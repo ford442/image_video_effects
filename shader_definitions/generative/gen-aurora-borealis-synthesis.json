@@ -9,5 +9,6 @@
     "plasma"
   ],
   "coordinate": 878,
-  "parameters": []
+  "parameters": [],
+  "url": "shaders/gen-aurora-borealis-synthesis.wgsl"
 }

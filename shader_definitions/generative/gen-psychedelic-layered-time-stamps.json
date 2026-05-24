@@ -38,5 +38,6 @@
       "step": 0.001,
       "default": 0.02
     }
-  ]
+  ],
+  "url": "shaders/gen-psychedelic-layered-time-stamps.wgsl"
 }

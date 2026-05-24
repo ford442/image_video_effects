@@ -35,5 +35,6 @@
       "step": 0.01,
       "id": "param3"
     }
-  ]
+  ],
+  "url": "shaders/gen-neuro-kinetic-liquid-gold-lotus.wgsl"
 }

@@ -52,5 +52,6 @@
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba"
-  ]
+  ],
+  "url": "shaders/gen-glacial-aether-quantum-cavern.wgsl"
 }

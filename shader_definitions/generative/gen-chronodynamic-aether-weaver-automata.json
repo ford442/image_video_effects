@@ -38,5 +38,6 @@
       "step": 0.01,
       "default": 0.95
     }
-  ]
+  ],
+  "url": "shaders/gen-chronodynamic-aether-weaver-automata.wgsl"
 }

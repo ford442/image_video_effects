@@ -9,5 +9,6 @@
     "matrix"
   ],
   "coordinate": 875,
-  "parameters": []
+  "parameters": [],
+  "url": "shaders/gen-holographic-lens-flare-matrix.wgsl"
 }

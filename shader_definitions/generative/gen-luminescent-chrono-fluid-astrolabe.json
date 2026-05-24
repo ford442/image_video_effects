@@ -38,5 +38,6 @@
       "step": 0.1,
       "default": 1
     }
-  ]
+  ],
+  "url": "shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl"
 }

@@ -983,6 +983,20 @@
     ]
   },
   {
+    "id": "gen-aurora-borealis-synthesis",
+    "name": "Aurora Borealis Synthesis",
+    "description": "Render a 3D volume of swirling aurora light and project it onto the 2D video surface, with audio-driven motion and depth-based mapping.",
+    "tags": [
+      "aurora",
+      "volumetric",
+      "audio-reactive",
+      "plasma"
+    ],
+    "coordinate": 878,
+    "parameters": [],
+    "url": "shaders/gen-aurora-borealis-synthesis.wgsl"
+  },
+  {
     "id": "gen-auroral-ferrofluid-monolith",
     "name": "Auroral Ferrofluid-Monolith",
     "url": "shaders/gen-auroral-ferrofluid-monolith.wgsl",
@@ -1489,6 +1503,57 @@
     ]
   },
   {
+    "id": "gen-celestial-nanite-swarm-nebula",
+    "name": "Celestial Nanite-Swarm Nebula",
+    "tags": [
+      "cosmic",
+      "particle-system",
+      "geometric",
+      "audio-reactive",
+      "nanites"
+    ],
+    "description": "A majestic, slowly churning nebula constructed entirely from trillions of glowing, synchronized nanites that dynamically self-assemble into intricate, shifting geometric constellations and colossal architectural megastructures in deep space.",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Swarm Density",
+        "type": "slider",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Constellation Link",
+        "type": "slider",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Wind Speed",
+        "type": "slider",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Geometric Order",
+        "type": "slider",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "url": "shaders/gen-celestial-nanite-swarm-nebula.wgsl"
+  },
+  {
     "id": "gen-celestial-prism-orchid",
     "name": "Celestial Prism-Orchid",
     "url": "shaders/gen-celestial-prism-orchid.wgsl",
@@ -1768,6 +1833,58 @@
     ]
   },
   {
+    "id": "gen-chromatic-singularity-loom",
+    "name": "Chromatic Singularity-Loom",
+    "tags": [
+      "singularity",
+      "fractal",
+      "weaving",
+      "space",
+      "audio-reactive",
+      "distortion"
+    ],
+    "description": "A majestic, gravity-warped cosmic loom weaving fractal strings of pure light around a central singularity.",
+    "parameters": [
+      {
+        "id": "gravity_mass",
+        "name": "Gravity Mass",
+        "type": "slider",
+        "min": 0.1,
+        "max": 10,
+        "step": 0.1,
+        "default": 2
+      },
+      {
+        "id": "thread_density",
+        "name": "Thread Density",
+        "type": "slider",
+        "min": 1,
+        "max": 8,
+        "step": 1,
+        "default": 4
+      },
+      {
+        "id": "accretion_glow",
+        "name": "Accretion Glow",
+        "type": "slider",
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "default": 1
+      },
+      {
+        "id": "chromatic_shift",
+        "name": "Chromatic Shift",
+        "type": "slider",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.5
+      }
+    ],
+    "url": "shaders/gen-chromatic-singularity-loom.wgsl"
+  },
+  {
     "id": "gen-chromodynamic-plasma-collider",
     "name": "Chromodynamic Plasma-Collider",
     "coordinate": 853,
@@ -1823,6 +1940,49 @@
         "step": 0.05
       }
     ]
+  },
+  {
+    "id": "gen-chronodynamic-aether-weaver-automata",
+    "name": "Chronodynamic Aether-Weaver Automata",
+    "tags": [
+      "cosmic",
+      "mechanical",
+      "quantum",
+      "bioluminescent",
+      "automata",
+      "audio-reactive"
+    ],
+    "parameters": [
+      {
+        "name": "Thread Count",
+        "min": 10,
+        "max": 500,
+        "step": 10,
+        "default": 100
+      },
+      {
+        "name": "Loom Rotation Speed",
+        "min": -5,
+        "max": 5,
+        "step": 0.1,
+        "default": 1
+      },
+      {
+        "name": "Aether Bloom",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.5
+      },
+      {
+        "name": "Temporal Decay",
+        "min": 0.5,
+        "max": 0.99,
+        "step": 0.01,
+        "default": 0.95
+      }
+    ],
+    "url": "shaders/gen-chronodynamic-aether-weaver-automata.wgsl"
   },
   {
     "id": "gen-chronos-labyrinth",
@@ -1883,6 +2043,50 @@
         "description": "Distance fade intensity"
       }
     ]
+  },
+  {
+    "id": "gen-cosmic-clockwork-dyson-sphere",
+    "name": "Cosmic-Clockwork Dyson-Sphere",
+    "description": "A hyper-intricate, colossal megastructure of interlocking golden gears, glowing plasma conduits, and rhythmic mechanical fractal shifts, enclosing a blinding quantum singularity that powers an ancient stellar clock.",
+    "tags": [
+      "mechanical",
+      "cosmic",
+      "fractal",
+      "audio-reactive",
+      "volumetric"
+    ],
+    "coordinate": 879,
+    "parameters": [
+      {
+        "name": "Mechanical Complexity",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Clock Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "name": "Plasma Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "name": "Gear Ratio",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "url": "shaders/gen-cosmic-clockwork-dyson-sphere.wgsl"
   },
   {
     "id": "gen-cosmic-web-filament",
@@ -2488,6 +2692,36 @@
     ]
   },
   {
+    "id": "gen-dynamic-tessellation-ornate-fractal-tiles",
+    "name": "Dynamic Tessellation (Ornate Fractal Tiles)",
+    "type": "compute",
+    "coordinate": 874,
+    "description": "Compute a screen-space tile grid and replace each tile with a tiny procedurally rendered fractal. The result is a morphing lattice of fractal mini-universes. Now audio-reactive to bass frequencies with meaningful alpha compositing.",
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "parameters": [
+      {
+        "id": "iterations",
+        "name": "Fractal Iterations",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Tile Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "url": "shaders/gen-dynamic-tessellation-ornate-fractal-tiles.wgsl"
+  },
+  {
     "id": "gen-eldritch-quantum-fractal-eye",
     "name": "Eldritch-Quantum Fractal-Eye",
     "tags": [
@@ -2916,6 +3150,63 @@
     ]
   },
   {
+    "id": "gen-glacial-aether-quantum-cavern",
+    "name": "Glacial-Aether Quantum-Cavern",
+    "tags": [
+      "fractal",
+      "ice",
+      "quantum",
+      "reactive",
+      "volumetric",
+      "cavern"
+    ],
+    "description": "An infinitely deep, freezing subterranean cavern of quantum ice that glows with auroral aether-plasma, physically cracking and echoing with kaleidoscopic light refractions upon heavy bass impulses.",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Ice Density",
+        "type": "slider",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Plasma Glow",
+        "type": "slider",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Fracture Rate",
+        "type": "slider",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Cavern Scale",
+        "type": "slider",
+        "default": 1.5,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.05
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "url": "shaders/gen-glacial-aether-quantum-cavern.wgsl"
+  },
+  {
     "id": "gen-gravitational-strain",
     "name": "Gravitational Strain Field",
     "url": "shaders/gen-gravitational-strain.wgsl",
@@ -3027,6 +3318,50 @@
     ]
   },
   {
+    "id": "gen-holographic-bismuth-core-reactor",
+    "name": "Holographic Bismuth-Core Reactor",
+    "description": "A hyper-dimensional, endlessly unfolding bismuth core reactor, merging metallic stepped-fractals with liquid-holographic interference patterns.",
+    "coordinate": 882,
+    "tags": [
+      "cosmic",
+      "mechanical",
+      "kifs",
+      "raymarching",
+      "holographic"
+    ],
+    "parameters": [
+      {
+        "name": "Core Size",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Iridescence Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Pulse Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Plasma Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "url": "shaders/gen-holographic-bismuth-core-reactor.wgsl"
+  },
+  {
     "id": "gen-holographic-data-core",
     "name": "Holographic Data Core",
     "url": "shaders/gen-holographic-data-core.wgsl",
@@ -3082,6 +3417,20 @@
         "step": 0.05
       }
     ]
+  },
+  {
+    "id": "gen-holographic-lens-flare-matrix",
+    "name": "Holographic Lens-Flare Matrix",
+    "description": "Generate a matrix of holographic lens flares that follow motion in the video or a synthetic flow field.",
+    "author": "Jules",
+    "tags": [
+      "generative",
+      "holographic",
+      "matrix"
+    ],
+    "coordinate": 875,
+    "parameters": [],
+    "url": "shaders/gen-holographic-lens-flare-matrix.wgsl"
   },
   {
     "id": "gen-holographic-membrane",
@@ -3975,6 +4324,49 @@
     "coordinate": 886
   },
   {
+    "id": "gen-luminescent-chrono-fluid-astrolabe",
+    "name": "Luminescent Chrono-Fluid Astrolabe",
+    "tags": [
+      "cosmic",
+      "mechanical",
+      "liquid",
+      "holographic",
+      "audio-reactive"
+    ],
+    "description": "A hyper-intricate, multi-dimensional astrolabe forged from flowing liquid-gold plasma and hard-light holograms, endlessly spinning and realigning its cosmic rings in perfect synchronization with audio frequencies.",
+    "parameters": [
+      {
+        "name": "Ring Complexity",
+        "min": 1,
+        "max": 10,
+        "step": 1,
+        "default": 3
+      },
+      {
+        "name": "Fluidity",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.5
+      },
+      {
+        "name": "Core Glow Intensity",
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "default": 1.5
+      },
+      {
+        "name": "Rotation Speed",
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "default": 1
+      }
+    ],
+    "url": "shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl"
+  },
+  {
     "id": "gen-luminous-fluid-chladni-resonator",
     "name": "Luminous-Fluid Chladni-Resonator",
     "url": "/shaders/gen-luminous-fluid-chladni-resonator.wgsl",
@@ -4735,6 +5127,46 @@
     ]
   },
   {
+    "id": "gen-neuro-kinetic-liquid-gold-lotus",
+    "name": "Neuro-Kinetic Liquid-Gold Lotus",
+    "description": "A hyper-organic, slowly unfurling macro-lotus made of liquid-gold geometry that dynamically responds to acoustic impulses, its petals rippling with neuro-kinetic plasma energy.",
+    "tags": [
+      "organic",
+      "liquid",
+      "gold",
+      "audio-reactive",
+      "geometry"
+    ],
+    "coordinate": 883,
+    "params": [
+      {
+        "name": "Bloom Radius",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "id": "param1"
+      },
+      {
+        "name": "Plasma Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "id": "param2"
+      },
+      {
+        "name": "Gold Smoothness",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "id": "param3"
+      }
+    ],
+    "url": "shaders/gen-neuro-kinetic-liquid-gold-lotus.wgsl"
+  },
+  {
     "id": "gen-obsidian-echo-chamber",
     "name": "Obsidian Echo-Chamber",
     "author": "Jules",
@@ -5226,6 +5658,49 @@
     ]
   },
   {
+    "id": "gen-psychedelic-layered-time-stamps",
+    "name": "Psychedelic Layered Time-Stamps",
+    "wgsl_code": "shaders/gen-psychedelic-layered-time-stamps.wgsl",
+    "tags": [
+      "generative",
+      "psychedelic",
+      "time",
+      "layers",
+      "audio-reactive"
+    ],
+    "description": "Overlay multiple delayed copies of the video, each with a different color offset and evolving distortion.",
+    "coordinate": 877,
+    "source": "Jules",
+    "features": [
+      "upgraded-rgba",
+      "audio-reactive"
+    ],
+    "parameters": [
+      {
+        "name": "Layer Count",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.5
+      },
+      {
+        "name": "Delay Scale",
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "default": 0.5
+      },
+      {
+        "name": "Distortion Amp",
+        "min": 0,
+        "max": 0.1,
+        "step": 0.001,
+        "default": 0.02
+      }
+    ],
+    "url": "shaders/gen-psychedelic-layered-time-stamps.wgsl"
+  },
+  {
     "id": "gen-psychedelic-time-warp-kaleidoscope",
     "name": "Psychedelic Time-Warp Kaleidoscope",
     "type": "compute",
@@ -5574,6 +6049,48 @@
     ]
   },
   {
+    "id": "gen-radiant-quantum-crystalline-forge",
+    "name": "Radiant Quantum-Crystalline Forge",
+    "tags": [
+      "fractal",
+      "crystal",
+      "quantum",
+      "reactive",
+      "volumetric"
+    ],
+    "description": "A majestic, zero-gravity forge where infinite quantum crystals self-assemble into intricate fractal geometries, pulsating with radiant chromatic energy and refracting light in a dazzling abyssal void.",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Crystallization Density",
+        "type": "slider",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Chromatic Aberration",
+        "type": "slider",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Fog Intensity",
+        "type": "slider",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      }
+    ],
+    "url": "shaders/gen-radiant-quantum-crystalline-forge.wgsl"
+  },
+  {
     "id": "gen-raptor-mini",
     "name": "Raptor Mini",
     "url": "shaders/gen-raptor-mini.wgsl",
@@ -5795,6 +6312,50 @@
         "step": 0.1
       }
     ]
+  },
+  {
+    "id": "gen-sonoluminescent-chrono-geode-matrix",
+    "name": "Sonoluminescent Chrono-Geode Matrix",
+    "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core.",
+    "coordinate": 882,
+    "tags": [
+      "geode",
+      "plasma",
+      "fractal",
+      "temporal",
+      "audio-reactive"
+    ],
+    "parameters": [
+      {
+        "name": "Fracture Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "Core Glow",
+        "default": 2,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Geode Rotation",
+        "default": 1,
+        "min": -3,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "name": "Temporal Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "url": "shaders/gen-sonoluminescent-chrono-geode-matrix.wgsl"
   },
   {
     "id": "gen-spectral-ferrofluid",

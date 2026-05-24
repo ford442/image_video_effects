@@ -3,6 +3,7 @@
     "id": "audio-reactive-pyramid",
     "name": "Audio Reactive Pyramid",
     "url": "shaders/audio-reactive-pyramid.wgsl",
+    "category": "post-processing",
     "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0–12), mid detail by mid bins (13–50), fine detail by treble bins (51–127). Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
     "tags": [
       "audio-reactive",
@@ -56,6 +57,7 @@
     "id": "audio-reactive-rgb-dispersion",
     "name": "Audio Reactive RGB Dispersion",
     "url": "shaders/audio-reactive-rgb-dispersion.wgsl",
+    "category": "post-processing",
     "description": "Chromatic (RGB) dispersion effect whose offset magnitudes and direction are driven by the spectral centroid of the live 128-bin FFT array. Bass-heavy music produces tight warm dispersion; treble-heavy music produces wide cool dispersion. Compatible with ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
     "tags": [
       "audio-reactive",
@@ -109,6 +111,7 @@
     "id": "audio-reactive-temporal-decay",
     "name": "Audio Reactive Temporal Decay",
     "url": "shaders/audio-reactive-temporal-decay.wgsl",
+    "category": "post-processing",
     "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range. Low-band energy → long ghostly trails; high-band energy → fast fade. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
     "tags": [
       "audio-reactive",
