@@ -4966,6 +4966,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Great for testing particle effects, subsurface scattering, and multi-colored bioluminescence.
 
+
+### Suggestion: Neon-Lit Cyberpunk Marketplace
+- **Date:** 2026-05-28
+- **Prompt:** "A bustling, vibrant cyberpunk marketplace located in a narrow, rain-slicked alleyway. The scene is illuminated entirely by intense, flickering neon signs in vivid magenta, cyan, and amber. Steam billows from street vents, obscuring the ground. In the foreground, a heavily augmented street vendor is cooking noodles on a futuristic portable stove. The mood is moody and cinematic. Captured with a 50mm prime lens, shallow depth of field, focused on the vendor with glowing bokeh in the background."
+- **Negative prompt:** "daylight, clean, unpopulated, cartoon, flat lighting, lowres, bright"
+- **Tags:** cyberpunk, interior, photorealistic, moody, cinematic
+- **Style / Reference:** photorealistic, cinematic, sci-fi concept art
+- **Composition:** medium shot, eye-level, focused on foreground subject
+- **Color palette:** high contrast magenta, cyan, amber, deep blacks
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260528_neon-cyberpunk-market.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing neon glow, volumetric fog, and wet reflection shaders.
+
+### Suggestion: Minimalist Zen Garden Retreat
+- **Date:** 2026-05-28
+- **Prompt:** "A tranquil, minimalist zen garden viewed from a wooden veranda. Perfectly raked white gravel surrounds large, moss-covered obsidian stones. A single, gracefully curved bonsai tree sits in the corner. The scene is bathed in soft, diffused morning sunlight piercing through a misty atmosphere. The mood is ethereal and peaceful. Captured with a wide-angle lens, deep depth of field, ensuring everything is in sharp focus."
+- **Negative prompt:** "cluttered, dark, noisy, people, vibrant colors, messy"
+- **Tags:** nature, landscape, minimalist, ethereal
+- **Style / Reference:** photorealistic, architectural visualization, minimalist
+- **Composition:** wide shot, symmetrical balance, static camera
+- **Color palette:** muted greens, soft whites, deep greys, pale yellow light
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20260528_minimalist-zen-garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing ambient occlusion, soft shadowing, and depth of field.
+
+### Suggestion: Steampunk Brass Observatory
+- **Date:** 2026-05-28
+- **Prompt:** "The intricate interior of a grand steampunk observatory perched high in the mountains. Massive brass telescopes and complex clockwork orreries dominate the space. The room is warmly lit by numerous glowing Edison bulbs and moonlight streaming through a massive glass dome, revealing a starry night sky. The mood is whimsical and cinematic. Captured with a 24mm lens to capture the vast scale of the machinery and the starry sky above."
+- **Negative prompt:** "modern, sleek, daylight, empty, simple, low quality"
+- **Tags:** steampunk, interior, photorealistic, cinematic
+- **Style / Reference:** photorealistic, detailed 3D render, steampunk aesthetic
+- **Composition:** low angle looking up at the telescope and glass dome
+- **Color palette:** warm golds, polished brass, rich mahogany, deep midnight blue
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260528_steampunk-observatory.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing metallic reflections, glass refraction, and point light sources.
+
+### Suggestion: Surreal Floating Geometric Desert
+- **Date:** 2026-05-28
+- **Prompt:** "A vast, surreal desert landscape where colossal, impossible geometric shapes—perfect spheres and hypercubes made of mirrored glass—hover silently above rolling sand dunes. The lighting is harsh, high-noon sunlight casting stark, sharp shadows on the orange sand. The mood is bright, dreamlike, and abstract. Captured with an ultra-wide 14mm lens, emphasizing the endless horizon and the massive scale of the floating geometry."
+- **Negative prompt:** "clouds, water, people, organic shapes, messy, dark"
+- **Tags:** landscape, surreal, abstract, bright
+- **Style / Reference:** surrealism, 3D abstract render, Dalí inspired
+- **Composition:** ultra-wide shot, rule of thirds, low horizon line
+- **Color palette:** vibrant orange sand, brilliant azure sky, chrome reflections
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260528_surreal-geometric-desert.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing environment mapping, sharp shadows, and ray-marched reflections.
+
+### Suggestion: Noir Detective Office at Midnight
+- **Date:** 2026-05-28
+- **Prompt:** "A gritty, 1940s noir detective office late at night. Cigarette smoke hangs thick in the air, catching the stark, high-contrast light spilling through Venetian blinds from a streetlamp outside. A silhouette of a fedora-wearing figure sits behind a cluttered oak desk. The mood is dark, moody, and tense. Captured with a 35mm lens, high contrast black-and-white lighting, with deep, impenetrable shadows."
+- **Negative prompt:** "bright, colorful, clean, daylight, modern, cheerful"
+- **Tags:** noir, interior, photorealistic, moody, dark
+- **Style / Reference:** cinematic noir, black and white photography, high contrast
+- **Composition:** medium shot, strong chiaroscuro, framing the silhouette
+- **Color palette:** monochromatic, stark blacks, bright whites, varied greys
+- **Aspect ratio:** 2.35:1
+- **Reference images:** `public/images/suggestions/20260528_noir-detective-office.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use for testing volumetric light shafts, high-contrast grading, and monochromatic filters.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
