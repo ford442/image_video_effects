@@ -382,23 +382,47 @@ class ShaderApiService {
     }
 
     try {
-      const url = `${this.baseUrl}/api/shaders${includeParams ? '?include_params=true' : ''}`;
-      console.log(`[ShaderApi] Fetching from ${url}`);
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`API ${response.status}`);
-      const responseData = await response.json();
-      
-      // Handle both array and wrapped response formats
-      let data: ApiShaderEntry[];
-      if (Array.isArray(responseData)) {
-        data = responseData;
-      } else if (responseData && typeof responseData === 'object' && Array.isArray(responseData.shaders)) {
-        data = responseData.shaders;
-      } else {
+      // The API paginates (default per_page=100). The wrapped response exposes
+      // `total`, so fetch the first page, then fetch any remaining pages and
+      // concatenate. per_page is kept at 200 because the backend returns an
+      // empty result for very large page sizes (>~1000).
+      const PER_PAGE = 200;
+      const baseParams = includeParams ? 'include_params=true&' : '';
+      const pageUrl = (page: number) =>
+        `${this.baseUrl}/api/shaders?${baseParams}per_page=${PER_PAGE}&page=${page}`;
+
+      const parsePage = (responseData: any): ApiShaderEntry[] => {
+        if (Array.isArray(responseData)) return responseData;
+        if (responseData && typeof responseData === 'object' && Array.isArray(responseData.shaders)) {
+          return responseData.shaders;
+        }
         throw new TypeError(`API response is not an array or wrapped array, received: ${typeof responseData}`);
+      };
+
+      console.log(`[ShaderApi] Fetching from ${pageUrl(1)}`);
+      const firstRes = await fetch(pageUrl(1));
+      if (!firstRes.ok) throw new Error(`API ${firstRes.status}`);
+      const firstData = await firstRes.json();
+
+      let data = parsePage(firstData);
+
+      // If the response is paginated (wrapped with a numeric `total`), fetch the rest.
+      const total: number | undefined =
+        firstData && typeof firstData === 'object' ? firstData.total : undefined;
+      if (typeof total === 'number' && total > data.length) {
+        const totalPages = Math.ceil(total / PER_PAGE);
+        const restPages = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, i) =>
+            fetch(pageUrl(i + 2))
+              .then(r => (r.ok ? r.json() : null))
+              .then(j => (j ? parsePage(j) : []))
+              .catch(() => [] as ApiShaderEntry[])
+          )
+        );
+        for (const page of restPages) data = data.concat(page);
       }
-      
-      console.log(`[ShaderApi] Received ${data.length} shaders from API`);
+
+      console.log(`[ShaderApi] Received ${data.length} shaders from API (total reported: ${total ?? 'n/a'})`);
       
       // Count shaders with real (non-0.5) params
       const withRealParams = data.filter(s => 
