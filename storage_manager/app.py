@@ -788,23 +788,56 @@ def _build_diff_preview(diff_full: dict) -> tuple:
 
 
 def _run_subprocess_sync(args: List[str], cwd: Path, timeout_seconds: int = 600) -> dict:
-    completed = subprocess.run(
-        args,
-        cwd=str(cwd),
-        capture_output=True,
-        text=True,
-        timeout=timeout_seconds,
-        check=False,
-    )
+    """Run a trusted subprocess command for shader-list maintenance tasks."""
+    allowed_commands = {
+        ("git", "pull", "--ff-only"),
+        ("node", "scripts/generate_shader_lists.js"),
+    }
+    if tuple(args) not in allowed_commands:
+        logging.warning("Rejected unsupported subprocess command: %s", " ".join(args))
+        raise RuntimeError(f"Unsupported command: {' '.join(args)}")
+
+    try:
+        completed = subprocess.run(
+            args,
+            cwd=str(cwd),
+            shell=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"Command timed out after {timeout_seconds}s: {' '.join(args)}")
+
+    max_output_chars = 20000
+    stdout = (completed.stdout or "")[:max_output_chars]
+    stderr = (completed.stderr or "")[:max_output_chars]
+    if completed.returncode == 0:
+        logging.info(
+            "Command succeeded: %s | stdout=%s | stderr=%s",
+            " ".join(args),
+            stdout.strip(),
+            stderr.strip(),
+        )
+    else:
+        logging.warning(
+            "Command failed: %s (code=%s) | stdout=%s | stderr=%s",
+            " ".join(args),
+            completed.returncode,
+            stdout.strip(),
+            stderr.strip(),
+        )
     return {
         "command": " ".join(args),
         "returncode": completed.returncode,
-        "stdout": completed.stdout,
-        "stderr": completed.stderr,
+        "stdout": stdout,
+        "stderr": stderr,
     }
 
 
 def _rescan_shader_lists_sync(pull_latest: bool = True) -> dict:
+    """Regenerate shader-list JSON files in-repo and upload them to storage."""
     repo_root = Path(
         os.environ.get(
             "IMAGE_VIDEO_EFFECTS_REPO_PATH",
@@ -816,6 +849,8 @@ def _rescan_shader_lists_sync(pull_latest: bool = True) -> dict:
 
     if not repo_root.exists():
         raise RuntimeError(f"Repository path not found: {repo_root}")
+    if not (repo_root / ".git").exists():
+        raise RuntimeError(f"Repository path is missing .git metadata: {repo_root}")
     if not generator_script.exists():
         raise RuntimeError(f"Generator script not found: {generator_script}")
     if not output_dir.exists():
@@ -837,14 +872,24 @@ def _rescan_shader_lists_sync(pull_latest: bool = True) -> dict:
             raise RuntimeError(f"Command failed: {result['command']}. {details}")
 
     uploaded_files: List[str] = []
+    upload_errors: List[str] = []
     for json_path in sorted(output_dir.glob("*.json")):
-        blob = bucket.blob(f"shader-lists/{json_path.name}")
-        with open(json_path, "r", encoding="utf-8") as f:
-            blob.upload_from_string(f.read(), content_type="application/json")
+        storage_path = f"shader-lists/{json_path.name}"
+        try:
+            blob = bucket.blob(storage_path)
+            blob.upload_from_filename(str(json_path), content_type="application/json")
+        except Exception as e:
+            upload_errors.append(f"{json_path} -> {storage_path}: {str(e)}")
+            continue
         uploaded_files.append(json_path.name)
 
     if not uploaded_files:
-        raise RuntimeError(f"No shader list JSON files found in {output_dir}")
+        raise RuntimeError(
+            f"No shader list JSON files found in {output_dir}. "
+            "Verify generate_shader_lists.js succeeded and outputs files to public/shader-lists."
+        )
+    if upload_errors:
+        raise RuntimeError("Some shader lists failed to upload: " + "; ".join(upload_errors))
 
     return {
         "success": True,

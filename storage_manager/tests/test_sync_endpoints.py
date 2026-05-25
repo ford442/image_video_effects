@@ -731,6 +731,7 @@ class TestRescanShaders:
         repo_root = tmp_path / "repo"
         scripts_dir = repo_root / "scripts"
         output_dir = repo_root / "public" / "shader-lists"
+        (repo_root / ".git").mkdir(parents=True)
         scripts_dir.mkdir(parents=True)
         output_dir.mkdir(parents=True)
         (scripts_dir / "generate_shader_lists.js").write_text("// noop", encoding="utf-8")
@@ -742,7 +743,7 @@ class TestRescanShaders:
 
         def _blob(path: str):
             blob = MagicMock()
-            blob.upload_from_string.return_value = None
+            blob.upload_from_filename.return_value = None
             blobs[path] = blob
             return blob
 
@@ -760,6 +761,7 @@ class TestRescanShaders:
         assert result["uploaded_count"] == 2
         assert result["uploaded_files"] == ["alpha.json", "beta.json"]
         assert run_mock.call_count == 1
+        assert run_mock.call_args.args[0] == ["node", "scripts/generate_shader_lists.js"]
         assert "shader-lists/alpha.json" in blobs
         assert "shader-lists/beta.json" in blobs
 
