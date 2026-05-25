@@ -686,6 +686,21 @@ function MainApp() {
         handleNewRandomImage();
     }, [rendererReady, imageManifest, currentImageUrl, inputSource, handleNewRandomImage]);
 
+    // --- Auto-select shader when switching to video input ---
+    // If user switches to video but no shader is active, auto-select the first available image shader
+    useEffect(() => {
+        if (inputSource !== 'video') return;
+        if (modes[0] && modes[0] !== 'none') return; // Already have a shader
+        if (availableModes.length === 0) return; // No shaders loaded yet
+
+        // Find first non-generative shader (generative shaders require specific input)
+        const firstImageShader = availableModes.find(s => s.category !== 'generative');
+        if (firstImageShader) {
+            console.log('[App] Auto-selecting shader for video input:', firstImageShader.id);
+            setMode(0, firstImageShader.id as RenderMode);
+        }
+    }, [inputSource, modes, availableModes, setMode]);
+
     // --- Auto Image Switch Timer ---
     useEffect(() => {
         if (!autoChangeEnabled || inputSource !== 'image') return;
