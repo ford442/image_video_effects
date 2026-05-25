@@ -16,7 +16,7 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
@@ -687,6 +687,81 @@ class TestWriteJsonAtomicSync:
 
         assert mock_bucket.copy_blob.call_count == 0
         assert backup == ""
+
+
+# ---------------------------------------------------------------------------
+# Shader-list rescanning endpoint
+# ---------------------------------------------------------------------------
+
+
+class TestRescanShaders:
+    def test_rescan_endpoint_happy_path(self, client):
+        c, _ = client
+        expected = {
+            "success": True,
+            "pull_latest": False,
+            "uploaded_count": 2,
+            "uploaded_files": ["image.json", "generative.json"],
+            "commands": [{"command": "node scripts/generate_shader_lists.js", "returncode": 0}],
+        }
+        cache_mock = AsyncMock()
+
+        with patch("storage_manager.app._rescan_shader_lists_sync", return_value=expected) as rescan_mock:
+            with patch("storage_manager.app.clear_cache_for_type", cache_mock):
+                resp = c.post("/api/admin/rescan-shaders", json={"pull_latest": False})
+
+        assert resp.status_code == 200
+        assert resp.json() == expected
+        assert rescan_mock.call_count == 1
+        assert rescan_mock.call_args.args == (False,)
+        cache_mock.assert_awaited_once_with(None)
+
+    def test_rescan_endpoint_failure_returns_500(self, client):
+        c, _ = client
+        cache_mock = AsyncMock()
+        with patch("storage_manager.app._rescan_shader_lists_sync", side_effect=RuntimeError("boom")):
+            with patch("storage_manager.app.clear_cache_for_type", cache_mock):
+                resp = c.post("/api/admin/rescan-shaders", json={"pull_latest": True})
+
+        assert resp.status_code == 500
+        assert "Shader rescan failed: boom" in resp.json()["detail"]
+        cache_mock.assert_not_awaited()
+
+    def test_rescan_shader_lists_sync_uploads_shader_lists(self, tmp_path):
+        repo_root = tmp_path / "repo"
+        scripts_dir = repo_root / "scripts"
+        output_dir = repo_root / "public" / "shader-lists"
+        scripts_dir.mkdir(parents=True)
+        output_dir.mkdir(parents=True)
+        (scripts_dir / "generate_shader_lists.js").write_text("// noop", encoding="utf-8")
+        (output_dir / "alpha.json").write_text('{"id":"alpha"}', encoding="utf-8")
+        (output_dir / "beta.json").write_text('{"id":"beta"}', encoding="utf-8")
+
+        blobs: Dict[str, MagicMock] = {}
+        mock_bucket = _make_test_bucket()
+
+        def _blob(path: str):
+            blob = MagicMock()
+            blob.upload_from_string.return_value = None
+            blobs[path] = blob
+            return blob
+
+        mock_bucket.blob.side_effect = _blob
+        app_module.bucket = mock_bucket
+
+        with patch.dict("storage_manager.app.os.environ", {"IMAGE_VIDEO_EFFECTS_REPO_PATH": str(repo_root)}):
+            with patch(
+                "storage_manager.app._run_subprocess_sync",
+                return_value={"command": "node scripts/generate_shader_lists.js", "returncode": 0, "stdout": "", "stderr": ""},
+            ) as run_mock:
+                result = app_module._rescan_shader_lists_sync(pull_latest=False)
+
+        assert result["success"] is True
+        assert result["uploaded_count"] == 2
+        assert result["uploaded_files"] == ["alpha.json", "beta.json"]
+        assert run_mock.call_count == 1
+        assert "shader-lists/alpha.json" in blobs
+        assert "shader-lists/beta.json" in blobs
 
 
 # ---------------------------------------------------------------------------

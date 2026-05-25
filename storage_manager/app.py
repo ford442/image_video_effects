@@ -16,6 +16,7 @@ from typing import Dict, List, Optional, Protocol, runtime_checkable
 from datetime import datetime
 from enum import Enum
 import io
+import subprocess
 from ftplib import FTP
 import uvicorn
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query, Body, Request
@@ -642,6 +643,10 @@ class CoordinateSyncPayload(BaseModel):
     overwrite: bool = False
 
 
+class ShaderRescanPayload(BaseModel):
+    pull_latest: bool = True
+
+
 # ========================= SYNC INTENT MODELS =========================
 
 class ApplyIntentPayload(BaseModel):
@@ -780,6 +785,77 @@ def _build_diff_preview(diff_full: dict) -> tuple:
             preview[key] = items
     preview["unchanged_count"] = diff_full["unchanged_count"]
     return preview, truncated
+
+
+def _run_subprocess_sync(args: List[str], cwd: Path, timeout_seconds: int = 600) -> dict:
+    completed = subprocess.run(
+        args,
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        timeout=timeout_seconds,
+        check=False,
+    )
+    return {
+        "command": " ".join(args),
+        "returncode": completed.returncode,
+        "stdout": completed.stdout,
+        "stderr": completed.stderr,
+    }
+
+
+def _rescan_shader_lists_sync(pull_latest: bool = True) -> dict:
+    repo_root = Path(
+        os.environ.get(
+            "IMAGE_VIDEO_EFFECTS_REPO_PATH",
+            str(Path(__file__).resolve().parent.parent),
+        )
+    ).resolve()
+    output_dir = repo_root / "public" / "shader-lists"
+    generator_script = repo_root / "scripts" / "generate_shader_lists.js"
+
+    if not repo_root.exists():
+        raise RuntimeError(f"Repository path not found: {repo_root}")
+    if not generator_script.exists():
+        raise RuntimeError(f"Generator script not found: {generator_script}")
+    if not output_dir.exists():
+        raise RuntimeError(f"Output directory not found: {output_dir}")
+
+    commands: List[List[str]] = []
+    if pull_latest:
+        commands.append(["git", "pull", "--ff-only"])
+    commands.append(["node", "scripts/generate_shader_lists.js"])
+
+    command_results = []
+    for args in commands:
+        result = _run_subprocess_sync(args, repo_root)
+        command_results.append(result)
+        if result["returncode"] != 0:
+            stderr = (result["stderr"] or "").strip()
+            stdout = (result["stdout"] or "").strip()
+            details = stderr or stdout or "No output"
+            raise RuntimeError(f"Command failed: {result['command']}. {details}")
+
+    uploaded_files: List[str] = []
+    for json_path in sorted(output_dir.glob("*.json")):
+        blob = bucket.blob(f"shader-lists/{json_path.name}")
+        with open(json_path, "r", encoding="utf-8") as f:
+            blob.upload_from_string(f.read(), content_type="application/json")
+        uploaded_files.append(json_path.name)
+
+    if not uploaded_files:
+        raise RuntimeError(f"No shader list JSON files found in {output_dir}")
+
+    return {
+        "success": True,
+        "pull_latest": pull_latest,
+        "uploaded_count": len(uploaded_files),
+        "uploaded_files": uploaded_files,
+        "commands": [
+            {"command": item["command"], "returncode": item["returncode"]}
+            for item in command_results
+        ],
+    }
 
 
 @app.get("/")
@@ -2759,6 +2835,18 @@ async def sync_gcs_storage():
 
     await clear_cache_for_type(None)
     return report
+
+
+@app.post("/api/admin/rescan-shaders")
+async def rescan_shaders(payload: ShaderRescanPayload = Body(default_factory=ShaderRescanPayload)):
+    try:
+        result = await run_io(_rescan_shader_lists_sync, payload.pull_latest)
+        await clear_cache_for_type(None)
+        return result
+    except Exception as e:
+        logging.error("Shader list rescan failed: %s", e)
+        raise HTTPException(500, f"Shader rescan failed: {str(e)}")
+
 
 @app.post("/api/admin/seed-test-samples")
 async def seed_test_samples():
