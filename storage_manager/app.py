@@ -16,6 +16,7 @@ from typing import Dict, List, Optional, Protocol, runtime_checkable
 from datetime import datetime
 from enum import Enum
 import io
+import subprocess
 from ftplib import FTP
 import uvicorn
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query, Body, Request
@@ -642,6 +643,10 @@ class CoordinateSyncPayload(BaseModel):
     overwrite: bool = False
 
 
+class ShaderRescanPayload(BaseModel):
+    pull_latest: bool = True
+
+
 # ========================= SYNC INTENT MODELS =========================
 
 class ApplyIntentPayload(BaseModel):
@@ -780,6 +785,122 @@ def _build_diff_preview(diff_full: dict) -> tuple:
             preview[key] = items
     preview["unchanged_count"] = diff_full["unchanged_count"]
     return preview, truncated
+
+
+def _run_subprocess_sync(args: List[str], cwd: Path, timeout_seconds: int = 600) -> dict:
+    """Run a trusted subprocess command for shader-list maintenance tasks."""
+    allowed_commands = {
+        ("git", "pull", "--ff-only"),
+        ("node", "scripts/generate_shader_lists.js"),
+    }
+    if tuple(args) not in allowed_commands:
+        logging.warning("Rejected unsupported subprocess command: %s", " ".join(args))
+        raise RuntimeError(f"Unsupported command: {' '.join(args)}")
+
+    try:
+        completed = subprocess.run(
+            args,
+            cwd=str(cwd),
+            shell=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"Command timed out after {timeout_seconds}s: {' '.join(args)}")
+
+    max_output_chars = 20000
+    stdout = (completed.stdout or "")[:max_output_chars]
+    stderr = (completed.stderr or "")[:max_output_chars]
+    if completed.returncode == 0:
+        logging.info(
+            "Command succeeded: %s | stdout=%s | stderr=%s",
+            " ".join(args),
+            stdout.strip(),
+            stderr.strip(),
+        )
+    else:
+        logging.warning(
+            "Command failed: %s (code=%s) | stdout=%s | stderr=%s",
+            " ".join(args),
+            completed.returncode,
+            stdout.strip(),
+            stderr.strip(),
+        )
+    return {
+        "command": " ".join(args),
+        "returncode": completed.returncode,
+        "stdout": stdout,
+        "stderr": stderr,
+    }
+
+
+def _rescan_shader_lists_sync(pull_latest: bool = True) -> dict:
+    """Regenerate shader-list JSON files in-repo and upload them to storage."""
+    repo_root = Path(
+        os.environ.get(
+            "IMAGE_VIDEO_EFFECTS_REPO_PATH",
+            str(Path(__file__).resolve().parent.parent),
+        )
+    ).resolve()
+    output_dir = repo_root / "public" / "shader-lists"
+    generator_script = repo_root / "scripts" / "generate_shader_lists.js"
+
+    if not repo_root.exists():
+        raise RuntimeError(f"Repository path not found: {repo_root}")
+    if not (repo_root / ".git").exists():
+        raise RuntimeError(f"Repository path is missing .git metadata: {repo_root}")
+    if not generator_script.exists():
+        raise RuntimeError(f"Generator script not found: {generator_script}")
+    if not output_dir.exists():
+        raise RuntimeError(f"Output directory not found: {output_dir}")
+
+    commands: List[List[str]] = []
+    if pull_latest:
+        commands.append(["git", "pull", "--ff-only"])
+    commands.append(["node", "scripts/generate_shader_lists.js"])
+
+    command_results = []
+    for args in commands:
+        result = _run_subprocess_sync(args, repo_root)
+        command_results.append(result)
+        if result["returncode"] != 0:
+            stderr = (result["stderr"] or "").strip()
+            stdout = (result["stdout"] or "").strip()
+            details = stderr or stdout or "No output"
+            raise RuntimeError(f"Command failed: {result['command']}. {details}")
+
+    uploaded_files: List[str] = []
+    upload_errors: List[str] = []
+    for json_path in sorted(output_dir.glob("*.json")):
+        storage_path = f"shader-lists/{json_path.name}"
+        try:
+            blob = bucket.blob(storage_path)
+            blob.upload_from_filename(str(json_path), content_type="application/json")
+        except Exception as e:
+            upload_errors.append(f"{json_path} -> {storage_path}: {str(e)}")
+            continue
+        uploaded_files.append(json_path.name)
+
+    if not uploaded_files:
+        raise RuntimeError(
+            f"No shader list JSON files found in {output_dir}. "
+            "Verify generate_shader_lists.js succeeded and outputs files to public/shader-lists."
+        )
+    if upload_errors:
+        raise RuntimeError("Some shader lists failed to upload: " + "; ".join(upload_errors))
+
+    return {
+        "success": True,
+        "pull_latest": pull_latest,
+        "uploaded_count": len(uploaded_files),
+        "uploaded_files": uploaded_files,
+        "commands": [
+            {"command": item["command"], "returncode": item["returncode"]}
+            for item in command_results
+        ],
+    }
 
 
 @app.get("/")
@@ -2759,6 +2880,18 @@ async def sync_gcs_storage():
 
     await clear_cache_for_type(None)
     return report
+
+
+@app.post("/api/admin/rescan-shaders")
+async def rescan_shaders(payload: ShaderRescanPayload = Body(default_factory=ShaderRescanPayload)):
+    try:
+        result = await run_io(_rescan_shader_lists_sync, payload.pull_latest)
+        await clear_cache_for_type(None)
+        return result
+    except Exception as e:
+        logging.error("Shader list rescan failed: %s", e)
+        raise HTTPException(500, f"Shader rescan failed: {str(e)}")
+
 
 @app.post("/api/admin/seed-test-samples")
 async def seed_test_samples():
