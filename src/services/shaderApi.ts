@@ -384,7 +384,7 @@ class ShaderApiService {
     }
 
     try {
-      const url = `${this.baseUrl}/api/shaders${includeParams ? '?include_params=true' : ''}`;
+      const url = `${this.baseUrl}/api/shaders?all=true`;
       console.log(`[ShaderApi] Fetching from ${url}`);
       const response = await fetch(url);
       if (!response.ok) throw new Error(`API ${response.status}`);
