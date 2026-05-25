@@ -542,6 +542,13 @@
       "added": "2026-05-23T15:29:18.932464",
       "status": "completed",
       "completed_at": "2026-05-24T08:02:21.451411"
+    },
+    {
+      "filename": "2026-05-21_symbiotic-chrono-mycelium-engine.md",
+      "title": "Symbiotic Chrono-Mycelium Engine",
+      "added": "2026-05-21T15:41:08.968049",
+      "status": "completed",
+      "completed_at": "2026-05-25T08:09:38.635604+00:00"
     }
   ],
   "rejected": [],
@@ -761,11 +768,6 @@
       "filename": "2026-05-22_celestial-nanite-swarm-nebula.md",
       "title": "Celestial Nanite-Swarm Nebula",
       "added": "2026-05-22T15:37:16.206489"
-    },
-    {
-      "filename": "2026-05-21_symbiotic-chrono-mycelium-engine.md",
-      "title": "Symbiotic Chrono-Mycelium Engine",
-      "added": "2026-05-21T15:41:08.968049"
     }
   ],
   "in_progress": null
