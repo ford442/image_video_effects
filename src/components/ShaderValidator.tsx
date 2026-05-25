@@ -386,13 +386,19 @@ const ShaderValidator: React.FC = () => {
 
     // 1. Initialise WebGPU
     if (!navigator.gpu) {
-      setGpuError('WebGPU is not available in this browser.');
+      setGpuError(
+        'WebGPU is not available. Please use Chrome 113+, Edge 113+, or Firefox Nightly with ' +
+        'dom.webgpu.enabled flag. HTTPS or localhost is required.'
+      );
       setRunning(false);
       return;
     }
     const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) {
-      setGpuError('No GPU adapter found.');
+      setGpuError(
+        'No GPU adapter found. This may occur if WebGPU is disabled in browser settings, ' +
+        'your GPU does not support WebGPU, or you are running in a headless/virtual environment.'
+      );
       setRunning(false);
       return;
     }
