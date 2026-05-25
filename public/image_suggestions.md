@@ -5032,6 +5032,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Use for testing volumetric light shafts, high-contrast grading, and monochromatic filters.
 
+### Suggestion: Steampunk Tsunami
+- **Date:** 2026-10-31
+- **Prompt:** "A chaotic, desperate scene of a massive tsunami wave crashing into an intricate steampunk harbor city. The towering, dark, and churning water dwarfs the brick tenements and brass smokestacks. The lighting is heavily overcast and bleak, casting murky shadows that emphasize the dirt, desperation, and raw power of nature over the mechanical urban landscape. The mood is dark, cinematic, and moody. Captured with a low, eye-level perspective to immerse the viewer in the unfolding disaster."
+- **Negative prompt:** "bright, cheerful, clean, modern, sci-fi, surreal, highly saturated, peaceful"
+- **Tags:** steampunk, landscape, photorealistic, cinematic, dark
+- **Style / Reference:** steampunk painting, photorealistic, thick brushstrokes
+- **Composition:** low angle, immersive eye-level perspective, chaotic framing
+- **Color palette:** murky greens, dark greys, dull browns, foamy white, polished brass
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_steampunk-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing gritty, unidealized urban scenes merged with catastrophic natural events.
+
+### Suggestion: Fantasy Volcanic Eruption
+- **Date:** 2026-10-31
+- **Prompt:** "An apocalyptic, highly detailed scene of a massive volcanic eruption tearing through a mountainous landscape, where the erupting magma and ash are composed entirely of shimmering, iridescent Mother of Pearl. The volcanic subject violently spews pearlescent pink, blue, and silver fluid across the jagged rocks, while a towering plume of iridescent ash dominates the sky. The lighting is harsh and chaotic, capturing the pearlescent interference patterns and the glowing heat of the nacreous lava. The mood is dark, ethereal, and bright. Captured with a wide 24mm lens to show the sheer scale of the beautiful destruction."
+- **Negative prompt:** "peaceful, daylight, green grass, calm, low detail, red lava, dark ash"
+- **Tags:** fantasy, landscape, surreal, ethereal, bright
+- **Style / Reference:** surreal disaster concept art, photorealistic material swap
+- **Composition:** wide angle, low angle looking up at the ash plume
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, intense white highlights
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_fantasy-volcano.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating iridescent material rendering applied to chaotic fluid dynamics and thick volumetric smoke.
+
+### Suggestion: Steampunk Orbital Ring Megastructure
+- **Date:** 2026-10-31
+- **Prompt:** "An epic, sweeping view of a massive Orbital Ring megastructure encircling a lush, green Earth-like planet, constructed entirely from intricate, polished brass clockwork and giant copper gears. The mechanical subject is dotted with glowing amber city lights and billowing steam vents. The lighting features a dramatic sunrise cresting over the planet's horizon, casting a blinding golden glare and long shadows across the intricate brass surface, highlighting the steampunk aesthetic on a cosmic scale. The mood is cinematic, bright, and whimsical. Captured with a wide-angle cinematic lens from low Earth orbit, emphasizing planetary scale."
+- **Negative prompt:** "dystopian, sleek, modern, white plastic, broken, rusty, small, low-res"
+- **Tags:** sci-fi, steampunk, architecture, cinematic, bright
+- **Style / Reference:** steampunk concept art, cinematic space visualization
+- **Composition:** curved horizon, extreme wide angle, dynamic lighting
+- **Color palette:** polished warm brass, glowing amber, vibrant earth greens and blues, blinding solar gold
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261031_steampunk-orbital-ring.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of massive scale, planetary curvature, and highly intricate metallic steampunk textures in space.
+
+### Suggestion: Cyberpunk Fireworks Over City
+- **Date:** 2026-10-31
+- **Prompt:** "A vibrant, long-exposure photograph of a massive fireworks display over a futuristic cyberpunk metropolis, but the exploding fireworks are composed of glowing, interconnected hexagonal structures of light-absorbing graphene. The dark, matte graphene subjects form intricate, geometric mandalas in the night sky, illuminated entirely by neon pink and cyan sparks traveling through the carbon lattice. The city below is lit by millions of neon signs. The mood is cinematic, bright, and moody. Captured from a high vantage point overlooking the skyline, showcasing the scale of the dark, geometric explosions."
+- **Negative prompt:** "daylight, traditional fireworks, smoke, blurry, historical, soft"
+- **Tags:** cyberpunk, landscape, abstract, cinematic, bright
+- **Style / Reference:** long-exposure photography, cyberpunk aesthetic, geometric art
+- **Composition:** high angle, wide skyline view, geometric patterns filling the sky
+- **Color palette:** matte black, electric cyan, neon magenta, deep night sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_cyberpunk-fireworks.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing light-absorbing materials (graphene) contrasted with intricate, glowing geometric particle simulations over urban environments.
+
+### Suggestion: Sci-fi Exoplanet Core
+- **Date:** 2026-10-31
+- **Prompt:** "A chaotic, energetic visualization deep within the core of a massive exoplanet, depicted in a highly abstract style. The subject is a violent, churning ocean of super-compressed crystalline fluid, deconstructed into aggressive, jagged diagonal lines and overlapping geometric planes that capture the intense pressure and kinetic energy. The lighting is blinding and internal, emanating from the explosive center and casting stark, jagged shadows that enhance the dynamic, splintered geometry. The mood is dark, abstract, and bright. Captured with a dynamic, tilted perspective to emphasize extreme pressure and raw motion."
+- **Negative prompt:** "calm, realistic, smooth, organic, peaceful, soft lighting, photography"
+- **Tags:** sci-fi, abstract, bright, dark
+- **Style / Reference:** abstract concept art
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** blinding white, intense cyan, deep shadows, electric blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_sci-fi-exoplanet.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction to an extreme, high-pressure alien environment.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
