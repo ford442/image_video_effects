@@ -310,12 +310,34 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                         : `videos/${selectedVideo}`;
                 }
 
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('[WebGPUCanvas] Video source:', { src, selectedVideo, videoSourceUrl, inputSource });
+                }
+
                 if (src && videoRef.current!.src !== src) {
+                    console.log('[WebGPUCanvas] Setting video src:', src);
                     videoRef.current!.src = src;
+
+                    // Add error handler to catch load failures
+                    const errorHandler = (event: Event) => {
+                        const video = event.target as HTMLVideoElement;
+                        const errorCode = video.error?.code;
+                        const errorMessages: Record<number, string> = {
+                            1: 'Video loading aborted',
+                            2: 'Network error while loading video',
+                            3: 'Video decoding error (corrupt file?)',
+                            4: 'Video format not supported'
+                        };
+                        console.error('[WebGPUCanvas] Video error:', errorMessages[errorCode || 0] || 'Unknown error');
+                    };
+                    videoRef.current!.addEventListener('error', errorHandler, { once: true });
+
                     videoRef.current!.load(); // Force browser to acknowledge the new source immediately
                     const playPromise = videoRef.current!.play();
                     if (playPromise !== undefined) {
-                        playPromise.catch(e => console.log("Video play failed:", e));
+                        playPromise
+                            .then(() => console.log('[WebGPUCanvas] Video playing'))
+                            .catch(e => console.log("[WebGPUCanvas] Video play failed:", e));
                     }
                 }
 
@@ -343,6 +365,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         // Ensure the renderer is aware of the video element whenever source changes
         if (rendererRef.current && videoRef.current) {
             if ('setVideo' in rendererRef.current) {
+                console.log('[WebGPUCanvas] Passing video element to renderer');
                 (rendererRef.current as any).setVideo(videoRef.current);
             }
         }
@@ -623,9 +646,40 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 autoPlay
                 playsInline
                 preload="auto"
+                onLoadStart={() => {
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log('[Video] Load started:', videoRef.current?.src);
+                    }
+                }}
                 onCanPlay={() => {
                     // Ensure video plays when loaded
-                    videoRef.current?.play().catch(() => { });
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log('[Video] Can play, starting playback');
+                    }
+                    videoRef.current?.play().catch((e) => {
+                        console.error('[Video] Play failed:', e.message);
+                    });
+                }}
+                onPlay={() => {
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log('[Video] Playing');
+                    }
+                }}
+                onPause={() => {
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log('[Video] Paused');
+                    }
+                }}
+                onError={(e) => {
+                    const video = e.target as HTMLVideoElement;
+                    const errorCode = video.error?.code;
+                    const errorMessages: Record<number, string> = {
+                        1: 'Video loading aborted',
+                        2: 'Network error while loading video',
+                        3: 'Video decoding error (corrupt file?)',
+                        4: 'Video format not supported'
+                    };
+                    console.error('[Video] Error:', errorMessages[errorCode || 0]);
                 }}
                 style={{
                     position: 'absolute',

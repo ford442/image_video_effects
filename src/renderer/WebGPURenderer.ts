@@ -1272,6 +1272,18 @@ export class WebGPURenderer implements Renderer {
     // Update video frame if video is playing (called every frame for smooth playback)
     if (this.video && !this.video.paused && this.video.readyState >= 2) {
       this.updateVideoFrame();
+    } else if (this.video && this.video.readyState >= 2 && this.frameCount % 60 === 0) {
+      // Debug: log video state periodically if not playing
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[WebGPURenderer] Video state:', {
+          paused: this.video.paused,
+          readyState: this.video.readyState,
+          videoWidth: this.video.videoWidth,
+          videoHeight: this.video.videoHeight,
+          src: this.video.src?.substring(0, 100),
+          error: this.video.error?.code
+        });
+      }
     }
 
     const enabled = this.slots.filter(
