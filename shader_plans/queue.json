@@ -549,6 +549,13 @@
       "added": "2026-05-21T15:41:08.968049",
       "status": "completed",
       "completed_at": "2026-05-25T08:09:38.635604+00:00"
+    },
+    {
+      "filename": "2026-05-25_quantum-entangled-ferrofluid-engine.md",
+      "title": "Quantum-Entangled Ferrofluid Engine",
+      "added": "2026-05-25T15:20:45.404707",
+      "status": "completed",
+      "completed_at": "2026-05-26T07:47:52.899529"
     }
   ],
   "rejected": [],
@@ -773,11 +780,6 @@
       "filename": "2026-05-21_symbiotic-chrono-mycelium-engine.md",
       "title": "Symbiotic Chrono-Mycelium Engine",
       "added": "2026-05-21T15:41:08.968049"
-    },
-    {
-      "filename": "2026-05-25_quantum-entangled-ferrofluid-engine.md",
-      "title": "Quantum-Entangled Ferrofluid Engine",
-      "added": "2026-05-25T15:20:45.404707"
     }
   ],
   "in_progress": null
