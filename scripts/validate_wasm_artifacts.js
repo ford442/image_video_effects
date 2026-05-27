@@ -13,7 +13,7 @@ const path = require('path');
 
 const WASM_MAGIC = Buffer.from([0x00, 0x61, 0x73, 0x6d]);
 const MIN_WASM_SIZE = 50 * 1024; // 50 KB minimum size
-const MAX_WASM_SIZE = 200 * 1024; // 200 KB maximum (2x current ~96 KB to catch bloat while allowing growth)
+const MAX_WASM_SIZE = 200 * 1024; // 200 KB maximum (allows growth from typical ~96 KB)
 
 const artifacts = [
   { path: 'public/wasm/pixelocity_wasm.wasm', type: 'wasm', min: MIN_WASM_SIZE, max: MAX_WASM_SIZE },
