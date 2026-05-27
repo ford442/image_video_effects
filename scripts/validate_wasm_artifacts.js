@@ -34,6 +34,13 @@ let errors = [];
 let warnings = [];
 let allValid = true;
 
+/**
+ * Escape special regex characters in a string
+ */
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 console.log('=== WASM Artifact Validation ===\n');
 
 // Check each artifact
@@ -102,10 +109,11 @@ artifacts.forEach(artifact => {
       if (artifact.type === 'js-module') {
         const missingExports = requiredExports.filter(exp => {
           // Match function declarations or exports like: function initWasmRenderer, _initWasmRenderer:, etc.
+          const escapedExp = escapeRegex(exp);
           const patterns = [
-            new RegExp(`\\bfunction\\s+(?:_)?${exp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
-            new RegExp(`["\']${exp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["\']`),
-            new RegExp(`_${exp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`),
+            new RegExp(`\\bfunction\\s+(?:_)?${escapedExp}\\b`),
+            new RegExp(`["\']${escapedExp}["\']`),
+            new RegExp(`_${escapedExp}\\s*:`),
           ];
           return !patterns.some(pattern => pattern.test(content));
         });

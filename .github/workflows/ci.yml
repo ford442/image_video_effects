@@ -46,10 +46,15 @@ jobs:
         SOURCE_DIR="wasm_renderer"
         
         # Find the most recent source file in wasm_renderer
-        LATEST_SOURCE=$(find "$SOURCE_DIR" -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.sh" \) -exec stat -c %Y {} \; | sort -n | tail -1)
-        WASM_TIME=$(stat -c %Y "$WASM_FILE" 2>/dev/null || echo 0)
+        LATEST_SOURCE=$(find "$SOURCE_DIR" -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.sh" \) -printf '%T@\n' | sort -n | tail -1)
+        WASM_TIME=$(stat -c %Y "$WASM_FILE" 2>/dev/null || stat -f %m "$WASM_FILE" 2>/dev/null || echo 0)
         
-        if [ -n "$LATEST_SOURCE" ] && [ "$WASM_TIME" -lt "$LATEST_SOURCE" ]; then
+        if [ -z "$LATEST_SOURCE" ]; then
+          echo "❌ No source files found in $SOURCE_DIR"
+          exit 1
+        fi
+        
+        if [ "$WASM_TIME" -lt "${LATEST_SOURCE%.*}" ]; then
           echo "❌ WASM artifact is older than source files"
           exit 1
         fi
