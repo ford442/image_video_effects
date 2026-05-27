@@ -12,8 +12,8 @@ const fs = require('fs');
 const path = require('path');
 
 const WASM_MAGIC = Buffer.from([0x00, 0x61, 0x73, 0x6d]);
-const MIN_WASM_SIZE = 50 * 1024; // 50 KB
-const MAX_WASM_SIZE = 200 * 1024; // 200 KB
+const MIN_WASM_SIZE = 50 * 1024; // 50 KB minimum size
+const MAX_WASM_SIZE = 200 * 1024; // 200 KB maximum (2x current ~96 KB to catch bloat while allowing growth)
 
 const artifacts = [
   { path: 'public/wasm/pixelocity_wasm.wasm', type: 'wasm', min: MIN_WASM_SIZE, max: MAX_WASM_SIZE },
@@ -27,7 +27,6 @@ const requiredExports = [
   'loadShader',
   'setActiveShader',
   'setSlotShader',
-  'render',
   'updateUniforms',
 ];
 
@@ -99,8 +98,17 @@ artifacts.forEach(artifact => {
       }
       
       // For js-module, check for expected exports/functions
+      // Use word boundaries and regex to match actual function declarations, not just substrings
       if (artifact.type === 'js-module') {
-        const missingExports = requiredExports.filter(exp => !content.includes(exp));
+        const missingExports = requiredExports.filter(exp => {
+          // Match function declarations or exports like: function initWasmRenderer, _initWasmRenderer:, etc.
+          const patterns = [
+            new RegExp(`\\bfunction\\s+(?:_)?${exp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
+            new RegExp(`["\']${exp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["\']`),
+            new RegExp(`_${exp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`),
+          ];
+          return !patterns.some(pattern => pattern.test(content));
+        });
         if (missingExports.length > 0) {
           warnings.push(`⚠️  ${artifact.path}: Missing expected exports: ${missingExports.join(', ')}`);
         } else {

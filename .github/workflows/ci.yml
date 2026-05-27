@@ -6,9 +6,14 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   wasm:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - uses: actions/checkout@v4
@@ -27,7 +32,6 @@ jobs:
       with:
         version: latest
         actions-cache-folder: 'emsdk-cache'
-        no-cache: true
     
     - name: Build WASM renderer
       run: npm run wasm:build
@@ -39,12 +43,13 @@ jobs:
       run: |
         echo "Checking artifact timestamps..."
         WASM_FILE="public/wasm/pixelocity_wasm.wasm"
-        SOURCE_FILE="wasm_renderer/main.cpp"
+        SOURCE_DIR="wasm_renderer"
         
+        # Find the most recent source file in wasm_renderer
+        LATEST_SOURCE=$(find "$SOURCE_DIR" -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.sh" \) -exec stat -c %Y {} \; | sort -n | tail -1)
         WASM_TIME=$(stat -c %Y "$WASM_FILE" 2>/dev/null || echo 0)
-        SOURCE_TIME=$(stat -c %Y "$SOURCE_FILE" 2>/dev/null || echo 0)
         
-        if [ "$WASM_TIME" -lt "$SOURCE_TIME" ]; then
+        if [ -n "$LATEST_SOURCE" ] && [ "$WASM_TIME" -lt "$LATEST_SOURCE" ]; then
           echo "❌ WASM artifact is older than source files"
           exit 1
         fi
@@ -52,6 +57,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - uses: actions/checkout@v4
@@ -93,6 +100,8 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - uses: actions/checkout@v4
