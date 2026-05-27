@@ -147,11 +147,18 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
     // Asyncify-suspended C++ function completes.  Without this, ccall returns 0
     // immediately when WASM suspends inside wgpuInstanceWaitAny (waiting for the
     // browser WebGPU adapter/device Promise), causing a false "init failed" error.
+
+    // Assign a stable CSS ID to the canvas so C++ can create the WebGPU surface.
+    if (!canvas.id) {
+      canvas.id = 'pixelocity-wasm-' + Math.random().toString(36).slice(2, 9);
+    }
+    const canvasSelector = '#' + canvas.id;
+
     const result = await wasmModule.ccall(
       'initWasmRenderer',
       'number',
-      ['number', 'number'],
-      [state.canvasWidth, state.canvasHeight],
+      ['number', 'number', 'string'],
+      [state.canvasWidth, state.canvasHeight, canvasSelector],
       { async: true }
     );
 

@@ -157,8 +157,11 @@ public:
     
     // Initialize WebGPU device, queues, and resources.
     // Sets up device-lost and uncaptured-error callbacks.
+    // canvasSelector: CSS selector for the HTMLCanvasElement to present to,
+    //   e.g. "#my-canvas".  Pass nullptr to skip surface/presentation setup.
     // Returns false if WebGPU is not available.
-    bool Initialize(int canvasWidth, int canvasHeight);
+    bool Initialize(int canvasWidth, int canvasHeight,
+                    const char* canvasSelector = nullptr);
     
     // Cleanup all WebGPU resources
     void Shutdown();
@@ -280,6 +283,9 @@ private:
     void CreateBindGroupLayout();
     void CreateBindGroups();
     void CreateRenderPipeline();
+    void CreateRenderBindGroup();
+    void ConfigureSurface();
+    void PresentToSurface();
     void UpdateUniformBuffer();
 
     // Release and recreate all canvas-size-dependent textures.
@@ -403,6 +409,10 @@ private:
     bool        initialized_  = false;
     int         canvasWidth_  = 0;
     int         canvasHeight_ = 0;
+
+    // CSS selector of the target HTMLCanvasElement, e.g. "#my-canvas".
+    // Empty string means no surface / presentation path.
+    std::string canvasSelector_;
 
     // Animation/interaction state
     float currentTime_ = 0.0f;
