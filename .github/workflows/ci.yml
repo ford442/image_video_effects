@@ -116,6 +116,53 @@ jobs:
       uses: codecov/codecov-action@v3
       if: github.event_name == 'pull_request'
 
+  test-wasm-e2e:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    needs: [wasm, test]
+    if: always() && needs.wasm.result == 'success'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Setup Emscripten SDK
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: latest
+        actions-cache-folder: 'emsdk-cache'
+    
+    - name: Build WASM renderer
+      run: npm run wasm:build
+    
+    - name: Build production app
+      run: npm run build
+    
+    - name: Install Playwright browsers
+      run: npx playwright install chromium
+    
+    - name: Run WASM Playwright smoke tests
+      run: npx playwright test tests/wasm-renderer.smoke.spec.ts --project=chromium
+      env:
+        CI: true
+    
+    - name: Upload Playwright report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: wasm-playwright-report
+        path: playwright-report/
+        retention-days: 30
+
   lint:
     runs-on: ubuntu-latest
     permissions:
