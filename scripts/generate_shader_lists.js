@@ -5,6 +5,11 @@ const DEFINITIONS_DIR = path.join(__dirname, '../shader_definitions');
 const OUTPUT_DIR = path.join(__dirname, '../public/shader-lists');
 const PUBLIC_DIR = path.join(__dirname, '../public');
 
+// Optional CLI argument: --base-url https://test.1ink.us/image_video_effects/
+// When provided, generated JSONs will contain absolute URLs instead of relative ones.
+const BASE_URL_ARG = process.argv.find(arg => arg.startsWith('--base-url='));
+const BASE_URL = BASE_URL_ARG ? BASE_URL_ARG.split('=')[1].replace(/\/$/, '') : null;
+
 // Ensure output directory exists
 if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -133,7 +138,14 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
                 // Passed checks - add to bucket
                 seenIds.set(id, `${dir}/${file}`);
                 if (!buckets.has(category)) buckets.set(category, []);
-                buckets.get(category).push(shaderDef);
+
+                // If --base-url is provided, rewrite the shader URL to absolute
+                const outputDef = { ...shaderDef };
+                if (BASE_URL && outputDef.url) {
+                    const relativePath = outputDef.url.replace(/^\.?\//, '');
+                    outputDef.url = `${BASE_URL}/${relativePath}`;
+                }
+                buckets.get(category).push(outputDef);
 
             } catch (e) {
                 console.error(`Error parsing ${dir}/${file}:`, e);

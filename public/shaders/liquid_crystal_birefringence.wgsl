@@ -120,12 +120,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let twistAngle = u.zoom_params.y * PI * 2.0; // 0-2π twist
     let birefringence = 0.1 + u.zoom_params.z * 0.2; // 0.1-0.3
     let voltage = u.zoom_params.w; // Electric field effect
+    let mousePos = u.zoom_config.yz;
     let isMouseDown = u.zoom_config.w > 0.5;
     let distToMouse = length(uv - mousePos);
     let mouseGravity = 1.0 - smoothstep(0.0, 0.3, distToMouse);
     let clickPulse = select(0.0, 1.0, isMouseDown) * exp(-distToMouse * 5.0);
     
-    let mousePos = u.zoom_config.yz;
     let audioPulse = u.zoom_config.w;
     
     // Director field

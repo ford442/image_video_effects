@@ -82,9 +82,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rAge  = time - rp.z;
     let rRad  = rAge * 0.45;
     let rBand = abs(rDist - rRad);
-    let active = select(0.0, 1.0, rBand < 0.04 && rAge >= 0.0 && rAge < 1.2);
+    let isActive = select(0.0, 1.0, rBand < 0.04 && rAge >= 0.0 && rAge < 1.2);
     let decay  = clamp(1.0 - rAge / 1.2, 0.0, 1.0);
-    shockDisp += active * decay * 0.025 * sin(rDist * 40.0 - rAge * 12.0);
+    shockDisp += isActive * decay * 0.025 * sin(rDist * 40.0 - rAge * 12.0);
   }
 
   // ── Zone 1: Front page (dx < 0) ──────────────────────────────────

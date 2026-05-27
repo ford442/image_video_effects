@@ -111,7 +111,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
       if (splash > 0.001) {
         let seed = rPos * 100.0 + f32(i) * 7.7;
-        let rnd = hash22(vec2<f32>(seed, elapsed));
+        let rnd = hash22(vec2<f32>(seed.x, elapsed));
         let splashColor = textureSampleLevel(readTexture, u_sampler, rPos + rnd * 0.1, 0.0).rgb * colorIntensity;
 
         // Splat shape variation via noise

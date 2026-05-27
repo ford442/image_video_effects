@@ -166,7 +166,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     color = mix(color, vec4<f32>(0.0, 0.0, 0.02, 1.0), fog);
 
         // (alpha already semantic)
-    textureStore(writeTexture, id.xy, finalColor);
+    textureStore(writeTexture, id.xy, color);
     let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
     let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));

@@ -859,7 +859,15 @@ def _rescan_shader_lists_sync(pull_latest: bool = True) -> dict:
     commands: List[List[str]] = []
     if pull_latest:
         commands.append(["git", "pull", "--ff-only"])
-    commands.append(["node", "scripts/generate_shader_lists.js"])
+    # Generate shader lists with absolute URLs pointing to the static file server
+    # where WGSL files are hosted (test.1ink.us/image_video_effects).
+    commands.append(
+        [
+            "node",
+            "scripts/generate_shader_lists.js",
+            "--base-url=https://test.1ink.us/image_video_effects",
+        ]
+    )
 
     command_results = []
     for args in commands:

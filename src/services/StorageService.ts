@@ -4,7 +4,7 @@
 //  Handles saving/loading shaders, images, videos with HMAC SHA256 signatures
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { API_BASE_URL, STORAGE_VPS_URL, STORAGE_WEBHOOK_SECRET, STATIC_NGINX_URL } from '../config/appConfig';
+import { API_BASE_URL, STORAGE_VPS_URL, STORAGE_WEBHOOK_SECRET, STATIC_NGINX_URL, SHADER_FILES_BASE_URL } from '../config/appConfig';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Types
@@ -445,7 +445,7 @@ export class StorageService {
         if (data.filename) {
           try {
             const wgslFilename = data.filename.replace(/\.json$/, '.wgsl');
-            const wgslRes = await fetch(`${this.apiUrl}/files/image-effects/shaders/${wgslFilename}`);
+            const wgslRes = await fetch(`${SHADER_FILES_BASE_URL.replace(/\/$/, '')}/shaders/${wgslFilename}`);
             if (wgslRes.ok) content = await wgslRes.text();
           } catch { /* content stays empty, handled by caller */ }
         }
@@ -522,7 +522,8 @@ export class StorageService {
       
       // Add static URLs and normalise the `stars`→`rating` field for backward compat
       shaders.forEach(shader => {
-        shader.url = `${this.staticUrl}/image-effects/shaders/${shader.filename}`;
+        const wgslFilename = shader.filename.replace(/\.json$/, '.wgsl');
+        shader.url = `${SHADER_FILES_BASE_URL.replace(/\/$/, '')}/shaders/${wgslFilename}`;
         // Backend returns `stars` (aggregate avg); surface it as `rating` for components
         // that still reference the legacy field name.
         if (shader.rating === null || shader.rating === undefined) {
@@ -560,7 +561,8 @@ export class StorageService {
 
     const shaders: ShaderItem[] = await response.json();
     shaders.forEach(shader => {
-      shader.url = `${this.staticUrl}/image-effects/shaders/${shader.filename}`;
+      const wgslFilename = shader.filename.replace(/\.json$/, '.wgsl');
+      shader.url = `${SHADER_FILES_BASE_URL.replace(/\/$/, '')}/shaders/${wgslFilename}`;
     });
 
     return shaders;

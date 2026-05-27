@@ -5098,6 +5098,73 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Challenges the model to apply the aggressive, dynamic abstraction to an extreme, high-pressure alien environment.
 
 
+
+
+### Suggestion: Italian Futurism Tsunami
+- **Date:** 2026-11-06
+- **Prompt:** "A chaotic, dynamic depiction of a towering tsunami crashing into a modern coastline, rendered in the aggressive, fragmented style of Italian Futurism. The massive wave is deconstructed into sharp, intersecting diagonal lines and overlapping geometric planes that convey explosive speed and overwhelming force. The lighting is harsh and directional, creating stark, jagged shadows that enhance the dynamic motion. The mood is energetic, destructive, and cinematic. Captured with a tilted, dynamic perspective to emphasize raw motion."
+- **Negative prompt:** "calm, realistic, soft curves, organic, peaceful, photography, smooth water"
+- **Tags:** abstract, landscape, cinematic
+- **Style / Reference:** Italian Futurism, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** deep ocean blue, harsh rusted reds, stark white foam, chaotic black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to a massive natural disaster.
+
+### Suggestion: Bismuth Underground Library
+- **Date:** 2026-11-06
+- **Prompt:** "A grand, sprawling subterranean library where the towering columns, staircases, and shelves are composed entirely of gigantic, iridescent bismuth crystals. The subject features massive, step-patterned geometric formations reflecting a dazzling array of rainbow colors. The lighting is ethereal and internal, emanating from glowing, floating crystal orbs that cast complex, multi-colored reflections across the metallic bismuth surfaces. The mood is ancient, magical, and silent. Captured with a wide-angle 14mm lens, deep depth of field to capture the intricate, labyrinthine geometry."
+- **Negative prompt:** "wood, paper, modern, daylight, soft lighting, ordinary rock"
+- **Tags:** fantasy, architecture, interior, ethereal
+- **Style / Reference:** fantasy environment design, hyper-detailed 3D render
+- **Composition:** wide expansive view, deep symmetrical perspective
+- **Color palette:** highly iridescent rainbow (metallic pinks, blues, greens, golds), dark cavern background
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests iridescent, metallic materials combined with intricate geometric (hopper crystal) architectural generation.
+
+### Suggestion: Mother of Pearl Macro Pocket Watch
+- **Date:** 2026-11-06
+- **Prompt:** "An ultra-macro, hyper-detailed photograph of an open, antique pocket watch where all the intricate gears, hands, and the casing are carved entirely from shimmering, iridescent Mother of Pearl. The delicate subject rests on a piece of dark, aged velvet. The lighting is soft, diffused sunlight, catching the microscopic ridges of the nacre to reveal its rainbow interference patterns and casting soft shadows. The mood is elegant, fragile, and timeless. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the central gear."
+- **Negative prompt:** "metal, brass, harsh lighting, wide angle, modern, blurry"
+- **Tags:** macro, still life, surreal, ethereal
+- **Style / Reference:** photorealistic macro product photography
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, deep burgundy velvet
+- **Aspect ratio:** 1:1
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating sub-surface scattering and thin-film iridescent interference on intricate, micro-mechanical shapes.
+
+### Suggestion: Graphene Steampunk Locomotive
+- **Date:** 2026-11-06
+- **Prompt:** "An imposing, colossal steampunk locomotive thundering across a snowy plain, constructed entirely from sleek, light-absorbing matte black graphene with polished copper accents and glowing amber pressure gauges. The dark, sleek subject features complex clockwork mechanisms driving its massive wheels. The lighting is harsh, unattenuated winter sunlight creating stark white highlights on the copper while the graphene hull remains pitch black, contrasted against the blinding white snow. The mood is powerful, industrial, and epic. Captured with a dynamic panning motion blur to convey immense speed."
+- **Negative prompt:** "rusty iron, colorful, bright daylight, modern train, slow, blurry subject"
+- **Tags:** steampunk, cinematic, landscape, dark
+- **Style / Reference:** cinematic sci-fi vehicle design, photorealistic
+- **Composition:** dynamic angled profile, panning motion blur, sharp subject focus
+- **Color palette:** matte pitch black graphene, warm polished copper, glowing amber, blinding white snow
+- **Aspect ratio:** 21:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of highly light-absorbing materials (graphene) contrasted with polished metal under harsh outdoor lighting and panning motion blur.
+
+### Suggestion: Brass Volcanic Eruption
+- **Date:** 2026-11-06
+- **Prompt:** "A cataclysmic, surreal scene of a massive volcano erupting, where the mountain itself is an intricate, colossal mechanism of polished brass gears and the erupting lava is molten, glowing liquid gold. The subject violently spews golden fluid and thick, dark soot across a jagged, metallic landscape. The lighting is harsh and chaotic, capturing the blinding heat of the molten gold and the sharp specular glints on the brass machinery. The mood is awe-inspiring, destructive, and surreal. Captured with a wide 24mm lens to show the sheer scale of the beautiful, mechanical destruction."
+- **Negative prompt:** "natural rock, red lava, peaceful, daylight, soft, low detail"
+- **Tags:** surreal, landscape, bright
+- **Style / Reference:** surreal disaster concept art, highly detailed 3D environment
+- **Composition:** wide angle, low angle looking up at the eruption
+- **Color palette:** brilliant molten gold, polished warm brass, pitch black soot, glowing amber
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating metallic rendering applied to chaotic fluid dynamics, massive scale, and intense internal lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.

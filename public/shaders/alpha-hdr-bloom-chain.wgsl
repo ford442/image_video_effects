@@ -88,7 +88,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     bloom *= bloomIntensity;
 
     // === COMPOSITE ===
-    let hdrColor = sourceColor + bloom;
+    var hdrColor = sourceColor + bloom;
 
     // === MOUSE BLOOM BOOST ===
     let mousePos = u.zoom_config.yz;

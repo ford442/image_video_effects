@@ -89,7 +89,7 @@ fn getPlasmaColor(intensity: f32) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coords = vec2<i32>(global_id.xy);
-    let res = vec2<i32>(u.config.z, u.config.w);
+    let res = vec2<i32>(i32(u.config.z), i32(u.config.w));
 
     if (coords.x >= res.x || coords.y >= res.y) {
         return;
@@ -154,8 +154,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let n = calcNormal(p, complex, gearRatio);
         let lightDir = normalize(vec3<f32>(1.0, 1.0, 1.0));
         let diff = max(dot(n, lightDir), 0.0);
-        let ref = reflect(rd, n);
-        let spec = pow(max(dot(ref, lightDir), 0.0), 32.0);
+        let refl = reflect(rd, n);
+        let spec = pow(max(dot(refl, lightDir), 0.0), 32.0);
 
         // Metallic Brass
         let baseColor = vec3<f32>(0.8, 0.6, 0.2);

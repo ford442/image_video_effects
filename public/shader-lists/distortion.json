@@ -2,7 +2,7 @@
   {
     "id": "black-hole",
     "name": "Gravitational Lensing",
-    "url": "shaders/black-hole.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/black-hole.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -48,7 +48,7 @@
   {
     "id": "bubble-lens",
     "name": "Bubble Lens",
-    "url": "shaders/bubble-lens.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/bubble-lens.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -94,7 +94,7 @@
   },
   {
     "id": "chromatic-swirl",
-    "url": "shaders/chromatic-swirl.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-swirl.wgsl",
     "icon": "cyclone",
     "features": [
       "mouse-driven"
@@ -140,7 +140,7 @@
   {
     "id": "complex-exponent-warp",
     "name": "Complex Exponent Warp",
-    "url": "shaders/complex-exponent-warp.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/complex-exponent-warp.wgsl",
     "description": "Applies a complex domain distortion z -> z^p where p is controlled by mouse position. Creates spirals, fractals, and inversions.",
     "features": [
       "mouse-driven",
@@ -197,7 +197,7 @@
   {
     "id": "crystal-facets",
     "name": "Crystal Facets",
-    "url": "shaders/crystal-facets.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/crystal-facets.wgsl",
     "description": "Physical crystal refraction with light transmission. Simulates radial-cut crystal with proper Fresnel reflection, internal scattering from fractures, and chromatic dispersion based on refractive index.",
     "params": [
       {
@@ -253,7 +253,7 @@
   {
     "id": "cyber-lens",
     "name": "Cyber Lens",
-    "url": "shaders/cyber-lens.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-lens.wgsl",
     "description": "Digital fisheye with scan lines and chromatic aberration.",
     "params": [
       {
@@ -298,7 +298,7 @@
   {
     "id": "data-slicer",
     "name": "Data Slicer",
-    "url": "shaders/data-slicer.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/data-slicer.wgsl",
     "description": "Glitchy horizontal slicing effect with chromatic aberration. Mouse Y controls influence area, Mouse X controls offset direction.",
     "params": [
       {
@@ -342,7 +342,7 @@
   {
     "id": "dimension-slicer",
     "name": "Dimension Slicer",
-    "url": "shaders/dimension-slicer.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/dimension-slicer.wgsl",
     "features": [
       "mouse-driven",
       "chromatic-aberration",
@@ -389,7 +389,7 @@
   {
     "id": "elastic-surface",
     "name": "Elastic Surface",
-    "url": "shaders/elastic-surface.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/elastic-surface.wgsl",
     "description": "Spring-mass elastic membrane with wave propagation, surface tension coupling, depth-aware deformation, and ripple-reactive impulses.",
     "params": [
       {
@@ -445,7 +445,7 @@
   {
     "id": "ethereal-swirl",
     "name": "Ethereal Swirl",
-    "url": "shaders/ethereal-swirl.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ethereal-swirl.wgsl",
     "description": "Ethereal swirling motion with soft gradients.",
     "features": [
       "mouse-driven",
@@ -497,7 +497,7 @@
   {
     "id": "fluid-grid",
     "name": "Fluid Grid",
-    "url": "shaders/fluid-grid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fluid-grid.wgsl",
     "description": "Flowing grid distortion with fluid dynamics.",
     "params": [
       {
@@ -542,7 +542,7 @@
   {
     "id": "fractal-glass-distort",
     "name": "IFS Attractor Glass",
-    "url": "shaders/fractal-glass-distort.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fractal-glass-distort.wgsl",
     "description": "Iterated Function System (IFS) attractor density field drives refraction index. Barnsley-style 4-contraction IFS evaluated per-pixel with iridescent chromatic dispersion through the fractal structure. Audio-driven contraction modulation.",
     "features": [
       "mouse-driven",
@@ -592,7 +592,7 @@
   {
     "id": "fractal-image-surf",
     "name": "Fractal Image Surf",
-    "url": "shaders/fractal-image-surf.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fractal-image-surf.wgsl",
     "description": "Maps the image onto a Julia Set fractal coordinate system, controlled by the mouse.",
     "params": [
       {
@@ -639,7 +639,7 @@
   {
     "id": "fractal-kaleidoscope",
     "name": "Fractal Kaleidoscope",
-    "url": "shaders/fractal-kaleidoscope.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fractal-kaleidoscope.wgsl",
     "description": "Fractal patterns in a kaleidoscope arrangement.",
     "tags": [
       "filter",
@@ -683,7 +683,7 @@
   {
     "id": "gemstone-fractures",
     "name": "Gemstone Fractures",
-    "url": "shaders/gemstone-fractures.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gemstone-fractures.wgsl",
     "features": [
       "alpha-transmission",
       "physical-refraction"
@@ -735,7 +735,7 @@
   {
     "id": "gen-chromatic-vortex",
     "name": "Chromatic Vortex",
-    "url": "shaders/gen-chromatic-vortex.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chromatic-vortex.wgsl",
     "description": "Rotates image in polar coordinates with psychedelic color-space warping driven by audio. Combines spiral distortion with YUV hue shifting.",
     "features": [
       "mouse-driven",
@@ -789,7 +789,7 @@
   {
     "id": "glass-brick-distortion",
     "name": "Glass Brick Distortion",
-    "url": "shaders/glass-brick-distortion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/glass-brick-distortion.wgsl",
     "description": "Physical glass brick wall with per-channel IOR chromatic dispersion (Snell's law), Schlick-Fresnel highlights, Beer-Lambert absorption, depth-aware thickness, audio-reactive refraction pulse, and ripple-driven brick wobble. Mouse cursor clears a window through the glass.",
     "features": [
       "mouse-driven",
@@ -846,7 +846,7 @@
   {
     "id": "glass-brick-wall",
     "name": "Glass Brick Wall",
-    "url": "shaders/glass-brick-wall.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/glass-brick-wall.wgsl",
     "description": "Simulates a wall of refractive glass bricks with mouse-controlled lighting.",
     "params": [
       {
@@ -894,7 +894,7 @@
   {
     "id": "glitch-slice-mirror",
     "name": "Glitch Slice Mirror",
-    "url": "shaders/glitch-slice-mirror.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/glitch-slice-mirror.wgsl",
     "description": "Mirrors the image at the mouse position with digital glitch artifacts, chromatic aberration, and scanlines along the seam. Audio-reactive intensity boost.",
     "features": [
       "mouse-driven",
@@ -947,7 +947,7 @@
   {
     "id": "gravity-well",
     "name": "Gravity Well",
-    "url": "shaders/gravity-well.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gravity-well.wgsl",
     "description": "Schwarzschild-inspired lensing with photon-sphere rings, gravitational redshift, and Doppler-bright accretion flow.",
     "features": [
       "mouse-driven",
@@ -995,7 +995,7 @@
   {
     "id": "heat-haze-gpt52",
     "name": "Heat Haze Mirage gpt52",
-    "url": "shaders/heat-haze-gpt52.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/heat-haze-gpt52.wgsl",
     "description": "Layered heat shimmer with chromatic dispersion, rising mirage flow, and bass-reactive intensity.",
     "params": [
       {
@@ -1049,7 +1049,7 @@
   {
     "id": "heat-haze",
     "name": "Heat Haze",
-    "url": "shaders/heat-haze.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/heat-haze.wgsl",
     "description": "Interactive heat distortion with thermal glow, mouse-driven heat injection, diffusion, and audio-reactive shimmer.",
     "params": [
       {
@@ -1098,7 +1098,7 @@
   {
     "id": "infinite-zoom-lens",
     "name": "Infinite Zoom Lens",
-    "url": "shaders/infinite-zoom-lens.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/infinite-zoom-lens.wgsl",
     "description": "A recursive feedback lens that creates infinite tunnels inside a mouse-controlled circle.",
     "features": [
       "mouse-driven"
@@ -1141,7 +1141,7 @@
   {
     "id": "infinite-zoom",
     "name": "Infinite Zoom",
-    "url": "shaders/infinite-zoom.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/infinite-zoom.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -1195,7 +1195,7 @@
   {
     "id": "interactive-rgb-split",
     "name": "Interactive RGB Split",
-    "url": "shaders/interactive-rgb-split.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-rgb-split.wgsl",
     "description": "Smooth alpha-channel translucency blending driven by a single displacement field. Spectral tint via mix, depth-aware compositing, and audio-reactive bass response.",
     "features": [
       "mouse-driven",
@@ -1243,7 +1243,7 @@
   {
     "id": "interactive-zoom-blur",
     "name": "Interactive Zoom Blur",
-    "url": "shaders/interactive-zoom-blur.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-zoom-blur.wgsl",
     "description": "Radial zoom blur centered on the mouse cursor with audio-reactive intensity and chromatic aberration.",
     "features": [
       "mouse-driven",
@@ -1292,7 +1292,7 @@
   {
     "id": "julia-warp",
     "name": "Julia Warp",
-    "url": "shaders/julia-warp.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/julia-warp.wgsl",
     "description": "Julia fractal-based warping with orbit traps for psychedelic coloring.",
     "features": [
       "mouse-driven",
@@ -1345,7 +1345,7 @@
   {
     "id": "kaleidoscope",
     "name": "Rose FBM Kaleidoscope",
-    "url": "shaders/kaleidoscope.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/kaleidoscope.wgsl",
     "tags": [
       "filter",
       "image-processing",
@@ -1394,7 +1394,7 @@
   },
   {
     "id": "liquid-prism",
-    "url": "shaders/liquid-prism.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-prism.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive"
@@ -1452,7 +1452,7 @@
       "upgraded-rgba",
       "depth-aware"
     ],
-    "url": "shaders/liquid-swirl.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-swirl.wgsl",
     "description": "Swirls the image around the cursor like mixing paint.",
     "params": [
       {
@@ -1497,7 +1497,7 @@
   {
     "id": "liquid-warp-interactive",
     "name": "Liquid Warp",
-    "url": "shaders/liquid-warp-interactive.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-warp-interactive.wgsl",
     "description": "Fluid-like distortion driven by mouse flow and noise.",
     "features": [
       "mouse-driven"
@@ -1541,7 +1541,7 @@
   {
     "id": "log-polar-droste",
     "name": "Log-Polar Droste",
-    "url": "shaders/log-polar-droste.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/log-polar-droste.wgsl",
     "description": "Infinite recursive zoom with spiral distortion creating Droste/Escher-like effects.",
     "params": [
       {
@@ -1587,7 +1587,7 @@
   {
     "id": "luma-glass",
     "name": "Luma Glass",
-    "url": "shaders/luma-glass.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/luma-glass.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -1634,7 +1634,7 @@
   },
   {
     "id": "luminescent-glass-tiles",
-    "url": "shaders/luminescent-glass-tiles.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/luminescent-glass-tiles.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -1683,7 +1683,7 @@
   {
     "id": "magnetic-field",
     "name": "Magnetic Field",
-    "url": "shaders/magnetic-field.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/magnetic-field.wgsl",
     "description": "Magnetic field lines distortion effect.",
     "params": [
       {
@@ -1733,7 +1733,7 @@
   },
   {
     "id": "parallax-shift",
-    "url": "shaders/parallax-shift.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/parallax-shift.wgsl",
     "description": "Uses luminance as depth to create a mouse-controlled 3D parallax effect.",
     "params": [
       {
@@ -1782,7 +1782,7 @@
   {
     "id": "perspective-tilt",
     "name": "Perspective Tilt",
-    "url": "shaders/perspective-tilt.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/perspective-tilt.wgsl",
     "description": "Rotates the image plane in 3D space based on mouse position (Pitch/Yaw). Zoom param adjusts distance.",
     "params": [
       {
@@ -1837,7 +1837,7 @@
   {
     "id": "phase-shift",
     "name": "Phase Shift",
-    "url": "shaders/phase-shift.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/phase-shift.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -1884,7 +1884,7 @@
   {
     "id": "pixel-sort-glitch",
     "name": "Pixel Sort Glitch",
-    "url": "shaders/pixel-sort-glitch.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-sort-glitch.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -1939,7 +1939,7 @@
   {
     "id": "pixel-storm",
     "name": "Pixel Storm",
-    "url": "shaders/pixel-storm.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-storm.wgsl",
     "description": "Mouse movement creates a chaotic storm of pixels.",
     "params": [
       {
@@ -1983,7 +1983,7 @@
   {
     "id": "predator-camouflage",
     "name": "Predator Camouflage",
-    "url": "shaders/predator-camouflage.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/predator-camouflage.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -2039,7 +2039,7 @@
   {
     "id": "prism-displacement",
     "name": "Prism Lens",
-    "url": "shaders/prism-displacement.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/prism-displacement.wgsl",
     "description": "Creates a prismatic lens effect with chromatic dispersion, magnification, and edge shine. Audio-reactive refraction responds to bass.",
     "features": [
       "mouse-driven",
@@ -2088,7 +2088,7 @@
   {
     "id": "prismatic-mosaic",
     "name": "Prismatic Mosaic",
-    "url": "shaders/prismatic-mosaic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/prismatic-mosaic.wgsl",
     "description": "Color tiles break apart and reassemble into shifting prisms, turning strong colors into a kaleidoscopic mosaic that ripples across the image.",
     "params": [
       {
@@ -2146,7 +2146,7 @@
   {
     "id": "radial-rgb",
     "name": "Radial RGB",
-    "url": "shaders/radial-rgb.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/radial-rgb.wgsl",
     "description": "Spectral chromatic aberration with lens distortion, anamorphic stretch, single-sample spectral tint via mix(), alpha translucency blending, and vignette.",
     "params": [
       {
@@ -2198,7 +2198,7 @@
   {
     "id": "refraction-tunnel",
     "name": "Refraction Tunnel",
-    "url": "shaders/refraction-tunnel.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/refraction-tunnel.wgsl",
     "description": "Infinite refractive tunnel effect.",
     "params": [
       {
@@ -2243,7 +2243,7 @@
   {
     "id": "scan-distort-gpt52",
     "name": "Scan Distort Matrix gpt52",
-    "url": "shaders/scan-distort-gpt52.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/scan-distort-gpt52.wgsl",
     "description": "High-density scanlines with 3-band frequency distortion, FBM-perturbed scan positions, rolling jitter, curvature, chromatic tearing, and mids-driven band distortion.",
     "params": [
       {
@@ -2295,7 +2295,7 @@
   {
     "id": "sine-wave",
     "name": "Sine Wave Distortion",
-    "url": "shaders/sine-wave.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sine-wave.wgsl",
     "tags": [
       "filter",
       "image-processing"
@@ -2341,7 +2341,7 @@
   {
     "id": "sonic-boom",
     "name": "Sonic Boom",
-    "url": "shaders/sonic-boom.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sonic-boom.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2386,7 +2386,7 @@
   {
     "id": "spec-bicubic-crystal",
     "name": "Bicubic Crystal",
-    "url": "shaders/spec-bicubic-crystal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-bicubic-crystal.wgsl",
     "description": "Bicubic Catmull-Rom crystalline distortion. Full 16-sample bicubic interpolation for perfectly smooth magnification, applied to prismatic crystalline faceting with chromatic separation.",
     "tags": [
       "bicubic",
@@ -2441,7 +2441,7 @@
   {
     "id": "spectral-vortex",
     "name": "Spectral Vortex",
-    "url": "shaders/spectral-vortex.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spectral-vortex.wgsl",
     "description": "Spectral color vortex with twisted distortions and alpha-channel translucency blending. Alpha encodes curl magnitude / maxCurl for energy-based translucency, with depth-aware compositing and audio-reactive twist.",
     "tags": [
       "filter",
@@ -2499,7 +2499,7 @@
   {
     "id": "spiral-lens",
     "name": "Spiral Lens",
-    "url": "shaders/spiral-lens.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spiral-lens.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2553,7 +2553,7 @@
   {
     "id": "temporal-distortion-field",
     "name": "Temporal Distortion Field",
-    "url": "shaders/temporal-distortion-field.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-distortion-field.wgsl",
     "description": "Creates a localized time-dilation field. Areas near the mouse update instantly, while distant areas lag behind in time.",
     "params": [
       {
@@ -2599,7 +2599,7 @@
   {
     "id": "voronoi-chaos",
     "name": "Voronoi Chaos",
-    "url": "shaders/voronoi-chaos.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/voronoi-chaos.wgsl",
     "description": "Breaks the image into Voronoi cells that shift chaotically based on time and mouse proximity.",
     "params": [
       {
@@ -2647,7 +2647,7 @@
   {
     "id": "voronoi-faceted-glass",
     "name": "Voronoi Faceted Glass",
-    "url": "shaders/voronoi-faceted-glass.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/voronoi-faceted-glass.wgsl",
     "description": "Cellular glass distortion effect.",
     "params": [
       {
@@ -2694,7 +2694,7 @@
   {
     "id": "vortex-distortion",
     "name": "Lamb-Oseen Vortex",
-    "url": "shaders/vortex-distortion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/vortex-distortion.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2743,7 +2743,7 @@
   {
     "id": "vortex-pass1",
     "name": "Clean Vortex (Pass 1)",
-    "url": "shaders/vortex-pass1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/vortex-pass1.wgsl",
     "description": "Vortex dynamics pass: four animated vortex centers, Biot-Savart velocity field, vorticity confinement, and turbulent FBM noise. Outputs velocity and vorticity field to dataTextureA.",
     "tags": [
       "vortex",
@@ -2800,7 +2800,7 @@
   {
     "id": "vortex-pass2",
     "name": "Clean Vortex (Pass 2)",
-    "url": "shaders/vortex-pass2.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/vortex-pass2.wgsl",
     "description": "Distortion rendering pass: UV displacement by velocity field, swirling rotation, texture warping, vorticity-based color grading, velocity glow, and turbulent alpha compositing. Reads velocity field from dataTextureC.",
     "tags": [
       "vortex",
@@ -2857,7 +2857,7 @@
   {
     "id": "vortex-warp",
     "name": "Vortex Warp",
-    "url": "shaders/vortex-warp.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/vortex-warp.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2908,7 +2908,7 @@
   {
     "id": "vortex",
     "name": "Clean Vortex",
-    "url": "shaders/vortex.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/vortex.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2960,7 +2960,7 @@
   {
     "id": "zoom-burst",
     "name": "Zoom Burst",
-    "url": "shaders/zoom-burst.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/zoom-burst.wgsl",
     "description": "Radial zoom blur emanating from the mouse cursor, simulating a long-exposure lens-zoom pull. Each pixel samples along the ray from the focal point through its screen position, accumulating N samples at increasing zoom magnifications with tapering weights. Bass pulses the burst radius for beat-synchronised explosions; mids introduce a slight spiral rotation per sample for a spin-zoom hybrid; treble adds chromatic fringing along burst rays.",
     "tags": [
       "zoom",

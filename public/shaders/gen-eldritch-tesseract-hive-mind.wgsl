@@ -181,7 +181,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     // Algorithmic Sentinel Swarms (Particles overlaid using fBm flow field visualization)
-    let flow_p = p + vec3<f32>(time * 0.2);
     let noise_val = vnoise3(vec3<f32>(uv * 10.0, time * 0.5));
     // High frequency thresholding for particle look
     var swarm_val = step(0.95 - (swarm_density * 0.05), noise_val);

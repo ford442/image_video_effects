@@ -11,6 +11,7 @@ import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
 import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
+import { resolveShaderUrl } from './utils/resolveShaderUrl';
 import {
     STORAGE_API_URL,
 
@@ -508,7 +509,7 @@ function MainApp() {
                     id: shader.id,
                     name: shader.name || shader.id,
                     // Use API URL (already points to .wgsl file) or local fallback
-                    url: shader.url || `./shaders/${shader.id}.wgsl`,
+                    url: shader.url || resolveShaderUrl(`shaders/${shader.id}.wgsl`),
                     category: determineCategory(shader),
                     description: shader.description || '',
                     tags: shader.tags || [],

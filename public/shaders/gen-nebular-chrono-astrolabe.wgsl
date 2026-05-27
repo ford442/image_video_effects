@@ -44,6 +44,7 @@ fn rot2D(angle: f32) -> mat2x2<f32> {
 
 // --- Map Function ---
 fn map(p: vec3<f32>) -> vec2<f32> {
+    let bass = plasmaBuffer[0].x;
     var d = MAX_DIST;
     var mat_id = 0.0;
 

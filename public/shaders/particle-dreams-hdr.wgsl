@@ -149,7 +149,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let b = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(chroma * baseDepth, 0.0), 0.0).z;
     let chromaticColor = vec3<f32>(r, g, b);
 
-    let hdrColor = chromaticColor + bloom;
+    var hdrColor = chromaticColor + bloom;
 
     // Mouse bloom boost
     let mouseDist = length(uv - mousePos);
