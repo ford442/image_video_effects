@@ -2,6 +2,9 @@ import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
 
+/** Default value for slot zoom parameters when not explicitly provided. */
+const DEFAULT_SLOT_PARAM = 0.5;
+
 /**
  * Diagnostic information from the WASM renderer.
  */
@@ -110,6 +113,23 @@ export class WASMRenderer implements Renderer {
 
   /** Set per-slot zoom parameters. */
   setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void {
+    WasmBridge.setSlotParams(slotIndex, p1, p2, p3, p4);
+  }
+
+  /**
+   * Update zoom parameters for a specific slot from a SlotParams object.
+   * This is the aggregate form called by the canvas effect when UI sliders change.
+   * @param params - Named zoom parameters
+   * @param slotIndex - Slot to update (defaults to 0)
+   */
+  updateSlotParams(
+    params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number },
+    slotIndex = 0
+  ): void {
+    const p1 = params.zoomParam1 ?? DEFAULT_SLOT_PARAM;
+    const p2 = params.zoomParam2 ?? DEFAULT_SLOT_PARAM;
+    const p3 = params.zoomParam3 ?? DEFAULT_SLOT_PARAM;
+    const p4 = params.zoomParam4 ?? DEFAULT_SLOT_PARAM;
     WasmBridge.setSlotParams(slotIndex, p1, p2, p3, p4);
   }
 
