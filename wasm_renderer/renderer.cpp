@@ -88,6 +88,12 @@ static WGPUStringView MakeStringView(const char* str) {
     return view;
 }
 
+// WGPU_DEPTH_SLICE_UNDEFINED was added in the 2024 WebGPU spec update; provide
+// a fallback if the installed header predates the addition.
+#ifndef WGPU_DEPTH_SLICE_UNDEFINED
+static constexpr uint32_t WGPU_DEPTH_SLICE_UNDEFINED = 0xFFFFFFFFu;
+#endif
+
 // Round `value` up to the nearest multiple of `align` (must be a power-of-2).
 static inline uint32_t AlignUp(uint32_t value, uint32_t align) {
     return (value + align - 1u) & ~(align - 1u);
@@ -641,7 +647,7 @@ void WebGPURenderer::CreateRenderPipeline() {
 
         @fragment
         fn fs_main(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4<f32> {
-            let coord = vec2<i32>(i32(fragCoord.x), i32(fragCoord.y));
+            let coord = vec2<i32>(fragCoord.xy);
             return textureLoad(u_texture, coord, 0);
         }
     )";
@@ -874,8 +880,10 @@ void WebGPURenderer::PresentToSurface() {
     WGPUSurfaceTexture surfaceTex = {};
     wgpuSurfaceGetCurrentTexture(surface_.get(), &surfaceTex);
 
-    // Accept both SuccessOptimal (new API) and SuccessSuboptimal; older builds
-    // used Success = 0 which is handled by the fallback branch.
+    // Accept both SuccessOptimal (emdawnwebgpu ≥ 2024) and SuccessSuboptimal.
+    // Older emdawnwebgpu headers use the single WGPUSurfaceGetCurrentTextureStatus_Success
+    // enum value (= 0) instead; the #else branch handles that case by name so the code
+    // compiles correctly with either header generation.
 #ifdef WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal
     const bool ok = (surfaceTex.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal ||
                      surfaceTex.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal);
@@ -890,12 +898,9 @@ void WebGPURenderer::PresentToSurface() {
     // Create a view of the swap-chain texture to use as the render attachment.
     WGPUTextureView surfaceView = wgpuTextureCreateView(surfaceTex.texture, nullptr);
 
-    // WGPU_DEPTH_SLICE_UNDEFINED: required for 2-D render attachments.
-    static constexpr uint32_t DEPTH_SLICE_UNDEF = 0xFFFFFFFFu;
-
     WGPURenderPassColorAttachment colorAttach = {};
     colorAttach.view       = surfaceView;
-    colorAttach.depthSlice = DEPTH_SLICE_UNDEF;
+    colorAttach.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;  // required for 2-D attachments
     colorAttach.loadOp     = WGPULoadOp_Clear;
     colorAttach.storeOp    = WGPUStoreOp_Store;
     colorAttach.clearValue = {0.0, 0.0, 0.0, 1.0};

@@ -9,6 +9,9 @@
 let wasmModule = null;
 let canvas = null;
 
+// Counter used to assign unique CSS IDs to canvas elements that lack one.
+let _canvasIdCounter = 0;
+
 // Renderer state
 const state = {
   initialized: false,
@@ -100,7 +103,7 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
 
     // Assign a stable CSS ID to the canvas so C++ can create the WebGPU surface.
     if (!canvas.id) {
-      canvas.id = 'pixelocity-wasm-' + Math.random().toString(36).slice(2, 9);
+      canvas.id = 'pixelocity-wasm-' + (++_canvasIdCounter);
     }
     const canvasSelector = '#' + canvas.id;
 
