@@ -7,6 +7,49 @@ on:
     branches: [ main ]
 
 jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Setup Emscripten SDK
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: latest
+        actions-cache-folder: 'emsdk-cache'
+        no-cache: true
+    
+    - name: Build WASM renderer
+      run: npm run wasm:build
+    
+    - name: Validate WASM artifacts
+      run: node scripts/validate_wasm_artifacts.js
+    
+    - name: Check artifacts are not stale
+      run: |
+        echo "Checking artifact timestamps..."
+        WASM_FILE="public/wasm/pixelocity_wasm.wasm"
+        SOURCE_FILE="wasm_renderer/main.cpp"
+        
+        WASM_TIME=$(stat -c %Y "$WASM_FILE" 2>/dev/null || echo 0)
+        SOURCE_TIME=$(stat -c %Y "$SOURCE_FILE" 2>/dev/null || echo 0)
+        
+        if [ "$WASM_TIME" -lt "$SOURCE_TIME" ]; then
+          echo "❌ WASM artifact is older than source files"
+          exit 1
+        fi
+        echo "✅ WASM artifact is up to date with source files"
+
   test:
     runs-on: ubuntu-latest
     
