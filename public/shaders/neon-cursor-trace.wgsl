@@ -42,8 +42,8 @@ fn valueNoise2D(p: vec2<f32>) -> f32 {
              mix(hash12(i + vec2<f32>(0.0, 1.0)), hash12(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
 
-fn springDamp(target: vec2<f32>, pos: vec2<f32>, vel: vec2<f32>, k: f32, d: f32, dt: f32) -> vec4<f32> {
-  let force = (target - pos) * k;
+fn springDamp(targetPos: vec2<f32>, pos: vec2<f32>, vel: vec2<f32>, k: f32, d: f32, dt: f32) -> vec4<f32> {
+  let force = (targetPos - pos) * k;
   let newVel = (vel + force * dt) * (1.0 - d);
   let newPos = pos + newVel * dt;
   return vec4<f32>(newPos, newVel);

@@ -72,14 +72,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let prevState = textureLoad(dataTextureC, coord, 0);
     var s1 = prevState.r;
     var s2 = prevState.g;
-    var resource = prevState.b;
+    var resourceVal = prevState.b;
     var toxin = prevState.a;
 
     // Seed on first frame
     if (time < 0.1) {
         s1 = 0.0;
         s2 = 0.0;
-        resource = 0.5;
+        resourceVal = 0.5;
         toxin = 0.0;
         let n1 = hash12(uv * 100.0 + vec2<f32>(12.9898, 78.233));
         if (n1 > 0.92) { s1 = 0.8; }
@@ -89,7 +89,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     s1 = clamp(s1, 0.0, 2.0);
     s2 = clamp(s2, 0.0, 2.0);
-    resource = clamp(resource, 0.0, 2.0);
+    resourceVal = clamp(resourceVal, 0.0, 2.0);
     toxin = clamp(toxin, 0.0, 2.0);
 
     let n = sampleNeighbors(uv, ps);
@@ -150,7 +150,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // === DIFFUSION ===
     let lapS1 = n[3].r + n[5].r + n[1].r + n[7].r - 4.0 * s1;
     let lapS2 = n[3].g + n[5].g + n[1].g + n[7].g - 4.0 * s2;
-    let lapResource = n[3].b + n[5].b + n[1].b + n[7].b - 4.0 * resource;
+    let lapResource = n[3].b + n[5].b + n[1].b + n[7].b - 4.0 * resourceVal;
     let lapToxin = n[3].a + n[5].a + n[1].a + n[7].a - 4.0 * toxin;
 
     // === PARAMETERS ===
@@ -161,9 +161,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dt = 0.5;
 
     // === ECOSYSTEM DYNAMICS ===
-    // Species consume resource to grow
-    let food1 = s1 * resource * flockCohesion;
-    let food2 = s2 * resource * flockCohesion * 0.8;
+    // Species consume resourceVal to grow
+    let food1 = s1 * resourceVal * flockCohesion;
+    let food2 = s2 * resourceVal * flockCohesion * 0.8;
 
     // Predation: s2 eats s1
     let predation = s1 * s2 * predationRate;
@@ -176,8 +176,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let toxinDamage = toxin * 0.02;
 
     // Resource regeneration
-    resource += resourceRegen - food1 - food2;
-    resource += lapResource * 0.1;
+    resourceVal += resourceRegen - food1 - food2;
+    resourceVal += lapResource * 0.1;
 
     // Species update
     s1 += food1 - predation - toxinDamage + lapS1 * 0.05;
@@ -195,7 +195,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Clamp
     s1 = clamp(s1, 0.0, 2.0);
     s2 = clamp(s2, 0.0, 2.0);
-    resource = clamp(resource, 0.0, 2.0);
+    resourceVal = clamp(resourceVal, 0.0, 2.0);
     toxin = clamp(toxin, 0.0, 2.0);
 
     // === MOUSE INTERACTION ===
@@ -203,8 +203,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseDown = u.zoom_config.w;
     let mouseDist = length(uv - mousePos);
     let mouseInfluence = smoothstep(0.1, 0.0, mouseDist) * mouseDown;
-    // Mouse adds resource and removes toxin (nurturing)
-    resource += mouseInfluence * 0.5;
+    // Mouse adds resourceVal and removes toxin (nurturing)
+    resourceVal += mouseInfluence * 0.5;
     toxin -= mouseInfluence * 0.3;
     toxin = max(toxin, 0.0);
     // Mouse attracts species 1 (flocking toward cursor)
@@ -227,13 +227,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     s2 = clamp(s2, 0.0, 2.0);
 
     // === STORE STATE ===
-    textureStore(dataTextureA, coord, vec4<f32>(s1, s2, resource, toxin));
+    textureStore(dataTextureA, coord, vec4<f32>(s1, s2, resourceVal, toxin));
 
     // === VISUALIZATION ===
     // Species 1 = cyan/teal, Species 2 = magenta/pink, Resource = green, Toxin = dark purple
     let colorS1 = vec3<f32>(0.0, 0.8, 1.0) * min(s1, 1.0);
     let colorS2 = vec3<f32>(1.0, 0.2, 0.6) * min(s2, 1.0);
-    let colorResource = vec3<f32>(0.2, 0.7, 0.2) * min(resource, 1.0) * 0.3;
+    let colorResource = vec3<f32>(0.2, 0.7, 0.2) * min(resourceVal, 1.0) * 0.3;
     let colorToxin = vec3<f32>(0.3, 0.0, 0.4) * min(toxin, 1.0) * 0.5;
 
     var displayColor = colorS1 + colorS2 + colorResource + colorToxin;

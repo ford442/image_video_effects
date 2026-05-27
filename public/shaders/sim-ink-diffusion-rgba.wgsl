@@ -174,12 +174,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // === STATE -> VISUAL COLOR MAPPING ===
     // Convert CMY pigment densities to RGB display color
-    let pigmentToRGB = vec3<f32>(
-        (1.0 - cyan) * (1.0 - yellow),  // Red = no cyan * no yellow... wait, that's not right
-        // Actually: CMY->RGB is: R=1-C, G=1-M, B=1-Y for pure pigments
-        // But we want to SHOW the ink colors, not subtract them
-        0.0, 0.0, 0.0
-    );
     // Show ink in their actual colors: cyan, magenta, yellow
     let inkColor = vec3<f32>(
         magenta * 0.3 + yellow * 0.3,  // R component

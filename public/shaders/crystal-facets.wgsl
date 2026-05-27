@@ -169,7 +169,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color * internalScatter;
 
     // Advanced Alpha: Physical Transmittance
-    let alpha = calculateAdvancedAlpha(color, transmission, pathLength, fresnel, purity, falloff);
+    let alpha = calculateAdvancedAlpha(color, transmission, pathLength, fresnel, purity, edgeFactor);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
 

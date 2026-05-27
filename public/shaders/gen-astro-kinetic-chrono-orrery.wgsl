@@ -29,7 +29,7 @@ const MAX_STEPS = 100;
 const SURF_DIST = 0.001;
 const MAX_DIST = 100.0;
 fn hash12(p: vec2<f32>) -> f32 {
-    let p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
@@ -117,7 +117,7 @@ fn map(p: vec3<f32>, time: f32) -> vec4<f32> {
         d = centralDist; temp = 8000.0; metal = 0.9; density = 1.0;
     }
     let diskR = length(vec2<f32>(q.x, q.z));
-    let diskTheta = atan(q.z, q.x);
+    let diskTheta = atan2(q.z, q.x);
     let diskDensity = accretionDiskDensity(diskR, diskTheta, time);
     let diskVertical = abs(q.y) - 0.05 - diskDensity * 0.08;
     let diskOuter = diskR - 3.0;

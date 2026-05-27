@@ -144,7 +144,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let colorB = vec3<f32>(1.0, 0.2, 0.0) * B;   // Red-orange
     let colorC = vec3<f32>(0.0, 1.0, 0.3) * C;   // Green
     let colorD = vec3<f32>(1.0, 0.8, 0.0) * D;   // Gold
-    let displayColor = colorA + colorB + colorC + colorD;
+    var displayColor = colorA + colorB + colorC + colorD;
     displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Mix with source image based on param4

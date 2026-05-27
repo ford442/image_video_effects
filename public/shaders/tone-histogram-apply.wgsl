@@ -76,8 +76,8 @@ fn main(
     }
 
     let meanLuma = clamp((weighted / totalPixels) / 255.0, 0.001, 1.0);
-    let target = mix(0.35, 0.65, clamp(u.zoom_params.x, 0.0, 1.0));
-    let exposure = clamp(target / meanLuma, 0.5, 3.5);
+    let targetLum = mix(0.35, 0.65, clamp(u.zoom_params.x, 0.0, 1.0));
+    let exposure = clamp(targetLum / meanLuma, 0.5, 3.5);
 
     let tonalSpan = max(4.0, f32(max(1u, p95 - p05)));
     let contrast = mix(0.85, 1.55, clamp(u.zoom_params.y, 0.0, 1.0)) * (255.0 / tonalSpan);
