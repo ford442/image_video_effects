@@ -4863,6 +4863,58 @@
     ]
   },
   {
+    "id": "gen-neon-plasma-biomechanical-hive",
+    "name": "Neon-Plasma Biomechanical Hive",
+    "tags": [
+      "biomechanical",
+      "neon",
+      "organic",
+      "plasma",
+      "audio-reactive",
+      "cyberpunk"
+    ],
+    "description": "A hyper-organic, biomechanical labyrinth of pulsing neon circuitry and breathing metallic tissue that spawns luminescent plasma-spores reacting to ambient cosmic frequencies.",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Hive Breathing Speed",
+        "type": "slider",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Neon Intensity",
+        "type": "slider",
+        "default": 2,
+        "min": 0,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Spore Density",
+        "type": "slider",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "param4",
+        "name": "Magnetic Pull",
+        "type": "slider",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      }
+    ],
+    "url": "shaders/gen-neon-plasma-biomechanical-hive.wgsl"
+  },
+  {
     "id": "gen-neural-bioluminescence-matrix",
     "name": "Neural Bioluminescence Matrix",
     "url": "shaders/gen-neural-bioluminescence-matrix.wgsl",
