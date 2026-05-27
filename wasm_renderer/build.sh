@@ -24,9 +24,9 @@ done
 
 # Check if emcc is available early
 if ! command -v emcc &> /dev/null; then
-    echo "❌ Error: emcc not found. Install the Emscripten SDK to build the WASM renderer."
+    echo "⚠️  Warning: emcc not found. Skipping WASM build. Install Emscripten to build the WASM renderer."
     echo "   See: https://emscripten.org/docs/getting_started/downloads.html"
-    exit 1
+    exit 0  # Exit successfully to allow rest of build to continue
 fi
 
 # Set writable cache location for TOT emscripten
