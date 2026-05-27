@@ -5,7 +5,7 @@ const DEFINITIONS_DIR = path.join(__dirname, '../shader_definitions');
 const OUTPUT_DIR = path.join(__dirname, '../public/shader-lists');
 const PUBLIC_DIR = path.join(__dirname, '../public');
 
-// Optional CLI argument: --base-url https://storage.1ink.us/files/image-effects/
+// Optional CLI argument: --base-url https://test.1ink.us/image_video_effects/
 // When provided, generated JSONs will contain absolute URLs instead of relative ones.
 const BASE_URL_ARG = process.argv.find(arg => arg.startsWith('--base-url='));
 const BASE_URL = BASE_URL_ARG ? BASE_URL_ARG.split('=')[1].replace(/\/$/, '') : null;

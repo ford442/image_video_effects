@@ -522,7 +522,8 @@ export class StorageService {
       
       // Add static URLs and normalise the `stars`→`rating` field for backward compat
       shaders.forEach(shader => {
-        shader.url = `${this.staticUrl}/image-effects/shaders/${shader.filename}`;
+        const wgslFilename = shader.filename.replace(/\.json$/, '.wgsl');
+        shader.url = `${SHADER_FILES_BASE_URL.replace(/\/$/, '')}/shaders/${wgslFilename}`;
         // Backend returns `stars` (aggregate avg); surface it as `rating` for components
         // that still reference the legacy field name.
         if (shader.rating === null || shader.rating === undefined) {
@@ -560,7 +561,8 @@ export class StorageService {
 
     const shaders: ShaderItem[] = await response.json();
     shaders.forEach(shader => {
-      shader.url = `${this.staticUrl}/image-effects/shaders/${shader.filename}`;
+      const wgslFilename = shader.filename.replace(/\.json$/, '.wgsl');
+      shader.url = `${SHADER_FILES_BASE_URL.replace(/\/$/, '')}/shaders/${wgslFilename}`;
     });
 
     return shaders;

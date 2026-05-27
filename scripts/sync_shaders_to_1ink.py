@@ -4,7 +4,7 @@ Sync local WGSL shaders to the static file server at storage.1ink.us.
 
 This script uploads the public/shaders/ directory (or selected .wgsl files)
 to the remote server via SFTP so they can be served by Nginx at:
-    https://storage.1ink.us/files/image-effects/shaders/
+    https://test.1ink.us/image_video_effects/shaders/
 
 Features:
 - Incremental sync: skips files that already exist with the same size
@@ -32,7 +32,7 @@ except ImportError:
 DEFAULT_HOST = os.environ.get("SHADER_SYNC_HOST", "1ink.us")
 DEFAULT_PORT = int(os.environ.get("SHADER_SYNC_PORT", "22"))
 DEFAULT_USER = os.environ.get("SHADER_SYNC_USER", "ford442")
-DEFAULT_REMOTE_PATH = os.environ.get("SHADER_SYNC_REMOTE_PATH", "storage.1ink.us/files/image-effects/shaders")
+DEFAULT_REMOTE_PATH = os.environ.get("SHADER_SYNC_REMOTE_PATH", "test.1ink.us/image_video_effects/shaders")
 LOCAL_SHADERS_DIR = Path("public/shaders")
 
 
@@ -53,12 +53,17 @@ def upload_file(sftp, local_path: Path, remote_path: str, dry_run: bool = False)
         return True
 
     try:
-        # Ensure parent directory exists
+        # Ensure parent directory exists (recursive mkdir)
         remote_dir = "/".join(remote_path.split("/")[:-1])
-        try:
-            sftp.mkdir(remote_dir)
-        except IOError:
-            pass  # Directory may already exist
+        parts = remote_dir.split("/")
+        for i in range(1, len(parts) + 1):
+            part_path = "/".join(parts[:i])
+            if not part_path:
+                continue
+            try:
+                sftp.mkdir(part_path)
+            except IOError:
+                pass  # Directory may already exist
 
         sftp.put(str(local_path), remote_path)
         return True

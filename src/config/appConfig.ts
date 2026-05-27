@@ -42,15 +42,19 @@ export const SHADER_RATINGS_URL = `${STORAGE_API_URL}/api/shaders`;
 export const LEGACY_IMAGE_URL = `${STORAGE_API_URL}/api/songs?type=image`;
 
 // Static Nginx file server (for retrieving saved files)
-// Default now points to storage.1ink.us where shader files are hosted.
+// NOTE: storage.1ink.us is currently a parked DreamHost domain and not serving files.
+// The deployed app at test.1ink.us/image_video_effects/ includes the shaders.
+// If you fix the storage.1ink.us subdomain in DreamHost, switch this back.
 export const STATIC_NGINX_URL = process.env.REACT_APP_STATIC_NGINX_URL || 'https://storage.1ink.us';
 
-// Shader files URL pattern (WGSL files are served from /files/ path)
-export const SHADER_FILES_URL = `${STATIC_NGINX_URL}/files/image-effects/shaders`;
+// Shader files URL pattern (WGSL files are served from the app build path)
+// Default points to test.1ink.us where the deployed build lives.
+export const SHADER_FILES_URL = process.env.REACT_APP_SHADER_FILES_URL || 'https://test.1ink.us/image_video_effects/shaders';
 
 // Configurable base URL for shader file resolution.
+// Default now uses the deployed app path since storage.1ink.us is parked.
 // Override with REACT_APP_SHADER_FILES_BASE_URL for local dev or staging.
-export const SHADER_FILES_BASE_URL = process.env.REACT_APP_SHADER_FILES_BASE_URL || `${STATIC_NGINX_URL}/files/image-effects/`;
+export const SHADER_FILES_BASE_URL = process.env.REACT_APP_SHADER_FILES_BASE_URL || 'https://test.1ink.us/image_video_effects/';
 
 // Webhook Secret for HMAC SHA256 signatures
 // In production, this should be set via environment variable
