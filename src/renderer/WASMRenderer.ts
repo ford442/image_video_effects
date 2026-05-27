@@ -2,6 +2,9 @@ import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
 
+/** Default value for slot zoom parameters when not explicitly provided. */
+const DEFAULT_SLOT_PARAM = 0.5;
+
 /**
  * Diagnostic information from the WASM renderer.
  */
@@ -123,10 +126,10 @@ export class WASMRenderer implements Renderer {
     params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number },
     slotIndex = 0
   ): void {
-    const p1 = params.zoomParam1 ?? 0.5;
-    const p2 = params.zoomParam2 ?? 0.5;
-    const p3 = params.zoomParam3 ?? 0.5;
-    const p4 = params.zoomParam4 ?? 0.5;
+    const p1 = params.zoomParam1 ?? DEFAULT_SLOT_PARAM;
+    const p2 = params.zoomParam2 ?? DEFAULT_SLOT_PARAM;
+    const p3 = params.zoomParam3 ?? DEFAULT_SLOT_PARAM;
+    const p4 = params.zoomParam4 ?? DEFAULT_SLOT_PARAM;
     WasmBridge.setSlotParams(slotIndex, p1, p2, p3, p4);
   }
 

@@ -222,7 +222,7 @@ export class RendererManager {
     if (this.currentRenderer instanceof WebGPURenderer) {
       this.currentRenderer.updateSlotParams(params);
     } else if (this.currentRenderer instanceof WASMRenderer) {
-      this.currentRenderer.updateSlotParams(params, slotIndex ?? 0);
+      this.currentRenderer.updateSlotParams(params, slotIndex);
     }
   }
 
