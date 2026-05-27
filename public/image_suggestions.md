@@ -5165,6 +5165,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for evaluating metallic rendering applied to chaotic fluid dynamics, massive scale, and intense internal lighting.
 
+### Suggestion: Bismuth Exoplanet Core
+- **Date:** 2026-11-07
+- **Prompt:** "A hyper-detailed, surreal depiction of an exoplanet core entirely composed of giant, geometric bismuth crystals. The subject features stepped, iridescent hopper crystal structures that form vast metallic canyons. The lighting is ethereal, glowing from internal fractures with intensely bright rainbow colors that reflect off the sharply angled metallic surfaces. The mood is otherworldly, serene, and majestic. Captured as a sweeping landscape view to emphasize the colossal scale of the crystalline formations."
+- **Negative prompt:** "organic, round, dull, earth-like, low resolution, blurry"
+- **Tags:** sci-fi, landscape, surreal, 3D, ethereal, bright
+- **Style / Reference:** 3D fractal art, hyper-realistic macro photography scaled up
+- **Composition:** wide sweeping landscape, low horizon
+- **Color palette:** iridescent pinks, blues, golds, and greens
+- **Aspect ratio:** 21:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex geometric refraction, metallic iridescence, and sharp angular shadows.
+
+### Suggestion: Aerogel Beehive
+- **Date:** 2026-11-07
+- **Prompt:** "A photorealistic macro shot of a futuristic beehive constructed entirely from ultra-lightweight, translucent blue aerogel. The subject shows glowing, robotic bees with delicate brass wings tending to glowing golden nectar stored within the hexagonal aerogel cells. The lighting is bright and whimsical, with sunlight passing through the cloudy, ghost-like aerogel to scatter soft blue light across the warm amber honey. The mood is peaceful, innovative, and warm. Captured with a specialized macro lens, highlighting the stark contrast between the milky aerogel and the sharp, precise machinery of the bees."
+- **Negative prompt:** "traditional wood, dark, gloomy, out of focus, artificial lighting"
+- **Tags:** solarpunk, macro, photorealistic, bright, whimsical
+- **Style / Reference:** photorealistic macro photography, high-tech nature concept
+- **Composition:** extreme close-up, shallow depth of field, rule of thirds
+- **Color palette:** translucent ghostly blue, warm amber, bright gold
+- **Aspect ratio:** 4:5
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests subsurface scattering, translucent materials, and the interaction of warm and cool lighting.
+
+### Suggestion: Mother of Pearl Orbital Ring
+- **Date:** 2026-11-07
+- **Prompt:** "A cinematic, wide-angle view of a colossal orbital ring megastructure suspended above an ocean planet, constructed entirely from iridescent, polished mother of pearl. The subject curves elegantly across the sky, reflecting the planet's vast blue oceans and white clouds in its shimmering, pearlescent surface. The lighting is bright and ethereal, illuminated by a distant white sun that catches the micro-ridges of the nacre, throwing prismatic rainbows into the void of space. The mood is majestic, peaceful, and awe-inspiring. Captured from low earth orbit to emphasize the massive architectural curve."
+- **Negative prompt:** "dark, gritty, industrial, rusty, lowres, busy"
+- **Tags:** sci-fi, architecture, cinematic, bright, ethereal
+- **Style / Reference:** grand sci-fi cinematic concept art, clean utopia
+- **Composition:** sweeping diagonal curve, immense scale
+- **Color palette:** pearlescent whites, soft pinks and greens, deep space blue
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Useful for evaluating large-scale iridescent reflections and clean, utopian lighting models.
+
+### Suggestion: Damascus Steel Tsunami
+- **Date:** 2026-11-07
+- **Prompt:** "An abstract, dark fantasy landscape where a towering tsunami wave is frozen in time, sculpted from dark, rippling Damascus steel. The subject features intricate, wavy metallic woodgrain patterns that flow seamlessly into the terrifying curl of the wave. The lighting is moody and dramatic, with a solitary, pale moonlight glinting off the polished, dark metal ridges, casting deep black shadows in the troughs. The mood is ominous, powerful, and surreal. Captured from a low angle on a desolate shoreline, emphasizing the heavy, crushing weight of the metallic ocean."
+- **Negative prompt:** "water, liquid, foam, blue, daytime, soft"
+- **Tags:** fantasy, landscape, abstract, moody, dark
+- **Style / Reference:** dark fantasy sculpture, abstract metal art
+- **Composition:** imposing foreground, low angle, dramatic silhouette
+- **Color palette:** dark metallic grays, silver highlights, pitch black
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Challenges the generator to apply detailed metallurgical patterns to complex, organic fluid shapes.
+
+### Suggestion: Tweed Ashcan School Interior
+- **Date:** 2026-11-07
+- **Prompt:** "A painterly, Ashcan School-style depiction of a dimly lit, retro 1920s speakeasy, but the entire interior—including the walls, tables, and even the drinks—is textured like woven wool tweed. The subject reveals heavy, coarse fabric patterns intersecting with gritty urban life. The lighting is moody and low-key, with a single, hazy overhead lamp casting long, textured shadows across the herringbone floor. The mood is nostalgic, melancholic, and cozy yet gritty. Captured from a wide corner perspective, highlighting the claustrophobic and textile-heavy environment."
+- **Negative prompt:** "smooth surfaces, modern, bright, photorealistic, clean"
+- **Tags:** retro, noir, interior, painterly, moody
+- **Style / Reference:** Ashcan School painting, heavy brushstrokes, textile art
+- **Composition:** corner view, deep shadows, intimate framing
+- **Color palette:** muted browns, charcoal grays, deep olive, warm sepia
+- **Aspect ratio:** 4:3
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing unconventional texture mapping and moody, painterly light diffusion over rough surfaces.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
