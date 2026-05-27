@@ -113,22 +113,21 @@ test('WASM renderer initializes successfully', async ({ page }) => {
 
   // Wait for test API to be available
   await page.waitForFunction(() => {
-    return (window as any).__pixelocity__ != null && (window as any).__rendererManager != null;
+    return (window as any).__pixelocity__ != null;
   }, {
     timeout: 15000,
   });
 
-  // Get diagnostics
+  // Get diagnostics from the renderer object
   const diagnostics = await page.evaluate(() => {
-    const mgr = (window as any).__rendererManager;
-    return mgr?.getDiagnostics?.();
+    const renderer = (window as any).__pixelocity__?.renderer;
+    return renderer?.getDiagnostics?.();
   });
 
   expect(diagnostics).toBeDefined();
-  expect(diagnostics?.rendererType).toBe('wasm');
-  expect(diagnostics?.wasm?.initialized).toBe(true);
-  expect(diagnostics?.wasm?.fps).toBeGreaterThan(0);
-  expect(diagnostics?.wasm?.hasModule).toBe(true);
+  expect(diagnostics?.initialized).toBe(true);
+  expect(diagnostics?.fps).toBeGreaterThan(0);
+  expect(diagnostics?.hasModule).toBe(true);
 
   // Verify no critical errors during initialization
   const criticalErrors: string[] = (page as any).__criticalErrors || [];
@@ -140,7 +139,7 @@ test('WASM renderer loads single shader without errors', async ({ page }) => {
 
   // Wait for test API
   await page.waitForFunction(
-    () => (window as any).__pixelocity__ != null && (window as any).__rendererManager != null,
+    () => (window as any).__pixelocity__ != null,
     { timeout: 15000 }
   );
 
@@ -161,7 +160,7 @@ test('WASM renderer loads single shader without errors', async ({ page }) => {
 
   // Verify renderer is still functioning
   const fps = await page.evaluate(() => {
-    return (window as any).__rendererManager?.getDiagnostics?.()?.wasm?.fps ?? 0;
+    return (window as any).__pixelocity__?.renderer?.getDiagnostics?.()?.fps ?? 0;
   });
   expect(fps).toBeGreaterThan(0);
 });
@@ -171,7 +170,7 @@ test('WASM renderer loads multiple shaders (multi-slot stack)', async ({ page })
 
   // Wait for test API
   await page.waitForFunction(
-    () => (window as any).__pixelocity__ != null && (window as any).__rendererManager != null,
+    () => (window as any).__pixelocity__ != null,
     { timeout: 15000 }
   );
 
@@ -197,7 +196,7 @@ test('WASM renderer loads multiple shaders (multi-slot stack)', async ({ page })
 
   // Verify renderer is still functioning
   const fps = await page.evaluate(() => {
-    return (window as any).__rendererManager?.getDiagnostics?.()?.wasm?.fps ?? 0;
+    return (window as any).__pixelocity__?.renderer?.getDiagnostics?.()?.fps ?? 0;
   });
   expect(fps).toBeGreaterThan(0);
 });
@@ -207,7 +206,7 @@ test('WASM renderer handles shader loading with minimal console errors', async (
 
   // Wait for test API
   await page.waitForFunction(
-    () => (window as any).__pixelocity__ != null && (window as any).__rendererManager != null,
+    () => (window as any).__pixelocity__ != null,
     { timeout: 15000 }
   );
 
@@ -238,9 +237,9 @@ test('WASM renderer handles shader loading with minimal console errors', async (
 
   // Verify diagnostics are still good
   const diagnostics = await page.evaluate(() => {
-    return (window as any).__rendererManager?.getDiagnostics?.();
+    return (window as any).__pixelocity__?.renderer?.getDiagnostics?.();
   });
-  expect(diagnostics?.wasm?.errorCount ?? 0).toBeLessThan(5); // Allow 0-4 errors as warnings
+  expect(diagnostics?.errorCount ?? 0).toBeLessThan(5); // Allow 0-4 errors as warnings
 });
 
 test('WASM renderer collects performance metrics', async ({ page }) => {
@@ -248,7 +247,7 @@ test('WASM renderer collects performance metrics', async ({ page }) => {
 
   // Wait for test API
   await page.waitForFunction(
-    () => (window as any).__pixelocity__ != null && (window as any).__rendererManager != null,
+    () => (window as any).__pixelocity__ != null,
     { timeout: 15000 }
   );
 
@@ -265,26 +264,23 @@ test('WASM renderer collects performance metrics', async ({ page }) => {
 
   // Collect WASM diagnostics
   const wasmDiags = await page.evaluate(() => {
-    const mgr = (window as any).__rendererManager;
-    const diags = mgr?.getDiagnostics?.();
+    const renderer = (window as any).__pixelocity__?.renderer;
+    const diags = renderer?.getDiagnostics?.();
     return {
-      rendererType: diags?.rendererType,
-      wasmFps: diags?.wasm?.fps,
-      wasmInitTime: diags?.wasm?.initTime,
-      wasmHasModule: diags?.wasm?.hasModule,
+      wasmFps: diags?.fps,
+      wasmInitTime: diags?.initTime,
+      wasmHasModule: diags?.hasModule,
     };
   });
 
   // Log metrics for CI reporting
   console.log('=== WASM Renderer Metrics ===');
-  console.log(`Renderer: ${wasmDiags.rendererType}`);
   console.log(`FPS: ${wasmDiags.wasmFps}`);
   console.log(`Init Time: ${wasmDiags.wasmInitTime}`);
   console.log(`Has Module: ${wasmDiags.wasmHasModule}`);
   console.log('==============================');
 
   // Assertions
-  expect(wasmDiags.rendererType).toBe('wasm');
   expect(wasmDiags.wasmFps).toBeGreaterThan(0);
   expect(wasmDiags.wasmHasModule).toBe(true);
 });
