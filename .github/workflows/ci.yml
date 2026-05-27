@@ -6,9 +6,77 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Setup Emscripten SDK
+      uses: mymindstorm/setup-emsdk@v14
+      with:
+        version: latest
+        actions-cache-folder: 'emsdk-cache'
+    
+    - name: Build WASM renderer
+      run: npm run wasm:build
+    
+    - name: Validate WASM artifacts
+      run: node scripts/validate_wasm_artifacts.js
+    
+    - name: Check artifacts are not stale
+      run: |
+        echo "Checking artifact timestamps..."
+        WASM_FILE="public/wasm/pixelocity_wasm.wasm"
+        SOURCE_DIR="wasm_renderer"
+        
+        # Check that WASM file exists and get its timestamp
+        if [ ! -f "$WASM_FILE" ]; then
+          echo "❌ WASM artifact not found: $WASM_FILE"
+          exit 1
+        fi
+        WASM_TIME=$(stat -c %Y "$WASM_FILE" 2>/dev/null || stat -f %m "$WASM_FILE" 2>/dev/null)
+        if [ -z "$WASM_TIME" ] || [ "$WASM_TIME" = "0" ]; then
+          echo "❌ Could not determine WASM file timestamp"
+          exit 1
+        fi
+        
+        # Find the most recent source file timestamp
+        # Use find with common stat format (-exec) for cross-platform compatibility
+        LATEST_SOURCE=$(find "$SOURCE_DIR" -type f \( -name "*.cpp" -o -name "*.h" -o -name "*.sh" \) -exec stat -c %Y {} \; 2>/dev/null | sort -n | tail -1)
+        if [ -z "$LATEST_SOURCE" ]; then
+          echo "❌ No source files found in $SOURCE_DIR"
+          exit 1
+        fi
+        
+        # Convert float timestamp to integer if needed (strip decimal)
+        LATEST_SOURCE_INT=$(printf "%.0f" "$LATEST_SOURCE")
+        
+        if [ "$WASM_TIME" -lt "$LATEST_SOURCE_INT" ]; then
+          echo "❌ WASM artifact is older than source files (WASM: $WASM_TIME, Latest source: $LATEST_SOURCE_INT)"
+          exit 1
+        fi
+        echo "✅ WASM artifact is up to date with source files"
+
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - uses: actions/checkout@v4
@@ -50,6 +118,8 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - uses: actions/checkout@v4
