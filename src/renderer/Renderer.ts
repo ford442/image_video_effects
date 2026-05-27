@@ -47,7 +47,7 @@ export interface Renderer {
   setMaskEnabled?: (enabled: boolean) => void;
   setRecording?: (isRecording: boolean) => void;
   setRecordingMode?: (mode: 'loop' | 'continuous') => void;
-  updateSlotParams?: (params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number }) => void;
+  updateSlotParams?: (params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number }, slotIndex?: number) => void;
 }
 
 export interface RendererConfig {

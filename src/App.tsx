@@ -4,9 +4,8 @@ import Controls from './components/Controls';
 import ShaderScanner from './components/ShaderScanner';
 import LiveStudioTab from './components/LiveStudioTab';
 import { StorageBrowser } from './components/StorageBrowser';
-import { Renderer } from './renderer/Renderer';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
-import { RendererType } from './renderer/RendererManager';
+import { RendererType, RendererManager } from './renderer/RendererManager';
 import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
@@ -285,13 +284,13 @@ function MainApp() {
     const [supportsDeepWorkgroup, setSupportsDeepWorkgroup] = useState(false);
 
     // --- Refs ---
-    const rendererRef = useRef<Renderer | null>(null);
+    const rendererRef = useRef<RendererManager | null>(null);
 
     // --- Renderer backend state ---
     const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
     const handleSwitchRenderer = useCallback(async (type: RendererType) => {
-        const manager = rendererRef.current as any;
-        if (!manager?.switchRenderer) return;
+        const manager = rendererRef.current;
+        if (!manager) return;
         setStatus(`Switching to ${type} renderer…`);
         const ok = await manager.switchRenderer(type);
         if (ok) {
@@ -326,15 +325,15 @@ function MainApp() {
             slotShaderStatusRef.current[index] = 'idle';
             setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'idle'; return n; });
             // Tell the renderer to disable this slot so other slots keep running
-            if (rendererRef.current && typeof (rendererRef.current as any).setSlotShader === 'function') {
-                (rendererRef.current as any).setSlotShader(index, '');
+            if (rendererRef.current) {
+                rendererRef.current.setSlotShader(index, '');
             }
             return;
         }
 
         // Attempt to load & compile the shader, tracking status
         const shaderEntry = availableModes.find(s => s.id === mode);
-        if (shaderEntry && rendererRef.current && 'loadShader' in rendererRef.current) {
+        if (shaderEntry && rendererRef.current) {
             slotShaderStatusRef.current[index] = 'loading';
             setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'loading'; return n; });
 
@@ -344,15 +343,11 @@ function MainApp() {
                 let shaderUrl = shaderEntry.url;
                 
                 // Load the shader
-                const ok = await (rendererRef.current as any).loadShader(shaderEntry.id, shaderUrl);
+                const ok = await rendererRef.current.loadShader(shaderEntry.id, shaderUrl);
                 
                 // Activate the shader on the specified slot
                 if (ok && rendererRef.current) {
-                    if (typeof (rendererRef.current as any).setSlotShader === 'function') {
-                        (rendererRef.current as any).setSlotShader(index, shaderEntry.id);
-                    } else if (typeof (rendererRef.current as any).setActiveShader === 'function') {
-                        (rendererRef.current as any).setActiveShader(shaderEntry.id);
-                    }
+                    rendererRef.current.setSlotShader(index, shaderEntry.id);
                 }
                 
                 slotShaderStatusRef.current[index] = ok ? 'idle' : 'error';
@@ -805,17 +800,10 @@ function MainApp() {
             (window as any).__pixelocity__ = {
                 renderer: rendererRef.current,
                 setSlotShader: (index: number, id: string) => {
-                    const r = rendererRef.current as any;
-                    if (r && typeof r.setSlotShader === 'function') {
-                        r.setSlotShader(index, id);
-                    }
+                    rendererRef.current?.setSlotShader(index, id);
                 },
                 loadShader: async (id: string, url: string) => {
-                    const r = rendererRef.current as any;
-                    if (r && typeof r.loadShader === 'function') {
-                        return r.loadShader(id, url);
-                    }
-                    return false;
+                    return rendererRef.current?.loadShader(id, url) ?? false;
                 },
             };
         }

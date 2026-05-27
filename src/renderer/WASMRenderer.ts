@@ -113,6 +113,23 @@ export class WASMRenderer implements Renderer {
     WasmBridge.setSlotParams(slotIndex, p1, p2, p3, p4);
   }
 
+  /**
+   * Update zoom parameters for a specific slot from a SlotParams object.
+   * This is the aggregate form called by the canvas effect when UI sliders change.
+   * @param params - Named zoom parameters
+   * @param slotIndex - Slot to update (defaults to 0)
+   */
+  updateSlotParams(
+    params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number },
+    slotIndex = 0
+  ): void {
+    const p1 = params.zoomParam1 ?? 0.5;
+    const p2 = params.zoomParam2 ?? 0.5;
+    const p3 = params.zoomParam3 ?? 0.5;
+    const p4 = params.zoomParam4 ?? 0.5;
+    WasmBridge.setSlotParams(slotIndex, p1, p2, p3, p4);
+  }
+
   /** Set slot execution mode: 'chained' (default) or 'parallel'. */
   setSlotMode(slotIndex: number, mode: 'chained' | 'parallel'): void {
     WasmBridge.setSlotMode(slotIndex, mode);

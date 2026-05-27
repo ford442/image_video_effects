@@ -209,13 +209,29 @@ export class RendererManager {
   setSlotShader(index: number, id: string): void {
     if (this.currentRenderer instanceof WebGPURenderer) {
       this.currentRenderer.setSlotShader(index, id);
+    } else if (this.currentRenderer instanceof WASMRenderer) {
+      this.currentRenderer.setSlotShader(index, id);
     }
   }
 
-  /** Update all zoom params from SlotParams (called when UI sliders change). */
-  updateSlotParams(params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number }): void {
+  /** Update zoom params for a slot (called when UI sliders change). */
+  updateSlotParams(
+    params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number },
+    slotIndex?: number
+  ): void {
     if (this.currentRenderer instanceof WebGPURenderer) {
       this.currentRenderer.updateSlotParams(params);
+    } else if (this.currentRenderer instanceof WASMRenderer) {
+      this.currentRenderer.updateSlotParams(params, slotIndex ?? 0);
+    }
+  }
+
+  /** Set slot execution mode ('chained' | 'parallel'). */
+  setSlotMode(index: number, mode: 'chained' | 'parallel'): void {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      this.currentRenderer.setSlotMode(index, mode);
+    } else if (this.currentRenderer instanceof WASMRenderer) {
+      this.currentRenderer.setSlotMode(index, mode);
     }
   }
 
@@ -261,6 +277,20 @@ export class RendererManager {
       return (this.currentRenderer as any).getAvailableModes();
     }
     return [];
+  }
+
+  /** Forward a list of image URLs to the active renderer (e.g. for slideshow mode). */
+  setImageList(urls: string[]): void {
+    if (this.currentRenderer?.setImageList) {
+      this.currentRenderer.setImageList(urls);
+    }
+  }
+
+  /** Forward a depth map to the active renderer. */
+  updateDepthMap(data: Float32Array, width: number, height: number): void {
+    if (this.currentRenderer?.updateDepthMap) {
+      this.currentRenderer.updateDepthMap(data, width, height);
+    }
   }
 
   /** Forwards deep-workgroup capability query to the active renderer. */
