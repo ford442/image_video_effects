@@ -201,13 +201,85 @@ For comprehensive testing, see [WASM_SMOKE_TEST.md](./WASM_SMOKE_TEST.md).
 
 ---
 
+## Automated Playwright Tests (CI/E2E)
+
+### Running WASM E2E Tests Locally
+
+To run the automated WASM renderer tests on your machine:
+
+1. **Build the WASM module:**
+
+   ```bash
+   npm run wasm:build
+   ```
+
+2. **Build the production app:**
+
+   ```bash
+   npm run build
+   ```
+
+3. **Run the WASM Playwright tests:**
+
+   ```bash
+   npx playwright test tests/wasm-renderer.smoke.spec.ts --project=chromium
+   ```
+
+4. **View test results:**
+
+   ```bash
+   npx playwright show-report
+   ```
+
+### What the Tests Validate
+
+The automated test suite (`tests/wasm-renderer.smoke.spec.ts`) includes:
+
+| Test | Purpose |
+|------|---------|
+| `WASM renderer initializes successfully` | Verifies `?renderer=wasm` forces WASM and initializes with `getDiagnostics().wasm.initialized === true` and `fps > 0` |
+| `WASM renderer loads single shader without errors` | Tests single-shader loading with 2-second render |
+| `WASM renderer loads multiple shaders (multi-slot stack)` | Tests 3-shader stack (multi-slot chain) with 3-second render |
+| `WASM renderer handles shader loading with minimal console errors` | Verifies no device-lost, shader-compile-error, or critical device errors |
+| `WASM renderer collects performance metrics` | Logs frame time, module status, and diagnostics for CI metrics tracking |
+
+### CI Integration
+
+The `.github/workflows/ci.yml` includes a `test-wasm-e2e` job that:
+
+- **Depends on:** `wasm` build job + `test` job
+- **Runs after:** WASM module successfully builds
+- **Runs:** Full Playwright suite against `?renderer=wasm&testMode=1`
+- **Reports:** Pass/fail + artifacts (HTML report, videos on failure)
+- **Fails CI if:** Any critical console errors, device-lost events, or renderer initialization fails
+
+**NOTE:** The `test-wasm-e2e` job requires [Emscripten SDK](https://emscripten.org) to be available. In CI, this is set up automatically via the `mymindstorm/setup-emsdk@v14` action. If the WASM build fails, the E2E tests are skipped.
+
+### Performance Metrics
+
+The test logs frame-time diagnostics for tracking:
+
+```
+=== WASM Renderer Metrics ===
+Renderer: wasm
+FPS: 58.3
+Init Time: 245ms
+Has Module: true
+==============================
+```
+
+These metrics can be used to detect performance regressions.
+
+---
+
 ## Known Limitations (May 2026)
 
 - The WASM binary is **not committed** to the repository. You must build it locally
   with Emscripten before testing.
-- There are no automated integration tests for the WASM path yet.
-- Performance benchmarks vs the TypeScript WebGPU renderer have not been formally
-  measured.
+- Automated Playwright tests require a successful WASM build. If the build fails in CI,
+  E2E tests will be skipped (see `test-wasm-e2e` job conditions).
+- Performance benchmarks vs the TypeScript WebGPU renderer can be extracted from test logs
+  but are not yet automatically compared or reported as pass/fail thresholds.
 
 ---
 
