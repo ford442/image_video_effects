@@ -89,6 +89,18 @@ export class JSRenderer implements Renderer {
     }
   }
 
+  setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
+    // For generative mode, clear both image and video (will show black canvas with audio visualization)
+    if (source === 'generative') {
+      this.image = null;
+      this.video = null;
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[JSRenderer] Input source set to: ${source}`);
+    }
+  }
+
   render = (): void => {
     if (!this.ctx || !this.canvas) {
       console.warn('🚨 JSRenderer.render: Missing context or canvas!', {

@@ -29,6 +29,9 @@ export interface Renderer {
   // Parameters
   setParam(name: string, value: number): void;
 
+  // Input source selection (for generative/procedural, image, video, webcam, or live)
+  setInputSource?: (source: 'image' | 'video' | 'webcam' | 'generative' | 'live') => void;
+
   // Slot management with parallelization support
   setSlotMode?: (index: number, mode: SlotMode) => void;
   getSlotMode?: (index: number) => SlotMode | null;

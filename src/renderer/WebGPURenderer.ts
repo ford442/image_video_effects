@@ -214,6 +214,7 @@ export class WebGPURenderer implements Renderer {
   private video: HTMLVideoElement | null = null;
   private offscreen: HTMLCanvasElement | null = null;
   private offCtx: CanvasRenderingContext2D | null = null;
+  private inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live' = 'image';
   
   // Zero-copy video optimization
   private videoExternalTexture: GPUExternalTexture | null = null;
@@ -1202,6 +1203,20 @@ export class WebGPURenderer implements Renderer {
     if (params.zoomParam2 !== undefined) this.zoomParams[1] = params.zoomParam2;
     if (params.zoomParam3 !== undefined) this.zoomParams[2] = params.zoomParam3;
     if (params.zoomParam4 !== undefined) this.zoomParams[3] = params.zoomParam4;
+  }
+
+  /** Set the active input source (generative, image, video, webcam, or live). */
+  setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
+    this.inputSource = source;
+    
+    // For generative mode, ensure source texture is black (no input image)
+    if (source === 'generative') {
+      this.clearSourceTexture();
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[WebGPU] Input source set to: ${source}`);
+    }
   }
 
   /** render() is a no-op; actual rendering is driven by the internal RAF loop. */
