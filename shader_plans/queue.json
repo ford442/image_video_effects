@@ -556,6 +556,13 @@
       "added": "2026-05-25T15:20:45.404707",
       "status": "completed",
       "completed_at": "2026-05-26T07:47:52.899529"
+    },
+    {
+      "filename": "2026-05-17_neon-plasma-biomechanical-hive.md",
+      "title": "Neon-Plasma Biomechanical Hive",
+      "added": "2026-05-17T15:31:50.867791",
+      "status": "completed",
+      "completed_at": "2026-05-27T08:04:46.221045"
     }
   ],
   "rejected": [],
@@ -760,11 +767,6 @@
       "filename": "2026-05-15_chromatic-singularity-loom.md",
       "title": "Chromatic Singularity-Loom",
       "added": "2026-05-15T15:39:20.139263"
-    },
-    {
-      "filename": "2026-05-17_neon-plasma-biomechanical-hive.md",
-      "title": "Neon-Plasma Biomechanical Hive",
-      "added": "2026-05-17T15:31:50.867791"
     },
     {
       "filename": "2026-05-19_radiant-quantum-crystalline-forge.md",
