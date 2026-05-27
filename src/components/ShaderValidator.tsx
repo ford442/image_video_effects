@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 
 interface ShaderDef {
   id: string;
@@ -44,11 +45,9 @@ export const ShaderValidator: React.FC = () => {
           if (!entry.url || seen.has(entry.id)) continue;
           seen.add(entry.id);
 
-          // More robust path handling
-          let url = entry.url;
-          if (!url.startsWith('shaders/')) {
-            url = `shaders/${url}`;
-          }
+          // Resolve shader URL against the configured base URL.
+          // Absolute URLs are left intact; relative ones are resolved.
+          const url = resolveShaderUrl(entry.url);
 
           allShaders.push({
             id: entry.id,
@@ -67,7 +66,7 @@ export const ShaderValidator: React.FC = () => {
     const start = performance.now();
 
     try {
-      const wgslRes = await fetch(def.url);
+      const wgslRes = await fetch(resolveShaderUrl(def.url));
 
       if (wgslRes.status === 404) {
         return {

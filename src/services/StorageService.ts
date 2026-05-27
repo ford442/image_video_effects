@@ -4,7 +4,7 @@
 //  Handles saving/loading shaders, images, videos with HMAC SHA256 signatures
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { API_BASE_URL, STORAGE_VPS_URL, STORAGE_WEBHOOK_SECRET, STATIC_NGINX_URL } from '../config/appConfig';
+import { API_BASE_URL, STORAGE_VPS_URL, STORAGE_WEBHOOK_SECRET, STATIC_NGINX_URL, SHADER_FILES_BASE_URL } from '../config/appConfig';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Types
@@ -445,7 +445,7 @@ export class StorageService {
         if (data.filename) {
           try {
             const wgslFilename = data.filename.replace(/\.json$/, '.wgsl');
-            const wgslRes = await fetch(`${this.apiUrl}/files/image-effects/shaders/${wgslFilename}`);
+            const wgslRes = await fetch(`${SHADER_FILES_BASE_URL.replace(/\/$/, '')}/shaders/${wgslFilename}`);
             if (wgslRes.ok) content = await wgslRes.text();
           } catch { /* content stays empty, handled by caller */ }
         }

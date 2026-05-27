@@ -35,6 +35,7 @@ import { reportError, getBrowserWarning } from './ErrorHandling';
 import { compileShader } from './ShaderCompilation';
 import { BLIT_WGSL, VIDEO_COPY_WGSL } from './ShaderTemplates';
 import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
+import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 
 // ── Constants matching C++ renderer ─────────────────────────────────────────
 
@@ -717,14 +718,17 @@ export class WebGPURenderer implements Renderer {
       } catch { return null; }
     };
 
+    // Resolve the provided URL against the configured shader base URL.
+    const resolvedUrl = resolveShaderUrl(url);
+
     // If subgroup operations are supported, probe the -sg sibling variant first.
     // The -sg file uses `enable subgroups;` and subgroupAdd/Shuffle ops that
     // cannot be inlined alongside non-subgroup code in the same module.
     // We compile it under the same base ID so all downstream code (setSlotShader,
     // pipeline cache, bind-group lookups) requires zero changes.
-    if (this.supportsSubgroups && !id.endsWith('-sg') && url.endsWith('.wgsl')) {
-      const sgUrl = url.replace(/\.wgsl$/, '-sg.wgsl');
-      const wgsl = await tryFetch(sgUrl) ?? await tryFetch(`./shaders/${id}-sg.wgsl`);
+    if (this.supportsSubgroups && !id.endsWith('-sg') && resolvedUrl.endsWith('.wgsl')) {
+      const sgUrl = resolvedUrl.replace(/\.wgsl$/, '-sg.wgsl');
+      const wgsl = await tryFetch(sgUrl) ?? await tryFetch(resolveShaderUrl(`shaders/${id}-sg.wgsl`));
       if (wgsl) {
         const ok = this.compileShader(id, wgsl);
         if (ok) {
@@ -741,7 +745,7 @@ export class WebGPURenderer implements Renderer {
     }
 
     // Base variant (also serves as silent fallback when -sg is absent or fails)
-    const wgsl = await tryFetch(url) ?? await tryFetch(`./shaders/${id}.wgsl`);
+    const wgsl = await tryFetch(resolvedUrl) ?? await tryFetch(resolveShaderUrl(`shaders/${id}.wgsl`));
     if (!wgsl) return false;
     return this.compileShader(id, wgsl);
   }

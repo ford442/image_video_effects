@@ -42,10 +42,15 @@ export const SHADER_RATINGS_URL = `${STORAGE_API_URL}/api/shaders`;
 export const LEGACY_IMAGE_URL = `${STORAGE_API_URL}/api/songs?type=image`;
 
 // Static Nginx file server (for retrieving saved files)
-export const STATIC_NGINX_URL = process.env.REACT_APP_STATIC_NGINX_URL || 'https://storage.noahcohn.com';
+// Default now points to storage.1ink.us where shader files are hosted.
+export const STATIC_NGINX_URL = process.env.REACT_APP_STATIC_NGINX_URL || 'https://storage.1ink.us';
 
 // Shader files URL pattern (WGSL files are served from /files/ path)
 export const SHADER_FILES_URL = `${STATIC_NGINX_URL}/files/image-effects/shaders`;
+
+// Configurable base URL for shader file resolution.
+// Override with REACT_APP_SHADER_FILES_BASE_URL for local dev or staging.
+export const SHADER_FILES_BASE_URL = process.env.REACT_APP_SHADER_FILES_BASE_URL || `${STATIC_NGINX_URL}/files/image-effects/`;
 
 // Webhook Secret for HMAC SHA256 signatures
 // In production, this should be set via environment variable
