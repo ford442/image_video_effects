@@ -89,6 +89,13 @@ export class JSRenderer implements Renderer {
     }
   }
 
+  /**
+   * Set the active input source for this renderer.
+   * For generative mode, clears the image and video (shows only black canvas with audio visualization).
+   * For other modes, the image/video will be loaded/displayed through separate methods.
+   * 
+   * @param source - The input source type: 'image', 'video', 'webcam', 'generative', or 'live'
+   */
   setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
     // For generative mode, clear both image and video (will show black canvas with audio visualization)
     if (source === 'generative') {

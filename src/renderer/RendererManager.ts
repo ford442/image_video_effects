@@ -242,10 +242,7 @@ export class RendererManager {
     } else if (this.currentRenderer instanceof WASMRenderer) {
       this.currentRenderer.setInputSource(source);
     } else if (this.currentRenderer instanceof JSRenderer) {
-      // JSRenderer may not implement it, but we check anyway
-      if ('setInputSource' in this.currentRenderer) {
-        (this.currentRenderer as any).setInputSource(source);
-      }
+      this.currentRenderer.setInputSource(source);
     }
   }
 
