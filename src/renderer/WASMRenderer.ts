@@ -219,7 +219,7 @@ export class WASMRenderer implements Renderer {
     return WasmBridge.recordAndDownload(canvasElement, durationMs, filename);
   }
 
-  // ── BaseRenderer interface ────────────────────────────────────────────────
+  // ── Renderer interface ─────────────────────────────────────────────────
 
   setVideo(video: HTMLVideoElement): void {
     this.video = video;
