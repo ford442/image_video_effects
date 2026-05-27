@@ -1,4 +1,4 @@
-import { BaseRenderer as Renderer, RendererConfig } from './BaseRenderer';
+import { Renderer, RendererConfig } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
 
@@ -144,7 +144,7 @@ export class WASMRenderer implements Renderer {
   }
 
   /** Set the active input source for generative / procedural shaders. */
-  setInputSource(source: 'none' | 'image' | 'video' | 'webcam' | 'generative'): void {
+  setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
     WasmBridge.setInputSource(source);
   }
 
@@ -219,7 +219,7 @@ export class WASMRenderer implements Renderer {
     return WasmBridge.recordAndDownload(canvasElement, durationMs, filename);
   }
 
-  // ── BaseRenderer interface ────────────────────────────────────────────────
+  // ── Renderer interface ─────────────────────────────────────────────────
 
   setVideo(video: HTMLVideoElement): void {
     this.video = video;

@@ -235,6 +235,17 @@ export class RendererManager {
     }
   }
 
+  /** Set the active input source (generative, image, video, webcam, or live). */
+  setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      this.currentRenderer.setInputSource(source);
+    } else if (this.currentRenderer instanceof WASMRenderer) {
+      this.currentRenderer.setInputSource(source);
+    } else if (this.currentRenderer instanceof JSRenderer) {
+      this.currentRenderer.setInputSource(source);
+    }
+  }
+
   addRipple(x: number, y: number): void {
     if (this.currentRenderer instanceof WebGPURenderer) {
       this.currentRenderer.addRipple(x, y);
