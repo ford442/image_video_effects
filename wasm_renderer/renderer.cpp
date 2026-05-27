@@ -884,7 +884,7 @@ void WebGPURenderer::PresentToSurface() {
     // Older emdawnwebgpu headers use the single WGPUSurfaceGetCurrentTextureStatus_Success
     // enum value (= 0) instead; the #else branch handles that case by name so the code
     // compiles correctly with either header generation.
-#ifdef WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal
+#if defined(WGPU_SURFACE_TEXTURE_INIT)
     const bool ok = (surfaceTex.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal ||
                      surfaceTex.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal);
 #else
