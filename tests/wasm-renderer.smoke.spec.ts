@@ -27,10 +27,12 @@ const TEST_SHADERS = [
   { slot: 0, id: 'liquid', url: './shaders/liquid.wgsl', category: 'interactive-mouse' },
   // Distortion effect
   { slot: 0, id: 'kaleidoscope', url: './shaders/kaleidoscope.wgsl', category: 'distortion' },
-  // Multi-slot stack: slot 0 + slot 1
-  { slot: 1, id: 'wave-distortion', url: './shaders/wave-distortion.wgsl', category: 'distortion' },
-  // Visual effects
-  { slot: 0, id: 'chromatic-aberration', url: './shaders/chromatic-aberration.wgsl', category: 'visual-effects' },
+  // Multi-slot stack: slot 1
+  { slot: 1, id: 'adaptive-mosaic', url: './shaders/adaptive-mosaic.wgsl', category: 'visual-effects' },
+  // Color/chromatic effects
+  { slot: 0, id: 'aero-chromatics', url: './shaders/aero-chromatics.wgsl', category: 'visual-effects' },
+  // Atmospheric effects
+  { slot: 0, id: 'aerogel-smoke', url: './shaders/aerogel-smoke.wgsl', category: 'visual-effects' },
 ];
 
 let server: ReturnType<typeof spawn> | null = null;
