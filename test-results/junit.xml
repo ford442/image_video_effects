@@ -1,0 +1,322 @@
+<testsuites id="" name="" tests="5" failures="4" skipped="0" errors="0" time="69.471882">
+<testsuite name="wasm-renderer.smoke.spec.ts" timestamp="2026-05-28T04:36:58.006Z" hostname="chromium" tests="5" failures="4" skipped="0" time="51.973" errors="0">
+<testcase name="WASM renderer initializes successfully" classname="wasm-renderer.smoke.spec.ts" time="2.612">
+<failure message="wasm-renderer.smoke.spec.ts:112:5 WASM renderer initializes successfully" type="FAILURE">
+<![CDATA[  [chromium] › wasm-renderer.smoke.spec.ts:112:5 › WASM renderer initializes successfully ──────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: undefined
+
+      128 |
+      129 |   expect(diagnostics).toBeDefined();
+    > 130 |   expect(diagnostics?.initialized).toBe(true);
+          |                                    ^
+      131 |   expect(diagnostics?.fps).toBeGreaterThan(0);
+      132 |   expect(diagnostics?.hasModule).toBe(true);
+      133 |
+        at /app/tests/wasm-renderer.smoke.spec.ts:130:36
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: undefined
+
+      128 |
+      129 |   expect(diagnostics).toBeDefined();
+    > 130 |   expect(diagnostics?.initialized).toBe(true);
+          |                                    ^
+      131 |   expect(diagnostics?.fps).toBeGreaterThan(0);
+      132 |   expect(diagnostics?.hasModule).toBe(true);
+      133 |
+        at /app/tests/wasm-renderer.smoke.spec.ts:130:36
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/video.webm]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/error-context.md]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/test-failed-1.png]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/video.webm]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="WASM renderer loads single shader without errors" classname="wasm-renderer.smoke.spec.ts" time="7.142">
+<failure message="wasm-renderer.smoke.spec.ts:139:5 WASM renderer loads single shader without errors" type="FAILURE">
+<![CDATA[  [chromium] › wasm-renderer.smoke.spec.ts:139:5 › WASM renderer loads single shader without errors
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "[WebGPU] No GPU adapter found",
+    + ]
+
+      159 |   // Verify no critical errors
+      160 |   const criticalErrors: string[] = (page as any).__criticalErrors || [];
+    > 161 |   expect(criticalErrors).toEqual([]);
+          |                          ^
+      162 |
+      163 |   // Verify renderer is still functioning
+      164 |   const fps = await page.evaluate(() => {
+        at /app/tests/wasm-renderer.smoke.spec.ts:161:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "[WebGPU] No GPU adapter found",
+    + ]
+
+      159 |   // Verify no critical errors
+      160 |   const criticalErrors: string[] = (page as any).__criticalErrors || [];
+    > 161 |   expect(criticalErrors).toEqual([]);
+          |                          ^
+      162 |
+      163 |   // Verify renderer is still functioning
+      164 |   const fps = await page.evaluate(() => {
+        at /app/tests/wasm-renderer.smoke.spec.ts:161:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium-retry1/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium/video.webm]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium/error-context.md]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium-retry1/test-failed-1.png]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium-retry1/video.webm]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-0b53d-ingle-shader-without-errors-chromium-retry1/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="WASM renderer loads multiple shaders (multi-slot stack)" classname="wasm-renderer.smoke.spec.ts" time="16.367">
+<failure message="wasm-renderer.smoke.spec.ts:170:5 WASM renderer loads multiple shaders (multi-slot stack)" type="FAILURE">
+<![CDATA[  [chromium] › wasm-renderer.smoke.spec.ts:170:5 › WASM renderer loads multiple shaders (multi-slot stack)
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "[WebGPU] No GPU adapter found",
+    + ]
+
+      195 |   // Verify no critical errors
+      196 |   const criticalErrors: string[] = (page as any).__criticalErrors || [];
+    > 197 |   expect(criticalErrors).toEqual([]);
+          |                          ^
+      198 |
+      199 |   // Verify renderer is still functioning
+      200 |   const fps = await page.evaluate(() => {
+        at /app/tests/wasm-renderer.smoke.spec.ts:197:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 3
+
+    - Array []
+    + Array [
+    +   "[WebGPU] No GPU adapter found",
+    + ]
+
+      195 |   // Verify no critical errors
+      196 |   const criticalErrors: string[] = (page as any).__criticalErrors || [];
+    > 197 |   expect(criticalErrors).toEqual([]);
+          |                          ^
+      198 |
+      199 |   // Verify renderer is still functioning
+      200 |   const fps = await page.evaluate(() => {
+        at /app/tests/wasm-renderer.smoke.spec.ts:197:26
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium-retry1/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium/test-failed-1.png]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium/video.webm]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium/error-context.md]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium-retry1/test-failed-1.png]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium-retry1/video.webm]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-7be43-e-shaders-multi-slot-stack--chromium-retry1/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="WASM renderer handles shader loading with minimal console errors" classname="wasm-renderer.smoke.spec.ts" time="9.259">
+</testcase>
+<testcase name="WASM renderer collects performance metrics" classname="wasm-renderer.smoke.spec.ts" time="16.593">
+<failure message="wasm-renderer.smoke.spec.ts:247:5 WASM renderer collects performance metrics" type="FAILURE">
+<![CDATA[  [chromium] › wasm-renderer.smoke.spec.ts:247:5 › WASM renderer collects performance metrics ──────
+
+    Error: expect(received).toBeGreaterThan(expected)
+
+    Matcher error: received value must be a number or bigint
+
+    Received has value: undefined
+
+      284 |
+      285 |   // Assertions
+    > 286 |   expect(wasmDiags.wasmFps).toBeGreaterThan(0);
+          |                             ^
+      287 |   expect(wasmDiags.wasmHasModule).toBe(true);
+      288 | });
+      289 |
+        at /app/tests/wasm-renderer.smoke.spec.ts:286:29
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(received).toBeGreaterThan(expected)
+
+    Matcher error: received value must be a number or bigint
+
+    Received has value: undefined
+
+      284 |
+      285 |   // Assertions
+    > 286 |   expect(wasmDiags.wasmFps).toBeGreaterThan(0);
+          |                             ^
+      287 |   expect(wasmDiags.wasmHasModule).toBe(true);
+      288 | });
+      289 |
+        at /app/tests/wasm-renderer.smoke.spec.ts:286:29
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[=== WASM Renderer Metrics ===
+FPS: undefined
+Init Time: undefined
+Has Module: undefined
+==============================
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/video.webm]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/error-context.md]]
+=== WASM Renderer Metrics ===
+FPS: undefined
+Init Time: undefined
+Has Module: undefined
+==============================
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/test-failed-1.png]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/video.webm]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/error-context.md]]
+]]>
+</system-out>
+</testcase>
+</testsuite>
+</testsuites>
