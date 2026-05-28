@@ -563,6 +563,13 @@
       "added": "2026-05-17T15:31:50.867791",
       "status": "completed",
       "completed_at": "2026-05-27T08:04:46.221045"
+    },
+    {
+      "filename": "2026-05-27_quantum-fluorescent-aether-moth-swarm.md",
+      "title": "Quantum-Fluorescent Aether-Moth Swarm",
+      "added": "2026-05-27T15:22:31.200548",
+      "status": "completed",
+      "completed_at": "2026-05-28T08:20:01.794483"
     }
   ],
   "rejected": [],
@@ -792,11 +799,6 @@
       "filename": "2026-05-26_prismatic-void-weaver-ouroboros.md",
       "title": "Prismatic Void-Weaver Ouroboros",
       "added": "2026-05-26T15:11:09.110950"
-    },
-    {
-      "filename": "2026-05-27_quantum-fluorescent-aether-moth-swarm.md",
-      "title": "Quantum-Fluorescent Aether-Moth Swarm",
-      "added": "2026-05-27T15:22:31.200548"
     }
   ],
   "in_progress": null
