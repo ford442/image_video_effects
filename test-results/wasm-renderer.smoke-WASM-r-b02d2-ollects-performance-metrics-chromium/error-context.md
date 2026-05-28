@@ -157,6 +157,6 @@
           - generic [ref=e156]: Browse shaders, images & videos from VPS
     - main [ref=e157]:
       - generic:
-        - generic: Ready. Select a shader from Slot 1 to get started.
+        - generic: Loading image...
         - 'generic "Click to cycle renderer: WebGPU → C++ WASM → Canvas2D (or use Dev Tools)" [ref=e160] [cursor=pointer]': 🔷 WebGPU
 ```

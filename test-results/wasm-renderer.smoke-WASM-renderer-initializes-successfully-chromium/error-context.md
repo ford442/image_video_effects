@@ -4,58 +4,57 @@
 - generic [ref=e3]:
   - banner [ref=e4]:
     - generic [ref=e5]:
-      - generic:
-        - img "Pixelocity"
-      - generic [ref=e6]: Image Playpen
-    - generic [ref=e7]:
-      - button "Main" [ref=e8] [cursor=pointer]
-      - button "🎥 Live Studio" [ref=e9] [cursor=pointer]
-      - button "Open Remote" [ref=e11] [cursor=pointer]
-      - button "Hide Controls" [ref=e12] [cursor=pointer]
-  - generic [ref=e13]:
-    - complementary [ref=e14]:
-      - generic [ref=e15]:
-        - generic [ref=e16]:
-          - generic [ref=e17]: Input Source
-          - generic [ref=e18]:
-            - generic [ref=e19] [cursor=pointer]:
-              - radio "Image" [checked] [ref=e20]
-              - text: Image
+      - img "Pixelocity" [ref=e7]
+      - generic [ref=e8]: Image Playpen
+    - generic [ref=e9]:
+      - button "Main" [ref=e10] [cursor=pointer]
+      - button "🎥 Live Studio" [ref=e11] [cursor=pointer]
+      - button "Open Remote" [ref=e13] [cursor=pointer]
+      - button "Hide Controls" [ref=e14] [cursor=pointer]
+  - generic [ref=e15]:
+    - complementary [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: Input Source
+          - generic [ref=e20]:
             - generic [ref=e21] [cursor=pointer]:
-              - radio "Video" [ref=e22]
-              - text: Video
+              - radio "Image" [checked] [ref=e22]
+              - text: Image
             - generic [ref=e23] [cursor=pointer]:
-              - radio "Webcam" [ref=e24]
-              - text: Webcam
+              - radio "Video" [ref=e24]
+              - text: Video
             - generic [ref=e25] [cursor=pointer]:
-              - radio "Generative" [ref=e26]
-              - text: Generative
+              - radio "Webcam" [ref=e26]
+              - text: Webcam
             - generic [ref=e27] [cursor=pointer]:
-              - radio "🔴 Live" [ref=e28]
+              - radio "Generative" [ref=e28]
+              - text: Generative
+            - generic [ref=e29] [cursor=pointer]:
+              - radio "🔴 Live" [ref=e30]
               - text: 🔴 Live
-        - generic [ref=e29]:
-          - generic [ref=e30]: 🎬 Renderer
-          - generic [ref=e31]:
-            - button "🔷 WebGPU TypeScript native ✓" [ref=e32] [cursor=pointer]:
-              - generic [ref=e33]: 🔷
-              - generic [ref=e34]: WebGPU
-              - generic [ref=e35]: TypeScript native
-              - generic [ref=e36]: ✓
-            - button "⚡ WASM C++ performance" [ref=e37] [cursor=pointer]:
-              - generic [ref=e38]: ⚡
-              - generic [ref=e39]: WASM
-              - generic [ref=e40]: C++ performance
-            - button "🎨 Canvas2D Fallback" [ref=e41] [cursor=pointer]:
-              - generic [ref=e42]: 🎨
-              - generic [ref=e43]: Canvas2D
-              - generic [ref=e44]: Fallback
-        - button "🎲 Random Image" [ref=e46] [cursor=pointer]
-        - generic [ref=e47]:
-          - generic [ref=e48]: Auto Switch
-          - checkbox "Auto Switch" [ref=e49] [cursor=pointer]
-        - generic [ref=e50]:
-          - generic [ref=e51]: Effect Filter
-          - combobox "Effect Filter" [ref=e52]:
+        - generic [ref=e31]:
+          - generic [ref=e32]: 🎬 Renderer
+          - generic [ref=e33]:
+            - button "🔷 WebGPU TypeScript native ✓" [ref=e34] [cursor=pointer]:
+              - generic [ref=e35]: 🔷
+              - generic [ref=e36]: WebGPU
+              - generic [ref=e37]: TypeScript native
+              - generic [ref=e38]: ✓
+            - button "⚡ WASM C++ performance" [ref=e39] [cursor=pointer]:
+              - generic [ref=e40]: ⚡
+              - generic [ref=e41]: WASM
+              - generic [ref=e42]: C++ performance
+            - button "🎨 Canvas2D Fallback" [ref=e43] [cursor=pointer]:
+              - generic [ref=e44]: 🎨
+              - generic [ref=e45]: Canvas2D
+              - generic [ref=e46]: Fallback
+        - button "🎲 Random Image" [ref=e48] [cursor=pointer]
+        - generic [ref=e49]:
+          - generic [ref=e50]: Auto Switch
+          - checkbox "Auto Switch" [ref=e51] [cursor=pointer]
+        - generic [ref=e52]:
+          - generic [ref=e53]: Effect Filter
+          - combobox "Effect Filter" [ref=e54]:
             - option "All Effects / Filters" [selected]
             - option "Procedural Generation"
             - option "Distortion"
@@ -68,96 +67,96 @@
             - option "Visual Effects"
             - option "Geometric"
             - option "Post-Processing"
-        - generic [ref=e54]:
-          - button "🎰Randomize Slot 1" [ref=e55] [cursor=pointer]:
+        - generic [ref=e56]:
+          - button "🎰Randomize Slot 1" [ref=e57] [cursor=pointer]:
             - text: 🎰
-            - generic [ref=e56]: Randomize Slot 1
-          - button "🎲Randomize All Slots" [ref=e57] [cursor=pointer]
-          - generic [ref=e59] [cursor=pointer]:
-            - checkbox "🔥 Chaos Mode Auto-switch every 6-10s" [ref=e60]
-            - generic [ref=e61]:
+            - generic [ref=e58]: Randomize Slot 1
+          - button "🎲Randomize All Slots" [ref=e59] [cursor=pointer]
+          - generic [ref=e61] [cursor=pointer]:
+            - checkbox "🔥 Chaos Mode Auto-switch every 6-10s" [ref=e62]
+            - generic [ref=e63]:
               - text: 🔥 Chaos Mode
-              - generic [ref=e62]: Auto-switch every 6-10s
-          - generic [ref=e63]: Press R to spin
-        - generic [ref=e64]:
-          - generic [ref=e65]: Shader Slots
-          - generic [ref=e66] [cursor=pointer]:
-            - generic [ref=e68]: Slot 1
-            - button "None ▼" [ref=e70]:
-              - generic "None" [ref=e71]
-              - generic [ref=e72]: ▼
-          - generic [ref=e73] [cursor=pointer]:
-            - generic [ref=e75]: Slot 2
-            - button "None ▼" [ref=e77]:
-              - generic "None" [ref=e78]
-              - generic [ref=e79]: ▼
-          - generic [ref=e80] [cursor=pointer]:
-            - generic [ref=e82]: Slot 3
-            - button "None ▼" [ref=e84]:
-              - generic "None" [ref=e85]
-              - generic [ref=e86]: ▼
-          - generic [ref=e87] [cursor=pointer]:
-            - generic [ref=e89]: Slot 4
-            - button "None ▼" [ref=e91]:
-              - generic "None" [ref=e92]
-              - generic [ref=e93]: ▼
-          - generic [ref=e94] [cursor=pointer]:
-            - generic [ref=e96]: Slot 5
-            - button "None ▼" [ref=e98]:
-              - generic "None" [ref=e99]
-              - generic [ref=e100]: ▼
-          - generic [ref=e101] [cursor=pointer]:
-            - generic [ref=e103]: Slot 6
-            - button "None ▼" [ref=e105]:
-              - generic "None" [ref=e106]
-              - generic [ref=e107]: ▼
-        - generic [ref=e108]:
+              - generic [ref=e64]: Auto-switch every 6-10s
+          - generic [ref=e65]: Press R to spin
+        - generic [ref=e66]:
+          - generic [ref=e67]: Shader Slots
+          - generic [ref=e68] [cursor=pointer]:
+            - generic [ref=e70]: Slot 1
+            - button "None ▼" [ref=e72]:
+              - generic "None" [ref=e73]
+              - generic [ref=e74]: ▼
+          - generic [ref=e75] [cursor=pointer]:
+            - generic [ref=e77]: Slot 2
+            - button "None ▼" [ref=e79]:
+              - generic "None" [ref=e80]
+              - generic [ref=e81]: ▼
+          - generic [ref=e82] [cursor=pointer]:
+            - generic [ref=e84]: Slot 3
+            - button "None ▼" [ref=e86]:
+              - generic "None" [ref=e87]
+              - generic [ref=e88]: ▼
+          - generic [ref=e89] [cursor=pointer]:
+            - generic [ref=e91]: Slot 4
+            - button "None ▼" [ref=e93]:
+              - generic "None" [ref=e94]
+              - generic [ref=e95]: ▼
+          - generic [ref=e96] [cursor=pointer]:
+            - generic [ref=e98]: Slot 5
+            - button "None ▼" [ref=e100]:
+              - generic "None" [ref=e101]
+              - generic [ref=e102]: ▼
+          - generic [ref=e103] [cursor=pointer]:
+            - generic [ref=e105]: Slot 6
+            - button "None ▼" [ref=e107]:
+              - generic "None" [ref=e108]
+              - generic [ref=e109]: ▼
+        - generic [ref=e110]:
           - text: Shader Parameters
-          - generic [ref=e109]: None
-        - generic [ref=e110] [cursor=pointer]: Select an effect for this slot to see parameters.
-        - generic [ref=e111]:
-          - button "⏺️ Record 8s Clip" [ref=e112] [cursor=pointer]:
-            - generic [ref=e113]: ⏺️
-            - generic [ref=e114]: Record 8s Clip
-          - generic [ref=e115]: Capture & share your creation
-        - generic [ref=e116]:
-          - button "📁 Upload Img" [ref=e118] [cursor=pointer]
-          - button "📹 Use Webcam" [ref=e119] [cursor=pointer]
+          - generic [ref=e111]: None
+        - generic [ref=e112] [cursor=pointer]: Select an effect for this slot to see parameters.
+        - generic [ref=e113]:
+          - button "⏺️ Record 8s Clip" [ref=e114] [cursor=pointer]:
+            - generic [ref=e115]: ⏺️
+            - generic [ref=e116]: Record 8s Clip
+          - generic [ref=e117]: Capture & share your creation
+        - generic [ref=e118]:
+          - button "📁 Upload Img" [ref=e120] [cursor=pointer]
+          - button "📹 Use Webcam" [ref=e121] [cursor=pointer]
         - separator
-        - generic [ref=e120]:
-          - generic [ref=e121]: Automation
-          - button "Load Depth Model" [ref=e122] [cursor=pointer]
-        - button "Start AI VJ" [ref=e124] [cursor=pointer]
-        - generic [ref=e125]:
-          - generic [ref=e126]: Vibe Prompt
-          - generic [ref=e127]:
-            - textbox "Describe the vibe..." [ref=e128]
-            - button "Generate" [disabled] [ref=e129] [cursor=pointer]
-            - button "Randomize Params" [ref=e130] [cursor=pointer]
-          - generic [ref=e131]: AI VJ is offline.
-          - generic [ref=e132]:
-            - textbox "Preset name…" [ref=e133]
-            - button "Save Preset" [disabled] [ref=e134] [cursor=pointer]
-        - generic [ref=e136] [cursor=pointer]:
-          - generic [ref=e137]: VJ History
-          - generic [ref=e138]: ▼
-        - generic [ref=e140] [cursor=pointer]:
-          - generic [ref=e141]: Presets
-          - generic [ref=e142]: ▼
-        - button "🔧 Dev Tools ▶" [ref=e144] [cursor=pointer]
+        - generic [ref=e122]:
+          - generic [ref=e123]: Automation
+          - button "Load Depth Model" [ref=e124] [cursor=pointer]
+        - button "Start AI VJ" [ref=e126] [cursor=pointer]
+        - generic [ref=e127]:
+          - generic [ref=e128]: Vibe Prompt
+          - generic [ref=e129]:
+            - textbox "Describe the vibe..." [ref=e130]
+            - button "Generate" [disabled] [ref=e131] [cursor=pointer]
+            - button "Randomize Params" [ref=e132] [cursor=pointer]
+          - generic [ref=e133]: AI VJ is offline.
+          - generic [ref=e134]:
+            - textbox "Preset name…" [ref=e135]
+            - button "Save Preset" [disabled] [ref=e136] [cursor=pointer]
+        - generic [ref=e138] [cursor=pointer]:
+          - generic [ref=e139]: VJ History
+          - generic [ref=e140]: ▼
+        - generic [ref=e142] [cursor=pointer]:
+          - generic [ref=e143]: Presets
+          - generic [ref=e144]: ▼
+        - button "🔧 Dev Tools ▶" [ref=e146] [cursor=pointer]
         - separator
-        - generic [ref=e145]:
-          - button "🗂️ Browse by Coordinate (B)" [ref=e146] [cursor=pointer]:
-            - generic [ref=e147]: 🗂️
-            - generic [ref=e148]: Browse by Coordinate (B)
-          - generic [ref=e149]: "Tip: Type any number to jump to that shader"
-        - generic [ref=e150]:
-          - button "📦 VPS Storage Browser" [ref=e151] [cursor=pointer]:
-            - generic [ref=e152]: 📦
-            - generic [ref=e153]: VPS Storage Browser
-          - generic [ref=e154]: Browse shaders, images & videos from VPS
-    - main [ref=e155]:
+        - generic [ref=e147]:
+          - button "🗂️ Browse by Coordinate (B)" [ref=e148] [cursor=pointer]:
+            - generic [ref=e149]: 🗂️
+            - generic [ref=e150]: Browse by Coordinate (B)
+          - generic [ref=e151]: "Tip: Type any number to jump to that shader"
+        - generic [ref=e152]:
+          - button "📦 VPS Storage Browser" [ref=e153] [cursor=pointer]:
+            - generic [ref=e154]: 📦
+            - generic [ref=e155]: VPS Storage Browser
+          - generic [ref=e156]: Browse shaders, images & videos from VPS
+    - main [ref=e157]:
       - generic:
         - generic: Ready.
-        - 'generic "Click to cycle renderer: WebGPU → C++ WASM → Canvas2D (or use Dev Tools)" [ref=e158] [cursor=pointer]': 🔷 WebGPU
+        - 'generic "Click to cycle renderer: WebGPU → C++ WASM → Canvas2D (or use Dev Tools)" [ref=e160] [cursor=pointer]': 🔷 WebGPU
 ```
