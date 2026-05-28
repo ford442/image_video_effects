@@ -397,11 +397,10 @@ export function updateDepthMap(float32Data, width, height) {
  *   2 or 'video'      - video / webcam frames
  *   3 or 'webcam'     - webcam (same as video in WASM)
  *   4 or 'generative' - procedural, no input required
- *   5 or 'live'       - live HLS stream (treated as video frames)
  */
 export function setInputSource(source) {
   if (!state.initialized || !wasmModule) return;
-  const sourceMap = { none: 0, image: 1, video: 2, webcam: 3, generative: 4, live: 2 };
+  const sourceMap = { none: 0, image: 1, video: 2, webcam: 3, generative: 4 };
   const sourceInt = typeof source === 'string'
     ? (sourceMap[source] ?? 0)
     : source;

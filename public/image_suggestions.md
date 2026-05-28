@@ -5230,6 +5230,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ideal for testing unconventional texture mapping and moody, painterly light diffusion over rough surfaces.
 
+### Suggestion: Neon-Soaked Solarpunk Cityscape
+- **Date:** 2026-05-18
+- **Prompt:** "A wide-angle, cinematic view of a solarpunk city at dusk. The architecture features sweeping, organic curves covered in lush, overgrown vines and glowing bio-luminescent moss. Warm, golden hour sunlight reflects off massive glass solar panels, contrasting with soft, cool blue neon lights activating in the lower streets. The mood is peaceful yet vibrant. Captured with a 24mm lens to emphasize the grand scale of the towering, eco-friendly skyscrapers against a pastel sky."
+- **Negative prompt:** "dystopian, pollution, smog, cars, grim, dark, blurry"
+- **Tags:** solarpunk, architecture, photorealistic, cinematic
+- **Style / Reference:** photorealistic, highly detailed matte painting
+- **Composition:** wide shot, grand scale, low angle
+- **Color palette:** warm golds, lush greens, soft cool blues
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_solarpunk-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing organic architecture and balanced warm/cool lighting.
+
+### Suggestion: Abandoned Gothic Library
+- **Date:** 2026-05-18
+- **Prompt:** "The interior of a massive, ruined Gothic library lit by ethereal moonlight streaming through a shattered stained-glass window. Dust motes float in the volumetric light shafts. Ancient, leather-bound books are scattered across a cracked marble floor overgrown with pale, twisting roots. The mood is dark, moody, and deeply atmospheric. Shot with a 35mm lens with a shallow depth of field, focusing on a single glowing tome on a stone pedestal in the foreground."
+- **Negative prompt:** "modern, bright, cheerful, clean, people, artificial lighting"
+- **Tags:** horror, interior, photorealistic, moody
+- **Style / Reference:** photorealistic, dark fantasy, cinematic lighting
+- **Composition:** foreground focus, rule of thirds, deep background
+- **Color palette:** desaturated grays, deep shadows, cold moonlight blue
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20260518_gothic-library.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing volumetric lighting and high-contrast shadows.
+
+### Suggestion: Cyberpunk Noir Detective
+- **Date:** 2026-05-18
+- **Prompt:** "A close-up portrait of a grizzled detective in a neon-lit, rain-slicked alleyway in a cyberpunk metropolis. The subject wears a worn trench coat with glowing fiber-optic threads. Harsh, contrasting neon lights (magenta and cyan) cast dramatic, moody shadows across their heavily augmented, cybernetic face. The camera uses an 85mm portrait lens with rich bokeh, blurring the busy, glowing city traffic in the deep background."
+- **Negative prompt:** "cartoon, 2D, sunny, happy, flat lighting, lowres"
+- **Tags:** cyberpunk, noir, portrait, photorealistic, cinematic
+- **Style / Reference:** photorealistic, neo-noir, cinematic 3D render
+- **Composition:** close-up portrait, shallow depth of field
+- **Color palette:** high contrast magenta and cyan, deep blacks
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260518_cyberpunk-detective.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use this to test neon reflections on skin and complex depth of field.
+
+### Suggestion: Whimsical Isometric Alchemist Lab
+- **Date:** 2026-05-18
+- **Prompt:** "A highly detailed, 3D isometric view of an alchemist's laboratory filled with bubbling, glowing potions. The room features a large brass cauldron, walls lined with intricate wooden shelves containing mysterious glowing jars, and scattered spell scrolls. Warm, ambient light emanates from a crackling fireplace and the luminescent liquids. The mood is whimsical and magical. Rendered with clean edges, sharp focus, and vibrant, saturated colors."
+- **Negative prompt:** "realistic, dark, scary, messy, perspective camera, lowres"
+- **Tags:** fantasy, interior, isometric, 3D, whimsical
+- **Style / Reference:** 3D isometric render, stylized, vibrant
+- **Composition:** isometric perspective, centered, cutaway view
+- **Color palette:** warm oranges, glowing greens and purples, rich browns
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260518_isometric-lab.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating sharp geometric rendering and glowing liquid materials.
+
+### Suggestion: Surreal Clockwork Macro
+- **Date:** 2026-05-18
+- **Prompt:** "An extreme macro, highly detailed shot of surreal, floating watch parts intermingled with fragile, crystalline butterfly wings. The tiny, intricate brass gears and glowing ruby jewels are suspended in a void of soft, ethereal, pearlescent fog. The lighting is soft and diffused, highlighting the microscopic scratches on the metal and the iridescence of the wings. The mood is ethereal and abstract. Shot with a dedicated 100mm macro lens."
+- **Negative prompt:** "people, large scale, outdoors, bright sunlight, harsh shadows"
+- **Tags:** steampunk, surreal, macro, abstract, ethereal
+- **Style / Reference:** surreal photography, extreme macro, highly detailed
+- **Composition:** extreme close-up, central focus, negative space
+- **Color palette:** brass, gold, pearlescent whites, soft ruby red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_surreal-macro.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing macro textures, soft diffusion, and abstract forms.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
