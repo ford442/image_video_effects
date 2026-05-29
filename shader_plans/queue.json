@@ -570,6 +570,13 @@
       "added": "2026-05-27T15:22:31.200548",
       "status": "completed",
       "completed_at": "2026-05-28T08:20:01.794483"
+    },
+    {
+      "filename": "2026-05-26_prismatic-void-weaver-ouroboros.md",
+      "title": "Prismatic Void-Weaver Ouroboros",
+      "added": "2026-05-26T15:11:09.110950",
+      "status": "completed",
+      "completed_at": "2026-05-29T07:56:50.578853"
     }
   ],
   "rejected": [],
@@ -794,11 +801,6 @@
       "filename": "2026-05-25_quantum-entangled-ferrofluid-engine.md",
       "title": "Quantum-Entangled Ferrofluid Engine",
       "added": "2026-05-25T15:20:45.404707"
-    },
-    {
-      "filename": "2026-05-26_prismatic-void-weaver-ouroboros.md",
-      "title": "Prismatic Void-Weaver Ouroboros",
-      "added": "2026-05-26T15:11:09.110950"
     }
   ],
   "in_progress": null
