@@ -124,7 +124,7 @@ fn getNormal(p: vec3<f32>, time: f32) -> vec3<f32> {
     return normalize(n);
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
     if (f32(id.x) >= res.x || f32(id.y) >= res.y) {
