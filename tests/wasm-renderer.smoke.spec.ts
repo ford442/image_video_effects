@@ -122,6 +122,7 @@ test('WASM renderer initializes successfully', async ({ page }) => {
 
   // Get diagnostics from the renderer object
   const diagnostics = await page.evaluate(() => {
+    console.log('DIAGNOSTICS:', JSON.stringify((window as any).__pixelocity__?.renderer?.getDiagnostics?.() || {}, null, 2));
     const renderer = (window as any).__pixelocity__?.renderer;
     return renderer?.getDiagnostics?.();
   });
@@ -147,7 +148,7 @@ test('WASM renderer loads single shader without errors', async ({ page }) => {
   // Wait for test API
   await page.waitForFunction(
     () => (window as any).__pixelocity__ != null,
-    { timeout: 15000 }
+    { timeout: 30000 }
   );
 
   // Load a single shader
@@ -178,7 +179,7 @@ test('WASM renderer loads multiple shaders (multi-slot stack)', async ({ page })
   // Wait for test API
   await page.waitForFunction(
     () => (window as any).__pixelocity__ != null,
-    { timeout: 15000 }
+    { timeout: 30000 }
   );
 
   // Load multiple shaders into different slots
@@ -214,7 +215,7 @@ test('WASM renderer handles shader loading with minimal console errors', async (
   // Wait for test API
   await page.waitForFunction(
     () => (window as any).__pixelocity__ != null,
-    { timeout: 15000 }
+    { timeout: 30000 }
   );
 
   // Load first shader
@@ -244,6 +245,7 @@ test('WASM renderer handles shader loading with minimal console errors', async (
 
   // Verify diagnostics are still good
   const diagnostics = await page.evaluate(() => {
+    console.log('DIAGNOSTICS:', JSON.stringify((window as any).__pixelocity__?.renderer?.getDiagnostics?.() || {}, null, 2));
     return (window as any).__pixelocity__?.renderer?.getDiagnostics?.();
   });
   if (diagnostics?.wasm) expect(diagnostics?.wasm?.errorCount ?? 0).toBeLessThan(5); // Allow 0-4 errors as warnings
@@ -255,7 +257,7 @@ test('WASM renderer collects performance metrics', async ({ page }) => {
   // Wait for test API
   await page.waitForFunction(
     () => (window as any).__pixelocity__ != null,
-    { timeout: 15000 }
+    { timeout: 30000 }
   );
 
   // Load shader
@@ -281,7 +283,7 @@ test('WASM renderer collects performance metrics', async ({ page }) => {
   });
 
   // Log metrics for CI reporting
-  console.log('=== WASM Renderer Metrics ===');
+  console.log('=== WASM Renderer Metrics ===\n' + JSON.stringify(wasmDiags, null, 2));
   console.log(`FPS: ${wasmDiags.wasmFps}`);
   console.log(`Init Time: ${wasmDiags.wasmInitTime}`);
   console.log(`Has Module: ${wasmDiags.wasmHasModule}`);

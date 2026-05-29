@@ -5710,6 +5710,55 @@
     ]
   },
   {
+    "id": "gen-prismatic-void-weaver-ouroboros",
+    "name": "Prismatic Void-Weaver Ouroboros",
+    "description": "A hyper-dimensional, endlessly twisting serpentine ring forged of chromatic plasma and fractal dark matter.",
+    "type": "generative",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
+    "tags": [
+      "ouroboros",
+      "void",
+      "fractal",
+      "plasma",
+      "chromatic",
+      "loop"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Twist Density",
+        "default": 5,
+        "min": 1,
+        "max": 20,
+        "step": 0.5
+      },
+      {
+        "id": "param2",
+        "name": "Plasma Glow",
+        "default": 0.8,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Void Gravity",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ]
+  },
+  {
     "id": "gen-psychedelic-layered-time-stamps",
     "name": "Psychedelic Layered Time-Stamps",
     "wgsl_code": "shaders/gen-psychedelic-layered-time-stamps.wgsl",
