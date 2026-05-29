@@ -159,7 +159,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     bloom *= bloomIntensity;
 
-    let hdrColor = color + bloom;
+    var hdrColor = color + bloom;
 
     // Ripple flash
     let rippleCount = min(u32(u.config.y), 50u);

@@ -35,6 +35,7 @@ import { reportError, getBrowserWarning } from './ErrorHandling';
 import { compileShader } from './ShaderCompilation';
 import { BLIT_WGSL, VIDEO_COPY_WGSL } from './ShaderTemplates';
 import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
+import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 
 // ── Constants matching C++ renderer ─────────────────────────────────────────
 
@@ -213,6 +214,7 @@ export class WebGPURenderer implements Renderer {
   private video: HTMLVideoElement | null = null;
   private offscreen: HTMLCanvasElement | null = null;
   private offCtx: CanvasRenderingContext2D | null = null;
+  private inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live' = 'image';
   
   // Zero-copy video optimization
   private videoExternalTexture: GPUExternalTexture | null = null;
@@ -717,14 +719,17 @@ export class WebGPURenderer implements Renderer {
       } catch { return null; }
     };
 
+    // Resolve the provided URL against the configured shader base URL.
+    const resolvedUrl = resolveShaderUrl(url);
+
     // If subgroup operations are supported, probe the -sg sibling variant first.
     // The -sg file uses `enable subgroups;` and subgroupAdd/Shuffle ops that
     // cannot be inlined alongside non-subgroup code in the same module.
     // We compile it under the same base ID so all downstream code (setSlotShader,
     // pipeline cache, bind-group lookups) requires zero changes.
-    if (this.supportsSubgroups && !id.endsWith('-sg') && url.endsWith('.wgsl')) {
-      const sgUrl = url.replace(/\.wgsl$/, '-sg.wgsl');
-      const wgsl = await tryFetch(sgUrl) ?? await tryFetch(`./shaders/${id}-sg.wgsl`);
+    if (this.supportsSubgroups && !id.endsWith('-sg') && resolvedUrl.endsWith('.wgsl')) {
+      const sgUrl = resolvedUrl.replace(/\.wgsl$/, '-sg.wgsl');
+      const wgsl = await tryFetch(sgUrl) ?? await tryFetch(resolveShaderUrl(`shaders/${id}-sg.wgsl`));
       if (wgsl) {
         const ok = this.compileShader(id, wgsl);
         if (ok) {
@@ -741,7 +746,7 @@ export class WebGPURenderer implements Renderer {
     }
 
     // Base variant (also serves as silent fallback when -sg is absent or fails)
-    const wgsl = await tryFetch(url) ?? await tryFetch(`./shaders/${id}.wgsl`);
+    const wgsl = await tryFetch(resolvedUrl) ?? await tryFetch(resolveShaderUrl(`shaders/${id}.wgsl`));
     if (!wgsl) return false;
     return this.compileShader(id, wgsl);
   }
@@ -1200,6 +1205,20 @@ export class WebGPURenderer implements Renderer {
     if (params.zoomParam4 !== undefined) this.zoomParams[3] = params.zoomParam4;
   }
 
+  /** Set the active input source (generative, image, video, webcam, or live). */
+  setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
+    this.inputSource = source;
+    
+    // For generative mode, ensure source texture is black (no input image)
+    if (source === 'generative') {
+      this.clearSourceTexture();
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[WebGPU] Input source set to: ${source}`);
+    }
+  }
+
   /** render() is a no-op; actual rendering is driven by the internal RAF loop. */
   render(): void {}
 
@@ -1272,6 +1291,18 @@ export class WebGPURenderer implements Renderer {
     // Update video frame if video is playing (called every frame for smooth playback)
     if (this.video && !this.video.paused && this.video.readyState >= 2) {
       this.updateVideoFrame();
+    } else if (this.video && this.video.readyState >= 2 && this.frameCount % 60 === 0) {
+      // Debug: log video state periodically if not playing
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[WebGPURenderer] Video state:', {
+          paused: this.video.paused,
+          readyState: this.video.readyState,
+          videoWidth: this.video.videoWidth,
+          videoHeight: this.video.videoHeight,
+          src: this.video.src?.substring(0, 100),
+          error: this.video.error?.code
+        });
+      }
     }
 
     const enabled = this.slots.filter(

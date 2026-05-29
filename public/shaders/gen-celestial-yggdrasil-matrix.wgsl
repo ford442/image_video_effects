@@ -96,7 +96,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
 
     var ro = vec3<f32>(0.0, 0.0, -5.0);
-    let rd = normalize(vec3<f32>(uv, 1.0));
+    var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Camera rotation
     let r_cam = rot(u.config.x * 0.1);

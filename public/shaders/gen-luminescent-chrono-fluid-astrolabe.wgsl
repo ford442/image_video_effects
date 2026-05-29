@@ -26,8 +26,8 @@ fn rot(a: f32) -> mat2x2<f32> {
 }
 
 // 3D Simplex noise based on iq's implementation
-fn hash(p: vec3<f32>) -> f32 {
-    let q = fract(p * vec3<f32>(17.1705, 31.7153, 51.4881));
+fn hash(p: f32) -> f32 {
+    let q = fract(vec3<f32>(p) * vec3<f32>(17.1705, 31.7153, 51.4881));
     return fract(q.x * q.y * q.z * 13.13);
 }
 
@@ -74,8 +74,12 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
         // Audio-Reactive Realignment
         let axis_shift = audio * 0.5 * sin(fi * 1.5 + time);
 
-        rp.xy = rp.xy * rot(time * 0.2 + fi * 0.5 + axis_shift);
-        rp.xz = rp.xz * rot(time * 0.3 + fi * 0.8 + axis_shift);
+        let rpxy = rp.xy * rot(time * 0.2 + fi * 0.5 + axis_shift);
+        rp.x = rpxy.x;
+        rp.y = rpxy.y;
+        let rpxz = rp.xz * rot(time * 0.3 + fi * 0.8 + axis_shift);
+        rp.x = rpxz.x;
+        rp.z = rpxz.y;
 
         let radius = 1.0 + fi * 0.5;
         let thickness = 0.05 + sin(time + fi) * 0.02;
@@ -153,8 +157,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         let diff = max(dot(n, l), 0.0);
         let view_dir = normalize(ro - p);
-        let ref = reflect(-l, n);
-        let spec = pow(max(dot(view_dir, ref), 0.0), 32.0);
+        let refl = reflect(-l, n);
+        let spec = pow(max(dot(view_dir, refl), 0.0), 32.0);
 
         if (mat == 1.0) { // Ring material - Iridescent Liquid Metal
             let base_col = vec3<f32>(1.0, 0.8, 0.2); // Warm gold

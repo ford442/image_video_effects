@@ -17,10 +17,10 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "prestart": "node scripts/generate_shader_lists.js && npm run build:manifest",
+    "prestart": "node scripts/generate_shader_lists.js --base-url=https://test.1ink.us/image_video_effects/ && npm run build:manifest",
     "start": "react-scripts start",
-    "prebuild": "(npm run wasm:build 2>/dev/null || echo '⚠️ WASM build skipped (emscripten not available)') && node scripts/generate_shader_lists.js && npm run build:manifest",
-    "build": "(npm run wasm:build 2>/dev/null || echo '⚠️ WASM build skipped (emscripten not available)') && react-scripts build",
+    "prebuild": "npm run wasm:build && node scripts/generate_shader_lists.js --base-url=https://test.1ink.us/image_video_effects/ && npm run build:manifest",
+    "build": "react-scripts build",
     "build:manifest": "tsx --tsconfig scripts/tsconfig.scripts.json scripts/build-unified-manifest.ts",
     "test": "react-scripts test",
     "eject": "react-scripts eject",

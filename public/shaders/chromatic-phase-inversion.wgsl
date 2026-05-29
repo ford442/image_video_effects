@@ -168,7 +168,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Depth at this pixel ───────────────────────────────────────────────
     let depth     = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let baseColor2 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depthPhase = depth * invDepth;
 
     // ── Spatial phase field ───────────────────────────────────────────────
@@ -264,7 +264,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let lumaOut = dot(vec3<f32>(outR, outG, outB), vec3<f32>(0.299, 0.587, 0.114));
     let phaseVar = abs(phR - phB);
     let effectIntensity = clamp(phaseVar * 0.5 + ghostBlend * 2.0, 0.0, 1.0);
-    let finalAlpha = mix(baseColor.a, 1.0, effectIntensity);
+    let finalAlpha = mix(baseColor2.a, 1.0, effectIntensity);
     textureStore(writeTexture, gid.xy, vec4<f32>(outR, outG, outB, finalAlpha));
     textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(phR, phG, phB, 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));

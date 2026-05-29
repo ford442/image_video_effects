@@ -11,6 +11,7 @@ import { useShaderRatings } from '../services/ShaderRatingIntegration';
 import { LiveStreamPanel } from './LiveStreamPanel';
 import { loadVJHistory, clearVJHistory, VJHistoryEntry } from '../services/vjHistory';
 import { VJPreset, loadPresets, deletePreset } from '../services/vjPresets';
+import { RendererSwitcher } from './RendererSwitcher';
 import '../styles/gold-glass-theme.css';
 
 // --- Types for Coordinate System ---
@@ -96,7 +97,7 @@ interface ControlsProps {
     onOpenShaderScanner?: () => void;
     // Renderer Switch Props
     activeRendererType?: 'webgpu' | 'wasm' | 'js';
-    onSwitchRenderer?: (type: 'webgpu' | 'wasm' | 'js') => void;
+    onSwitchRenderer?: (type: 'webgpu' | 'wasm' | 'js') => Promise<void>;
     // Storage Browser Props
     onOpenStorageBrowser?: () => void;
 }
@@ -609,6 +610,14 @@ const Controls: React.FC<ControlsProps> = ({
             </div>
 
                         
+            {/* --- Renderer Switcher --- */}
+            {onSwitchRenderer && (
+                <RendererSwitcher
+                    activeRendererType={activeRendererType}
+                    onSwitchRenderer={onSwitchRenderer}
+                />
+            )}
+
             {inputSource === 'image' && (
                 <>
                     <div className="control-group">

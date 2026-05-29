@@ -84,5 +84,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let finalAlpha = mix(frostAlpha * 0.8, frostAlpha, depth);
 
   textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
-  textureStore(writeDepthTexture, coord, depth);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

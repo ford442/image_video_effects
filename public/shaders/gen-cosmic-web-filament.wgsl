@@ -85,7 +85,7 @@ fn ridgedVoronoi(p: vec3<f32>, octaves: i32) -> f32 {
 }
 fn spiralWarp(p: vec3<f32>, arms: f32, pitch: f32, strength: f32) -> vec3<f32> {
   let r = length(p.xy);
-  let angle = atan(p.y, p.x);
+  let angle = atan2(p.y, p.x);
   let twist = r * pitch;
   let armPhase = fract(angle * arms / (2.0 * PI) + twist);
   let warp = sin(armPhase * 2.0 * PI) * strength;

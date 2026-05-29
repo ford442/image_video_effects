@@ -78,14 +78,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prevState = textureLoad(dataTextureC, coord, 0);
   var s1 = prevState.r;
   var s2 = prevState.g;
-  var resource = prevState.b;
+  var resourceVal = prevState.b;
   var toxin = prevState.a;
 
   // Seed on first frame
   if (time < 0.1) {
     s1 = 0.0;
     s2 = 0.0;
-    resource = 0.5;
+    resourceVal = 0.5;
     toxin = 0.0;
     // Seed species along botanical branches
     if (flora > 0.3) {
@@ -99,7 +99,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Clamp
   s1 = clamp(s1, 0.0, 2.0);
   s2 = clamp(s2, 0.0, 2.0);
-  resource = clamp(resource, 0.0, 2.0);
+  resourceVal = clamp(resourceVal, 0.0, 2.0);
   toxin = clamp(toxin, 0.0, 2.0);
 
   // Diffusion
@@ -110,7 +110,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let lapS1 = left.r + right.r + down.r + up.r - 4.0 * s1;
   let lapS2 = left.g + right.g + down.g + up.g - 4.0 * s2;
-  let lapResource = left.b + right.b + down.b + up.b - 4.0 * resource;
+  let lapResource = left.b + right.b + down.b + up.b - 4.0 * resourceVal;
   let lapToxin = left.a + right.a + down.a + up.a - 4.0 * toxin;
 
   // Ecosystem dynamics modulated by botanical structure
@@ -120,15 +120,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resourceRegen = 0.001 + flora * 0.003; // More light on branches
   let dt = 0.5;
 
-  let food1 = s1 * resource * growthRate1;
-  let food2 = s2 * resource * growthRate2;
+  let food1 = s1 * resourceVal * growthRate1;
+  let food2 = s2 * resourceVal * growthRate2;
   let competition = s1 * s2 * 0.1;
   let toxinProduction1 = s1 * 0.005 * flora;
   let toxinProduction2 = s2 * 0.003 * flora;
   let toxinDamage = toxin * 0.02;
 
-  resource += resourceRegen - food1 - food2;
-  resource += lapResource * 0.1;
+  resourceVal += resourceRegen - food1 - food2;
+  resourceVal += lapResource * 0.1;
 
   s1 += food1 - competition - toxinDamage + lapS1 * 0.05;
   s2 += food2 - competition - toxinDamage + lapS2 * 0.05;
@@ -142,7 +142,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   s1 = clamp(s1, 0.0, 2.0);
   s2 = clamp(s2, 0.0, 2.0);
-  resource = clamp(resource, 0.0, 2.0);
+  resourceVal = clamp(resourceVal, 0.0, 2.0);
   toxin = clamp(toxin, 0.0, 2.0);
 
   // Mouse interaction nurtures ecosystem
@@ -150,7 +150,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseDown = u.zoom_config.w;
   let mouseDist = length(uv - mousePos);
   let mouseInfluence = smoothstep(0.1, 0.0, mouseDist) * mouseDown;
-  resource += mouseInfluence * 0.5;
+  resourceVal += mouseInfluence * 0.5;
   toxin -= mouseInfluence * 0.3;
   toxin = max(toxin, 0.0);
 
@@ -171,13 +171,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   s2 = clamp(s2, 0.0, 2.0);
 
   // Store state
-  textureStore(dataTextureA, coord, vec4<f32>(s1, s2, resource, toxin));
+  textureStore(dataTextureA, coord, vec4<f32>(s1, s2, resourceVal, toxin));
 
   // Visualization: blend botanical base with ecosystem overlay
   let botanicalColor = vec3<f32>(0.15 + flora * 0.4, 0.35 + flora * 0.3, 0.25 + flora * 0.35);
   let colorS1 = vec3<f32>(0.0, 0.9, 1.0) * min(s1, 1.0);
   let colorS2 = vec3<f32>(1.0, 0.2, 0.6) * min(s2, 1.0);
-  let colorResource = vec3<f32>(0.3, 0.8, 0.3) * min(resource, 1.0) * 0.3;
+  let colorResource = vec3<f32>(0.3, 0.8, 0.3) * min(resourceVal, 1.0) * 0.3;
   let colorToxin = vec3<f32>(0.4, 0.0, 0.5) * min(toxin, 1.0) * 0.5;
 
   var displayColor = colorS1 + colorS2 + colorResource + colorToxin;

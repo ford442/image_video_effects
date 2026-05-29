@@ -1,289 +1,209 @@
-# WASM Renderer: Gap Analysis & Production Readiness Blockers
+# WASM Renderer: Gap Analysis & Production Readiness (May 2026)
 
-> **Type:** Epic / Tracking Issue  
+> **Type:** Epic / Tracking Document  
 > **Labels:** `wasm`, `renderer`, `infrastructure`, `help wanted`  
-> **Related:** `wasm_renderer/COMPLETENESS_ANALYSIS.md`, `wasm_renderer/ARCHITECTURE_ANALYSIS.md`, `wasm_renderer/RENDERER_PLAN.md`
+> **Current as of:** May 2026 (post-Phase 3 commits)  
+> **Related:** `wasm_renderer/STATUS.md` (over-optimistic), `wasm_renderer/README.md`, `WASM_TESTING.md`, `WASM_SMOKE_TEST.md`
 
 ---
 
-## TL;DR
+## TL;DR — Current Reality
 
-The WASM renderer path is **architecturally present but functionally non-viable** today. `public/wasm/pixelocity_wasm.js` is a **dummy stub** (resolves to `{}`), so the compiled `.wasm` binary (79 KB) is unreachable from the browser. Even if the loader were fixed, the underlying C++ renderer is only **~30 % feature-complete** compared to the TypeScript renderer. The app currently cascades: **TS WebGPU → WASM (fails silently) → Canvas2D fallback**.
+The C++ WASM renderer has received **significant investment** (multi-slot pipeline, depth, audio, RAII, async capture, workgroup parsing, device-lost handling) between March and May 2026. The compute core is real, compiles cleanly via Emscripten + emdawnwebgpu, and the JS bridge + TypeScript wrapper expose a rich API.
 
-**Yes, we still need the C++ code.** It is the actual WASM renderer implementation. Without it, there is nothing to compile. The problem is that the build pipeline produces a broken loader, the JS/C++ API boundary has signature mismatches, and the C++ core is missing critical features (multi-slot stacking, depth maps, audio, recording, etc.).
+**However, the WASM path is still not a viable drop-in renderer.**
 
----
+- The renderer **initializes successfully** (WebGPU device + all textures/buffers/pipelines) and can execute the full 700+ WGSL compute shaders.
+- **It produces zero visible output on the canvas.** `Render()` only issues compute passes and texture copies. The render pipeline (dead code) and surface presentation path were never wired up. No `BeginRenderPass`, no surface configuration, no texture view for the HTML canvas.
+- **Critical integration bugs** in `RendererManager` mean slot changes and parameter updates from the UI are never forwarded to the C++ side when WASM is active.
+- The app **never calls `setInputSource`** on any renderer, so generative/procedural mode support in the C++ is unreachable.
+- Build/CI hygiene is still broken: `npm run build` silently skips (or swallows hard failures from) the WASM build on machines without Emscripten.
 
-## 1. Current Behavior vs. Expected Behavior
+**Result:** `?renderer=wasm` produces a black or frozen canvas while the C++ side burns CPU/GPU in the background doing invisible work. The cascade remains **TS WebGPU → (WASM that silently fails to present) → Canvas2D fallback** in practice.
 
-### Current Behavior
-- `npm run wasm:build` runs `wasm_renderer/build.sh`.
-- If `emcc` is missing (CI, fresh clones, most dev machines), the script silently writes a **dummy stub** to `public/wasm/pixelocity_wasm.js`:
-  ```js
-  window.PixelocityWASM = function() { return Promise.resolve({}); };
-  ```
-- `npm run prebuild` wraps this with `2>/dev/null || echo '⚠️ WASM build skipped ...'`, so failures are **never surfaced**.
-- At runtime, `useWASM.ts` dynamically imports the stub. `loadWASM()` "succeeds" but the module has **zero usable exports** (`_initWasmRenderer`, `ccall`, etc. are `undefined`).
-- `RendererManager.ts` tries WASM second in the cascade, fails, and falls through to the Canvas2D fallback or the TS WebGPU renderer.
-
-### Expected Behavior
-- `npm run build` produces a **real Emscripten JS glue** (`pixelocity_wasm.js`) alongside the `.wasm` binary.
-- The WASM renderer loads successfully and achieves **feature parity** with the TS renderer.
-- `RendererManager.ts` can select WASM as a genuine high-performance backend.
+The old root GAP doc (pre-Phase work) was pessimistic but directionally correct on viability. The `wasm_renderer/STATUS.md` and `README.md` claims of "Phase 3 Complete" and "all features ✅" are not supported by the code.
 
 ---
 
-## 2. Root Cause: Build & Integration Layer Is Broken
+## 1. Current Status (Overall Health)
 
-| Layer | Status | Problem |
-|-------|--------|---------|
-| **Build script** | ⚠️ Partial | `build.sh` creates dummy stub when `emcc` absent; no CI enforcement |
-| **CMake** | 🔴 Broken | Double `add_executable()`, missing `renderer.cpp`, undefined `${SOURCES}` |
-| **Emscripten glue** | 🔴 Missing | `public/wasm/pixelocity_wasm.js` is a 1-line stub, not real Emscripten output |
-| **JS/C++ API boundary** | 🔴 Mismatched | `updateUniforms()` passes 8 args from JS; C++ export accepts 0 |
-| **Bridge** | 🟡 Incomplete | `wasm_bridge.js` missing wrappers for slots, depth, recording, input sources |
-| **C++ core** | 🟡 ~30 % | Single-pass only; no multi-slot, no audio uniforms, no depth upload, no recording |
+| Aspect                    | Assessment                          | Evidence |
+|---------------------------|-------------------------------------|----------|
+| C++ compute engine        | Advanced (Phase 2.5–3 quality)     | Full multi-slot, depth upload, audio to both buffers, RAII, workgroup parser, async readback |
+| Presentation / output     | **Completely missing**             | Zero `BeginRenderPass` or surface usage anywhere in renderer.cpp |
+| TS integration (manager)  | **Broken for WASM**                | `setSlotShader`, `updateSlotParams` only forward to `WebGPURenderer` |
+| App → renderer wiring     | Incomplete                         | No `setInputSource` calls; render() args ignored by WASM path |
+| Build / CI                | Fragile / misleading               | Artifacts committed; prebuild swallows; no emsdk in CI |
+| Documentation             | Misleading                         | STATUS.md claims complete; reality does not match |
+| End-to-end usability      | Non-functional                     | Cannot replace TS renderer today |
 
-### 2.1 Files Involved
-- `wasm_renderer/build.sh`
-- `wasm_renderer/CMakeLists.txt`
-- `public/wasm/pixelocity_wasm.js` (stub)
-- `public/wasm/pixelocity_wasm.wasm` (real but unreachable)
-- `src/hooks/useWASM.ts`
-- `src/renderer/WASMRenderer.ts`
-- `src/renderer/RendererManager.ts`
-- `wasm_renderer/wasm_bridge.js`
-- `wasm_renderer/main.cpp`
-- `wasm_renderer/renderer.cpp`
-- `wasm_renderer/renderer.h`
+**Bottom line:** Excellent low-level WebGPU C++ work that stopped short of being a usable renderer. The "last mile" (presentation + glue) was never finished.
 
 ---
 
-## 3. Feature Parity Matrix: TS Renderer vs. WASM Renderer
+## 2. What's Working (Evidence-Based)
 
-| Feature | TS Renderer | WASM Renderer | Priority |
-|---------|-------------|---------------|----------|
-| Single-pass compute shaders | ✅ | ✅ | — |
-| Multi-slot shader stacking (3 slots, chained / parallel) | ✅ | ❌ **MISSING** | **Critical** |
-| Ping-pong texture management | ✅ | ⚠️ Partial | — |
-| Fixed 2048×2048 internal resolution | ✅ | ✅ | — |
-| Static images | ✅ | ✅ | — |
-| Video files / webcam | ✅ | ✅ | — |
-| HLS live streams | ✅ | ❌ **MISSING** | High |
-| Generative / procedural shaders | ✅ | ❌ **MISSING** | High |
-| AI depth estimation → depth texture | ✅ | ❌ Stub only | **Critical** |
-| Depth-aware shader effects | ✅ | ⚠️ Untested | Medium |
-| Mouse position / clicks / ripples | ✅ | ✅ | — |
-| Multi-touch | ✅ | ❌ **MISSING** | Medium |
-| Audio analyzer (bass / mid / treble) | ✅ | ❌ **MISSING** | High |
-| Audio-reactive shader uniforms | ✅ | ❌ **MISSING** | High |
-| Video recording (8 s WebM clips) | ✅ | ❌ **MISSING** | High |
-| Screenshots | ✅ | ❌ **MISSING** | Medium |
-| BroadcastChannel remote control | ✅ | ❌ **MISSING** | Medium |
-| Shader caching / precompilation | ✅ | ❌ **MISSING** | Medium |
-| Dynamic canvas resize | ✅ | ❌ **MISSING** | Medium |
-| High-DPI / Retina | ✅ | ⚠️ Partial | Medium |
-| FPS counter | ✅ | ✅ | — |
-| GPU timestamp profiling | ✅ | ❌ **MISSING** | Low |
-| Frame-rate throttling / battery awareness | ✅ | ❌ **MISSING** | Low |
+- **Device & resources**: `Initialize()` creates instance/adapter/device/queue with proper async callbacks + error handlers (device-lost, uncaptured-error). All 13 bind-group entries + samplers + uniform/extra/plasma buffers + 2048² textures created.
+- **Multi-slot pipeline**: `Render()` correctly walks enabled slots[0..2], chooses chained vs parallel read source, writes per-slot `zoom_params` via `WriteSlotParams`, dispatches with correct parsed workgroup sizes, does final feedback copies. Separate `QueueSubmit` per slot (heavy but intentional for uniform ordering).
+- **Shader loading**: `LoadShader` parses `@workgroup_size`, compiles WGSL via Dawn, caches pipelines. Matches the universal bind-group layout from AGENTS.md.
+- **Depth**: `UpdateDepthMap` does `wgpuQueueWriteTexture` into `depthTextureRead_` (with zero-fill for partial uploads). Respects canvas size.
+- **Audio**: `SetAudioData` → `UpdateUniformBuffer` writes to `extraBuffer_[0..2]` and `plasmaBuffer_[0]` as vec4(bass,mid,treble,0). Both shader conventions satisfied.
+- **Capture/Recording bridge**: `beginFrameCapture` + `mapAsync` + `ReadCapturedFrame` (float→u8 conversion) + JS polling + `captureFrame()`/`startRecording()` (the latter uses `canvas.captureStream` on the input canvas element, bypassing internal textures).
+- **Resize**: `ResizeCanvas` / `RecreateTextures` properly releases + rebuilds all size-dependent textures (including data A/B/C, depth, ping-pongs, readback buffer).
+- **Generative placeholder**: 1×1 black `emptyTexture_` + `InputSource::Generative` path exists in C++.
+- **Bridge & TS wrapper**: `wasm_bridge.js` (public version) + `WASMRenderer.ts` expose `setSlot*`, `updateDepthMap`, `updateAudioData`, `captureFrame`, `startRecording`, `resizeCanvas`, etc. Diagnostics present.
+- **Artifacts**: `public/wasm/pixelocity_wasm.{js,wasm}` (66 KB + 96 KB, May 26 build) are genuine Emscripten output with correct magic and exports (not the old `Promise.resolve({})` stub). `build.sh` now hard-fails without `emcc`.
 
 ---
 
-## 4. Critical C++ Code Gaps
+## 3. What's Broken / Incomplete
 
-The C++ source (~1,560 lines across `main.cpp`, `renderer.cpp`, `renderer.h`) is **real and compiles**, but several core subsystems are missing or stubbed:
+### 3.1 No Pixels Ever Reach the Canvas (Critical Blocker)
+- `Render()` ends after compute + `CopyTextureToTexture` feedback. No render pass, no `wgpuSurfaceGetCurrentTexture`, no `BeginRenderPass`, no `Draw`.
+- `CreateRenderPipeline()` builds a dead full-screen sampler of `writeTexture_` but is never used.
+- The canvas element passed to `initWasmRenderer` is only used for width/height; its WebGPU context (if any) is never acquired or configured by the C++ side.
+- **Observable result**: Switching to WASM shows black/frozen output. The TS renderer (or previous frame) owns the canvas.
 
-### 4.1 Multi-Slot Pipeline (Biggest Architectural Blocker)
-The TS renderer runs up to 3 shaders in sequence (`Slot 0 → Slot 1 → Slot 2`) with independent parameters and chained texture binding. The C++ `WebGPURenderer::Render()` only executes **one** compute pass. Adding multi-slot support requires:
-- Per-slot state (`ShaderSlot` struct, `MAX_SHADER_SLOTS = 3`)
-- Chained compute passes with ping-pong texture swapping
-- Per-slot bind-group updates for `readTexture` / `writeTexture`
-- JS bridge wrappers: `setSlotShader(slot, id)`, `setSlotParams(slot, params)`
+### 3.2 RendererManager Forwards Almost Nothing to WASM
+- `setSlotShader(index, id)`: only `if (instanceof WebGPURenderer)`
+- `updateSlotParams(...)`: only `if (instanceof WebGPURenderer)`
+- `loadShaders`, several other helpers have the same one-sided dispatch.
+- App code often does `(rendererRef.current as any).setSlotShader(...)` — fragile and bypasses the manager's (already incomplete) logic.
+- Consequence: changing shaders in slots or moving sliders has no effect under WASM.
 
-**Effort estimate:** 2–3 weeks.
+### 3.3 Input Source & Generative Never Wired
+- Zero call sites for `renderer.setInputSource(...)` or `WasmBridge.setInputSource` in `App.tsx`, `WebGPUCanvas.tsx`, or `Controls.tsx`.
+- Video/webcam paths work because `updateVideoFrame()` is called on the active renderer (and WASM implements it).
+- Generative shaders and explicit "live" / "generative" source selection are no-ops for WASM.
 
-### 4.2 Depth Map Upload
-`WebGPURenderer::UpdateDepthMap()` is declared in `renderer.h` but **empty** in `renderer.cpp`. The TS renderer uploads a `Float32Array` from the Xenova DPT-Hybrid-MIDAS model to `readDepthTexture` every frame. WASM needs:
-- `wgpuQueueWriteTexture` path for single-channel `R32Float` data
-- JS bridge: `updateDepthMap(data: Float32Array, w, h)`
+### 3.4 Recording & Screenshots Are Half-Real
+- `startRecording()` in the bridge ignores the WASM renderer entirely and does `canvas.captureStream(60)` + `MediaRecorder` on the JS canvas (which may be blank when WASM is "active").
+- The internal `captureFrame()` / readback path works in isolation but is not used by the app's recording UI.
 
-**Effort estimate:** 3–5 days.
+### 3.5 Partial Interface Implementation
+WASMRenderer implements many optionals but is missing:
+- `updateAudioFrequencyBins` (full FFT → extraBuffer)
+- `updateSlotParams` (aggregate form used by WebGPUCanvas effect)
+- `getSlotState`, `getGPUTimings`, `getSupportsDeepWorkgroup`, `setRecording`/`setRecordingMode`
+- `getFrameImage`
 
-### 4.3 Audio Reactivity
-`main.cpp` has `SetAudioData(bass, mid, treble)` but the data **never reaches shader uniforms**. The TS renderer pipes audio into `extraBuffer` / `plasmaBuffer`. WASM needs:
-- Audio fields in the uniform struct (or a dedicated audio buffer)
-- Uniform upload path in `renderer.cpp`
-- JS bridge: `updateAudioData(bass, mid, treble)`
-
-**Effort estimate:** 1 week.
-
-### 4.4 Recording / Screenshots
-Completely absent from C++. The TS renderer uses `canvas.captureStream(60)` + `MediaRecorder`. WASM would need:
-- Frame readback: `CopyTextureToBuffer` → `mapAsync`
-- Either JS-side `MediaRecorder` integration via `EM_JS` macros, or raw buffer export to JS for encoding
-
-**Effort estimate:** 1–2 weeks.
-
-### 4.5 Generative Shader Input
-Generative shaders (e.g., `gen-orb`, `gen-nebula`) do not need an input image. The TS renderer binds a black/empty texture when `inputSource === 'generative'`. WASM hard-codes image/video upload paths and has no `InputSource::Generative` enum.
-
-**Effort estimate:** 2–3 days.
-
-### 4.6 Dynamic Workgroup Sizes
-The TS renderer **parses `@workgroup_size` from WGSL source** and dispatches accordingly. The C++ renderer hard-codes `(8, 8, 1)` in `Render()`. Some shaders use `(64, 1, 1)` or `(256, 1, 1)`; these will produce incorrect results or GPU errors under WASM.
-
-**Effort estimate:** 3–5 days.
+### 3.6 Other Runtime Risks
+- Every slot = separate encoder + submit (no single-encoder multi-pass).
+- Readback path assumes RGBA32Float internal format and does manual float→u8 (correct for capture but highlights that the "final" texture is never presented as 8-bit either).
+- No high-DPI handling, no dynamic context loss recovery beyond the callbacks.
+- `src/wasm/wasm_bridge.js` (bundled) is older than `public/wasm/wasm_bridge.js` (copied at build) → skew risk.
 
 ---
 
-## 5. API Boundary Mismatches
+## 4. Build & Integration Issues
 
-| JS Side (`wasm_bridge.js`) | C++ Side (`main.cpp`) | Issue |
-|----------------------------|----------------------|-------|
-| `updateUniforms(time, mouseX, mouseY, mouseDown, p1, p2, p3, p4)` — 8 args | `void updateUniforms()` — 0 args | **Stack corruption / UB** |
-| `_initWasmRenderer(width, height, agentCount)` | `initWasmRenderer(width, height)` — no agent count | Signature drift; `useWASM.ts` references stale API |
-| `setSlotShader(slot, id)` | **Does not exist** | Missing entirely |
-| `updateDepthMap(data, w, h)` | `UpdateDepthMap()` stub | No implementation |
-| `setRecording(isRecording)` | **Does not exist** | Missing entirely |
-| `setInputSource(source)` | **Does not exist** | Missing entirely |
+| Problem | Location | Impact |
+|---------|----------|--------|
+| `prebuild` / `build` swallow failures | `package.json:22,27` | `npm run build` succeeds while shipping stale WASM or nothing |
+| No Emscripten in CI | `.github/workflows/ci.yml` | `wasm:build` either skipped or hard-fails silently; artifacts never regenerated in PRs |
+| Artifacts committed | `public/wasm/`, `build/wasm/`, `wasm_renderer/build/` | Drift inevitable; 96 KB binary in git |
+| Two bridge copies | `src/wasm/wasm_bridge.js` vs `public/wasm/wasm_bridge.js` | Version skew between bundled imports and runtime-loaded glue |
+| `build.sh` improved but still env-sensitive | `wasm_renderer/build.sh` | Hard-coded candidate paths for emsdk_env.sh |
+| CMake is secondary | `CMakeLists.txt` comment says "use build.sh" | Maintainers must keep two export lists in sync |
 
-**Recommendation:** Consolidate all C API exports into a single `extern "C"` block with consistent `wasm*` naming (see `RENDERER_PLAN.md` §1.2 for a full proposed API).
-
----
-
-## 6. Build System Issues
-
-### 6.1 `CMakeLists.txt` is broken
-- Two `add_executable()` calls — the second overwrites the first, dropping `main.cpp`.
-- `renderer.cpp` is **not listed** in source files.
-- `${SOURCES}` and `${HEADERS}` are referenced but never defined.
-- Result: CMake path cannot produce a working binary even if `emcc` is present.
-
-### 6.2 `build.sh` silently degrades
-```bash
-if ! command -v emcc &> /dev/null; then
-    echo "/* stub */ window.PixelocityWASM = function() { return Promise.resolve({}); };" \
-        > "$OUTPUT_DIR/pixelocity_wasm.js"
-    exit 0  # Exits SUCCESS — build appears green
-fi
-```
-This means:
-- CI passes even when the WASM renderer is not built.
-- Developers may not realize they are shipping a stub.
-- The real `pixelocity_wasm.wasm` (from a previous build) sits next to a fake `.js`, creating a **misleading artifact pair**.
-
-### 6.3 `package.json` prebuild silently skips
-```json
-"prebuild": "(npm run wasm:build 2>/dev/null || echo '⚠️ WASM build skipped ...') && node scripts/generate_shader_lists.js"
-```
-Failures are swallowed by `2>/dev/null` and the `||` clause.
+The old stub behavior is gone (good), but the "silent degradation" problem moved up one layer into the npm scripts.
 
 ---
 
-## 7. Do We Still Need the C++ Code?
+## 5. Feature Parity Gaps (vs TypeScript Renderer)
 
-**Yes.**
+| Feature                          | TS WebGPURenderer          | WASM (C++)                          | Status |
+|----------------------------------|----------------------------|-------------------------------------|--------|
+| Single-pass WGSL compute         | ✅                         | ✅ (full bind group, dynamic wg)   | Good |
+| 3-slot chained / parallel        | ✅                         | ✅ (per-slot submits + param patch) | Core works |
+| Depth map (AI)                   | ✅                         | ✅ (QueueWriteTexture)             | Wired |
+| 3-band audio (bass/mid/treble)   | ✅                         | ✅ (extra + plasma)                | Wired |
+| Full FFT bins                    | ✅                         | ❌ (only 3-band)                   | Partial |
+| Mouse + ripples                  | ✅                         | ✅                                 | Good |
+| Image / video / webcam upload    | ✅                         | ✅ (persistent staging for video)  | Good |
+| Generative (no input)            | ✅                         | ⚠️ API exists, never called        | Unreachable |
+| HLS live streams                 | ✅ (via video element)     | ⚠️ Same path, untested             | Untested |
+| Dynamic canvas resize            | ✅                         | ✅ (RecreateTextures)              | Good |
+| Screenshot / captureFrame        | ✅                         | ✅ (internal) / JS side            | Half |
+| 8s WebM recording                | ✅ (canvas.captureStream)  | ⚠️ JS canvas only (may be blank)   | Broken when active |
+| Shader caching / precompile      | ✅                         | ⚠️ Per-load compile, no cache      | Basic |
+| GPU timing queries               | ✅                         | ❌                                 | Missing |
+| `setRecording` / loop mode       | ✅                         | ❌ (different API)                 | Interface gap |
+| BroadcastChannel remote          | ✅                         | ❌ (JS layer only)                 | N/A |
+| Presentation to canvas           | ✅ (full WebGPU render pass) | ❌ **Nothing**                    | **Blocker** |
 
-The C++ code is not a wrapper around the TS renderer — it is a **separate native implementation** of the WebGPU compute pipeline. The performance rationale for WASM is:
-- Reduce JS heap overhead (~200 MB → ~150 MB target)
-- Eliminate per-frame `Float32Array` conversions for video uploads (persistent staging buffer)
-- Faster shader compilation via direct WASM calls
-- Potential for SIMD pixel conversion and fewer texture copies
-
-**If we remove the C++ code, there is nothing to compile to `.wasm`.** The TS renderer cannot be transpiled to WASM; it is a fundamentally different runtime path.
-
-However, the C++ code as it stands is **not production-ready**. It is a partial implementation that needs significant investment to reach parity.
-
----
-
-## 8. Proposed Next Steps (Roadmap)
-
-### Phase 0: Fix the Build & Loader (Days)
-- [ ] **Restore working Emscripten build in CI**
-  - Add `emsdk` setup to `.github/workflows/ci.yml`
-  - Fail the build if `emcc` is missing (remove silent stub generation)
-  - Produce real `pixelocity_wasm.js` glue alongside `.wasm`
-- [ ] **Fix `CMakeLists.txt`**
-  - Remove duplicate `add_executable()`
-  - Explicitly list `main.cpp renderer.cpp`
-  - Or deprecate CMake and document `build.sh` as the blessed path
-- [ ] **Fix `updateUniforms` API mismatch**
-  - Align JS bridge signature with C++ export (or vice versa)
-- [ ] **Add null-checks to `wasm_bridge.js`**
-  - Every `_malloc` must have a corresponding `_free` in `try/finally`
-
-### Phase 1: Core Architecture (Weeks)
-- [ ] **Implement multi-slot shader pipeline** (3 slots, chained / parallel)
-  - Add `ShaderSlot` state to `renderer.h`
-  - Modify `Render()` to dispatch chained compute passes
-  - Add JS bridge: `setSlotShader`, `setSlotParams`, `setSlotMode`
-- [ ] **Wire up audio data to uniforms / `extraBuffer`**
-- [ ] **Implement `UpdateDepthMap`** (float32 upload to `depthTextureRead_`)
-- [ ] **Add generative shader support** (bind empty texture when no input)
-
-### Phase 2: Features & Polish (Weeks)
-- [ ] **Recording / screenshots**
-  - Frame readback via `CopyTextureToBuffer` + `mapAsync`
-  - `EM_JS` wrappers for `MediaRecorder` or export raw frames to JS
-- [ ] **Persistent staging buffer** for video uploads (eliminate per-frame 64 MB heap allocs)
-- [ ] **Dynamic workgroup size parsing** from WGSL source (match TS behavior)
-- [ ] **Dynamic canvas resize** (runtime texture recreation)
-
-### Phase 3: Cleanup & Hardening (Weeks)
-- [ ] **Remove dead Physarum code** from `main.cpp` (~250 lines)
-- [ ] **RAII wrappers** for all raw WebGPU pointers
-- [ ] **Device-lost callbacks** and shader compilation error reporting
-- [ ] **Synchronize `useWASM.ts` / `WASMRenderer.ts` / `wasm_bridge.js`** with `main.cpp` exports
-- [ ] **Add WASM renderer tests** (even if just Emscripten shell tests)
+**Highest-priority missing pieces for usability:**
+1. End-to-end presentation (render pass + surface or texture-to-canvas path).
+2. Complete `RendererManager` forwarding for all WASM methods.
+3. App-level calls to `setInputSource` + per-renderer input mode handling.
+4. Wire `updateSlotParams` or normalize the slot param API.
+5. CI + build that actually produces fresh artifacts or fails visibly.
 
 ---
 
-## 9. Estimated Effort
+## 6. Testing & Validation Status
 
-Based on `RENDERER_PLAN.md` and `COMPLETENESS_ANALYSIS.md`:
-
-| Phase | Duration | Outcome |
-|-------|----------|---------|
-| Phase 0 | 2–3 days | WASM loads without crashing; real JS glue in CI |
-| Phase 1 | 3–4 weeks | Multi-slot, audio, depth, generative input work |
-| Phase 2 | 2–3 weeks | Recording, staging buffer, dynamic workgroups |
-| Phase 3 | 2–3 weeks | Cleanup, RAII, error handling, tests |
-| **Total** | **~8–10 weeks (1 developer)** | Full parity with TS renderer |
+- **Unit tests**: `src/__tests__/WASMBridge.test.ts` only mocks the bridge surface. No real WASM execution.
+- **Manual smoke docs**: `WASM_SMOKE_TEST.md` and `WASM_TESTING.md` are high-quality and describe `?renderer=wasm`, `getDiagnostics()`, runtime switching, and a checklist. They assume a working build.
+- **No automated parity or visual regression tests** for the WASM path.
+- **No performance numbers** (the original motivation).
+- **No Playwright / CI job** that actually builds with emsdk and exercises `?renderer=wasm`.
+- In practice, the only way to know it is broken is to try it manually with a local emsdk.
 
 ---
 
-## 10. Decision Points for Maintainers
+## 7. Recommended Next Steps / Roadmap (Prioritized)
 
-1. **Should WASM be a supported backend for the next release?**
-   - If **yes**, we should commit to Phase 0 immediately and schedule Phase 1.
-   - If **no**, we should remove the WASM toggle from `LiveStudioTab.tsx`, delete the stub artifacts, and archive `wasm_renderer/` to avoid confusing new contributors.
+### Phase 0 — Make It Visible (1–3 days, unblocks everything)
+- Implement the missing presentation path in C++ (configure surface from the canvas or, simpler, expose `getOutputTexture()` + let JS do a blit, or add a proper render pass that writes to a surface configured in JS).
+- Or (faster): after the last compute, copy `writeTexture_` to a shared staging texture that the TS side can sample in its own render pass when WASM is active.
+- Add a visible "WASM presents: NO OUTPUT" warning banner when the WASM renderer is selected but presentation is not wired.
 
-2. **CMake or `build.sh`?**
-   - `CMakeLists.txt` is currently broken. Fixing it is trivial, but maintaining two build paths is overhead. Pick one and delete the other.
+### Phase 1 — Glue & Correctness (1 week)
+- Fix `RendererManager`: add `else if (instanceof WASMRenderer)` branches for `setSlotShader`, `setSlotParams`/`updateSlotParams`, `setSlotMode`, `loadShader`, `updateSlotParams`, etc.
+- Add `updateSlotParams` (or a normalized `setActiveSlotParams`) to WASMRenderer that calls the per-slot C++ API for the active slot.
+- Audit every `(as any).foo` call site in App.tsx / WebGPUCanvas and route through the manager.
+- Call `setInputSource(...)` from the input-source change handlers (map 'generative' → 4, etc.) for both renderers.
 
-3. **Should `prebuild` fail hard when `emcc` is missing?**
-   - Current behavior: silent skip → developers ship a stub unknowingly.
-   - Recommended: make `wasm:build` a **separate, explicit step** (not part of `prebuild`) and fail loudly if `emcc` is absent.
+### Phase 2 — Build & CI (3–5 days)
+- Add Emscripten + emdawnwebgpu setup to a new "wasm" job or optional matrix in CI (use emsdk action or container).
+- Remove the `2>/dev/null || echo` wrappers or make `wasm:build` a required step that fails the build when artifacts are missing/stale.
+- Decide: commit artifacts (with hash manifest) **or** treat WASM as an explicit opt-in dev-only backend.
+- Sync the two `wasm_bridge.js` copies or make one the source of truth and copy in a build step.
+
+### Phase 3 — Parity & Hardening (2–3 weeks)
+- Implement missing interface methods (`updateAudioFrequencyBins`, full recording integration using internal readback + JS encoding, `setRecording` adapter).
+- Add WASM smoke + visual parity tests (even if just "does FPS stay > 30 and no console errors for 10 shaders").
+- Performance benchmark (frame time, memory, shader compile) vs TS renderer on 3–5 representative shaders.
+- Clean up per-slot submit pattern if it causes measurable overhead.
+- RAII + error handling is already good; add shader hot-reload / recompilation path.
+
+### Decision Point for Maintainers
+**Do we want WASM as a supported backend in the next 3 months?**
+
+- **Yes** → Commit to Phase 0 + 1 immediately. The C++ core is worth finishing.
+- **No** → Remove the toggle, the `?renderer=wasm` path, the dead `wasm_renderer/` docs that claim completion, and the committed binaries. Keep the C++ as a research artifact or delete it to reduce confusion. The TS renderer is the only production path.
 
 ---
 
-## Appendix: Quick Diagnostic Commands
+## Appendix: Quick Diagnostics (Still Valid)
 
 ```bash
-# Check if the JS glue is a stub
-grep -c "Promise.resolve({})" public/wasm/pixelocity_wasm.js
-# If result > 0, you are shipping a dummy loader.
+# Is the glue a stub?
+grep -c "Promise.resolve({})" public/wasm/pixelocity_wasm.js   # should be 0
 
-# Check if the real .wasm exists
-ls -lh public/wasm/pixelocity_wasm.wasm
+# Real build?
+ls -lh public/wasm/pixelocity_wasm.wasm   # ~96 KB, starts with \0asm
 
-# Verify emcc is available
-which emcc || echo "Emscripten NOT installed — WASM build will produce a stub"
+# In browser console with WASM active:
+window.__rendererManager?.getDiagnostics()
+# Look for rendererType:"wasm", wasm.initialized:true, but also visually inspect canvas
 
-# Check CMake validity
-cd wasm_renderer && cmake -B build . 2>&1 | head -20
+# Force it:
+http://localhost:3000/?renderer=wasm
 ```
 
 ---
 
-*Issue drafted from analysis of `wasm_renderer/` source, `src/renderer/` integration layer, and CI build configuration. See linked analysis docs in `wasm_renderer/` for deeper technical detail.*
+*Analysis performed May 2026 by direct source inspection of `wasm_renderer/{main.cpp,renderer.{h,cpp},build.sh,CMakeLists.txt,wasm_bridge.js}`, `src/renderer/{RendererManager.ts,WASMRenderer.ts,WebGPURenderer.ts,types.ts}`, `src/components/WebGPUCanvas.tsx`, `src/App.tsx`, package.json, CI yaml, committed artifacts, and git history since April 2026. The gap between "advanced compute prototype" and "usable renderer" is the central finding.*
+

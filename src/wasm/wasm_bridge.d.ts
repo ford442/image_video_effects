@@ -28,7 +28,7 @@ export function setMouseDown(down: boolean): void;
 export function updateAudioData(bass: number, mid: number, treble: number): void;
 export function updateDepthMap(data: Float32Array, width: number, height: number): void;
 export function setInputSource(
-  source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative'
+  source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative' | 'live'
 ): void;
 export function addRipple(x: number, y: number): void;
 export function clearRipples(): void;
@@ -89,7 +89,7 @@ export interface WasmRenderer {
   setMouseDown(down: boolean): void;
   updateAudioData(bass: number, mid: number, treble: number): void;
   updateDepthMap(data: Float32Array, width: number, height: number): void;
-  setInputSource(source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative'): void;
+  setInputSource(source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative' | 'live'): void;
   addRipple(x: number, y: number): void;
   clearRipples(): void;
   getFPS(): number;

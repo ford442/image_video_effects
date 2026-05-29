@@ -5032,6 +5032,335 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Use for testing volumetric light shafts, high-contrast grading, and monochromatic filters.
 
+### Suggestion: Steampunk Tsunami
+- **Date:** 2026-10-31
+- **Prompt:** "A chaotic, desperate scene of a massive tsunami wave crashing into an intricate steampunk harbor city. The towering, dark, and churning water dwarfs the brick tenements and brass smokestacks. The lighting is heavily overcast and bleak, casting murky shadows that emphasize the dirt, desperation, and raw power of nature over the mechanical urban landscape. The mood is dark, cinematic, and moody. Captured with a low, eye-level perspective to immerse the viewer in the unfolding disaster."
+- **Negative prompt:** "bright, cheerful, clean, modern, sci-fi, surreal, highly saturated, peaceful"
+- **Tags:** steampunk, landscape, photorealistic, cinematic, dark
+- **Style / Reference:** steampunk painting, photorealistic, thick brushstrokes
+- **Composition:** low angle, immersive eye-level perspective, chaotic framing
+- **Color palette:** murky greens, dark greys, dull browns, foamy white, polished brass
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_steampunk-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing gritty, unidealized urban scenes merged with catastrophic natural events.
+
+### Suggestion: Fantasy Volcanic Eruption
+- **Date:** 2026-10-31
+- **Prompt:** "An apocalyptic, highly detailed scene of a massive volcanic eruption tearing through a mountainous landscape, where the erupting magma and ash are composed entirely of shimmering, iridescent Mother of Pearl. The volcanic subject violently spews pearlescent pink, blue, and silver fluid across the jagged rocks, while a towering plume of iridescent ash dominates the sky. The lighting is harsh and chaotic, capturing the pearlescent interference patterns and the glowing heat of the nacreous lava. The mood is dark, ethereal, and bright. Captured with a wide 24mm lens to show the sheer scale of the beautiful destruction."
+- **Negative prompt:** "peaceful, daylight, green grass, calm, low detail, red lava, dark ash"
+- **Tags:** fantasy, landscape, surreal, ethereal, bright
+- **Style / Reference:** surreal disaster concept art, photorealistic material swap
+- **Composition:** wide angle, low angle looking up at the ash plume
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, intense white highlights
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_fantasy-volcano.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating iridescent material rendering applied to chaotic fluid dynamics and thick volumetric smoke.
+
+### Suggestion: Steampunk Orbital Ring Megastructure
+- **Date:** 2026-10-31
+- **Prompt:** "An epic, sweeping view of a massive Orbital Ring megastructure encircling a lush, green Earth-like planet, constructed entirely from intricate, polished brass clockwork and giant copper gears. The mechanical subject is dotted with glowing amber city lights and billowing steam vents. The lighting features a dramatic sunrise cresting over the planet's horizon, casting a blinding golden glare and long shadows across the intricate brass surface, highlighting the steampunk aesthetic on a cosmic scale. The mood is cinematic, bright, and whimsical. Captured with a wide-angle cinematic lens from low Earth orbit, emphasizing planetary scale."
+- **Negative prompt:** "dystopian, sleek, modern, white plastic, broken, rusty, small, low-res"
+- **Tags:** sci-fi, steampunk, architecture, cinematic, bright
+- **Style / Reference:** steampunk concept art, cinematic space visualization
+- **Composition:** curved horizon, extreme wide angle, dynamic lighting
+- **Color palette:** polished warm brass, glowing amber, vibrant earth greens and blues, blinding solar gold
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261031_steampunk-orbital-ring.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of massive scale, planetary curvature, and highly intricate metallic steampunk textures in space.
+
+### Suggestion: Cyberpunk Fireworks Over City
+- **Date:** 2026-10-31
+- **Prompt:** "A vibrant, long-exposure photograph of a massive fireworks display over a futuristic cyberpunk metropolis, but the exploding fireworks are composed of glowing, interconnected hexagonal structures of light-absorbing graphene. The dark, matte graphene subjects form intricate, geometric mandalas in the night sky, illuminated entirely by neon pink and cyan sparks traveling through the carbon lattice. The city below is lit by millions of neon signs. The mood is cinematic, bright, and moody. Captured from a high vantage point overlooking the skyline, showcasing the scale of the dark, geometric explosions."
+- **Negative prompt:** "daylight, traditional fireworks, smoke, blurry, historical, soft"
+- **Tags:** cyberpunk, landscape, abstract, cinematic, bright
+- **Style / Reference:** long-exposure photography, cyberpunk aesthetic, geometric art
+- **Composition:** high angle, wide skyline view, geometric patterns filling the sky
+- **Color palette:** matte black, electric cyan, neon magenta, deep night sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_cyberpunk-fireworks.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing light-absorbing materials (graphene) contrasted with intricate, glowing geometric particle simulations over urban environments.
+
+### Suggestion: Sci-fi Exoplanet Core
+- **Date:** 2026-10-31
+- **Prompt:** "A chaotic, energetic visualization deep within the core of a massive exoplanet, depicted in a highly abstract style. The subject is a violent, churning ocean of super-compressed crystalline fluid, deconstructed into aggressive, jagged diagonal lines and overlapping geometric planes that capture the intense pressure and kinetic energy. The lighting is blinding and internal, emanating from the explosive center and casting stark, jagged shadows that enhance the dynamic, splintered geometry. The mood is dark, abstract, and bright. Captured with a dynamic, tilted perspective to emphasize extreme pressure and raw motion."
+- **Negative prompt:** "calm, realistic, smooth, organic, peaceful, soft lighting, photography"
+- **Tags:** sci-fi, abstract, bright, dark
+- **Style / Reference:** abstract concept art
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** blinding white, intense cyan, deep shadows, electric blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261031_sci-fi-exoplanet.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction to an extreme, high-pressure alien environment.
+
+
+
+
+### Suggestion: Italian Futurism Tsunami
+- **Date:** 2026-11-06
+- **Prompt:** "A chaotic, dynamic depiction of a towering tsunami crashing into a modern coastline, rendered in the aggressive, fragmented style of Italian Futurism. The massive wave is deconstructed into sharp, intersecting diagonal lines and overlapping geometric planes that convey explosive speed and overwhelming force. The lighting is harsh and directional, creating stark, jagged shadows that enhance the dynamic motion. The mood is energetic, destructive, and cinematic. Captured with a tilted, dynamic perspective to emphasize raw motion."
+- **Negative prompt:** "calm, realistic, soft curves, organic, peaceful, photography, smooth water"
+- **Tags:** abstract, landscape, cinematic
+- **Style / Reference:** Italian Futurism, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** deep ocean blue, harsh rusted reds, stark white foam, chaotic black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to a massive natural disaster.
+
+### Suggestion: Bismuth Underground Library
+- **Date:** 2026-11-06
+- **Prompt:** "A grand, sprawling subterranean library where the towering columns, staircases, and shelves are composed entirely of gigantic, iridescent bismuth crystals. The subject features massive, step-patterned geometric formations reflecting a dazzling array of rainbow colors. The lighting is ethereal and internal, emanating from glowing, floating crystal orbs that cast complex, multi-colored reflections across the metallic bismuth surfaces. The mood is ancient, magical, and silent. Captured with a wide-angle 14mm lens, deep depth of field to capture the intricate, labyrinthine geometry."
+- **Negative prompt:** "wood, paper, modern, daylight, soft lighting, ordinary rock"
+- **Tags:** fantasy, architecture, interior, ethereal
+- **Style / Reference:** fantasy environment design, hyper-detailed 3D render
+- **Composition:** wide expansive view, deep symmetrical perspective
+- **Color palette:** highly iridescent rainbow (metallic pinks, blues, greens, golds), dark cavern background
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests iridescent, metallic materials combined with intricate geometric (hopper crystal) architectural generation.
+
+### Suggestion: Mother of Pearl Macro Pocket Watch
+- **Date:** 2026-11-06
+- **Prompt:** "An ultra-macro, hyper-detailed photograph of an open, antique pocket watch where all the intricate gears, hands, and the casing are carved entirely from shimmering, iridescent Mother of Pearl. The delicate subject rests on a piece of dark, aged velvet. The lighting is soft, diffused sunlight, catching the microscopic ridges of the nacre to reveal its rainbow interference patterns and casting soft shadows. The mood is elegant, fragile, and timeless. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the central gear."
+- **Negative prompt:** "metal, brass, harsh lighting, wide angle, modern, blurry"
+- **Tags:** macro, still life, surreal, ethereal
+- **Style / Reference:** photorealistic macro product photography
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** pearlescent pinks, soft baby blues, shimmering silver, deep burgundy velvet
+- **Aspect ratio:** 1:1
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating sub-surface scattering and thin-film iridescent interference on intricate, micro-mechanical shapes.
+
+### Suggestion: Graphene Steampunk Locomotive
+- **Date:** 2026-11-06
+- **Prompt:** "An imposing, colossal steampunk locomotive thundering across a snowy plain, constructed entirely from sleek, light-absorbing matte black graphene with polished copper accents and glowing amber pressure gauges. The dark, sleek subject features complex clockwork mechanisms driving its massive wheels. The lighting is harsh, unattenuated winter sunlight creating stark white highlights on the copper while the graphene hull remains pitch black, contrasted against the blinding white snow. The mood is powerful, industrial, and epic. Captured with a dynamic panning motion blur to convey immense speed."
+- **Negative prompt:** "rusty iron, colorful, bright daylight, modern train, slow, blurry subject"
+- **Tags:** steampunk, cinematic, landscape, dark
+- **Style / Reference:** cinematic sci-fi vehicle design, photorealistic
+- **Composition:** dynamic angled profile, panning motion blur, sharp subject focus
+- **Color palette:** matte pitch black graphene, warm polished copper, glowing amber, blinding white snow
+- **Aspect ratio:** 21:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of highly light-absorbing materials (graphene) contrasted with polished metal under harsh outdoor lighting and panning motion blur.
+
+### Suggestion: Brass Volcanic Eruption
+- **Date:** 2026-11-06
+- **Prompt:** "A cataclysmic, surreal scene of a massive volcano erupting, where the mountain itself is an intricate, colossal mechanism of polished brass gears and the erupting lava is molten, glowing liquid gold. The subject violently spews golden fluid and thick, dark soot across a jagged, metallic landscape. The lighting is harsh and chaotic, capturing the blinding heat of the molten gold and the sharp specular glints on the brass machinery. The mood is awe-inspiring, destructive, and surreal. Captured with a wide 24mm lens to show the sheer scale of the beautiful, mechanical destruction."
+- **Negative prompt:** "natural rock, red lava, peaceful, daylight, soft, low detail"
+- **Tags:** surreal, landscape, bright
+- **Style / Reference:** surreal disaster concept art, highly detailed 3D environment
+- **Composition:** wide angle, low angle looking up at the eruption
+- **Color palette:** brilliant molten gold, polished warm brass, pitch black soot, glowing amber
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating metallic rendering applied to chaotic fluid dynamics, massive scale, and intense internal lighting.
+
+### Suggestion: Bismuth Exoplanet Core
+- **Date:** 2026-11-07
+- **Prompt:** "A hyper-detailed, surreal depiction of an exoplanet core entirely composed of giant, geometric bismuth crystals. The subject features stepped, iridescent hopper crystal structures that form vast metallic canyons. The lighting is ethereal, glowing from internal fractures with intensely bright rainbow colors that reflect off the sharply angled metallic surfaces. The mood is otherworldly, serene, and majestic. Captured as a sweeping landscape view to emphasize the colossal scale of the crystalline formations."
+- **Negative prompt:** "organic, round, dull, earth-like, low resolution, blurry"
+- **Tags:** sci-fi, landscape, surreal, 3D, ethereal, bright
+- **Style / Reference:** 3D fractal art, hyper-realistic macro photography scaled up
+- **Composition:** wide sweeping landscape, low horizon
+- **Color palette:** iridescent pinks, blues, golds, and greens
+- **Aspect ratio:** 21:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex geometric refraction, metallic iridescence, and sharp angular shadows.
+
+### Suggestion: Aerogel Beehive
+- **Date:** 2026-11-07
+- **Prompt:** "A photorealistic macro shot of a futuristic beehive constructed entirely from ultra-lightweight, translucent blue aerogel. The subject shows glowing, robotic bees with delicate brass wings tending to glowing golden nectar stored within the hexagonal aerogel cells. The lighting is bright and whimsical, with sunlight passing through the cloudy, ghost-like aerogel to scatter soft blue light across the warm amber honey. The mood is peaceful, innovative, and warm. Captured with a specialized macro lens, highlighting the stark contrast between the milky aerogel and the sharp, precise machinery of the bees."
+- **Negative prompt:** "traditional wood, dark, gloomy, out of focus, artificial lighting"
+- **Tags:** solarpunk, macro, photorealistic, bright, whimsical
+- **Style / Reference:** photorealistic macro photography, high-tech nature concept
+- **Composition:** extreme close-up, shallow depth of field, rule of thirds
+- **Color palette:** translucent ghostly blue, warm amber, bright gold
+- **Aspect ratio:** 4:5
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests subsurface scattering, translucent materials, and the interaction of warm and cool lighting.
+
+### Suggestion: Mother of Pearl Orbital Ring
+- **Date:** 2026-11-07
+- **Prompt:** "A cinematic, wide-angle view of a colossal orbital ring megastructure suspended above an ocean planet, constructed entirely from iridescent, polished mother of pearl. The subject curves elegantly across the sky, reflecting the planet's vast blue oceans and white clouds in its shimmering, pearlescent surface. The lighting is bright and ethereal, illuminated by a distant white sun that catches the micro-ridges of the nacre, throwing prismatic rainbows into the void of space. The mood is majestic, peaceful, and awe-inspiring. Captured from low earth orbit to emphasize the massive architectural curve."
+- **Negative prompt:** "dark, gritty, industrial, rusty, lowres, busy"
+- **Tags:** sci-fi, architecture, cinematic, bright, ethereal
+- **Style / Reference:** grand sci-fi cinematic concept art, clean utopia
+- **Composition:** sweeping diagonal curve, immense scale
+- **Color palette:** pearlescent whites, soft pinks and greens, deep space blue
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Useful for evaluating large-scale iridescent reflections and clean, utopian lighting models.
+
+### Suggestion: Damascus Steel Tsunami
+- **Date:** 2026-11-07
+- **Prompt:** "An abstract, dark fantasy landscape where a towering tsunami wave is frozen in time, sculpted from dark, rippling Damascus steel. The subject features intricate, wavy metallic woodgrain patterns that flow seamlessly into the terrifying curl of the wave. The lighting is moody and dramatic, with a solitary, pale moonlight glinting off the polished, dark metal ridges, casting deep black shadows in the troughs. The mood is ominous, powerful, and surreal. Captured from a low angle on a desolate shoreline, emphasizing the heavy, crushing weight of the metallic ocean."
+- **Negative prompt:** "water, liquid, foam, blue, daytime, soft"
+- **Tags:** fantasy, landscape, abstract, moody, dark
+- **Style / Reference:** dark fantasy sculpture, abstract metal art
+- **Composition:** imposing foreground, low angle, dramatic silhouette
+- **Color palette:** dark metallic grays, silver highlights, pitch black
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Challenges the generator to apply detailed metallurgical patterns to complex, organic fluid shapes.
+
+### Suggestion: Tweed Ashcan School Interior
+- **Date:** 2026-11-07
+- **Prompt:** "A painterly, Ashcan School-style depiction of a dimly lit, retro 1920s speakeasy, but the entire interior—including the walls, tables, and even the drinks—is textured like woven wool tweed. The subject reveals heavy, coarse fabric patterns intersecting with gritty urban life. The lighting is moody and low-key, with a single, hazy overhead lamp casting long, textured shadows across the herringbone floor. The mood is nostalgic, melancholic, and cozy yet gritty. Captured from a wide corner perspective, highlighting the claustrophobic and textile-heavy environment."
+- **Negative prompt:** "smooth surfaces, modern, bright, photorealistic, clean"
+- **Tags:** retro, noir, interior, painterly, moody
+- **Style / Reference:** Ashcan School painting, heavy brushstrokes, textile art
+- **Composition:** corner view, deep shadows, intimate framing
+- **Color palette:** muted browns, charcoal grays, deep olive, warm sepia
+- **Aspect ratio:** 4:3
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing unconventional texture mapping and moody, painterly light diffusion over rough surfaces.
+
+### Suggestion: Neon-Soaked Solarpunk Cityscape
+- **Date:** 2026-05-18
+- **Prompt:** "A wide-angle, cinematic view of a solarpunk city at dusk. The architecture features sweeping, organic curves covered in lush, overgrown vines and glowing bio-luminescent moss. Warm, golden hour sunlight reflects off massive glass solar panels, contrasting with soft, cool blue neon lights activating in the lower streets. The mood is peaceful yet vibrant. Captured with a 24mm lens to emphasize the grand scale of the towering, eco-friendly skyscrapers against a pastel sky."
+- **Negative prompt:** "dystopian, pollution, smog, cars, grim, dark, blurry"
+- **Tags:** solarpunk, architecture, photorealistic, cinematic
+- **Style / Reference:** photorealistic, highly detailed matte painting
+- **Composition:** wide shot, grand scale, low angle
+- **Color palette:** warm golds, lush greens, soft cool blues
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_solarpunk-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing organic architecture and balanced warm/cool lighting.
+
+### Suggestion: Abandoned Gothic Library
+- **Date:** 2026-05-18
+- **Prompt:** "The interior of a massive, ruined Gothic library lit by ethereal moonlight streaming through a shattered stained-glass window. Dust motes float in the volumetric light shafts. Ancient, leather-bound books are scattered across a cracked marble floor overgrown with pale, twisting roots. The mood is dark, moody, and deeply atmospheric. Shot with a 35mm lens with a shallow depth of field, focusing on a single glowing tome on a stone pedestal in the foreground."
+- **Negative prompt:** "modern, bright, cheerful, clean, people, artificial lighting"
+- **Tags:** horror, interior, photorealistic, moody
+- **Style / Reference:** photorealistic, dark fantasy, cinematic lighting
+- **Composition:** foreground focus, rule of thirds, deep background
+- **Color palette:** desaturated grays, deep shadows, cold moonlight blue
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20260518_gothic-library.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing volumetric lighting and high-contrast shadows.
+
+### Suggestion: Cyberpunk Noir Detective
+- **Date:** 2026-05-18
+- **Prompt:** "A close-up portrait of a grizzled detective in a neon-lit, rain-slicked alleyway in a cyberpunk metropolis. The subject wears a worn trench coat with glowing fiber-optic threads. Harsh, contrasting neon lights (magenta and cyan) cast dramatic, moody shadows across their heavily augmented, cybernetic face. The camera uses an 85mm portrait lens with rich bokeh, blurring the busy, glowing city traffic in the deep background."
+- **Negative prompt:** "cartoon, 2D, sunny, happy, flat lighting, lowres"
+- **Tags:** cyberpunk, noir, portrait, photorealistic, cinematic
+- **Style / Reference:** photorealistic, neo-noir, cinematic 3D render
+- **Composition:** close-up portrait, shallow depth of field
+- **Color palette:** high contrast magenta and cyan, deep blacks
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260518_cyberpunk-detective.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use this to test neon reflections on skin and complex depth of field.
+
+### Suggestion: Whimsical Isometric Alchemist Lab
+- **Date:** 2026-05-18
+- **Prompt:** "A highly detailed, 3D isometric view of an alchemist's laboratory filled with bubbling, glowing potions. The room features a large brass cauldron, walls lined with intricate wooden shelves containing mysterious glowing jars, and scattered spell scrolls. Warm, ambient light emanates from a crackling fireplace and the luminescent liquids. The mood is whimsical and magical. Rendered with clean edges, sharp focus, and vibrant, saturated colors."
+- **Negative prompt:** "realistic, dark, scary, messy, perspective camera, lowres"
+- **Tags:** fantasy, interior, isometric, 3D, whimsical
+- **Style / Reference:** 3D isometric render, stylized, vibrant
+- **Composition:** isometric perspective, centered, cutaway view
+- **Color palette:** warm oranges, glowing greens and purples, rich browns
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260518_isometric-lab.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating sharp geometric rendering and glowing liquid materials.
+
+### Suggestion: Surreal Clockwork Macro
+- **Date:** 2026-05-18
+- **Prompt:** "An extreme macro, highly detailed shot of surreal, floating watch parts intermingled with fragile, crystalline butterfly wings. The tiny, intricate brass gears and glowing ruby jewels are suspended in a void of soft, ethereal, pearlescent fog. The lighting is soft and diffused, highlighting the microscopic scratches on the metal and the iridescence of the wings. The mood is ethereal and abstract. Shot with a dedicated 100mm macro lens."
+- **Negative prompt:** "people, large scale, outdoors, bright sunlight, harsh shadows"
+- **Tags:** steampunk, surreal, macro, abstract, ethereal
+- **Style / Reference:** surreal photography, extreme macro, highly detailed
+- **Composition:** extreme close-up, central focus, negative space
+- **Color palette:** brass, gold, pearlescent whites, soft ruby red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_surreal-macro.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing macro textures, soft diffusion, and abstract forms.
+
+### Suggestion: Bismuth Clockwork Owl
+- **Date:** 2026-10-15
+- **Prompt:** "A highly detailed, macro portrait of a mechanical owl constructed entirely from vibrant, stepped hopper crystals of iridescent bismuth and delicate brass clockwork. The subject is perched on a dark, rusted iron branch. The lighting is cinematic, utilizing a single warm spotlight that highlights the rainbow interference patterns of the bismuth and casts deep, sharp shadows within the gears. The mood is mysterious, intricate, and magical. Captured with a 100mm macro lens, incredibly shallow depth of field focusing strictly on its glowing, multi-faceted amber eyes."
+- **Negative prompt:** "organic feathers, real bird, daylight, soft lighting, bright background, blurry, out of focus"
+- **Tags:** macro, steampunk, animal, bismuth, photorealistic
+- **Style / Reference:** photorealistic macro product photography, steampunk aesthetic
+- **Composition:** centered portrait, close-up, shallow depth of field
+- **Color palette:** iridescent rainbow, metallic pink, gold, deep iron black, glowing amber
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261015_bismuth-clockwork-owl.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the generation of complex hopper crystal geometry combined with intricate mechanical parts and iridescence.
+
+### Suggestion: Graphene Bioluminescent Reef
+- **Date:** 2026-10-15
+- **Prompt:** "A breathtaking, ultra-wide underwater landscape showcasing a sprawling coral reef constructed entirely from light-absorbing, matte black graphene. The dark, geometric graphene structures are heavily populated by intensely glowing, bioluminescent flora in vivid neon cyan and magenta. The lighting is entirely diegetic, radiating from the luminescent plants and reflecting off tiny, silver-scaled fish, while the graphene remains pitch black. The mood is alien, beautiful, and deeply mysterious. Captured with a 14mm ultra-wide lens to emphasize the vast, sweeping scale of the dark, glowing ecosystem."
+- **Negative prompt:** "sunlight, daylight, bright surface, natural coral, sand, murky water, low resolution"
+- **Tags:** underwater, sci-fi, landscape, graphene, bioluminescent
+- **Style / Reference:** cinematic deep-sea exploration, high-contrast digital art
+- **Composition:** wide landscape, deep perspective, rule of thirds
+- **Color palette:** matte pitch black, neon cyan, vibrant magenta, bright silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261015_graphene-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to contrast intensely bright emissive materials against completely light-absorbing, matte geometric structures.
+
+### Suggestion: Mother of Pearl Spacesuit
+- **Date:** 2026-10-15
+- **Prompt:** "An elegant, surreal fashion portrait of an astronaut wearing a futuristic spacesuit forged seamlessly from shimmering, iridescent Mother of Pearl and polished silver joints. The subject stands elegantly on the desolate, dusty surface of an asteroid with a massive, vibrant blue gas giant looming in the background. The lighting is harsh, unattenuated starlight that catches the micro-ridges of the nacre, throwing prismatic pink and blue highlights across the suit's curved surfaces. The mood is majestic, fragile, and highly fashionable. Captured with an 85mm portrait lens, eye-level perspective."
+- **Negative prompt:** "fabric, cloth, plastic, dull, earth, atmosphere, soft lighting, cartoon"
+- **Tags:** sci-fi, fashion, portrait, surreal, mother of pearl
+- **Style / Reference:** high-fashion editorial photography, surreal sci-fi
+- **Composition:** waist-up portrait, off-center subject, grand cosmic background
+- **Color palette:** pearlescent whites, soft pinks and blues, polished silver, deep cosmic black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261015_nacre-spacesuit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating thin-film iridescent interference mapped onto complex, curved, hard-surface armor plating.
+
+### Suggestion: Italian Futurism Asteroid Base
+- **Date:** 2026-10-15
+- **Prompt:** "A chaotic, high-velocity depiction of a sprawling mining base on a tumbling asteroid, rendered in the aggressive, fragmented style of Italian Futurism. The massive industrial drills and habitats are deconstructed into jagged diagonal lines and overlapping geometric planes that convey explosive mechanical energy and relentless speed. The lighting is harsh, directional, and splintered, throwing stark, jagged shadows that enhance the dynamic motion of the composition. The mood is energetic, industrial, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion."
+- **Negative prompt:** "calm, realistic space, smooth curves, organic, gentle, photorealistic, quiet"
+- **Tags:** abstract, sci-fi, italian futurism, space, dynamic
+- **Style / Reference:** Italian Futurism art movement, Giacomo Balla inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black space, blinding white light
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261015_futurism-asteroid-base.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Pushes the model to apply the aggressive, dynamic abstraction of Italian Futurism to an industrial, cosmic environment.
+
+### Suggestion: Ashcan School Cyberpunk Diner
+- **Date:** 2026-10-15
+- **Prompt:** "A bustling, gritty cyberpunk diner on a rainy night, depicted in the unidealized, painterly style of the Ashcan School. The subject features weary, working-class cyborgs huddled over steaming bowls of noodles under flickering, dim lights. The lighting is overcast and realistic, casting soft, murky shadows that highlight the dirt and texture of the urban environment, contrasted only by a dull, buzzing neon sign outside. The mood is authentic, raw, and full of everyday melancholy. Captured with an eye-level, documentary-style perspective, emphasizing the unglamorous reality of the futuristic city."
+- **Negative prompt:** "clean, modern, bright, cheerful, highly saturated, glossy, 3d render, anime"
+- **Tags:** cyberpunk, interior, ashcan school, gritty, painterly
+- **Style / Reference:** Ashcan School painting, heavy brushstrokes, Edward Hopper inspired
+- **Composition:** eye-level, crowded interior, naturalistic framing
+- **Color palette:** muted browns, dark greys, dull olive, faded neon red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261015_ashcan-cyber-diner.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of futuristic, high-tech themes with the gritty, muted, historical painting style of the Ashcan School.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.

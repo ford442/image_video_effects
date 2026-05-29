@@ -71,7 +71,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let mouseDist = length(uv - mousePos);
     let mouseFactor = exp(-mouseDist * mouseDist * 6.0) * mouseInfluence;
-    let radius = i32(mix(f32(radiusBase), f32(radiusBase) * 0.4, mouseFactor));
+    let radiusFinal = i32(mix(f32(radiusBase), f32(radiusBase) * 0.4, mouseFactor));
     let epsilon = mix(epsilonBase * 3.0, epsilonBase * 0.1, mouseFactor);
 
     var rippleDepth = 0.0;
@@ -86,7 +86,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    let maxRadius = min(radius, 4);
+    let maxRadius = min(radiusFinal, 4);
     var sumGuide = 0.0;
     var sumInput = vec3<f32>(0.0);
     var sumGuideInput = vec3<f32>(0.0);

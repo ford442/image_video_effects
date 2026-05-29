@@ -54,10 +54,10 @@ fn noiseWithDerivative(p: vec2<f32>) -> vec3<f32> {
     let du = 30.0 * f * f * (f * (f - 2.0) + 1.0);
 
     // Hash corners
-    let a = hash2(i + vec2<f32>(0.0, 0.0));
-    let b = hash2(i + vec2<f32>(1.0, 0.0));
-    let c = hash2(i + vec2<f32>(0.0, 1.0));
-    let d = hash2(i + vec2<f32>(1.0, 1.0));
+    let a = hash12(i + vec2<f32>(0.0, 0.0));
+    let b = hash12(i + vec2<f32>(1.0, 0.0));
+    let c = hash12(i + vec2<f32>(0.0, 1.0));
+    let d = hash12(i + vec2<f32>(1.0, 1.0));
 
     // Value interpolation
     let k0 = a;

@@ -221,8 +221,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Fake specular reflection
         if (mat < 0.5) {
-            let ref = reflect(rd, n);
-            let refGlow = max(0.0, dot(ref, vec3<f32>(0.0, 1.0, 0.0))) * 0.35;
+            let refl = reflect(rd, n);
+            let refGlow = max(0.0, dot(refl, vec3<f32>(0.0, 1.0, 0.0))) * 0.35;
             col += vec3<f32>(0.1, 0.7, 1.0) * refGlow * u.zoom_params.x;
         }
     }

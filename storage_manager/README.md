@@ -61,6 +61,7 @@ uvicorn app:app --host 0.0.0.0 --port 7860 --reload
 
 ### Admin
 - `POST /api/admin/sync` - Rebuild indexes from GCS
+- `POST /api/admin/rescan-shaders` - Pull latest repo + regenerate `shader-lists/*.json` + upload lists to storage
 - `GET /api/storage/files?folder=shaders` - List files in folder
 
 ## Shader Upload Example

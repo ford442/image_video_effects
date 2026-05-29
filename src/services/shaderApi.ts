@@ -3,7 +3,8 @@
  * Handles shader CRUD operations and Shadertoy imports
  */
 
-import { STORAGE_API_URL, API_BASE_URL } from '../config/appConfig';
+import { STORAGE_API_URL, API_BASE_URL, SHADER_FILES_BASE_URL } from '../config/appConfig';
+import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || API_BASE_URL;
 
@@ -384,7 +385,7 @@ class ShaderApiService {
     }
 
     try {
-      const url = `${this.baseUrl}/api/shaders${includeParams ? '?include_params=true' : ''}`;
+      const url = `${this.baseUrl}/api/shaders?all=true`;
       console.log(`[ShaderApi] Fetching from ${url}`);
       const response = await fetch(url);
       if (!response.ok) throw new Error(`API ${response.status}`);
@@ -409,9 +410,11 @@ class ShaderApiService {
       console.log(`[ShaderApi] Shaders with real defaults: ${withRealParams}`);
       
       // Build URL pointing to the static .wgsl file (nginx serves /files/ with CORS headers)
+      // Now uses the dedicated SHADER_FILES_BASE_URL so shader files can live on a
+      // different domain from the API backend.
       data.forEach(s => {
         const wgslFilename = s.filename.replace(/\.json$/, '.wgsl');
-        s.url = `${this.baseUrl}/files/image-effects/shaders/${wgslFilename}`;
+        s.url = `${SHADER_FILES_BASE_URL.replace(/\/$/, '')}/shaders/${wgslFilename}`;
       });
       
       this.cache.set(cacheKey, data);
@@ -466,7 +469,7 @@ class ShaderApiService {
           description: shader.description || '',
           category: shader.category || category,  // Use shader's own category or the file category
           tags: shader.tags || [],
-          url: shader.url ? `./${shader.url}` : `./shaders/${shader.id}.wgsl`,
+          url: shader.url ? resolveShaderUrl(shader.url) : resolveShaderUrl(`shaders/${shader.id}.wgsl`),
           requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
           params: (shader.params || []).map((p: any, idx: number) => ({
             id: p.id || p.name || `param${idx + 1}`,
@@ -508,7 +511,7 @@ class ShaderApiService {
         description: data.reason,
         coordinate: data.coordinate,
         tags: data.tags || [],
-        url: `./shaders/${id}.wgsl`,
+        url: resolveShaderUrl(`shaders/${id}.wgsl`),
       } as ApiShaderEntry));
     } catch (error) {
       console.error('Failed to load local shaders:', error);
@@ -531,7 +534,7 @@ class ShaderApiService {
       this.cache.set(`code:${shaderId}`, code);
       return code;
     } catch (error) {
-      const response = await fetch(`./shaders/${shaderId}.wgsl`);
+      const response = await fetch(resolveShaderUrl(`shaders/${shaderId}.wgsl`));
       return await response.text();
     }
   }
