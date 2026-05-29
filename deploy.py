@@ -53,7 +53,7 @@ def build_zip(build_path: Path) -> bytes:
             rel = file.relative_to(build_path)
             # Skip common junk
             parts = rel.parts
-            if any(p in (".git", "node_modules", "__pycache__") for p in parts):
+            if any(p in (".git", "node_modules", "__pycache__", "shaders") for p in parts):
                 continue
             zf.write(file, str(rel))
             print(f"  + {rel}")
