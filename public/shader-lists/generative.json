@@ -5710,6 +5710,55 @@
     ]
   },
   {
+    "id": "gen-prismatic-void-weaver-ouroboros",
+    "name": "Prismatic Void-Weaver Ouroboros",
+    "description": "A hyper-dimensional, endlessly twisting serpentine ring forged of chromatic plasma and fractal dark matter.",
+    "type": "generative",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
+    "tags": [
+      "ouroboros",
+      "void",
+      "fractal",
+      "plasma",
+      "chromatic",
+      "loop"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Twist Density",
+        "default": 5,
+        "min": 1,
+        "max": 20,
+        "step": 0.5
+      },
+      {
+        "id": "param2",
+        "name": "Plasma Glow",
+        "default": 0.8,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Void Gravity",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ]
+  },
+  {
     "id": "gen-psychedelic-layered-time-stamps",
     "name": "Psychedelic Layered Time-Stamps",
     "wgsl_code": "shaders/gen-psychedelic-layered-time-stamps.wgsl",
@@ -5859,6 +5908,58 @@
         "step": 0.05
       }
     ]
+  },
+  {
+    "id": "gen-quantum-fluorescent-aether-moth-swarm",
+    "name": "Quantum-Fluorescent Aether-Moth Swarm",
+    "tags": [
+      "swarm",
+      "fluorescent",
+      "quantum",
+      "moth",
+      "audio-reactive",
+      "interactive"
+    ],
+    "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies.",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Swarm Density",
+        "type": "slider",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Curl Intensity",
+        "type": "slider",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "param3",
+        "name": "Glow Strength",
+        "type": "slider",
+        "default": 2,
+        "min": 0.5,
+        "max": 10,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Audio Sensitivity",
+        "type": "slider",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      }
+    ],
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl"
   },
   {
     "id": "gen-quantum-foam-alpha",

@@ -563,6 +563,20 @@
       "added": "2026-05-17T15:31:50.867791",
       "status": "completed",
       "completed_at": "2026-05-27T08:04:46.221045"
+    },
+    {
+      "filename": "2026-05-27_quantum-fluorescent-aether-moth-swarm.md",
+      "title": "Quantum-Fluorescent Aether-Moth Swarm",
+      "added": "2026-05-27T15:22:31.200548",
+      "status": "completed",
+      "completed_at": "2026-05-28T08:20:01.794483"
+    },
+    {
+      "filename": "2026-05-26_prismatic-void-weaver-ouroboros.md",
+      "title": "Prismatic Void-Weaver Ouroboros",
+      "added": "2026-05-26T15:11:09.110950",
+      "status": "completed",
+      "completed_at": "2026-05-29T07:56:50.578853"
     }
   ],
   "rejected": [],
@@ -784,10 +798,15 @@
       "added": "2026-05-21T15:41:08.968049"
     },
     {
-      "filename": "2026-05-25_quantum-entangled-ferrofluid-engine.md",
-      "title": "Quantum-Entangled Ferrofluid Engine",
-      "added": "2026-05-25T15:20:45.404707"
+      "filename": "2026-05-23_radiant-chrono-glass-nautilus.md",
+      "title": "Radiant Chrono-Glass Nautilus",
+      "added": "2026-05-23T15:29:18.932464"
     },
+    {
+      "filename": "2026-05-24_quantum-entangled-ferrofluid-engine.md",
+      "title": "Quantum-Entangled Ferrofluid Engine",
+      "added": "2026-05-24T15:31:55.781492"
+
     {
       "filename": "2026-05-26_prismatic-void-weaver-ouroboros.md",
       "title": "Prismatic Void-Weaver Ouroboros",
@@ -802,6 +821,11 @@
       "filename": "2026-05-28_ethereal-quantum-hologram-bonsai.md",
       "title": "Ethereal Quantum-Hologram Bonsai",
       "added": "2026-05-28T15:23:06.697098"
+    },
+    {
+      "filename": "2026-05-29_abyssal-quantum-leviathan-skeleton.md",
+      "title": "Abyssal Quantum-Leviathan Skeleton",
+      "added": "2026-05-29T15:12:02.977716"
     }
   ],
   "in_progress": null
