@@ -10,60 +10,88 @@ Usage:
   2. python deploy.py
 
 This script contacts https://storage.noahcohn.com (your Contabo storage manager)
-to upload each file in the build directory.
+to upload your entire build as a single zip archive.  The server extracts it and
+pushes all files over one persistent SFTP connection — much faster than uploading
+files individually.
 
-The actual upload to storage.1ink.us happens server-side using credentials
-that live ONLY in the Contabo VPS .env file — no passwords in this repo.
+Actual FTP/SFTP credentials never leave the VPS.
 
 Requirements:
   pip install requests
 """
 
+import io
 import os
 import sys
+import zipfile
 from pathlib import Path
-import requests
 from typing import Optional
+
+import requests
 
 # ============================================================
 # PER-PROJECT CONFIGURATION - EDIT THESE
 # ============================================================
-PROJECT_NAME: str = "image_video_effects"
-BUILD_DIR: str = "build"
+PROJECT_NAME: str = 'image_video_effects'
+BUILD_DIR: str = 'build'
 CONTABO_BASE_URL: str = "https://storage.noahcohn.com"
 
 # Optional deploy token (recommended for security).
 # Set via environment: export DEPLOY_TOKEN="your_long_token_from_vps_env"
-# Or hardcode here only for quick local testing (never commit a real token).
 DEPLOY_TOKEN: Optional[str] = "6de44dca5425348f2e2ef9456fc820bfe56a5ace68bddeb6da4a1c2a9d9cadc0"
 # ============================================================
 
 
-def upload_single_file(local_path: Path, rel_path: str) -> bool:
-    """Upload one file to the deploy endpoint."""
-    url = f"{CONTABO_BASE_URL}/api/deploy/{PROJECT_NAME}/file"
+def build_zip(build_path: Path) -> bytes:
+    """Zip the contents of build_path into an in-memory archive."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for file in sorted(build_path.rglob("*")):
+            if file.is_dir():
+                continue
+            rel = file.relative_to(build_path)
+            # Skip common junk
+            parts = rel.parts
+            if any(p in (".git", "node_modules", "__pycache__") for p in parts):
+                continue
+            zf.write(file, str(rel))
+            print(f"  + {rel}")
+    return buf.getvalue()
+
+
+def deploy_bundle(build_path: Path) -> bool:
+    """Zip the build and upload it as a single bundle."""
+    url = f"{CONTABO_BASE_URL}/api/deploy/{PROJECT_NAME}/bundle"
     headers = {}
     if DEPLOY_TOKEN:
         headers["X-Deploy-Token"] = DEPLOY_TOKEN
 
-    try:
-        with open(local_path, "rb") as f:
-            response = requests.post(
-                url,
-                files={"file": (local_path.name, f, "application/octet-stream")},
-                data={"rel_path": rel_path},
-                headers=headers,
-                timeout=120,
-            )
+    print("Building zip archive...")
+    zip_bytes = build_zip(build_path)
+    print(f"Archive size: {len(zip_bytes) / 1024:.1f} KB\n")
 
-        if response.status_code == 200:
-            print(f"  ✓ {rel_path}")
-            return True
-        else:
-            print(f"  ✗ {rel_path} -> {response.status_code}: {response.text[:200]}")
-            return False
+    print("Uploading bundle...")
+    try:
+        response = requests.post(
+            url,
+            files={"bundle": ("build.zip", zip_bytes, "application/zip")},
+            headers=headers,
+            timeout=300,
+        )
     except Exception as exc:
-        print(f"  ✗ {rel_path} -> Exception: {exc}")
+        print(f"  \u2717 Upload exception: {exc}")
+        return False
+
+    if response.status_code == 200:
+        data = response.json()
+        print(f"  \u2713 {data.get('uploaded', 0)} files uploaded")
+        if data.get("failed"):
+            print("  Failures:")
+            for f in data["failed"]:
+                print(f"    \u2717 {f['path']}: {f['error']}")
+        return not data.get("failed")
+    else:
+        print(f"  \u2717 {response.status_code}: {response.text[:400]}")
         return False
 
 
@@ -80,31 +108,14 @@ def main():
         health = requests.get(f"{CONTABO_BASE_URL}/api/deploy/health", timeout=10)
         if health.status_code == 200:
             print(f"Contabo deploy service: {health.json().get('status', 'unknown')}")
-        else:
-            print("Warning: Could not reach Contabo deploy health endpoint.")
     except Exception:
         print("Warning: Could not contact storage.noahcohn.com (continuing anyway).")
 
-    print(f"\nUploading files from {BUILD_DIR}/ ...\n")
+    print()
+    success = deploy_bundle(build_path)
 
-    uploaded = 0
-    failed = 0
-
-    for root, dirs, files in os.walk(build_path):
-        dirs[:] = [d for d in dirs if d not in (".git", "node_modules", "__pycache__")]
-        for filename in sorted(files):
-            local_file = Path(root) / filename
-            rel_path = str(local_file.relative_to(build_path))
-            if upload_single_file(local_file, rel_path):
-                uploaded += 1
-            else:
-                failed += 1
-
-    print(f"\n=== Deployment complete ===")
-    print(f"  Uploaded: {uploaded}")
-    print(f"  Failed:   {failed}")
-    if failed:
-        sys.exit(1)
+    print(f"\n=== {'Deployment complete' if success else 'Deployment finished with errors'} ===")
+    sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":
