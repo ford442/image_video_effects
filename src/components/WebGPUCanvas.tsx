@@ -225,9 +225,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // Sync inputSource to renderer
     useEffect(() => {
         if (rendererRef.current) {
-            if ('setInputSource' in rendererRef.current) {
-                (rendererRef.current as any).setInputSource(inputSource);
-            }
+            rendererRef.current.setInputSource(inputSource);
         }
     }, [inputSource, rendererRef]);
 
