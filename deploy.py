@@ -35,6 +35,7 @@ import requests
 PROJECT_NAME: str = 'image_video_effects'
 BUILD_DIR: str = 'build'
 CONTABO_BASE_URL: str = "https://storage.noahcohn.com"
+DEPLOY_FOLDER: str = ""  # override remote target folder; empty = use PROJECT_NAME
 
 # Optional deploy token (recommended for security).
 # Set via environment: export DEPLOY_TOKEN="your_long_token_from_vps_env"
@@ -61,6 +62,7 @@ def build_zip(build_path: Path) -> bytes:
 
 def deploy_bundle(build_path: Path) -> bool:
     """Zip the build and upload it as a single bundle."""
+    target_folder = DEPLOY_FOLDER or PROJECT_NAME
     url = f"{CONTABO_BASE_URL}/api/deploy/{PROJECT_NAME}/bundle"
     headers = {}
     if DEPLOY_TOKEN:
@@ -75,6 +77,7 @@ def deploy_bundle(build_path: Path) -> bool:
         response = requests.post(
             url,
             files={"bundle": ("build.zip", zip_bytes, "application/zip")},
+            data={"target_folder": target_folder},
             headers=headers,
             timeout=300,
         )
