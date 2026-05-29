@@ -1,25 +1,161 @@
-<testsuites id="" name="" tests="5" failures="0" skipped="0" errors="0" time="27.280468">
-<testsuite name="wasm-renderer.smoke.spec.ts" timestamp="2026-05-29T19:40:45.661Z" hostname="chromium" tests="5" failures="0" skipped="0" time="24.865" errors="0">
-<testcase name="WASM renderer initializes successfully" classname="wasm-renderer.smoke.spec.ts" time="1.417">
+<testsuites id="" name="" tests="5" failures="0" skipped="0" errors="0" time="39.948496999999996">
+<testsuite name="wasm-renderer.smoke.spec.ts" timestamp="2026-05-29T19:40:59.886Z" hostname="chromium" tests="5" failures="0" skipped="0" time="35.085" errors="0">
+<testcase name="WASM renderer initializes successfully" classname="wasm-renderer.smoke.spec.ts" time="3.27">
 <system-out>
-<![CDATA[WASM renderer fell back (expected in CI)
+<![CDATA[[BROWSER log] [ShaderApi] Fetching from https://storage.noahcohn.com/api/shaders?all=true
+[BROWSER log] 🔧 WASM renderer explicitly requested via ?renderer=wasm
+[BROWSER log] [WASM] Init attempt 1/3...
+[BROWSER log] [WASM] Loading from: /wasm/pixelocity_wasm.js
+[BROWSER log] Pixelocity WASM module loaded. Call initWasmRenderer() to start.
+[BROWSER log] 🚀 Pixelocity WASM Renderer initializing...
+[BROWSER log]    Canvas: 2048x2048
+[BROWSER log] ❌ Failed to get WebGPU adapter
+[BROWSER log] ❌ Failed to create WebGPU device
+[BROWSER error] [WASM] Failed to initialize WASM renderer (C++ returned 0)
+[BROWSER error] ❌ WASM Renderer init failed (attempt 1/3)
+[BROWSER error] [WebGPU Renderer] wasm-init: WASM Renderer init failed (attempt 1/3)
+[BROWSER warning] [RendererManager] switchRenderer('wasm') failed — keeping previous renderer
+[BROWSER warning] ⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU
+[BROWSER warning] No available adapters.
+[BROWSER warning] No available adapters.
+[BROWSER error] [WebGPU Renderer] webgpu-unavailable: No suitable GPU adapter found. Your device may not support WebGPU.
+[BROWSER warning] [WebGPU] No GPU adapter found
+[BROWSER warning] [RendererManager] switchRenderer('webgpu') failed — keeping previous renderer
+[BROWSER warning] ⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)
+[BROWSER log] ✅ JS Renderer initialized with canvas size: 2048x2048
+DIAGNOSTICS: {
+  rendererType: [32m'js'[39m,
+  metrics: { fps: [33m0[39m, frameTime: [33m0[39m, agentCount: [33m0[39m, isWASM: [33mfalse[39m },
+  timestamp: [32m'2026-05-29T19:41:06.654Z'[39m
+}
+CONSOLE MESSAGES: []
+WASM path fell back to JS Canvas2D (expected in CI without GPU)
+[BROWSER log] Loaded local manifest. Total: 999 images, 19 videos
+[BROWSER log] [ShaderApi] Received 967 shaders from API
+[BROWSER log] [ShaderApi] Shaders with real defaults: 217
 ]]>
 </system-out>
 </testcase>
-<testcase name="WASM renderer loads single shader without errors" classname="wasm-renderer.smoke.spec.ts" time="3.943">
-</testcase>
-<testcase name="WASM renderer loads multiple shaders (multi-slot stack)" classname="wasm-renderer.smoke.spec.ts" time="8.444">
-</testcase>
-<testcase name="WASM renderer handles shader loading with minimal console errors" classname="wasm-renderer.smoke.spec.ts" time="4.967">
-</testcase>
-<testcase name="WASM renderer collects performance metrics" classname="wasm-renderer.smoke.spec.ts" time="6.094">
+<testcase name="WASM renderer loads single shader without errors" classname="wasm-renderer.smoke.spec.ts" time="10.49">
 <system-out>
-<![CDATA[=== WASM Renderer Metrics ===
+<![CDATA[[BROWSER log] [ShaderApi] Fetching from https://storage.noahcohn.com/api/shaders?all=true
+[BROWSER log] 🔧 WASM renderer explicitly requested via ?renderer=wasm
+[BROWSER log] [WASM] Init attempt 1/3...
+[BROWSER log] [WASM] Loading from: /wasm/pixelocity_wasm.js
+[BROWSER log] Pixelocity WASM module loaded. Call initWasmRenderer() to start.
+[BROWSER log] 🚀 Pixelocity WASM Renderer initializing...
+[BROWSER log]    Canvas: 2048x2048
+[BROWSER log] ❌ Failed to get WebGPU adapter
+[BROWSER log] ❌ Failed to create WebGPU device
+[BROWSER error] [WASM] Failed to initialize WASM renderer (C++ returned 0)
+[BROWSER error] ❌ WASM Renderer init failed (attempt 1/3)
+[BROWSER error] [WebGPU Renderer] wasm-init: WASM Renderer init failed (attempt 1/3)
+[BROWSER warning] [RendererManager] switchRenderer('wasm') failed — keeping previous renderer
+[BROWSER warning] ⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU
+[BROWSER warning] No available adapters.
+[BROWSER warning] No available adapters.
+[BROWSER error] [WebGPU Renderer] webgpu-unavailable: No suitable GPU adapter found. Your device may not support WebGPU.
+[BROWSER warning] [WebGPU] No GPU adapter found
+[BROWSER warning] [RendererManager] switchRenderer('webgpu') failed — keeping previous renderer
+[BROWSER warning] ⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)
+[BROWSER log] ✅ JS Renderer initialized with canvas size: 2048x2048
+[BROWSER log] [ShaderApi] Received 967 shaders from API
+[BROWSER log] [ShaderApi] Shaders with real defaults: 217
+[BROWSER log] Loaded local manifest. Total: 999 images, 19 videos
+]]>
+</system-out>
+</testcase>
+<testcase name="WASM renderer loads multiple shaders (multi-slot stack)" classname="wasm-renderer.smoke.spec.ts" time="7.775">
+<system-out>
+<![CDATA[[BROWSER log] [ShaderApi] Fetching from https://storage.noahcohn.com/api/shaders?all=true
+[BROWSER log] 🔧 WASM renderer explicitly requested via ?renderer=wasm
+[BROWSER log] [WASM] Init attempt 1/3...
+[BROWSER log] [WASM] Loading from: /wasm/pixelocity_wasm.js
+[BROWSER log] Pixelocity WASM module loaded. Call initWasmRenderer() to start.
+[BROWSER log] 🚀 Pixelocity WASM Renderer initializing...
+[BROWSER log]    Canvas: 2048x2048
+[BROWSER log] ❌ Failed to get WebGPU adapter
+[BROWSER log] ❌ Failed to create WebGPU device
+[BROWSER error] [WASM] Failed to initialize WASM renderer (C++ returned 0)
+[BROWSER error] ❌ WASM Renderer init failed (attempt 1/3)
+[BROWSER error] [WebGPU Renderer] wasm-init: WASM Renderer init failed (attempt 1/3)
+[BROWSER warning] [RendererManager] switchRenderer('wasm') failed — keeping previous renderer
+[BROWSER warning] ⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU
+[BROWSER warning] No available adapters.
+[BROWSER warning] No available adapters.
+[BROWSER error] [WebGPU Renderer] webgpu-unavailable: No suitable GPU adapter found. Your device may not support WebGPU.
+[BROWSER warning] [WebGPU] No GPU adapter found
+[BROWSER warning] [RendererManager] switchRenderer('webgpu') failed — keeping previous renderer
+[BROWSER warning] ⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)
+[BROWSER log] ✅ JS Renderer initialized with canvas size: 2048x2048
+[BROWSER log] Loaded local manifest. Total: 999 images, 19 videos
+[BROWSER log] [ShaderApi] Received 967 shaders from API
+[BROWSER log] [ShaderApi] Shaders with real defaults: 217
+[BROWSER log] ✅ JSRenderer: Image loaded 1024x1024
+]]>
+</system-out>
+</testcase>
+<testcase name="WASM renderer handles shader loading with minimal console errors" classname="wasm-renderer.smoke.spec.ts" time="6.598">
+<system-out>
+<![CDATA[[BROWSER log] [ShaderApi] Fetching from https://storage.noahcohn.com/api/shaders?all=true
+[BROWSER log] 🔧 WASM renderer explicitly requested via ?renderer=wasm
+[BROWSER log] [WASM] Init attempt 1/3...
+[BROWSER log] [WASM] Loading from: /wasm/pixelocity_wasm.js
+[BROWSER log] Pixelocity WASM module loaded. Call initWasmRenderer() to start.
+[BROWSER log] 🚀 Pixelocity WASM Renderer initializing...
+[BROWSER log]    Canvas: 2048x2048
+[BROWSER log] ❌ Failed to get WebGPU adapter
+[BROWSER log] ❌ Failed to create WebGPU device
+[BROWSER error] [WASM] Failed to initialize WASM renderer (C++ returned 0)
+[BROWSER error] ❌ WASM Renderer init failed (attempt 1/3)
+[BROWSER error] [WebGPU Renderer] wasm-init: WASM Renderer init failed (attempt 1/3)
+[BROWSER warning] [RendererManager] switchRenderer('wasm') failed — keeping previous renderer
+[BROWSER warning] ⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU
+[BROWSER warning] No available adapters.
+[BROWSER warning] No available adapters.
+[BROWSER error] [WebGPU Renderer] webgpu-unavailable: No suitable GPU adapter found. Your device may not support WebGPU.
+[BROWSER warning] [WebGPU] No GPU adapter found
+[BROWSER warning] [RendererManager] switchRenderer('webgpu') failed — keeping previous renderer
+[BROWSER warning] ⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)
+[BROWSER log] ✅ JS Renderer initialized with canvas size: 2048x2048
+[BROWSER log] Loaded local manifest. Total: 999 images, 19 videos
+[BROWSER log] [ShaderApi] Received 967 shaders from API
+[BROWSER log] [ShaderApi] Shaders with real defaults: 217
+]]>
+</system-out>
+</testcase>
+<testcase name="WASM renderer collects performance metrics" classname="wasm-renderer.smoke.spec.ts" time="6.952">
+<system-out>
+<![CDATA[[BROWSER log] [ShaderApi] Fetching from https://storage.noahcohn.com/api/shaders?all=true
+[BROWSER log] 🔧 WASM renderer explicitly requested via ?renderer=wasm
+[BROWSER log] [WASM] Init attempt 1/3...
+[BROWSER log] [WASM] Loading from: /wasm/pixelocity_wasm.js
+[BROWSER log] Pixelocity WASM module loaded. Call initWasmRenderer() to start.
+[BROWSER log] 🚀 Pixelocity WASM Renderer initializing...
+[BROWSER log]    Canvas: 2048x2048
+[BROWSER log] ❌ Failed to get WebGPU adapter
+[BROWSER log] ❌ Failed to create WebGPU device
+[BROWSER error] [WASM] Failed to initialize WASM renderer (C++ returned 0)
+[BROWSER error] ❌ WASM Renderer init failed (attempt 1/3)
+[BROWSER error] [WebGPU Renderer] wasm-init: WASM Renderer init failed (attempt 1/3)
+[BROWSER warning] [RendererManager] switchRenderer('wasm') failed — keeping previous renderer
+[BROWSER warning] ⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU
+[BROWSER warning] No available adapters.
+[BROWSER warning] No available adapters.
+[BROWSER error] [WebGPU Renderer] webgpu-unavailable: No suitable GPU adapter found. Your device may not support WebGPU.
+[BROWSER warning] [WebGPU] No GPU adapter found
+[BROWSER warning] [RendererManager] switchRenderer('webgpu') failed — keeping previous renderer
+[BROWSER warning] ⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)
+[BROWSER log] ✅ JS Renderer initialized with canvas size: 2048x2048
+[BROWSER log] Loaded local manifest. Total: 999 images, 19 videos
+[BROWSER log] [ShaderApi] Received 967 shaders from API
+[BROWSER log] [ShaderApi] Shaders with real defaults: 217
+=== WASM Renderer Metrics ===
 FPS: undefined
 Init Time: undefined
 Has Module: undefined
 ==============================
-WASM renderer fell back (expected in CI)
+Skipping WASM performance metric assertions because renderer fell back to undefined
 ]]>
 </system-out>
 </testcase>
