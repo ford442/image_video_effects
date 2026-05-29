@@ -1,162 +1,25 @@
-<testsuites id="" name="" tests="5" failures="2" skipped="0" errors="0" time="48.999905">
-<testsuite name="wasm-renderer.smoke.spec.ts" timestamp="2026-05-28T05:25:07.908Z" hostname="chromium" tests="5" failures="2" skipped="0" time="38.166" errors="0">
-<testcase name="WASM renderer initializes successfully" classname="wasm-renderer.smoke.spec.ts" time="2.779">
-<failure message="wasm-renderer.smoke.spec.ts:112:5 WASM renderer initializes successfully" type="FAILURE">
-<![CDATA[  [chromium] › wasm-renderer.smoke.spec.ts:112:5 › WASM renderer initializes successfully ──────────
-
-    Error: expect(received).toBe(expected) // Object.is equality
-
-    Expected: true
-    Received: undefined
-
-      128 |
-      129 |   expect(diagnostics).toBeDefined();
-    > 130 |   expect(diagnostics?.initialized).toBe(true);
-          |                                    ^
-      131 |   expect(diagnostics?.fps).toBeGreaterThanOrEqual(0);
-      132 |   expect(diagnostics?.hasModule).toBe(true);
-      133 |
-        at /app/tests/wasm-renderer.smoke.spec.ts:130:36
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/error-context.md
-
-    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
-
-    Error: expect(received).toBe(expected) // Object.is equality
-
-    Expected: true
-    Received: undefined
-
-      128 |
-      129 |   expect(diagnostics).toBeDefined();
-    > 130 |   expect(diagnostics?.initialized).toBe(true);
-          |                                    ^
-      131 |   expect(diagnostics?.fps).toBeGreaterThanOrEqual(0);
-      132 |   expect(diagnostics?.hasModule).toBe(true);
-      133 |
-        at /app/tests/wasm-renderer.smoke.spec.ts:130:36
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/error-context.md
-]]>
-</failure>
+<testsuites id="" name="" tests="5" failures="0" skipped="0" errors="0" time="27.280468">
+<testsuite name="wasm-renderer.smoke.spec.ts" timestamp="2026-05-29T19:40:45.661Z" hostname="chromium" tests="5" failures="0" skipped="0" time="24.865" errors="0">
+<testcase name="WASM renderer initializes successfully" classname="wasm-renderer.smoke.spec.ts" time="1.417">
 <system-out>
-<![CDATA[
-[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/test-failed-1.png]]
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/video.webm]]
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/error-context.md]]
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/test-failed-1.png]]
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/video.webm]]
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/error-context.md]]
+<![CDATA[WASM renderer fell back (expected in CI)
 ]]>
 </system-out>
 </testcase>
-<testcase name="WASM renderer loads single shader without errors" classname="wasm-renderer.smoke.spec.ts" time="4.952">
+<testcase name="WASM renderer loads single shader without errors" classname="wasm-renderer.smoke.spec.ts" time="3.943">
 </testcase>
-<testcase name="WASM renderer loads multiple shaders (multi-slot stack)" classname="wasm-renderer.smoke.spec.ts" time="7.2">
+<testcase name="WASM renderer loads multiple shaders (multi-slot stack)" classname="wasm-renderer.smoke.spec.ts" time="8.444">
 </testcase>
-<testcase name="WASM renderer handles shader loading with minimal console errors" classname="wasm-renderer.smoke.spec.ts" time="5.924">
+<testcase name="WASM renderer handles shader loading with minimal console errors" classname="wasm-renderer.smoke.spec.ts" time="4.967">
 </testcase>
-<testcase name="WASM renderer collects performance metrics" classname="wasm-renderer.smoke.spec.ts" time="17.311">
-<failure message="wasm-renderer.smoke.spec.ts:247:5 WASM renderer collects performance metrics" type="FAILURE">
-<![CDATA[  [chromium] › wasm-renderer.smoke.spec.ts:247:5 › WASM renderer collects performance metrics ──────
-
-    Error: expect(received).toBeGreaterThanOrEqual(expected)
-
-    Matcher error: received value must be a number or bigint
-
-    Received has value: undefined
-
-      284 |
-      285 |   // Assertions
-    > 286 |   expect(wasmDiags.wasmFps).toBeGreaterThanOrEqual(0);
-          |                             ^
-      287 |   expect(wasmDiags.wasmHasModule).toBe(true);
-      288 | });
-      289 |
-        at /app/tests/wasm-renderer.smoke.spec.ts:286:29
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/error-context.md
-
-    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
-
-    Error: expect(received).toBeGreaterThanOrEqual(expected)
-
-    Matcher error: received value must be a number or bigint
-
-    Received has value: undefined
-
-      284 |
-      285 |   // Assertions
-    > 286 |   expect(wasmDiags.wasmFps).toBeGreaterThanOrEqual(0);
-          |                             ^
-      287 |   expect(wasmDiags.wasmHasModule).toBe(true);
-      288 | });
-      289 |
-        at /app/tests/wasm-renderer.smoke.spec.ts:286:29
-
-    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
-    ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/test-failed-1.png
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
-    ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/video.webm
-    ────────────────────────────────────────────────────────────────────────────────────────────────
-
-    Error Context: ../test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/error-context.md
-]]>
-</failure>
+<testcase name="WASM renderer collects performance metrics" classname="wasm-renderer.smoke.spec.ts" time="6.094">
 <system-out>
 <![CDATA[=== WASM Renderer Metrics ===
 FPS: undefined
 Init Time: undefined
 Has Module: undefined
 ==============================
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/test-failed-1.png]]
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/video.webm]]
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/error-context.md]]
-=== WASM Renderer Metrics ===
-FPS: undefined
-Init Time: undefined
-Has Module: undefined
-==============================
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/test-failed-1.png]]
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/video.webm]]
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/error-context.md]]
+WASM renderer fell back (expected in CI)
 ]]>
 </system-out>
 </testcase>

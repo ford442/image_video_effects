@@ -5295,6 +5295,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Good for testing macro textures, soft diffusion, and abstract forms.
 
+### Suggestion: Bismuth Clockwork Owl
+- **Date:** 2026-10-15
+- **Prompt:** "A highly detailed, macro portrait of a mechanical owl constructed entirely from vibrant, stepped hopper crystals of iridescent bismuth and delicate brass clockwork. The subject is perched on a dark, rusted iron branch. The lighting is cinematic, utilizing a single warm spotlight that highlights the rainbow interference patterns of the bismuth and casts deep, sharp shadows within the gears. The mood is mysterious, intricate, and magical. Captured with a 100mm macro lens, incredibly shallow depth of field focusing strictly on its glowing, multi-faceted amber eyes."
+- **Negative prompt:** "organic feathers, real bird, daylight, soft lighting, bright background, blurry, out of focus"
+- **Tags:** macro, steampunk, animal, bismuth, photorealistic
+- **Style / Reference:** photorealistic macro product photography, steampunk aesthetic
+- **Composition:** centered portrait, close-up, shallow depth of field
+- **Color palette:** iridescent rainbow, metallic pink, gold, deep iron black, glowing amber
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261015_bismuth-clockwork-owl.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the generation of complex hopper crystal geometry combined with intricate mechanical parts and iridescence.
+
+### Suggestion: Graphene Bioluminescent Reef
+- **Date:** 2026-10-15
+- **Prompt:** "A breathtaking, ultra-wide underwater landscape showcasing a sprawling coral reef constructed entirely from light-absorbing, matte black graphene. The dark, geometric graphene structures are heavily populated by intensely glowing, bioluminescent flora in vivid neon cyan and magenta. The lighting is entirely diegetic, radiating from the luminescent plants and reflecting off tiny, silver-scaled fish, while the graphene remains pitch black. The mood is alien, beautiful, and deeply mysterious. Captured with a 14mm ultra-wide lens to emphasize the vast, sweeping scale of the dark, glowing ecosystem."
+- **Negative prompt:** "sunlight, daylight, bright surface, natural coral, sand, murky water, low resolution"
+- **Tags:** underwater, sci-fi, landscape, graphene, bioluminescent
+- **Style / Reference:** cinematic deep-sea exploration, high-contrast digital art
+- **Composition:** wide landscape, deep perspective, rule of thirds
+- **Color palette:** matte pitch black, neon cyan, vibrant magenta, bright silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261015_graphene-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to contrast intensely bright emissive materials against completely light-absorbing, matte geometric structures.
+
+### Suggestion: Mother of Pearl Spacesuit
+- **Date:** 2026-10-15
+- **Prompt:** "An elegant, surreal fashion portrait of an astronaut wearing a futuristic spacesuit forged seamlessly from shimmering, iridescent Mother of Pearl and polished silver joints. The subject stands elegantly on the desolate, dusty surface of an asteroid with a massive, vibrant blue gas giant looming in the background. The lighting is harsh, unattenuated starlight that catches the micro-ridges of the nacre, throwing prismatic pink and blue highlights across the suit's curved surfaces. The mood is majestic, fragile, and highly fashionable. Captured with an 85mm portrait lens, eye-level perspective."
+- **Negative prompt:** "fabric, cloth, plastic, dull, earth, atmosphere, soft lighting, cartoon"
+- **Tags:** sci-fi, fashion, portrait, surreal, mother of pearl
+- **Style / Reference:** high-fashion editorial photography, surreal sci-fi
+- **Composition:** waist-up portrait, off-center subject, grand cosmic background
+- **Color palette:** pearlescent whites, soft pinks and blues, polished silver, deep cosmic black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261015_nacre-spacesuit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating thin-film iridescent interference mapped onto complex, curved, hard-surface armor plating.
+
+### Suggestion: Italian Futurism Asteroid Base
+- **Date:** 2026-10-15
+- **Prompt:** "A chaotic, high-velocity depiction of a sprawling mining base on a tumbling asteroid, rendered in the aggressive, fragmented style of Italian Futurism. The massive industrial drills and habitats are deconstructed into jagged diagonal lines and overlapping geometric planes that convey explosive mechanical energy and relentless speed. The lighting is harsh, directional, and splintered, throwing stark, jagged shadows that enhance the dynamic motion of the composition. The mood is energetic, industrial, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion."
+- **Negative prompt:** "calm, realistic space, smooth curves, organic, gentle, photorealistic, quiet"
+- **Tags:** abstract, sci-fi, italian futurism, space, dynamic
+- **Style / Reference:** Italian Futurism art movement, Giacomo Balla inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black space, blinding white light
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261015_futurism-asteroid-base.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Pushes the model to apply the aggressive, dynamic abstraction of Italian Futurism to an industrial, cosmic environment.
+
+### Suggestion: Ashcan School Cyberpunk Diner
+- **Date:** 2026-10-15
+- **Prompt:** "A bustling, gritty cyberpunk diner on a rainy night, depicted in the unidealized, painterly style of the Ashcan School. The subject features weary, working-class cyborgs huddled over steaming bowls of noodles under flickering, dim lights. The lighting is overcast and realistic, casting soft, murky shadows that highlight the dirt and texture of the urban environment, contrasted only by a dull, buzzing neon sign outside. The mood is authentic, raw, and full of everyday melancholy. Captured with an eye-level, documentary-style perspective, emphasizing the unglamorous reality of the futuristic city."
+- **Negative prompt:** "clean, modern, bright, cheerful, highly saturated, glossy, 3d render, anime"
+- **Tags:** cyberpunk, interior, ashcan school, gritty, painterly
+- **Style / Reference:** Ashcan School painting, heavy brushstrokes, Edward Hopper inspired
+- **Composition:** eye-level, crowded interior, naturalistic framing
+- **Color palette:** muted browns, dark greys, dull olive, faded neon red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261015_ashcan-cyber-diner.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of futuristic, high-tech themes with the gritty, muted, historical painting style of the Ashcan School.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.

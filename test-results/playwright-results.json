@@ -95,7 +95,7 @@
       "specs": [
         {
           "title": "WASM renderer initializes successfully",
-          "ok": false,
+          "ok": true,
           "tags": [],
           "tests": [
             {
@@ -108,111 +108,22 @@
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "failed",
-                  "duration": 1421,
-                  "error": {
-                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m",
-                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m\n    at /app/tests/wasm-renderer.smoke.spec.ts:130:36",
-                    "location": {
-                      "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                      "column": 36,
-                      "line": 130
-                    },
-                    "snippet": "\u001b[0m \u001b[90m 128 |\u001b[39m\n \u001b[90m 129 |\u001b[39m   expect(diagnostics)\u001b[33m.\u001b[39mtoBeDefined()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 130 |\u001b[39m   expect(diagnostics\u001b[33m?\u001b[39m\u001b[33m.\u001b[39minitialized)\u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 131 |\u001b[39m   expect(diagnostics\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mfps)\u001b[33m.\u001b[39mtoBeGreaterThanOrEqual(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 132 |\u001b[39m   expect(diagnostics\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mhasModule)\u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 133 |\u001b[39m\u001b[0m"
-                  },
-                  "errors": [
+                  "status": "passed",
+                  "duration": 1417,
+                  "errors": [],
+                  "stdout": [
                     {
-                      "location": {
-                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                        "column": 36,
-                        "line": 130
-                      },
-                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m\n\n  128 |\n  129 |   expect(diagnostics).toBeDefined();\n> 130 |   expect(diagnostics?.initialized).toBe(true);\n      |                                    ^\n  131 |   expect(diagnostics?.fps).toBeGreaterThanOrEqual(0);\n  132 |   expect(diagnostics?.hasModule).toBe(true);\n  133 |\n    at /app/tests/wasm-renderer.smoke.spec.ts:130:36"
+                      "text": "WASM renderer fell back (expected in CI)\n"
                     }
                   ],
-                  "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-05-28T05:25:10.717Z",
+                  "startTime": "2026-05-29T19:40:47.221Z",
                   "annotations": [],
-                  "attachments": [
-                    {
-                      "name": "screenshot",
-                      "contentType": "image/png",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/test-failed-1.png"
-                    },
-                    {
-                      "name": "video",
-                      "contentType": "video/webm",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/video.webm"
-                    },
-                    {
-                      "name": "error-context",
-                      "contentType": "text/markdown",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/error-context.md"
-                    }
-                  ],
-                  "errorLocation": {
-                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                    "column": 36,
-                    "line": 130
-                  }
-                },
-                {
-                  "workerIndex": 1,
-                  "parallelIndex": 0,
-                  "status": "failed",
-                  "duration": 1358,
-                  "error": {
-                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m",
-                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m\n    at /app/tests/wasm-renderer.smoke.spec.ts:130:36",
-                    "location": {
-                      "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                      "column": 36,
-                      "line": 130
-                    },
-                    "snippet": "\u001b[0m \u001b[90m 128 |\u001b[39m\n \u001b[90m 129 |\u001b[39m   expect(diagnostics)\u001b[33m.\u001b[39mtoBeDefined()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 130 |\u001b[39m   expect(diagnostics\u001b[33m?\u001b[39m\u001b[33m.\u001b[39minitialized)\u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 131 |\u001b[39m   expect(diagnostics\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mfps)\u001b[33m.\u001b[39mtoBeGreaterThanOrEqual(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 132 |\u001b[39m   expect(diagnostics\u001b[33m?\u001b[39m\u001b[33m.\u001b[39mhasModule)\u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 133 |\u001b[39m\u001b[0m"
-                  },
-                  "errors": [
-                    {
-                      "location": {
-                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                        "column": 36,
-                        "line": 130
-                      },
-                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32mtrue\u001b[39m\nReceived: \u001b[31mundefined\u001b[39m\n\n  128 |\n  129 |   expect(diagnostics).toBeDefined();\n> 130 |   expect(diagnostics?.initialized).toBe(true);\n      |                                    ^\n  131 |   expect(diagnostics?.fps).toBeGreaterThanOrEqual(0);\n  132 |   expect(diagnostics?.hasModule).toBe(true);\n  133 |\n    at /app/tests/wasm-renderer.smoke.spec.ts:130:36"
-                    }
-                  ],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 1,
-                  "startTime": "2026-05-28T05:25:14.575Z",
-                  "annotations": [],
-                  "attachments": [
-                    {
-                      "name": "screenshot",
-                      "contentType": "image/png",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/test-failed-1.png"
-                    },
-                    {
-                      "name": "video",
-                      "contentType": "video/webm",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/video.webm"
-                    },
-                    {
-                      "name": "error-context",
-                      "contentType": "text/markdown",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium-retry1/error-context.md"
-                    }
-                  ],
-                  "errorLocation": {
-                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                    "column": 36,
-                    "line": 130
-                  }
+                  "attachments": []
                 }
               ],
-              "status": "unexpected"
+              "status": "expected"
             }
           ],
           "id": "66856f7efa90714362f5-9c8a0d625a15e7876578",
@@ -233,15 +144,15 @@
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 2,
+                  "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4952,
+                  "duration": 3943,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-05-28T05:25:18.149Z",
+                  "startTime": "2026-05-29T19:40:49.048Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -251,7 +162,7 @@
           ],
           "id": "66856f7efa90714362f5-adbea961028e0087672d",
           "file": "wasm-renderer.smoke.spec.ts",
-          "line": 139,
+          "line": 144,
           "column": 5
         },
         {
@@ -267,15 +178,15 @@
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 2,
+                  "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 7200,
+                  "duration": 8444,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-05-28T05:25:23.692Z",
+                  "startTime": "2026-05-29T19:40:53.009Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -285,7 +196,7 @@
           ],
           "id": "66856f7efa90714362f5-39e147011d4e6f9c7f85",
           "file": "wasm-renderer.smoke.spec.ts",
-          "line": 170,
+          "line": 175,
           "column": 5
         },
         {
@@ -301,15 +212,15 @@
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 2,
+                  "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5924,
+                  "duration": 4967,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-05-28T05:25:30.909Z",
+                  "startTime": "2026-05-29T19:41:01.470Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -319,12 +230,12 @@
           ],
           "id": "66856f7efa90714362f5-3a1c9af053fb6dfaf8a4",
           "file": "wasm-renderer.smoke.spec.ts",
-          "line": 206,
+          "line": 211,
           "column": 5
         },
         {
           "title": "WASM renderer collects performance metrics",
-          "ok": false,
+          "ok": true,
           "tags": [],
           "tests": [
             {
@@ -335,30 +246,11 @@
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 2,
+                  "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "failed",
-                  "duration": 7176,
-                  "error": {
-                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must be a number or bigint\n\nReceived has value: \u001b[31mundefined\u001b[39m",
-                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must be a number or bigint\n\nReceived has value: \u001b[31mundefined\u001b[39m\n    at /app/tests/wasm-renderer.smoke.spec.ts:286:29",
-                    "location": {
-                      "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                      "column": 29,
-                      "line": 286
-                    },
-                    "snippet": "\u001b[0m \u001b[90m 284 |\u001b[39m\n \u001b[90m 285 |\u001b[39m   \u001b[90m// Assertions\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 286 |\u001b[39m   expect(wasmDiags\u001b[33m.\u001b[39mwasmFps)\u001b[33m.\u001b[39mtoBeGreaterThanOrEqual(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 287 |\u001b[39m   expect(wasmDiags\u001b[33m.\u001b[39mwasmHasModule)\u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 288 |\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 289 |\u001b[39m\u001b[0m"
-                  },
-                  "errors": [
-                    {
-                      "location": {
-                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                        "column": 29,
-                        "line": 286
-                      },
-                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must be a number or bigint\n\nReceived has value: \u001b[31mundefined\u001b[39m\n\n  284 |\n  285 |   // Assertions\n> 286 |   expect(wasmDiags.wasmFps).toBeGreaterThanOrEqual(0);\n      |                             ^\n  287 |   expect(wasmDiags.wasmHasModule).toBe(true);\n  288 | });\n  289 |\n    at /app/tests/wasm-renderer.smoke.spec.ts:286:29"
-                    }
-                  ],
+                  "status": "passed",
+                  "duration": 6094,
+                  "errors": [],
                   "stdout": [
                     {
                       "text": "=== WASM Renderer Metrics ===\n"
@@ -374,111 +266,24 @@
                     },
                     {
                       "text": "==============================\n"
+                    },
+                    {
+                      "text": "WASM renderer fell back (expected in CI)\n"
                     }
                   ],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-05-28T05:25:36.851Z",
+                  "startTime": "2026-05-29T19:41:06.461Z",
                   "annotations": [],
-                  "attachments": [
-                    {
-                      "name": "screenshot",
-                      "contentType": "image/png",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/test-failed-1.png"
-                    },
-                    {
-                      "name": "video",
-                      "contentType": "video/webm",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/video.webm"
-                    },
-                    {
-                      "name": "error-context",
-                      "contentType": "text/markdown",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium/error-context.md"
-                    }
-                  ],
-                  "errorLocation": {
-                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                    "column": 29,
-                    "line": 286
-                  }
-                },
-                {
-                  "workerIndex": 3,
-                  "parallelIndex": 0,
-                  "status": "failed",
-                  "duration": 10135,
-                  "error": {
-                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must be a number or bigint\n\nReceived has value: \u001b[31mundefined\u001b[39m",
-                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must be a number or bigint\n\nReceived has value: \u001b[31mundefined\u001b[39m\n    at /app/tests/wasm-renderer.smoke.spec.ts:286:29",
-                    "location": {
-                      "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                      "column": 29,
-                      "line": 286
-                    },
-                    "snippet": "\u001b[0m \u001b[90m 284 |\u001b[39m\n \u001b[90m 285 |\u001b[39m   \u001b[90m// Assertions\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 286 |\u001b[39m   expect(wasmDiags\u001b[33m.\u001b[39mwasmFps)\u001b[33m.\u001b[39mtoBeGreaterThanOrEqual(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 287 |\u001b[39m   expect(wasmDiags\u001b[33m.\u001b[39mwasmHasModule)\u001b[33m.\u001b[39mtoBe(\u001b[36mtrue\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m 288 |\u001b[39m })\u001b[33m;\u001b[39m\n \u001b[90m 289 |\u001b[39m\u001b[0m"
-                  },
-                  "errors": [
-                    {
-                      "location": {
-                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                        "column": 29,
-                        "line": 286
-                      },
-                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\n\u001b[1mMatcher error\u001b[22m: \u001b[31mreceived\u001b[39m value must be a number or bigint\n\nReceived has value: \u001b[31mundefined\u001b[39m\n\n  284 |\n  285 |   // Assertions\n> 286 |   expect(wasmDiags.wasmFps).toBeGreaterThanOrEqual(0);\n      |                             ^\n  287 |   expect(wasmDiags.wasmHasModule).toBe(true);\n  288 | });\n  289 |\n    at /app/tests/wasm-renderer.smoke.spec.ts:286:29"
-                    }
-                  ],
-                  "stdout": [
-                    {
-                      "text": "=== WASM Renderer Metrics ===\n"
-                    },
-                    {
-                      "text": "FPS: undefined\n"
-                    },
-                    {
-                      "text": "Init Time: undefined\n"
-                    },
-                    {
-                      "text": "Has Module: undefined\n"
-                    },
-                    {
-                      "text": "==============================\n"
-                    }
-                  ],
-                  "stderr": [],
-                  "retry": 1,
-                  "startTime": "2026-05-28T05:25:45.635Z",
-                  "annotations": [],
-                  "attachments": [
-                    {
-                      "name": "screenshot",
-                      "contentType": "image/png",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/test-failed-1.png"
-                    },
-                    {
-                      "name": "video",
-                      "contentType": "video/webm",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/video.webm"
-                    },
-                    {
-                      "name": "error-context",
-                      "contentType": "text/markdown",
-                      "path": "/app/test-results/wasm-renderer.smoke-WASM-r-b02d2-ollects-performance-metrics-chromium-retry1/error-context.md"
-                    }
-                  ],
-                  "errorLocation": {
-                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
-                    "column": 29,
-                    "line": 286
-                  }
+                  "attachments": []
                 }
               ],
-              "status": "unexpected"
+              "status": "expected"
             }
           ],
           "id": "66856f7efa90714362f5-6874ca046f4b09669061",
           "file": "wasm-renderer.smoke.spec.ts",
-          "line": 247,
+          "line": 252,
           "column": 5
         }
       ]
@@ -486,11 +291,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-05-28T05:25:07.432Z",
-    "duration": 48999.905,
-    "expected": 3,
+    "startTime": "2026-05-29T19:40:45.395Z",
+    "duration": 27280.468,
+    "expected": 5,
     "skipped": 0,
-    "unexpected": 2,
+    "unexpected": 0,
     "flaky": 0
   }
 }
