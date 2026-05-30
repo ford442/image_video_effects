@@ -2645,6 +2645,62 @@
     ]
   },
   {
+    "id": "gen-crystal-lattice-growth",
+    "name": "Crystal Lattice Growth",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-crystal-lattice-growth.wgsl",
+    "category": "generative",
+    "description": "Mineral dendrites crystallise from a golden-ratio nucleation seed. Radially symmetric branches grow with bass energy, prismatic hue shifts with mids, treble adds refractive sparkle.",
+    "tags": [
+      "crystal",
+      "fractal",
+      "dendrite",
+      "generative",
+      "audio-reactive",
+      "geometric",
+      "abstract",
+      "procedural"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "symmetry",
+        "name": "Symmetry",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "growthRate",
+        "name": "Growth Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "hue",
+        "name": "Hue",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "thickness",
+        "name": "Thickness",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-crystalline-chrono-dyson",
     "name": "Crystalline Chrono-Dyson",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-crystalline-chrono-dyson.wgsl",
@@ -4607,6 +4663,62 @@
     ]
   },
   {
+    "id": "gen-hypnotic-vortex-tunnel",
+    "name": "Hypnotic Vortex Tunnel",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-hypnotic-vortex-tunnel.wgsl",
+    "category": "generative",
+    "description": "An infinite vortex tunnel of nested spinning rings coloured by spectral light. Bass spins the rings faster, treble fires radial arc strobes, mouse shifts the vanishing point.",
+    "tags": [
+      "tunnel",
+      "vortex",
+      "hypnotic",
+      "generative",
+      "audio-reactive",
+      "psychedelic",
+      "abstract",
+      "neon"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "rings",
+        "name": "Rings",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "rotSpeed",
+        "name": "Rotation Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "distort",
+        "name": "Distortion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-inverse-mandelbrot",
     "name": "Inverse Mandelbrot Realm",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-inverse-mandelbrot.wgsl",
@@ -5563,6 +5675,62 @@
     ]
   },
   {
+    "id": "gen-molten-planetary-core",
+    "name": "Molten Planetary Core",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-molten-planetary-core.wgsl",
+    "category": "generative",
+    "description": "A rocky planet's iron-nickel heart: convection cells churn in slow blackbody glow. Bass erupts mantle plumes, treble cracks the crust in magma seams, mouse tilts the view.",
+    "tags": [
+      "molten",
+      "planet",
+      "lava",
+      "generative",
+      "audio-reactive",
+      "cosmic",
+      "sphere",
+      "abstract"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "convection",
+        "name": "Convection",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "plume",
+        "name": "Plume Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "crustThick",
+        "name": "Crust Thickness",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-multi-scale-evolutionary-cellular-gardens",
     "name": "Multi-Scale Evolutionary Cellular Gardens",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-multi-scale-evolutionary-cellular-gardens.wgsl",
@@ -5841,6 +6009,62 @@
         "step": 0.1,
         "mapping": "zoom_params.w",
         "description": "Mouse gravity attraction"
+      }
+    ]
+  },
+  {
+    "id": "gen-neon-lotus",
+    "name": "Neon Lotus",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neon-lotus.wgsl",
+    "category": "generative",
+    "description": "A blooming neon lotus flower with layered petals unfolding in real-time. Bass swells the bloom, mids shift the chromatic glow, treble adds iridescent shimmer on each petal edge.",
+    "tags": [
+      "lotus",
+      "flower",
+      "neon",
+      "generative",
+      "audio-reactive",
+      "colorful",
+      "abstract",
+      "psychedelic"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "petalCount",
+        "name": "Petal Count",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bloom",
+        "name": "Bloom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glowScale",
+        "name": "Glow Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -7121,6 +7345,61 @@
     ]
   },
   {
+    "id": "gen-quantum-foam",
+    "name": "Quantum Foam",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-foam.wgsl",
+    "category": "generative",
+    "description": "Spacetime seething at the Planck scale: Worley-noise bubbles pop in chromatic iridescence. Bass amplifies density, treble brightens cell borders, creating a living quantum vacuum.",
+    "tags": [
+      "quantum",
+      "foam",
+      "cellular",
+      "abstract",
+      "audio-reactive",
+      "generative",
+      "cosmic",
+      "procedural"
+    ],
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bubbleSize",
+        "name": "Bubble Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chroma",
+        "name": "Chroma",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-quantum-mycelium",
     "name": "Quantum Mycelium",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-quantum-mycelium.wgsl",
@@ -7727,6 +8006,62 @@
     ]
   },
   {
+    "id": "gen-solar-wind-ribbons",
+    "name": "Solar Wind Ribbons",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-solar-wind-ribbons.wgsl",
+    "category": "generative",
+    "description": "Magnetised plasma ribbons stream like coronal mass ejections caught mid-flight. Bass swells ribbon width, treble brightens edges, mouse steers the aurora curtain.",
+    "tags": [
+      "solar",
+      "aurora",
+      "ribbons",
+      "plasma",
+      "generative",
+      "audio-reactive",
+      "cosmic",
+      "abstract"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "ribbonCount",
+        "name": "Ribbon Count",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "twist",
+        "name": "Twist",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-sonoluminescent-chrono-geode-matrix",
     "name": "Sonoluminescent Chrono-Geode Matrix",
     "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core.",
@@ -7818,6 +8153,62 @@
         "id": "turbulence",
         "name": "Turbulence",
         "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-stardust-nebula",
+    "name": "Stardust Nebula",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-stardust-nebula.wgsl",
+    "category": "generative",
+    "description": "A stellar nursery in HII emission colours: curl-noise gas clouds, dark absorption pillars, and proto-star sparkle. Bass swells the pillars of creation, treble ignites new suns.",
+    "tags": [
+      "nebula",
+      "space",
+      "stars",
+      "generative",
+      "audio-reactive",
+      "cosmic",
+      "abstract",
+      "atmospheric"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Cloud Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "emission",
+        "name": "Emission",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "starField",
+        "name": "Star Field",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "drift",
+        "name": "Gas Drift",
+        "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01
