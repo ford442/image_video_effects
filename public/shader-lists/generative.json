@@ -3299,6 +3299,68 @@
     ]
   },
   {
+    "id": "gen-emergent-script-gardens",
+    "name": "Emergent Script Gardens",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-emergent-script-gardens.wgsl",
+    "category": "generative",
+    "description": "Interacting ink-like and neon strokes follow local rules to self-organize into alien symbolic gardens. Mouse interaction plants dense stroke seeds, while audio bands influence stroke curvature, length, and glyph clustering.",
+    "tags": [
+      "generative",
+      "calligraphy",
+      "emergent",
+      "script",
+      "glyphs",
+      "strokes",
+      "audio-reactive",
+      "mouse-driven",
+      "procedural"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven",
+      "meaningful-alpha"
+    ],
+    "params": [
+      {
+        "id": "strokeDensity",
+        "name": "Stroke Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Number of interacting strokes in each symbolic garden cluster"
+      },
+      {
+        "id": "curvature",
+        "name": "Curvature",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "How strongly strokes bend through the local rule field"
+      },
+      {
+        "id": "gardenScale",
+        "name": "Garden Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Scale and spacing of emergent glyph clusters"
+      },
+      {
+        "id": "palette",
+        "name": "Ink / Neon",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Blend from minimal ink wash to luminous neon script"
+      }
+    ]
+  },
+  {
     "id": "gen-erosion-strata",
     "name": "Erosion Strata",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-erosion-strata.wgsl",
