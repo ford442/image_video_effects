@@ -248,7 +248,11 @@ def main():
         exit(1)
     print("")
     
-    password = 'GoogleBez12!'  # Consider using environment variable
+    # Read password from env var; fall back to interactive prompt.
+    # Set DEPLOY_PASS in your shell environment — never hardcode credentials here.
+    password = os.environ.get("DEPLOY_PASS", "")
+    if not password:
+        password = getpass.getpass(f"Password for {USERNAME}@{HOSTNAME}: ")
 
     # Load manifest
     manifest = load_manifest()
