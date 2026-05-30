@@ -2,7 +2,7 @@
   {
     "id": "glass-wipes",
     "name": "Rainy Window",
-    "url": "shaders/glass-wipes.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/glass-wipes.wgsl",
     "description": "Simulates rain on a window that distorts the view. Use the mouse to wipe the glass clean.",
     "features": [
       "mouse-driven"
@@ -45,7 +45,7 @@
   {
     "id": "ink-marbling",
     "name": "Ink Marbling",
-    "url": "shaders/ink-marbling.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ink-marbling.wgsl",
     "description": "Distorts the image with fluid, ink-like domain warping.",
     "features": [
       "mouse-driven"
@@ -92,7 +92,7 @@
   {
     "id": "kimi-liquid-glass",
     "name": "Kimi Liquid Glass",
-    "url": "shaders/kimi_liquid_glass.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/kimi_liquid_glass.wgsl",
     "description": "Realistic liquid surface with caustics, chromatic refraction, and specular highlights.",
     "features": [
       "mouse-driven",
@@ -148,7 +148,7 @@
   {
     "id": "liquid-displacement",
     "name": "Liquid Displacement",
-    "url": "shaders/liquid-displacement.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-displacement.wgsl",
     "description": "Navier-Stokes fluid simulation for realistic water-like displacement. Features swirling eddies, vortices, and volume-conserving flow with pressure projection.",
     "params": [
       {
@@ -204,7 +204,7 @@
   {
     "id": "liquid-fast",
     "name": "Liquid Fast",
-    "url": "shaders/liquid-fast.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-fast.wgsl",
     "description": "",
     "tags": [
       "filter",
@@ -259,7 +259,7 @@
   {
     "id": "liquid-glitch",
     "name": "Liquid Glitch",
-    "url": "shaders/liquid-glitch.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-glitch.wgsl",
     "description": "",
     "tags": [
       "filter",
@@ -314,7 +314,7 @@
   {
     "id": "liquid-jelly",
     "name": "Liquid Jelly",
-    "url": "shaders/liquid-jelly.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-jelly.wgsl",
     "description": "Elastic liquid effect with subsurface scattering and alpha physics",
     "features": [
       "upgraded-rgba",
@@ -375,7 +375,7 @@
   {
     "id": "liquid-metal",
     "name": "Liquid Metal",
-    "url": "shaders/liquid-metal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-metal.wgsl",
     "description": "PBR mercury surface with FBM height field, Schlick-Fresnel reflectance, chromatic RGB dispersion, depth-aware pooling, and audio-reactive surface pulsing.",
     "features": [
       "mouse-driven",
@@ -432,7 +432,7 @@
   {
     "id": "liquid-mirror",
     "name": "Liquid Mirror",
-    "url": "shaders/liquid-mirror.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-mirror.wgsl",
     "description": "Metallic liquid surface that reflects the image and ripples under the mouse.",
     "params": [
       {
@@ -475,7 +475,7 @@
   {
     "id": "liquid-oil",
     "name": "Liquid Oil",
-    "url": "shaders/liquid-oil.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-oil.wgsl",
     "description": "",
     "tags": [
       "filter",
@@ -530,7 +530,7 @@
   {
     "id": "liquid-optimized-pass1",
     "name": "Liquid Optimized (Pass 1)",
-    "url": "shaders/liquid-optimized-pass1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-optimized-pass1.wgsl",
     "description": "Physics simulation pass: capillary wave dynamics, Laplace pressure, ripple propagation, and ambient micro-ripples. Outputs height field state to dataTextureA.",
     "tags": [
       "liquid",
@@ -586,7 +586,7 @@
   {
     "id": "liquid-optimized-pass2",
     "name": "Liquid Optimized (Pass 2)",
-    "url": "shaders/liquid-optimized-pass2.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-optimized-pass2.wgsl",
     "description": "Fluid rendering pass: Fresnel reflection, Beer-Lambert absorption, specular highlights, and alpha blending. Reads physics state from dataTextureC.",
     "tags": [
       "liquid",
@@ -641,7 +641,7 @@
   {
     "id": "liquid-optimized",
     "name": "Liquid Surface Tension (Optimized)",
-    "url": "shaders/liquid-optimized.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-optimized.wgsl",
     "description": "Surface tension liquid simulation with shared memory optimization. Uses workgroup-local caching to reduce texture fetches by 80% for 8-10x performance improvement. Audio reactivity drives ambient wave amplitude and virtual ripple sources.",
     "tags": [
       "liquid",
@@ -695,7 +695,7 @@
   {
     "id": "liquid-pass1",
     "name": "Liquid (Pass 1)",
-    "url": "shaders/liquid-pass1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-pass1.wgsl",
     "description": "Capillary wave physics pass: surface tension simulation with Laplacian and biharmonic operators, gravity waves, ripple sources, and ambient micro-ripples. Outputs persistent height field to dataTextureA.",
     "tags": [
       "liquid",
@@ -750,7 +750,7 @@
   {
     "id": "liquid-pass2",
     "name": "Liquid (Pass 2)",
-    "url": "shaders/liquid-pass2.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-pass2.wgsl",
     "description": "Fluid rendering pass: surface normal calculation, Snell's law refraction, Fresnel reflection, Beer-Lambert wavelength-dependent absorption, specular highlights, and physics-based alpha blending.",
     "tags": [
       "liquid",
@@ -805,7 +805,7 @@
   {
     "id": "liquid-perspective",
     "name": "Liquid Perspective",
-    "url": "shaders/liquid-perspective.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-perspective.wgsl",
     "description": "",
     "params": [
       {
@@ -848,7 +848,7 @@
   {
     "id": "liquid-rainbow",
     "name": "Liquid Rainbow",
-    "url": "shaders/liquid-rainbow.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-rainbow.wgsl",
     "description": "Liquid rainbow refraction with single-sample spectral tint mixing, Fresnel-based alpha translucency, and depth-aware compositing.",
     "tags": [
       "filter",
@@ -904,7 +904,7 @@
   {
     "id": "liquid-rgb",
     "name": "Liquid RGB",
-    "url": "shaders/liquid-rgb.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-rgb.wgsl",
     "description": "",
     "tags": [
       "filter",
@@ -959,7 +959,7 @@
   {
     "id": "liquid-smear",
     "name": "Liquid Smear",
-    "url": "shaders/liquid-smear.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-smear.wgsl",
     "description": "Smudge pixels like wet paint with your mouse.",
     "params": [
       {
@@ -1003,7 +1003,7 @@
   {
     "id": "liquid-tensor-vortex",
     "name": "Liquid Tensor Vortex",
-    "url": "shaders/liquid-tensor-vortex.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-tensor-vortex.wgsl",
     "description": "A 3D tensor field that melts and reforms like liquid metal under mouse vorticity, with bass-driven surface tension and transmission alpha that lets the background breathe through the folds.",
     "tags": [
       "liquid",
@@ -1058,7 +1058,7 @@
   {
     "id": "liquid-v1",
     "name": "Liquid (Ambient)",
-    "url": "shaders/liquid-v1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-v1.wgsl",
     "description": "",
     "tags": [
       "filter",
@@ -1102,7 +1102,7 @@
   {
     "id": "liquid-viscous-grokcf1",
     "name": "Liquid Viscous Nebula grokcf1",
-    "url": "shaders/liquid-viscous-grokcf1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-viscous-grokcf1.wgsl",
     "description": "Enhanced viscous liquid with nebula glow, multi-layer flow, and cosmic viscosity.",
     "tags": [
       "filter",
@@ -1146,7 +1146,7 @@
   {
     "id": "liquid-viscous-simple",
     "name": "Liquid Viscous (Simple)",
-    "url": "shaders/liquid-viscous-simple.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-viscous-simple.wgsl",
     "description": "",
     "tags": [
       "filter",
@@ -1201,7 +1201,7 @@
   {
     "id": "liquid-viscous",
     "name": "Liquid Viscous",
-    "url": "shaders/liquid-viscous.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-viscous.wgsl",
     "description": "",
     "tags": [
       "filter",
@@ -1256,7 +1256,7 @@
   {
     "id": "liquid-zoom",
     "name": "Liquid Zoom",
-    "url": "shaders/liquid-zoom.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-zoom.wgsl",
     "description": "",
     "features": [
       "mouse-driven"
@@ -1303,7 +1303,7 @@
   {
     "id": "liquid",
     "name": "Liquid (Interactive)",
-    "url": "shaders/liquid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid.wgsl",
     "description": "",
     "tags": [
       "filter",
@@ -1359,7 +1359,7 @@
   },
   {
     "id": "luma-melt-interactive",
-    "url": "shaders/luma-melt-interactive.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/luma-melt-interactive.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1410,7 +1410,7 @@
   {
     "id": "luma-velocity-melt",
     "name": "Luma Velocity Melt",
-    "url": "shaders/luma-velocity-melt.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/luma-velocity-melt.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -1453,7 +1453,7 @@
   {
     "id": "rain-ripples",
     "name": "Rain Ripples",
-    "url": "shaders/rain-ripples.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/rain-ripples.wgsl",
     "description": "Interactive water ripples and raindrops.",
     "params": [
       {
@@ -1497,7 +1497,7 @@
   {
     "id": "viscous-drag",
     "name": "Viscous Drag",
-    "url": "shaders/viscous-drag.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/viscous-drag.wgsl",
     "description": "The screen becomes a thick, viscous fluid that ripples and deforms under your touch.",
     "features": [
       "mouse-driven"
