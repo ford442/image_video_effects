@@ -86,10 +86,12 @@ export class RendererManager {
     }
 
     // 1. Try native TypeScript WebGPU renderer (no WASM / Emscripten required)
-    const gpuSuccess = await this.switchRenderer('webgpu');
-    if (gpuSuccess) {
-      console.log('✅ Using TypeScript WebGPU renderer (native navigator.gpu)');
-      return true;
+    if (urlPreference !== 'wasm') {
+      const gpuSuccess = await this.switchRenderer('webgpu');
+      if (gpuSuccess) {
+        console.log('✅ Using TypeScript WebGPU renderer (native navigator.gpu)');
+        return true;
+      }
     }
 
     // 2. Canvas2D fallback — no shader effects, but app stays functional.

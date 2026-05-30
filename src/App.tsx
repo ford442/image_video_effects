@@ -287,7 +287,14 @@ function MainApp() {
     const rendererRef = useRef<RendererManager | null>(null);
 
     // --- Renderer backend state ---
-    const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
+        // --- Renderer backend state ---
+    const [activeRendererType, setActiveRendererType] = useState<RendererType>(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const forcedRenderer = urlParams.get('renderer');
+        if (forcedRenderer === 'wasm') return 'wasm';
+        if (forcedRenderer === 'js' || forcedRenderer === 'canvas2d') return 'js';
+        return 'webgpu';
+    });
     const handleSwitchRenderer = useCallback(async (type: RendererType) => {
         const manager = rendererRef.current;
         if (!manager) return;

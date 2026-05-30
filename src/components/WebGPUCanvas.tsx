@@ -14,6 +14,7 @@ interface WebGPUCanvasProps {
     isMouseDown: boolean;
     setIsMouseDown: (down: boolean) => void;
     onInit?: () => void;
+    onRendererInitialized?: (type: string) => void;
     inputSource: InputSource;
     selectedVideo: string; // Used for "Stock" videos
     videoSourceUrl?: string; // NEW: Used for "Uploaded" videos (Blob URL)
