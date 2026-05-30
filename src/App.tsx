@@ -1560,9 +1560,11 @@ function MainApp() {
                     />
                     <div className="status-bar">
                         <span>{isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}</span>
+
+                        {/* Current Renderer Badge (clickable for cycling) */}
                         <span
                             className={`renderer-badge renderer-badge--${activeRendererType}`}
-                            title="Click to cycle renderer: WebGPU → C++ WASM → Canvas2D (or use Dev Tools)"
+                            title="Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)"
                             onClick={() => {
                                 const cycle: Record<RendererType, RendererType> = {
                                     webgpu: 'wasm',
@@ -1574,6 +1576,22 @@ function MainApp() {
                         >
                             {activeRendererType === 'wasm' ? '⚡ C++ WASM' : activeRendererType === 'js' ? '🎨 Canvas2D' : '🔷 WebGPU'}
                         </span>
+
+                        {/* Prominent one-click switch button between the two serious renderers */}
+                        {onSwitchRenderer && (activeRendererType === 'webgpu' || activeRendererType === 'wasm') && (
+                            <button
+                                className="renderer-switch-btn"
+                                onClick={() => {
+                                    const target: RendererType = activeRendererType === 'webgpu' ? 'wasm' : 'webgpu';
+                                    handleSwitchRenderer(target);
+                                }}
+                                title={activeRendererType === 'webgpu' 
+                                    ? 'Switch to the high-performance C++ WASM renderer' 
+                                    : 'Switch back to the TypeScript WebGPU renderer'}
+                            >
+                                {activeRendererType === 'webgpu' ? '⚡ Switch to C++ WASM' : '🔷 Switch to WebGPU'}
+                            </button>
+                        )}
                     </div>
                 </main>
             </div>
