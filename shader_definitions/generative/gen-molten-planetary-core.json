@@ -1,0 +1,43 @@
+{
+  "id": "gen-molten-planetary-core",
+  "name": "Molten Planetary Core",
+  "url": "shaders/gen-molten-planetary-core.wgsl",
+  "category": "generative",
+  "description": "A rocky planet's iron-nickel heart: convection cells churn in slow blackbody glow. Bass erupts mantle plumes, treble cracks the crust in magma seams, mouse tilts the view.",
+  "tags": ["molten", "planet", "lava", "generative", "audio-reactive", "cosmic", "sphere", "abstract"],
+  "features": ["mouse-driven", "audio-reactive", "upgraded-rgba"],
+  "params": [
+    {
+      "id": "convection",
+      "name": "Convection",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "plume",
+      "name": "Plume Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "crustThick",
+      "name": "Crust Thickness",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Glow",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}
