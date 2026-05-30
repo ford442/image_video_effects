@@ -1,8 +1,9 @@
 {
   "id": "optical-illusion-spin",
   "name": "Optical Illusion Spin",
-  "description": "Slices the image into rotating concentric rings. Mouse adds a twisting force.",
+  "category": "image",
   "url": "shaders/optical-illusion-spin.wgsl",
+  "description": "Hypnotic concentric rings spin around the cursor with beat-synced halos and alternating spoke direction.",
   "params": [
     {
       "name": "Ring Count",
@@ -38,10 +39,15 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "hypnotic",
+    "rings",
+    "spin",
+    "audio-reactive",
+    "illusion"
   ]
 }

@@ -33,6 +33,20 @@ const PHI: f32 = 1.61803398874989484820;
 
 fn luminance(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722)); }
 
+// ═══ UNIQUE VISUAL IDEA helpers: paper fiber grain ═══
+fn paperHash(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+fn paperGrain(uv: vec2<f32>) -> f32 {
+    // Anisotropic fibre noise — paper has a directional grain from the pulp rollers.
+    let p = uv * vec2<f32>(520.0, 180.0);
+    let i = floor(p); let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    let n = mix(mix(paperHash(i), paperHash(i + vec2<f32>(1.0, 0.0)), u.x),
+                mix(paperHash(i + vec2<f32>(0.0, 1.0)), paperHash(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+    return n;
+}
+
 fn ellipDot(uv: vec2<f32>, center: vec2<f32>, radius: f32, axis: vec2<f32>, stretch: f32) -> f32 {
     let d = uv - center;
     let along = dot(d, axis);
@@ -93,9 +107,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let inkTint = mix(vec3<f32>(0.0), monoTint, mouseDown);
     let monoColor = mix(vec3<f32>(1.0), mix(vec3<f32>(0.0), inkTint, mouseDown), monoDot);
 
-    let cDot = screen_dot(uv, baseScale, baseAngle + 15.0 * PI / 180.0, sampleColor, vec3<f32>(1.0, 0.0, 0.0), velAxis, stretch, contrast);
-    let mDot = screen_dot(uv, baseScale, baseAngle + 75.0 * PI / 180.0, sampleColor, vec3<f32>(0.0, 1.0, 0.0), velAxis, stretch, contrast);
-    let yDot = screen_dot(uv, baseScale, baseAngle +  0.0 * PI / 180.0, sampleColor, vec3<f32>(0.0, 0.0, 1.0), velAxis, stretch, contrast);
+    // ═══ UNIQUE VISUAL IDEA: offset-press plate misregistration ═══
+    // On a real press each CMYK plate prints in a separate pass; a loose press
+    // leaves the plates slightly out of register. We offset each plate's *sampled
+    // image* by a tiny, slowly-drifting vector so colours fringe apart like cheap
+    // newsprint / risograph. Mouse press tightens registration (a "calibrated" press).
+    let regAmt = mix(0.004, 0.0006, mouseDown) * (1.0 + bass * 0.5);
+    let regC = vec2<f32>( cos(time * 0.7),        sin(time * 0.7)) * regAmt;
+    let regM = vec2<f32>( cos(time * 0.5 + 2.1),  sin(time * 0.5 + 2.1)) * regAmt;
+    let regY = vec2<f32>( cos(time * 0.9 + 4.2),  sin(time * 0.9 + 4.2)) * regAmt;
+    let sampC = textureSampleLevel(readTexture, u_sampler, clamp(uv + regC, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let sampM = textureSampleLevel(readTexture, u_sampler, clamp(uv + regM, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let sampY = textureSampleLevel(readTexture, u_sampler, clamp(uv + regY, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+
+    let cDot = screen_dot(uv, baseScale, baseAngle + 15.0 * PI / 180.0, sampC, vec3<f32>(1.0, 0.0, 0.0), velAxis, stretch, contrast);
+    let mDot = screen_dot(uv, baseScale, baseAngle + 75.0 * PI / 180.0, sampM, vec3<f32>(0.0, 1.0, 0.0), velAxis, stretch, contrast);
+    let yDot = screen_dot(uv, baseScale, baseAngle +  0.0 * PI / 180.0, sampY, vec3<f32>(0.0, 0.0, 1.0), velAxis, stretch, contrast);
     let kDot = screen_dot(uv, baseScale * 1.05, baseAngle + 45.0 * PI / 180.0, sampleColor, vec3<f32>(0.299, 0.587, 0.114), velAxis, stretch, contrast);
     let cyan    = vec3<f32>(0.0, 0.7, 0.9);
     let magenta = vec3<f32>(0.9, 0.0, 0.6);
@@ -108,7 +135,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     cmykColor *= mix(vec3<f32>(1.0), black,   kDot);
 
     let isMono = select(0.0, 1.0, u.zoom_params.z < 0.5);
-    let outColor = mix(cmykColor, monoColor, isMono);
+    var outColor = mix(cmykColor, monoColor, isMono);
+
+    // Paper fibre grain — multiplies the ink so the white paper shows its texture
+    // and ink density varies slightly across the sheet (cheap-stock authenticity).
+    let grain = paperGrain(uv);
+    outColor *= 0.92 + grain * 0.12;
 
     let coverage = 1.0 - luminance(outColor);
     let alpha = clamp(coverage * 0.85 + focus * 0.15 + 0.05, 0.0, 1.0);

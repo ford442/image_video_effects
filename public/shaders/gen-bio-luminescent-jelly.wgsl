@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Bio-Luminescent Jelly
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Features: jellyfish, bioluminescence, sdf-tentacles, audio-pulse, mouse-current, depth-glow, organic-motion
 //  Complexity: High
-//  Description: SDF tentacle jellyfish with pulsing bio-luminescence.
-//    Alpha encodes glow intensity + tentacle density — glowing parts are
-//    translucent while the dense bell body remains opaque.
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish pass — richer pulsing, color, and atmospheric underwater light)
+// ═══════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;

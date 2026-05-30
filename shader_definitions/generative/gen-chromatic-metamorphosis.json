@@ -17,8 +17,11 @@
   ],
   "features": [
     "mouse-driven",
+    "mouse-catalyst",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "semantic-alpha",
+    "depth-aware"
   ],
   "author": "AI",
   "params": [

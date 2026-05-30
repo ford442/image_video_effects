@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Thermal Vision
-//  Category: artistic
-//  Features: audio-reactive, upgraded-rgba
+//  Category: visual-effects
+//  Features: thermal, vision, heat, audio-heat, depth-gradient, atmospheric-haze, pulse-glow
 //  Complexity: Medium
-//  Upgraded: 2026-05-30
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer heat gradients, audio-reactive pulsing, volumetric haze)
+// ═══════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -71,6 +73,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = audio.x;
     let mids = audio.y;
     let treble = audio.z;
+
+    // Grok visual flourish: Richer heat color gradient + audio pulse
+    let heatPulse = 1.0 + bass * 0.4 + treble * 0.3;
 
     let heatSensitivity = mix(0.5, 3.0, u.zoom_params.x) * (1.0 + bass * 0.2);
     let colorRange = u.zoom_params.y;

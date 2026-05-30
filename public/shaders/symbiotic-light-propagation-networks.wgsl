@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Symbiotic Light Propagation Networks
 //  Category: generative
-//  Features: light-transport, organic-networks, symbiotic-growth, audio-color, mouse-seeding
+//  Features: light-transport, organic-networks, symbiotic-growth, audio-color, mouse-seeding,
+//            chromatic-dispersion, bass-glow-pulses, temporal-accumulation, upgraded-rgba
 //  Complexity: High
 //  Chunks From: light ray marching simulation + growth models
 //  Created: 2026-05-31
-//  By: Grok (creative technical artist)
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -38,6 +39,7 @@ fn hash12(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv = vec2<f32>(gid.xy) / res;
     let time = u.config.x * 0.3;
 
@@ -48,31 +50,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
-    // Read previous network state
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
 
-    // Growth influenced by light (previous frame brightness) + audio
     let lightReceived = prev.a;
     let growth = (0.015 + mids * 0.025) * (0.4 + lightReceived * 1.2);
 
-    // Two symbiotic species
     let species1 = prev.r;
     let species2 = prev.g;
 
-    // They support each other but also compete
     let support = species1 * species2 * 0.6;
     let compete = abs(species1 - species2) * 0.3;
 
     var newS1 = species1 * 0.97 + growth * (1.0 + support - compete);
     var newS2 = species2 * 0.97 + growth * (1.0 + support - compete * 0.8);
 
-    // Mouse seeds the network
     let mouseDist = length(uv - mouse);
     let mouseSeed = smoothstep(0.1, 0.0, mouseDist) * mouseDown * 0.8;
     newS1 += mouseSeed * 0.5;
     newS2 += mouseSeed * 0.4;
 
-    // Simple diffusion
     let ps = 1.0 / res;
     let n1 = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(ps.x, 0.0), 0.0);
     let n2 = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(ps.x, 0.0), 0.0);
@@ -82,27 +78,37 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     newS1 = (newS1 + n1.r + n2.r + n3.r + n4.r) * 0.2;
     newS2 = (newS2 + n1.g + n2.g + n3.g + n4.g) * 0.2;
 
-    // Light transport simulation (very simplified)
+    // Chromatic light transport: R and B light travel at different speeds
     let lightDir = normalize(vec2<f32>(0.6, 0.4));
-    let lightSample = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - lightDir * 0.03, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let transmittedLight = (lightSample.r + lightSample.g) * 0.4 * (0.6 + treble * 0.5);
+    let rLightSample = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - lightDir * 0.035, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let bLightSample = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - lightDir * 0.025, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let gLightSample = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - lightDir * 0.03, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let transmittedR = (rLightSample.r + rLightSample.g) * 0.4 * (0.6 + treble * 0.5);
+    let transmittedG = (gLightSample.r + gLightSample.g) * 0.4 * (0.6 + mids * 0.5);
+    let transmittedB = (bLightSample.r + bLightSample.g) * 0.4 * (0.6 + bass * 0.5);
 
     let totalDensity = newS1 + newS2;
-    let light = transmittedLight * (1.0 - totalDensity * 0.4);
+    let lightR = transmittedR * (1.0 - totalDensity * 0.4);
+    let lightG = transmittedG * (1.0 - totalDensity * 0.4);
+    let lightB = transmittedB * (1.0 - totalDensity * 0.4);
 
-    // Store
-    textureStore(dataTextureA, gid.xy, vec4<f32>(newS1, newS2, light, totalDensity));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(newS1, newS2, lightG, totalDensity));
 
-    // Visualization: glowing organic network
+    // Temporal accumulation for persistent glow
+    let prevLight = prev.b;
+    let accumulatedLight = mix(vec3<f32>(lightR, lightG, lightB), vec3<f32>(prevLight * 0.9), 0.1);
+
     let c1 = vec3<f32>(0.3, 0.8, 0.5) * newS1;
     let c2 = vec3<f32>(0.8, 0.4, 0.7) * newS2;
-    let glow = vec3<f32>(0.4, 0.7, 0.9) * light * 1.5;
+    let glow = vec3<f32>(0.4, 0.7, 0.9) * accumulatedLight * 1.5;
 
-    let col = c1 + c2 + glow;
+    // Bass-driven glow pulses
+    let pulse = 1.0 + bass * 0.5 * smoothstep(0.3, 0.0, mouseDist);
+    let col = (c1 + c2 + glow) * pulse;
 
-    let alpha = clamp(totalDensity * 0.7 + light * 0.6, 0.2, 1.25);
+    let alpha = clamp(totalDensity * 0.7 + (lightR + lightG + lightB) * 0.2 + bass * 0.05, 0.2, 1.0);
     let a = clamp(alpha, 0.0, 1.0);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(col * a, a));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(totalDensity * 0.6 + light * 0.4, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(col, a));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(totalDensity * 0.6 + lightG * 0.4, 0.0, 0.0, 0.0));
 }

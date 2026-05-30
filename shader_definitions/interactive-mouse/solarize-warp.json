@@ -1,8 +1,9 @@
 {
   "id": "solarize-warp",
   "name": "Solarize Warp",
+  "category": "interactive-mouse",
   "url": "shaders/solarize-warp.wgsl",
-  "description": "Twists the image around the mouse cursor while applying a solarization effect.",
+  "description": "Darkroom-style solarization twists around the cursor, flipping tones at a tunable threshold with beat-driven intensity.",
   "params": [
     {
       "id": "twist",
@@ -26,18 +27,23 @@
       "max": 1
     },
     {
-      "id": "unused",
-      "name": "Unused",
-      "default": 0,
+      "id": "intensity",
+      "name": "Effect Intensity",
+      "default": 0.4,
       "min": 0,
       "max": 1
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "solarize",
+    "darkroom",
+    "warp",
+    "twist",
+    "audio-reactive"
   ]
 }

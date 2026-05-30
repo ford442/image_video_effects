@@ -21,6 +21,17 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+// ═══ UNIQUE VISUAL IDEA helpers: iron-filing field lines ═══
+fn mrHash(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+fn mrNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p); let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(mrHash(i), mrHash(i + vec2<f32>(1.0, 0.0)), u.x),
+               mix(mrHash(i + vec2<f32>(0.0, 1.0)), mrHash(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -101,7 +112,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(r, g, b, 1.0));
+    var outColor = vec3<f32>(r, g, b);
+
+    // ═══ UNIQUE VISUAL IDEA: iron-filing field-line visualization ═══
+    // The local magnetic field is the blend of the radial (attraction) and the
+    // tangential (swirl) components. Iron filings align ALONG that field, so we
+    // sample noise compressed perpendicular to the field direction — producing the
+    // characteristic dipole field-line filaments of a classroom magnet demo.
+    let fieldDir = normalize(mix(dir, swirlDir, clamp(swirl, 0.0, 1.0)) + vec2<f32>(1e-4));
+    let fieldPerp = vec2<f32>(-fieldDir.y, fieldDir.x);
+    // Coordinates: stretched along the field, tight across it → thin streaks.
+    let along = dot(dVecAspect, fieldDir);
+    let across = dot(dVecAspect, fieldPerp);
+    let filingUV = vec2<f32>(along * 18.0, across * 90.0);
+    // Animate filings drifting along the field lines (current flowing).
+    let flow = mrNoise(filingUV + vec2<f32>(u.config.x * 0.6, 0.0));
+    let filing = pow(abs(sin(across * 120.0 + flow * 6.0)), 6.0);
+    // Filings only appear inside the field's reach, brightest where it is strong.
+    let filingMask = field * smoothstep(0.0, 0.15, strength);
+    let filingColor = vec3<f32>(0.55, 0.6, 0.7); // cold iron sheen
+    outColor = outColor + filingColor * filing * filingMask * 0.7;
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, 1.0));
 
     // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

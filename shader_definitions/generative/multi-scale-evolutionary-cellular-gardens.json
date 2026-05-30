@@ -9,7 +9,10 @@
     "rule-evolution",
     "audio-mutation",
     "multi-scale",
-    "organic-growth"
+    "organic-growth",
+    "upgraded-rgba",
+    "chromatic-species",
+    "temporal-color-memory"
   ],
   "tags": [
     "cellular-automata",

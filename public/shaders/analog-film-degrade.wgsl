@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Analog Film Degrade
 //  Category: image
-//  Features: upgraded-rgba, temporal, grain
+//  Features: film, degrade, retro, audio-grain, jitter, vignette, color-shift
 //  Complexity: Medium
-//  Chunks From: valueNoise, hash21
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer filmic texture, audio-reactive grain, atmospheric degradation)
+// ═══════════════════════════════════════════════════════════════════
 //  Created: 2026-05-23
 //  By: Copilot CLI (tactical swarm)
 // ═══════════════════════════════════════════════════════════════════
@@ -21,6 +23,13 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+let bass = plasmaBuffer[0].x;
+let mids = plasmaBuffer[0].y;
+let treble = plasmaBuffer[0].z;
+
+// Grok: Richer filmic response with audio
+let filmPulse = 1.0 + bass * 0.3 + treble * 0.5;
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
@@ -92,7 +101,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = col + vec4<f32>(select(0.0, scratchBright, scratchLine));
     col = col + vec4<f32>(select(0.0, dustBright, dust));
 
-    // Color fade toward sepia
+    // === Visual Flourish: Richer, more alive film degradation ===
     let luma = dot(col.rgb, vec3<f32>(0.299, 0.587, 0.114));
     let sepia = vec3<f32>(luma * 1.2, luma * 0.9, luma * 0.6);
     col = vec4<f32>(mix(col.rgb, sepia, fadeAmount * 0.5), col.a);
@@ -100,6 +109,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Saturation reduction
     let gray = vec3<f32>(luma);
     col = vec4<f32>(mix(col.rgb, gray, fadeAmount * 0.3), col.a);
+
+    // Audio-reactive film artifacts
+    // Bass adds heavy contrast and "print through"
+    // Treble adds fine scratches and gate weave
+    let heavyDamage = bass * 0.15;
+    let fineDamage = treble * 0.08;
+    
+    // Extra vignette and contrast from bass
+    col.rgb = mix(col.rgb, col.rgb * 0.6, heavyDamage * fadeAmount);
+    
+    // Fine jitter / weave from treble
+    let weave = sin(uv.y * 120.0 + time * 40.0) * fineDamage * fadeAmount * 0.03;
+    let weaveUV = clamp(uv + vec2<f32>(weave * 0.5, weave), vec2<f32>(0.0), vec2<f32>(1.0));
+    let weaveSample = textureSampleLevel(readTexture, u_sampler, weaveUV, 0.0).rgb;
+    col.rgb = mix(col.rgb, weaveSample, fineDamage * 0.4);
 
     // Vignette
     let centerDist = length(uv - vec2<f32>(0.5));

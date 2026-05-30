@@ -1,10 +1,12 @@
 {
   "id": "luma-echo-warp",
   "url": "shaders/luma-echo-warp.wgsl",
-  "description": "Distorts the image based on pixel brightness and mouse position, creating a warping echo effect.",
+  "description": "Temporal echo accumulation with depth-parallax attenuation and curl-warped flow. Bass drives echo amplitude, treble adds sparkle to high-luma regions, and previous frames bleed through via dataTextureC.",
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "temporal-echo",
+    "depth-attenuation",
     "upgraded-rgba"
   ],
   "params": [
@@ -39,7 +41,11 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "temporal-feedback",
+    "depth-aware",
+    "echo",
+    "warp"
   ],
   "name": "Luma Echo Warp"
 }

@@ -1,14 +1,19 @@
 {
   "id": "slime-mold-on-video",
   "name": "Slime Mold on Video",
+  "category": "simulation",
   "url": "shaders/slime-mold-on-video.wgsl",
-  "description": "Video luminance acts as a food field for a slime-mold style trail simulation with persistent tendrils.",
+  "description": "Video luminance feeds a slime-mold trail simulation. Audio shifts tendril colors (bass green, mids cyan, treble magenta). Depth boosts glow intensity. Mouse deposits extra food.",
   "features": [
     "simulation",
     "temporal",
     "video-driven",
     "trail-feedback",
-    "webcam-friendly"
+    "webcam-friendly",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "chromatic-tendril"
   ],
   "tags": [
     "slime",
@@ -16,7 +21,10 @@
     "video",
     "food-map",
     "tendrils",
-    "glow"
+    "glow",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic"
   ],
   "params": [
     {

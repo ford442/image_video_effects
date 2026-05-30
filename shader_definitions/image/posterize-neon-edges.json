@@ -2,7 +2,8 @@
   "id": "posterize-neon-edges",
   "name": "Posterize Neon Edges",
   "url": "/shaders/posterize-neon-edges.wgsl",
-  "description": "Posterization combined with Sobel edge detection and neon glow for a stylized comic-book look.",
+  "category": "image",
+  "description": "Edge-aware posterization with FBM-noise organic boundaries, multi-band luminance quantization, HDR neon bloom with ACES tone mapping, and cyan/magenta split-tone. Audio-reactive and mouse-driven.",
   "tags": [
     "posterize",
     "neon",
@@ -10,10 +11,18 @@
     "glow",
     "comic",
     "stylized",
-    "artistic"
+    "artistic",
+    "audio-reactive",
+    "mouse-driven",
+    "hdr",
+    "film"
   ],
   "features": [
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "edge-detect",
+    "neon",
+    "audio-reactive",
+    "mouse-driven"
   ],
   "params": [
     {

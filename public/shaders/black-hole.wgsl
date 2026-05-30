@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Black Hole
 //  Category: distortion
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Low
-//  Chunks From: black-hole
+//  Features: gravitational-lensing, chromatic-aberration, audio-accretion, mouse-secondary, atmospheric-depth
+//  Complexity: Medium
+//  Chunks From: previous black-hole work + gravitational lensing + accretion disk patterns
 //  Created: 2026-05-30
-//  By: Copilot CLI
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish pass — richer lensing, accretion, and atmosphere)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -54,6 +55,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let d_vec_aspect = vec2<f32>(d_vec_raw.x * aspect, d_vec_raw.y);
     let dist = length(d_vec_aspect);
 
+    // Time for animation
+    let t = u.config.x;
+
     var final_color = vec3<f32>(0.0, 0.0, 0.0);
 
     if (dist < radius) {
@@ -61,10 +65,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         final_color = vec3<f32>(0.0, 0.0, 0.0);
     } else {
         // Gravitational Lensing
-        // We pull pixels from *closer* to the center effectively stretching the background around the hole.
-        // Formula: sample_uv = uv - (offset_vector)
-        // Offset should be larger when close to radius.
-        
         let dist_from_surface = dist - radius;
         
         // Inverse square-ish falloff for gravity
@@ -73,31 +73,52 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Direction from pixel towards mouse
         let pinch_factor = distortion * (0.5 + lensing_scale);
 
-        // We need to apply aspect correction to the offset to avoid oval distortion
-        let offset = (d_vec_aspect / max(length(d_vec_aspect), 0.0001)) * pinch_factor;
-        // Un-aspect the offset for UV space
-        let offset_uv = vec2<f32>(offset.x / aspect, offset.y);
+        // Chromatic gravitational lensing (different wavelengths bend differently)
+        let chr_amount = distortion * 0.018;
+        let offset_r = (d_vec_aspect / max(length(d_vec_aspect), 0.0001)) * (pinch_factor + chr_amount);
+        let offset_g = (d_vec_aspect / max(length(d_vec_aspect), 0.0001)) * pinch_factor;
+        let offset_b = (d_vec_aspect / max(length(d_vec_aspect), 0.0001)) * (pinch_factor - chr_amount);
 
-        let sample_uv = clamp(uv - offset_uv, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+        let offset_uv_r = vec2<f32>(offset_r.x / aspect, offset_r.y);
+        let offset_uv_g = vec2<f32>(offset_g.x / aspect, offset_g.y);
+        let offset_uv_b = vec2<f32>(offset_b.x / aspect, offset_b.y);
 
-        // Wrap/Repeat is handled by sampler, but let's clamp or wrap manually if needed?
-        // Default sampler is Repeat.
+        let sample_r = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset_uv_r, vec2<f32>(0.001,0.001), vec2<f32>(0.999,0.999)), 0.0).r;
+        let sample_g = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset_uv_g, vec2<f32>(0.001,0.001), vec2<f32>(0.999,0.999)), 0.0).g;
+        let sample_b = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset_uv_b, vec2<f32>(0.001,0.001), vec2<f32>(0.999,0.999)), 0.0).b;
 
-        let bg_color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
+        let bg_color = vec3<f32>(sample_r, sample_g, sample_b);
 
-        // Accretion Disk Glow
-        // Very bright near the radius
+        // === Enhanced Accretion Disk with Visual Flourish ===
         let glow_falloff = exp(-dist_from_surface * 20.0);
-        let glow_color = vec3<f32>(1.0, 0.7 + mids * 0.2, 0.3 + treble * 0.15) * glow_intensity * 3.0 * glow_falloff;
+        
+        // Audio-reactive turbulence in the disk
+        let angle = atan2(d_vec_aspect.y, d_vec_aspect.x);
+        let disk_turb = sin(angle * 14.0 + t * 9.0 + bass * 5.0) * (0.12 + treble * 0.08) + 1.0;
+        
+        // Rich temperature gradient in the accretion disk
+        let temp = 1.0 - (dist_from_surface * 0.8);
+        let disk_color = vec3<f32>(
+            1.0,
+            0.55 + mids * 0.35 + temp * 0.15,
+            0.15 + treble * 0.45 + temp * 0.25
+        ) * disk_turb;
+        
+        let glow_color = disk_color * glow_intensity * 3.5 * glow_falloff;
 
-        // Doppler shifting / Redshift? (Optional, maybe just color tint)
-        // Let's add the glow
-        final_color = bg_color + glow_color;
+        // Subtle redshift near the horizon
+        let redshift = smoothstep(0.0, 0.6, dist_from_surface);
+        let final_bg = mix(bg_color * vec3<f32>(1.0, 0.92, 0.85), bg_color, redshift);
+
+        final_color = final_bg + glow_color;
     }
 
     let horizonMask = 1.0 - smoothstep(radius, radius + 0.08 + lensing_scale * 0.1, dist);
-    let finalAlpha = clamp(0.16 + horizonMask * 0.45 + glow_intensity * 0.12, 0.08, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, finalAlpha));
+    // Richer alpha with atmospheric falloff and accretion contribution
+    let atm = exp(-dist * 1.8);
+    let finalAlpha = clamp(0.12 + horizonMask * 0.5 + glow_intensity * 0.18 + atm * 0.15, 0.06, 1.15);
+    let a = clamp(finalAlpha, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color * a, a));
 
     // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

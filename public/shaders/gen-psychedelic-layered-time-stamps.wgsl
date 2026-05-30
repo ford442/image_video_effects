@@ -1,6 +1,8 @@
 // ----------------------------------------------------------------
 // Psychedelic Layered Time-Stamps
 // Category: generative
+// Features: temporal-layering, chromatic-offset, bass-distortion, feedback-accumulation, upgraded-rgba
+// Upgraded: 2026-05-31
 // ----------------------------------------------------------------
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -32,7 +34,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
-  // Audio reactivity
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
@@ -42,26 +43,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let layer_count = i32(u.zoom_params.x * 10.0 + 3.0);
   let delay_scale = u.zoom_params.y;
   let distortion_amp = u.zoom_params.z;
+  let chromatic_shift = u.zoom_params.w * 0.01;
 
   var final_color = vec3<f32>(0.0);
 
-  // Create rippling distortion based on audio and time
-  let dist_offset = vec2<f32>(
-    sin(uv.y * 10.0 + time) * distortion_amp * (1.0 + bass * 2.0),
+  // Chromatic distortion: R/B channels offset differently
+  let r_dist_offset = vec2<f32>(
+    sin(uv.y * 10.0 + time) * distortion_amp * (1.0 + bass * 2.0) + chromatic_shift * (1.0 + bass),
+    cos(uv.x * 10.0 + time) * distortion_amp * (1.0 + bass * 2.0)
+  );
+  let b_dist_offset = vec2<f32>(
+    sin(uv.y * 10.0 + time) * distortion_amp * (1.0 + bass * 2.0) - chromatic_shift * (1.0 + treble),
     cos(uv.x * 10.0 + time) * distortion_amp * (1.0 + bass * 2.0)
   );
 
-  let distorted_uv = uv + dist_offset;
-  let sample_coords = vec2<i32>(distorted_uv * resolution);
+  let r_uv = clamp(uv + r_dist_offset, vec2<f32>(0.0), vec2<f32>(1.0));
+  let b_uv = clamp(uv + b_dist_offset, vec2<f32>(0.0), vec2<f32>(1.0));
+  let g_uv = clamp(uv + vec2<f32>(
+    sin(uv.y * 10.0 + time) * distortion_amp * (1.0 + bass * 2.0),
+    cos(uv.x * 10.0 + time) * distortion_amp * (1.0 + bass * 2.0)
+  ), vec2<f32>(0.0), vec2<f32>(1.0));
 
-  // Fetch delay info
+  let r_sample = textureLoad(readTexture, clamp(vec2<i32>(r_uv * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0).r;
+  let g_sample = textureLoad(readTexture, clamp(vec2<i32>(g_uv * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0).g;
+  let b_sample = textureLoad(readTexture, clamp(vec2<i32>(b_uv * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0).b;
+  let base_color = vec3<f32>(r_sample, g_sample, b_sample);
+
   let delay_info = textureLoad(dataTextureC, coord, 0);
   let current_delay = delay_info.x + (bass * 0.1);
 
-  // Sample base image with distortion
-  let base_color = textureLoad(readTexture, clamp(sample_coords, vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0).rgb;
-
-  // Calculate layer contribution
   for(var i = 0; i < 10; i = i + 1) {
     if (i >= layer_count) { break; }
     let layer_factor = f32(i) / f32(layer_count);
@@ -78,24 +88,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   final_color = final_color / f32(layer_count);
 
-  // Mouse interaction - adds local disturbance
   let mouse_dist = distance(uv, mouse);
   let isMouseActive = mouse_dist < 0.1 && u.zoom_config.w > 0.5;
   final_color += vec3<f32>(1.0 - mouse_dist * 10.0) * bass * select(0.0, 1.0, isMouseActive);
 
-  // Update delay texture (simple temporal evolution)
+  // Feedback accumulation with chromatic boost
+  let prev_frame = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+  let fbMix = 0.1 + mids * 0.15;
+  final_color = mix(final_color, prev_frame * vec3<f32>(1.0 + bass * 0.1, 1.0, 1.0 + treble * 0.1), fbMix);
+
   let delay_track = textureLoad(dataTextureC, coord, 0);
   let delay_raw = delay_track.x + 0.01;
   let new_delay = delay_raw - floor(delay_raw);
   textureStore(dataTextureA, coord, vec4<f32>(new_delay, 0.0, 0.0, 1.0));
 
-  // Alpha: psychedelic layer accumulation brightness drives temporal blend weight
   let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = clamp(luma * 0.6 + current_delay * 0.2 + 0.15, 0.0, 1.0);
+  let alpha = clamp(luma * 0.6 + current_delay * 0.2 + 0.15 + bass * 0.05, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(final_color, alpha));
 
-  // Depth pass-through
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

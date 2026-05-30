@@ -2,11 +2,14 @@
   "id": "phosphor-magnifier",
   "label": "Phosphor Magnifier",
   "name": "Phosphor Magnifier",
+  "category": "interactive-mouse",
   "url": "shaders/phosphor-magnifier.wgsl",
   "icon": "search",
-  "description": "Simulates a CRT phosphor mask. Use mouse to magnify the screen pixels.",
+  "description": "A CRT-style magnifying lens reveals chunky phosphor triads, scanlines, and green bloom around the cursor.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -39,7 +42,10 @@
     }
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "crt",
+    "phosphor",
+    "lens",
+    "retro",
+    "audio-reactive"
   ]
 }

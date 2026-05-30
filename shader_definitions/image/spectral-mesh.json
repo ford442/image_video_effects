@@ -1,13 +1,20 @@
 {
   "id": "spectral-mesh",
   "name": "Spectral Mesh",
+  "category": "image",
   "url": "shaders/spectral-mesh.wgsl",
+  "description": "Audio-lit wireframe mesh bends toward the cursor and paints the image with shifting spectral bands.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "mesh",
+    "wireframe",
+    "spectral",
+    "audio-reactive",
+    "grid"
   ],
   "params": [
     {
@@ -28,7 +35,7 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
-      "description": "Height of mesh displacement"
+      "description": "Amount of cursor-driven mesh drift"
     },
     {
       "id": "mouse_radius",
@@ -48,7 +55,7 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Spectral color shift"
+      "description": "Spectral palette offset"
     }
   ]
 }

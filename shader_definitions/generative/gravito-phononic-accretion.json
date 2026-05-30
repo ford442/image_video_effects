@@ -3,13 +3,16 @@
   "name": "Gravito-Phononic Accretion",
   "url": "shaders/gravito-phononic-accretion.wgsl",
   "category": "generative",
-  "description": "Multiple gravitational centers driven by different audio bands accrete density into beautiful organic structures. Includes gravitational lensing distortion. Mouse can temporarily increase gravity in a region.",
+  "description": "SPH density estimation around orbiting accretors with cubic-spline kernel, shock-wave detection, and temperature-based blackbody coloring. Bass adds mass to primaries, mids drive orbital precession, treble creates acoustic standing waves. Mouse introduces a rogue body with tidal forces. Ripples seed density perturbations.",
   "features": [
-    "gravitational-accretion",
+    "SPH-density",
+    "orbital-velocity",
+    "shock-detection",
+    "blackbody",
     "audio-driven",
-    "lensing",
-    "particle-density",
-    "mouse-gravity"
+    "mouse-rogue-body",
+    "ripple-perturbation",
+    "temporal"
   ],
   "tags": [
     "gravitational",
@@ -17,7 +20,9 @@
     "cosmic",
     "organic",
     "audio-reactive",
-    "lensing"
+    "lensing",
+    "blackbody",
+    "HDR"
   ],
   "params": [
     {

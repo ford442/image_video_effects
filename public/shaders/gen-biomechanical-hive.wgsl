@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Biomechanical Hive - Generative Shader with Chitinous Tissue Properties
+//  Biomechanical Hive
 //  Category: generative
-//  Features: chitinous-shell, organic-transparency, core-bioluminescence, audio-reactive, ACES
+//  Features: biomechanical, hive, organic-mechanical, audio-rhythm, mouse-drone, depth-layers, pulsing-growth
 //  Complexity: High
-//  Created: 2026-05-10
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish pass — richer organic light, audio pulsing, atmospheric depth)
+// ═══════════════════════════════════════════════════════════════════
 //  By: Claude Opus 4.8 (swarm optimization pass 2026-05-31)
 //  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════

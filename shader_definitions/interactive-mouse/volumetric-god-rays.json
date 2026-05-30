@@ -2,7 +2,7 @@
   "id": "volumetric-god-rays",
   "name": "Volumetric God Rays",
   "url": "shaders/volumetric-god-rays.wgsl",
-  "description": "Generates volumetric light rays emanating from the mouse position, using image highlights as the source. Audio-reactive weight modulation enhances the rays with bass frequencies.",
+  "description": "Ray-marched volumetric lighting with Mie scattering phase function, dust particle scatter, chromatic dispersion at shaft edges, ACES tone mapping, HDR bloom, and atmospheric haze. Bass drives dust density, mouse positions the light source, depth controls shaft occlusion and extinction.",
   "params": [
     {
       "id": "density",
@@ -36,6 +36,7 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
@@ -43,6 +44,7 @@
     "image-processing",
     "lighting",
     "rays",
-    "volumetric"
+    "volumetric",
+    "atmosphere"
   ]
 }

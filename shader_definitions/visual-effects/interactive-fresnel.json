@@ -2,39 +2,40 @@
   "id": "interactive-fresnel",
   "name": "Interactive Fresnel",
   "url": "shaders/interactive-fresnel.wgsl",
-  "description": "Simulates a Fresnel lens with stepped concentric rings. Features chromatic aberration with alpha-aware blending, depth influence, and audio reactivity.",
+  "description": "Gravitational lensing with chromatic Einstein rings and depth mass simulation. Concentric rings warp the image with per-channel dispersion; depth acts as gravitational mass. Bass multiplies lensing power, treble sharpens chromatic separation.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven",
+    "chromatic-aberration",
+    "depth-mass",
     "upgraded-rgba"
   ],
   "params": [
     {
-      "id": "ringDensity",
-      "name": "Ring Density",
+      "id": "effectStrength",
+      "name": "Lensing Power",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "magnification",
-      "name": "Magnification",
+      "id": "ringCount",
+      "name": "Ring Count",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "aberration",
-      "name": "Aberration",
+      "id": "ringThickness",
+      "name": "Ring Thickness",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "depthInfluence",
-      "name": "Depth Influence",
-      "default": 0,
+      "id": "dispersion",
+      "name": "Dispersion",
+      "default": 0.5,
       "min": 0,
       "max": 1
     }
@@ -44,6 +45,9 @@
     "image-processing",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "fresnel",
+    "lensing",
+    "chromatic"
   ]
 }

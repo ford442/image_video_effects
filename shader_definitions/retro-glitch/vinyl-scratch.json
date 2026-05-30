@@ -1,8 +1,9 @@
 {
   "id": "vinyl-scratch",
   "name": "Vinyl Scratch",
+  "category": "retro-glitch",
   "url": "shaders/vinyl-scratch.wgsl",
-  "description": "Vintage vinyl record scratch effect.",
+  "description": "Vintage vinyl record scratch with chromatic wobble. Bass drives rotation speed, mids warp the record, treble adds groove noise. Depth scales groove intensity.",
   "params": [
     {
       "id": "scratch_density",
@@ -39,10 +40,17 @@
     "mouse-driven",
     "upgraded-rgba",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "chromatic-wobble"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "vinyl",
+    "scratch",
+    "retro",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic"
   ]
 }

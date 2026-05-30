@@ -16,7 +16,9 @@
   "features": [
     "generative",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal-rotation",
+    "chromatic-edge-bloom"
   ],
   "params": [
     {

@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Kinetic Dispersion
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, curl-dispersion, shockwave, block-scatter, upgraded-rgba
-//  Complexity: High
-//  Chunks From: kinetic-dispersion, curl2D, hash12, bass_env
+//  Category: distortion
+//  Features: mouse-driven, dispersion, kinetic, audio-shatter, depth-fragments, prismatic-motion
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer motion, audio-reactive shattering, atmospheric fragments)
+// ═══════════════════════════════════════════════════════════════════
 //  Created: 2026-05-10
 //  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════

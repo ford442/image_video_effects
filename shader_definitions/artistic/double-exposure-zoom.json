@@ -2,7 +2,7 @@
   "id": "double-exposure-zoom",
   "name": "Double Exposure Zoom",
   "url": "shaders/double-exposure-zoom.wgsl",
-  "description": "Blends the image with a zoomed and rotated copy of itself, pivoting around a spring-damped mouse cursor. Features attack/release audio envelope, temporal feedback trails with alpha-aging, and mouse-distance zoom modulation.",
+  "description": "Multi-scale double exposure with luminance-based matte extraction, film stock color response curves, light leak artifacts, ACES tone mapping, and chromatic aberration on zoom edges. Bass drives zoom speed, mouse controls secondary exposure position with depth parallax.",
   "params": [
     {
       "id": "rotation",
@@ -36,7 +36,7 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven",
+    "depth-aware",
     "temporal",
     "upgraded-rgba"
   ],
@@ -45,6 +45,8 @@
     "image-processing",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "film",
+    "double-exposure"
   ]
 }

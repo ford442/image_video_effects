@@ -2,7 +2,8 @@
   "id": "pixel-reveal",
   "name": "Pixel Reveal",
   "url": "shaders/pixel-reveal.wgsl",
-  "description": "Pixelates the image, with a clear window (or obscuring block) around the mouse.",
+  "category": "interactive-mouse",
+  "description": "Pixel sorting with threshold-based reveal and temporal noise accumulation. Revealed pixels decay back to hidden over time. Glitch chromatic separation on edges, scanline bands, film grain, and depth-controlled pixel perspective.",
   "params": [
     {
       "id": "pixelSize",
@@ -26,18 +27,26 @@
       "max": 1
     },
     {
-      "id": "invert",
-      "name": "Invert Mode",
-      "default": 0,
+      "id": "decay_rate",
+      "name": "Temporal Decay",
+      "default": 0.5,
       "min": 0,
       "max": 1
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "pixel-sort",
+    "glitch",
+    "scanlines",
+    "film-grain",
+    "chromatic",
+    "temporal"
   ]
 }

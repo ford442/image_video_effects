@@ -3,13 +3,15 @@
   "name": "Topological Acoustic Knots",
   "url": "shaders/topological-acoustic-knots.wgsl",
   "category": "generative",
-  "description": "A nematic orientation field where audio frequencies drive the birth, motion, and annihilation of topological defects. Bass and treble create defects while mids control their mobility. Mouse can pin or generate new singularities.",
+  "description": "Nematic Q-tensor evolution with topological charge computation and trefoil-knot SDF constraint. Schlieren texture with defect-core coloring and HDR bloom on +1 defects. Bass creates defect pairs via Kibble-Zurek quench, mids drive annihilation dynamics, treble adds acoustic phonon waves. Mouse pins director with homeotropic anchoring. Ripples spawn defect loops.",
   "features": [
-    "topological-defects",
-    "nematic-fields",
+    "nematic-Q-tensor",
+    "topological-charge",
+    "trefoil-sdf",
+    "schlieren-texture",
     "audio-driven",
-    "mouse-pinning",
-    "defect-dynamics"
+    "mouse-anchoring",
+    "temporal"
   ],
   "tags": [
     "topological",
@@ -17,7 +19,9 @@
     "defects",
     "audio-reactive",
     "scientific",
-    "abstract"
+    "abstract",
+    "knots",
+    "schlieren"
   ],
   "params": [
     {

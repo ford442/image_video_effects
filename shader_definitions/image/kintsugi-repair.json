@@ -1,6 +1,7 @@
 {
   "id": "kintsugi-repair",
   "name": "Kintsugi Repair",
+  "category": "image",
   "url": "shaders/kintsugi-repair.wgsl",
   "description": "Simulates the Japanese art of repairing broken pottery with gold (Kintsugi). Voronoi patterns create cracks with gold filling.",
   "params": [
@@ -34,10 +35,14 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "kintsugi",
+    "gold",
+    "cracks",
+    "audio-reactive"
   ]
 }

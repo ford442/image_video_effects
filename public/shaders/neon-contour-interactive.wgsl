@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Contour Interactive
-//  Category: artistic
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Category: lighting-effects
+//  Features: mouse-driven, neon, edge, audio-pulse, depth-glow, rim-light, electric-atmosphere
 //  Complexity: Medium
-//  Chunks From: neon-contour-interactive
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer electric rim light, audio-reactive pulses, volumetric neon)
+// ═══════════════════════════════════════════════════════════════════
 //  Created: 2026-05-30
 //  By: Copilot CLI
 // ═══════════════════════════════════════════════════════════════════
@@ -67,6 +69,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let audioHigh = audio.z;
     let audioOverall = dot(audio, vec3<f32>(0.5, 0.3, 0.2));
     let audioReactivity = 1.0 + audioOverall * 0.5;
+
+    // Grok visual flourish: Electric, pulsing neon with rich atmospheric glow
+    let electricPulse = 1.0 + audioBass * 0.7 + sin(time * 8.0) * audioHigh * 0.4;
 
     // Params
     // x: Threshold, y: Glow, z: CycleSpeed, w: OcclusionBalance

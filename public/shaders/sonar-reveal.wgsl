@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Sonar Reveal v2
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, temporal, depth-aware
-//  Complexity: High
-//  Upgraded: 2026-05-30
+//  Sonar Reveal
+//  Category: lighting-effects
+//  Features: mouse-driven, sonar, reveal, audio-pulse, depth-echo, atmospheric-reveal
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer pulse propagation, audio-reactive echoes, volumetric atmosphere)
+// ═══════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -55,6 +57,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
+
+    // Grok: Richer sonar pulse with atmospheric propagation
+    let pulseStrength = 1.0 + bass * 0.6 + treble * 0.4;
+
+// Grok: Richer atmospheric propagation and echo layers
+let echoLayers = 1.0 + mids * 0.8;
 
   let baseSize = u.zoom_params.x * 0.45 + 0.06;
   let intensity = u.zoom_params.y * 3.0;

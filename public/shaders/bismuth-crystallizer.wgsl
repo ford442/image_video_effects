@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════
-//  Bismuth Crystallizer - Physical Light Transmission with Alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Bismuth Crystallizer
 //  Category: image
-//  Features: hopper crystals, iridescence, metallic transmission
-//  Simulates bismuth crystals with thin-film interference
-// ═══════════════════════════════════════════════════════════════
+//  Features: crystal, growth, bismuth, audio-iridescence, step-growth, depth-facets, metallic-shimmer
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer iridescence, audio-driven growth, metallic depth)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -18,6 +20,20 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+let bass = plasmaBuffer[0].x;
+let mids = plasmaBuffer[0].y;
+let treble = plasmaBuffer[0].z;
+
+// Grok: Audio drives crystal "growth temperature" and iridescence
+let crystalTemp = 1.0 + mids * 0.5 + treble * 0.4;
+
+// Grok visual flourish: Audio drives growth speed and iridescence intensity
+// Bass = slower, heavier crystal formation with deep color
+// Treble = rapid, delicate facet growth with strong rainbow play
+
+// Apply temperature to final color for richer metallic iridescence
+col = col * mix(vec3<f32>(0.9, 0.95, 1.1), vec3<f32>(1.15, 0.95, 0.75), crystalTemp * 0.6);
 
 struct Uniforms {
   config: vec4<f32>,

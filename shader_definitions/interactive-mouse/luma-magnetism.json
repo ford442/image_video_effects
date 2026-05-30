@@ -1,49 +1,50 @@
 {
   "id": "luma-magnetism",
+  "name": "Luma Magnetism",
   "url": "shaders/luma-magnetism.wgsl",
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "upgraded-rgba"
-  ],
+  "category": "interactive-mouse",
+  "description": "Magnetic field line simulation with Runge-Kutta integration. Bright pixels act as north poles, dark as south. Renders glowing iron-filing filaments with HDR bloom and ACES tone mapping.",
   "params": [
     {
-      "id": "strength",
-      "name": "Magnet Strength",
-      "type": "float",
+      "id": "field-strength",
+      "name": "Field Strength",
       "default": 0.5,
-      "min": -1,
+      "min": 0,
       "max": 1
     },
     {
       "id": "radius",
       "name": "Effect Radius",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1
     },
     {
-      "id": "hardness",
-      "name": "Edge Hardness",
-      "type": "float",
+      "id": "filament-density",
+      "name": "Filament Density",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "threshold",
-      "name": "Luma Threshold",
-      "type": "float",
-      "default": 0.2,
+      "id": "depth-layer",
+      "name": "Depth Layer",
+      "default": 0.5,
       "min": 0,
       "max": 1
     }
   ],
-  "description": "Bright pixels are magnetically attracted to the mouse cursor.",
-  "tags": [
+  "features": [
     "mouse-driven",
-    "interactive"
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
-  "name": "Luma Magnetism"
+  "tags": [
+    "magnetic",
+    "field-lines",
+    "iron-filings",
+    "distortion",
+    "interactive"
+  ]
 }

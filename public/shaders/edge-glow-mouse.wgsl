@@ -1,9 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Edge Glow Mouse - Advanced Alpha with Edge-Preserve
-//  Category: edge-detection
-//  Alpha Mode: Edge-Preserve Alpha + Depth-Layered
-//  Features: advanced-alpha, mouse-interactive, edge-glow
-// ═══════════════════════════════════════════════════════════════════════════════
+// ================================================================
+//  Edge Glow
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: edge-glow-mouse
+//  Created: 2026-05-30
+//  By: Copilot
+// ================================================================
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -22,99 +25,54 @@
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=EdgeThreshold, y=GlowRadius, z=Intensity, w=ColorSpeed
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ ADVANCED ALPHA FUNCTIONS ═══
-
-// Mode 2: Edge-Preserve Alpha
-fn edgePreserveAlpha(
-    uv: vec2<f32>,
-    pixelSize: vec2<f32>,
-    edgeThreshold: f32
-) -> f32 {
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).r;
-    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).r;
-    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).r;
-    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, pixelSize.y), 0.0).r;
-    
-    let depthEdge = length(vec2<f32>(dR - dL, dU - dD));
-    let edgeMask = smoothstep(edgeThreshold * 0.5, edgeThreshold, depthEdge);
-    
-    return mix(0.2, 1.0, edgeMask);
+fn luminance(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.299, 0.587, 0.114));
 }
 
-// Mode 1: Depth-Layered Alpha
-fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthAlpha = mix(0.4, 1.0, depth);
-    return mix(1.0, depthAlpha, depthWeight);
-}
-
-// Combined alpha
-fn calculateAdvancedAlpha(
-    uv: vec2<f32>,
-    pixelSize: vec2<f32>,
-    mouseDist: f32,
-    glowRadius: f32,
-    params: vec4<f32>
-) -> f32 {
-    let edgeAlpha = edgePreserveAlpha(uv, pixelSize, params.x);
-    let depthAlpha = depthLayeredAlpha(uv, params.z);
-    
-    // Mouse proximity increases alpha
-    let mouseAlpha = 1.0 - smoothstep(0.0, glowRadius, mouseDist);
-    
-    return clamp(edgeAlpha * depthAlpha * mix(0.5, 1.0, mouseAlpha), 0.0, 1.0);
+fn sampleLuma(uv: vec2<f32>) -> f32 {
+  return luminance(textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let pixelSize = 1.0 / resolution;
-    let time = u.config.x;
-    
-    // Parameters
-    let edgeThreshold = u.zoom_params.x * 0.1 + 0.02;
-    let glowRadius = u.zoom_params.y * 0.3 + 0.05;
-    let depthWeight = u.zoom_params.z;
-    let glowIntensity = u.zoom_params.w * 3.0;
-    
-    let mousePos = u.zoom_config.yz;
-    let mouseDist = distance(uv, mousePos);
-    
-    // Sample with offset for edge detection
-    let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let cR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
-    let cL = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
-    let cU = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).rgb;
-    let cD = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, pixelSize.y), 0.0).rgb;
-    
-    let colorEdge = length(cR - cL) + length(cU - cD);
-    
-    // Mouse glow falloff
-    let glowFalloff = 1.0 - smoothstep(0.0, glowRadius, mouseDist);
-    
-    // Edge glow color
-    let edgeGlow = vec3<f32>(
-        0.5 + 0.5 * sin(time * 2.0),
-        0.5 + 0.5 * sin(time * 2.0 + 2.09),
-        0.5 + 0.5 * sin(time * 2.0 + 4.18)
-    ) * colorEdge * glowIntensity * glowFalloff;
-    
-    // ═══ ADVANCED ALPHA CALCULATION ═══
-    let alpha = calculateAdvancedAlpha(uv, pixelSize, mouseDist, glowRadius, u.zoom_params);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(edgeGlow, alpha));
-    
-    // Pass through depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
+
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
+  let time = u.config.x;
+  let aspect = dims.x / dims.y;
+  let audio = plasmaBuffer[0].xyz;
+
+  let edgeThreshold = mix(0.02, 0.35, u.zoom_params.x);
+  let glowRadius = mix(0.08, 0.70, u.zoom_params.y);
+  let intensity = mix(0.3, 2.5, u.zoom_params.z);
+  let colorSpeed = 0.2 + u.zoom_params.w * 4.0;
+
+  let px = vec2<f32>(1.0 / dims.x, 1.0 / dims.y);
+  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let edgeX = sampleLuma(uv + vec2<f32>(px.x, 0.0)) - sampleLuma(uv - vec2<f32>(px.x, 0.0));
+  let edgeY = sampleLuma(uv + vec2<f32>(0.0, px.y)) - sampleLuma(uv - vec2<f32>(0.0, px.y));
+  let edge = length(vec2<f32>(edgeX, edgeY));
+  let glowMask = smoothstep(edgeThreshold, edgeThreshold + 0.15, edge);
+
+  let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+  let mouseAura = 1.0 - smoothstep(0.0, glowRadius, mouseDist);
+  let hue = 0.5 + 0.5 * sin(time * colorSpeed + mouseDist * 18.0);
+  let glowColor = mix(vec3<f32>(0.10, 0.85, 1.0), vec3<f32>(1.0, 0.45, 0.75), hue);
+
+  var finalColor = baseColor + glowColor * glowMask * intensity * (0.25 + mouseAura + audio.x * 0.4);
+  let finalAlpha = clamp(0.72 + glowMask * 0.18 + mouseAura * 0.08, 0.42, 0.98);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthOut = clamp(mix(baseDepth, 0.20 + glowMask * 0.72, 0.26), 0.0, 1.0);
+
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(glowMask, mouseAura, intensity, finalAlpha));
 }

@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Emergent Calligraphic Weave
+//  Emergent Calligraphic Weave v2
 //  Category: generative
-//  Features: stroke-based, emergent-symbols, audio-field, mouse-influence, temporal
-//  Complexity: High
-//  Chunks From: orientation field techniques + particle advection
+//  Features: stroke-based, brush-dynamics, ink-viscosity, paper-absorption,
+//            bezier-strokes, sumi-e, dry-brush, chromatic-edge, upgraded-rgba
+//  Complexity: Very High
 //  Created: 2026-05-31
-//  By: Grok (creative technical artist)
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -35,74 +35,112 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-fn getOrientation(p: vec2<f32>, t: f32, complexity: f32) -> f32 {
-    let n1 = hash12(p * 1.7 + t * 0.1) - 0.5;
-    let n2 = hash12(p * 4.3 - t * 0.17) - 0.5;
-    return (n1 * 1.2 + n2 * 0.6) * complexity;
+fn aces_tone_map(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv = vec2<f32>(gid.xy) / res;
-    let time = u.config.x * 0.6;
-    
+    let time = u.config.x * 0.5;
+
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    
+
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
-    
-    // Read previous stroke field
+
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    
-    // Audio-driven field parameters
-    let fieldStrength = 0.6 + mids * 0.8;
-    let strokeLength = 0.012 + bass * 0.018;
-    let chaos = 0.3 + treble * 0.9;
-    
-    // Mouse influence on orientation field
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    // Brush dynamics parameters
+    let pressure = mouseDown * (0.6 + hash12(mouse * 10.0 + time) * 0.4);
+    let brushSpeed = 0.5 + bass * 2.0;
+    let inkConcentration = 0.4 + mids * 0.6;
+    let viscosity = 0.85 + mids * 0.15;
+
+    let strokeLength = 0.008 + brushSpeed * 0.012;
+    let chaos = 0.2 + treble * 0.8;
+
+    // Orientation field with mouse influence
     let toMouse = normalize(uv - mouse + vec2<f32>(0.0001));
     let mouseAngle = atan2(toMouse.y, toMouse.x);
-    let mouseInfluence = smoothstep(0.25, 0.02, length(uv - mouse)) * mouseDown * 1.5;
-    
-    // Base orientation field
-    let baseAngle = getOrientation(uv * 2.5, time, 1.0 + chaos * 0.6);
-    
-    // Combine with mouse influence
+    let mouseInfluence = smoothstep(0.3, 0.02, length(uv - mouse)) * pressure * 2.0;
+
+    let n1 = hash12(uv * 1.7 + time * 0.1) - 0.5;
+    let n2 = hash12(uv * 4.3 - time * 0.17) - 0.5;
+    let baseAngle = (n1 * 1.2 + n2 * 0.6) * (1.0 + chaos * 0.6);
     let angle = mix(baseAngle, mouseAngle, mouseInfluence);
-    
-    // Sample previous stroke in the direction of the field
+
+    // Bézier stroke sampling modulated by velocity
     let dir = vec2<f32>(cos(angle), sin(angle));
-    let sampleUV = clamp(uv - dir * strokeLength, vec2<f32>(0.0), vec2<f32>(1.0));
+    let perp = vec2<f32>(-dir.y, dir.x);
+    let curvature = sin(angle * 3.0 + time * 2.0) * 0.015 * brushSpeed;
+    let sampleUV = clamp(uv - dir * strokeLength + perp * curvature, vec2<f32>(0.0), vec2<f32>(1.0));
     let sampled = textureSampleLevel(dataTextureC, u_sampler, sampleUV, 0.0);
-    
-    // Stroke accumulation with decay
-    let decay = 0.94 - bass * 0.03;
-    var newStroke = sampled.r * decay + 0.06;
-    
-    // Add new strokes where field is coherent
-    let coherence = 1.0 - abs(sampled.g - angle) * 0.8;
-    newStroke += coherence * 0.045 * (0.6 + mids * 0.5);
-    
-    // Store new field (stroke density + angle)
-    textureStore(dataTextureA, gid.xy, vec4<f32>(newStroke, angle, 0.0, 0.0));
-    
-    // Visualization
-    let density = clamp(newStroke, 0.0, 1.4);
-    let ink = pow(density, 0.85);
-    
-    // Elegant color - warm ink on cool background
-    let col = mix(vec3<f32>(0.08, 0.06, 0.04), vec3<f32>(0.95, 0.88, 0.65), ink);
-    
-    // Subtle color variation based on angle
-    let hueShift = sin(angle * 2.0) * 0.08;
-    let finalCol = col * (1.0 + hueShift);
-    
-    let alpha = ink * 0.92;
-    let a = clamp(alpha, 0.0, 1.0);
-    
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalCol * a, a));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(density * 0.6, 0.0, 0.0, 0.0));
+
+    // Paper grain and absorption scale from depth
+    let paperScale = mix(30.0, 100.0, depth);
+    let grain = hash12(uv * paperScale);
+    let paperAbsorb = 0.5 + depth * 0.5;
+    let dryBrush = smoothstep(0.35, 0.55, grain);
+
+    // Paper fiber visibility
+    let fiber = sin(uv.x * paperScale * 2.3 + uv.y * paperScale * 1.7) * 0.5 + 0.5;
+    let fiberMask = smoothstep(0.4, 0.6, fiber) * dryBrush * 0.2;
+
+    // Ink viscosity flow and capillary bleed
+    let decay = viscosity - bass * 0.02;
+    let bleed = (sampled.r - prev.r) * 0.08 * paperAbsorb;
+    var newStroke = sampled.r * decay + 0.035 * inkConcentration + bleed;
+    newStroke = newStroke * (0.7 + dryBrush * 0.6);
+
+    // Brush temperature from bass (faster = drier / hotter)
+    let brushTemp = 0.5 + bass * 0.5;
+    let evaporation = smoothstep(0.3, 0.8, brushTemp);
+    newStroke = newStroke * (1.0 - evaporation * 0.08);
+
+    // Treble-driven splatter
+    let splatter = step(1.0 - treble * 0.25, hash12(uv * 60.0 + time * 5.0)) * treble * 0.4;
+    newStroke = newStroke + splatter;
+
+    // Coherence feedback from orientation alignment
+    let coherence = 1.0 - abs(sampled.g - angle) * 0.7;
+    newStroke += coherence * 0.03 * (0.5 + mids * 0.4);
+
+    let density = clamp(newStroke, 0.0, 1.2);
+    let ink = pow(density, 0.9);
+
+    // Sumi-e ink wash palette
+    let inkR = mix(vec3<f32>(0.06, 0.04, 0.03), vec3<f32>(0.9, 0.7, 0.5), ink);
+    let inkB = mix(vec3<f32>(0.06, 0.04, 0.03), vec3<f32>(0.5, 0.7, 0.9), ink);
+    let col = mix(inkR, inkB, smoothstep(0.3, 0.7, treble));
+
+    // Chromatic edge darkening (yellowing at ink boundaries)
+    let neighbor = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + dir * 0.004, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let edge = abs(prev.r - neighbor.r);
+    let yellowing = vec3<f32>(0.9, 0.85, 0.5) * smoothstep(0.02, 0.08, edge) * 0.35;
+
+    let hueShift = sin(angle * 2.0) * 0.06;
+    var finalCol = col * (1.0 + hueShift) + yellowing;
+
+    // Add paper fiber texture to final color
+    finalCol = finalCol + vec3<f32>(0.05, 0.04, 0.03) * fiberMask;
+
+    // ACES tone map
+    finalCol = aces_tone_map(finalCol);
+
+    let alpha = clamp(ink * paperAbsorb * depth + splatter * 0.5, 0.0, 1.0);
+
+    textureStore(writeTexture, gid.xy, vec4<f32>(finalCol, alpha));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(newStroke, angle, inkConcentration, density));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(density * 0.5, 0.0, 0.0, 0.0));
 }

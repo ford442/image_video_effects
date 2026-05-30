@@ -9,7 +9,11 @@
     "fractal-terrain",
     "mouse-lineage",
     "audio-mutation",
-    "evolutionary"
+    "evolutionary",
+    "upgraded-rgba",
+    "chromatic-lineage",
+    "depth-aware",
+    "temporal-mutation"
   ],
   "tags": [
     "fractal",

@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ================================================================
+//  Interactive Ripple
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, wave
+//  Complexity: Medium
+//  Chunks From: interactive-ripple
+//  Created: 2026-05-30
+//  By: Copilot
+// ================================================================
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,113 +15,66 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=WaveHeight, y=WaveCount, z=WaveSpeed, w=Damping
   ripples: array<vec4<f32>, 50>,
 };
 
-// Interactive Ripple
-// Param1: Wave Speed
-// Param2: Frequency
-// Param3: Decay
-// Param4: Specular / Wetness
-
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let currentTime = u.config.x;
-  var mousePos = u.zoom_config.yz;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-  let waveSpeed = u.zoom_params.x * 5.0 + 1.0;
-  let frequency = u.zoom_params.y * 50.0 + 10.0;
-  let decayFactor = u.zoom_params.z * 5.0 + 1.0;
-  let specularStr = u.zoom_params.w;
+  let uv = vec2<f32>(gid.xy) / dims;
+  let time = u.config.x;
+  let aspect = dims.x / dims.y;
+  let audio = plasmaBuffer[0].xyz;
 
-  var totalHeight = 0.0;
-  var totalSlope = vec2<f32>(0.0, 0.0);
+  let waveHeight = u.zoom_params.x * 0.035;
+  let waveCount = mix(4.0, 26.0, u.zoom_params.y);
+  let waveSpeed = 0.2 + u.zoom_params.z * 4.0;
+  let damping = mix(0.35, 2.2, u.zoom_params.w);
+  let rippleCount = min(u32(u.config.y), 50u);
 
-  // 1. Handle Clicks (Ripples)
-  let rippleCount = u32(u.config.y);
+  var totalOffset = vec2<f32>(0.0);
+  var rippleEnergy = 0.0;
+
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-      let rData = u.ripples[i];
-      let rPos = rData.xy;
-      let rStart = rData.z;
-
-      var t = currentTime - rStart;
-      if (t > 0.0 && t < 4.0) { // Limit lifetime
-          var dVec = uv - rPos;
-          // Correct aspect ratio for distance
-          var aspect = resolution.x / resolution.y;
-          var dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
-
-          if (dist > 0.001) {
-             let phase = dist * frequency - t * waveSpeed;
-             // Wave packet function: sin(phase) * envelope
-             // Envelope decays with time and distance
-             let amp = 1.0 / (1.0 + t * decayFactor + dist * 20.0);
-
-             let h = sin(phase) * amp;
-             var s = cos(phase) * frequency * amp; // Approx derivative magnitude
-
-             totalHeight += h;
-             totalSlope += normalize(dVec) * s;
-          }
-      }
+    let ripple = u.ripples[i];
+    let center = ripple.xy;
+    let delta = (uv - center) * vec2<f32>(aspect, 1.0);
+    let dist = length(delta);
+    let age = max(0.0, time - ripple.z);
+    let envelope = exp(-age * damping) * exp(-dist * (3.5 + damping));
+    let phase = dist * waveCount * 10.0 - age * waveSpeed * 8.0;
+    let wave = sin(phase) * envelope;
+    let dir = delta / max(dist, 1e-4);
+    totalOffset = totalOffset + dir * wave * waveHeight * (1.0 + audio.x * 0.8);
+    rippleEnergy = rippleEnergy + abs(wave);
   }
 
-  // 2. Handle Mouse Hover (Continuous disturbance)
-  if (mousePos.x >= 0.0) {
-      var dVec = uv - mousePos;
-      var aspect = resolution.x / resolution.y;
-      var dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
+  let sampleUV = clamp(uv + totalOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+  var finalColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+  let wetSpec = pow(clamp(rippleEnergy * 0.25, 0.0, 1.0), 2.0) * (0.20 + audio.z * 0.45);
+  let tint = mix(vec3<f32>(0.08, 0.55, 1.0), vec3<f32>(0.95, 0.80, 1.0), audio.y * 0.5);
+  finalColor = finalColor + tint * wetSpec;
 
-      // Wake / Bow wave effect? Or just a depression?
-      // Let's make a local depression that moves with mouse.
-      let radius = 0.05;
-      if (dist < radius * 2.0) {
-          var t = dist / radius;
-          // Smooth bump
-          var h = -1.0 * exp(-t * t * 4.0);
-          // Slope
-          var s = h * (-2.0 * t * 4.0 / radius); // Chain rule approx
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+  let finalAlpha = clamp(0.68 + wetSpec * 0.35 + rippleEnergy * 0.03, 0.40, 0.98);
+  let depthOut = clamp(mix(baseDepth, 0.18 + rippleEnergy * 0.08, 0.28), 0.0, 1.0);
 
-          totalHeight += h * 0.2; // Weaker than clicks
-          totalSlope += normalize(dVec) * s * 0.2;
-      }
-  }
-
-  // Distort UVs
-  let distortion = totalSlope * 0.005;
-  let finalUV = clamp(uv - distortion, vec2<f32>(0.0), vec2<f32>(1.0));
-
-  var color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
-
-  // Lighting (Specular)
-  if (specularStr > 0.0) {
-      // Normal from slope: (-slope.x, -slope.y, 1.0)
-      let n = normalize(vec3<f32>(-totalSlope.x * 20.0, -totalSlope.y * 20.0, 1.0));
-      let lightDir = normalize(vec3<f32>(-0.5, -0.5, 0.8));
-      let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-      var h = normalize(lightDir + viewDir);
-      let spec = pow(max(dot(n, h), 0.0), 64.0);
-
-      color = color + vec4<f32>(spec * specularStr);
-  }
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-  // Pass depth
-  let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(totalOffset.x, totalOffset.y, rippleEnergy, finalAlpha));
 }

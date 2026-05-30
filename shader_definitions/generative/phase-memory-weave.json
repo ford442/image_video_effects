@@ -3,13 +3,15 @@
   "name": "Phase Memory Weave",
   "url": "shaders/phase-memory-weave.wgsl",
   "category": "generative",
-  "description": "A viscous material that remembers its past while undergoing audio-driven phase transitions between fluid and crystalline states. Strong history creates beautiful hysteresis and pattern retention.",
+  "description": "Continuous Ginzburg-Landau order parameter with Allen-Cahn interface energy and exponential-decay memory kernel. Opalescent thin-film interference on phase boundaries with fluid caustics and crystalline subsurface scattering. Bass nucleates crystal seeds, mids control grain boundary mobility, treble adds capillary waves. Mouse deposits heat or cold based on click parity.",
   "features": [
-    "temporal-memory",
-    "phase-transitions",
+    "ginzburg-landau",
+    "allen-cahn",
+    "multi-scale-memory",
+    "opalescent-interfaces",
     "audio-driven",
-    "viscous",
-    "history-rich"
+    "mouse-thermal",
+    "temporal"
   ],
   "tags": [
     "viscous",
@@ -17,7 +19,9 @@
     "phase",
     "material",
     "audio-reactive",
-    "abstract"
+    "abstract",
+    "opalescent",
+    "caustics"
   ],
   "params": [
     {

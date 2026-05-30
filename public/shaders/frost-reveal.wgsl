@@ -1,4 +1,14 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Frost Reveal
+//  Category: image
+//  Features: frost-growth, dendritic-crystals, mouse-melt, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Claude Opus 4.8 (visual-idea pass 2026-05-31)
+//  upgraded-rgba
+//  Unique idea: dendritic ice crystals with hexagonal 6-fold symmetry that branch
+//  from nucleation points and grow inward from cold screen edges (real window frost).
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -53,6 +63,31 @@ fn fbm(p: vec2<f32>) -> f32 {
     return v;
 }
 
+// ═══ UNIQUE VISUAL IDEA: dendritic ice crystal with hexagonal symmetry ═══
+// Ice forms 6-fold-symmetric ferns. We tile space into nucleation cells, fold the
+// angle from each cell's seed into 60° wedges, and grow feathery needle branches
+// (sharp sine ridges) outward — the characteristic window-frost dendrite.
+const TAU: f32 = 6.28318530718;
+fn iceCrystal(p: vec2<f32>, t: f32) -> f32 {
+    let cellScale = 6.0;
+    let g = p * cellScale;
+    let cell = floor(g);
+    let seed = hash12(cell);
+    // Nucleus jitter within the cell.
+    let nucleus = cell + 0.5 + vec2<f32>(hash12(cell + 3.1), hash12(cell + 7.7)) * 0.6 - 0.3;
+    let d = g - nucleus;
+    let radius = length(d);
+    var ang = atan2(d.y, d.x) + seed * TAU;
+    // Fold into 6-fold symmetry (hexagonal ice).
+    ang = abs(fract(ang / (TAU / 6.0)) - 0.5);
+    // Primary spine + secondary feathered branches along the radius.
+    let spine = pow(1.0 - smoothstep(0.0, 0.16, ang), 3.0);
+    let branches = pow(max(sin(radius * 26.0 - t * 0.4), 0.0), 8.0) * (1.0 - smoothstep(0.0, 0.34, ang));
+    // Crystals fade out past the cell — a finite fern, denser near the nucleus.
+    let falloff = exp(-radius * 1.7);
+    return clamp((spine * 0.7 + branches * 0.6) * falloff, 0.0, 1.0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -93,7 +128,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let frost_pattern = fbm(uv * 10.0 + vec2<f32>(0.0, 0.0)); // Static pattern
     let frost_detail = fbm(uv * 20.0);
 
-    let combined_frost = smoothstep(0.3, 0.7, frost_pattern * 0.6 + frost_detail * 0.4);
+    // Dendritic crystal ferns layered over the soft FBM haze base.
+    let crystal = iceCrystal(uv * vec2<f32>(aspect, 1.0), time);
+    // Cold edges nucleate first: frost creeps inward from the screen border.
+    let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+    let edgeFrost = smoothstep(0.45, 0.0, edgeDist);
+
+    let haze = smoothstep(0.3, 0.7, frost_pattern * 0.6 + frost_detail * 0.4);
+    // Crystals are the star; haze + edge nucleation fill the rest.
+    let combined_frost = clamp(crystal * 0.9 + haze * 0.4 + edgeFrost * 0.35, 0.0, 1.0);
 
     // Distortion
     let offset = (vec2<f32>(frost_pattern, frost_detail) - 0.5) * distortion_amt * mask;

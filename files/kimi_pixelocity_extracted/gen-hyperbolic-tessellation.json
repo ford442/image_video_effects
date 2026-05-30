@@ -1,0 +1,57 @@
+{
+  "id": "gen-hyperbolic-tessellation",
+  "name": "Hyperbolic Tessellation",
+  "url": "shaders/gen-hyperbolic-tessellation.wgsl",
+  "description": "Real-time hyperbolic tiling in the Poincare disk model. Generates regular tessellations {p,q} with configurable parameters, rendered with metallic coloring and smooth edge transitions. Mouse controls navigation through hyperbolic space. Patterns morph between different tilings over time.",
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural",
+    "geometric"
+  ],
+  "tags": [
+    "hyperbolic",
+    "tessellation",
+    "tiling",
+    "geometry",
+    "poincare",
+    "generative",
+    "mathematical",
+    "metallic"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Tiling Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Animation",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "scale",
+      "name": "Zoom",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

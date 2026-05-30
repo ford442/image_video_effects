@@ -1,0 +1,58 @@
+{
+  "id": "silk-flow-advection",
+  "name": "Silk Flow Advection",
+  "url": "shaders/silk-flow-advection.wgsl",
+  "description": "The colors and details of the input are gently carried along living, silky curl-noise flows. The mouse acts like a finger disturbing delicate fabric. Creates beautiful organic painterly motion on stills and video.",
+  "tags": [
+    "silk",
+    "flow",
+    "advection",
+    "painterly",
+    "fabric",
+    "audio-reactive",
+    "organic"
+  ],
+  "features": [
+    "audio-reactive",
+    "audio-driven",
+    "mouse-driven",
+    "mouse-finger",
+    "temporal",
+    "semantic-alpha",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "flow",
+      "name": "Flow Amount",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.4,
+      "step": 0.01
+    },
+    {
+      "id": "silk",
+      "name": "Silk Softness",
+      "default": 0.75,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "breath",
+      "name": "Breathing Motion",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "disturb",
+      "name": "Mouse Disturb",
+      "default": 0.85,
+      "min": 0.0,
+      "max": 1.6,
+      "step": 0.01
+    }
+  ]
+}

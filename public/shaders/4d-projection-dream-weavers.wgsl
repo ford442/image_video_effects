@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  4D Projection Dream Weavers
 //  Category: generative
-//  Features: 4d-fractal, smooth-navigation, mouse-4d-control, audio-parameter, dream-like
+//  Features: 4d-fractal, smooth-navigation, mouse-4d-control, audio-parameter, dream-like,
+//            temporal-persistence, chromatic-dimension-separation, bass-detail, upgraded-rgba
 //  Complexity: High
 //  Chunks From: 4D noise projection techniques
 //  Created: 2026-05-31
-//  By: Grok (creative technical artist)
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -59,6 +60,7 @@ fn noise4D(p: vec4<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv = vec2<f32>(gid.xy) / res;
     let time = u.config.x * 0.2;
 
@@ -68,39 +70,44 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let mouse = u.zoom_config.yz;
 
-    // Mouse controls two extra dimensions (w and z in 4D)
     let w = (mouse.x - 0.5) * 4.0;
     let z = (mouse.y - 0.5) * 4.0;
 
-    // Audio affects fractal parameters
     let scale = 1.8 + mids * 1.4;
     let speed = 0.6 + bass * 0.8;
     let detail = 0.7 + treble * 1.2;
 
-    // 4D coordinate
     let p4 = vec4<f32>(uv * scale, z, w);
 
-    // Sample 4D noise at multiple scales
-    let n1 = noise4D(p4 * 1.0 + time * speed);
+    // Chromatic dimension separation: sample at different 4D offsets per channel
+    let n_r = noise4D(p4 * 1.0 + time * speed + vec4<f32>(bass * 0.1, 0.0, 0.0, 0.0));
+    let n_g = noise4D(p4 * 1.0 + time * speed);
+    let n_b = noise4D(p4 * 1.0 + time * speed - vec4<f32>(treble * 0.1, 0.0, 0.0, 0.0));
     let n2 = noise4D(p4 * 2.3 - time * speed * 0.7) * 0.5;
     let n3 = noise4D(p4 * 4.7 + time * speed * 1.3) * 0.25;
 
-    let fractal = n1 + n2 + n3;
+    let fractal_r = n_r + n2 + n3;
+    let fractal_g = n_g + n2 + n3;
+    let fractal_b = n_b + n2 + n3;
 
-    // Rich coloring based on value and extra dimensions
+    // Temporal persistence for dream-like trails
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let fractal_col = vec3<f32>(fractal_r, fractal_g, fractal_b);
+    let temporal = mix(fractal_col, prev * 0.92, 0.12 + bass * 0.05);
+
     let col = mix(
         vec3<f32>(0.1, 0.15, 0.25),
         vec3<f32>(0.9, 0.85, 0.7),
-        fractal * 0.6 + 0.4
+        temporal * 0.6 + 0.4
     );
 
-    // Add color variation from the 4th dimensions
     let extraColor = vec3<f32>(abs(z) * 0.1, abs(w) * 0.08, (z + w) * 0.05);
     let finalCol = col + extraColor;
 
-    let alpha = clamp(fractal * 0.7 + 0.4, 0.25, 1.15);
+    let alpha = clamp((fractal_r + fractal_g + fractal_b) * 0.25 + 0.4 + bass * 0.05, 0.25, 1.0);
     let a = clamp(alpha, 0.0, 1.0);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalCol * a, a));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(fractal * 0.6 + 0.3, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(finalCol, a));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(finalCol, a));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>((fractal_r + fractal_g + fractal_b) * 0.2 + 0.3, 0.0, 0.0, 0.0));
 }

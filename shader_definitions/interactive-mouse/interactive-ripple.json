@@ -1,8 +1,9 @@
 {
   "id": "interactive-ripple",
   "name": "Interactive Ripple",
+  "category": "interactive-mouse",
   "url": "shaders/interactive-ripple.wgsl",
-  "description": "Classic water ripple effect following cursor.",
+  "description": "Persistent cursor ripples travel across the frame like a metallic pond, with audio adding wet specular sheen.",
   "params": [
     {
       "id": "amplitude",
@@ -35,10 +36,15 @@
   ],
   "features": [
     "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
     "wave"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "ripple",
+    "water",
+    "metallic",
+    "wave",
+    "audio-reactive"
   ]
 }

@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  VHS Chroma Bleed
-//  Category: image
-//  Features: upgraded-rgba, temporal, glitch, retro
-//  Complexity: Medium
-//  Created: 2026-05-23
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, jitter-smear, chromatic-bleed, depth-scatter, upgraded-rgba
+//  Complexity: High
+//  Chunks From: vhs-chroma-bleed, hash, bass_env
+//  Created: 2024-01-01
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -21,70 +23,79 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
 fn hash21(p: vec2<f32>) -> f32 {
-    let h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
+  let h = dot(p, vec2<f32>(127.1, 311.7));
+  return fract(sin(h) * 43758.5453123);
 }
 
-fn hash11(p: f32) -> f32 {
-    return fract(sin(p * 12.9898) * 43758.5453);
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  let h1 = hash21(p);
+  let h2 = hash21(p + vec2<f32>(1.0, 0.0));
+  return vec2<f32>(h1, h2);
+}
+
+fn bass_env(bass: f32, mids: f32) -> f32 {
+  return 1.0 + bass * 0.5 + mids * 0.2;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let res = vec2<f32>(u.config.zw);
-    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let coords = vec2<i32>(global_id.xy);
-    let uv = vec2<f32>(global_id.xy) / res;
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    let mousePos = u.zoom_config.yz;
 
-    let chromaShift = u.zoom_params.x;
-    let noiseIntensity = u.zoom_params.y;
-    let jitterAmount = u.zoom_params.z;
-    let bleedWidth = u.zoom_params.w;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthScatter = mix(0.7, 1.3, depth);
 
-    // Tracking jitter
-    let jitterLine = hash11(floor(uv.y * 200.0) + floor(time * 12.0));
-    let jitterOffset = select(0.0, (jitterLine - 0.5) * jitterAmount * 0.02, jitterLine < jitterAmount);
-    let jitteredUV = vec2<f32>(uv.x + jitterOffset, uv.y);
+    let bleedStrength = u.zoom_params.x * bass_env(bass, mids);
+    let jitterAmt = u.zoom_params.y;
+    let driftSpeed = u.zoom_params.z;
+    let rgbShift = u.zoom_params.w * depthScatter;
 
-    // Sample with horizontal chroma displacement
-    let shift = chromaShift * 0.01 * bleedWidth;
-    let rUV = jitteredUV + vec2<f32>(shift, 0.0);
-    let gUV = jitteredUV;
-    let bUV = jitteredUV - vec2<f32>(shift, 0.0);
+    // Audio-reactive jitter: bass drives line dropout, treble adds micro-jitter
+    let lineHash = hash21(vec2<f32>(0.0, uv.y * resolution.y));
+    let dropOut = step(1.0 - bass * 0.15, lineHash);
+    let microJitter = (hash21(vec2<f32>(time * 100.0, uv.y * 500.0)) - 0.5) * jitterAmt * (1.0 + treble);
 
-    let r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, clamp(gUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-    let baseAlpha = textureSampleLevel(readTexture, u_sampler, jitteredUV, 0.0).a;
+    let dToMouse = uv - mousePos;
+    let lenD = length(dToMouse);
+    let safeDir = select(vec2<f32>(0.0), dToMouse / max(lenD, 0.0001), lenD > 0.001);
+    let mouseDist = length(dToMouse);
+    let mouseForce = smoothstep(0.3, 0.0, mouseDist) * 0.05;
 
-    var col = vec4<f32>(r, g, b, baseAlpha);
+    let jitter = microJitter + safeDir.y * mouseForce;
+    let drift = sin(uv.y * 20.0 + time * driftSpeed * 5.0) * 0.005 * depthScatter;
+    let bleed = (dropOut * 0.02) + bleedStrength * (0.02 + drift) * depthScatter;
 
-    // Luma noise in dark areas
-    let luma = dot(col.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let darkMask = 1.0 - smoothstep(0.0, 0.3, luma);
-    let noise = (hash21(uv * 400.0 + fract(time * 30.0) * 10.0) - 0.5) * noiseIntensity * darkMask;
-    col = col + vec4<f32>(noise, noise, noise, 0.0);
+    // Chromatic bleed: R and B shift in opposite directions
+    let rOff = clamp(uv + vec2<f32>(-bleed * (1.0 + rgbShift), jitter), vec2<f32>(0.0), vec2<f32>(1.0));
+    let bOff = clamp(uv + vec2<f32>(bleed * (1.0 + rgbShift), -jitter), vec2<f32>(0.0), vec2<f32>(1.0));
+    let gOff = clamp(uv + vec2<f32>(0.0, jitter * 0.5), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Horizontal banding artifact
-    let bandY = sin(uv.y * 300.0 + time * 2.0) * 0.5 + 0.5;
-    let bandNoise = hash11(uv.y * 500.0 + time) * 0.03 * noiseIntensity;
-    col = col * (1.0 - bandY * bandNoise);
+    let r = textureSampleLevel(readTexture, u_sampler, rOff, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, gOff, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, bOff, 0.0).b;
 
-    // Occasional color burst error
-    let burstTrigger = hash11(floor(time * 4.0) + floor(uv.y * 50.0)) < 0.03;
-    let burstColor = vec3<f32>(hash11(time), hash11(time + 1.0), hash11(time + 2.0)) * 0.15;
-    col = vec4<f32>(select(col.rgb, col.rgb + burstColor, burstTrigger), col.a);
+    // Mids add color flash during chroma shifts
+    let flash = mids * 0.08 * bleed * 10.0;
+    let rgb = vec3<f32>(r, g, b) + vec3<f32>(flash, flash * 0.5, flash * 0.2);
 
-    col = clamp(col, vec4<f32>(0.0), vec4<f32>(1.0));
+    let alpha = clamp((r + g + b) * 0.3 + bleed * 5.0 + bass * 0.05, 0.0, 1.0);
 
-    textureStore(writeTexture, coords, col);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(rgb, alpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(rgb, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

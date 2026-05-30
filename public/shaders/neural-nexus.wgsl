@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Neural Nexus
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: neural-nexus
+//  Upgraded: 2026-05-30
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,81 +19,79 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x: time, y: aspect_ratio, z: active_ripples_count, w: unused
-  zoom_config: vec4<f32>,  // xy: center_offset, z: zoom_level, w: unused
-  zoom_params: vec4<f32>,  // xy: target_zoom, zw: interpolation_speed
-  ripples: array<vec4<f32>, 50>, // xy: position (0-1), z: start_time, w: amplitude/decay
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
 };
 
-// Mapping notes: mouse in zoom_config.yz; zoom_params: x=networkDensity, y=signalSpeed, z=decayRate, w=branchComplexity
-
 fn hash(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(12.9898,78.233))) * 43758.5453);
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = vec2<f32>(u.config.z, u.config.w);
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    var mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
-    let pulseStrength = u.zoom_config.x;
-
-    // Generate neural points
-    let density = max(1.0, u.zoom_params.x);
-    var neuralActivity = 0.0;
-
-    for (var i: u32 = 0u; i < 8u; i = i + 1u) {
-        let seed = f32(i) * 12.345;
-        let neuronPos = vec2<f32>(
-            hash(vec2<f32>(seed, 0.0)),
-            hash(vec2<f32>(seed, 1.0))
-        );
-
-        // Distance to neuron
-        let dist = distance(uv, neuronPos);
-        let connectionDist = distance(neuronPos, mousePos);
-
-        // Pulse propagation
-        let signalSpeed = u.zoom_params.y;
-        let pulseTime = time - connectionDist * signalSpeed;
-        let pulse = sin(pulseTime * 10.0) * exp(-pulseTime * u.zoom_params.z);
-
-        // Branching patterns
-        let branches = max(1.0, u.zoom_params.w);
-        let angle = atan2(uv.y - neuronPos.y, uv.x - neuronPos.x);
-        let branchPattern = sin(angle * branches + time * 2.0) * 0.5 + 0.5;
-
-        neuralActivity = neuralActivity + pulse * branchPattern / (dist * 5.0 + 1.0);
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
     }
 
-    // Mouse pulse wave
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+    let mousePos = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let density = clamp(u.zoom_params.x, 0.5, 4.0);
+    let signalSpeed = clamp(u.zoom_params.y, 0.0, 4.0);
+    let decayRate = clamp(u.zoom_params.z, 0.05, 2.5);
+    let branches = clamp(u.zoom_params.w, 1.0, 8.0);
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
+
+    var activity = 0.0;
+    var sparks = 0.0;
+    let nodeCount = 5u + u32(density * 2.0);
+
+    for (var i: u32 = 0u; i < nodeCount; i = i + 1u) {
+        let seed = f32(i) * 17.23;
+        let neuronPos = vec2<f32>(
+            hash(vec2<f32>(seed, 0.13)),
+            hash(vec2<f32>(seed, 9.71))
+        );
+        let toNeuron = uv - neuronPos;
+        let dist = max(length(toNeuron), 0.001);
+        let connectionDist = distance(neuronPos, mousePos);
+        let signalPhase = time * (3.0 + bass * 6.0) - connectionDist * (2.5 + signalSpeed * 2.0) * 6.0;
+        let pulse = sin(signalPhase) * exp(-connectionDist * (1.5 + decayRate));
+        let angle = atan2(toNeuron.y, toNeuron.x);
+        let dendrite = 0.5 + 0.5 * cos(angle * branches + time * (1.2 + treble * 3.0) + seed);
+        let aura = pulse * dendrite / (dist * (2.5 + density) + 0.35);
+        activity += aura;
+        sparks += exp(-dist * (20.0 + treble * 15.0)) * (0.3 + 0.7 * abs(pulse));
+    }
+
     let mouseDist = distance(uv, mousePos);
-    let mousePulse = sin(mouseDist * 15.0 - time * 8.0) * exp(-mouseDist * 3.0) * pulseStrength;
+    let mousePulse = sin(mouseDist * (16.0 + treble * 12.0) - time * (7.0 + bass * 4.0)) *
+        exp(-mouseDist * (3.0 + density)) * (0.3 + bass * 0.7);
 
-    // Combine activities
-    let totalActivity = neuralActivity + mousePulse;
+    let totalActivity = activity + mousePulse;
+    let sampleUV = clamp(
+        uv + vec2<f32>(totalActivity * 0.025, activity * 0.015 + mousePulse * 0.01),
+        vec2<f32>(0.001, 0.001),
+        vec2<f32>(0.999, 0.999)
+    );
+    let baseColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let electricBlue = vec3<f32>(0.05, 0.45 + treble * 0.15, 1.0) * max(totalActivity, 0.0);
+    let synapsePurple = vec3<f32>(0.9, 0.15, 1.0) * max(-totalActivity, 0.0) * 0.65;
+    let warmSparks = vec3<f32>(1.0, 0.7 + mids * 0.2, 0.25) * sparks * (0.12 + bass * 0.08);
+    let finalColor = baseColor.rgb + electricBlue + synapsePurple + warmSparks;
+    let alpha = clamp(baseColor.a * 0.38 + abs(totalActivity) * 0.28 + sparks * 0.2 + bass * 0.05, 0.08, 1.0);
+    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r + abs(totalActivity) * 0.05, 0.0, 1.0);
+    let finalPixel = vec4<f32>(finalColor, alpha);
 
-    // Color mapping based on activity
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv + totalActivity * 0.1, 0.0).rgb;
-    let electricBlue = vec3<f32>(0.0, 0.5, 1.0) * max(0.0, totalActivity);
-    let synapsePurple = vec3<f32>(0.8, 0.0, 1.0) * max(0.0, -totalActivity);
-
-    var finalColor = baseColor + electricBlue + synapsePurple;
-
-    // Add dendritic glow
-    let glow = exp(-abs(totalActivity) * 2.0) * 0.5;
-    finalColor = finalColor + vec3<f32>(0.5, 0.8, 1.0) * glow;
-
-    // Glial cell shimmer
-    let shimmer = hash(uv * 100.0 + time) * 0.1 * pulseStrength;
-    finalColor = finalColor + shimmer;
-
-    textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(finalColor, 1.0));
-
-    let depth = 1.0 - clamp(mouseDist * 2.0, 0.0, 1.0);
-    textureStore(writeDepthTexture, vec2<u32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(totalActivity, sparks, mousePulse, alpha));
 }

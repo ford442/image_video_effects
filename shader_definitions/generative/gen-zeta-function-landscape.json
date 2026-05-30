@@ -16,7 +16,9 @@
   "features": [
     "generative",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "chromatic-zeros",
+    "temporal-smoothing"
   ],
   "params": [
     {

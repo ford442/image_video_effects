@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cycloid Bloom
 //  Category: generative
-//  Features: audio-reactive, temporal, psychedelic, procedural
+//  Features: audio-reactive, temporal, psychedelic, procedural, mouse-distortion,
+//            chromatic-layer-separation, depth-output, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-23
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 //  Nested hypotrochoid and epicycloid curves layered to form a
 //  blooming flower/mandala. Multiple gear-ratio pairs evolve slowly,
@@ -41,8 +43,6 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
   return c.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
-// Hypotrochoid: rolling circle of radius r inside circle of radius R
-// pen at distance d from rolling-circle center
 fn hypotrochoid(t: f32, R: f32, r: f32, d: f32) -> vec2<f32> {
   let x = (R - r) * cos(t) + d * cos((R - r) / r * t);
   let y = (R - r) * sin(t) - d * sin((R - r) / r * t);
@@ -61,21 +61,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass   = plasmaBuffer[0].x;
   let mids   = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
+  let mouse  = u.zoom_config.yz;
 
-  // Parameters
   let spinSpeed  = mix(0.15, 2.0, u.zoom_params.x);
   let petalMult  = mix(1.0, 4.0,  u.zoom_params.y);
   let glowWidth  = mix(0.02, 0.004, u.zoom_params.z);
   let feedback   = u.zoom_params.w;
 
-  let p = (uv - 0.5) * vec2<f32>(aspect, 1.0) * 2.4;
+  // Mouse-driven distortion: mouse pulls the bloom center
+  let mousePull = (mouse - 0.5) * 0.3;
+  let p = (uv - 0.5 + mousePull * bass) * vec2<f32>(aspect, 1.0) * 2.4;
 
   var colorAcc = vec3<f32>(0.0);
   var glowAcc  = 0.0;
 
   for (var li: i32 = 0; li < LAYERS; li = li + 1) {
     let lf   = f32(li);
-    // Gear radii: integer ratios produce closed curves
     let R    = 1.0;
     let rInner = 1.0 / (3.0 + lf * petalMult);
     let d    = rInner * (0.55 + 0.4 * sin(time * 0.07 * spinSpeed + lf * 1.2));
@@ -102,7 +103,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     glowAcc  = glowAcc + g;
   }
 
-  // Feedback
+  // Chromatic layer separation: R from outer layers, B from inner
+  let chromaR = colorAcc * vec3<f32>(1.1, 0.95, 0.85);
+  let chromaB = colorAcc * vec3<f32>(0.85, 0.95, 1.1);
+  colorAcc = mix(chromaR, chromaB, smoothstep(0.0, 1.0, treble));
+
   let prev  = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
   let fbMix = mix(0.05, 0.70, feedback);
   colorAcc = mix(colorAcc, prev * 0.90, fbMix);
@@ -110,7 +115,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let vign  = 1.0 - smoothstep(0.7, 1.45, length(p));
   colorAcc  = colorAcc * vign;
   let depth = clamp(glowAcc * 0.35, 0.0, 1.0);
-  let alpha = clamp(length(colorAcc) * 0.75, 0.0, 1.0);
+  let alpha = clamp(length(colorAcc) * 0.75 + bass * 0.05, 0.0, 1.0);
 
   textureStore(writeTexture,      coord, vec4<f32>(colorAcc, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

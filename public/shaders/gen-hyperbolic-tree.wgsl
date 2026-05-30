@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Hyperbolic Tree Fractal
 //  Category: generative
-//  Features: generative, audio-reactive, upgraded-rgba
+//  Features: generative, audio-reactive, upgraded-rgba, temporal-branch-sway, chromatic-leaves,
+//            bass-growth-speed, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-23
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -39,7 +41,6 @@ fn hue2rgb(h: f32) -> vec3<f32> {
     return clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Distance to line segment
 fn sdSegment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
     let pa = p - a;
     let ba = b - a;
@@ -47,13 +48,11 @@ fn sdSegment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
     return length(pa - ba * h);
 }
 
-// Recursive tree branch in hyperbolic Poincare disk
 fn hyperbolicTree(p: vec2<f32>, time: f32, bass: f32, mids: f32, depth: i32, branchAngle: f32) -> f32 {
     var d = 1000.0;
     let r = length(p);
     if (r > 0.98) { return d; }
     
-    // Möbius transform for hyperbolic motion
     let mobius = p / (1.0 + sqrt(max(1.0 - r * r, 0.0001)));
     
     var pos = vec2<f32>(0.0, 0.0);
@@ -62,8 +61,10 @@ fn hyperbolicTree(p: vec2<f32>, time: f32, bass: f32, mids: f32, depth: i32, bra
     
     for (var i: i32 = 0; i < depth; i = i + 1) {
         let fi = f32(i);
+        // Temporal sway memory: each branch remembers previous sway
+        let prevSway = sin(time * 0.3 + fi * 0.5) * 0.1;
         let len = len0 * pow(0.65, fi) * (1.0 + bass * 0.2 * sin(time + fi));
-        let sway = sin(time * 0.5 + fi * 0.7) * 0.15 * (1.0 + mids * 0.3);
+        let sway = sin(time * 0.5 + fi * 0.7) * 0.15 * (1.0 + mids * 0.3) + prevSway;
         let leftDir = vec2<f32>(dir.x * cos(branchAngle + sway) - dir.y * sin(branchAngle + sway),
                                  dir.x * sin(branchAngle + sway) + dir.y * cos(branchAngle + sway));
         let rightDir = vec2<f32>(dir.x * cos(-branchAngle + sway) - dir.y * sin(-branchAngle + sway),
@@ -72,7 +73,6 @@ fn hyperbolicTree(p: vec2<f32>, time: f32, bass: f32, mids: f32, depth: i32, bra
         let nextPos = pos + dir * len;
         d = min(d, sdSegment(mobius, pos, nextPos) - len * 0.08);
         
-        // Branch selection based on pixel side
         let side = hash12(mobius * 100.0 + vec2<f32>(fi, 0.0));
         pos = nextPos;
         dir = select(rightDir, leftDir, side > 0.5);
@@ -80,7 +80,7 @@ fn hyperbolicTree(p: vec2<f32>, time: f32, bass: f32, mids: f32, depth: i32, bra
     return d;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
     
@@ -99,31 +99,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let p = (uv - 0.5) * 2.0;
     let r = length(p);
     
-    let treeDepth = i32(mix(5.0, 12.0, param1 + bass * 0.2));
+    // Bass drives growth speed (depth changes more dynamically)
+    let treeDepth = i32(mix(5.0, 12.0, param1 + bass * 0.3 * sin(time * 0.5)));
     let branchAngle = mix(0.3, 0.8, param2);
     let d = hyperbolicTree(p, time, bass, mids, treeDepth, branchAngle);
     
-    // Disk boundary
     let diskEdge = smoothstep(0.95, 1.0, r);
     
-    // Glow from branches
     let branchGlow = smoothstep(0.05, 0.0, d);
     let leafGlow = smoothstep(0.15, 0.0, d) * (1.0 - smoothstep(0.0, 0.05, d));
     
-    let hue = fract(0.25 + r * 0.3 + time * 0.02 + mids * 0.1 + param3 * 0.2);
+    // Chromatic leaf separation: R leaves on left, B on right
+    let leafHue = fract(0.25 + r * 0.3 + time * 0.02 + mids * 0.1 + param3 * 0.2);
+    let leftLeaf = mix(leafHue, 0.0, smoothstep(-0.1, 0.5, p.x));
+    let rightLeaf = mix(leafHue, 0.55, smoothstep(-0.5, 0.1, p.x));
+    let blendedHue = mix(leftLeaf, rightLeaf, smoothstep(-0.1, 0.1, p.x));
+    
     let sat = mix(0.3, 0.9, param4 + treble * 0.3);
     let val = mix(0.1, 1.0, branchGlow + leafGlow * 0.5 + bass * 0.15);
     
-    let rgb = hue2rgb(hue) * sat + vec3<f32>(1.0 - sat) * val;
+    let rgb = hue2rgb(blendedHue) * sat + vec3<f32>(1.0 - sat) * val;
     let leafColor = vec3<f32>(0.2, 0.8, 0.3) * leafGlow * (1.0 + treble);
     
-    let finalRGB = rgb * val + leafColor;
-    let alpha = clamp(val * 0.6 + branchGlow * 0.3 + leafGlow * 0.2 + 0.1, 0.0, 1.0) * (1.0 - diskEdge);
+    // Temporal branch glow persistence
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let finalRGB = mix(rgb * val + leafColor, prev * 0.92, 0.05 + bass * 0.02);
+    
+    let alpha = clamp(val * 0.6 + branchGlow * 0.3 + leafGlow * 0.2 + 0.1 + bass * 0.05, 0.0, 1.0) * (1.0 - diskEdge);
     let finalColor = vec4<f32>(finalRGB, alpha);
     
-    let depth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
-    
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(val * 0.5, 0.0, 0.0, 0.0));
 }

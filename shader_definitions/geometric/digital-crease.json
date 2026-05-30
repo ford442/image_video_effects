@@ -1,0 +1,54 @@
+{
+  "id": "digital-crease",
+  "name": "Digital Crease",
+  "category": "geometric",
+  "url": "shaders/digital-crease.wgsl",
+  "description": "Paper-fold creases radiate from center with depth-curve distortion. Temporal persistence simulates paper memory. Chromatic folding separates R/B channels per crease. Audio modulates fold amplitude.",
+  "params": [
+    {
+      "id": "foldCount",
+      "name": "Fold Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "foldDepth",
+      "name": "Fold Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "foldSoftness",
+      "name": "Fold Softness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "chromaOffset",
+      "name": "Chromatic Offset",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "temporal-paper-fold",
+    "chromatic-folding"
+  ],
+  "tags": [
+    "geometric",
+    "paper",
+    "crease",
+    "fold",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic",
+    "temporal"
+  ]
+}

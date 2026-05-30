@@ -162,23 +162,40 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
     var col = vec3<f32>(0.0);
     var alpha = 0.0;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
+
     if (t < MAX_DIST) {
         let p = ro + rd * t;
         let res = map(p, time);
         let bb = blackbodyColor(res.y);
-        col.r = clamp(res.y / 10000.0, 0.0, 1.0);
-        col.g = res.z;
-        col.b = dot(bb, vec3<f32>(0.299, 0.587, 0.114));
+        
+        // Richer visual mapping with audio
+        col.r = clamp(res.y / 9000.0, 0.0, 1.0);
+        col.g = res.z * (0.9 + mids * 0.2);
+        col.b = dot(bb, vec3<f32>(0.299, 0.587, 0.114)) * (0.85 + treble * 0.3);
+        
+        // Audio-reactive pulsing on the central body and hot areas
+        let tempPulse = 1.0 + bass * 0.25 * sin(time * 4.0);
+        col *= tempPulse;
+        
         alpha = clamp(res.w, 0.0, 1.0);
     }
     if (alpha < 0.01) {
         let starHash = hash12(uv * 100.0 + vec2<f32>(time * 0.01, 0.0));
         if (starHash > 0.995) {
             let starBright = (starHash - 0.995) * 200.0;
-            col = vec3<f32>(0.8, 0.85, 1.0) * starBright;
+            col = vec3<f32>(0.85, 0.9, 1.0) * starBright * (0.9 + treble * 0.2);
             alpha = clamp(starBright, 0.0, 1.0);
         }
     }
+    
+    // Atmospheric depth fog
+    let fog = 1.0 - exp(-t * 0.08);
+    col = mix(col, vec3<f32>(0.02, 0.015, 0.04), fog * 0.6);
+    
     textureStore(writeTexture, id.xy, vec4<f32>(col, alpha));
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, screen_uv, 0.0).r;
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

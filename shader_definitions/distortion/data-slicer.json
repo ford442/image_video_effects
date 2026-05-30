@@ -1,8 +1,9 @@
 {
   "id": "data-slicer",
   "name": "Data Slicer",
+  "category": "distortion",
   "url": "shaders/data-slicer.wgsl",
-  "description": "Glitchy horizontal slicing effect with chromatic aberration. Mouse Y controls influence area, Mouse X controls offset direction.",
+  "description": "Beat-reactive tape-slice glitch that jitters horizontal bands around the cursor with chromatic scan glow.",
   "params": [
     {
       "id": "slideSpeed",
@@ -35,10 +36,15 @@
   ],
   "features": [
     "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
     "distortion"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "glitch",
+    "slice",
+    "chromatic",
+    "audio-reactive",
+    "scanline"
   ]
 }

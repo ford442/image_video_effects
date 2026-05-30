@@ -72,6 +72,21 @@ fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
+// ═══ UNIQUE VISUAL IDEA: gravity-driven soap-film drainage ═══
+// Real soap bubbles thin at the top as the film drains downward under gravity,
+// forming the iconic "black spot" before they pop, while color bands pool and
+// swirl at the bottom. This value-noise drives turbulent thickness variation.
+fn filmHash(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+fn filmNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(filmHash(i), filmHash(i + vec2<f32>(1.0, 0.0)), u.x),
+               mix(filmHash(i + vec2<f32>(0.0, 1.0)), filmHash(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -115,13 +130,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         let sample = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
         
-        // Thin film interference colors
-        let phase = filmThickness * 10.0 * (1.0 - factor);
-        let interference = vec3<f32>(
+        // ═══ Gravity-driven film drainage ═══
+        // Vertical position within the bubble: -1 at top, +1 at bottom.
+        let vertInBubble = d.y / bubbleRadius;
+        // Film drains downward: thin at top (drainGrad→0), thick at bottom (drainGrad→1).
+        // Slow time drift makes the drainage living rather than static.
+        let drainGrad = clamp(0.5 + vertInBubble * 0.5 + sin(time * 0.4) * 0.04, 0.0, 1.0);
+        // Turbulent flow in the film — bands swirl and migrate down over time.
+        let flowUV = warpedUV * 7.0 + vec2<f32>(0.0, -time * 0.25);
+        let turb = filmNoise(flowUV) * 0.6 + filmNoise(flowUV * 2.3 + 11.0) * 0.4;
+        // Effective thickness: drainage gradient × turbulence, scaled by the param.
+        let drainThickness = filmThickness * (0.15 + drainGrad * 1.6) * (0.7 + turb * 0.6);
+
+        // Thin film interference colors driven by the drained, turbulent thickness
+        let phase = drainThickness * 10.0 * (1.0 - factor * 0.5);
+        var interference = vec3<f32>(
             0.5 + 0.5 * cos(phase),
             0.5 + 0.5 * cos(phase + 2.09),
             0.5 + 0.5 * cos(phase + 4.18)
         );
+        // The "black spot": where the film has drained to near-nothing at the very top,
+        // interference collapses to a dark, colorless thin region (Newton's black film).
+        let blackSpot = smoothstep(0.12, 0.0, drainThickness);
+        interference = mix(interference, vec3<f32>(0.02, 0.02, 0.03), blackSpot);
         
         // Fresnel effect at edges
         let viewDir = vec2<f32>(0.0, 0.0) - d;

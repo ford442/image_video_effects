@@ -1,9 +1,11 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 //  Chromatic Metamorphosis
-//  Category: GENERATIVE
-//  Complexity: VERY HIGH
-//  Visual concept: Metaballs morph continuously between sphere, torus, cube,
-//    and asymmetric shapes. Color evolves independently from geometry, sliding
+//  Category: generative
+//  Features: color-morph, audio-spectrum, mouse-catalyst, temporal-evolution, depth-layers, iridescent-shift, semantic-alpha
+//  Complexity: High
+//  Updated: 2026-05-31
+//  By: Grok (deep visual/audio flourish — plasmaBuffer seasonal spectrum wired, mouse catalyst splits/accelerates morph, semantic alpha from fresnel+rim, richer filmic response)
+// ═══════════════════════════════════════════════════════════════════
 //    across surfaces in waves. Beauty in perpetual transformation.
 //  Mathematical approach: Smooth-min SDF blending of sphere/torus/box SDFs;
 //    time-driven interpolation weights; surface color is a function of normal
@@ -186,7 +188,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let blendRadius = u.zoom_params.z * 0.4 + 0.05;
     let lightInt    = u.zoom_params.w * 2.0 + 0.5;
 
-    let morphT = t * morphSpeed;
+    // ═══ CHUNK: Deep seasonal plasma audio + mouse catalyst (visual/audio flourish) ═══
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;   // Bass drives heavy morph speed + warm spectrum weight
+    let mids = audio.y;   // Mids shift hue cycles and saturation
+    let treble = audio.z; // Treble adds micro-iridescent flicker and edge energy
+
+    // Seasonal audio climate for perpetual transformation feel
+    let season = fract(t * 0.021 + bass * 0.55);
+    let audioMorphBoost = 1.0 + bass * 1.2 + mids * 0.4;
+    let hueDrift = (mids - 0.5) * 0.8 + treble * 0.3 * sin(t * 7.0);
+    let edgeEnergy = treble * 0.7 + bass * 0.25;
+
+    let morphT = t * morphSpeed * audioMorphBoost;
+
+    // Mouse as catalyst — surprising behavior: proximity accelerates local morph and "splits" geometry
+    let mouseNDC = (mouse - 0.5) * 2.0;
+    let catDist = length(uv - mouseNDC);
+    let catalyst = smoothstep(0.9, 0.05, catDist) * (0.6 + bass * 0.8);
+    // Local morph perturbation near mouse (feels like touching the form changes its evolution rate)
+    let localMorph = morphT + catalyst * 4.5 * sin(t * 3.0 + catDist * 12.0);
 
     // Camera
     let camPos = vec3<f32>(
@@ -208,7 +229,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var hitP = vec3<f32>(0.0);
     for (var i = 0; i < 80; i++) {
         let p  = ro + rd * tRay;
-        let d  = sceneSDF(p, t, blendRadius, morphT);
+        let d  = sceneSDF(p, t, blendRadius, localMorph);
         if (d < 0.001) { hit = true; hitP = p; break; }
         if (tRay > 8.0) { break; }
         tRay += d * 0.9;
@@ -217,13 +238,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var col = vec3<f32>(0.02, 0.02, 0.06); // background
 
     if (hit) {
-        let N = sceneNormal(hitP, t, blendRadius, morphT);
+        let N = sceneNormal(hitP, t, blendRadius, localMorph);
 
-        // Independent color field: based on normal + time, not geometry phase
-        let colorPhase = dot(N, vec3<f32>(0.577)) * 2.0 + t * colorSpeed;
-        let hue = fract(colorPhase * 0.5 + 0.15);
-        let sat = 0.6 + 0.4 * abs(sin(colorPhase * 1.7));
-        let surfCol = hsv2rgb(hue, sat, 1.0);
+        // Independent color field: based on normal + time + seasonal audio drift (deep audio wiring)
+        let colorPhase = dot(N, vec3<f32>(0.577)) * 2.0 + t * colorSpeed + hueDrift * 1.6;
+        let hue = fract(colorPhase * 0.5 + 0.15 + season * 0.25);
+        let sat = 0.52 + 0.48 * abs(sin(colorPhase * 1.7)) + mids * 0.22;
+        let val = 0.88 + edgeEnergy * 0.4;
+        let surfCol = hsv2rgb(hue, clamp(sat, 0.3, 1.0), clamp(val, 0.55, 1.25));
 
         // Lighting
         let lightDir = normalize(vec3<f32>(sin(t * 0.2), 0.7, cos(t * 0.2)));
@@ -231,44 +253,64 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let spec = pow(max(dot(reflect(-lightDir, N), -rd), 0.0), 32.0);
         let rim  = pow(1.0 - max(dot(N, -rd), 0.0), 3.0);
 
-        // AO approximation
-        let ao = 1.0 - smoothstep(0.0, 0.3, abs(sceneSDF(hitP + N * 0.08, t, blendRadius, morphT)));
+        // AO approximation (catalyst perturbs)
+        let ao = 1.0 - smoothstep(0.0, 0.3, abs(sceneSDF(hitP + N * 0.08, t, blendRadius, localMorph)));
 
+        // Catalyst rim boost — mouse "ignites" the evolving surface
+        let catBoost = 1.0 + catalyst * 1.8 * (0.5 + treble * 0.6);
         col = surfCol * (0.1 + diff * 0.7 * lightInt) * ao
             + vec3<f32>(1.0) * spec * 0.4
-            + surfCol * rim * 0.3;
+            + surfCol * rim * 0.35 * catBoost;
         col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
     }
 
     if (hit) {
-        let N2 = sceneNormal(hitP, t, blendRadius, morphT);
+        let N2 = sceneNormal(hitP, t, blendRadius, localMorph);
 
-        // ── Fresnel rim light ──────────────────────────────────────────────
+        // ── Fresnel rim light (audio-reactive hue + catalyst spark) ────────
         let NdotV = max(dot(N2, -rd), 0.0);
         let fresnelW = fresnel(NdotV, 0.04);
-        let rimHue = fract(t * 0.07 + 0.6);
-        col += hsv2rgb(rimHue, 1.0, 1.0) * fresnelW * 0.4;
+        let rimHue = fract(t * 0.07 + 0.6 + hueDrift * 0.6 + catalyst * 1.2);
+        let catSpark = 1.0 + catalyst * 2.5 * (0.4 + treble * 0.7);
+        col += hsv2rgb(rimHue, 0.95, 1.0) * fresnelW * 0.45 * catSpark;
 
         // ── Material noise texture ─────────────────────────────────────────
         let matNoise = vnoise_cm(hitP.xy * 4.0 + hitP.z * vec2<f32>(1.3, 0.7));
         col = mix(col, col * (0.7 + matNoise * 0.6), 0.3);
 
-        // ── GGX specular sheen ────────────────────────────────────────────
+        // ── GGX specular sheen (seasonal audio tint) ───────────────────────
         let halfV = normalize(normalize(vec3<f32>(sin(t*0.2), 0.7, cos(t*0.2))) + (-rd));
         let NdotH = max(dot(N2, halfV), 0.0);
         let roughness = 0.3 + matNoise * 0.4;
         let ggxSpec = ggxD(NdotH, roughness) * 0.15;
-        col += hsv2rgb(fract(t * colorSpeed * 0.3 + 0.3), 0.7, 1.0) * ggxSpec;
+        col += hsv2rgb(fract(t * colorSpeed * 0.3 + 0.3 + season * 0.4), 0.75, 1.0) * ggxSpec * (0.9 + edgeEnergy * 0.4);
 
-        // ── Full AO pass ───────────────────────────────────────────────────
-        let ao2 = ambientOcclusion(hitP, N2, t, blendRadius, morphT);
+        // ── Full AO pass (catalyst aware) ──────────────────────────────────
+        let ao2 = ambientOcclusion(hitP, N2, t, blendRadius, localMorph);
         col *= ao2;
 
         col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
     }
 
-    // Depth
+    // Subtle filmic post + audio-reactive vignette (richer atmosphere)
+    let vign = 1.0 - length(uv) * (0.35 + bass * 0.12);
+    col *= vign;
+    // Treble micro-grain for texture
+    let grain = (fract(sin(dot(vec2<f32>(gid.xy), vec2<f32>(12.9898, 78.233))) * 43758.5453) - 0.5) * treble * 0.035;
+    col = clamp(col + grain, vec3<f32>(0.0), vec3<f32>(1.25));
+
+    // ═══ Semantic alpha (rim + catalyst energy + fresnel bloom give transparent edges during morph) ═══
+    var semantic_alpha = 0.88;
+    if (hit) {
+        let edgeAlpha = pow(1.0 - max(dot(normalize(hitP), -rd), 0.0), 2.5);
+        semantic_alpha = mix(0.65, 0.96, 0.4 + edgeAlpha * 0.5 + catalyst * 0.35 + edgeEnergy * 0.25);
+    } else {
+        semantic_alpha = 0.25 + edgeEnergy * 0.2; // faint nebular mist
+    }
+    semantic_alpha = clamp(semantic_alpha, 0.2, 1.0);
+
+    // Depth (normalized)
     let depthVal = select(0.0, 1.0 - tRay / 8.0, hit);
-    textureStore(writeTexture, gid.xy, vec4<f32>(col, 1.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(col, semantic_alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depthVal, 0.0, 0.0, 1.0));
 }

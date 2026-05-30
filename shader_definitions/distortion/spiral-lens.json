@@ -5,7 +5,6 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "temporal",
     "depth-aware",
     "upgraded-rgba",
     "archimedean-spiral",
@@ -42,13 +41,15 @@
     }
   ],
   "tags": [
-    "filter",
-    "image-processing",
-    "audio-reactive",
-    "feedback",
-    "interactive",
     "lens",
+    "spiral",
     "distortion",
-    "spiral"
+    "chromatic",
+    "caustic",
+    "bloom",
+    "dof",
+    "audio-reactive",
+    "depth-aware",
+    "interactive"
   ]
 }

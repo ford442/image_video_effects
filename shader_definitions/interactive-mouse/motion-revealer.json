@@ -2,7 +2,8 @@
   "id": "motion-revealer",
   "name": "Motion Revealer",
   "url": "shaders/motion-revealer.wgsl",
-  "description": "The screen is dark by default; use the mouse as a brush to paint the live video feed onto the canvas with trailing fades.",
+  "category": "interactive-mouse",
+  "description": "The screen is dark by default; use the mouse as a brush to paint the live video feed onto the canvas with trailing fades. Audio-reactive pigment shifts RGB channels with bass/mids/treble. Depth-aware stroke opacity makes near objects paint more vividly.",
   "params": [
     {
       "id": "size",
@@ -35,10 +36,19 @@
   ],
   "features": [
     "mouse-driven",
-    "temporal-persistence"
+    "temporal-persistence",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic-mixing",
+    "upgraded-rgba"
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "audio-reactive",
+    "depth-aware",
+    "temporal",
+    "brush",
+    "chromatic"
   ]
 }

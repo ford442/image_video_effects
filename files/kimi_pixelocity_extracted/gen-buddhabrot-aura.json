@@ -1,0 +1,56 @@
+{
+  "id": "gen-buddhabrot-aura",
+  "name": "Buddhabrot Aura",
+  "url": "shaders/gen-buddhabrot-aura.wgsl",
+  "description": "Renders the Buddhabrot - a density visualization of Mandelbrot set trajectories. Creates the iconic Buddha-like silhouette with an ethereal purple-blue aura. Uses orbit accumulation for density plots with multi-channel coloring. Mouse controls orbit threshold for different density layers.",
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural"
+  ],
+  "tags": [
+    "fractal",
+    "buddhabrot",
+    "mandelbrot",
+    "density",
+    "generative",
+    "mathematical",
+    "ethereal",
+    "aura"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Sample Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Temporal Flow",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "scale",
+      "name": "Zoom",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

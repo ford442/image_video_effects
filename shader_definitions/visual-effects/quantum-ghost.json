@@ -1,0 +1,63 @@
+{
+  "id": "quantum-ghost",
+  "name": "Quantum Ghost",
+  "category": "visual-effects",
+  "url": "shaders/quantum-ghost.wgsl",
+  "description": "Quantum uncertainty visualization with Gaussian wave packet spreading, interference patterns from partial measurement, and entanglement correlation lines between ghost copies. Ghostly translucent copies with phase-dependent opacity, neon quantum numbers, HDR bloom on measurement events, ACES tone mapping, and chromatic separation by momentum uncertainty.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "temporal-ghosting",
+    "interference-fringes",
+    "quantum-uncertainty",
+    "wave-packet",
+    "entanglement-correlation"
+  ],
+  "params": [
+    {
+      "id": "offset",
+      "name": "Ghost Offset",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "fringes",
+      "name": "Fringe Frequency",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "decay",
+      "name": "Ghost Decay",
+      "default": 0.7,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "chroma",
+      "name": "Chromatic Shift",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "quantum",
+    "ghost",
+    "interference",
+    "fringes",
+    "temporal",
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic",
+    "wave-packet",
+    "entanglement",
+    "hdr-bloom",
+    "aces-tone-mapping"
+  ]
+}

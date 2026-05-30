@@ -1,4 +1,13 @@
-// --- PLASTIC BRICKS ---
+// ================================================================
+//  Plastic Bricks
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: plastic-bricks
+//  Created: 2026-05-30
+//  By: Copilot
+// ================================================================
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,104 +25,62 @@
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=BrickDensity, y=StudSize, z=ReliefDepth, w=Bevel
   ripples: array<vec4<f32>, 50>,
 };
 
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(173.3, 251.9))) * 43758.5453);
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    // Params
-    let bricksAcross = mix(20.0, 100.0, u.zoom_params.x); // Brick Density
-    let studSize = u.zoom_params.y * 0.4 + 0.1; // Stud Radius relative to cell
-    let relief = u.zoom_params.z * 0.5; // Stud Height / Shadow intensity
-    let bevel = u.zoom_params.w; // Brick bevel
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
+  let time = u.config.x;
+  let aspect = dims.x / dims.y;
+  let audio = plasmaBuffer[0].xyz;
 
-    // Mouse Interaction: Local zoom or distorion?
-    // Let's make mouse push the bricks slightly or change scale locally
-    var mouse = u.zoom_config.yz;
-    let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
+  let density = mix(6.0, 32.0, u.zoom_params.x);
+  let studSize = mix(0.10, 0.38, u.zoom_params.y);
+  let relief = mix(0.06, 0.40, u.zoom_params.z);
+  let bevel = mix(0.01, 0.18, u.zoom_params.w);
 
-    // Scale bricks near mouse
-    let scaleFactor = 1.0 + smoothstep(0.3, 0.0, dist) * 0.5;
-    let density = bricksAcross / scaleFactor;
+  var brickUV = uv * density;
+  if (fract(floor(brickUV.y) * 0.5) >= 0.5) {
+    brickUV.x = brickUV.x + 0.5;
+  }
+  let brickId = floor(brickUV);
+  let cell = fract(brickUV) - 0.5;
 
-    // Grid coordinates
-    let st = uv * vec2<f32>(aspect, 1.0) * density;
-    let id = floor(st);
-    let cell_uv = fract(st);
+  let mortar = smoothstep(0.46, 0.50, max(abs(cell.x), abs(cell.y)));
+  let studDist = length(cell);
+  let studMask = 1.0 - smoothstep(studSize, studSize + bevel, studDist);
+  let bodyMask = 1.0 - mortar;
 
-    // Center of cell
-    var center = vec2<f32>(0.5);
-    let d = distance(cell_uv, center);
+  let centerUV = clamp((brickId + 0.5) / density, vec2<f32>(0.0), vec2<f32>(1.0));
+  let baseColor = textureSampleLevel(readTexture, u_sampler, centerUV, 0.0).rgb;
 
-    // Sample color from center of cell
-    // Map back to UV
-    let sample_uv = (id + 0.5) / density / vec2<f32>(aspect, 1.0);
-    var color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
+  let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+  let mouseGlow = 1.0 - smoothstep(0.0, 0.45, mouseDist);
+  let huePulse = hash12(brickId + vec2<f32>(floor(time), 0.0));
+  let toyTint = mix(vec3<f32>(1.0, 0.25, 0.18), vec3<f32>(0.05, 0.75, 1.0), huePulse + audio.z * 0.3);
 
-    // Stud drawing
-    // Stud is a circle with highlight top-left, shadow bottom-right
-    let studR = studSize;
+  var finalColor = mix(baseColor, toyTint, 0.30 * bodyMask + 0.25 * studMask);
+  let highlight = studMask * (0.18 + audio.x * 0.25) + bodyMask * mouseGlow * 0.10;
+  finalColor = finalColor + vec3<f32>(1.0, 0.95, 0.85) * highlight;
 
-    if (d < studR) {
-        // Stud Top
-        // Flat color, maybe slightly brighter
-        color = color * (1.0 + relief * 0.1);
+  let reliefMask = clamp(bodyMask * relief + studMask * (relief + 0.25), 0.0, 1.0);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, centerUV, 0.0).r;
+  let depthOut = clamp(mix(baseDepth, 0.20 + reliefMask * 0.75, 0.35), 0.0, 1.0);
+  let finalAlpha = clamp(0.72 + reliefMask * 0.18 + highlight * 0.2, 0.48, 0.99);
 
-        // Specular highlight on stud
-        let studLight = normalize(vec2<f32>(-1.0, -1.0));
-        var p = (cell_uv - center) / studR; // -1 to 1
-        // Fake spherical normal?
-        // Or just flat cylinder with edge bevel
-
-        // Simple cylinder rim
-        if (d > studR * 0.8) {
-            // bevel
-            let angle = atan2(cell_uv.y - 0.5, cell_uv.x - 0.5);
-            let light = cos(angle + 2.35); // 135 degrees
-            color += vec3<f32>(light * relief);
-        }
-    } else {
-        // Floor of the brick
-        // Add shadow from the stud?
-        // Shadow is offset to bottom right
-        let shadowOffset = vec2<f32>(0.05, 0.05) * relief;
-        let shadowDist = distance(cell_uv - shadowOffset, center);
-        if (shadowDist < studR) {
-            color *= 0.7;
-        }
-    }
-
-    // Brick Bevel (edges of cell)
-    let edgeX = min(cell_uv.x, 1.0 - cell_uv.x);
-    let edgeY = min(cell_uv.y, 1.0 - cell_uv.y);
-    let edge = min(edgeX, edgeY);
-
-    if (edge < 0.05) {
-        // Bevel logic
-        // Top/Left = Light, Bottom/Right = Dark
-        let isLight = (cell_uv.x < 0.05 || cell_uv.y < 0.05);
-        if (isLight) {
-            color += vec3<f32>(0.2 * relief);
-        } else {
-            color -= vec3<f32>(0.2 * relief);
-        }
-    }
-
-    // Gap between bricks
-    if (edge < 0.02) {
-        color *= 0.5;
-    }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(studMask, mortar, mouseGlow, finalAlpha));
 }

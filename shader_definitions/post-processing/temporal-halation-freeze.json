@@ -1,0 +1,56 @@
+{
+  "id": "temporal-halation-freeze",
+  "name": "Temporal Halation Freeze",
+  "url": "shaders/temporal-halation-freeze.wgsl",
+  "description": "Long-exposure style halation and light bloom that slowly accumulates and 'freezes' bright moments with beautiful decaying ghost echoes. Transforms video into dreamy, time-blurred poetry. Bass lengthens the exposure tail.",
+  "tags": [
+    "halation",
+    "bloom",
+    "long-exposure",
+    "temporal",
+    "ghost",
+    "cinematic",
+    "audio-reactive"
+  ],
+  "features": [
+    "audio-reactive",
+    "audio-driven",
+    "temporal",
+    "semantic-alpha",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "exposure",
+      "name": "Exposure Length",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.01
+    },
+    {
+      "id": "decay",
+      "name": "Decay Rate",
+      "default": 0.86,
+      "min": 0.6,
+      "max": 0.97,
+      "step": 0.01
+    },
+    {
+      "id": "color",
+      "name": "Bloom Color Temp",
+      "default": 0.35,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "ghost",
+      "name": "Ghost Echo",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

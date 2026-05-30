@@ -2,7 +2,7 @@
   "id": "blueprint-reveal",
   "name": "Blueprint Reveal",
   "url": "shaders/blueprint-reveal.wgsl",
-  "description": "Interactive blueprint schematic that you can erase to reveal reality.",
+  "description": "Temporal ink dissolve with depth hatch density and audio surge. Sobel edge detection draws blueprint lines; previous reveal state bleeds outward like spreading ink. Depth modulates hatch fineness, bass creates ink ripple surges from the mouse.",
   "params": [
     {
       "id": "edgeStrength",
@@ -34,10 +34,18 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal-ink",
+    "depth-hatch",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "blueprint",
+    "ink",
+    "reveal",
+    "schematic"
   ]
 }

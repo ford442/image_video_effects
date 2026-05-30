@@ -1,0 +1,53 @@
+{
+  "id": "ferrofluid-spikes",
+  "name": "Ferrofluid Spikes",
+  "category": "simulation",
+  "url": "shaders/ferrofluid-spikes.wgsl",
+  "description": "Mouse-driven ferrofluid simulation. The cursor acts as a magnet, pulling up metallic spikes from a dark liquid surface. Audio adds turbulence.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "generative-surface",
+    "metallic-highlights"
+  ],
+  "params": [
+    {
+      "id": "magnet",
+      "name": "Magnet Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "density",
+      "name": "Spike Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "viscosity",
+      "name": "Fluid Viscosity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "highlight",
+      "name": "Highlight Sharpness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "ferrofluid",
+    "simulation",
+    "magnetic",
+    "liquid",
+    "mouse-driven",
+    "audio-reactive",
+    "metallic"
+  ]
+}

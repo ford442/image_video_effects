@@ -9,6 +9,16 @@
     "matrix"
   ],
   "coordinate": 875,
+  "features": [
+    "anamorphic-flare",
+    "mouse-spin",
+    "audio-reactive",
+    "palette-tinted",
+    "upgraded-rgba",
+    "chromatic-dispersion",
+    "temporal-flare-persistence",
+    "depth-aware"
+  ],
   "parameters": [],
   "url": "shaders/gen-holographic-lens-flare-matrix.wgsl"
 }

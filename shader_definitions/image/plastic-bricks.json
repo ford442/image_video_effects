@@ -1,11 +1,9 @@
 {
   "id": "plastic-bricks",
   "name": "Plastic Bricks",
+  "category": "image",
   "url": "shaders/plastic-bricks.wgsl",
-  "features": [
-    "mouse-driven"
-  ],
-  "description": "Simulates a plastic brick surface (like LEGO) with 3D studs. Mouse influences scale.",
+  "description": "Toy-brick relief remaps the scene into glossy stacked blocks with audio-pulsed stud highlights.",
   "params": [
     {
       "id": "param1",
@@ -36,8 +34,16 @@
       "max": 1
     }
   ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "tags": [
-    "filter",
-    "image-processing"
+    "plastic",
+    "bricks",
+    "toy",
+    "relief",
+    "audio-reactive"
   ]
 }

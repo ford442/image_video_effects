@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Waveform Glitch v2 — Transcendent Pass
+//  Waveform Glitch
 //  Category: retro-glitch
-//  Features: temporal, audio-reactive, depth-aware, upgraded-rgba,
-//            optical-flow, phosphor-persistence, halation, bayer-dither
-//  Complexity: Very High
+//  Features: glitch, waveform, retro, audio-sweep, rgb-tear, scanline, depth-jitter
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer scanline motion, audio-reactive tearing, atmospheric jitter)
+// ═══════════════════════════════════════════════════════════════════
 //  Upgraded: 2026-05-30
 // ═══════════════════════════════════════════════════════════════════
 

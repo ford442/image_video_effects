@@ -2,7 +2,7 @@
   "id": "chroma-kinetic",
   "name": "Chroma Kinetic",
   "url": "shaders/chroma-kinetic.wgsl",
-  "description": "Mouse-driven chromatic aberration modulated by image luminance and audio bass.",
+  "description": "Velocity chromatic aberration with directional smear and audio split. R channel leads, B lags based on motion direction; bass drives lead amount, mids drive smear glow. Directional motion trails sample along the velocity vector for cinematic motion blur.",
   "params": [
     {
       "id": "strength",
@@ -40,6 +40,8 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "velocity-chromatic",
+    "directional-smear",
     "upgraded-rgba"
   ],
   "tags": [
@@ -47,6 +49,8 @@
     "image-processing",
     "chromatic-aberration",
     "kinetic",
-    "mouse"
+    "mouse",
+    "motion-blur",
+    "velocity"
   ]
 }

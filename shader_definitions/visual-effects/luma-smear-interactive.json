@@ -1,10 +1,16 @@
 {
   "id": "luma-smear-interactive",
   "name": "Kinetic Echo",
+  "category": "visual-effects",
   "url": "shaders/luma-smear-interactive.wgsl",
-  "description": "Creates a motion trail based on brightness. Bright objects leave trails that decay over time. Mouse clears the trails.",
+  "description": "Creates a motion trail with chromatic smear (R lags, B leads). Bright objects leave decaying trails. Curl turbulence and audio gusts add organic chaos. Depth controls viscosity.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "chromatic-smear",
+    "curl-turbulence"
   ],
   "params": [
     {
@@ -38,6 +44,12 @@
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "smear",
+    "echo",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic",
+    "curl-noise"
   ]
 }

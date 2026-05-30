@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Art Deco Skyscraper - Generative Shader
+//  Art Deco Skyscraper
 //  Category: generative
-//  Features: raymarching, mouse-driven, audio-reactive, ACES, upgraded-rgba
+//  Features: raymarching, architectural, generative-city, audio-lights, mouse-wind, gold-metallic, atmospheric-fog
 //  Complexity: High
+//  Chunks From: previous art deco work + richer lighting and atmosphere
 //  Created: 2026-05-10
-//  By: Claude Opus 4.8 (swarm optimization pass 2026-05-31)
-//  upgraded-rgba
-//  Description: Infinite vertical ascent up a monumental Art Deco tower with gold fluting and geometric patterns.
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish pass — richer metallic light, audio city glow, depth)
 // ═══════════════════════════════════════════════════════════════════
 //  OPTIMIZATION LOG (2026-05-31):
 //  - Audio reactivity wired to plasmaBuffer (bass→gold glow + window flicker)

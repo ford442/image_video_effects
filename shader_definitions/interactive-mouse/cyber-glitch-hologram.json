@@ -1,8 +1,9 @@
 {
   "id": "cyber-glitch-hologram",
   "name": "Cyber Glitch Hologram",
+  "category": "interactive-mouse",
   "url": "shaders/cyber-glitch-hologram.wgsl",
-  "description": "A sci-fi holographic projection with interactive interference and chromatic aberration.",
+  "description": "Block-based datamoshing with structure-tensor motion estimation, holographic cosine interference fringes, cyan/magenta color separation, chromatic aberration on glitch blocks, and ACES tone mapping.",
   "params": [
     {
       "id": "hologramIntensity",
@@ -26,18 +27,24 @@
       "max": 2
     },
     {
-      "id": "mouseRadius",
-      "name": "Mouse Inf.",
-      "default": 0.3,
+      "id": "blockScale",
+      "name": "Block Scale",
+      "default": 0.5,
       "min": 0,
       "max": 1
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "hologram",
+    "glitch",
+    "cyber",
+    "datamosh",
+    "interference",
+    "audio-reactive"
   ]
 }

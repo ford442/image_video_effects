@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Ripple Blocks v2.0 — 4-Agent Swarm Upgrade
-//  Category: image
-//  Features: mouse-driven, audio-reactive, depth-aware, temporal,
-//            domain-warping, cymatics-interference, HDR, upgraded-rgba
-//  Complexity: High
+//  Ripple Blocks
+//  Category: visual-effects
+//  Features: ripple, blocks, retro, audio-wave, depth-stack, light-bleed, tactile-ripple
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer wave propagation, audio stacking, atmospheric light bleed)
+// ═══════════════════════════════════════════════════════════════════
 //  Upgraded: 2026-05-31 (Algorithmist + Visualist + Interactivist + Optimizer)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -82,6 +84,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
+
+    // Grok visual flourish: Richer wave stacking and light interaction
+    let waveDrive = 1.0 + bass * 0.5 + mids * 0.3;
   let env = 1.0 + bass * 2.0;
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

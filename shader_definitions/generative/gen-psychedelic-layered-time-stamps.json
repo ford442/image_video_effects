@@ -14,7 +14,10 @@
   "source": "Jules",
   "features": [
     "upgraded-rgba",
-    "audio-reactive"
+    "audio-reactive",
+    "chromatic-layer",
+    "depth-compositing",
+    "temporal-feedback"
   ],
   "parameters": [
     {

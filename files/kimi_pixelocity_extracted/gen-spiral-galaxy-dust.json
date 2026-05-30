@@ -1,0 +1,57 @@
+{
+  "id": "gen-spiral-galaxy-dust",
+  "name": "Spiral Galaxy Dust",
+  "url": "shaders/gen-spiral-galaxy-dust.wgsl",
+  "description": "Procedurally generated spiral galaxy with millions of simulated star particles forming spiral arms, dust lanes, and a bright galactic core. Features parallax star layers, temperature-based star coloring, and nebula wisps. Mouse controls viewing angle and zoom for cosmic exploration.",
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural",
+    "3d"
+  ],
+  "tags": [
+    "galaxy",
+    "particles",
+    "space",
+    "stars",
+    "spiral",
+    "generative",
+    "cosmic",
+    "nebula"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Star Density",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Rotation Speed",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "scale",
+      "name": "Field of View",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

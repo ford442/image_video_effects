@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Celestial Forge
 //  Category: generative
-//  Features: raymarching, mouse-driven, audio-reactive, ACES, upgraded-rgba
+//  Features: celestial-forge, cosmic-anvil, audio-hammer, mouse-sparks, stellar-plasma, depth-stars
 //  Complexity: High
-//  Created: 2026-05-10
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish pass — richer cosmic light, audio hammering, atmospheric stars)
+// ═══════════════════════════════════════════════════════════════════
 //  By: Claude Opus 4.8 (swarm optimization pass 2026-05-31)
 //  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════

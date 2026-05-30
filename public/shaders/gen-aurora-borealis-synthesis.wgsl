@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Aurora Borealis Synthesis
+//  Category: generative
+//  Features: volumetric-raymarch, audio-reactive, mouse-ripples, upgraded-rgba,
+//            chromatic-wavelength-split, temporal-aurora, audio-storm, depth-output
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 struct Uniforms {
     config: vec4<f32>,
     zoom_config: vec4<f32>,
@@ -19,7 +28,6 @@ struct Uniforms {
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-// 3D Noise helper function
 fn hash3(p: vec3<f32>) -> f32 {
     let p2 = fract(p * 0.3183099 + vec3<f32>(0.1, 0.1, 0.1));
     let q = p2 * 17.0;
@@ -30,9 +38,7 @@ fn noise3(x: vec3<f32>) -> f32 {
     let p = floor(x);
     let f = fract(x);
     let f2 = f * f * (vec3<f32>(3.0) - vec2<f32>(2.0).xxx * f);
-
     let n = p.x + p.y * 57.0 + 113.0 * p.z;
-
     let res = mix(
         mix(
             mix(hash3(p), hash3(p + vec3<f32>(1.0, 0.0, 0.0)), f2.x),
@@ -71,23 +77,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     let time = u.config.x;
-    let bass = u.config.y;
-    let treble = u.config.z;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Base video color
     let base_color = textureLoad(readTexture, vec2<i32>(id.xy), 0);
 
-    // Aurora calculation via raymarching volumetric noise
     var accumulated_color = vec3<f32>(0.0);
     var accumulated_alpha = 0.0;
 
-    // Configurable direction and properties from zoom uniforms
     let storm_dir = u.zoom_config.yz;
     let swirl_speed = max(0.1, u.zoom_params.y);
     let volume_height = max(0.5, u.zoom_params.x);
     let brightness_scale = max(0.1, u.zoom_params.z);
 
-    // Audio drives upward/storm motion
     let motion_offset = time * swirl_speed * 0.5 + vec3<f32>(storm_dir.x * time, bass * 2.0, storm_dir.y * time);
 
     let ray_dir = normalize(vec3<f32>(uv * 2.0 - 1.0, 1.0));
@@ -98,24 +101,32 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     for (var i = 0; i < steps; i++) {
         p += ray_dir * step_size;
 
-        // Sample noise
-        let n = fbm(p + vec3<f32>(0.0, treble * 0.5, 0.0));
+        // Chromatic wavelength splitting: R and B sample at different heights
+        let nR = fbm(p + vec3<f32>(0.0, treble * 0.8, 0.0));
+        let nG = fbm(p + vec3<f32>(0.0, mids * 0.5, 0.0));
+        let nB = fbm(p + vec3<f32>(0.0, bass * 0.3, 0.0));
 
-        // Only keep high intensity noise
-        var intensity = smoothstep(0.4, 0.8, n);
-        intensity *= (1.0 - (f32(i) / f32(steps))); // fade out vertically
+        var intensityR = smoothstep(0.4, 0.8, nR);
+        var intensityG = smoothstep(0.4, 0.8, nG);
+        var intensityB = smoothstep(0.4, 0.8, nB);
+        let fade = (1.0 - (f32(i) / f32(steps)));
+        intensityR *= fade;
+        intensityG *= fade;
+        intensityB *= fade;
 
-        if (intensity > 0.0) {
-            // Map intensity to plasmaBuffer colors
-            let color_index = u32(clamp(intensity * 128.0, 0.0, 127.0));
+        if (intensityG > 0.0) {
+            let color_index = u32(clamp(intensityG * 128.0, 0.0, 127.0));
             let mapped_color = plasmaBuffer[color_index].rgb;
-
-            accumulated_color += mapped_color * intensity * brightness_scale * step_size * 10.0;
-            accumulated_alpha += intensity * 0.1;
+            accumulated_color += vec3<f32>(mapped_color.r * intensityR, mapped_color.g * intensityG, mapped_color.b * intensityB) * brightness_scale * step_size * 10.0;
+            accumulated_alpha += intensityG * 0.1;
         }
 
         if (accumulated_alpha >= 1.0) { break; }
     }
+
+    // Temporal aurora persistence: previous frame blends for smoother curtains
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    accumulated_color = mix(accumulated_color, prev * 0.9, 0.08 + bass * 0.02);
 
     // Interactive mouse ripples affect aurora intensity and displacement
     var ripple_effect = 0.0;
@@ -129,7 +140,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     accumulated_color += vec3<f32>(ripple_effect * 0.5);
 
-    // Additive blending with base video
     let final_color = base_color.rgb + accumulated_color;
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(final_color, 1.0));
+    let alpha = clamp(accumulated_alpha + base_color.a * 0.5, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(final_color, alpha));
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(final_color, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(clamp(accumulated_alpha, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

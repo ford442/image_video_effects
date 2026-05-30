@@ -1,14 +1,15 @@
 {
   "id": "chroma-threads",
   "name": "Chroma Threads",
+  "category": "image",
   "url": "shaders/chroma-threads.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
-  "tags": [
-    "filter",
-    "image-processing"
-  ],
+  "description": "Woven fabric simulation with anisotropic noise, silk/sheen BRDF, subsurface scattering, and chromatic aberration on thread edges.",
   "params": [
     {
       "id": "thread_density",
@@ -50,5 +51,15 @@
       "mapping": "zoom_params.w",
       "description": "Trail decay factor"
     }
+  ],
+  "tags": [
+    "threads",
+    "chromatic",
+    "woven",
+    "fabric",
+    "sheen",
+    "brdf",
+    "audio-reactive",
+    "depth-aware"
   ]
 }

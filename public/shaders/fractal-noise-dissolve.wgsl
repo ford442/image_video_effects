@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Fractal Noise Dissolve
-//  Category: image
-//  Features: mouse-driven, audio-reactive, domain-warped-fbm, edge-glow, upgraded-rgba
-//  Complexity: High
-//  Chunks From: fractal-noise-dissolve, warpedFBM, bass_env
+//  Category: visual-effects
+//  Features: noise, dissolve, fractal, audio-eat, depth-layers, temporal-erosion, organic-breakup
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer erosion, audio-driven breakup, atmospheric layers)
+// ═══════════════════════════════════════════════════════════════════
 //  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;

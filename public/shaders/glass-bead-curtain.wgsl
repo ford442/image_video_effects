@@ -1,8 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-// Glass Bead Curtain - Physical glass transmission with Beer-Lambert law
-// Category: distortion
-// Features: mouse-driven, refraction, physically-based alpha
-// ═══════════════════════════════════════════════════════════════
+// ================================================================
+//  Glass Bead Curtain
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: glass-bead-curtain
+//  Created: 2026-05-30
+//  By: Copilot
+// ================================================================
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -21,104 +25,60 @@
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=BeadSize, y=Refraction, z=InteractTension, w=GlassDensity
   ripples: array<vec4<f32>, 50>,
 };
 
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+  let lenSq = max(dot(v, v), 1e-6);
+  return v * inverseSqrt(lenSq);
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    var mouse = u.zoom_config.yz;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    // Params
-    let bead_size = mix(10.0, 100.0, u.zoom_params.x);
-    let refraction_str = u.zoom_params.y;
-    let tension = u.zoom_params.z;
-    let glass_density = u.zoom_params.w * 2.0 + 0.5; // Beer-Lambert density factor
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
+  let time = u.config.x;
+  let aspect = dims.x / dims.y;
+  let audio = plasmaBuffer[0].xyz;
 
-    // Mouse Interaction
-    let aspect = resolution.x / resolution.y;
-    var center = mouse;
-    if (center.x < 0.0) { center = vec2<f32>(0.5, 0.5); }
+  let beadCount = mix(8.0, 36.0, 1.0 - u.zoom_params.x);
+  let refraction = u.zoom_params.y * 0.06;
+  let interactTension = mix(0.05, 0.35, u.zoom_params.z);
+  let density = mix(0.35, 1.0, u.zoom_params.w);
 
-    let dist_vec = (uv - center) * vec2<f32>(aspect, 1.0);
-    let dist = length(dist_vec);
+  let curtainUV = vec2<f32>(uv.x * beadCount * aspect, uv.y * beadCount);
+  let beadId = floor(curtainUV);
+  let beadCenter = beadId + 0.5;
+  let sway = sin(time * (1.5 + audio.x * 3.0) + beadId.y * 0.4) * 0.12;
+  let beadLocal = curtainUV - beadCenter + vec2<f32>(sway, 0.0);
+  let beadDist = length(beadLocal);
+  let beadMask = 1.0 - smoothstep(0.34, 0.50, beadDist);
 
-    // Repel force
-    let repel_radius = 0.3;
-    let interact = smoothstep(repel_radius, 0.0, dist);
-    let disp = normalize(dist_vec) * interact * tension * 0.2;
-    let active_uv = uv - vec2<f32>(disp.x / aspect, disp.y);
+  let beadCenterUV = vec2<f32>((beadCenter.x - sway) / (beadCount * aspect), beadCenter.y / beadCount);
+  let pullDelta = (beadCenterUV - mouse) * vec2<f32>(aspect, 1.0);
+  let pull = (1.0 - smoothstep(0.0, 0.45, length(pullDelta))) * interactTension;
+  let normal = safeNormalize(beadLocal + safeNormalize(pullDelta + vec2<f32>(0.001, 0.0)) * pull);
+  let refractOffset = normal * refraction * beadMask * (1.0 + audio.z * 0.8);
+  let sampleUV = clamp(uv + refractOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Grid logic on active_uv
-    let px_active = active_uv * resolution;
-    let cell_uv = fract(px_active / bead_size) - 0.5;
-    let r = length(cell_uv);
+  var finalColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+  let iridescence = mix(vec3<f32>(0.25, 0.85, 1.0), vec3<f32>(1.0, 0.55, 0.85), 0.5 + 0.5 * normal.x);
+  let sparkle = pow(max(0.0, 1.0 - beadDist * 1.9), 4.0) * (0.3 + audio.y * 0.7);
+  finalColor = mix(finalColor, finalColor * density + iridescence * 0.30, beadMask * density);
+  finalColor = finalColor + iridescence * sparkle;
 
-    var final_uv = active_uv;
-    var transmission = 1.0; // Alpha for Beer-Lambert transmission
-    var glass_thickness = 0.0;
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+  let transmission = mix(0.42, 0.88, beadMask * density);
+  let finalAlpha = clamp(0.42 + transmission * 0.45 + sparkle * 0.12, 0.25, 0.97);
+  let depthOut = clamp(mix(baseDepth, baseDepth * 0.35 + beadMask * 0.65, 0.38), 0.0, 1.0);
 
-    if (r < 0.5) {
-        // Inside bead: Calculate sphere normal and thickness
-        let z = sqrt(0.25 - r*r);
-        let normal = normalize(vec3<f32>(cell_uv, z));
-        
-        // Glass thickness through sphere at this point (path length)
-        // For a sphere: thickness = 2 * z at entry point
-        glass_thickness = 2.0 * z;
-
-        // Refraction offset
-        final_uv = active_uv - normal.xy * refraction_str * 0.5;
-        
-        // View direction (straight on for now)
-        let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-        
-        // Fresnel: more reflection at glancing angles
-        // Schlick's approximation: R = R0 + (1-R0)*(1-cos(theta))^5
-        let cos_theta = abs(dot(viewDir, normal));
-        let R0 = 0.04; // Fresnel reflectance at normal incidence (glass-air)
-        let fresnel = R0 + (1.0 - R0) * pow(1.0 - cos_theta, 5.0);
-        
-        // Beer-Lambert law: I = I0 * exp(-absorption * thickness * density)
-        // Glass absorption coefficient (wavelength-dependent, simplified here)
-        let glass_color = vec3<f32>(0.95, 0.98, 1.0); // Slight blue tint
-        let absorption = exp(-(1.0 - glass_color) * glass_thickness * glass_density);
-        
-        // Transmission coefficient combines fresnel reflection and absorption
-        transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
-    } else {
-        // Gap - fully transparent, no glass
-        transmission = 0.0;
-    }
-
-    // Sample with transmission alpha
-    var color = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0);
-    
-    // Apply glass tint and absorption
-    if (r < 0.5) {
-        // Apply Beer-Lambert absorption to RGB
-        let glass_tint = vec3<f32>(0.95, 0.98, 1.0);
-        color = vec4<f32>(color.rgb * glass_tint, transmission);
-        
-        // Add specular highlight on beads
-        let light_dir = normalize(vec3<f32>(-0.5, -0.5, 1.0));
-        let z = sqrt(max(0.0, 0.25 - r*r));
-        let normal = normalize(vec3<f32>(cell_uv, z));
-        let spec = pow(max(dot(normal, light_dir), 0.0), 20.0);
-        color = color + vec4<f32>(spec * 0.5);
-    } else {
-        // Gap - transparent, show background
-        color = vec4<f32>(color.rgb, 0.0);
-    }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    // Pass depth
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(beadMask, transmission, sparkle, finalAlpha));
 }

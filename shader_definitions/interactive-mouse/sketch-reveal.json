@@ -1,8 +1,9 @@
 {
   "id": "sketch-reveal",
   "name": "Sketch Reveal",
+  "category": "interactive-mouse",
   "url": "shaders/sketch-reveal.wgsl",
-  "description": "Transforms the world into a pencil sketch, allowing you to 'paint' the reality back in with your mouse.",
+  "description": "Turns the frame into living pencil work, then lets a soft cursor brush paint the original scene back in.",
   "params": [
     {
       "id": "brushSize",
@@ -34,10 +35,15 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "sketch",
+    "pencil",
+    "reveal",
+    "brush",
+    "audio-reactive"
   ]
 }

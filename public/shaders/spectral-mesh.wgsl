@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ================================================================
+//  Spectral Mesh
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: spectral-mesh
+//  Created: 2026-05-30
+//  By: Copilot
+// ================================================================
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +21,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
@@ -21,98 +29,51 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
-    let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    var p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-    return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+fn palette(t: f32) -> vec3<f32> {
+  return 0.52 + 0.48 * cos(6.28318 * (vec3<f32>(0.0, 0.18, 0.35) + t));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    var mouse = u.zoom_config.yz;
-    let time = u.config.x;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    // Parameters
-    let gridDensity = mix(20.0, 100.0, u.zoom_params.x);
-    let heightScale = u.zoom_params.y * 2.0; // Strength of luma displacement
-    let mouseRadius = u.zoom_params.z * 0.5; // Influence radius
-    let colorShift = u.zoom_params.w; // Rotate hue
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
+  let time = u.config.x;
+  let aspect = dims.x / dims.y;
+  let audio = plasmaBuffer[0].xyz;
 
-    // Base Sample
-    let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let density = 6.0 + u.zoom_params.x * 82.0;
+  let displacementStrength = u.zoom_params.y * 0.08;
+  let mouseRadius = max(0.02, u.zoom_params.z * 0.7);
+  let colorShift = u.zoom_params.w;
 
-    // Grid Logic
-    // We want to displace the UV we check against the grid, NOT sample from displaced UV.
-    // Actually, to make lines appear distorted, we usually distort the domain.
+  let centered = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let dist = length(centered);
+  let pull = 1.0 - smoothstep(0.0, mouseRadius, dist);
+  let wobble = vec2<f32>(
+    sin(uv.y * density + time * (0.8 + audio.x * 2.0)),
+    cos(uv.x * density * 1.2 - time * (1.1 + audio.y * 1.6))
+  ) * displacementStrength * pull;
+  let sampleUV = clamp(uv + wobble, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // 1. Calculate Grid
-    // Correct aspect for square grid cells
-    let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
+  let grid = abs(fract(sampleUV * density) - 0.5);
+  let line = 1.0 - smoothstep(0.0, 0.08 + audio.z * 0.02, min(grid.x, grid.y));
+  let diagonal = 1.0 - smoothstep(0.08, 0.22, abs(grid.x - grid.y));
 
-    // Mouse Interaction
-    let mouse_aspect = vec2<f32>(mouse.x * aspect, mouse.y);
-    let toMouse = uv_aspect - mouse_aspect;
-    let dist = length(toMouse);
-    let mouseForce = smoothstep(mouseRadius, 0.0, dist) * 0.2; // Push/Pull factor
+  var baseColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+  let spectral = palette(colorShift + sampleUV.x * 0.5 + time * 0.04 + audio.y * 0.2);
+  baseColor = mix(baseColor, spectral, line * 0.45 + diagonal * 0.15);
+  baseColor = baseColor + spectral * diagonal * (0.08 + 0.20 * pull);
 
-    // Displace domain for grid check
-    // "Pull" grid towards peaks (luminance) and mouse
-    let displacement = vec2<f32>(0.0);
+  let finalAlpha = clamp(0.70 + line * 0.18 + pull * 0.12, 0.40, 0.98);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+  let depthOut = clamp(mix(baseDepth, 0.22 + line * 0.75 + pull * 0.15, 0.28), 0.0, 1.0);
 
-    // Simple fake normal for luma
-    let eps = 0.01;
-    let luma_x = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(eps, 0.0), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let luma_y = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, eps), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let grad = vec2<f32>(luma_x - luma, luma_y - luma) / eps;
-
-    var mouseDir = vec2<f32>(0.0);
-    if (dist > 0.0001) {
-        mouseDir = normalize(toMouse);
-    }
-
-    let distortedUV = uv_aspect - grad * heightScale * 0.05 - mouseDir * mouseForce;
-
-    // Grid Lines
-    let grid = fract(distortedUV * gridDensity);
-    let lineThickness = 0.05 + 0.1 * luma; // Thicker lines at bright spots? Or constant?
-    // Let's make lines constant thickness relative to cell, but smooth
-    let lineAA = 0.1; // Softness
-
-    // Check x and y lines
-    let valX = smoothstep(lineThickness + lineAA, lineThickness, grid.x) + smoothstep(1.0 - (lineThickness + lineAA), 1.0 - lineThickness, grid.x);
-    let valY = smoothstep(lineThickness + lineAA, lineThickness, grid.y) + smoothstep(1.0 - (lineThickness + lineAA), 1.0 - lineThickness, grid.y);
-
-    let gridIntensity = clamp(valX + valY, 0.0, 1.0);
-
-    // Height calculation for color
-    // We base height on the luma at the current pixel + mouse influence
-    let height = luma + mouseForce * 5.0;
-
-    // Spectral Color
-    let hue = height * 0.7 + colorShift + time * 0.1;
-    let gridColor = hsv2rgb(vec3<f32>(hue, 0.8, 1.0));
-
-    // Background
-    // Darken original image
-    let bg = color.rgb * 0.1;
-
-    // Composite
-    // Add grid on top
-    var finalColor = mix(bg, gridColor, gridIntensity);
-
-    // Add glowing dots at vertices
-    let vertex = valX * valY; // Intersection
-    finalColor += gridColor * vertex * 2.0;
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
-
-    // Depth
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(luma, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(baseColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(line, diagonal, pull, finalAlpha));
 }

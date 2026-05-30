@@ -1,0 +1,57 @@
+{
+  "id": "anamorphic-caustic-flare",
+  "name": "Anamorphic Caustic Flare",
+  "url": "shaders/anamorphic-caustic-flare.wgsl",
+  "description": "Premium cinematic anamorphic lens flares combined with living, refracting water caustics that distort and project the source footage. Bass stretches the flares dramatically while treble animates the caustic ripples. Mouse tilts the virtual lens.",
+  "tags": [
+    "anamorphic",
+    "caustic",
+    "lens-flare",
+    "cinematic",
+    "refraction",
+    "audio-reactive",
+    "water"
+  ],
+  "features": [
+    "audio-reactive",
+    "audio-driven",
+    "mouse-driven",
+    "mouse-tilt",
+    "semantic-alpha",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "flare",
+      "name": "Anamorphic Flare",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.6,
+      "step": 0.01
+    },
+    {
+      "id": "caustic",
+      "name": "Caustic Intensity",
+      "default": 0.85,
+      "min": 0.0,
+      "max": 1.8,
+      "step": 0.01
+    },
+    {
+      "id": "refraction",
+      "name": "Refraction Amount",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "stretch",
+      "name": "Caustic Stretch",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

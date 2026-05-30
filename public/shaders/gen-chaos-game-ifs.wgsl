@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chaos Game IFS Fractal
 //  Category: generative
-//  Features: generative, audio-reactive, upgraded-rgba
+//  Features: generative, audio-reactive, upgraded-rgba, temporal-ghosting, chromatic-attractors,
+//            bass-scale-pulse, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-23
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -39,7 +41,6 @@ fn hue2rgb(h: f32) -> vec3<f32> {
     return clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// IFS attractor point with rotation
 fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec2<f32> {
     var p = uv * 2.0 - 1.0;
     let rot = time * 0.1 + bass * 0.5;
@@ -48,7 +49,6 @@ fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec2<f32> {
     
     for (var i: i32 = 0; i < iter; i = i + 1) {
         let fi = f32(i);
-        // Three attractor points forming Sierpinski-like pattern
         let a1 = vec2<f32>(-0.5 * c - 0.0 * s, -0.5 * s + 0.0 * c);
         let a2 = vec2<f32>(0.5 * c - 0.0 * s, 0.5 * s + 0.0 * c);
         let a3 = vec2<f32>(0.0 * c - 0.866 * s, 0.0 * s + 0.866 * c);
@@ -69,7 +69,7 @@ fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec2<f32> {
     return p;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
     
@@ -86,26 +86,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let param4 = u.zoom_params.w;
     
     let iterations = i32(mix(3.0, 12.0, param1 + bass * 0.3));
-    let p = ifsPoint(uv, iterations, time, bass);
     
-    let d = length(p);
-    let angle = atan2(p.y, p.x) / (2.0 * 3.14159265);
+    // Chromatic attractor separation: R/B use different attractor offsets
+    let p_r = ifsPoint(uv + vec2<f32>(param4 * 0.01 * bass, 0.0), iterations, time, bass);
+    let p_b = ifsPoint(uv - vec2<f32>(param4 * 0.01 * treble, 0.0), iterations, time, bass);
+    let p_g = ifsPoint(uv, iterations, time, bass);
     
-    // Glow from attractor density
-    let glow = 1.0 / (1.0 + d * d * mix(4.0, 20.0, param2));
-    let rings = smoothstep(0.0, 0.1, abs(fract(d * mix(3.0, 10.0, param3)) - 0.5));
+    let d_r = length(p_r);
+    let d_g = length(p_g);
+    let d_b = length(p_b);
+    let angle = atan2(p_g.y, p_g.x) / (2.0 * 3.14159265);
+    
+    let glow_r = 1.0 / (1.0 + d_r * d_r * mix(4.0, 20.0, param2));
+    let glow_g = 1.0 / (1.0 + d_g * d_g * mix(4.0, 20.0, param2));
+    let glow_b = 1.0 / (1.0 + d_b * d_b * mix(4.0, 20.0, param2));
+    let rings = smoothstep(0.0, 0.1, abs(fract(d_g * mix(3.0, 10.0, param3)) - 0.5));
     
     let hue = fract(angle + time * 0.03 + mids * 0.15);
     let sat = mix(0.4, 1.0, param4 + treble * 0.3);
-    let val = glow * (0.5 + rings * 0.5) * (1.0 + bass * 0.3);
+    let val_r = glow_r * (0.5 + rings * 0.5) * (1.0 + bass * 0.3);
+    let val_g = glow_g * (0.5 + rings * 0.5) * (1.0 + bass * 0.3);
+    let val_b = glow_b * (0.5 + rings * 0.5) * (1.0 + bass * 0.3);
     
-    let rgb = hue2rgb(hue) * sat + vec3<f32>(1.0 - sat) * val;
+    let rgb = hue2rgb(hue) * sat + vec3<f32>(1.0 - sat);
+    let finalRGB = vec3<f32>(rgb.r * val_r, rgb.g * val_g, rgb.b * val_b);
+    
+    // Temporal ghosting from previous IFS state
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let ghosted = mix(finalRGB, prev * 0.88, 0.1 + bass * 0.05);
     
     let depth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
-    let alpha = clamp(val * 0.7 + glow * 0.3 + 0.1, 0.0, 1.0);
-    let finalColor = vec4<f32>(rgb * val, alpha);
+    let alpha = clamp((val_r + val_g + val_b) * 0.3 + glow_g * 0.3 + 0.1 + bass * 0.05, 0.0, 1.0);
+    let finalColor = vec4<f32>(ghosted, alpha);
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

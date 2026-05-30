@@ -1,9 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Aperiodic Monotile Hat Tiling
 //  Category: generative
-//  Features: generative, audio-reactive, upgraded-rgba
+//  Features: aperiodic-tiling, monotile, generative-pattern, audio-reactive, mouse-scale,
+//            edge-glow, temporal-rotation, chromatic-edge-bloom, bass-scale-pulse, upgraded-rgba
 //  Complexity: High
+//  Chunks From: aperiodic tiling + improved visual layering
 //  Created: 2026-05-23
+//  Updated: 2026-05-31
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -52,27 +56,22 @@ fn hue2rgb(h: f32) -> vec3<f32> {
     return clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Approximate hat tile via hexagonal substitution pattern
 fn hatTileDistance(uv: vec2<f32>, scale: f32) -> f32 {
     let p = uv * scale;
-    // Hex grid
     let hex_q = p.x * 0.57735 + p.y * 0.33333;
     let hex_r = p.y * 0.66667;
     let hex_s = -hex_q - hex_r;
-    
     let qf = floor(hex_q);
     let rf = floor(hex_r);
     let sf = floor(hex_s);
-    
     let dq = abs(hex_q - qf - 0.5);
     let dr = abs(hex_r - rf - 0.5);
     let ds = abs(hex_s - sf - 0.5);
-    
     let d = max(dq, max(dr, ds));
     return d * 2.0 - 0.5;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
     
@@ -82,40 +81,49 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let resolution = vec2<f32>(u.config.zw);
     let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+    let mouse = u.zoom_config.yz;
     
     let param1 = u.zoom_params.x;
     let param2 = u.zoom_params.y;
     let param3 = u.zoom_params.z;
     let param4 = u.zoom_params.w;
     
+    // Bass-driven scale pulse
     let scale = mix(8.0, 32.0, param1) * (1.0 + bass * 0.2);
     let rotSpeed = (param2 - 0.5) * 0.5;
-    let p = rot2(uv - 0.5, time * rotSpeed) + 0.5;
+    
+    // Temporal rotation + mouse influence
+    let rot = time * rotSpeed + mouse.x * 0.5;
+    let p = rot2(uv - 0.5, rot) + 0.5;
     
     let d = hatTileDistance(p, scale);
     
-    // Tile ID for coloring
     let tileID = floor(p.x * scale * 0.57735) + floor(p.y * scale * 0.66667) * 137.0;
     let tileHash = hash12(vec2<f32>(tileID, fract(tileID * 0.618)));
     
     let edgeWidth = mix(0.02, 0.08, param3);
     let edge = smoothstep(edgeWidth, 0.0, abs(d));
     
-    // Color cycling with audio
+    // Chromatic edge bloom: R on outer edge, B on inner
+    let edgeR = smoothstep(edgeWidth * 1.2, 0.0, abs(d - 0.01 * bass));
+    let edgeB = smoothstep(edgeWidth * 1.2, 0.0, abs(d + 0.01 * treble));
+    let chromaEdge = vec3<f32>(edgeR, edge, edgeB) * (1.0 + treble);
+    
     let hue = fract(tileHash + time * 0.03 + mids * 0.15 + uv.x * 0.1);
     let sat = mix(0.4, 0.9, param4 + treble * 0.3);
     let val = mix(0.15, 0.85, smoothstep(-0.3, 0.3, d) + bass * 0.2);
     
     let rgb = hue2rgb(hue) * sat + vec3<f32>(1.0 - sat) * val;
-    let edgeColor = vec3<f32>(1.0, 0.95, 0.8) * edge * (1.0 + treble);
+    let edgeColor = vec3<f32>(1.0, 0.95, 0.8) * chromaEdge;
     
-    let finalRGB = rgb * val + edgeColor;
-    let alpha = clamp(val * 0.6 + edge * 0.4 + bass * 0.1, 0.0, 1.0);
+    // Temporal tile color persistence
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let finalRGB = mix(rgb * val + edgeColor, prev * 0.94, 0.06 + bass * 0.02);
+    
+    let alpha = clamp(val * 0.6 + edge * 0.4 + bass * 0.05, 0.0, 1.0);
     let finalColor = vec4<f32>(finalRGB, alpha);
     
-    let depth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
-    
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(val * 0.5 + edge * 0.3, 0.0, 0.0, 0.0));
 }

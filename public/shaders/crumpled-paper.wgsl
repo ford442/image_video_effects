@@ -138,28 +138,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lightDir = normalize(vec3<f32>(0.5, -0.5, 1.0)); // Top-right light
     let diffuse = max(dot(normal, lightDir), 0.0);
 
-    // Ambient occlusion in creases (where height is low?)
-    // Actually where ridge is sharp.
-    // Let's just map height to ambient. Lower parts are darker.
-    let ambient = 0.5 + 0.5 * height;
-
+    // ═══ UNIQUE VISUAL IDEA: physical crease response ═══
+    // (1) Valley ambient occlusion — light is trapped in folds, so low height darkens.
+    let ao = mix(0.55, 1.0, clamp(height * 1.4 + 0.3, 0.0, 1.0));
+    let ambient = (0.5 + 0.5 * height) * ao;
     let lighting = ambient * 0.5 + diffuse * 0.8;
 
-    // Apply texture distortion
-    // Refract texture based on normal xy
+    // (2) Anisotropic crease sheen — paper isn't fully matte; sharp folds catch a
+    //     glint. Blinn-Phong specular concentrated on the steep crease faces.
+    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+    let halfDir = normalize(lightDir + viewDir);
+    let creaseSteep = clamp(length(normal.xy) * 2.2, 0.0, 1.0); // steeper face = sharper crease
+    let specular = pow(max(dot(normal, halfDir), 0.0), 48.0) * creaseSteep * 0.6;
+
+    // (3) Worn-fibre whitening — the apex of each fold is mechanically stressed and
+    //     the fibres blanch white (the classic pale lines on crumpled paper).
+    let creaseWear = pow(ridge, 3.0) * smoothstep(0.25, 0.6, depth);
+
+    // Apply texture distortion (refraction along the surface normal)
     let distortStr = 0.02 * depth;
     let finalUV = uv + normal.xy * distortStr;
 
     let texColor = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
 
-    // Mix lighting
-    // If lightStrength is 0, we see pure image. If 1, we see paper texture heavily applied.
-    // Paper is usually white.
-    // Let's multiply image by lighting (modulate).
+    // Modulate by lighting, then add sheen and the worn white fold-lines.
     var finalColor = texColor * mix(1.0, lighting, lightStrength);
-
-    // Add specular highlight for shiny paper?
-    // Maybe paper is matte.
+    finalColor = finalColor + vec3<f32>(specular) * lightStrength;
+    finalColor = mix(finalColor, vec3<f32>(0.96, 0.96, 0.93), creaseWear * 0.5 * lightStrength);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 

@@ -1,0 +1,41 @@
+{
+  "id": "brush-strokes",
+  "name": "Brush Strokes",
+  "url": "shaders/brush-strokes.wgsl",
+  "features": ["mouse-driven", "splat", "temporal"],
+  "tags": ["brush", "paint", "strokes", "artistic", "organic", "trail"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Brush Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Texture",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Wetness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Color Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

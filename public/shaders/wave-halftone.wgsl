@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Wave Halftone v2
+//  Category: image
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Chunks From: wave-halftone
+//  Upgraded: 2026-05-30
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +19,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -21,72 +27,124 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Wave Halftone
-// Generates a halftone dot pattern where the grid itself is distorted by sine waves
-// and influenced by the mouse.
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+
+fn acesTone(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hexCell(uv: vec2<f32>, density: f32) -> vec2<f32> {
+  let s = uv * density;
+  let r = vec2<f32>(1.0, 1.7320508);
+  let h = r * 0.5;
+  let a = fract(s) - h;
+  let b = fract(s - h) - h;
+  return select(a, b, dot(a, a) < dot(b, b));
+}
+
+fn hexCenter(uv: vec2<f32>, density: f32) -> vec2<f32> {
+  let s = uv * density;
+  let r = vec2<f32>(1.0, 1.7320508);
+  let h = r * 0.5;
+  let a = fract(s) - h;
+  let b = fract(s - h) - h;
+  let gv = select(a, b, dot(a, a) < dot(b, b));
+  let id = s - gv;
+  return id / density;
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    var mousePos = u.zoom_config.yz;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    // Params
-    let dotSizeScale = 0.5 + u.zoom_params.x; // 0.5 to 1.5
-    let gridDensity = 20.0 + u.zoom_params.y * 100.0; // 20 to 120
-    let waveAmp = u.zoom_params.z * 0.1; // 0.0 to 0.1
-    let waveSpeed = u.zoom_params.w * 5.0; // 0.0 to 5.0
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    // Mouse Interaction
-    let dToMouse = uv - mousePos;
-    let mouseDist = length(dToMouse);
+  let dotSizeScale = 0.4 + u.zoom_params.x * 0.8;
+  let gridDensity = 12.0 + u.zoom_params.y * 80.0;
+  let waveAmp = u.zoom_params.z * 0.15;
+  let chromaticAmt = u.zoom_params.w * 0.02;
 
-    // Mouse creates a "bulge" or lens effect by pushing the grid coordinates
-    let mouseForce = smoothstep(0.3, 0.0, mouseDist) * 0.05;
-    let mouseDir = normalize(dToMouse);
-    // Safety for 0 length
-    var safeDir = vec2<f32>(0.0);
-    if (mouseDist > 0.001) { safeDir = mouseDir; }
+  let mousePos = u.zoom_config.yz;
+  let mouseDown = u.zoom_config.w;
 
-    // Wave function
-    let waveX = sin(uv.y * 10.0 + time * waveSpeed) * waveAmp;
-    let waveY = cos(uv.x * 10.0 + time * waveSpeed * 0.8) * waveAmp;
+  // Hexagonal close-packed grid coordinates
+  let hexUV = hexCell(uv, gridDensity);
+  let hexDist = length(hexUV);
 
-    // Distort the UV used for grid calculation
-    let distortedUV = uv + vec2<f32>(waveX, waveY) - (safeDir * mouseForce);
+  // 2D wave equation interference from multiple oscillators
+  var interference = 0.0;
+  interference = interference + sin(uv.x * 12.0 + time * 2.0) * cos(uv.y * 10.0 - time * 1.5);
+  interference = interference + sin((uv.x + uv.y) * 8.0 + time * 1.2) * 0.5;
+  interference = interference + cos(uv.x * 6.0 - time * 0.8) * sin(uv.y * 14.0 + time * 1.1) * 0.3;
+  interference = interference * waveAmp * (1.0 + bass * 1.5);
 
-    // Grid Logic
-    let gridUV = distortedUV * gridDensity;
-    let gridIndex = floor(gridUV);
-    let gridFract = fract(gridUV); // 0..1 inside cell
+  // Dynamic wave sources from mouse ripples
+  let rippleCount = u32(u.config.y);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let r = u.ripples[i];
+    let d = length(uv - r.xy);
+    let t = time - r.z;
+    interference = interference + sin(d * 30.0 - t * 8.0) * exp(-d * 5.0) * 0.06 * mouseDown;
+  }
 
-    // Center of the cell in UV space (for sampling color)
-    let cellCenterUV = (gridIndex + 0.5) / gridDensity;
+  // Mouse cursor acts as a continuous wave source
+  let mouseDist = length(uv - mousePos);
+  interference = interference + sin(mouseDist * 25.0 - time * 5.0) * exp(-mouseDist * 4.0) * 0.08 * mouseDown;
 
-    // Sample the image at the center of the cell
-    // Use clamp sampler implicitly via standard sampler
-    let color = textureSampleLevel(readTexture, u_sampler, cellCenterUV, 0.0);
-    let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  // Sample image at hex cell center for color quantization
+  let cellCenter = hexCenter(uv, gridDensity);
+  let safeCenter = clamp(cellCenter, vec2<f32>(0.001), vec2<f32>(0.999));
+  let color = textureSampleLevel(readTexture, u_sampler, safeCenter, 0.0);
+  let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    // Dot Rendering
-    // Distance from center of cell
-    let dist = length(gridFract - 0.5);
+  // Depth controls dot perspective (smaller dots for distant objects)
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let perspective = mix(0.6, 1.0, depth);
 
-    // Radius depends on luma
-    // Mouse also magnifies the dots locally
-    let mag = 1.0 + smoothstep(0.2, 0.0, mouseDist) * 1.0;
-    let radius = luma * 0.5 * dotSizeScale * mag;
+  // Dot radius modulated by luma and wave interference crests
+  let waveMod = 1.0 + interference * 0.5;
+  let radius = luma * 0.45 * dotSizeScale * waveMod * perspective;
 
-    // Smooth circle
-    let mask = smoothstep(radius, radius - 0.1, dist);
+  // Moire patterns at high-interference nodes
+  let moire = smoothstep(0.7, 1.0, abs(interference)) * 0.25;
 
-    var finalColor = color * mask;
-    finalColor.a = 1.0;
+  // Chromatic aberration on wave crests
+  let crestMask = smoothstep(0.5, 1.0, abs(interference));
+  let rShift = chromaticAmt * crestMask * perspective;
+  let rSample = textureSampleLevel(readTexture, u_sampler, clamp(safeCenter + vec2<f32>(rShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let bSample = textureSampleLevel(readTexture, u_sampler, clamp(safeCenter - vec2<f32>(rShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
+  // Paper texture grain
+  let paper = hash21(uv * 400.0 + time * 0.1) * 0.06 + 0.94;
+
+  // Anti-aliased dot mask
+  let edgeWidth = 0.08 * perspective;
+  let mask = smoothstep(radius + edgeWidth, radius - edgeWidth, hexDist);
+
+  let dotColor = vec3<f32>(rSample, color.g, bSample) * mask * paper;
+  let moireColor = vec3<f32>(0.85, 0.92, 1.0) * moire * mask * (0.5 + treble * 0.5);
+
+  // ACES tone mapping on final composited color
+  let finalColor = acesTone(dotColor + moireColor + color.rgb * 0.04);
+
+  // Alpha: wave interference intensity × dot_density × depth
+  let interferenceIntensity = smoothstep(0.0, 1.0, abs(interference) + 0.2);
+  let dotDensity = mask * luma;
+  let alpha = clamp(interferenceIntensity * dotDensity * depth + mask * 0.12, 0.1, 0.9);
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(interference, mask, luma, alpha));
 }

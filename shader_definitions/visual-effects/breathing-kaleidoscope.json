@@ -1,8 +1,9 @@
 {
   "id": "breathing-kaleidoscope",
   "name": "Breathing Kaleidoscope",
+  "category": "visual-effects",
   "url": "shaders/breathing-kaleidoscope.wgsl",
-  "description": "Smoothly folds and unfolds the image into mirrored segments with a breathing animation; center and rotation are controllable.",
+  "description": "Organic breathing kaleidoscope driven by domain-warped FBM, fractional symmetry, jewel-tone palette cycling, film grain, and depth-aware sector fading.",
   "params": [
     {
       "id": "cycleSpeed",
@@ -39,13 +40,15 @@
     "visual-effects",
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing",
+    "kaleidoscope",
+    "petals",
     "audio",
-    "music",
-    "reactive"
+    "reactive",
+    "organic",
+    "fbm"
   ]
 }

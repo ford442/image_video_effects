@@ -1,8 +1,9 @@
 {
   "id": "edge-glow-mouse",
   "name": "Edge Glow",
+  "category": "interactive-mouse",
   "url": "shaders/edge-glow-mouse.wgsl",
-  "description": "Detects edges in the image which glow intensely when near the mouse cursor.",
+  "description": "Source edges bloom into neon halos as the cursor passes, with beat-driven color cycling and preserved image detail.",
   "params": [
     {
       "id": "threshold",
@@ -34,10 +35,15 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "edges",
+    "glow",
+    "neon",
+    "cursor",
+    "audio-reactive"
   ]
 }

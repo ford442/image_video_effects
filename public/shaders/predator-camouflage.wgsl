@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ================================================================
+//  Predator Camouflage
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, temporal-ghosting, chromatic-aberration
+//  Complexity: Medium
+//  Chunks From: predator-camouflage
+//  Created: 2026-05-30
+//  By: Copilot
+// ================================================================
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,102 +21,74 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=CloakRadius, y=RefractionStrength, z=ShimmerSpeed, w=NoiseScale
   ripples: array<vec4<f32>, 50>,
 };
 
 fn hash12(p: vec2<f32>) -> f32 {
-    var p3 = fract(vec3<f32>(p.xyx) * .1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash12(i + vec2<f32>(0.0, 0.0)),
-                   hash12(i + vec2<f32>(1.0, 0.0)), u.x),
-               mix(hash12(i + vec2<f32>(0.0, 1.0)),
-                   hash12(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+  let i = floor(p);
+  let f = fract(p);
+  let a = hash12(i);
+  let b = hash12(i + vec2<f32>(1.0, 0.0));
+  let c = hash12(i + vec2<f32>(0.0, 1.0));
+  let d = hash12(i + vec2<f32>(1.0, 1.0));
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    // Parameters
-    let camou_radius = 0.1 + u.zoom_params.x * 0.4;
-    let distortion_strength = 0.01 + u.zoom_params.y * 0.05;
-    let shimmer_speed = 2.0 + u.zoom_params.z * 5.0;
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
+  let time = u.config.x;
+  let aspect = dims.x / dims.y;
+  let audio = plasmaBuffer[0].xyz;
 
-    var mouse = u.zoom_config.yz;
+  let cloakRadius = mix(0.08, 0.70, u.zoom_params.x);
+  let refractionStrength = u.zoom_params.y * 0.08;
+  let shimmerSpeed = 0.2 + u.zoom_params.z * 5.0;
+  let noiseScale = mix(4.0, 26.0, u.zoom_params.w);
 
-    // Calculate distance from mouse (cloaked entity)
-    let d_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(d_vec);
+  let centered = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let dist = length(centered);
+  let cloakMask = 1.0 - smoothstep(cloakRadius * 0.75, cloakRadius, dist);
+  let rim = smoothstep(cloakRadius * 0.55, cloakRadius * 0.92, dist) * cloakMask;
 
-    // Create the camouflage mask (1.0 at center, 0.0 at edge)
-    // We use a smooth transition at the edge
-    let mask = 1.0 - smoothstep(camou_radius * 0.8, camou_radius, dist);
+  let shimmerA = noise(uv * noiseScale + vec2<f32>(time * shimmerSpeed, -time * 0.5));
+  let shimmerB = noise(uv * (noiseScale * 1.7) - vec2<f32>(time * 0.8, time * shimmerSpeed));
+  let shimmer = (shimmerA + shimmerB - 1.0) * (0.5 + audio.x);
+  let normal = normalize(centered + vec2<f32>(0.001, 0.0));
+  let offset = normal * (refractionStrength * cloakMask * (0.5 + shimmer));
+  let refractedUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
+  let split = normal * (0.003 + audio.z * 0.01) * rim;
 
-    if (mask <= 0.001) {
-        // Optimization: No effect outside radius
-        var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-        textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-        // Write depth
-        var depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-        textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-        return;
-    }
+  var finalColor = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, clamp(refractedUV + split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, refractedUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, clamp(refractedUV - split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
+  );
+  let cloakTint = mix(vec3<f32>(0.10, 0.8, 1.0), vec3<f32>(0.65, 0.95, 0.35), shimmerA);
+  finalColor = mix(finalColor, finalColor * 0.55 + cloakTint * 0.45, cloakMask * 0.55);
+  finalColor = finalColor + cloakTint * rim * (0.10 + audio.y * 0.18);
 
-    let time = u.config.x * shimmer_speed;
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, refractedUV, 0.0).r;
+  let depthOut = clamp(mix(baseDepth, 0.18 + cloakMask * 0.72, 0.30), 0.0, 1.0);
+  let finalAlpha = clamp(0.92 - cloakMask * 0.30 + rim * 0.10, 0.35, 0.98);
 
-    // Generate low frequency noise for bulk distortion
-    let n_scale = mix(5.0, 40.0, u.zoom_params.w);
-    let n1 = noise(uv * n_scale + vec2<f32>(time * 0.2, 0.0));
-    let n2 = noise(uv * n_scale + vec2<f32>(0.0, time * 0.2));
-    let displacement_dir = vec2<f32>(n1, n2) - 0.5;
-
-    // High frequency noise for "glitch/shimmer"
-    let hf_noise = noise(uv * 50.0 + time);
-
-    // Calculate displacement
-    // Distortion is strongest in the middle but fades at edges
-    let displacement = displacement_dir * distortion_strength * mask;
-
-    // Chromatic Aberration
-    // Offset channels differently
-    let r_off = displacement * (1.0 + 10.0 * distortion_strength);
-    let b_off = displacement * (1.0 - 5.0 * distortion_strength);
-
-    let r = textureSampleLevel(readTexture, u_sampler, uv + r_off, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv + displacement, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + b_off, 0.0).b;
-
-    var color = vec4<f32>(r, g, b, 1.0);
-
-    // Add specular shimmer
-    let shimmer_intensity = smoothstep(0.6, 0.8, hf_noise) * mask * 0.2;
-    color = color + vec4<f32>(shimmer_intensity);
-
-    // Add a subtle edge highlight to define the cloaked shape
-    let edge_mask = smoothstep(camou_radius * 0.8, camou_radius * 0.85, dist) * (1.0 - smoothstep(camou_radius * 0.95, camou_radius, dist));
-    color = mix(color, color + vec4<f32>(0.1), edge_mask);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    // Write depth
-    var depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(cloakMask, rim, shimmerA, finalAlpha));
 }

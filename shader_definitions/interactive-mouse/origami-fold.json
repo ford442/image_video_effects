@@ -1,8 +1,9 @@
 {
   "id": "origami-fold",
   "name": "Origami Fold",
+  "category": "interactive-mouse",
   "url": "shaders/origami-fold.wgsl",
-  "description": "Simulates a paper fold effect where the image is creased and folded based on the mouse position.",
+  "description": "Paper fold effect with chromatic edge separation and crease glow. Audio modulates fold angle and adds warm bass glow to creases. Depth controls shadow intensity.",
   "params": [
     {
       "id": "radius",
@@ -34,10 +35,19 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "chromatic-edge"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "origami",
+    "paper",
+    "fold",
+    "interactive",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic"
   ]
 }

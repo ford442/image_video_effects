@@ -2,7 +2,7 @@
   "id": "magnetic-field",
   "name": "Magnetic Field",
   "url": "shaders/magnetic-field.wgsl",
-  "description": "Magnetic field lines distortion effect.",
+  "description": "Multi-pole magnetic field simulation with curl-noise particle traces and audio-reactive attraction. Field lines wiggle organically via FBM curl, depth modulates field strength, and treble adds particle sparkle.",
   "params": [
     {
       "id": "strength",
@@ -38,7 +38,8 @@
     "physics",
     "mouse-driven",
     "audio-reactive",
-    "audio-driven",
+    "curl-noise",
+    "field-lines",
     "upgraded-rgba"
   ],
   "tags": [
@@ -46,6 +47,9 @@
     "image-processing",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "magnetic",
+    "curl",
+    "particles"
   ]
 }

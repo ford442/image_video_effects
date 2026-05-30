@@ -1,10 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Luma Magnetism
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive
-//  Complexity: Medium
-//  Created: 2026-05-17
+//  Luma Magnetism v2
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Chunks From: field-sim, runge-kutta, iron-filings
+//  Created: 2026-05-30
+//  By: 4-Agent Upgrade Swarm
 // ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -20,70 +23,119 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=FieldStrength, y=Radius, z=FilamentDensity, w=DepthLayer
   ripples: array<vec4<f32>, 50>,
 };
 
+const PI: f32 = 3.141592653589793;
+
+// ═══ CHUNK: aces_tonemap (standard) ═══
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 2.51 + 0.03);
+  let b = x * (x * 2.43 + 0.59) + 0.14;
+  return clamp(a / max(b, vec3<f32>(0.001)), vec3(0.0), vec3(1.0));
+}
+
+// ═══ CHUNK: hash21 ═══
 fn hash21(p: vec2<f32>) -> f32 {
-  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
 }
 
-fn noise(p: vec2<f32>) -> f32 {
-  let i = floor(p); let f = fract(p);
-  let a = hash21(i); let b = hash21(i + vec2<f32>(1.0, 0.0));
-  let c = hash21(i + vec2<f32>(0.0, 1.0)); let d = hash21(i + vec2<f32>(1.0, 1.0));
-  let u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+// ═══ CHUNK: sample_luma_polarity ═══
+fn sampleLuma(uv: vec2<f32>) -> f32 {
+  let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  return dot(c, vec3(0.299, 0.587, 0.114));
 }
 
-fn curl(p: vec2<f32>) -> vec2<f32> {
-  let e = 0.01;
-  let n = noise(p); let nx = noise(p + vec2<f32>(e, 0.0)); let ny = noise(p + vec2<f32>(0.0, e));
-  return vec2<f32>(-(ny - n), nx - n) / e;
+// ═══ CHUNK: magnetic_field_rk2 ═══
+fn magneticField(pos: vec2<f32>, mouse: vec2<f32>, strength: f32, bass: f32) -> vec2<f32> {
+  let ps = vec2(0.003, 0.003);
+  let l = sampleLuma(pos + vec2(-ps.x, 0.0));
+  let r = sampleLuma(pos + vec2( ps.x, 0.0));
+  let u = sampleLuma(pos + vec2(0.0, -ps.y));
+  let d = sampleLuma(pos + vec2(0.0,  ps.y));
+  let grad = vec2(r - l, d - u) * 10.0;
+
+  let mouseDelta = pos - mouse;
+  let mouseDist = length(mouseDelta);
+  let mouseField = vec2(-mouseDelta.y, mouseDelta.x) * strength * (1.0 + bass)
+                 / max(mouseDist * mouseDist, 0.0001);
+  return grad + mouseField;
+}
+
+fn rk2Step(pos: vec2<f32>, mouse: vec2<f32>, strength: f32, bass: f32, dt: f32) -> vec2<f32> {
+  let k1 = magneticField(pos, mouse, strength, bass);
+  let k2 = magneticField(pos + k1 * dt * 0.5, mouse, strength, bass);
+  return pos + k2 * dt;
+}
+
+// ═══ CHUNK: field_line_density ═══
+fn fieldLineDensity(uv: vec2<f32>, mouse: vec2<f32>, strength: f32, bass: f32, steps: i32) -> f32 {
+  var pos = uv;
+  var density = 0.0;
+  for (var i: i32 = 0; i < steps; i = i + 1) {
+    let f = magneticField(pos, mouse, strength, bass);
+    pos = pos + f * 0.003;
+    let l = sampleLuma(pos);
+    density = density + l * 0.1;
+    if (length(pos - uv) > 0.3) { break; }
+  }
+  return density;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let res = u.config.zw;
-  if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
-  let uv = vec2<f32>(global_id.xy) / res;
-  let mousePos = u.zoom_config.yz;
-  let click = u.zoom_config.w > 0.5;
-  let aspect = res.x / res.y;
-  let diff = uv - mousePos;
-  let dist = length(vec2<f32>(diff.x * aspect, diff.y));
-  let origColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let luma = dot(origColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
-  let strength = u.zoom_params.x * (1.0 + plasmaBuffer[0].x * 2.0);
-  let radius = max(u.zoom_params.y, 0.01);
-  let hardness = u.zoom_params.z * 5.0 + 1.0;
-  let threshold = u.zoom_params.w * 0.99;
-  let dir = select(normalize(diff), vec2<f32>(1.0, 0.0), length(diff) < 0.0001);
-  let t = dist / radius;
-  let distMask = smoothstep(1.0, 0.0, t);
-  let lumaMask = smoothstep(threshold, threshold + 0.05, luma);
-  let falloff = pow(1.0 - t, hardness) * distMask;
-  let swirl = plasmaBuffer[0].y * 0.5;
-  let rotDir = vec2<f32>(dir.y, -dir.x);
-  let jitter = curl(uv * 8.0 + u.config.x) * 0.015;
-  var offset = (dir + rotDir * swirl + jitter) * falloff * strength * luma * 0.2 * lumaMask;
-  let shock = select(0.0, 0.15 / max(dist, 0.001), click);
-  offset = offset + (diff / max(dist, 0.001)) * shock;
-  let dispMag = length(offset);
-  let stretch = dispMag * 0.3;
-  let rUV = clamp(uv + offset + dir * stretch, vec2<f32>(0.0), vec2<f32>(1.0));
-  let gUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-  let bUV = clamp(uv + offset - dir * stretch * 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
-  let rCol = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
-  let gCol = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
-  let bCol = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
-  let glow = smoothstep(radius, 0.0, dist) * lumaMask * abs(strength) * 0.15;
-  let finalRGB = vec3<f32>(rCol, gCol, bCol) + vec3<f32>(luma, luma * 0.8, luma * 0.6) * glow;
-  let alpha = mix(origColor.a, 1.0, min(dispMag * 2.0, 1.0));
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let mouse = u.zoom_config.yz;
+  let bass = plasmaBuffer[0].x;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+
+  let fieldStrength = u.zoom_params.x * 2.0 * (1.0 + bass * 0.5);
+  let radius = max(u.zoom_params.y, 0.01);
+  let filamentDensity = u.zoom_params.z * 5.0 + 1.0;
+  let depthLayer = u.zoom_params.w;
+
+  let aspect = resolution.x / resolution.y;
+  let diff = uv - mouse;
+  let dist = length(vec2(diff.x * aspect, diff.y));
+
+  let luma = sampleLuma(uv);
+  let polarity = (luma - 0.5) * 2.0;
+
+  let field = magneticField(uv, mouse, fieldStrength, bass);
+  let fieldMag = length(field);
+
+  let lineDensity = fieldLineDensity(uv, mouse, fieldStrength, bass, 8);
+  let filament = smoothstep(0.5, 0.0, abs(sin(lineDensity * filamentDensity * PI + depth * 6.2831853)))
+               * smoothstep(radius, 0.0, dist);
+
+  let filingColor = vec3(0.15, 0.12, 0.10);
+  let northColor = vec3(0.8, 0.2, 0.1);
+  let southColor = vec3(0.1, 0.3, 0.8);
+  let polarityColor = mix(southColor, northColor, polarity * 0.5 + 0.5);
+
+  let bloom = fieldMag * 0.15 * smoothstep(radius, 0.0, dist);
+  let hdrBloom = polarityColor * bloom * (1.0 + bass * 0.3);
+
+  let filingGlow = filingColor * filament * 2.0;
+
+  let displacedUV = uv + normalize(field) * fieldMag * 0.01 * smoothstep(radius, 0.0, dist);
+  let displaced = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+
+  let depthFade = mix(0.6, 1.0, depth * depthLayer);
+  let emission_base = mix(displaced, polarityColor, filament * 0.4) + hdrBloom + filingGlow;
+  var emission = emission_base * depthFade;
+  let tonemapped = aces_tonemap(emission);
+
+  let noise = hash21(uv * 400.0) * 0.03;
+  let alpha = clamp(filament * depth * 2.0 + bloom * depth * 3.0 + noise, 0.0, 1.0);
+  let outCol = vec4(tonemapped, alpha);
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), outCol);
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), outCol);
 }

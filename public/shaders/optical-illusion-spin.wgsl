@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ================================================================
+//  Optical Illusion Spin
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: optical-illusion-spin
+//  Created: 2026-05-30
+//  By: Copilot
+// ================================================================
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,104 +21,60 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=RingCount, y=Speed, z=TwistForce, w=Alternating
   ripples: array<vec4<f32>, 50>,
 };
 
+fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
+  let s = sin(angle);
+  let c = cos(angle);
+  return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
+    return;
+  }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    var center = vec2<f32>(0.5, 0.5);
-    let aspect = resolution.x / resolution.y;
+  let uv = vec2<f32>(gid.xy) / resolution;
+  let mouse = u.zoom_config.yz;
+  let aspect = resolution.x / resolution.y;
+  let time = u.config.x;
+  let audio = plasmaBuffer[0].xyz;
 
-    // Parameters
-    // x: Ring Count (5 to 50)
-    // y: Speed (0 to 5.0)
-    // z: Twist Strength (-3.0 to 3.0)
-    // w: Alternating (0.0 or 1.0) - mixed smoothly? Threshold it.
+  let ringCount = 4.0 + u.zoom_params.x * 44.0;
+  let speed = 0.15 + u.zoom_params.y * 5.0;
+  let twistForce = u.zoom_params.z * 4.5;
+  let alternating = u.zoom_params.w;
 
-    let ring_count = u.zoom_params.x * 45.0 + 5.0;
-    let speed = u.zoom_params.y * 5.0; // Rotation speed
-    let twist_strength = (u.zoom_params.z - 0.5) * 20.0; // -10 to 10
-    let alternating = step(0.5, u.zoom_params.w); // 0 or 1
+  let centered = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let radius = length(centered);
+  let angle = atan2(centered.y, centered.x);
+  let ring = floor(radius * ringCount);
+  let altDir = mix(1.0, select(-1.0, 1.0, fract(ring * 0.5) >= 0.5), alternating);
+  let twist = (1.0 - smoothstep(0.0, 1.1, radius)) * twistForce * altDir;
+  let pulse = sin(time * speed * 2.0 + ring * 0.7) * (0.35 + 0.65 * audio.x);
+  let spun = rotate(centered, twist + pulse * 0.18);
+  let sampleUV = clamp(spun / vec2<f32>(aspect, 1.0) + mouse, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Polar Conversion
-    let centered_uv = uv - center;
-    let corrected_uv = vec2<f32>(centered_uv.x * aspect, centered_uv.y);
-    let radius = length(corrected_uv);
-    var angle = atan2(corrected_uv.y, corrected_uv.x);
+  var finalColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+  let ringPhase = fract(radius * ringCount);
+  let ringMask = 1.0 - smoothstep(0.42, 0.50, abs(ringPhase - 0.5));
+  let halo = ringMask * (0.08 + 0.24 * audio.z);
+  let illusionTint = mix(vec3<f32>(0.10, 0.85, 1.0), vec3<f32>(1.0, 0.55, 0.20), 0.5 + 0.5 * sin(angle * 3.0 + time * speed));
+  finalColor = finalColor + illusionTint * halo;
 
-    // Ring Logic
-    let ring_index = floor(radius * ring_count);
+  let finalAlpha = clamp(0.74 + halo * 0.8 + (1.0 - smoothstep(0.0, 1.0, radius)) * 0.12, 0.42, 0.98);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+  let depthOut = clamp(mix(baseDepth, 0.30 + halo * 0.7, 0.22), 0.0, 1.0);
 
-    // Direction
-    // If alternating is 1, even rings go one way, odd go another.
-    // If alternating is 0, all go same way? Or maybe random?
-    // Let's make param w control "Variation".
-    // w < 0.5: All same direction. w > 0.5: Alternating.
-    var direction = 1.0;
-    if (alternating > 0.5) {
-        if (ring_index % 2.0 != 0.0) {
-            direction = -1.0;
-        }
-    }
-
-    // Time based rotation
-    let time_rot = u.config.x * speed * direction * 0.5;
-
-    // Mouse Interaction
-    var mouse = u.zoom_config.yz;
-    let mouse_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let mouse_dist = length(mouse_vec);
-
-    // Twist effect near mouse
-    // The closer to mouse, the more "offset" or "speed boost" we add.
-    // Let's add a rotational offset based on mouse distance.
-    // Twist creates a vortex-like drag.
-    let twist = smoothstep(0.5, 0.0, mouse_dist) * twist_strength;
-
-    // Apply Rotation
-    angle += time_rot + twist;
-
-    // Convert back to UV
-    let cos_a = cos(angle);
-    let sin_a = sin(angle);
-
-    // Rotate the corrected vector
-    // New vector (rx, ry)
-    // rx = x cos - y sin ... wait, we have radius and angle.
-    let rotated_vec = vec2<f32>(cos_a * radius, sin_a * radius);
-
-    // Map back to UV space
-    // x = rx / aspect + 0.5
-    // y = ry + 0.5
-    let new_uv = vec2<f32>(rotated_vec.x / aspect + 0.5, rotated_vec.y + 0.5);
-
-    var color = vec4<f32>(0.0, 0.0, 0.0, 1.0);
-
-    // Bounds check
-    if (new_uv.x >= 0.0 && new_uv.x <= 1.0 && new_uv.y >= 0.0 && new_uv.y <= 1.0) {
-         color = textureSampleLevel(readTexture, u_sampler, new_uv, 0.0);
-    }
-
-    // Ring Borders (optional aesthetic)
-    // Darken edges of rings slightly for separation
-    let ring_pos = fract(radius * ring_count);
-    let border = smoothstep(0.0, 0.1, ring_pos) * smoothstep(1.0, 0.9, ring_pos);
-    // color = color * (0.8 + 0.2 * border); // Subtle ring lines
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, new_uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(ringMask, halo, radius, finalAlpha));
 }

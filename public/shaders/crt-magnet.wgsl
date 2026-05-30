@@ -173,7 +173,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let luma = dot(tintedColor, vec3<f32>(0.299, 0.587, 0.114));
   let bloomThreshold = smoothstep(0.6, 1.0, luma);
-  let finalColor = tintedColor + bloom * bloomThreshold * bloomIntensity * (2.0 + mids * 1.5) + vec3<f32>(treble * 0.05);
+  var finalColor = tintedColor + bloom * bloomThreshold * bloomIntensity * (2.0 + mids * 1.5) + vec3<f32>(treble * 0.05);
+
+  // ═══ UNIQUE VISUAL IDEA: shadow-mask beam purity error + aperture grille ═══
+  // A magnet near a CRT deflects the three electron beams by DIFFERENT amounts, so
+  // each lands on the wrong colour phosphor stripe — the iconic rainbow purity
+  // blotch. We sample R/G/B along progressively different deflections, scaled by
+  // the field, so the channels fan apart into colour fringes only near the magnet.
+  let beamR = clamp(uv - displacement * 1.35, vec2<f32>(0.0), vec2<f32>(1.0));
+  let beamG = clamp(uv - displacement * 1.00, vec2<f32>(0.0), vec2<f32>(1.0));
+  let beamB = clamp(uv - displacement * 0.70, vec2<f32>(0.0), vec2<f32>(1.0));
+  let purityCol = vec3<f32>(
+      textureSampleLevel(readTexture, u_sampler, beamR, 0.0).r,
+      textureSampleLevel(readTexture, u_sampler, beamG, 0.0).g,
+      textureSampleLevel(readTexture, u_sampler, beamB, 0.0).b
+  );
+  // Blend toward the purity-separated colour where the field is strong.
+  finalColor = mix(finalColor, purityCol, clamp(field * 1.6, 0.0, 0.85));
+
+  // Aperture-grille: the physical screen is vertical R/G/B phosphor stripes. Each
+  // column lights only its own phosphor, so the magnet's purity error reads against
+  // a real CRT substructure. A subtle effect that vanishes when the field is calm.
+  let stripe = u32(global_id.x) % 3u;
+  var grille = vec3<f32>(0.85);
+  if (stripe == 0u) { grille = vec3<f32>(1.15, 0.8, 0.8); }
+  else if (stripe == 1u) { grille = vec3<f32>(0.8, 1.15, 0.8); }
+  else { grille = vec3<f32>(0.8, 0.8, 1.15); }
+  let grilleAmt = clamp(field * 1.2, 0.0, 0.5);
+  finalColor = finalColor * mix(vec3<f32>(1.0), grille, grilleAmt);
 
   // SDF vignette with smooth radial falloff
   let vigUV = uvRaw - 0.5;

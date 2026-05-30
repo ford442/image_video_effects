@@ -1,0 +1,58 @@
+{
+  "id": "mercury-temporal-mirror",
+  "name": "Mercury Temporal Mirror",
+  "url": "shaders/mercury-temporal-mirror.wgsl",
+  "description": "The input image is reflected in a living liquid mercury surface whose ripples persist and evolve over time. Mouse presses create visceral impact dents that propagate realistically. Audio controls the viscosity and thickness of the metal.",
+  "tags": [
+    "mercury",
+    "liquid",
+    "reflection",
+    "temporal",
+    "ripple",
+    "audio-reactive",
+    "metallic"
+  ],
+  "features": [
+    "audio-reactive",
+    "audio-driven",
+    "mouse-driven",
+    "mouse-impact",
+    "temporal",
+    "semantic-alpha",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "reflect",
+      "name": "Reflection Strength",
+      "default": 0.75,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "impact",
+      "name": "Mouse Impact",
+      "default": 0.9,
+      "min": 0.0,
+      "max": 1.8,
+      "step": 0.01
+    },
+    {
+      "id": "metallic",
+      "name": "Metallic Sheen",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

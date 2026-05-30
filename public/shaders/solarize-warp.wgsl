@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ================================================================
+//  Solarize Warp
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: solarize-warp
+//  Created: 2026-05-30
+//  By: Copilot
+// ================================================================
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,113 +21,57 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=TwistStrength, y=SolarizeThreshold, z=EffectRadius, w=EffectIntensity
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let aspect = resolution.x / resolution.y;
-  var mouse = u.zoom_config.yz;
-
-  // Params
-  let twistStrength = (u.zoom_params.x - 0.5) * 20.0;
-  let solarThreshold = u.zoom_params.y;
-  let radius = u.zoom_params.z;
-  let solarSoftness = u.zoom_params.w; // Unused but reserved, maybe mix amount?
-
-  // Aspect Corrected Distance
-  let uv_c = vec2<f32>(uv.x * aspect, uv.y);
-  let mouse_c = vec2<f32>(mouse.x * aspect, mouse.y);
-  let dist = distance(uv_c, mouse_c);
-
-  // Warp Logic
-  // Smoothstep returns 0.0 if dist > radius, 1.0 if dist < 0
-  // Note: smoothstep(high, low, val) is undefined behavior in WGSL. Use 1.0 - smoothstep(low, high, val).
-  let influence = 1.0 - smoothstep(0.0, radius, dist);
-  let angle = influence * twistStrength;
+fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
   let s = sin(angle);
   let c = cos(angle);
+  return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
 
-  // To rotate around mouse, we need vectors relative to mouse
-  // But we must correct for aspect ratio during rotation, then convert back?
-  // Easier to just rotate the UV vector around the mouse center in aspect-space?
-  // Let's do simple non-aspect corrected rotation for swirl, it looks fine usually,
-  // or use the aspect-corrected vector for rotation.
-
-  var dir = uv - mouse;
-  // Aspect correct the direction for rotation logic
-  var dir_c = vec2<f32>(dir.x * aspect, dir.y);
-
-  // Rotate dir_c
-  let rotated_dir_c = vec2<f32>(dir_c.x * c - dir_c.y * s, dir_c.x * s + dir_c.y * c);
-
-  // Convert back to UV space (divide x by aspect)
-  let rotated_dir = vec2<f32>(rotated_dir_c.x / aspect, rotated_dir_c.y);
-
-  let sourceUV = mouse + rotated_dir;
-
-  let color = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
-
-  // Solarize Logic
-  // Standard solarize: if value > threshold, invert?
-  // Or: color = 1.0 - abs(color - 0.5) * 2.0; (This creates a V shape)
-  // Let's do threshold inversion based on params.
-
-  let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
-
-  var solarColor = color.rgb;
-
-  // We want the solarization to be intense near the warp center
-  // And maybe normal outside? Or controlled by param?
-  // Let's make the solarization global but the threshold modulated by param?
-  // Or make it only happen inside the warp?
-
-  // Let's try: "Solarize Warp" - The warped area is solarized.
-  // influence is 1.0 at center, 0.0 at radius.
-
-  // Only solarize if influence > 0?
-  // Let's blend.
-
-  if (luma > solarThreshold) {
-      solarColor = 1.0 - solarColor;
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
   }
 
-  // Make solarization dependent on influence
-  // If influence is high, we solarize fully.
-  // If influence is low, we see normal color.
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
+  let aspect = dims.x / dims.y;
+  let time = u.config.x;
+  let audio = plasmaBuffer[0].xyz;
 
-  let finalColor = mix(color.rgb, solarColor, influence * solarSoftness + (1.0 - solarSoftness) * 0.0);
-  // Actually let's just use solarSoftness as a global "Mix" slider.
-  // If solarSoftness is 1.0, the effect is localized by influence?
-  // Let's say param W controls "Effect Intensity" which modulates the mix.
+  let twistStrength = u.zoom_params.x * 4.5;
+  let solarizeThreshold = mix(0.15, 0.85, u.zoom_params.y);
+  let effectRadius = mix(0.08, 0.80, u.zoom_params.z);
+  let effectIntensity = mix(0.05, 1.0, u.zoom_params.w);
 
-  // Let's just output the warped color, and if inside radius, apply solarization.
+  let centered = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let dist = length(centered);
+  let influence = 1.0 - smoothstep(0.0, effectRadius, dist);
+  let angle = twistStrength * influence * (1.0 + audio.x * 0.7) + sin(time * 2.0 + dist * 18.0) * 0.15;
+  let warpedUV = clamp(rotate(centered, angle) / vec2<f32>(aspect, 1.0) + mouse, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  var result = color.rgb;
-  if (luma > solarThreshold) {
-      result = 1.0 - result;
-  }
+  let source = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0).rgb;
+  let luma = dot(source, vec3<f32>(0.299, 0.587, 0.114));
+  let threshold = solarizeThreshold + (audio.y - 0.5) * 0.15 * influence;
+  let inverted = 1.0 - source;
+  let solarized = mix(source, inverted, step(threshold, luma));
+  let tint = mix(vec3<f32>(1.0, 0.58, 0.12), vec3<f32>(0.12, 0.78, 1.0), 0.5 + 0.5 * sin(time + dist * 14.0));
+  var finalColor = mix(source, solarized + tint * influence * 0.12, influence * effectIntensity);
 
-  // Mix based on distance?
-  // If we want "Solarize Warp", usually the whole image is solarized or just the warp?
-  // Let's make it local to the warp.
+  let finalAlpha = clamp(0.70 + influence * 0.18 + effectIntensity * 0.08, 0.40, 0.98);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, warpedUV, 0.0).r;
+  let depthOut = clamp(mix(baseDepth, 0.22 + influence * 0.70, 0.28), 0.0, 1.0);
 
-  result = mix(color.rgb, result, influence);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(result, 1.0));
-
-   // Depth passthrough
-  let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(influence, luma, threshold, finalAlpha));
 }

@@ -3,9 +3,12 @@
   "name": "Luma Glass",
   "url": "shaders/luma-glass.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
-  "description": "Dynamic refraction shader where the image luminance creates a glass-like surface, lit by the mouse.",
+  "description": "Physically-based refraction shader where luminance drives glass refractive index. Features Sellmeier chromatic dispersion, caustic highlights, Fresnel reflections, and subsurface scattering.",
   "params": [
     {
       "id": "refract-str",
@@ -43,6 +46,9 @@
   "tags": [
     "warp",
     "distort",
-    "transform"
+    "glass",
+    "refraction",
+    "chromatic-dispersion",
+    "caustics"
   ]
 }

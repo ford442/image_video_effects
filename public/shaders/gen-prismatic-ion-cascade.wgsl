@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Prismatic Ion Cascade
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, chromatic-split,
+//            temporal-cascade-persistence, audio-stream-modulation, depth-scaled
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -67,33 +68,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Params: x=streamDensity, y=cascadeSpeed, z=spectralSpread, w=ionThickness
-    let streamDensity = 4.0 + u.zoom_params.x * 16.0;
+    // Audio drives stream count dynamically
+    let streamDensity = 4.0 + u.zoom_params.x * 16.0 + bass * 4.0;
     let cascadeSpeed = 0.3 + u.zoom_params.y * 2.0;
     let spectralSpread = 0.02 + u.zoom_params.z * 0.15;
     let ionThickness = 0.005 + u.zoom_params.w * 0.06;
 
-    // Mouse-driven origin: cascades pour from mouse position
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let aspect = resolution.x / max(resolution.y, 1.0);
     let p = vec2<f32>((uv.x - mouse.x) * aspect, uv.y - mouse.y);
 
-    // Distance and angle from cascade origin
     let r = length(p);
     let theta = atan2(p.y, p.x);
 
-    // Vertical-biased streams that warp toward mouse (technique 1: streaming bands)
     let warp = fbm(vec2<f32>(theta * 2.0, time * cascadeSpeed * (1.0 + mids * 0.4)));
     let bandPhase = theta * streamDensity + warp * 3.0 + time * cascadeSpeed * (1.0 + bass * 0.5);
     let bandWave = sin(bandPhase);
     let bandMask = smoothstep(1.0 - ionThickness * 20.0, 1.0, abs(bandWave));
 
-    // Falloff from origin (audio-pulsing radius)
     let radialPulse = 1.0 + bass * 0.6;
     let coreFall = exp(-r * (3.0 - radialPulse));
     let outerFall = exp(-r * 1.4);
 
-    // Technique 2: prismatic spectral split — sample three offset phase positions
     let split = spectralSpread * (1.0 + treble * 0.8);
     let phaseR = sin(bandPhase + split * 6.28);
     let phaseG = sin(bandPhase);
@@ -107,30 +103,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ionG = maskG * (coreFall + outerFall * 0.4);
     let ionB = maskB * (coreFall + outerFall * 0.4);
 
-    // Temporal turbulence shimmer (technique 3: fbm-driven flicker tied to time)
     let shimmer = fbm(p * 6.0 + vec2<f32>(time * 0.5, -time * 0.7)) * 0.5 + 0.5;
     let flicker = mix(0.7, 1.3, shimmer) * (1.0 + treble * 0.4);
 
     var ionColor = vec3<f32>(ionR, ionG, ionB) * flicker;
 
-    // Ambient prismatic haze blended with original frame
+    // Temporal cascade persistence: ion trail burn-in
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let trailBurn = mix(ionColor, prev * 0.92, 0.08 + bass * 0.03);
+    ionColor = mix(ionColor, trailBurn, 0.5);
+
     let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let haze = vec3<f32>(0.05, 0.08, 0.18) * outerFall * (1.0 + bass * 0.5);
     let composed = baseSample.rgb * 0.35 + ionColor * 2.2 + haze;
 
-    // Sparkle dots near peaks
     let sparkleSeed = hash21(floor(uv * resolution * 0.5) + floor(time * 8.0));
     let sparkle = step(0.985, sparkleSeed) * bandMask * treble * 1.5;
     let finalRGB = clamp(composed + vec3<f32>(sparkle), vec3<f32>(0.0), vec3<f32>(4.0));
 
-    // Meaningful alpha: encodes ion stream presence + radial falloff + audio + base alpha
+    // Depth-scaled ion intensity
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthScale = 0.6 + depth * 0.4;
+    finalRGB = finalRGB * depthScale;
+
     let ionStrength = (ionR + ionG + ionB) / 3.0;
     let alpha = clamp(baseSample.a * 0.25 + ionStrength * 0.6 + coreFall * 0.3 + bass * 0.1, 0.0, 1.0);
 
-    // Depth: closer near cascade origin
-    let depth = clamp(1.0 - coreFall, 0.0, 1.0);
+    let depthOut = clamp(1.0 - coreFall, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(finalRGB, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, vec4<f32>(finalRGB, alpha));
 }

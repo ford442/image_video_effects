@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Velvet Vortex
-//  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, depth-aware, spiral-sdf, upgraded-rgba
-//  Complexity: High
-//  Chunks From: velvet-vortex, bass_env, depth-aware-fog
+//  Category: distortion
+//  Features: mouse-driven, vortex, velvet, audio-swirl, depth-pile, light-absorb, tactile-motion
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer material feel, audio texture, atmospheric absorption)
+// ═══════════════════════════════════════════════════════════════════
 //  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;

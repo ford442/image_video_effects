@@ -1,7 +1,11 @@
-// ----------------------------------------------------------------
-// Cellular Automata Tapestry (Reaction-Diffusion)
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Cellular Automata Tapestry
+//  Category: generative
+//  Features: multi-state-ca, evolving-rules, audio-mutation, mouse-nutrient, tapestry-weave, depth-pattern, temporal-texture, organic-evolution, semantic-alpha
+//  Complexity: High
+//  Updated: 2026-05-31
+//  By: Grok (deep visual/audio flourish — seasonal plasma color climate, stronger mouse nutrient injector, semantic alpha from chemical energy + glow, richer final glaze)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -101,13 +105,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Write back ping pong
     textureStore(dataTextureA, coord, vec4<f32>(nextA, nextB, 0.0, 1.0));
 
+    // ═══ Deep seasonal plasma + semantic alpha (visual/audio flourish) ═══
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x; let mids = audio.y; let treble = audio.z;
+    let season = fract(u.config.x * 0.018 + bass * 0.6); // slow evolving climate
 
-    // Plasma coloring based on B concentration
+    // Richer color: seasonal tint + audio energy on the chemical B
     let plasmaIdx = min(u32(nextB * 255.0), 255u);
-    let mappedColor = plasmaBuffer[plasmaIdx].rgb;
+    var mappedColor = plasmaBuffer[plasmaIdx].rgb;
+    // Seasonal hue rotation + mids/treble for liveliness
+    let seasonTint = vec3<f32>(0.6 + season * 0.5, 0.7 - season * 0.3, 0.9 - mids * 0.2);
+    mappedColor = mix(mappedColor, mappedColor * seasonTint, 0.35 + treble * 0.25);
 
-    // Composite
-    let outColor = mix(vidColor, mappedColor, nextB * 1.5);
+    // Composite with audio-reactive weight
+    let energy = nextB * (0.9 + bass * 0.4 + treble * 0.25);
+    let outColor = mix(vidColor, mappedColor, energy * 1.35);
 
-    textureStore(writeTexture, coord, vec4<f32>(outColor, 1.0));
+    // Semantic alpha: chemical concentration + audio "glow" gives transparent background areas
+    let semantic_alpha = clamp(0.35 + energy * 0.7 + mids * 0.15, 0.25, 1.0);
+
+    textureStore(writeTexture, coord, vec4<f32>(outColor, semantic_alpha));
+
+    // Depth write (was unbound despite binding — enables depth-aware stacking)
+    let ca_depth = 0.2 + nextB * 0.6 + (1.0 - energy) * 0.2;
+    textureStore(writeDepthTexture, coord, vec4<f32>(ca_depth, 0.0, 0.0, 0.0));
 }

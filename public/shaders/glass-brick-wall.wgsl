@@ -97,6 +97,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let halfDir = normalize(lightDir + viewDir);
         let specular = pow(max(dot(normal, halfDir), 0.0), 16.0);
         color = color + vec4<f32>(specular * 0.3);
+
+        // ═══ UNIQUE VISUAL IDEA: per-brick lens caustics ═══
+        // Each squircle brick acts as a plano-convex lens. Light refracting through
+        // it converges into a bright focal caustic. We trace the refracted light ray
+        // and measure how tightly the brick's curvature focuses it toward this pixel:
+        // where the refracted ray aligns with the view axis, energy concentrates.
+        let iorGlass = 1.0 / 1.52; // air→glass inverse IOR for refract()
+        let refLight = refract(-lightDir, normal, iorGlass);
+        // Focal alignment: caustic is brightest where the refracted ray points back
+        // along +Z (toward the viewer) AND the brick surface is steeply curved (edges).
+        let focal = pow(max(refLight.z, 0.0), 6.0);
+        let curvature = smoothstep(0.0, 0.6, r); // 0 at brick center, 1 at edges
+        // Animated shimmer so the caustic "swims" like real refracted light.
+        let causticPhase = sin(r * 22.0 - u.config.x * 2.0 + cellID.x * 1.3 + cellID.y * 0.7);
+        let caustic = focal * (0.5 + 0.5 * causticPhase) * (0.35 + curvature * 0.8);
+        // Chromatic focus: wavelengths focus at slightly different depths, tinting
+        // the caustic core warm and its halo cool.
+        let causticColor = vec3<f32>(1.0, 0.9, 0.7) + vec3<f32>(-0.2, 0.0, 0.4) * causticPhase;
+        color = color + vec4<f32>(causticColor * caustic * 1.4, caustic * 0.5);
     } else {
         // Mortar - less transparent
         color = color * 0.4;

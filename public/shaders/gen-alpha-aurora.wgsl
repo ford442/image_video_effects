@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Aurora
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Features: aurora, spectral-bands, curl-noise-flow, audio-reactive, mouse-wind, density-alpha, atmospheric
 //  Complexity: High
-//  Description: Procedural aurora borealis with spectral band blending
-//    and density-based alpha translucency. Curl noise drives organic
-//    flow patterns across multiple spectral bands. Alpha encodes
-//    aurora band density for smooth downstream blending.
+//  Chunks From: previous aurora work + improved spectral layering
+//  Created: 2026-05-23
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish pass — richer color, motion, and atmospheric depth)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -102,11 +102,16 @@ fn curlNoise(p: vec3<f32>, t: f32) -> vec3<f32> {
   return normalize(vec3<f32>(dy - dz, dz - dx, dx - dy));
 }
 
-// ═══ CHUNK: spectral color mapping ═══
-fn spectralColor(t: f32, temp: f32) -> vec3<f32> {
+// ═══ CHUNK: spectral color mapping (enhanced visual richness) ═══
+fn spectralColor(t: f32, temp: f32, audio: vec3<f32>) -> vec3<f32> {
   // t: 0-1 spectral band position
-  // temp: 0-1 color temperature shift (cool blue -> warm red)
-  let hue = fract(t * 0.7 + temp * 0.15 + 0.55);
+  // temp: 0-1 color temperature shift
+  // audio: bass, mids, treble for dynamic color modulation
+  let bass = audio.x;
+  let mids = audio.y;
+  let treble = audio.z;
+
+  let hue = fract(t * 0.7 + temp * 0.15 + 0.55 + treble * 0.08);
   let h6 = hue * 6.0;
   let c = 1.0;
   let x = c * (1.0 - abs(h6 - floor(h6 / 2.0) * 2.0 - 1.0));
@@ -117,12 +122,16 @@ fn spectralColor(t: f32, temp: f32) -> vec3<f32> {
   else if (h6 < 4.0) { col = vec3<f32>(0.0, x, c); }
   else if (h6 < 5.0) { col = vec3<f32>(x, 0.0, c); }
   else { col = vec3<f32>(c, 0.0, x); }
-  // Shift toward green-cyan for aurora realism
-  col = mix(col, vec3<f32>(0.2, 0.9, 0.6), 0.25);
-  // Temperature shift: cooler = more blue, warmer = more red-magenta
-  let cool = vec3<f32>(0.1, 0.4, 0.9);
-  let warm = vec3<f32>(0.9, 0.3, 0.6);
-  col = mix(col, mix(cool, warm, temp), 0.35);
+
+  // Richer aurora palette with audio influence
+  col = mix(col, vec3<f32>(0.15, 0.85, 0.7), 0.35 + mids * 0.15);
+  col = mix(col, vec3<f32>(0.6, 0.3, 0.9), treble * 0.2);
+
+  // Temperature + bass for dynamic color temperature
+  let cool = vec3<f32>(0.1, 0.45, 0.95);
+  let warm = vec3<f32>(0.95, 0.35, 0.55);
+  col = mix(col, mix(cool, warm, temp + bass * 0.2), 0.4);
+
   return col;
 }
 
@@ -229,7 +238,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     bandIntensity = bandIntensity + rippleBoost * bandProfile;
 
     // Spectral color for this band
-    let bandColor = spectralColor(bandT, colorTemp + tempShift);
+    let bandColor = spectralColor(bandT, colorTemp + tempShift, audio);
 
     // Accumulate with density-weighted blending
     let bandDensity = clamp(bandIntensity, 0.0, 1.0);
@@ -245,7 +254,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   accumulatedAlpha = clamp(accumulatedAlpha, 0.0, 1.0);
 
   // Add atmospheric glow based on total density
-  let glowColor = spectralColor(0.5, colorTemp + tempShift) * 0.3;
+  let glowColor = spectralColor(0.5, colorTemp + tempShift, audio) * 0.3;
   accumulatedColor = accumulatedColor + glowColor * accumulatedDensity * accumulatedDensity * glowParam;
 
   // Star field background (subtle)

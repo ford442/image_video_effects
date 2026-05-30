@@ -75,8 +75,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Intensity drops off with distance
     let mouseIntensity = smoothstep(0.4, 0.0, dist);
 
-    // Combine wave and mouse
-    let activeHex = mouseIntensity + wave * 0.2 * impactStrength;
+    // ═══ UNIQUE VISUAL IDEA: discrete impact shockwaves ═══
+    // Each click (ripples buffer) detonates an expanding bright ring on the shield.
+    // The ring is a thin wavefront racing outward; hexes it crosses flare and the
+    // shield "absorbs" the hit. This is the Halo/sci-fi energy-shield impact look.
+    let rippleCount = u32(u.config.y);
+    var impactFlare = 0.0;
+    var impactHue = 0.0;
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = u.config.x - rp.z;
+        if (age < 0.0 || age > 3.0) { continue; }
+        let rd = length((hexCenterUV - rp.xy) * vec2<f32>(aspect, 1.0));
+        let waveR = age * (0.25 + rippleSpeed * 0.08); // expanding radius
+        // Thin bright wavefront ring; sharpens with a narrow Gaussian band.
+        let band = exp(-pow((rd - waveR) * 22.0, 2.0));
+        // Per-hex ignition crackle along the front.
+        let crackle = 0.6 + 0.4 * sin(dot(hexCenter, vec2<f32>(12.9, 7.3)) + u.config.x * 8.0);
+        let fade = (1.0 - age / 3.0);
+        impactFlare = impactFlare + band * crackle * fade * (0.6 + impactStrength);
+        impactHue = impactHue + band * fade;
+    }
+    impactFlare = clamp(impactFlare, 0.0, 2.0);
+
+    // Combine wave, mouse, and impact shockwaves
+    let activeHex = mouseIntensity + wave * 0.2 * impactStrength + impactFlare;
 
     // Hex Edges
     let hexD = hexDist(gv);
@@ -97,6 +120,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Add extra brightness at the impact point
     finalColor = finalColor + gridColor * mouseIntensity * 0.2;
+
+    // Impact shockwave glow — hot white core fringing to the shield's cyan, so the
+    // wavefront reads as a high-energy discharge rather than just a brighter grid.
+    let impactColor = mix(gridColor, vec3<f32>(0.8, 1.0, 1.0), clamp(impactHue, 0.0, 1.0));
+    finalColor = finalColor + impactColor * impactFlare;
+
+    // ═══ Fresnel sphere-shield edge glow ═══
+    // A force field is a curved surface seen at a glancing angle near the rim — it
+    // glows brightest toward the screen edges, faint and transparent at center.
+    let centered = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+    let fres = pow(clamp(length(centered) * 1.4, 0.0, 1.0), 2.5);
+    finalColor = finalColor + gridColor * fres * 0.18 * (0.6 + impactStrength);
 
     // Use persistence to leave a trail?
     // Let's read history for a fading trail of activation

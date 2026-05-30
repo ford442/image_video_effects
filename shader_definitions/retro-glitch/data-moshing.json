@@ -1,0 +1,62 @@
+{
+  "id": "data-moshing",
+  "name": "Data Moshing",
+  "url": "shaders/data-moshing.wgsl",
+  "category": "retro-glitch",
+  "description": "Advanced data-moshing glitch effect with structure-tensor optical flow estimation and motion-compensated smearing. Simulates MPEG macro-blocking, DCT ringing, chroma subsampling errors, and VHS head-switching bands. Bass triggers corruption events, mouse scrubs temporal buffer, and depth controls compression quality.",
+  "tags": [
+    "glitch",
+    "data-mosh",
+    "retro",
+    "temporal",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "VHS"
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "smearStrength",
+      "name": "Smear Strength",
+      "type": "float",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "blockSize",
+      "name": "Block Size",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "corruption",
+      "name": "Corruption",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "quantize",
+      "name": "Quantize",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

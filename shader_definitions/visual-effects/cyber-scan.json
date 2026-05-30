@@ -1,11 +1,17 @@
 {
   "id": "cyber-scan",
   "name": "Cyber Scan",
+  "category": "visual-effects",
   "url": "shaders/cyber-scan.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "temporal-scan-pass",
+    "chromatic-scan"
   ],
-  "description": "A digital scanning line that follows the mouse, highlighting edges and overlaying a cybernetic grid.",
+  "description": "A digital scanning line follows the mouse with temporal smear and depth-based colorization. Audio drives scan speed; chromatic separation shifts RGB per treble intensity.",
   "params": [
     {
       "id": "scanWidth",
@@ -16,29 +22,34 @@
     },
     {
       "id": "gridIntensity",
-      "name": "Grid Intensity",
+      "name": "Trail Length",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
       "id": "colorSpeed",
-      "name": "Color Speed",
+      "name": "Scan Width",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
       "id": "edgeStrength",
-      "name": "Edge Strength",
+      "name": "Color Shift",
       "default": 0.5,
       "min": 0,
       "max": 1
     }
   ],
   "tags": [
-    "vfx",
-    "particles",
-    "glow"
+    "cyber",
+    "scan",
+    "hud",
+    "glow",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic",
+    "temporal"
   ]
 }

@@ -2,7 +2,7 @@
   "id": "laser-burn",
   "name": "Laser Burn",
   "url": "shaders/laser-burn.wgsl",
-  "description": "Interactive laser that burns the image permanently (or heals slowly).",
+  "description": "Temporal burn accumulation with ember glow and audio spark showers. Mouse beam chars the surface persistently; embers fade slower than heat for lingering glow. Treble creates flying spark particles near the beam, bass deepens the char.",
   "params": [
     {
       "id": "beamSize",
@@ -35,8 +35,9 @@
   ],
   "features": [
     "mouse-driven",
-    "temporal-persistence",
-    "audio-reactive",
+    "temporal-accumulation",
+    "ember-glow",
+    "audio-sparks",
     "upgraded-rgba"
   ],
   "tags": [
@@ -45,6 +46,8 @@
     "laser",
     "burn",
     "interactive",
-    "fire"
+    "fire",
+    "embers",
+    "sparks"
   ]
 }

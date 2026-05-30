@@ -3,13 +3,20 @@
   "name": "Emergent Calligraphic Weave",
   "url": "shaders/emergent-calligraphic-weave.wgsl",
   "category": "generative",
-  "description": "Strokes follow an evolving orientation field to spontaneously form complex symbolic and calligraphic patterns. The system self-organizes into glyph-like structures that respond to sound and mouse interaction.",
+  "description": "Sumi-e ink wash simulation with pressure-sensitive Bézier brush strokes, ink viscosity flow, paper absorption capillary action, and dry-brush texture. Audio drives brush speed and splatter; mouse acts as the brush with pressure from click duration. Depth scales paper grain.",
   "features": [
     "stroke-based",
-    "emergent-symbols",
+    "brush-dynamics",
+    "ink-viscosity",
+    "paper-absorption",
+    "bezier-strokes",
+    "sumi-e",
+    "dry-brush",
+    "chromatic-edge",
     "audio-field",
     "mouse-influence",
-    "temporal"
+    "temporal",
+    "upgraded-rgba"
   ],
   "tags": [
     "calligraphic",
@@ -17,7 +24,13 @@
     "symbolic",
     "organic",
     "audio-reactive",
-    "abstract"
+    "abstract",
+    "sumi-e",
+    "ink",
+    "brush-dynamics",
+    "dry-brush",
+    "paper-texture",
+    "chromatic-edge"
   ],
   "params": [
     {
