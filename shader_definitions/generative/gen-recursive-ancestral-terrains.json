@@ -2,6 +2,7 @@
   "id": "gen-recursive-ancestral-terrains",
   "name": "Recursive Ancestral Terrains",
   "url": "shaders/gen-recursive-ancestral-terrains.wgsl",
+  "category": "generative",
   "description": "Fractal landscape generator where terrain features carry genetic parameters from parent generations. The mouse position locally selects which ancestral lineage is expressed, creating alien mountain ranges with evolutionary history. Audio controls mutation rate and generational blending.",
   "tags": [
     "generative",

@@ -2,6 +2,7 @@
   "id": "gen-emergent-calligraphic-ecosystems",
   "name": "Emergent Calligraphic Ecosystems",
   "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
+  "category": "generative",
   "description": "A system of interacting calligraphic strokes following local orientation rules that spontaneously form complex alien writing systems. Mouse plants seeds or disturbs regions. Audio influences stroke behavior and interaction rules. Elegant ink-like or neon self-organizing glyphs.",
   "tags": [
     "generative",

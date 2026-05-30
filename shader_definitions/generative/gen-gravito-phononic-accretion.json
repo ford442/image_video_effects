@@ -2,6 +2,7 @@
   "id": "gen-gravito-phononic-accretion",
   "name": "Gravito-Phononic Accretion",
   "url": "shaders/gen-gravito-phononic-accretion.wgsl",
+  "category": "generative",
   "description": "Multiple audio-driven gravitational centers that accrete and sculpt procedural density fields with gravitational lensing distortion. Different audio bands control different gravitational bodies. Mouse can add temporary mass concentration. Dark cores with swirling filamentary gas.",
   "tags": [
     "generative",
