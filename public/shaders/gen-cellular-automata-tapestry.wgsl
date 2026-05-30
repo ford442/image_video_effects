@@ -24,7 +24,7 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let res = vec2<i32>(i32(u.config.z), i32(u.config.w));

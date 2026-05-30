@@ -22,7 +22,7 @@ struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
     zoom_params: vec4<f32>,  // x=Boiling Volatility, y=Vortex Radius, z=Radiation Glow, w=Current Speed
-    custom_params: vec4<f32>,
+    ripples: array<vec4<f32>, 50>,
 };
 
 fn hash13(p3: vec3<f32>) -> f32 {
