@@ -1,7 +1,11 @@
-// ----------------------------------------------------------------
-// Depth-Refracted Liquid Stained Glass
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Depth-Refracted Liquid Stained Glass
+//  Category: generative
+//  Features: facet-refraction, depth-aware, chromatic-aberration, upgraded-rgba,
+//            temporal-rotation, audio-refraction, chromatic-edge-dispersion
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -18,13 +22,12 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=FacetCount, y=BevelWidth, z=Unused, w=Unused
+    config: vec4<f32>,
+    zoom_config: vec4<f32>,
+    zoom_params: vec4<f32>,
     ripples: array<vec4<f32>, 50>,
 };
 
-// 2D Rotation Matrix
 fn rot2D(angle: f32) -> mat2x2<f32> {
     let c = cos(angle);
     let s = sin(angle);
@@ -36,80 +39,78 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coords = vec2<i32>(global_id.xy);
     let res = vec2<i32>(i32(u.config.z), i32(u.config.w));
 
-    if (coords.x >= res.x || coords.y >= res.y) {
-        return;
-    }
+    if (coords.x >= res.x || coords.y >= res.y) { return; }
 
     let aspect = f32(res.x) / f32(res.y);
     var uv = vec2<f32>(coords) / vec2<f32>(res);
     var p = uv * 2.0 - 1.0;
     p.x *= aspect;
 
-    // Center point from mouse
     let center = u.zoom_config.yz * 2.0 - 1.0;
     var centered_p = p - vec2<f32>(center.x * aspect, center.y);
 
-    // Polar Folding
-    let facetCount = max(3.0, floor(u.zoom_params.x)); // default 6
+    let facetCount = max(3.0, floor(u.zoom_params.x));
     let angleStep = 3.14159 * 2.0 / facetCount;
 
     var a = atan2(centered_p.y, centered_p.x);
     let r = length(centered_p);
 
-    // Rotation over time and audio
+    // Temporal rotation: slow facet spin
     a += u.config.x * 0.2 + u.config.y * 0.5;
 
-    // Fold
     a = (a / angleStep % 1.0 + 1.0) % 1.0;
     a = abs(a - 0.5) * angleStep;
 
     var folded_p = vec2<f32>(cos(a), sin(a)) * r;
 
-    // Un-aspect
     folded_p.x /= aspect;
     var sample_uv = folded_p * 0.5 + 0.5;
-
-    // Clamp for safety
     sample_uv = clamp(sample_uv, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Get depth for refraction
     let depth_val = textureSampleLevel(readDepthTexture, u_sampler, sample_uv, 0.0).r;
 
-    // Edge detection for bevels
     let texSize = vec2<f32>(textureDimensions(readDepthTexture));
-    let eps = vec2<f32>(1.0 / texSize.x, 1.0 / texSize.y) * u.zoom_params.y; // Bevel width
+    let eps = vec2<f32>(1.0 / texSize.x, 1.0 / texSize.y) * u.zoom_params.y;
 
     let d_dx = textureSampleLevel(readDepthTexture, u_sampler, sample_uv + vec2<f32>(eps.x, 0.0), 0.0).r - depth_val;
     let d_dy = textureSampleLevel(readDepthTexture, u_sampler, sample_uv + vec2<f32>(0.0, eps.y), 0.0).r - depth_val;
     let normal = normalize(vec3<f32>(d_dx, d_dy, 0.1));
 
-    // Refraction and depth modulation
+    // Audio-reactive refraction strength
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let depth_mod = sin(u.config.x * 2.0 + u.config.y * 3.0) * 0.5 + 0.5;
-    let ref_str = 0.1 * depth_mod; // Refraction strength based on depth mod
+    let ref_str = 0.1 * depth_mod * (1.0 + bass * 0.3);
 
     let offset = normal.xy * ref_str * (1.0 - depth_val);
 
-    // Chromatic Aberration using plasmaBuffer (small offset table)
-    let r_offset = plasmaBuffer[0].xy * 0.02;
+    // Chromatic edge dispersion: R and B refract at different angles near facet edges
+    let edgeDist = min(min(a, angleStep - a), r * 0.5);
+    let edgeFactor = smoothstep(0.05, 0.0, edgeDist);
+    let r_offset = plasmaBuffer[0].xy * 0.02 + vec2<f32>(edgeFactor * 0.01 * treble, 0.0);
     let g_offset = plasmaBuffer[1].xy * 0.02;
-    let b_offset = plasmaBuffer[2].xy * 0.02;
+    let b_offset = plasmaBuffer[2].xy * 0.02 - vec2<f32>(edgeFactor * 0.01 * bass, 0.0);
 
     var col = vec3<f32>(0.0);
     col.r = textureSampleLevel(readTexture, u_sampler, sample_uv + offset + r_offset, 0.0).r;
     col.g = textureSampleLevel(readTexture, u_sampler, sample_uv + offset + g_offset, 0.0).g;
     col.b = textureSampleLevel(readTexture, u_sampler, sample_uv + offset + b_offset, 0.0).b;
 
-    // Facet Tint curve using plasmaBuffer
     let tint = plasmaBuffer[3].rgb;
     col *= (vec3<f32>(1.0) + tint * 0.5);
 
-    // Bevel highlights
     let edge = length(vec2<f32>(d_dx, d_dy)) * 50.0;
     col += vec3<f32>(smoothstep(0.1, 0.5, edge)) * 0.5;
 
-    // Depth output pseudo
-    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    textureStore(writeDepthTexture, coords, vec4<f32>(luma, 0.0, 0.0, 1.0));
+    // Temporal color rotation via dataTextureC tint blend
+    let prevTint = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    col = mix(col, prevTint * 0.9, 0.04 + mids * 0.02);
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(0.8 + luma * 0.2 + bass * 0.05, 0.0, 1.0);
+
+    textureStore(writeDepthTexture, coords, vec4<f32>(luma, 0.0, 0.0, 1.0));
+    textureStore(writeTexture, coords, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, coords, vec4<f32>(col, alpha));
 }

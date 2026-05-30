@@ -2,53 +2,59 @@
   "id": "holographic_interference",
   "name": "Holographic Interference",
   "url": "shaders/holographic_interference.wgsl",
-  "description": "Holographic rainbow patterns with interference fringes, multi-layer ghosting with staggered alpha, and wavelength-dependent diffraction",
+  "description": "Holographic rainbow interference patterns with thin-film diffraction, temporal phase drift, audio-reactive film thickness pulsing, depth-scaled viewing angle, and chromatic dispersion per wavelength.",
   "tags": [
     "holographic",
     "interference",
     "rainbow",
-    "ghosting",
-    "diffraction"
+    "diffraction",
+    "temporal",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic"
   ],
   "features": [
-    "rgba",
+    "upgraded-rgba",
     "interference",
     "diffraction",
     "hologram",
-    "rainbow"
+    "rainbow",
+    "audio-reactive",
+    "temporal",
+    "depth-aware"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Layers",
+      "id": "filmThickness",
+      "name": "Film Thickness",
       "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Rainbow Spread",
+      "id": "wavelengthScale",
+      "name": "Wavelength Scale",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Coherence",
+      "id": "depthWeight",
+      "name": "Depth Weight",
       "default": 0.7,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Ghost Offset",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
+      "id": "interferenceStrength",
+      "name": "Interference Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "target_rating": 4.6

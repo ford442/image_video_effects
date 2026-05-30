@@ -2,7 +2,7 @@
   "id": "temporal-layered-time-stamps",
   "name": "Temporal Layered Time-Stamps",
   "url": "shaders/temporal-layered-time-stamps.wgsl",
-  "description": "Psychedelic temporal echo: blends 4–8 past frames from the history ring buffer (binding 13) with per-layer hue rotation and spiral UV distortion",
+  "description": "Psychedelic temporal echo: blends 4\u20138 past frames from the history ring buffer (binding 13) with per-layer hue rotation and spiral UV distortion",
   "tags": [
     "temporal",
     "psychedelic",
@@ -13,7 +13,10 @@
   ],
   "features": [
     "temporal",
-    "history-ring"
+    "history-ring",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "requiresHistoryRing": true,
   "params": [

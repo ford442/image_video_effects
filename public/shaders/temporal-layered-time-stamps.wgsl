@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Layered Time-Stamps
 //  Category: post-processing
-//  Features: temporal, history-ring
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
+//  Upgraded: 2026-05-31
 //  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
 //  Created: 2026-05-23
 //  By: Copilot (binding-13 infrastructure proof shader)
@@ -69,10 +70,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
   let time = u.config.x;
 
+  // Audio reactivity (bass pulses warp depth, mids drive saturation)
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+
   // Parameters
   let echoLayers  = clamp(u32(u.zoom_params.x * 7.0 + 1.0), 4u, HISTORY_DEPTH);
-  let warpAmt     = u.zoom_params.y * 0.06;
-  let colorSat    = 0.4 + u.zoom_params.z * 0.6;
+  let warpAmt     = u.zoom_params.y * 0.06 * (1.0 + bass * 0.5);
+  let colorSat    = clamp(0.4 + u.zoom_params.z * 0.6 + mids * 0.3, 0.0, 1.0);
   let blendMix    = 0.25 + u.zoom_params.w * 0.65;
 
   // historyHead: index of the slot we are about to write this frame.
@@ -118,7 +123,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // ── Composite: blend base with history layers ────────────────────────────────
-  let output = mix(base, accumulated, blendMix);
+  let outRGB = mix(base.rgb, accumulated.rgb, blendMix);
+  // Alpha encodes temporal echo energy: how much history overrides the base frame.
+  let echoEnergy = clamp(length(accumulated.rgb - base.rgb) * blendMix, 0.0, 1.0);
+  let alpha = clamp(base.a * (1.0 - blendMix) + echoEnergy + bass * 0.15, 0.0, 1.0);
+  let output = vec4<f32>(outRGB, alpha);
 
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeTexture, coord, output);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, output);
 }

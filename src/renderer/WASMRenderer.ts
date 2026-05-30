@@ -50,7 +50,9 @@ export class WASMRenderer implements Renderer {
       
       const ok = await WasmBridge.initWasmRenderer(canvas);
       if (!ok) {
-        const error = `WASM Renderer init failed (attempt ${this.initAttempts}/${this.maxInitAttempts})`;
+        const error = `WASM Renderer init failed (attempt ${this.initAttempts}/${this.maxInitAttempts}). ` +
+                      `Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. ` +
+                      `See console for detailed C++ logs. Falling back to JS WebGPU renderer.`;
         console.error(`❌ ${error}`);
         reportError({
           type: 'wasm-init',

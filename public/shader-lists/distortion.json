@@ -48,48 +48,50 @@
   {
     "id": "bubble-lens",
     "name": "Bubble Lens",
+    "category": "distortion",
     "url": "shaders/bubble-lens.wgsl",
+    "description": "A thin-film soap bubble lens magnifies the source image and blooms into beat-reactive interference colors around the cursor.",
     "features": [
-      "mouse-driven"
-    ],
-    "description": "A magnifying bubble lens distortion that follows the mouse cursor.",
-    "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "bubble",
+      "soap",
+      "interference",
+      "lens",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "bubble_size",
+        "name": "Bubble Size",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "magnification",
+        "name": "Magnification",
+        "default": 0.55,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "film_thickness",
+        "name": "Film Thickness",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "ior",
+        "name": "IOR",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -253,53 +255,59 @@
   {
     "id": "cyber-lens",
     "name": "Cyber Lens",
+    "category": "distortion",
     "url": "shaders/cyber-lens.wgsl",
-    "description": "Digital fisheye with scan lines and chromatic aberration.",
+    "description": "A scanning cybernetic magnifier overlays chromatic split and holographic grid lines onto the source image.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "cyber",
+      "lens",
+      "grid",
+      "chromatic",
+      "audio-reactive"
+    ],
     "params": [
       {
-        "id": "strength",
-        "name": "Lens Strength",
+        "id": "lens_radius",
+        "name": "Lens Radius",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "zoom_strength",
+        "name": "Zoom Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "aberration",
-        "name": "Chromatic",
-        "default": 0.5,
+        "id": "grid_intensity",
+        "name": "Grid Intensity",
+        "default": 0.4,
         "min": 0,
         "max": 1
       },
       {
-        "id": "scanlines",
-        "name": "Scan Lines",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "vignette",
-        "name": "Vignette",
-        "default": 0.5,
+        "id": "chromatic_aberration",
+        "name": "Chromatic Aberration",
+        "default": 0.3,
         "min": 0,
         "max": 1
       }
-    ],
-    "features": [
-      "distortion",
-      "retro",
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
     "id": "data-slicer",
     "name": "Data Slicer",
+    "category": "distortion",
     "url": "shaders/data-slicer.wgsl",
-    "description": "Glitchy horizontal slicing effect with chromatic aberration. Mouse Y controls influence area, Mouse X controls offset direction.",
+    "description": "Beat-reactive tape-slice glitch that jitters horizontal bands around the cursor with chromatic scan glow.",
     "params": [
       {
         "id": "slideSpeed",
@@ -332,58 +340,130 @@
     ],
     "features": [
       "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
       "distortion"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "glitch",
+      "slice",
+      "chromatic",
+      "audio-reactive",
+      "scanline"
     ]
   },
   {
     "id": "dimension-slicer",
     "name": "Dimension Slicer",
     "url": "shaders/dimension-slicer.wgsl",
+    "description": "Opens a dimensional rift with temporal slice rotation memory, chromatic inside-slice dispersion, audio-driven slice width modulation, depth-aware zoom warp, and edge glow.",
     "features": [
       "mouse-driven",
       "chromatic-aberration",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal",
+      "depth-aware"
     ],
-    "description": "Opens a dimensional rift at the mouse position, distorting space inside a rotating slice.",
     "params": [
       {
-        "id": "width",
-        "name": "Slice Width",
+        "id": "sliceAngle",
+        "name": "Slice Angle",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "distortion",
-        "name": "Warp Strength",
+        "id": "zoomWarp",
+        "name": "Zoom Warp",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "angle",
-        "name": "Rotation",
-        "default": 0.1,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "aberration",
-        "name": "Aberration",
+        "id": "chromaticAmount",
+        "name": "Chromatic Amount",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "depthModulation",
+        "name": "Depth Modulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
       "warp",
       "distort",
-      "transform"
+      "transform",
+      "temporal",
+      "chromatic",
+      "audio-reactive",
+      "depth-aware",
+      "slice"
+    ]
+  },
+  {
+    "id": "elastic-strip",
+    "name": "Elastic Strip",
+    "url": "shaders/elastic-strip.wgsl",
+    "description": "Spring physics strips with chromatic stretch and audio frequency response. Each strip oscillates at bass-driven frequencies, depth modulates stiffness, and treble adds chromatic edge glow on stretched boundaries.",
+    "params": [
+      {
+        "id": "density",
+        "name": "Strip Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "strength",
+        "name": "Stretch Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "falloff",
+        "name": "Influence Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dir",
+        "name": "Direction (V/H)",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "labels": [
+          "Vertical Strips",
+          "Horizontal Strips"
+        ]
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "spring-physics",
+      "chromatic-aberration",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "distortion",
+      "elastic",
+      "physics",
+      "spring",
+      "chromatic",
+      "frequency"
     ]
   },
   {
@@ -592,8 +672,9 @@
   {
     "id": "fractal-image-surf",
     "name": "Fractal Image Surf",
+    "category": "distortion",
     "url": "shaders/fractal-image-surf.wgsl",
-    "description": "Maps the image onto a Julia Set fractal coordinate system, controlled by the mouse.",
+    "description": "Multi-octave FBM domain warping with Jacobian-preserving displacement. Morphs between Julia, Mandelbrot, and Burning Ship fractals driven by bass.",
     "params": [
       {
         "name": "Iterations",
@@ -629,11 +710,21 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "fractal",
+      "fbm",
+      "julia",
+      "mandelbrot",
+      "burning-ship",
+      "domain-warp",
+      "distortion",
+      "audio-reactive",
+      "depth-aware"
     ]
   },
   {
@@ -846,49 +937,51 @@
   {
     "id": "glass-brick-wall",
     "name": "Glass Brick Wall",
+    "category": "distortion",
     "url": "shaders/glass-brick-wall.wgsl",
-    "description": "Simulates a wall of refractive glass bricks with mouse-controlled lighting.",
-    "params": [
-      {
-        "name": "Brick Size",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.5,
-        "id": "brick_size"
-      },
-      {
-        "name": "Distortion",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.5,
-        "id": "distortion"
-      },
-      {
-        "name": "Mortar Size",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.2,
-        "id": "mortar_size"
-      },
-      {
-        "name": "Glossiness",
-        "type": "f32",
-        "min": 0,
-        "max": 1,
-        "default": 0.6,
-        "id": "glossiness"
-      }
-    ],
+    "description": "Transforms the source image into a wall of refractive glass bricks with beat-driven caustics and dense absorption control.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "warp",
-      "distort",
-      "transform"
+      "glass",
+      "brick",
+      "caustic",
+      "refraction",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "brick_size",
+        "name": "Brick Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "distortion",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "mortar_size",
+        "name": "Mortar Size",
+        "default": 0.25,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glass_density",
+        "name": "Glass Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
     ]
   },
   {
@@ -1098,44 +1191,51 @@
   {
     "id": "infinite-zoom-lens",
     "name": "Infinite Zoom Lens",
+    "category": "distortion",
     "url": "shaders/infinite-zoom-lens.wgsl",
-    "description": "A recursive feedback lens that creates infinite tunnels inside a mouse-controlled circle.",
+    "description": "A temporal zoom tunnel spirals the source image inward around the cursor and feeds the previous frame back into itself.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal"
+    ],
+    "tags": [
+      "zoom",
+      "tunnel",
+      "temporal",
+      "spiral",
+      "audio-reactive"
     ],
     "params": [
       {
-        "id": "zoom",
+        "id": "zoom_strength",
         "name": "Zoom Strength",
-        "default": 0.5,
+        "default": 0.45,
         "min": 0,
         "max": 1
       },
       {
-        "id": "radius",
+        "id": "lens_radius",
         "name": "Lens Radius",
-        "default": 0.3,
-        "min": 0.1,
+        "default": 0.35,
+        "min": 0,
         "max": 1
       },
       {
-        "id": "decay",
+        "id": "feedback_persistence",
         "name": "Feedback Persistence",
-        "default": 0.9,
-        "min": 0.5,
-        "max": 0.99
+        "default": 0.65,
+        "min": 0,
+        "max": 1
       },
       {
-        "id": "rotation",
+        "id": "twist",
         "name": "Twist",
         "default": 0.5,
         "min": 0,
         "max": 1
       }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
@@ -1244,11 +1344,14 @@
     "id": "interactive-zoom-blur",
     "name": "Interactive Zoom Blur",
     "url": "shaders/interactive-zoom-blur.wgsl",
-    "description": "Radial zoom blur centered on the mouse cursor with audio-reactive intensity and chromatic aberration.",
+    "description": "Radial zoom blur centered on the mouse cursor with temporal blur trail persistence, chromatic radial streak separation, depth-scaled blur attenuation, dithered sampling, and audio-reactive intensity.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal",
+      "chromatic",
+      "depth-aware"
     ],
     "params": [
       {
@@ -1256,28 +1359,32 @@
         "name": "Blur Strength",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "samples",
+        "id": "chromatic",
+        "name": "Chromatic Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "sampleCount",
         "name": "Quality",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "bias",
-        "name": "Center Bias",
+        "id": "depthAttenuation",
+        "name": "Depth Attenuation",
         "default": 0.5,
         "min": 0,
-        "max": 1
-      },
-      {
-        "id": "aberration",
-        "name": "Aberration",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
@@ -1286,7 +1393,10 @@
       "zoom",
       "radial",
       "blur",
-      "chromatic"
+      "chromatic",
+      "temporal",
+      "audio-reactive",
+      "depth-aware"
     ]
   },
   {
@@ -1589,9 +1699,12 @@
     "name": "Luma Glass",
     "url": "shaders/luma-glass.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
-    "description": "Dynamic refraction shader where the image luminance creates a glass-like surface, lit by the mouse.",
+    "description": "Physically-based refraction shader where luminance drives glass refractive index. Features Sellmeier chromatic dispersion, caustic highlights, Fresnel reflections, and subsurface scattering.",
     "params": [
       {
         "id": "refract-str",
@@ -1629,7 +1742,10 @@
     "tags": [
       "warp",
       "distort",
-      "transform"
+      "glass",
+      "refraction",
+      "chromatic-dispersion",
+      "caustics"
     ]
   },
   {
@@ -1684,7 +1800,7 @@
     "id": "magnetic-field",
     "name": "Magnetic Field",
     "url": "shaders/magnetic-field.wgsl",
-    "description": "Magnetic field lines distortion effect.",
+    "description": "Multi-pole magnetic field simulation with curl-noise particle traces and audio-reactive attraction. Field lines wiggle organically via FBM curl, depth modulates field strength, and treble adds particle sparkle.",
     "params": [
       {
         "id": "strength",
@@ -1720,7 +1836,8 @@
       "physics",
       "mouse-driven",
       "audio-reactive",
-      "audio-driven",
+      "curl-noise",
+      "field-lines",
       "upgraded-rgba"
     ],
     "tags": [
@@ -1728,7 +1845,10 @@
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "magnetic",
+      "curl",
+      "particles"
     ]
   },
   {
@@ -1983,11 +2103,9 @@
   {
     "id": "predator-camouflage",
     "name": "Predator Camouflage",
+    "category": "distortion",
     "url": "shaders/predator-camouflage.wgsl",
-    "features": [
-      "mouse-driven"
-    ],
-    "description": "Simulates an optical camouflage cloaking device around the mouse cursor, with refraction, chromatic aberration, and shimmer.",
+    "description": "Upgraded active camouflage with chromatophore pigment-sac simulation, predator thermal vision (IR false-color), heat-map distortion, HDR bloom on heat signatures, ACES tone mapping, and chromatic separation on camouflage edges. Bass drives chromatophore oscillation, mouse acts as prey heat source, depth controls thermal haze.",
     "params": [
       {
         "id": "radius",
@@ -1996,8 +2114,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Radius of the camouflage cloaking field"
+        "param": "zoom_params.x"
       },
       {
         "id": "distortion",
@@ -2006,18 +2123,16 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Strength of refraction distortion"
+        "param": "zoom_params.y"
       },
       {
         "id": "shimmer",
-        "name": "Shimmer Speed",
+        "name": "Chromatophore Speed",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Speed of the shimmer animation"
+        "param": "zoom_params.z"
       },
       {
         "id": "noise_scale",
@@ -2026,54 +2141,73 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Scale of the camouflage noise pattern"
+        "param": "zoom_params.w"
       }
     ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "semantic-alpha",
+      "chromatic-aberration",
+      "thermal-vision"
+    ],
     "tags": [
-      "warp",
-      "distort",
-      "transform"
+      "cloak",
+      "predator",
+      "camouflage",
+      "chromatic",
+      "audio-reactive",
+      "thermal",
+      "chromatophore",
+      "IR"
     ]
   },
   {
     "id": "prism-displacement",
     "name": "Prism Lens",
     "url": "shaders/prism-displacement.wgsl",
-    "description": "Creates a prismatic lens effect with chromatic dispersion, magnification, and edge shine. Audio-reactive refraction responds to bass.",
+    "description": "Prismatic lens effect with chromatic angular dispersion, temporal lens rotation memory, depth-weighted magnification, audio-reactive refraction responding to bass, and edge shine.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal",
+      "chromatic",
+      "depth-aware"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Size",
-        "default": 0.25,
-        "min": 0.1,
-        "max": 0.8
-      },
-      {
-        "id": "param2",
-        "name": "Refraction",
-        "default": 0.05,
-        "min": 0,
-        "max": 0.2
-      },
-      {
-        "id": "param3",
-        "name": "Rotation",
-        "default": 0,
-        "min": 0,
-        "max": 6.28
-      },
-      {
-        "id": "param4",
-        "name": "Edge Shine",
+        "id": "zoomAmount",
+        "name": "Zoom Amount",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromatic",
+        "name": "Chromatic Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "rotationSpeed",
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "depthWeight",
+        "name": "Depth Weight",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
@@ -2082,7 +2216,10 @@
       "transform",
       "prism",
       "chromatic",
-      "lens"
+      "lens",
+      "temporal",
+      "audio-reactive",
+      "depth-aware"
     ]
   },
   {
@@ -2199,7 +2336,7 @@
     "id": "refraction-tunnel",
     "name": "Refraction Tunnel",
     "url": "shaders/refraction-tunnel.wgsl",
-    "description": "Infinite refractive tunnel effect.",
+    "description": "Multi-layer chromatic refraction through a cylindrical tunnel with Snell's-law dispersion, rainbow caustics, volumetric fog, and anamorphic streaks.",
     "params": [
       {
         "id": "depth",
@@ -2217,14 +2354,14 @@
       },
       {
         "id": "aberration",
-        "name": "Chromatic",
+        "name": "Chromatic Dispersion",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "speed",
-        "name": "Travel Speed",
+        "id": "curvature",
+        "name": "Tunnel Curvature",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -2233,11 +2370,17 @@
     "features": [
       "animated",
       "3d",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "distortion",
+      "refraction",
+      "chromatic",
+      "tunnel",
+      "volumetric"
     ]
   },
   {
@@ -2294,19 +2437,30 @@
   },
   {
     "id": "sine-wave",
-    "name": "Sine Wave Distortion",
+    "name": "Sine Wave",
+    "category": "distortion",
     "url": "shaders/sine-wave.wgsl",
-    "tags": [
-      "filter",
-      "image-processing"
-    ],
+    "description": "Multi-frequency sine wave interference with traveling wave packets, water caustics, chromatic dispersion on crests, and HDR specular highlights. Bass drives wave amplitude, mouse creates wave sources, depth controls attenuation.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "wave",
+      "ribbon",
+      "chromatic",
+      "audio-reactive",
+      "distortion",
+      "interference",
+      "caustics",
+      "HDR"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
+        "name": "Wave Amplitude",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2314,7 +2468,7 @@
       },
       {
         "id": "param2",
-        "name": "Speed",
+        "name": "Wave Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2322,7 +2476,7 @@
       },
       {
         "id": "param3",
-        "name": "Scale",
+        "name": "Wave Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2330,7 +2484,7 @@
       },
       {
         "id": "param4",
-        "name": "Detail",
+        "name": "Chroma Detail",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2345,6 +2499,7 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "params": [
@@ -2380,7 +2535,9 @@
     "tags": [
       "warp",
       "distort",
-      "transform"
+      "shock-wave",
+      "mach-cone",
+      "supersonic"
     ]
   },
   {
@@ -2503,7 +2660,6 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal",
       "depth-aware",
       "upgraded-rgba",
       "archimedean-spiral",
@@ -2540,60 +2696,74 @@
       }
     ],
     "tags": [
-      "filter",
-      "image-processing",
-      "audio-reactive",
-      "feedback",
-      "interactive",
       "lens",
+      "spiral",
       "distortion",
-      "spiral"
+      "chromatic",
+      "caustic",
+      "bloom",
+      "dof",
+      "audio-reactive",
+      "depth-aware",
+      "interactive"
     ]
   },
   {
     "id": "temporal-distortion-field",
     "name": "Temporal Distortion Field",
     "url": "shaders/temporal-distortion-field.wgsl",
-    "description": "Creates a localized time-dilation field. Areas near the mouse update instantly, while distant areas lag behind in time.",
+    "description": "Creates a localized time-dilation field with chromatic time-lag splitting (R past / G present / B future), temporal freeze memory refinement, depth-aware field radius modulation, and fbm warp.",
     "params": [
       {
-        "id": "field_radius",
-        "name": "Field Radius",
+        "id": "freezeAmount",
+        "name": "Freeze Amount",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "time_lag",
-        "name": "Time Lag",
+        "id": "warpStrength",
+        "name": "Warp Strength",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "ghosting",
-        "name": "Ghosting",
+        "id": "ghostCount",
+        "name": "Ghost Count",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "distortion",
-        "name": "Warp",
-        "default": 0,
+        "id": "depthWeight",
+        "name": "Depth Weight",
+        "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal",
+      "chromatic",
+      "depth-aware"
     ],
     "tags": [
       "warp",
       "distort",
-      "transform"
+      "transform",
+      "temporal",
+      "chromatic",
+      "audio-reactive",
+      "depth-aware",
+      "freeze"
     ]
   },
   {
@@ -2801,19 +2971,24 @@
     "id": "vortex-pass2",
     "name": "Clean Vortex (Pass 2)",
     "url": "shaders/vortex-pass2.wgsl",
-    "description": "Distortion rendering pass: UV displacement by velocity field, swirling rotation, texture warping, vorticity-based color grading, velocity glow, and turbulent alpha compositing. Reads velocity field from dataTextureC.",
+    "description": "Fluid vortex distortion rendering pass with chromatic velocity blur offsets, temporal vorticity accumulation, audio-driven swirl intensity, iridescent tint based on curl, and palette grading.",
     "tags": [
       "vortex",
       "distortion",
       "warp",
       "multi-pass",
-      "audio-reactive"
+      "audio-reactive",
+      "chromatic",
+      "temporal",
+      "iridescent"
     ],
     "features": [
       "multi-pass-2",
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal",
+      "chromatic"
     ],
     "multipass": {
       "pass": 2,
@@ -2821,32 +2996,32 @@
     },
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "swirlStrength",
+        "name": "Swirl Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "iridescence",
+        "name": "Iridescence",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "trailLength",
+        "name": "Trail Length",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "paletteSpeed",
+        "name": "Palette Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -2960,61 +3135,51 @@
   {
     "id": "zoom-burst",
     "name": "Zoom Burst",
+    "category": "distortion",
     "url": "shaders/zoom-burst.wgsl",
-    "description": "Radial zoom blur emanating from the mouse cursor, simulating a long-exposure lens-zoom pull. Each pixel samples along the ray from the focal point through its screen position, accumulating N samples at increasing zoom magnifications with tapering weights. Bass pulses the burst radius for beat-synchronised explosions; mids introduce a slight spiral rotation per sample for a spin-zoom hybrid; treble adds chromatic fringing along burst rays.",
-    "tags": [
-      "zoom",
-      "blur",
-      "radial",
-      "burst",
-      "motion-blur",
-      "mouse-driven",
-      "audio-reactive",
-      "chromatic"
-    ],
+    "description": "Radially smears the source image away from the cursor with controllable spin, chroma, and beat-reactive burst energy.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "radial-blur"
+    ],
+    "tags": [
+      "zoom",
+      "burst",
+      "radial",
+      "chromatic",
+      "audio-reactive"
     ],
     "params": [
       {
-        "id": "burstLength",
+        "id": "burst_length",
         "name": "Burst Length",
-        "default": 0.4,
+        "default": 0.45,
         "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x"
+        "max": 1
       },
       {
-        "id": "numSamples",
+        "id": "sample_quality",
         "name": "Sample Quality",
+        "default": 0.55,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "spin",
+        "name": "Spin",
         "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y"
-      },
-      {
-        "id": "spinAngle",
-        "name": "Spin Twist",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z"
+        "max": 1
       },
       {
         "id": "chroma",
-        "name": "Chromatic Fringe",
+        "name": "Chroma",
         "default": 0.3,
         "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w"
+        "max": 1
       }
-    ],
-    "coordinate": 892
+    ]
   }
 ]

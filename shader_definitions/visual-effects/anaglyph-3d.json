@@ -1,58 +1,59 @@
 {
   "id": "anaglyph-3d",
   "name": "Anaglyph 3D",
+  "category": "visual-effects",
   "url": "shaders/anaglyph-3d.wgsl",
-  "description": "Red-cyan stereoscopic anaglyph from a single camera feed. The red channel is sampled at a leftward horizontal offset and cyan (G+B) at a rightward offset, creating the classic red/cyan 3D glasses effect. Separation widens with distance from the mouse focal point; a secondary ghost layer adds fringing depth. Bass pulses the split width; mids warm the left ghost; mouse controls the depth focal centre.",
-  "tags": [
-    "stereoscopic",
-    "anaglyph",
-    "3d",
-    "chromatic",
-    "audio-reactive",
-    "mouse-driven"
-  ],
+  "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, and bass-pulsed split width.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "depth-aware",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic"
+  ],
+  "tags": [
+    "anaglyph",
+    "3d",
+    "depth-aware",
+    "stereo",
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "ghost"
   ],
   "params": [
     {
       "id": "separation",
-      "name": "Stereo Separation",
+      "name": "Separation",
       "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
       "id": "depthCurve",
-      "name": "Depth Falloff",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "name": "Depth Curve",
+      "default": 0.45,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "ghostStrength",
-      "name": "Ghost Fringing",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "id": "ghostAmount",
+      "name": "Ghost Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "grain",
-      "name": "Film Grain",
-      "default": 0.2,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "id": "grainAmount",
+      "name": "Grain Amount",
+      "default": 0.35,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
-  ],
-  "coordinate": 889
+  ]
 }

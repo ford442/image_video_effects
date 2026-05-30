@@ -1,0 +1,58 @@
+{
+  "id": "gen-3d-sierpinski-chaos",
+  "name": "3D Sierpinski Chaos Game",
+    "category": "generative",
+  "url": "shaders/gen-3d-sierpinski-chaos.wgsl",
+  "description": "Iterated function system rendering a 3D Sierpinski tetrahedron using the chaos game algorithm. Thousands of point samples create intricate cloud-like renders of the fractal solid with depth-based coloring and perspective projection. Mouse rotates the 3D view in real-time.",
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural",
+    "3d"
+  ],
+  "tags": [
+    "fractal",
+    "sierpinski",
+    "ifs",
+    "3d",
+    "particles",
+    "generative",
+    "mathematical",
+    "pointcloud"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Point Density",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Rotation Speed",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "scale",
+      "name": "Point Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

@@ -3,10 +3,11 @@
   "name": "Spectral Mesh",
   "category": "image",
   "url": "shaders/spectral-mesh.wgsl",
-  "description": "Audio-lit wireframe mesh bends toward the cursor and paints the image with shifting spectral bands.",
+  "description": "Adaptive Delaunay-style spectral mesh with image-gradient-driven density, chromatic wavelength vertex coloring, wireframe glow, HDR bloom, ACES tone mapping, and subsurface scattering. Bass drives subdivision, mouse attracts vertices, depth controls foreshortening.",
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [

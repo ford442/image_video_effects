@@ -49,11 +49,14 @@
   {
     "id": "bayer-dither-interactive",
     "name": "Bayer Dither Interactive",
+    "category": "retro-glitch",
     "url": "shaders/bayer-dither-interactive.wgsl",
-    "description": "Applies an ordered 8x8 Bayer dithering effect with adjustable bit depth and pixelation scale.",
+    "description": "Ordered 8x8 Bayer dither with blue-noise modulation, gather-style error diffusion, retro 1-bit/4-bit/8-bit palette switching, CRT phosphor dot pitch, and chromatic aberration on dither edges.",
     "features": [
       "mouse-driven",
-      "retro-style"
+      "retro-style",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -100,7 +103,10 @@
     "tags": [
       "glitch",
       "retro",
-      "vintage"
+      "vintage",
+      "dither",
+      "bayer",
+      "crt"
     ]
   },
   {
@@ -408,6 +414,68 @@
     "tags": [
       "filter",
       "image-processing"
+    ]
+  },
+  {
+    "id": "data-moshing",
+    "name": "Data Moshing",
+    "url": "shaders/data-moshing.wgsl",
+    "category": "retro-glitch",
+    "description": "Advanced data-moshing glitch effect with structure-tensor optical flow estimation and motion-compensated smearing. Simulates MPEG macro-blocking, DCT ringing, chroma subsampling errors, and VHS head-switching bands. Bass triggers corruption events, mouse scrubs temporal buffer, and depth controls compression quality.",
+    "tags": [
+      "glitch",
+      "data-mosh",
+      "retro",
+      "temporal",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "VHS"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "smearStrength",
+        "name": "Smear Strength",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "blockSize",
+        "name": "Block Size",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "corruption",
+        "name": "Corruption",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "quantize",
+        "name": "Quantize",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -726,6 +794,71 @@
     ]
   },
   {
+    "id": "film-gate-weave",
+    "name": "Film Gate Weave",
+    "category": "retro-glitch",
+    "url": "shaders/film-gate-weave.wgsl",
+    "description": "Accurate 35mm film gate weave simulation with perforation hole registration jitter, gate flutter from intermittent motion, and film scratch generation with temporal persistence. Film grain with dye cloud structure, gate hair accumulation, splice tape artifacts, ACES tone mapping, and chromatic aberration from lens breathing.",
+    "features": [
+      "temporal-frame-jitter",
+      "upgraded-rgba",
+      "audio-reactive-jitter",
+      "retro",
+      "gate-flutter",
+      "registration-jitter",
+      "scratch-persistence",
+      "splice-tape",
+      "chromatic-aberration"
+    ],
+    "params": [
+      {
+        "id": "weave",
+        "name": "Gate Weave",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dust",
+        "name": "Dust Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scratches",
+        "name": "Scratches",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "flicker",
+        "name": "Color Flicker",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "film",
+      "analog",
+      "35mm",
+      "gate-weave",
+      "dust",
+      "scratches",
+      "flicker",
+      "retro",
+      "vintage",
+      "audio-reactive",
+      "gate-flutter",
+      "registration-jitter",
+      "splice-tape",
+      "chromatic-aberration",
+      "aces-tone-mapping"
+    ]
+  },
+  {
     "id": "halftone",
     "name": "Retro Halftone",
     "url": "shaders/halftone.wgsl",
@@ -834,9 +967,10 @@
   },
   {
     "id": "holographic-projection-failure",
-    "name": "Holo-Projection Failure",
+    "name": "Holo-Projection Failure v2",
+    "category": "retro-glitch",
     "url": "shaders/holographic-projection-failure.wgsl",
-    "description": "A failing holographic transmission. Glitches stabilize when the mouse 'tunes' the signal locally.",
+    "description": "Holographic projection failure simulation with phase wrapping errors, bit-depth truncation, scanline desync, and block corruption. Bass triggers cascading failure modes; mouse repairs the signal locally. Depth controls projection plane distance.",
     "params": [
       {
         "id": "instability",
@@ -871,6 +1005,7 @@
       "mouse-driven",
       "audio-reactive",
       "audio-driven",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [
@@ -878,7 +1013,12 @@
       "retro",
       "vintage",
       "audio",
-      "music"
+      "music",
+      "holographic",
+      "failure",
+      "corruption",
+      "scanline",
+      "depth-aware"
     ]
   },
   {
@@ -1041,53 +1181,6 @@
       "filter",
       "image-processing"
     ]
-  },
-  {
-    "id": "pixelate-blast",
-    "url": "shaders/pixelate-blast.wgsl",
-    "icon": "blur_on",
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "upgraded-rgba"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Max Pixel Size",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param2",
-        "name": "Radius",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "param3",
-        "name": "Invert Area",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 1
-      },
-      {
-        "id": "param4",
-        "name": "Color Crunch",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "glitch",
-      "retro",
-      "vintage"
-    ],
-    "name": "Pixelate Blast"
   },
   {
     "id": "pixelation-drift",
@@ -1532,8 +1625,9 @@
   {
     "id": "vinyl-scratch",
     "name": "Vinyl Scratch",
+    "category": "retro-glitch",
     "url": "shaders/vinyl-scratch.wgsl",
-    "description": "Vintage vinyl record scratch effect.",
+    "description": "Vintage vinyl record scratch with chromatic wobble. Bass drives rotation speed, mids warp the record, treble adds groove noise. Depth scales groove intensity.",
     "params": [
       {
         "id": "scratch_density",
@@ -1570,11 +1664,18 @@
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "chromatic-wobble"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "vinyl",
+      "scratch",
+      "retro",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic"
     ]
   },
   {

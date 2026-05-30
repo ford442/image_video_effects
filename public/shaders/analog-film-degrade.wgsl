@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Analog Film Degrade
 //  Category: image
-//  Features: film, degrade, retro, audio-grain, jitter, vignette, color-shift
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Updated: 2026-05-31
+//  Upgraded: 2026-05-31
 //  By: Grok (visual flourish — richer filmic texture, audio-reactive grain, atmospheric degradation)
 // ═══════════════════════════════════════════════════════════════════
 //  Created: 2026-05-23
@@ -23,13 +23,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-let bass = plasmaBuffer[0].x;
-let mids = plasmaBuffer[0].y;
-let treble = plasmaBuffer[0].z;
-
-// Grok: Richer filmic response with audio
-let filmPulse = 1.0 + bass * 0.3 + treble * 0.5;
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
@@ -79,7 +72,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / res;
     let time = u.config.x;
 
-    let grainIntensity = u.zoom_params.x;
+    // Audio reactivity: bass = heavy print-through, treble = fine scratches/weave
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let filmPulse = 1.0 + bass * 0.3 + treble * 0.5;
+
+    let grainIntensity = u.zoom_params.x * filmPulse;
     let fadeAmount = u.zoom_params.y;
     let scratchFreq = u.zoom_params.z;
     let vignetteStrength = u.zoom_params.w;
@@ -117,22 +116,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fineDamage = treble * 0.08;
     
     // Extra vignette and contrast from bass
-    col.rgb = mix(col.rgb, col.rgb * 0.6, heavyDamage * fadeAmount);
-    
+    col = vec4<f32>(mix(col.rgb, col.rgb * 0.6, heavyDamage * fadeAmount), col.a);
+
     // Fine jitter / weave from treble
     let weave = sin(uv.y * 120.0 + time * 40.0) * fineDamage * fadeAmount * 0.03;
     let weaveUV = clamp(uv + vec2<f32>(weave * 0.5, weave), vec2<f32>(0.0), vec2<f32>(1.0));
     let weaveSample = textureSampleLevel(readTexture, u_sampler, weaveUV, 0.0).rgb;
-    col.rgb = mix(col.rgb, weaveSample, fineDamage * 0.4);
+    col = vec4<f32>(mix(col.rgb, weaveSample, fineDamage * 0.4), col.a);
 
     // Vignette
     let centerDist = length(uv - vec2<f32>(0.5));
     let vignette = smoothstep(0.5, 0.5 - vignetteStrength * 0.5, centerDist);
     col = col * vignette;
 
-    // Clamp and preserve alpha
+    // Clamp
     col = clamp(col, vec4<f32>(0.0), vec4<f32>(1.0));
-    col.a = originalAlpha;
 
-    textureStore(writeTexture, coords, col);
+    // Alpha encodes accumulated film damage (grain + vignette darkening + audio),
+    // blended over the source alpha so compositing can soften degraded frames.
+    let damage = clamp(abs(grain) + (1.0 - vignette) + heavyDamage * fadeAmount, 0.0, 1.0);
+    let alpha = clamp(originalAlpha * (1.0 - damage * 0.5) + treble * 0.1, 0.0, 1.0);
+    let out = vec4<f32>(col.rgb, alpha);
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, coords, out);
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, out);
 }

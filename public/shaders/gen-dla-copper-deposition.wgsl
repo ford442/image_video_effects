@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Diffusion-Limited Aggregation Copper Deposition
 //  Category: generative
-//  Features: audio-reactive, mouse-driven, temporal
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Created: 2026-05-30
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -61,6 +61,8 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = vec2<f32>(u.config.zw);
+  let coord = vec2<i32>(global_id.xy);
+  if (coord.x >= i32(res.x) || coord.y >= i32(res.y)) { return; }
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
@@ -124,7 +126,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = color * (2.51 * color + 0.03) / (color * (2.43 * color + 0.59) + 0.14);
 
   // Alpha: density × (1.0 - depletion)
-  let alpha = clamp(deposit * (1.0 - depletion * 0.7), 0.0, 1.0);
+  let alpha = clamp(deposit * (1.0 - depletion * 0.7) + spark * 0.3, 0.0, 1.0);
+  let out = vec4<f32>(color, alpha);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(color, alpha));
+  // Depth: deposited metal sits closer (higher) than depleted electrolyte
+  let depth = clamp(deposit * (1.0 - polar.x), 0.0, 1.0);
+  textureStore(writeTexture, coord, out);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, out);
 }

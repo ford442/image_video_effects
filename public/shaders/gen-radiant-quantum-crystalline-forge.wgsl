@@ -1,7 +1,11 @@
-// ----------------------------------------------------------------
-// Radiant Quantum-Crystalline Forge
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Radiant Quantum-Crystalline Forge
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -36,7 +40,7 @@ fn rotate(a: f32) -> mat2x2<f32> {
 fn mapSDF(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
     let t = u.config.x * 0.5;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x; // bass drives fold expansion
     let density = u.zoom_params.x;
 
     p.x += sin(p.z * 0.2 + t) * 0.5;
@@ -76,6 +80,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = (vec2<f32>(global_id.xy) - vec2<f32>(0.5) * res) / res.y;
 
+    // Audio reactivity: mids feed volumetric fog, treble adds spec sparkle
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Mouse Interaction: Gravity well distortion
     var m = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) - vec2<f32>(0.5) * res) / res.y;
     let mDist = length(uv - m);
@@ -100,7 +108,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dS = mapSDF(p);
 
         // Volumetric Fog accumulation
-        glow += 0.01 * fogInt / (1.0 + dS.x * dS.x * 100.0) * (1.0 + u.config.y);
+        glow += 0.01 * fogInt / (1.0 + dS.x * dS.x * 100.0) * (1.0 + mids * 0.8);
 
         if(dS.x < SURF_DIST) {
             hit = true;
@@ -111,6 +119,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
+    var surfFresnel = 0.0;
 
     if(hit) {
         let n = calcNormal(p);
@@ -119,8 +128,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let h = normalize(l + view);
 
         let diff = max(dot(n, l), 0.0);
-        let spec = pow(max(dot(n, h), 0.0), 32.0);
+        let spec = pow(max(dot(n, h), 0.0), 32.0) * (1.0 + treble * 1.5);
         let fresnel = pow(1.0 - max(dot(n, view), 0.0), 4.0);
+        surfFresnel = fresnel;
 
         // Iridescent chromatic dispersion based on normals and time
         let baseCol = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(u.config.x) + p.xyz * 0.5 + vec3<f32>(0.0, 2.0, 4.0));
@@ -133,7 +143,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += vec3<f32>(glow) * fogCol;
 
     // Background fade
-    col = mix(col, vec3<f32>(0.05, 0.0, 0.1), smoothstep(0.0, MAX_DIST, dO));
+    let bgFade = smoothstep(0.0, MAX_DIST, dO);
+    col = mix(col, vec3<f32>(0.05, 0.0, 0.1), bgFade);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    // Alpha: crystal surface coverage + volumetric fog density, never flat 1.0
+    let alpha = clamp(select(0.0, 0.4, hit) + surfFresnel * 0.4 + clamp(glow, 0.0, 1.0) * 0.4, 0.0, 1.0);
+    let out = vec4<f32>(col, alpha);
+
+    // Depth: ray-march hit distance (near = closer)
+    let depth = select(0.0, clamp(1.0 - dO / MAX_DIST, 0.0, 1.0), hit);
+    let coord = vec2<i32>(global_id.xy);
+    textureStore(writeTexture, coord, out);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, out);
 }

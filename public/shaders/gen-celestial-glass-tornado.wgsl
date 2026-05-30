@@ -1,8 +1,11 @@
-// ----------------------------------------------------------------
-// Celestial Glass-Tornado
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Celestial Glass-Tornado
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -40,8 +43,8 @@ fn map(p: vec3<f32>) -> f32 {
     let warp_dist = length(q.xy - vec2<f32>(mx, my));
     let pull = exp(-warp_dist * 1.5) * 2.0;
 
-    // Audio reactive turbulence
-    let audio_twist = u.zoom_params.w * u.config.y;
+    // Audio reactive turbulence (bass drives the twist intensity)
+    let audio_twist = u.zoom_params.w * plasmaBuffer[0].x;
     let base_twist = u.zoom_params.x;
 
     // Twist the tornado
@@ -89,6 +92,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
     let nuv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
 
+    // Audio reactivity: mids feed glow accumulation, treble adds star twinkle
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     var ro = vec3<f32>(0.0, 0.0, -8.0);
     var rd = normalize(vec3<f32>(nuv, 1.0));
 
@@ -117,11 +124,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         d = map(p);
         if (d < 0.001 || t > 40.0) { break; }
         t += d * 0.6; // Slightly slower march for detail
-        glow += 0.005 / (0.01 + abs(d)) * (1.0 + u.config.y * u.zoom_params.w);
+        glow += 0.005 / (0.01 + abs(d)) * (1.0 + mids * u.zoom_params.w);
     }
 
-    var col = vec4<f32>(0.0);
-    if (t < 40.0) {
+    var col = vec3<f32>(0.0);
+    var alpha = 0.0;
+    let hit = t < 40.0;
+    if (hit) {
         let p = ro + rd * t;
         // Simulating chromatic split
         let split = u.zoom_params.z * 0.1;
@@ -134,13 +143,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             mix(0.1, 1.0, 1.0 / (1.0 + g_d * 50.0)),
             mix(0.1, 1.0, 1.0 / (1.0 + b_d * 50.0))
         );
-        col = vec4<f32>(rgb * glow, 1.0);
+        col = rgb * glow;
+        // Alpha: glass tornado opacity from accumulated glow
+        alpha = clamp(0.3 + glow * 0.5, 0.0, 1.0);
     } else {
         // Stellar background
         let bg = fract(sin(dot(rd, vec3<f32>(12.9898, 78.233, 45.164))) * 43758.5453);
-        let star = step(0.995, bg) * bg;
-        col = vec4<f32>(vec3<f32>(star) + vec3<f32>(0.02, 0.01, 0.05) * glow, 1.0);
+        let star = step(0.995, bg) * bg * (1.0 + treble * 1.5); // treble twinkle
+        col = vec3<f32>(star) + vec3<f32>(0.02, 0.01, 0.05) * glow;
+        // Alpha: faint stars + glow haze, never flat 1.0
+        alpha = clamp(star + glow * 0.1, 0.0, 1.0);
     }
 
-    textureStore(writeTexture, vec2<i32>(id.xy), col);
+    let out = vec4<f32>(col, alpha);
+    // Depth: tornado hit distance; background sits at far plane
+    let depth = select(0.0, clamp(1.0 - t / 40.0, 0.0, 1.0), hit);
+    let coord = vec2<i32>(id.xy);
+    textureStore(writeTexture, coord, out);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, out);
 }

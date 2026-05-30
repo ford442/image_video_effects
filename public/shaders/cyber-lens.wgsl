@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ================================================================
+//  Cyber Lens
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, chromatic-aberration
+//  Complexity: Medium
+//  Chunks From: cyber-lens
+//  Created: 2026-05-31
+//  By: Copilot
+// ================================================================
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,125 +15,79 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=LensRadius, y=ZoomStrength, z=GridIntensity, w=ChromaticAberration
   ripples: array<vec4<f32>, 50>,
 };
 
-// Cyber Lens Effect
-// Param1: Lens Radius
-// Param2: Zoom Strength
-// Param3: Grid Intensity
-// Param4: Chromatic Aberration
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+  let lenSq = max(dot(v, v), 1e-6);
+  return v * inverseSqrt(lenSq);
+}
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
+
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
   let time = u.config.x;
+  let aspect = dims.x / dims.y;
+  let audio = plasmaBuffer[0].xyz;
 
-  // Mouse position passed via zoom_config.yz
-  var mousePos = u.zoom_config.yz;
-
-  // Parameters
-  let lensRadius = max(0.01, u.zoom_params.x * 0.5); // Max radius 0.5
-  let zoomStrength = 1.0 + u.zoom_params.y * 4.0; // 1.0 to 5.0
+  let lensRadius = mix(0.04, 0.42, u.zoom_params.x);
+  let zoomStrength = mix(1.0, 5.0, u.zoom_params.y);
   let gridIntensity = u.zoom_params.z;
-  let aberration = u.zoom_params.w * 0.1;
+  let aberration = u.zoom_params.w * 0.05;
 
-  // Calculate distance to mouse
-  // Adjust for aspect ratio
-  let aspect = resolution.x / resolution.y;
-  let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
-  let mouse_aspect = vec2<f32>(mousePos.x * aspect, mousePos.y);
+  let offset = uv - mouse;
+  let delta = vec2<f32>(offset.x * aspect, offset.y);
+  let dist = length(delta);
+  let lensMask = 1.0 - smoothstep(lensRadius, lensRadius + 0.02, dist);
+  let dir = safeNormalize(offset + vec2<f32>(0.0001, 0.0));
 
-  let dist = length(uv_aspect - mouse_aspect);
+  let mag = mix(1.0 / zoomStrength, 1.0, smoothstep(0.0, lensRadius, dist));
+  let lensUV = clamp(mouse + offset * mag, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  var finalUV = uv;
-  var inLens = 0.0;
+  let split = dir * aberration * lensMask * (1.0 + audio.z * 0.6);
+  var lensColor = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, clamp(lensUV - split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, lensUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, clamp(lensUV + split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
+  );
 
-  if (mousePos.x >= 0.0 && dist < lensRadius) {
-    // Lens distortion (Bulge)
-    // Map dist from 0..radius to 0..1
-    let t = dist / lensRadius;
-    // Distortion function: sin(t * PI / 2) makes it bulge out
-    // Better: t * pow(t, zoomStrength) or similar.
-    // Let's use simple magnification.
-    // P_new = Center + (P - Center) / zoom
-    // But we want non-linear.
+  let gridUV = lensUV * 42.0;
+  let lineX = 1.0 - smoothstep(0.0, 0.06, abs(fract(gridUV.x - time * 0.4) - 0.5));
+  let lineY = 1.0 - smoothstep(0.0, 0.06, abs(fract(gridUV.y + time * 0.16) - 0.5));
+  let grid = max(lineX, lineY) * gridIntensity * (0.55 + audio.y * 0.8);
+  let scan = 0.85 + 0.15 * sin(uv.y * dims.y * 0.45 + time * 7.0);
+  let rim = smoothstep(lensRadius - 0.02, lensRadius, dist) - smoothstep(lensRadius, lensRadius + 0.02, dist);
+  let borderColor = mix(vec3<f32>(0.05, 0.95, 0.95), vec3<f32>(0.95, 0.35, 1.0), 0.5 + 0.5 * sin(time * 1.5));
 
-    // Fish-eye
-    let theta = atan2(uv.y - mousePos.y, uv.x - mousePos.x);
-    var r = dist; // Real distance
-    // Distorted radius: r' = r / zoom at center, r at edge.
-    // Function that maps 0->0 and R->R, but slope at 0 is 1/zoom.
-    // r' = r * (1 + (zoom-1) * (r/R)^k) ? No
+  lensColor = lensColor * scan + borderColor * grid + borderColor * rim * (0.2 + audio.x * 0.25);
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let finalColor = mix(src.rgb, lensColor, lensMask);
+  let finalAlpha = clamp(mix(src.a, 0.72 + grid * 0.35 + rim * 0.18, lensMask), 0.10, 0.98);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, lensUV, 0.0).r;
+  let outDepth = clamp(mix(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r, baseDepth, lensMask), 0.0, 1.0);
 
-    // Let's use: r_new = r * (1.0 - smoothstep(0.0, lensRadius, r) * (1.0 - 1.0/zoomStrength));
-    // Actually standard fish eye: r_new = r^k.
-
-    // Let's interpolate UV.
-    let mag = mix(1.0 / zoomStrength, 1.0, smoothstep(0.0, lensRadius, dist));
-    // Relative vector
-    let offset = uv - mousePos;
-    finalUV = mousePos + offset * mag;
-
-    // Soft edge for lens mask
-    inLens = smoothstep(lensRadius, lensRadius - 0.02, dist);
-  }
-
-  // --- Grid Effect inside lens ---
-  var gridColor = vec3<f32>(0.0);
-  if (inLens > 0.0 && gridIntensity > 0.0) {
-      // Grid based on distorted UVs to look like it's on the lens surface
-      let gridSize = 40.0;
-      let gridUV = finalUV * gridSize;
-      let gridX = abs(fract(gridUV.x - time * 0.5) - 0.5);
-      let gridY = abs(fract(gridUV.y + time * 0.2) - 0.5);
-      let gridLine = smoothstep(0.45, 0.48, max(gridX, gridY));
-
-      let pulse = 0.5 + 0.5 * sin(time * 5.0);
-      gridColor = vec3<f32>(0.0, 1.0, 0.8) * gridLine * gridIntensity * pulse;
-  }
-
-  // --- Chromatic Aberration ---
-  var color = vec4<f32>(0.0);
-  if (inLens > 0.0 && aberration > 0.0) {
-      // Radial aberration
-      var dir = normalize(uv - mousePos);
-      let rUV = finalUV - dir * aberration * inLens;
-      let bUV = finalUV + dir * aberration * inLens;
-
-      var r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
-      let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
-      let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
-
-      color = vec4<f32>(r, g, b, 1.0);
-  } else {
-      color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
-  }
-
-  // Combine grid
-  color = vec4<f32>(color.rgb + gridColor * inLens, color.a);
-
-  // Lens Border
-  let border = smoothstep(lensRadius - 0.005, lensRadius, dist) * smoothstep(lensRadius + 0.005, lensRadius, dist);
-  color = mix(color, vec4<f32>(0.0, 1.0, 1.0, 1.0), border * inLens * 2.0);
-
-  // Write output
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-  // Pass depth
-  let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(lensMask, grid, rim, finalAlpha));
 }

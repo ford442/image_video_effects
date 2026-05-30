@@ -3,12 +3,13 @@
   "name": "Ripple Bloom",
   "url": "shaders/ripple-bloom.wgsl",
   "category": "hybrid",
-  "description": "Combines mouse-driven ripples with audio-reactive bloom. Feels alive and musical, especially on video sources.",
-  "tags": ["ripple", "bloom", "hybrid", "audio-reactive", "mouse-driven", "organic"],
+  "description": "Huygens wavelet ripple simulation with frequency dispersion, chromatic dispersion on crests, HDR bloom on constructive interference, subsurface scattering in troughs, and ACES tone mapping. Bass drives ripple frequency, mouse drops stones, depth controls water depth.",
+  "tags": ["ripple", "bloom", "hybrid", "audio-reactive", "mouse-driven", "organic", "dispersion", "subsurface"],
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "semantic-alpha"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {

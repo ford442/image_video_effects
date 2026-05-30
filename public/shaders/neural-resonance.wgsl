@@ -1,185 +1,100 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Neural Resonance - Pareidolia Feedback Shader
-//  Runaway neural feedback loop with hallucinogenic pareidolic effects.
-//  Creates breathing fractal scales, watching eyes, spiraling vortices.
-// ────────────────────────────────────────────────────────────────────────────────
+// ================================================================
+//  Neural Resonance
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal
+//  Complexity: Medium
+//  Chunks From: neural-resonance
+//  Created: 2026-05-31
+//  By: Copilot
+// ================================================================
+
 @group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ────────────────────────────────────────────────────────────────────────────────
 
 struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  zoom_config: vec4<f32>,       // x=contrastBoost, y=evolutionSpeed, z=seedStrength, w=depthMod
-  zoom_params: vec4<f32>,       // x=amplification, y=curlStrength, z=feedbackMix, w=chromaticDrift
-  ripples:     array<vec4<f32>, 50>,
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=Amplification, y=CurlStrength, z=FeedbackMix, w=ChromaticDrift
+  ripples: array<vec4<f32>, 50>,
 };
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  Calculate luminance for curl noise
-// ───────────────────────────────────────────────────────────────────────────────
-fn luminance(rgb: vec3<f32>) -> f32 {
-    return dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  Calculate gradient of luminance (4 texture samples)
-// ───────────────────────────────────────────────────────────────────────────────
-fn luminanceGradient(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
-    let l0 = luminance(textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0).rgb);
-    let l1 = luminance(textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb);
-    let l2 = luminance(textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(0.0, texel.y), 0.0).rgb);
-    let l3 = luminance(textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb);
-    return vec2<f32>(l1 - l0, l3 - l2);
+fn noise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  let a = hash12(i);
+  let b = hash12(i + vec2<f32>(1.0, 0.0));
+  let c = hash12(i + vec2<f32>(0.0, 1.0));
+  let d = hash12(i + vec2<f32>(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  Calculate curl (2D rotation) from gradient derivatives
-// ───────────────────────────────────────────────────────────────────────────────
-fn curlNoise(uv: vec2<f32>, texel: vec2<f32>) -> f32 {
-    let gx0 = luminanceGradient(uv - vec2<f32>(texel.x, 0.0), texel);
-    let gx1 = luminanceGradient(uv + vec2<f32>(texel.x, 0.0), texel);
-    let gy0 = luminanceGradient(uv - vec2<f32>(0.0, texel.y), texel);
-    let gy1 = luminanceGradient(uv + vec2<f32>(0.0, texel.y), texel);
-
-    // Curl is z-component of cross product of gradients
-    return (gy1.x - gy0.x - gx1.y + gx0.y) * 0.5;
+fn curlField(p: vec2<f32>, t: f32) -> vec2<f32> {
+  let e = 0.01;
+  let n1 = noise(p + vec2<f32>(0.0, e) + t);
+  let n2 = noise(p - vec2<f32>(0.0, e) + t);
+  let n3 = noise(p + vec2<f32>(e, 0.0) - t);
+  let n4 = noise(p - vec2<f32>(e, 0.0) - t);
+  return vec2<f32>(n1 - n2, -(n3 - n4)) / (2.0 * e);
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  Gaussian blur (3x3 for performance)
-// ───────────────────────────────────────────────────────────────────────────────
-fn gaussianBlur3x3(uv: vec2<f32>, texel: vec2<f32>, radius: f32) -> vec3<f32> {
-    var sum = vec3<f32>(0.0);
-    let scale = texel * radius;
-    
-    // 3x3 Gaussian weights (sigma ≈ 0.8)
-    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-scale.x, -scale.y), 0.0).rgb * 0.0625;
-    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, -scale.y), 0.0).rgb * 0.125;
-    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(scale.x, -scale.y), 0.0).rgb * 0.0625;
-    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-scale.x, 0.0), 0.0).rgb * 0.125;
-    sum += textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb * 0.25;
-    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(scale.x, 0.0), 0.0).rgb * 0.125;
-    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-scale.x, scale.y), 0.0).rgb * 0.0625;
-    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, scale.y), 0.0).rgb * 0.125;
-    sum += textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(scale.x, scale.y), 0.0).rgb * 0.0625;
-    
-    return sum;
-}
-
-// ───────────────────────────────────────────────────────────────────────────────
-//  Main compute shader
-// ───────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let dims = u.config.zw;
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    var uv = vec2<f32>(gid.xy) / dims;
-    let texel = 1.0 / dims;
-    let time = u.config.x;
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
+  let aspect = dims.x / dims.y;
+  let time = u.config.x;
+  let audio = plasmaBuffer[0].xyz;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Parameters
-    // ──────────────────────────────────────────────────────────────────────────
-    let amplification = u.zoom_params.x * 1.0 + 1.2;        // 1.2 - 2.2
-    let curlStrength = u.zoom_params.y * 0.02;               // 0 - 0.02
-    let feedbackMix = u.zoom_params.z * 0.1 + 0.9;          // 0.9 - 1.0
-    let chromaticDrift = u.zoom_params.w * 0.004;           // 0 - 0.004
-    let contrastBoost = u.zoom_config.x * 0.5;              // 0 - 0.5
-    let evolutionSpeed = u.zoom_config.y * 2.0 + 1.0;       // 1 - 3
-    let seedStrength = u.zoom_config.z * 0.1 + 0.02;        // 0.02 - 0.12
-    let depthMod = u.zoom_config.w;                          // 0 - 1
+  let amplification = mix(0.15, 1.35, u.zoom_params.x) * (1.0 + audio.x * 0.45);
+  let curlStrength = mix(0.005, 0.08, u.zoom_params.y);
+  let feedbackMix = mix(0.25, 0.96, u.zoom_params.z);
+  let chromaticDrift = mix(0.0, 0.03, u.zoom_params.w);
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Sample inputs
-    // ──────────────────────────────────────────────────────────────────────────
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let videoSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let prevFrame = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+  let aspectUV = uv * vec2<f32>(aspect, 1.0);
+  let mouseDelta = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let mouseMask = 1.0 - smoothstep(0.0, 0.65, length(mouseDelta));
+  let curl = curlField(aspectUV * (2.0 + amplification), time * 0.15) * curlStrength;
+  let warpedUV = clamp(uv + curl / vec2<f32>(aspect, 1.0) * (0.4 + mouseMask * 1.2), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Depth-modulated kernel radius
-    let kernelRadius = mix(1.0, 3.0, depth * depthMod);
+  let source = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
+  let feedback = textureSampleLevel(dataTextureC, u_sampler, warpedUV, 0.0);
+  let split = curl * chromaticDrift * (0.8 + audio.z * 0.6);
+  let chroma = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r,
+    source.g,
+    textureSampleLevel(readTexture, u_sampler, clamp(warpedUV - split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
+  );
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Iterative Unsharp Masking (Laplacian detail enhancement)
-    // ──────────────────────────────────────────────────────────────────────────
-    let blurred = gaussianBlur3x3(uv, texel, kernelRadius);
-    let detail = prevFrame - blurred;
-    
-    // Amplify detail with temporal variation for breathing effect
-    let ampMod = amplification + sin(time * 0.5) * 0.2;
-    let enhancedDetail = detail * ampMod;
-    
-    // Positive feedback: add detail back
-    var result = prevFrame + enhancedDetail;
+  let synapseTint = mix(vec3<f32>(0.10, 0.75, 1.0), vec3<f32>(1.0, 0.35, 0.85), 0.5 + 0.5 * sin(time * 0.7 + noise(aspectUV * 4.0) * 6.28318));
+  var finalColor = mix(chroma, feedback.rgb, feedbackMix * (0.4 + mouseMask * 0.6));
+  finalColor = mix(finalColor, finalColor + synapseTint * (0.08 + audio.y * 0.18), 0.55);
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Curl-Noise Domain Warping (DeepDream swirl effect)
-    // ──────────────────────────────────────────────────────────────────────────
-    let curl = curlNoise(uv, texel);
-    let curlAmt = curlStrength * (1.0 + depth * 2.0); // Stronger in background
-    
-    // Rotation matrix from curl
-    let angle = curl * curlAmt;
-    let cosA = cos(angle);
-    let sinA = sin(angle);
+  let finalAlpha = clamp(mix(source.a, feedback.a, feedbackMix) + mouseMask * 0.12, 0.02, 0.98);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, warpedUV, 0.0).r;
+  let outDepth = clamp(mix(baseDepth, 0.24 + mouseMask * 0.58, 0.22), 0.0, 1.0);
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Chromatic Aberration Drift (rainbow edges)
-    // ──────────────────────────────────────────────────────────────────────────
-    let timeOffset = time * 0.1;
-    let baseR = vec2<f32>(sin(timeOffset), cos(timeOffset)) * chromaticDrift;
-    let baseG = vec2<f32>(cos(timeOffset * 1.3), -sin(timeOffset * 1.3)) * chromaticDrift * 0.5;
-    let baseB = vec2<f32>(-sin(timeOffset * 0.7), cos(timeOffset * 0.7)) * chromaticDrift * 0.75;
-    
-    // Apply curl rotation to chromatic offsets
-    let offsetR = vec2<f32>(baseR.x * cosA - baseR.y * sinA, baseR.x * sinA + baseR.y * cosA);
-    let offsetG = vec2<f32>(baseG.x * cosA - baseG.y * sinA, baseG.x * sinA + baseG.y * cosA);
-    let offsetB = vec2<f32>(baseB.x * cosA - baseB.y * sinA, baseB.x * sinA + baseB.y * cosA);
-    
-    // Sample with chromatic aberration
-    let sampleR = textureSampleLevel(dataTextureC, u_sampler, uv + offsetR, 0.0).r;
-    let sampleG = textureSampleLevel(dataTextureC, u_sampler, uv + offsetG, 0.0).g;
-    let sampleB = textureSampleLevel(dataTextureC, u_sampler, uv + offsetB, 0.0).b;
-    let warpedColor = vec3<f32>(sampleR, sampleG, sampleB);
-    
-    // Blend warped feedback with enhanced result
-    result = mix(result, warpedColor, 0.3);
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Seed with video input (prevents noise takeover)
-    // ──────────────────────────────────────────────────────────────────────────
-    result = mix(result, videoSample, seedStrength);
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Temporal Evolution (breathing patterns)
-    // ──────────────────────────────────────────────────────────────────────────
-    let evolution = sin(time * evolutionSpeed + uv.x * 10.0) * cos(time * evolutionSpeed * 0.85 + uv.y * 7.0) * 0.05;
-    result = result * (1.0 + evolution);
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Depth-based contrast enhancement
-    // ──────────────────────────────────────────────────────────────────────────
-    let contrast = 1.0 + depth * contrastBoost;
-    result = pow(max(result, vec3<f32>(0.001)), vec3<f32>(contrast));
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Output (HDR allowed for glow effects)
-    // ──────────────────────────────────────────────────────────────────────────
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
-    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(result, 1.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(mouseMask, feedbackMix, length(curl) * 10.0, finalAlpha));
 }

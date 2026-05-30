@@ -3,7 +3,7 @@
   "name": "Plastic Bricks",
   "category": "image",
   "url": "shaders/plastic-bricks.wgsl",
-  "description": "Toy-brick relief remaps the scene into glossy stacked blocks with audio-pulsed stud highlights.",
+  "description": "LEGO-style plastic bricks with microfacet BRDF, ambient occlusion in stud cavities, fingerprint smudges, and subsurface scattering. Bass drives assembly animation, mouse deconstructs bricks, depth controls stud perspective.",
   "params": [
     {
       "id": "param1",
@@ -37,6 +37,7 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
@@ -44,6 +45,9 @@
     "bricks",
     "toy",
     "relief",
-    "audio-reactive"
+    "brdf",
+    "ambient-occlusion",
+    "audio-reactive",
+    "depth-aware"
   ]
 }

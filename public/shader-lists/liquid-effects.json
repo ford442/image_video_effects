@@ -1410,11 +1410,17 @@
   {
     "id": "luma-velocity-melt",
     "name": "Luma Velocity Melt",
+    "category": "liquid-effects",
     "url": "shaders/luma-velocity-melt.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "chromatic-drip",
+      "curl-turbulence"
     ],
-    "description": "Image melts downwards based on brightness. Mouse heat speeds up the melting.",
+    "description": "Image melts downwards with curl-noise turbulence. Bright pixels drip faster; chromatic separation makes R/B channels drip at different rates. Audio heat pulses and depth viscosity modulate flow.",
     "params": [
       {
         "name": "Melt Speed",
@@ -1447,7 +1453,13 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "liquid",
+      "melt",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic",
+      "curl-noise"
     ]
   },
   {

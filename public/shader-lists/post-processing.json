@@ -755,6 +755,67 @@
     ]
   },
   {
+    "id": "soft-vignette-bloom",
+    "name": "Soft Vignette Bloom",
+    "url": "shaders/soft-vignette-bloom.wgsl",
+    "category": "post-processing",
+    "description": "Cinematic post-processing with multi-scale Gaussian bloom pyramid, anamorphic highlight streaks, and superellipse vignette. Features ACES tone mapping, split-tone shadows, film grain, and depth-driven haze. Bass boosts bloom threshold and mouse shifts vignette center.",
+    "tags": [
+      "bloom",
+      "vignette",
+      "cinematic",
+      "post-processing",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "filmic"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "vignetteStrength",
+        "name": "Vignette Strength",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bloomRadius",
+        "name": "Bloom Radius",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "hazeAmount",
+        "name": "Haze Amount",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bloomIntensity",
+        "name": "Bloom Intensity",
+        "type": "float",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "spatio-temporal-3d-conv",
     "name": "Spatio-Temporal 3D Convolution",
     "url": "shaders/spatio-temporal-3d-conv.wgsl",
@@ -990,6 +1051,62 @@
     ]
   },
   {
+    "id": "temporal-halation-freeze",
+    "name": "Temporal Halation Freeze",
+    "url": "shaders/temporal-halation-freeze.wgsl",
+    "description": "Long-exposure style halation and light bloom that slowly accumulates and 'freezes' bright moments with beautiful decaying ghost echoes. Transforms video into dreamy, time-blurred poetry. Bass lengthens the exposure tail.",
+    "tags": [
+      "halation",
+      "bloom",
+      "long-exposure",
+      "temporal",
+      "ghost",
+      "cinematic",
+      "audio-reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "exposure",
+        "name": "Exposure Length",
+        "default": 0.7,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01
+      },
+      {
+        "id": "decay",
+        "name": "Decay Rate",
+        "default": 0.86,
+        "min": 0.6,
+        "max": 0.97,
+        "step": 0.01
+      },
+      {
+        "id": "color",
+        "name": "Bloom Color Temp",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ghost",
+        "name": "Ghost Echo",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "temporal-layered-time-stamps",
     "name": "Temporal Layered Time-Stamps",
     "url": "shaders/temporal-layered-time-stamps.wgsl",
@@ -1004,7 +1121,10 @@
     ],
     "features": [
       "temporal",
-      "history-ring"
+      "history-ring",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "requiresHistoryRing": true,
     "params": [
@@ -1327,31 +1447,32 @@
   },
   {
     "id": "tone-histogram",
-    "name": "Tone Histogram (Pass 1)",
+    "name": "Tone Histogram v2",
+    "category": "post-processing",
     "url": "shaders/tone-histogram.wgsl",
-    "description": "Builds a 256-bucket luminance histogram in extraBuffer using atomics for auto-exposure.",
+    "description": "Single-pass local adaptive histogram equalization with film-like tonal curves, split-tone shadows/highlights, grain texture, and depth-driven haze removal. Bass stretches histogram dynamically.",
     "features": [
-      "multi-pass-1",
-      "histogram",
-      "auto-exposure",
-      "atomic-buffer"
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba"
     ],
-    "multipass": {
-      "pass": 1,
-      "totalPasses": 2,
-      "nextShader": "tone-histogram-apply"
-    },
     "tags": [
       "tone",
       "histogram",
       "exposure",
       "luminance",
-      "grading"
+      "grading",
+      "film",
+      "local-contrast",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware"
     ],
     "params": [
       {
         "id": "target",
-        "name": "Target Luma",
+        "name": "Stretch Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1359,7 +1480,7 @@
       },
       {
         "id": "contrast",
-        "name": "Contrast",
+        "name": "Toe Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1367,7 +1488,7 @@
       },
       {
         "id": "saturation",
-        "name": "Saturation",
+        "name": "Shoulder Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1375,11 +1496,11 @@
       },
       {
         "id": "psychedelic",
-        "name": "Dynamic Hue Mode",
+        "name": "Haze Removal",
         "default": 0,
         "min": 0,
         "max": 1,
-        "step": 1
+        "step": 0.01
       }
     ]
   }

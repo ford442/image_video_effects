@@ -1,47 +1,49 @@
 {
   "id": "warp-drive",
   "name": "Warp Drive",
+  "category": "visual-effects",
   "url": "shaders/warp_drive.wgsl",
-  "description": "Intense radial blur and chromatic aberration centered on the mouse.",
+  "description": "Launches the source image into a chromatic warp tunnel with beat-synced core glow and radial streaking.",
   "features": [
-    "mouse-driven"
+    "audio-reactive",
+    "upgraded-rgba",
+    "radial-blur"
+  ],
+  "tags": [
+    "warp",
+    "streak",
+    "space",
+    "chromatic",
+    "audio-reactive"
   ],
   "params": [
     {
-      "id": "intensity",
+      "id": "warp_speed",
       "name": "Warp Speed",
-      "type": "float",
-      "default": 0.5,
+      "default": 0.45,
       "min": 0,
       "max": 1
     },
     {
-      "id": "aberration",
+      "id": "prism_split",
       "name": "Prism Split",
-      "type": "float",
       "default": 0.3,
       "min": 0,
       "max": 1
     },
     {
-      "id": "brightness",
+      "id": "core_glow",
       "name": "Core Glow",
-      "type": "float",
-      "default": 0.2,
+      "default": 0.45,
       "min": 0,
       "max": 1
     },
     {
-      "id": "samples",
+      "id": "blur_quality",
       "name": "Blur Quality",
-      "type": "float",
       "default": 0.5,
       "min": 0,
       "max": 1
     }
-  ],
-  "tags": [
-    "filter",
-    "image-processing"
   ]
 }

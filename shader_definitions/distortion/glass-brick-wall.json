@@ -1,48 +1,50 @@
 {
   "id": "glass-brick-wall",
   "name": "Glass Brick Wall",
+  "category": "distortion",
   "url": "shaders/glass-brick-wall.wgsl",
-  "description": "Simulates a wall of refractive glass bricks with mouse-controlled lighting.",
-  "params": [
-    {
-      "name": "Brick Size",
-      "type": "f32",
-      "min": 0,
-      "max": 1,
-      "default": 0.5,
-      "id": "brick_size"
-    },
-    {
-      "name": "Distortion",
-      "type": "f32",
-      "min": 0,
-      "max": 1,
-      "default": 0.5,
-      "id": "distortion"
-    },
-    {
-      "name": "Mortar Size",
-      "type": "f32",
-      "min": 0,
-      "max": 1,
-      "default": 0.2,
-      "id": "mortar_size"
-    },
-    {
-      "name": "Glossiness",
-      "type": "f32",
-      "min": 0,
-      "max": 1,
-      "default": 0.6,
-      "id": "glossiness"
-    }
-  ],
+  "description": "Transforms the source image into a wall of refractive glass bricks with beat-driven caustics and dense absorption control.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
-    "warp",
-    "distort",
-    "transform"
+    "glass",
+    "brick",
+    "caustic",
+    "refraction",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "brick_size",
+      "name": "Brick Size",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "distortion",
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "mortar_size",
+      "name": "Mortar Size",
+      "default": 0.25,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "glass_density",
+      "name": "Glass Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
   ]
 }

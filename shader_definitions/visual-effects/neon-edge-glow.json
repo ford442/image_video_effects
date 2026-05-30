@@ -3,21 +3,26 @@
   "name": "Neon Edge Glow",
   "url": "shaders/neon-edge-glow.wgsl",
   "category": "visual-effects",
-  "description": "Detects edges and renders them with vibrant cycling neon colors plus a soft blooming glow. Reacts musically to audio and looks excellent on video and high-contrast images.",
+  "description": "Gas discharge tube simulation with accurate neon emission spectrum, AC rectification flicker, mercury vapor secondary lines, electrode sputtering, and atmospheric haze. Bass drives flicker frequency, mouse bends the tube, depth controls atmospheric scatter.",
   "tags": [
     "neon",
     "edge",
     "glow",
     "bloom",
     "sobel",
+    "gas-discharge",
+    "spectrum",
     "colorful",
     "post-processing",
-    "audio-reactive"
+    "audio-reactive",
+    "depth-aware"
   ],
   "features": [
     "audio-reactive",
     "post-processing",
-    "semantic-alpha"
+    "depth-aware",
+    "semantic-alpha",
+    "upgraded-rgba"
   ],
   "params": [
     {

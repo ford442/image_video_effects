@@ -3,7 +3,7 @@
   "name": "Solarize Warp",
   "category": "interactive-mouse",
   "url": "shaders/solarize-warp.wgsl",
-  "description": "Darkroom-style solarization twists around the cursor, flipping tones at a tunable threshold with beat-driven intensity.",
+  "description": "Sabattier solarization with domain-warped fBm displacement, Mackie edge lines, split-tone shadows/highlights, ACES tone mapping, and film grain. Bass drives threshold oscillation, mouse warps field, depth controls parallax.",
   "params": [
     {
       "id": "twist",
@@ -37,6 +37,7 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [

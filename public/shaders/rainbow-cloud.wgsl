@@ -1,207 +1,96 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Rainbow Cloud - Volumetric Alpha Upgrade
-//  Turns any image/video into swirling, rainbow-coloured clouds with 
-//  physically-based volumetric density and optical depth
-//  
-//  Scientific Implementation:
-//  - FBM-generated cloud density field
-//  - Optical depth accumulation for realistic alpha
-//  - HDR in-scattered light with Beer-Lambert extinction
-//  - Curl-field feedback trails with volumetric blending
-// ────────────────────────────────────────────────────────────────────────────────
+// ================================================================
+//  Rainbow Cloud
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, atmospheric
+//  Complexity: Medium
+//  Chunks From: rainbow-cloud
+//  Created: 2026-05-31
+//  By: Copilot
+// ================================================================
+
 @group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ────────────────────────────────────────────────────────────────────────────────
 
 struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  zoom_config: vec4<f32>,       // x=densityPower, y=saturation, z=octaves, w=depthInf
-  zoom_params: vec4<f32>,       // x=cloudScale, y=twistSpeed, z=feedbackStep, w=persistence
-  ripples:     array<vec4<f32>, 50>,
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=CloudScale, y=DriftSpeed, z=Density, w=RainbowIntensity
+  ripples: array<vec4<f32>, 50>,
 };
 
-// Volumetric constants for cloud rendering
-const SIGMA_T_CLOUD: f32 = 2.0;         // Cloud extinction coefficient
-const SIGMA_S_CLOUD: f32 = 1.8;         // Cloud scattering (high albedo)
-const STEP_SIZE: f32 = 0.02;            // Ray step through cloud
-
-// ───────────────────────────────────────────────────────────────────────────────
-//  2-D hash (returns a pseudo-random float in [0,1])
-// ───────────────────────────────────────────────────────────────────────────────
-fn hash(p: vec2<f32>) -> f32 {
-    let h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  2-D value noise (smoothstep interpolation)
-// ───────────────────────────────────────────────────────────────────────────────
 fn noise(p: vec2<f32>) -> f32 {
-    var i = floor(p);
-    let f = fract(p);
-    // Four corners
-    let a = hash(i + vec2<f32>(0.0, 0.0));
-    let b = hash(i + vec2<f32>(1.0, 0.0));
-    let c = hash(i + vec2<f32>(0.0, 1.0));
-    let d = hash(i + vec2<f32>(1.0, 1.0));
-    // Smooth interpolation
-    var uv = f * f * (3.0 - 2.0 * f);
-    return mix(mix(a, b, uv.x), mix(c, d, uv.x), uv.y);
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  let a = hash12(i);
+  let b = hash12(i + vec2<f32>(1.0, 0.0));
+  let c = hash12(i + vec2<f32>(0.0, 1.0));
+  let d = hash12(i + vec2<f32>(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  Fractal Brownian Motion
-// ───────────────────────────────────────────────────────────────────────────────
-fn fbm(p: vec2<f32>, octaves: i32, persistence: f32) -> f32 {
-    var sum: f32 = 0.0;
-    var amp: f32 = 1.0;
-    var freq: f32 = 1.0;
-    var totalAmp: f32 = 0.0;
-    for (var i: i32 = 0; i < octaves; i = i + 1) {
-        sum = sum + amp * noise(p * freq);
-        totalAmp = totalAmp + amp;
-        freq = freq * 2.0;
-        amp = amp * persistence;
-    }
-    return sum / totalAmp;
+fn fbm(p: vec2<f32>) -> f32 {
+  var v = 0.0;
+  var a = 0.5;
+  var f = p;
+  for (var i = 0; i < 4; i = i + 1) {
+    v = v + noise(f) * a;
+    f = f * 2.0 + 7.13;
+    a = a * 0.5;
+  }
+  return v;
 }
 
-// ───────────────────────────────────────────────────────────────────────────────
-//  HSV → RGB (both in [0,1])
-// ───────────────────────────────────────────────────────────────────────────────
-fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
-    let K = vec4<f32>(1.0, 2.0/3.0, 1.0/3.0, 3.0);
-    var p = abs(fract(vec3<f32>(hsv.x, hsv.x, hsv.x) + K.xyz) * 6.0 - K.www);
-    return hsv.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
-}
-
-// ───────────────────────────────────────────────────────────────────────────────
-//  Compute luminance gradient for curl field
-// ───────────────────────────────────────────────────────────────────────────────
-fn computeCurl(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
-    let Lu = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r;
-    let Ld = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, texel.y), 0.0).r;
-    let Ll = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
-    let Lr = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0).r;
-    let grad = vec2<f32>(Lr - Ll, Ld - Lu);
-    return vec2<f32>(-grad.y, grad.x);
-}
-
-// ───────────────────────────────────────────────────────────────────────────────
-//  Main compute shader
-// ───────────────────────────────────────────────────────────────────────────────
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let dims = u.config.zw;
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    var uv = (vec2<f32>(gid.xy) + 0.5) / dims;
-    let texel = 1.0 / dims;
-    let time = u.config.x;
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
+  let aspect = dims.x / dims.y;
+  let time = u.config.x;
+  let audio = plasmaBuffer[0].xyz;
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Parameters
-    // ──────────────────────────────────────────────────────────────────────────
-    let cloudScale = u.zoom_params.x * 4.0 + 1.0;           // 1 - 5
-    let twistSpeed = u.zoom_params.y * 0.5;                  // 0 - 0.5
-    let feedbackStep = u.zoom_params.z * 0.03;               // 0 - 0.03
-    let persistence = u.zoom_params.w * 0.4 + 0.3;          // 0.3 - 0.7
-    let densityPower = u.zoom_config.x * 1.5 + 1.0;         // 1 - 2.5
-    let saturation = u.zoom_config.y * 0.3 + 0.7;           // 0.7 - 1.0
-    let octaves = i32(u.zoom_config.z * 4.0 + 3.0);         // 3 - 7
-    let depthInf = u.zoom_config.w;                          // 0 - 1
+  let cloudScale = mix(1.5, 8.0, u.zoom_params.x);
+  let driftSpeed = mix(0.02, 0.35, u.zoom_params.y);
+  let density = mix(0.1, 0.95, u.zoom_params.z);
+  let rainbowIntensity = mix(0.05, 1.0, u.zoom_params.w);
 
-    // Sample inputs
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let lum = max(max(src.r, src.g), src.b);
+  let cloudUV = uv * vec2<f32>(aspect, 1.0) * cloudScale + vec2<f32>(time * driftSpeed, -time * driftSpeed * 0.4);
+  let cloud = fbm(cloudUV + fbm(cloudUV * 0.6) * 1.2);
+  let mouseMask = 1.0 - smoothstep(0.0, 0.65, length((uv - mouse) * vec2<f32>(aspect, 1.0)));
+  let nebula = smoothstep(0.35, 0.9, cloud) * density;
+  let hue = cloud + time * 0.05 + audio.y * 0.18;
+  let rainbow = 0.5 + 0.5 * cos(6.28318 * (vec3<f32>(0.0, 0.25, 0.5) + hue));
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Build cloud density using fbm
-    // ──────────────────────────────────────────────────────────────────────────
-    let cloudPos = uv * cloudScale + vec2<f32>(time * 0.1, time * 0.07);
-    var density = fbm(cloudPos, octaves, persistence);
-    
-    // Sharpen clouds with power function
-    density = pow(density, densityPower);
-    
-    // Depth influence - farther = more cloud
-    density = density * (1.0 + (1.0 - depth) * depthInf * 0.5);
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  var finalColor = src.rgb;
+  finalColor = mix(finalColor, finalColor * 0.7 + rainbow * 0.75, nebula * rainbowIntensity);
+  finalColor = finalColor + rainbow * mouseMask * (0.06 + audio.x * 0.16);
 
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Volumetric Light Transport
-    // ──────────────────────────────────────────────────────────────────────────
-    
-    // Calculate optical depth
-    // τ = density * step_size * extinction_coefficient
-    let opticalDepth = density * STEP_SIZE * SIGMA_T_CLOUD;
-    
-    // Transmittance (Beer-Lambert): T = exp(-τ)
-    let transmittance = exp(-opticalDepth);
-    
-    // Volumetric alpha: α = 1 - T
-    let alpha = 1.0 - transmittance;
-    
-    // Map density → rainbow hue (in-scattered light color)
-    let hueBase = fract(density + time * twistSpeed);
-    let sat = saturation;
-    let val = mix(0.2, 1.2, density); // allow values >1 for HDR bursts
+  let finalAlpha = clamp(src.a * (1.0 - nebula * 0.25) + nebula * 0.30 + mouseMask * 0.06, 0.05, 0.98);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let outDepth = clamp(mix(depth, 0.25 + nebula * 0.55, 0.18), 0.0, 1.0);
 
-    let cloudRGB = hsv2rgb(vec3<f32>(hueBase, sat, val));
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Energy injection for very bright source pixels
-    // ──────────────────────────────────────────────────────────────────────────
-    var extra = vec3<f32>(0.0);
-    if (lum > 1.0) {
-        var curl = computeCurl(uv, texel);
-        let burstHue = fract(atan2(curl.y, curl.x) / (2.0 * 3.14159265));
-        extra = hsv2rgb(vec3<f32>(burstHue, 1.0, (lum - 1.0) * 2.0)) * 0.4;
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Colour-debt (negative channels) for very dark regions
-    // ──────────────────────────────────────────────────────────────────────────
-    var inScattered = cloudRGB + extra;
-    if (lum < 0.2) {
-        inScattered = -inScattered; // creates ghost-like voids
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Feedback warp – drag previous colour along a curl-field
-    // ──────────────────────────────────────────────────────────────────────────
-    var curl = computeCurl(uv, texel);
-    let warpedUV = clamp(uv + curl * feedbackStep, vec2<f32>(0.0), vec2<f32>(1.0));
-    let prevCol = textureSampleLevel(dataTextureC, u_sampler, warpedUV, 0.0).rgb;
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Temporal blend (persistence creates silky trails)
-    // ──────────────────────────────────────────────────────────────────────────
-    let temporalBlend = 0.7 + persistence * 0.25; // Use persistence param (0.7 - 0.95)
-    let finalRGB = prevCol * temporalBlend + inScattered * (1.0 - temporalBlend);
-    
-    // Blend with source based on density
-    let finalColor = mix(src.rgb, finalRGB, alpha * 0.8);
-
-    // ──────────────────────────────────────────────────────────────────────────
-    //  Output with Volumetric Alpha
-    // ──────────────────────────────────────────────────────────────────────────
-    // RGB: In-scattered light
-    // A: Physical opacity from optical depth
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, opticalDepth, 0.0, alpha));
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalRGB, alpha));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(nebula, rainbowIntensity, mouseMask, finalAlpha));
 }

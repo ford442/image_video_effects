@@ -3,8 +3,8 @@
   "name": "Buddhabrot Aura",
   "url": "shaders/gen-buddhabrot-aura.wgsl",
   "category": "generative",
-  "description": "A glowing, ethereal take on the Buddhabrot fractal. Mouse controls the orbit threshold and zoom, while audio modulates density and aura intensity.",
-  "tags": ["buddhabrot", "fractal", "generative", "audio-reactive", "ethereal", "mouse-interactive"],
+  "description": "Upgraded Buddhabrot fractal with proper escaping-orbit trajectory accumulation, importance sampling, orbit-trap iridescence, HDR bloom, ACES tone mapping, and chromatic aberration on high-density regions. Bass drives orbit iteration count, mouse zooms into fractal regions, and depth controls orbit density perspective.",
+  "tags": ["buddhabrot", "fractal", "generative", "audio-reactive", "ethereal", "mouse-interactive", "orbit-trap", "HDR", "bloom"],
   "features": [
     "audio-reactive",
     "mouse-driven",

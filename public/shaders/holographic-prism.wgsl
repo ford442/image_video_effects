@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Holographic Prism
+//  Holographic Prism v2
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
 //  Chunks From: holographic-prism
 //  Upgraded: 2026-05-30
+//  By: 4-Agent Shader Upgrade Swarm
 // ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -27,58 +29,122 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+
+fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn snellRefract(incident: vec2<f32>, n: vec2<f32>, n1: f32, n2: f32) -> vec2<f32> {
+  let eta = n1 / n2;
+  let cosI = clamp(-dot(incident, n), -1.0, 1.0);
+  let sinT2 = eta * eta * (1.0 - cosI * cosI);
+  let cosT = sqrt(max(0.0, 1.0 - sinT2));
+  return incident * eta + n * (eta * cosI - cosT);
+}
+
+fn wavelengthToRGB(wavelength: f32) -> vec3<f32> {
+  var c = vec3<f32>(0.0);
+  if (wavelength < 440.0) {
+    c = vec3<f32>(-(wavelength - 440.0) / 60.0, 0.0, 1.0);
+  } else if (wavelength < 490.0) {
+    c = vec3<f32>(0.0, (wavelength - 440.0) / 50.0, 1.0);
+  } else if (wavelength < 510.0) {
+    c = vec3<f32>(0.0, 1.0, -(wavelength - 510.0) / 20.0);
+  } else if (wavelength < 580.0) {
+    c = vec3<f32>((wavelength - 510.0) / 70.0, 1.0, 0.0);
+  } else if (wavelength < 645.0) {
+    c = vec3<f32>(1.0, -(wavelength - 645.0) / 65.0, 0.0);
+  } else {
+    c = vec3<f32>(1.0, 0.0, 0.0);
+  }
+  return clamp(c, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    let aspect = resolution.x / resolution.y;
-    let facets = max(3.0, floor(u.zoom_params.x));
-    let dispersion = u.zoom_params.y * 0.04;
-    let rotation = u.zoom_params.z;
-    let glitch = u.zoom_params.w;
-    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
-    let bass = audio.x;
-    let mids = audio.y;
-    let treble = audio.z;
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let time = u.config.x;
+  let aspect = dims.x / dims.y;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+  let bass = audio.x;
+  let mids = audio.y;
+  let treble = audio.z;
 
-    let center = vec2<f32>(0.5, 0.5) + (mouse - 0.5) * 0.14;
-    let p = (uv - center) * vec2<f32>(aspect, 1.0);
-    let dist = max(length(p), 0.001);
-    let angle = atan2(p.y, p.x) + u.config.x * rotation * (1.0 + treble * 0.4);
-    let facet = abs(fract(angle / 6.28318 * facets) - 0.5) * 2.0;
-    let prismDir = vec2<f32>(cos(facet * 3.14159265), sin(facet * 3.14159265));
-    let facetWarp = vec2<f32>(prismDir.x / aspect, prismDir.y) * (0.03 + bass * 0.02) / dist;
-    let glitchJitter = vec2<f32>(
-        sin(uv.y * 80.0 + u.config.x * (5.0 + treble * 8.0)),
-        cos(uv.x * 90.0 + u.config.x * (4.0 + mids * 7.0))
-    ) * glitch * 0.006;
-    let baseUV = clamp(uv + facetWarp + glitchJitter, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
-    let uvR = clamp(baseUV + vec2<f32>(dispersion, 0.0), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
-    let uvG = baseUV;
-    let uvB = clamp(baseUV - vec2<f32>(dispersion, 0.0), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let facets = max(3.0, floor(mix(3.0, 12.0, u.zoom_params.x)));
+  let dispersion = u.zoom_params.y * 0.06;
+  let rotationSpeed = u.zoom_params.z;
+  let holoContrast = u.zoom_params.w;
 
-    let sampled = vec3<f32>(
-        textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
-        textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
-        textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
-    );
-    let caustic = vec3<f32>(
-        0.25 + facet * 0.75,
-        0.4 + treble * 0.2,
-        1.0 - facet * 0.18 + bass * 0.12
-    ) * exp(-dist * (2.5 + mids * 2.0)) * (0.18 + bass * 0.12);
-    let shardRing = smoothstep(0.08, 0.0, abs(dist - (0.18 + bass * 0.08)));
-    let finalColor = sampled * (0.78 + caustic.b * 0.18) + caustic + vec3<f32>(1.0, 0.9, 0.4) * shardRing * 0.15;
-    let alpha = clamp(0.1 + caustic.b * 0.25 + shardRing * 0.2 + bass * 0.05, 0.08, 1.0);
-    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, baseUV, 0.0).r + shardRing * 0.05, 0.0, 1.0);
-    let finalPixel = vec4<f32>(finalColor, alpha);
+  let center = vec2<f32>(0.5, 0.5) + (mouse - 0.5) * 0.12 * (1.0 + depth * 0.5);
+  let p = (uv - center) * vec2<f32>(aspect, 1.0);
+  let dist = max(length(p), 0.001);
+  let baseAngle = atan2(p.y, p.x);
+  let prismRotation = baseAngle + time * rotationSpeed * (1.0 + bass * 0.5) + bass * 0.3;
+  let facet = abs(fract(prismRotation / 6.28318 * facets) - 0.5) * 2.0;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(facet, shardRing, dist, alpha));
+  let n1 = 1.0;
+  let n2 = 1.52;
+  let prismNormal = vec2<f32>(cos(facet * 3.14159265 + 1.570796), sin(facet * 3.14159265 + 1.570796));
+  let incident = normalize(p + vec2<f32>(0.001, 0.0));
+  let refracted = snellRefract(incident, prismNormal, n1, n2);
+
+  let facetWarp = vec2<f32>(refracted.x / aspect, refracted.y) * (0.025 + bass * 0.015) / dist;
+  let holoSpeckle = hash12(floor(uv * 256.0 + fract(sin(time * 0.5) * 1000.0))) * 2.0 - 1.0;
+  let speckleMask = smoothstep(0.35, 0.65, abs(holoSpeckle)) * holoContrast;
+
+  let glitchJitter = vec2<f32>(
+    sin(uv.y * 80.0 + time * (5.0 + treble * 8.0)),
+    cos(uv.x * 90.0 + time * (4.0 + mids * 7.0))
+  ) * 0.004 * holoContrast;
+
+  let baseUV = clamp(uv + facetWarp + glitchJitter, vec2<f32>(0.001), vec2<f32>(0.999));
+
+  let lambdaR = 700.0 - dispersion * 200.0;
+  let lambdaG = 530.0;
+  let lambdaB = 450.0 + dispersion * 200.0;
+  let rShift = refracted * dispersion * 0.8 / dist;
+  let bShift = refracted * dispersion * 1.2 / dist;
+
+  let uvR = clamp(baseUV + vec2<f32>(rShift.x / aspect, rShift.y) * 0.03, vec2<f32>(0.001), vec2<f32>(0.999));
+  let uvG = baseUV;
+  let uvB = clamp(baseUV - vec2<f32>(bShift.x / aspect, bShift.y) * 0.03, vec2<f32>(0.001), vec2<f32>(0.999));
+
+  let sampled = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
+  );
+
+  let wavelengthColor = wavelengthToRGB(mix(450.0, 700.0, facet));
+  let caustic = wavelengthColor * exp(-dist * (2.2 + mids * 2.0)) * (0.2 + bass * 0.15);
+  let interference = sin(dist * 60.0 - time * 3.0 + facet * 12.0) * 0.5 + 0.5;
+  let holoFringe = caustic * interference * (0.5 + treble * 0.5) * speckleMask;
+
+  let shardRing = smoothstep(0.08, 0.0, abs(dist - (0.18 + bass * 0.08)));
+  let bloom = vec3<f32>(1.0, 0.92, 0.55) * shardRing * (0.2 + mids * 0.3);
+
+  var finalColor = sampled * (0.75 + caustic.b * 0.15) + caustic * 0.7 + holoFringe + bloom;
+  finalColor = acesTonemap(finalColor * 1.25);
+
+  let dispersionAlpha = length(caustic) * 0.6 + shardRing * 0.3 + speckleMask * 0.15;
+  let finalAlpha = clamp(dispersionAlpha * holoContrast * depth, 0.08, 0.95);
+
+  let depthOut = clamp(depth + shardRing * 0.06, 0.0, 1.0);
+
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(facet, shardRing, speckleMask, finalAlpha));
 }

@@ -1,45 +1,50 @@
 {
   "id": "cyber-lens",
   "name": "Cyber Lens",
+  "category": "distortion",
   "url": "shaders/cyber-lens.wgsl",
-  "description": "Digital fisheye with scan lines and chromatic aberration.",
+  "description": "A scanning cybernetic magnifier overlays chromatic split and holographic grid lines onto the source image.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "chromatic-aberration"
+  ],
+  "tags": [
+    "cyber",
+    "lens",
+    "grid",
+    "chromatic",
+    "audio-reactive"
+  ],
   "params": [
     {
-      "id": "strength",
-      "name": "Lens Strength",
+      "id": "lens_radius",
+      "name": "Lens Radius",
+      "default": 0.35,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "zoom_strength",
+      "name": "Zoom Strength",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "aberration",
-      "name": "Chromatic",
-      "default": 0.5,
+      "id": "grid_intensity",
+      "name": "Grid Intensity",
+      "default": 0.4,
       "min": 0,
       "max": 1
     },
     {
-      "id": "scanlines",
-      "name": "Scan Lines",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "vignette",
-      "name": "Vignette",
-      "default": 0.5,
+      "id": "chromatic_aberration",
+      "name": "Chromatic Aberration",
+      "default": 0.3,
       "min": 0,
       "max": 1
     }
-  ],
-  "features": [
-    "distortion",
-    "retro",
-    "mouse-driven"
-  ],
-  "tags": [
-    "filter",
-    "image-processing"
   ]
 }

@@ -1,0 +1,57 @@
+{
+  "id": "gen-islamic-star-rose",
+  "name": "Islamic Geometric Star-Rose",
+  "url": "shaders/gen-islamic-star-rose.wgsl",
+  "description": "Procedurally generated Islamic geometric patterns with girih-style star and polygon tessellations. Features intricate strapwork, rosette centers, and metallic gold/blue/crimson coloring on a hexagonal grid. Mouse controls pattern rotation and scale for close examination of the geometry.",
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural",
+    "geometric"
+  ],
+  "tags": [
+    "islamic",
+    "geometric",
+    "girih",
+    "tessellation",
+    "star",
+    "generative",
+    "ornamental",
+    "metallic"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Pattern Complexity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Rotation",
+      "default": 0.15,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "scale",
+      "name": "Zoom",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

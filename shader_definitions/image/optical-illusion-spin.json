@@ -3,7 +3,7 @@
   "name": "Optical Illusion Spin",
   "category": "image",
   "url": "shaders/optical-illusion-spin.wgsl",
-  "description": "Hypnotic concentric rings spin around the cursor with beat-synced halos and alternating spoke direction.",
+  "description": "Op-art illusion generator with Rotating Snakes, Fraser spiral, and moiré interference between counter-rotating patterns. Chromatic afterimage, HDR edges, ACES tone mapping, and dithering. Bass drives rotation, mouse distorts locally, depth controls scale perspective.",
   "params": [
     {
       "name": "Ring Count",
@@ -41,6 +41,7 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [

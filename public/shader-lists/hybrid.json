@@ -665,5 +665,66 @@
     ],
     "created_by": "Agent 2A - Shader Surgeon",
     "created_date": "2026-03-22"
+  },
+  {
+    "id": "ripple-bloom",
+    "name": "Ripple Bloom",
+    "url": "shaders/ripple-bloom.wgsl",
+    "category": "hybrid",
+    "description": "Huygens wavelet ripple simulation with frequency dispersion, chromatic dispersion on crests, HDR bloom on constructive interference, subsurface scattering in troughs, and ACES tone mapping. Bass drives ripple frequency, mouse drops stones, depth controls water depth.",
+    "tags": [
+      "ripple",
+      "bloom",
+      "hybrid",
+      "audio-reactive",
+      "mouse-driven",
+      "organic",
+      "dispersion",
+      "subsurface"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "rippleAmount",
+        "name": "Ripple Amount",
+        "default": 0.7,
+        "min": 0,
+        "max": 1.6,
+        "step": 0.01,
+        "param": "zoom_params.x"
+      },
+      {
+        "id": "bloomAmount",
+        "name": "Bloom Amount",
+        "default": 0.75,
+        "min": 0,
+        "max": 1.8,
+        "step": 0.01,
+        "param": "zoom_params.y"
+      },
+      {
+        "id": "mouseInfluence",
+        "name": "Mouse Influence",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.z"
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.w"
+      }
+    ]
   }
 ]

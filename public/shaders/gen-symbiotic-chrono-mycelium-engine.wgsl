@@ -1,7 +1,11 @@
-// ----------------------------------------------------------------
-// Symbiotic Chrono-Mycelium Engine
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Symbiotic Chrono-Mycelium Engine
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -68,7 +72,7 @@ fn sdf_gear(p: vec3<f32>) -> f32 {
 fn sdf_mycelium(p: vec3<f32>) -> f32 {
     var pos = p;
     let density = u.zoom_params.x; // Mycelial Density
-    let audio_react = u.ripples[0].x * 0.5;
+    let audio_react = plasmaBuffer[0].x * 0.5; // bass swells the hyphae
 
     let warp = u.zoom_params.z;
     let mouse_offset = vec2<f32>((u.zoom_config.y - 0.5) * 2.0, (u.zoom_config.z - 0.5) * 2.0);
@@ -100,7 +104,7 @@ fn calc_normal(p: vec3<f32>) -> vec3<f32> {
     return normalize(n);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
@@ -108,6 +112,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (fragCoord.x >= res.x || fragCoord.y >= res.y) {
         return;
     }
+
+    // Audio reactivity: mids brighten plasma glow, treble adds shimmer
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let uv = (fragCoord - 0.5 * res) / res.y;
     var ro = vec3<f32>(0.0, 0.0, -5.0);
@@ -125,9 +133,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
-    let plasma_glow = u.zoom_params.y; // Plasma Glow
+    let plasma_glow = u.zoom_params.y * (1.0 + mids * 0.6); // Plasma Glow, mid-reactive
+    let hit = t < 20.0;
+    var lum = 0.0;
 
-    if (t < 20.0) {
+    if (hit) {
         let n = calc_normal(p);
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let diff = max(dot(n, l), 0.0);
@@ -137,7 +147,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let mycelium_color = vec3<f32>(0.0, 1.0, 1.0) * glow * diff + vec3<f32>(1.0, 0.0, 1.0) * (1.0-glow) * diff;
 
         col = mix(gear_color, mycelium_color, smoothstep(0.0, 1.0, length(p)));
+        col += vec3<f32>(0.8, 0.9, 1.0) * abs(glow) * treble * 0.15; // treble sparkle
+        lum = clamp(diff + abs(glow) * 0.5, 0.0, 1.0);
     }
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Alpha: lit mycelium/gear coverage over the void, never flat 1.0
+    let alpha = clamp(select(0.0, 0.3, hit) + lum * 0.6, 0.0, 1.0);
+    let out = vec4<f32>(col, alpha);
+
+    // Depth: ray-march hit distance (near = closer)
+    let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
+    let coord = vec2<i32>(id.xy);
+    textureStore(writeTexture, coord, out);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, out);
 }

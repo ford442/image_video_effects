@@ -60,47 +60,109 @@
     "id": "ascii-glyph",
     "name": "ASCII Glyphs",
     "url": "shaders/ascii-glyph.wgsl",
-    "description": "ASCII / SDF glyph morphing and atlas-based rendering.",
+    "description": "SDF glyph morph with bass character swap and depth luminance map. Pixels are quantized into glyph cells; depth controls brightness tiering. Bass swaps glyph patterns on beats, treble adds chromatic highlights to dense characters.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "sdf-glyph",
+      "depth-luminance",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "ascii",
+      "glyph",
+      "SDF",
+      "typography"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "glyphSize",
+        "name": "Glyph Size",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "brightness",
+        "name": "Brightness",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "colorAmount",
+        "name": "Color Amount",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "densityBoost",
+        "name": "Density Boost",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       }
+    ]
+  },
+  {
+    "id": "crystal-mosaic",
+    "name": "Crystal Mosaic",
+    "category": "geometric",
+    "url": "shaders/crystal-mosaic.wgsl",
+    "description": "Image broken into triangular mosaic tiles that rotate based on mouse proximity. Chromatic edges at tile boundaries with depth parallax shifting.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "chromatic-edges"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Tile Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chroma",
+        "name": "Chromatic Edge",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "influence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "mosaic",
+      "crystal",
+      "geometric",
+      "triangular",
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic"
     ]
   },
   {
@@ -162,6 +224,60 @@
         "step": 0.01,
         "description": "How long motion trails persist (higher=longer trails)"
       }
+    ]
+  },
+  {
+    "id": "digital-crease",
+    "name": "Digital Crease",
+    "category": "geometric",
+    "url": "shaders/digital-crease.wgsl",
+    "description": "Paper-fold creases radiate from center with depth-curve distortion. Temporal persistence simulates paper memory. Chromatic folding separates R/B channels per crease. Audio modulates fold amplitude.",
+    "params": [
+      {
+        "id": "foldCount",
+        "name": "Fold Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "foldDepth",
+        "name": "Fold Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "foldSoftness",
+        "name": "Fold Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chromaOffset",
+        "name": "Chromatic Offset",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal-paper-fold",
+      "chromatic-folding"
+    ],
+    "tags": [
+      "geometric",
+      "paper",
+      "crease",
+      "fold",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic",
+      "temporal"
     ]
   },
   {
@@ -380,9 +496,13 @@
   {
     "id": "kaleido-scope",
     "name": "Kaleido-Scope",
+    "category": "geometric",
     "url": "shaders/kaleido-scope.wgsl",
+    "description": "Hyperbolic Poincaré-disk tessellation kaleidoscope with animated morphing between symmetry types, iridescent metallic boundaries, HDR specular vertices, and depth-driven stereoscopic chromatic aberration.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -416,7 +536,11 @@
     ],
     "tags": [
       "geometric",
-      "pattern"
+      "pattern",
+      "kaleidoscope",
+      "prismatic",
+      "hyperbolic",
+      "tessellation"
     ]
   },
   {
@@ -510,6 +634,56 @@
     "tags": [
       "geometric",
       "pattern"
+    ]
+  },
+  {
+    "id": "neon-quantum-lattice",
+    "name": "Neon Quantum Lattice",
+    "url": "shaders/neon-quantum-lattice.wgsl",
+    "description": "Aperiodic Penrose-like quasi-crystal tiling with neon edge glow, metallic fill gradients, HDR vertex bloom, and quantum uncertainty zones.",
+    "params": [
+      {
+        "id": "inflation",
+        "name": "Tile Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glow",
+        "name": "Neon Glow Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "parallax",
+        "name": "Depth Parallax",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "brightness",
+        "name": "Brightness",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "geometric",
+      "neon",
+      "quasicrystal",
+      "penrose",
+      "tiling",
+      "metallic"
     ]
   },
   {

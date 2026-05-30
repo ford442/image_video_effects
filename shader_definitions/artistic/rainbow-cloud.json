@@ -1,47 +1,50 @@
 {
   "id": "rainbow-cloud",
   "name": "Rainbow Cloud",
+  "category": "artistic",
   "url": "shaders/rainbow-cloud.wgsl",
-  "description": "Colorful cloud formations with rainbow gradients.",
+  "description": "Floats iridescent rainbow cloud layers over the source image, thickening around the cursor and pulsing with the beat.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "atmospheric"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "rainbow",
+    "cloud",
+    "nebula",
+    "atmospheric",
+    "audio-reactive"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
-      "default": 0.5,
+      "id": "cloud_scale",
+      "name": "Cloud Scale",
+      "default": 0.4,
       "min": 0,
-      "max": 1,
-      "step": 0.01
+      "max": 1
     },
     {
-      "id": "param2",
-      "name": "Speed",
-      "default": 0.5,
+      "id": "drift_speed",
+      "name": "Drift Speed",
+      "default": 0.35,
       "min": 0,
-      "max": 1,
-      "step": 0.01
+      "max": 1
     },
     {
-      "id": "param3",
-      "name": "Scale",
+      "id": "density",
+      "name": "Density",
       "default": 0.5,
       "min": 0,
-      "max": 1,
-      "step": 0.01
+      "max": 1
     },
     {
-      "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
+      "id": "rainbow_intensity",
+      "name": "Rainbow Intensity",
+      "default": 0.55,
       "min": 0,
-      "max": 1,
-      "step": 0.01
+      "max": 1
     }
   ]
 }

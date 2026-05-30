@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Dimension Slicer
-//  Category: distortion
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Upgraded: 2026-05-17
+//  Category: image
+//  Features: upgraded-rgba, audio-reactive, chromatic-aberration, depth-aware,
+//            temporal-slice-rotation, chromatic-slice-dispersion, audio-slice-width
+//  Complexity: High
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -21,83 +22,77 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time
-  zoom_config: vec4<f32>,  // y=MouseX, z=MouseY
-  zoom_params: vec4<f32>,  // x=SliceWidth, y=Distortion, z=Angle, w=Aberration
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
-    let c = cos(angle);
-    let s = sin(angle);
-    return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+
+fn rot2D(a: f32) -> mat2x2<f32> {
+    let c = cos(a);
+    let s = sin(a);
+    return mat2x2<f32>(c, -s, s, c);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dims = u.config.zw;
-    if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
-        return;
-    }
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    var uv = vec2<f32>(global_id.xy) / dims;
-    let aspect = dims.x / max(dims.y, 0.001);
+    let sliceAngle = u.zoom_params.x * PI * 2.0;
+    let zoomWarp = u.zoom_params.y * 2.0;
+    let chromaticAmount = u.zoom_params.z;
+    let depthModulation = u.zoom_params.w;
 
-    // Audio reactivity
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-
-    // Parameters — bass widens slice, mids boost aberration
-    let sliceWidth  = mix(0.05, 0.4, u.zoom_params.x) * (1.0 + bass * 0.15);
-    let distortion  = mix(0.0, 2.0, u.zoom_params.y);
-    let angle       = u.zoom_params.z * 3.14159 * 2.0;
-    let aberration  = u.zoom_params.w * 0.05 * (1.0 + mids * 0.3);
-
-    let mouse = u.zoom_config.yz;
-
-    var p = uv - mouse;
-    p.x *= aspect;
-
-    let pRot = rotate(p, angle);
-    let dist = abs(pRot.x);
-
-    let inSlice = 1.0 - smoothstep(sliceWidth - 0.01, sliceWidth, dist);
-
-    // Warp UVs inside slice
-    let zoom = 1.0 - distortion * 0.5 * cos(dist / max(sliceWidth, 0.001) * 3.14159);
-    let offset = (uv - mouse) * (1.0 / max(zoom, 0.001) - 1.0);
-    let warpedUV = clamp(uv + offset * inSlice, vec2<f32>(0.0), vec2<f32>(1.0));
-
-    // Chromatic aberration — applied inside slice, zero outside
-    let aberAmt = vec2<f32>(aberration, 0.0) * inSlice;
-    let rUV = clamp(warpedUV + aberAmt, vec2<f32>(0.0), vec2<f32>(1.0));
-    let bUV = clamp(warpedUV - aberAmt, vec2<f32>(0.0), vec2<f32>(1.0));
-    let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
-    let baseAlpha = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0).a;
-
-    // Slice edge glow
-    let edge = smoothstep(sliceWidth - 0.02, sliceWidth, dist) * (1.0 - smoothstep(sliceWidth, sliceWidth + 0.01, dist));
-    let sliceColor = vec3<f32>(r, g, b) + vec3<f32>(0.5, 0.8, 1.0) * edge * 2.0;
-
-    // Outside slice: original image with soft darkening
-    let outsideColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let shadow = smoothstep(sliceWidth, sliceWidth + 0.1, dist);
-    let outsideDark = outsideColor * (0.5 + 0.5 * shadow);
-
-    // Blend inside/outside — branchless
-    var finalColor = mix(outsideDark, sliceColor, inSlice);
-    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
-
-    // Depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Meaningful alpha: slice presence + edge glow + audio
-    let alpha = clamp(inSlice * 0.6 + edge * 0.8 + bass * 0.1 + baseAlpha * 0.1, 0.0, 1.0);
-    let fc = vec4<f32>(finalColor, alpha);
+    // Temporal slice rotation memory: angle drifts slowly
+    let driftedAngle = sliceAngle + time * 0.3;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), fc);
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), fc);
+    let p = uv - vec2<f32>(0.5);
+    let rotP = rot2D(driftedAngle) * p;
+    let sliceDist = rotP.y;
+
+    // Audio-driven slice width modulation
+    let sliceWidth = 0.04 + bass * 0.02;
+    let inSlice = smoothstep(sliceWidth, sliceWidth * 0.5, abs(sliceDist));
+
+    let slicePos = rotP.x / max(abs(rotP.y), 1e-4);
+    let zoomedSlice = slicePos * zoomWarp * (1.0 + depth * depthModulation);
+
+    // Chromatic inside-slice dispersion
+    let chromaShift = chromaticAmount * 0.015 * (1.0 + treble * 0.3);
+    var rUV = vec2<f32>(zoomedSlice + chromaShift, rotP.y);
+    var gUV = vec2<f32>(zoomedSlice, rotP.y);
+    var bUV = vec2<f32>(zoomedSlice - chromaShift, rotP.y);
+
+    rUV = rot2D(-driftedAngle) * rUV + vec2<f32>(0.5);
+    gUV = rot2D(-driftedAngle) * gUV + vec2<f32>(0.5);
+    bUV = rot2D(-driftedAngle) * bUV + vec2<f32>(0.5);
+
+    var color = vec3<f32>(0.0);
+    color.r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    color.g = textureSampleLevel(readTexture, u_sampler, clamp(gUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+    color.b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+
+    let edgeGlow = smoothstep(0.02, 0.0, abs(sliceDist)) * inSlice;
+    let edgeColor = vec3<f32>(1.0, 0.8, 0.5) * (1.0 + bass * 0.3);
+    color = mix(color, edgeColor, edgeGlow);
+
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    color = mix(baseColor.rgb, color, inSlice);
+
+    let finalAlpha = mix(baseColor.a, 1.0, inSlice * 0.5 + edgeGlow * 0.3);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(color, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0, 0, 1));
 }

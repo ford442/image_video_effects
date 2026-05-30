@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Holographic Interference
 //  Category: lighting-effects
-//  Features: advanced-alpha, interference-patterns, thin-film, depth-aware
+//  Features: advanced-alpha, interference-patterns, thin-film, depth-aware,
+//            temporal-drift, audio-thickness, depth-scaled-angle
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,36 +22,27 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=FilmThickness, y=WavelengthScale, z=DepthWeight, w=InterferenceStr
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
 
-// ═══ ADVANCED ALPHA FUNCTIONS ═══
-
-// Mode 1: Depth-Layered Alpha
 fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthAlpha = mix(0.4, 1.0, depth);
     return mix(1.0, depthAlpha, depthWeight);
 }
 
-// Thin film interference alpha
 fn interferenceAlpha(opticalPath: f32, baseAlpha: f32) -> f32 {
     let interference = 0.5 + 0.5 * cos(opticalPath * 10.0);
     return baseAlpha * (0.7 + interference * 0.3);
 }
 
-// Combined alpha
-fn calculateInterferenceAlpha(
-    uv: vec2<f32>,
-    opticalPath: f32,
-    params: vec4<f32>
-) -> f32 {
+fn calculateInterferenceAlpha(uv: vec2<f32>, opticalPath: f32, params: vec4<f32>) -> f32 {
     let depthAlpha = depthLayeredAlpha(uv, params.z);
     let intAlpha = interferenceAlpha(opticalPath, params.x);
     return clamp(depthAlpha * intAlpha, 0.0, 1.0);
@@ -60,51 +51,46 @@ fn calculateInterferenceAlpha(
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Parameters — bass modulates film thickness (color shifts with beat)
-    let filmThickness = (u.zoom_params.x * 2.0 + 0.5) * (1.0 + bass * 0.3);
+    // Audio-reactive film thickness pulsing
+    let filmThickness = (u.zoom_params.x * 2.0 + 0.5) * (1.0 + bass * 0.3 + mids * 0.1 * sin(time * 2.0));
     let wavelengthScale = u.zoom_params.y * 5.0 + 1.0;
     let depthWeight = u.zoom_params.z;
     let interferenceStrength = u.zoom_params.w;
-    
-    // Sample depth
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
-    // Thin film interference calculation
-    let angle = length(uv - 0.5) * wavelengthScale;
+
+    // Depth-scaled angle: deeper regions have wider interference rings
+    let angle = length(uv - 0.5) * wavelengthScale * (1.0 + depth * 0.3);
     let opticalPath = filmThickness * cos(angle) + time * 0.2;
-    
-    // RGB interference
-    let rPhase = opticalPath / 650.0;
+
+    // Temporal interference drift: slow phase rotation
+    let drift = sin(time * 0.15 + depth * PI) * 0.1;
+
+    let rPhase = (opticalPath + drift) / 650.0;
     let gPhase = opticalPath / 530.0;
-    let bPhase = opticalPath / 460.0;
-    
+    let bPhase = (opticalPath - drift) / 460.0;
+
     let r = 0.5 + 0.5 * cos(rPhase * 20.0);
     let g = 0.5 + 0.5 * cos(gPhase * 20.0);
     let b = 0.5 + 0.5 * cos(bPhase * 20.0);
-    
+
     let interferenceColor = vec3<f32>(r, g, b) * interferenceStrength;
-    
-    // Sample base
+
     let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    
-    // Blend interference with base
     let finalColor = mix(baseSample.rgb, interferenceColor, interferenceStrength * 0.5);
-    
-    // ═══ ADVANCED ALPHA CALCULATION ═══
+
     let alpha = calculateInterferenceAlpha(uv, opticalPath, u.zoom_params);
     let finalAlpha = mix(baseSample.a, 1.0, interferenceStrength * 0.7);
-    
+
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-    
-    // Pass through depth
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

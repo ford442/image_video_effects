@@ -1,12 +1,13 @@
 {
   "id": "sine-wave",
-  "name": "Sine Wave Distortion",
+  "name": "Sine Wave",
   "category": "distortion",
   "url": "shaders/sine-wave.wgsl",
-  "description": "Layered ribbon-wave refraction with cursor pull, treble chroma fringes, and animated crest highlights.",
+  "description": "Multi-frequency sine wave interference with traveling wave packets, water caustics, chromatic dispersion on crests, and HDR specular highlights. Bass drives wave amplitude, mouse creates wave sources, depth controls attenuation.",
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
@@ -14,7 +15,10 @@
     "ribbon",
     "chromatic",
     "audio-reactive",
-    "distortion"
+    "distortion",
+    "interference",
+    "caustics",
+    "HDR"
   ],
   "params": [
     {

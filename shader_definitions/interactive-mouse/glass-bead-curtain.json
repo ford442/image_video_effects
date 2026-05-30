@@ -3,7 +3,7 @@
   "name": "Glass Bead Curtain",
   "category": "interactive-mouse",
   "url": "shaders/glass-bead-curtain.wgsl",
-  "description": "Iridescent bead strands sway like a stage curtain, refracting the source image and parting around the cursor.",
+  "description": "Physical glass bead curtain with Fresnel refraction, chromatic caustics, subsurface scattering, and bead-collision physics. Bass drives wind sway, mouse pushes beads aside, depth controls perspective bead size.",
   "params": [
     {
       "id": "size",
@@ -49,6 +49,7 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
@@ -56,6 +57,9 @@
     "beads",
     "iridescent",
     "refraction",
-    "audio-reactive"
+    "caustics",
+    "fresnel",
+    "audio-reactive",
+    "depth-aware"
   ]
 }

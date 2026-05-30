@@ -5,10 +5,11 @@
   "category": "interactive-mouse",
   "url": "shaders/phosphor-magnifier.wgsl",
   "icon": "search",
-  "description": "A CRT-style magnifying lens reveals chunky phosphor triads, scanlines, and green bloom around the cursor.",
+  "description": "P22 phosphor decay CRT magnifier with chromatic aberration, barrel distortion, shadow mask, scanline beats, HDR bloom, ACES tone mapping, and afterimage trails. Bass drives excitation, mouse positions lens, depth controls magnification power.",
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "params": [

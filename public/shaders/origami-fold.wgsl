@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Origami Fold
-//  Category: geometric
-//  Features: mouse-driven, audio-reactive, paper-fold, depth-shadow, chromatic-edge, upgraded-rgba
-//  Complexity: High
-//  Chunks From: origami-fold, bass_env
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, paper-fold, mountain-valley, chromatic-edge, semantic-alpha
+//  Complexity: Very High
 //  Created: 2024-01-01
-//  Upgraded: 2026-05-31
+//  Updated: 2026-06-01
+//  By: Kimi Agent (4-Agent Swarm Upgrade)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,70 +23,118 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-fn bass_env(bass: f32, mids: f32) -> f32 {
-  return 1.0 + bass * 0.5 + mids * 0.2;
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+
+fn paperTexture(uv: vec2<f32>) -> f32 {
+  let fiber = sin(uv.x * 200.0 + hash12(uv * 3.0) * 0.5) * 0.5 + 0.5;
+  let grain = hash12(uv * 47.0) * 0.08;
+  return 0.92 + fiber * 0.06 - grain;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 0.15 + 0.05) + 0.004;
+  let b = x * (x * 0.15 + 0.50) + 0.06;
+  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn kawasakiAngle(angles: vec4<f32>) -> f32 {
+  let alt1 = angles.x + angles.y;
+  let alt2 = angles.z + angles.w;
+  return select(alt2, alt1, alt1 < alt2);
+}
+
+fn timePhase(t: f32) -> f32 {
+  return t;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let mousePos = u.zoom_config.yz;
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let mousePos = u.zoom_config.yz;
+  let clickCount = u.config.y;
+  let isMouseDown = u.zoom_config.w > 0.5;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthShadow = mix(0.6, 1.2, depth);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthShadow = mix(0.55, 1.15, depth);
 
-    let radius = u.zoom_params.x;
-    let shadowStrength = u.zoom_params.y * depthShadow;
-    let angle = u.zoom_params.z * bass_env(bass, mids);
-    let transparency = u.zoom_params.w;
+  let foldSpeed = u.zoom_params.x * (0.5 + bass * 0.5);
+  let shadowStrength = u.zoom_params.y * depthShadow;
+  let baseAngle = u.zoom_params.z;
+  let paperOpacity = u.zoom_params.w;
 
-    let foldDir = vec2<f32>(cos(angle), sin(angle));
-    let dist = dot(uv - mousePos, foldDir);
+  let mountainValley = fract(clickCount * 0.5) > 0.25;
+  let animPhase = baseAngle + bass * 0.4;
+  let foldDir = vec2<f32>(cos(animPhase), sin(animPhase));
 
-    var finalColor = vec4<f32>(0.0);
-    if (dist > 0.0) {
-        finalColor = vec4<f32>(0.0);
-    } else {
-        finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let toPoint = uv - mousePos;
+  let dist = dot(toPoint, foldDir);
 
-        let sourceUV = uv - 2.0 * dist * foldDir;
-        if (sourceUV.x >= 0.0 && sourceUV.x <= 1.0 && sourceUV.y >= 0.0 && sourceUV.y <= 1.0) {
-            let shadow = 1.0 - smoothstep(0.0, 0.1 + radius, abs(dist)) * shadowStrength;
-            let flapColor = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
-            let darkened = vec4<f32>(flapColor.rgb * 0.9, flapColor.a);
+  let creaseAngles = vec4<f32>(
+    abs(atan2(toPoint.y, toPoint.x)),
+    abs(atan2(toPoint.y + 0.01, toPoint.x)),
+    abs(atan2(toPoint.y, toPoint.x + 0.01)),
+    abs(atan2(toPoint.y - 0.01, toPoint.x - 0.01))
+  );
+  let kAngle = kawasakiAngle(creaseAngles);
+  let dihedral = smoothstep(0.0, 1.57, kAngle) * foldSpeed;
 
-            // Chromatic edge: treble adds RGB separation near crease
-            let edge = smoothstep(0.0, 0.05, abs(dist));
-            let chroma = treble * 0.02 * edge;
-            let r = textureSampleLevel(readTexture, u_sampler, clamp(sourceUV + vec2<f32>(chroma, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-            let b = textureSampleLevel(readTexture, u_sampler, clamp(sourceUV - vec2<f32>(chroma, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-            let chromaFlap = vec4<f32>(r, darkened.g, b, darkened.a);
+  let isFolded = select(dist > 0.0, dist < 0.0, mountainValley);
+  var finalColor = vec3<f32>(0.0);
+  var foldAlpha = 0.0;
 
-            finalColor = mix(chromaFlap, finalColor, transparency);
-            finalColor = vec4<f32>(finalColor.rgb * shadow, finalColor.a);
+  if (!isFolded) {
+    let texColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    finalColor = texColor.rgb;
+    foldAlpha = texColor.a;
+  } else {
+    let reflectDir = toPoint - 2.0 * dist * foldDir;
+    let sourceUV = clamp(mousePos + reflectDir, vec2<f32>(0.0), vec2<f32>(1.0));
+    let texColor = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
 
-            // Bass adds warm glow to crease
-            let creaseGlow = bass * 0.1 * smoothstep(0.05, 0.0, abs(dist));
-            finalColor = finalColor + vec4<f32>(creaseGlow, creaseGlow * 0.5, 0.0, 0.0);
-        }
-    }
+    let shadow = 1.0 - smoothstep(0.0, 0.12 + foldSpeed * 0.1, abs(dist)) * shadowStrength;
+    let paper = paperTexture(uv * 3.0 + vec2<f32>(animPhase * 0.1));
+    let darkened = texColor.rgb * 0.88 * paper * shadow;
 
-    let alpha = clamp(finalColor.a + (1.0 - smoothstep(0.0, 0.1, abs(dist))) * 0.2 + bass * 0.05, 0.0, 1.0);
+    let edge = smoothstep(0.0, 0.06, abs(dist));
+    let chroma = treble * 0.025 * edge * (1.0 + bass * 0.5);
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(sourceUV + vec2<f32>(chroma, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(sourceUV - vec2<f32>(chroma, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor.rgb, alpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor.rgb, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let specAngle = abs(dist) * 20.0;
+    let specular = pow(smoothstep(0.92, 1.0, sin(specAngle + bass * 3.0)), 12.0) * (0.3 + mids * 0.4);
+
+    finalColor = vec3<f32>(r, darkened.g, b);
+    finalColor += vec3<f32>(specular) * vec3<f32>(0.95, 0.92, 0.85);
+    foldAlpha = texColor.a * paperOpacity;
+
+    let creaseGlow = bass * 0.12 * smoothstep(0.06, 0.0, abs(dist)) * select(1.0, 2.0, isMouseDown);
+    finalColor += vec3<f32>(creaseGlow, creaseGlow * 0.55, creaseGlow * 0.15);
+  }
+
+  let layerOrder = smoothstep(0.0, 0.08, abs(dist)) * (0.6 + depth * 0.4);
+  let edgeDarken = smoothstep(0.0, 0.04, abs(dist)) * 0.15 * treble;
+  finalColor = mix(finalColor, finalColor * 0.7, edgeDarken);
+
+  finalColor = acesToneMap(finalColor * (1.0 + bass * 0.15));
+
+  let semantic_alpha = clamp(abs(dihedral) * foldAlpha * (0.5 + depth * 0.5), 0.2, 0.98);
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, semantic_alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, semantic_alpha));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth * layerOrder, 0.0, 0.0, 0.0));
 }

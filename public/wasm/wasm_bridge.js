@@ -168,7 +168,9 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
     state.initEndTime = performance.now();
 
     if (!result) {
-      const error = 'C++ initWasmRenderer returned 0 (device creation failed)';
+      const error = 'C++ initWasmRenderer returned 0 (likely Dawn adapter/device creation failed inside WASM). ' +
+                    'This is a known issue on some Windows + Chrome/Edge configurations with emdawnwebgpu. ' +
+                    'The JS WebGPU renderer is unaffected. Try forcing it via ?renderer=webgpu or the UI toggle.';
       console.error('[WASM]', error);
       state.lastLoadError = error;
       state.loadErrorCount++;

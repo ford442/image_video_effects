@@ -1,0 +1,15 @@
+{
+  "id": "gen-plasma-psychedelic-wormhole",
+  "name": "Psychedelic Wormhole",
+    "category": "generative",
+  "url": "shaders/gen-plasma-psychedelic-wormhole.wgsl",
+  "description": "A wildly colorful tunnel/wormhole effect with swirling rainbow plasma patterns spiraling inward. Bright saturated colors cycling through the full spectrum. Multi-octave fBm noise creates organic flowing patterns. Stars and particles stream past the edges as you travel through the cosmic vortex. Mouse controls tunnel curvature and travel speed.",
+  "features": ["interactive", "mouse-reactive", "temporal", "procedural"],
+  "tags": ["psychedelic", "neon", "wormhole", "tunnel", "plasma", "rainbow", "cosmic", "generative"],
+  "params": [
+    {"id": "intensity", "name": "Brightness", "default": 0.8, "min": 0, "max": 1, "step": 0.01},
+    {"id": "speed", "name": "Travel Speed", "default": 0.35, "min": 0, "max": 1, "step": 0.01},
+    {"id": "scale", "name": "Tunnel Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01},
+    {"id": "colorshift", "name": "Color Shift", "default": 0.0, "min": 0, "max": 1, "step": 0.01}
+  ]
+}

@@ -739,6 +739,59 @@
     ]
   },
   {
+    "id": "ferrofluid-spikes",
+    "name": "Ferrofluid Spikes",
+    "category": "simulation",
+    "url": "shaders/ferrofluid-spikes.wgsl",
+    "description": "Mouse-driven ferrofluid simulation. The cursor acts as a magnet, pulling up metallic spikes from a dark liquid surface. Audio adds turbulence.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "generative-surface",
+      "metallic-highlights"
+    ],
+    "params": [
+      {
+        "id": "magnet",
+        "name": "Magnet Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Spike Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "viscosity",
+        "name": "Fluid Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "highlight",
+        "name": "Highlight Sharpness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "ferrofluid",
+      "simulation",
+      "magnetic",
+      "liquid",
+      "mouse-driven",
+      "audio-reactive",
+      "metallic"
+    ]
+  },
+  {
     "id": "flow-sort",
     "name": "Streamline Pixel Sort",
     "url": "shaders/flow-sort.wgsl",
@@ -2407,14 +2460,19 @@
   {
     "id": "slime-mold-on-video",
     "name": "Slime Mold on Video",
+    "category": "simulation",
     "url": "shaders/slime-mold-on-video.wgsl",
-    "description": "Video luminance acts as a food field for a slime-mold style trail simulation with persistent tendrils.",
+    "description": "Video luminance feeds a slime-mold trail simulation. Audio shifts tendril colors (bass green, mids cyan, treble magenta). Depth boosts glow intensity. Mouse deposits extra food.",
     "features": [
       "simulation",
       "temporal",
       "video-driven",
       "trail-feedback",
-      "webcam-friendly"
+      "webcam-friendly",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "chromatic-tendril"
     ],
     "tags": [
       "slime",
@@ -2422,7 +2480,10 @@
       "video",
       "food-map",
       "tendrils",
-      "glow"
+      "glow",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic"
     ],
     "params": [
       {

@@ -1,8 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-// Glass Brick Wall - Physical glass transmission with Beer-Lambert law
-// Category: distortion
-// Features: refraction, specular, physically-based alpha
-// ═══════════════════════════════════════════════════════════════
+// ================================================================
+//  Glass Brick Wall
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: glass-brick-wall
+//  Created: 2026-05-31
+//  By: Copilot
+// ================================================================
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -19,112 +23,82 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BrickSize, y=DistortionStr, z=MortarSize, w=GlassDensity
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=BrickSize, y=Distortion, z=MortarSize, w=GlassDensity
   ripples: array<vec4<f32>, 50>,
 };
 
+fn safeNormalize3(v: vec3<f32>) -> vec3<f32> {
+  let lenSq = max(dot(v, v), 1e-6);
+  return v * inverseSqrt(lenSq);
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+  let uv = vec2<f32>(gid.xy) / dims;
+  let aspect = dims.x / dims.y;
+  let mouse = u.zoom_config.yz;
+  let time = u.config.x;
+  let audio = plasmaBuffer[0].xyz;
 
-    // Params
-    let brickSize = mix(10.0, 50.0, u.zoom_params.x);
-    let distortionStr = mix(0.0, 0.1, u.zoom_params.y);
-    let mortarSize = mix(0.01, 0.1, u.zoom_params.z);
-    let glassDensity = u.zoom_params.w * 2.0 + 0.5; // Beer-Lambert density parameter
+  let brickSize = mix(10.0, 54.0, u.zoom_params.x);
+  let distortion = mix(0.0, 0.12, u.zoom_params.y);
+  let mortarSize = mix(0.01, 0.12, u.zoom_params.z);
+  let glassDensity = mix(0.6, 2.6, u.zoom_params.w);
 
-    // Mouse as light source
-    var mouse = u.zoom_config.yz;
-    let lightPos = vec3<f32>(mouse * vec2<f32>(aspect, 1.0), 0.5);
-    let pixelPos = vec3<f32>(uv * vec2<f32>(aspect, 1.0), 0.0);
-    let lightDir = normalize(lightPos - pixelPos);
+  let gridUV = uv * vec2<f32>(brickSize * aspect, brickSize);
+  let cellId = floor(gridUV);
+  let cell = fract(gridUV) - 0.5;
+  let r2 = dot(cell, cell) * 4.0;
 
-    // Grid Logic
-    let gridUV = uv * vec2<f32>(brickSize * aspect, brickSize);
-    let cellID = floor(gridUV);
-    let cellUV = fract(gridUV);
+  let normalXY = cell * -2.0;
+  let normalZ = sqrt(max(0.0, 1.0 - dot(normalXY, normalXY)));
+  let normal = safeNormalize3(vec3<f32>(normalXY, normalZ));
+  let mortarMask = smoothstep(0.48 - mortarSize, 0.5, max(abs(cell.x), abs(cell.y)));
 
-    // Squircle Distance Field
-    let d = cellUV - 0.5;
-    let r = dot(d, d) * 4.0;
+  let refractOffset = normal.xy * distortion * (1.0 - mortarMask) * (1.0 + audio.x * 0.35);
+  let finalUV = clamp(uv + refractOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+  var color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
-    // Calculate Normal from height map
-    let normalXY = d * -2.0;
-    let normalZ = sqrt(max(0.0, 1.0 - dot(normalXY, normalXY)));
-    let normal = normalize(vec3<f32>(normalXY, normalZ));
+  let lightPos = vec3<f32>(mouse * vec2<f32>(aspect, 1.0), 0.55);
+  let pixelPos = vec3<f32>(uv * vec2<f32>(aspect, 1.0), 0.0);
+  let lightDir = safeNormalize3(lightPos - pixelPos);
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let halfDir = safeNormalize3(lightDir + viewDir);
 
-    // Mortar Mask
-    let distFromCenter = max(abs(d.x), abs(d.y));
-    let mortarMask = smoothstep(0.48 - mortarSize, 0.5, distFromCenter);
+  var transmission = 0.45;
+  if (mortarMask < 0.5) {
+    let cosTheta = max(dot(viewDir, normal), 0.0);
+    let fresnel = 0.04 + (1.0 - 0.04) * pow(1.0 - cosTheta, 5.0);
+    let thickness = 0.08 + r2 * 0.16;
+    let glassTint = mix(vec3<f32>(0.94, 0.97, 1.0), vec3<f32>(0.98, 0.85, 1.0), 0.5 + 0.5 * sin(time * 0.35 + cellId.x * 0.4));
+    let absorption = exp(-(1.0 - glassTint) * thickness * glassDensity);
+    transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
 
-    // Distortion
-    let refractOffset = normal.xy * distortionStr * (1.0 - mortarMask);
-    let finalUV = uv + refractOffset;
-    var color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
+    let specular = pow(max(dot(normal, halfDir), 0.0), 18.0) * (0.22 + audio.y * 0.45);
+    let refLight = refract(-lightDir, normal, 1.0 / 1.52);
+    let focal = pow(max(refLight.z, 0.0), 6.0);
+    let curvature = smoothstep(0.0, 0.6, r2);
+    let phase = sin(r2 * 22.0 - time * (2.0 + audio.x * 2.0) + cellId.x * 1.3 + cellId.y * 0.7);
+    let caustic = focal * (0.5 + 0.5 * phase) * (0.35 + curvature * 0.85) * (1.0 + audio.z * 0.5);
+    let causticColor = vec3<f32>(1.0, 0.9, 0.7) + vec3<f32>(-0.2, 0.0, 0.4) * phase;
 
-    // Physical glass properties
-    var transmission = 1.0;
-    var glassColor = vec3<f32>(0.94, 0.97, 1.0); // Slight blue-green tint
-    
-    if (mortarMask < 0.5) {
-        // Inside glass brick - apply Beer-Lambert law
-        let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-        
-        // Fresnel reflection (Schlick's approximation)
-        let cos_theta = max(dot(viewDir, normal), 0.0);
-        let R0 = 0.04; // Reflectance at normal incidence
-        let fresnel = R0 + (1.0 - R0) * pow(1.0 - cos_theta, 5.0);
-        
-        // Glass thickness based on curvature (thicker at edges)
-        let thickness = 0.08 + r * 0.15;
-        
-        // Beer-Lambert: I = I0 * exp(-absorption * thickness * density)
-        let absorption = exp(-(1.0 - glassColor) * thickness * glassDensity);
-        
-        // Transmission combines absorption and fresnel
-        transmission = (1.0 - fresnel) * (absorption.r + absorption.g + absorption.b) / 3.0;
-        
-        // Apply glass tint
-        color = vec4<f32>(color.rgb * glassColor, transmission);
-        
-        // Specular Highlight (Phong)
-        let halfDir = normalize(lightDir + viewDir);
-        let specular = pow(max(dot(normal, halfDir), 0.0), 16.0);
-        color = color + vec4<f32>(specular * 0.3);
+    color = vec4<f32>(color.rgb * glassTint * transmission + specular + causticColor * caustic * 1.2, transmission);
+  } else {
+    color = vec4<f32>(color.rgb * 0.42, 0.42);
+  }
 
-        // ═══ UNIQUE VISUAL IDEA: per-brick lens caustics ═══
-        // Each squircle brick acts as a plano-convex lens. Light refracting through
-        // it converges into a bright focal caustic. We trace the refracted light ray
-        // and measure how tightly the brick's curvature focuses it toward this pixel:
-        // where the refracted ray aligns with the view axis, energy concentrates.
-        let iorGlass = 1.0 / 1.52; // air→glass inverse IOR for refract()
-        let refLight = refract(-lightDir, normal, iorGlass);
-        // Focal alignment: caustic is brightest where the refracted ray points back
-        // along +Z (toward the viewer) AND the brick surface is steeply curved (edges).
-        let focal = pow(max(refLight.z, 0.0), 6.0);
-        let curvature = smoothstep(0.0, 0.6, r); // 0 at brick center, 1 at edges
-        // Animated shimmer so the caustic "swims" like real refracted light.
-        let causticPhase = sin(r * 22.0 - u.config.x * 2.0 + cellID.x * 1.3 + cellID.y * 0.7);
-        let caustic = focal * (0.5 + 0.5 * causticPhase) * (0.35 + curvature * 0.8);
-        // Chromatic focus: wavelengths focus at slightly different depths, tinting
-        // the caustic core warm and its halo cool.
-        let causticColor = vec3<f32>(1.0, 0.9, 0.7) + vec3<f32>(-0.2, 0.0, 0.4) * causticPhase;
-        color = color + vec4<f32>(causticColor * caustic * 1.4, caustic * 0.5);
-    } else {
-        // Mortar - less transparent
-        color = color * 0.4;
-        transmission = 0.4;
-    }
+  let finalAlpha = clamp(color.a + (1.0 - mortarMask) * 0.10, 0.15, 0.98);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, finalUV, 0.0).r;
+  let outDepth = clamp(mix(baseDepth, baseDepth * 0.45 + (1.0 - mortarMask) * 0.45, 0.25), 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    // Pass depth through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(color.rgb, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(1.0 - mortarMask, transmission, abs(refractOffset.x) + abs(refractOffset.y), finalAlpha));
 }

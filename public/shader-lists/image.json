@@ -122,7 +122,9 @@
     ],
     "features": [
       "upgraded-rgba",
-      "temporal"
+      "temporal",
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -216,14 +218,15 @@
   {
     "id": "chroma-threads",
     "name": "Chroma Threads",
+    "category": "image",
     "url": "shaders/chroma-threads.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ],
+    "description": "Woven fabric simulation with anisotropic noise, silk/sheen BRDF, subsurface scattering, and chromatic aberration on thread edges.",
     "params": [
       {
         "id": "thread_density",
@@ -265,6 +268,16 @@
         "mapping": "zoom_params.w",
         "description": "Trail decay factor"
       }
+    ],
+    "tags": [
+      "threads",
+      "chromatic",
+      "woven",
+      "fabric",
+      "sheen",
+      "brdf",
+      "audio-reactive",
+      "depth-aware"
     ]
   },
   {
@@ -404,7 +417,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -514,6 +529,59 @@
       "audio",
       "music",
       "reactive"
+    ]
+  },
+  {
+    "id": "contour-flow",
+    "name": "Contour Flow",
+    "url": "shaders/contour-flow.wgsl",
+    "description": "Per-pixel curl flow with depth advection and bass turbulence. Sobel edge detection drives flow direction, curl noise adds organic swirl, and depth controls sharpness vs advection mix. Treble sparks on edge intersections.",
+    "params": [
+      {
+        "name": "Flow Speed",
+        "id": "flowSpeed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Curl Strength",
+        "id": "curlStrength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Flow Size",
+        "id": "flowSize",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Direction",
+        "id": "direction",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "curl-flow",
+      "depth-advection",
+      "edge-aligned",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "image",
+      "contour",
+      "flow",
+      "edge-detection",
+      "advection",
+      "curl",
+      "turbulence"
     ]
   },
   {
@@ -1489,8 +1557,8 @@
   {
     "id": "crt-scanline-damage",
     "name": "CRT Scanline Damage",
-    "url": "/shaders/crt-scanline-damage.wgsl",
-    "description": "Damaged CRT monitor simulation with scanlines, phosphor mask, barrel distortion, flicker, and occasional vertical roll.",
+    "url": "shaders/crt-scanline-damage.wgsl",
+    "description": "Damaged CRT monitor simulation with barrel distortion, RGB phosphor mask, scanlines, temporal phosphor decay via dataTextureC, audio-driven chromatic barrel separation, depth-aware distortion, and occasional vertical roll.",
     "tags": [
       "crt",
       "scanline",
@@ -1499,12 +1567,18 @@
       "glitch",
       "phosphor",
       "monitor",
-      "damaged"
+      "damaged",
+      "temporal",
+      "audio-reactive",
+      "chromatic",
+      "depth-aware"
     ],
     "features": [
       "upgraded-rgba",
       "temporal",
-      "glitch"
+      "glitch",
+      "audio-reactive",
+      "depth-aware"
     ],
     "params": [
       {
@@ -1685,54 +1759,10 @@
     ]
   },
   {
-    "id": "data-moshing",
-    "name": "Data Moshing",
-    "url": "shaders/data-moshing.wgsl",
-    "description": "Smears pixels based on mouse movement, simulating video compression artifacts and glitch art.",
-    "params": [
-      {
-        "id": "smear",
-        "name": "Smear Force",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "radius",
-        "name": "Brush Size",
-        "default": 0.2,
-        "min": 0,
-        "max": 0.5
-      },
-      {
-        "id": "decay",
-        "name": "Persistence",
-        "default": 0.9,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "crush",
-        "name": "Bit Crush",
-        "default": 0,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "glitch"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "digital-lens",
     "name": "Digital Lens",
     "url": "shaders/digital-lens.wgsl",
-    "description": "Barrel/pincushion lens distortion with spectral chromatic dispersion, vignette darkening, and audio-reactive distortion pulse.",
+    "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, lens breathing driven by bass, ACES tone mapping, and film grain.",
     "params": [
       {
         "id": "distortion",
@@ -1766,9 +1796,11 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba",
       "barrel-distortion",
-      "chromatic-dispersion"
+      "chromatic-dispersion",
+      "anamorphic"
     ],
     "tags": [
       "filter",
@@ -1776,13 +1808,15 @@
       "lens",
       "digital",
       "chromatic",
-      "audio-reactive"
+      "audio-reactive",
+      "anamorphic"
     ]
   },
   {
     "id": "directional-blur-wipe",
     "name": "Directional Blur Wipe",
-    "description": "Splits the screen with a directional blur. Mouse controls split position and angle.",
+    "category": "image",
+    "description": "Splits the screen with an audio-reactive directional blur. Mouse controls split position; chromatic offset scatters RGB per treble. Depth-scatter increases blur radius on distant objects.",
     "url": "shaders/directional-blur-wipe.wgsl",
     "params": [
       {
@@ -1819,11 +1853,75 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "chromatic-offset"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "blur",
+      "wipe",
+      "directional",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic"
+    ]
+  },
+  {
+    "id": "ember-drift-dissolve",
+    "name": "Ember Drift Dissolve",
+    "url": "shaders/ember-drift-dissolve.wgsl",
+    "description": "Bright areas of the image lift off as glowing embers and are carried upward by a living heat field. Creates haunting, beautiful disintegration especially on video. Treble controls spark density while bass thickens the rising glow.",
+    "tags": [
+      "ember",
+      "fire",
+      "dissolve",
+      "advection",
+      "heat",
+      "atmospheric",
+      "audio-reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "rise",
+        "name": "Rise Speed",
+        "default": 0.7,
+        "min": 0,
+        "max": 1.6,
+        "step": 0.01
+      },
+      {
+        "id": "spark",
+        "name": "Spark Density",
+        "default": 0.75,
+        "min": 0,
+        "max": 1.8,
+        "step": 0.01
+      },
+      {
+        "id": "heat",
+        "name": "Heat Turbulence",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "decay",
+        "name": "Ember Decay",
+        "default": 0.82,
+        "min": 0.4,
+        "max": 0.98,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -1963,11 +2061,14 @@
   {
     "id": "gamma-ray-burst",
     "name": "Gamma Ray Burst",
+    "category": "image",
     "url": "shaders/gamma-ray-burst.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
-    "description": "Intense radial blur and exposure burst originating from the mouse position.",
+    "description": "Physically-motivated relativistic jet simulation with Lorenz-boosted Doppler beaming, synchrotron emission spectrum, magnetic field line spirals, extreme HDR bloom, chromatic aberration, and ACES tone mapping.",
     "params": [
       {
         "id": "param1",
@@ -1985,7 +2086,7 @@
       },
       {
         "id": "param3",
-        "name": "Ray Density",
+        "name": "Jet Spread",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -1999,8 +2100,12 @@
       }
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "burst",
+      "stellar",
+      "relativistic",
+      "jet",
+      "hdr",
+      "audio-reactive"
     ]
   },
   {
@@ -2195,11 +2300,9 @@
   {
     "id": "hex-lens",
     "name": "Hex Lens Interactive",
+    "category": "image",
     "url": "shaders/hex-lens.wgsl",
-    "features": [
-      "mouse-driven"
-    ],
-    "description": "Hexagonal grid where each cell acts as a lens, controlled by the mouse.",
+    "description": "Honeycomb microlenses rotate and refract toward the cursor while audio adds prismatic shimmer to each cell.",
     "params": [
       {
         "id": "param1",
@@ -2230,56 +2333,78 @@
         "max": 1
       }
     ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "chromatic-aberration"
+    ],
     "tags": [
-      "filter",
-      "image-processing"
+      "hex",
+      "lens",
+      "honeycomb",
+      "prismatic",
+      "audio-reactive"
     ]
   },
   {
     "id": "holographic-shatter",
     "name": "Holographic Shatter",
-    "description": "Fractures the image into digital shards that react to cursor movement with holographic interference patterns.",
     "url": "shaders/holographic-shatter.wgsl",
+    "description": "Fractures the image into digital shards with temporal shard velocity persistence, chromatic edge refraction per shard, audio-driven impact intensity, holographic interference patterns, and plasma palette tinting.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "temporal",
+      "chromatic",
+      "depth-aware"
     ],
     "params": [
       {
-        "id": "scale",
-        "name": "Shard Scale",
+        "id": "shatterAmount",
+        "name": "Shatter Amount",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "holo",
         "name": "Hologram Intensity",
-        "default": 0.3,
+        "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "displace",
-        "name": "Displacement",
-        "default": 0.6,
+        "id": "depthWeight",
+        "name": "Depth Weight",
+        "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "speed",
-        "name": "Glitch Speed",
-        "default": 0.4,
+        "id": "shardCount",
+        "name": "Shard Count",
+        "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio",
-      "music"
+      "music",
+      "shatter",
+      "holographic",
+      "chromatic",
+      "temporal",
+      "shard"
     ]
   },
   {
@@ -2328,6 +2453,7 @@
   {
     "id": "kintsugi-repair",
     "name": "Kintsugi Repair",
+    "category": "image",
     "url": "shaders/kintsugi-repair.wgsl",
     "description": "Simulates the Japanese art of repairing broken pottery with gold (Kintsugi). Voronoi patterns create cracks with gold filling.",
     "params": [
@@ -2361,11 +2487,71 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "kintsugi",
+      "gold",
+      "cracks",
+      "audio-reactive"
+    ]
+  },
+  {
+    "id": "lenticular-holographic-shift",
+    "name": "Lenticular Holographic Shift",
+    "url": "shaders/lenticular-holographic-shift.wgsl",
+    "description": "Simulates a lenticular/holographic print that dramatically shifts perspective, color, and moiré interference as you move the mouse or as audio beats. Stunning on portraits and detailed imagery.",
+    "tags": [
+      "lenticular",
+      "holographic",
+      "moire",
+      "print",
+      "perspective",
+      "audio-reactive",
+      "interactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "mouse-driven",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "shift",
+        "name": "View Shift",
+        "default": 0.8,
+        "min": 0,
+        "max": 1.6,
+        "step": 0.01
+      },
+      {
+        "id": "frequency",
+        "name": "Lenticular Frequency",
+        "default": 0.55,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color",
+        "name": "Holo Color Shift",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "beat",
+        "name": "Audio Beat Pulse",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -2415,58 +2601,74 @@
     "id": "luma-refraction",
     "name": "Luma Refraction",
     "url": "shaders/luma-refraction.wgsl",
-    "description": "Ripples propagate through the image, with speed determined by brightness. Bright areas are like water, dark areas like oil.",
+    "description": "Ripples propagate through the image with speed determined by brightness. Features chromatic refraction offsets (R/G/B at different normals), temporal wave damping memory, audio-driven wave amplitude, and semantic alpha handling.",
     "params": [
       {
-        "id": "speed",
+        "id": "waveSpeed",
         "name": "Wave Speed",
-        "default": 1,
-        "min": 0.1,
-        "max": 2
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "force",
+        "id": "mouseForce",
         "name": "Mouse Force",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "damping",
         "name": "Damping",
         "default": 0.98,
         "min": 0.9,
-        "max": 0.999
+        "max": 0.999,
+        "step": 0.001
       },
       {
         "id": "refraction",
         "name": "Refraction",
         "default": 0.5,
         "min": 0,
-        "max": 2
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
       "mouse-driven",
-      "simulation"
+      "simulation",
+      "upgraded-rgba",
+      "audio-reactive",
+      "temporal",
+      "chromatic"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "chromatic",
+      "audio-reactive",
+      "temporal",
+      "refraction"
     ]
   },
   {
     "id": "magnetic-chroma",
     "name": "Magnetic Chroma",
+    "category": "image",
     "url": "shaders/magnetic-chroma.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
-    "description": "RGB channels are pulled towards the mouse with a twisting distortion.",
+    "description": "HSV hue-wheel warping via RK2-integrated magnetic field line advection per RGB channel. Chromatic dispersion, neon glow, and ACES tone mapping.",
     "params": [
       {
         "id": "param1",
-        "name": "Pull Strength",
+        "name": "Field Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -2480,8 +2682,8 @@
       },
       {
         "id": "param3",
-        "name": "Twist",
-        "default": 0.5,
+        "name": "Chromatic",
+        "default": 0.3,
         "min": 0,
         "max": 1
       },
@@ -2494,8 +2696,72 @@
       }
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "magnetic",
+      "chroma",
+      "hsv",
+      "rk2",
+      "neon",
+      "bloom",
+      "audio-reactive",
+      "depth-aware"
+    ]
+  },
+  {
+    "id": "mercury-temporal-mirror",
+    "name": "Mercury Temporal Mirror",
+    "url": "shaders/mercury-temporal-mirror.wgsl",
+    "description": "The input image is reflected in a living liquid mercury surface whose ripples persist and evolve over time. Mouse presses create visceral impact dents that propagate realistically. Audio controls the viscosity and thickness of the metal.",
+    "tags": [
+      "mercury",
+      "liquid",
+      "reflection",
+      "temporal",
+      "ripple",
+      "audio-reactive",
+      "metallic"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "mouse-driven",
+      "mouse-impact",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "reflect",
+        "name": "Reflection Strength",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "impact",
+        "name": "Mouse Impact",
+        "default": 0.9,
+        "min": 0,
+        "max": 1.8,
+        "step": 0.01
+      },
+      {
+        "id": "metallic",
+        "name": "Metallic Sheen",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -2664,8 +2930,9 @@
   {
     "id": "optical-illusion-spin",
     "name": "Optical Illusion Spin",
-    "description": "Slices the image into rotating concentric rings. Mouse adds a twisting force.",
+    "category": "image",
     "url": "shaders/optical-illusion-spin.wgsl",
+    "description": "Op-art illusion generator with Rotating Snakes, Fraser spiral, and moiré interference between counter-rotating patterns. Chromatic afterimage, HDR edges, ACES tone mapping, and dithering. Bass drives rotation, mouse distorts locally, depth controls scale perspective.",
     "params": [
       {
         "name": "Ring Count",
@@ -2701,11 +2968,17 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "hypnotic",
+      "rings",
+      "spin",
+      "audio-reactive",
+      "illusion"
     ]
   },
   {
@@ -2810,8 +3083,9 @@
   {
     "id": "pixel-scattering",
     "name": "Pixel Scattering",
-    "url": "shaders/pixel-scattering.wgsl",
-    "description": "Scatters pixels away from the mouse cursor like dust particles.",
+    "url": "/shaders/pixel-scattering.wgsl",
+    "category": "distortion",
+    "description": "Velocity-field advection using curl noise and Fibonacci spiral patterns. Motion blur trails, chromatic separation along velocity vectors, and HDR accumulation. Bass triggers explosive scatter events.",
     "params": [
       {
         "id": "radius",
@@ -2828,14 +3102,14 @@
         "max": 1
       },
       {
-        "id": "size",
-        "name": "Particle Size",
-        "default": 0,
+        "id": "trail_length",
+        "name": "Trail Length",
+        "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "random",
+        "id": "chaos",
         "name": "Chaos",
         "default": 0.5,
         "min": 0,
@@ -2845,11 +3119,16 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "velocity-field"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "distortion",
+      "scatter",
+      "velocity",
+      "curl-noise",
+      "chromatic",
+      "audio-reactive"
     ]
   },
   {
@@ -2959,11 +3238,9 @@
   {
     "id": "plastic-bricks",
     "name": "Plastic Bricks",
+    "category": "image",
     "url": "shaders/plastic-bricks.wgsl",
-    "features": [
-      "mouse-driven"
-    ],
-    "description": "Simulates a plastic brick surface (like LEGO) with 3D studs. Mouse influences scale.",
+    "description": "LEGO-style plastic bricks with microfacet BRDF, ambient occlusion in stud cavities, fingerprint smudges, and subsurface scattering. Bass drives assembly animation, mouse deconstructs bricks, depth controls stud perspective.",
     "params": [
       {
         "id": "param1",
@@ -2994,9 +3271,21 @@
         "max": 1
       }
     ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
     "tags": [
-      "filter",
-      "image-processing"
+      "plastic",
+      "bricks",
+      "toy",
+      "relief",
+      "brdf",
+      "ambient-occlusion",
+      "audio-reactive",
+      "depth-aware"
     ]
   },
   {
@@ -3052,7 +3341,8 @@
     "id": "posterize-neon-edges",
     "name": "Posterize Neon Edges",
     "url": "/shaders/posterize-neon-edges.wgsl",
-    "description": "Posterization combined with Sobel edge detection and neon glow for a stylized comic-book look.",
+    "category": "image",
+    "description": "Edge-aware posterization with FBM-noise organic boundaries, multi-band luminance quantization, HDR neon bloom with ACES tone mapping, and cyan/magenta split-tone. Audio-reactive and mouse-driven.",
     "tags": [
       "posterize",
       "neon",
@@ -3060,10 +3350,18 @@
       "glow",
       "comic",
       "stylized",
-      "artistic"
+      "artistic",
+      "audio-reactive",
+      "mouse-driven",
+      "hdr",
+      "film"
     ],
     "features": [
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "edge-detect",
+      "neon",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -3517,6 +3815,64 @@
     ]
   },
   {
+    "id": "silk-flow-advection",
+    "name": "Silk Flow Advection",
+    "url": "shaders/silk-flow-advection.wgsl",
+    "description": "The colors and details of the input are gently carried along living, silky curl-noise flows. The mouse acts like a finger disturbing delicate fabric. Creates beautiful organic painterly motion on stills and video.",
+    "tags": [
+      "silk",
+      "flow",
+      "advection",
+      "painterly",
+      "fabric",
+      "audio-reactive",
+      "organic"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "mouse-driven",
+      "mouse-finger",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "flow",
+        "name": "Flow Amount",
+        "default": 0.65,
+        "min": 0,
+        "max": 1.4,
+        "step": 0.01
+      },
+      {
+        "id": "silk",
+        "name": "Silk Softness",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "breath",
+        "name": "Breathing Motion",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "disturb",
+        "name": "Mouse Disturb",
+        "default": 0.85,
+        "min": 0,
+        "max": 1.6,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "slime-drip",
     "name": "Slime Drip",
     "url": "shaders/slime-drip.wgsl",
@@ -3557,58 +3913,6 @@
     "tags": [
       "filter",
       "image-processing"
-    ]
-  },
-  {
-    "id": "soft-vignette-bloom",
-    "name": "Soft Vignette Bloom",
-    "url": "/shaders/soft-vignette-bloom.wgsl",
-    "description": "Cinematic soft vignette with selective bloom on bright areas and adjustable color temperature.",
-    "tags": [
-      "vignette",
-      "bloom",
-      "cinematic",
-      "warm",
-      "cool",
-      "soft",
-      "dreamy"
-    ],
-    "features": [
-      "upgraded-rgba"
-    ],
-    "params": [
-      {
-        "id": "vignette_strength",
-        "name": "Vignette Strength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1.5,
-        "step": 0.01
-      },
-      {
-        "id": "bloom_radius",
-        "name": "Bloom Radius",
-        "default": 1,
-        "min": 0,
-        "max": 3,
-        "step": 0.01
-      },
-      {
-        "id": "temperature",
-        "name": "Temperature",
-        "default": 0,
-        "min": -1,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "bloom_intensity",
-        "name": "Bloom Intensity",
-        "default": 0.6,
-        "min": 0,
-        "max": 2,
-        "step": 0.01
-      }
     ]
   },
   {
@@ -3724,13 +4028,21 @@
   {
     "id": "spectral-mesh",
     "name": "Spectral Mesh",
+    "category": "image",
     "url": "shaders/spectral-mesh.wgsl",
+    "description": "Adaptive Delaunay-style spectral mesh with image-gradient-driven density, chromatic wavelength vertex coloring, wireframe glow, HDR bloom, ACES tone mapping, and subsurface scattering. Bass drives subdivision, mouse attracts vertices, depth controls foreshortening.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "mesh",
+      "wireframe",
+      "spectral",
+      "audio-reactive",
+      "grid"
     ],
     "params": [
       {
@@ -3751,7 +4063,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.y",
-        "description": "Height of mesh displacement"
+        "description": "Amount of cursor-driven mesh drift"
       },
       {
         "id": "mouse_radius",
@@ -3771,56 +4083,9 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Spectral color shift"
+        "description": "Spectral palette offset"
       }
     ]
-  },
-  {
-    "id": "spectral-slit-scan",
-    "url": "shaders/spectral-slit-scan.wgsl",
-    "description": "RGB trails that decay at different rates, distorted by sine waves and mouse gravity.",
-    "features": [
-      "mouse-driven"
-    ],
-    "params": [
-      {
-        "id": "split",
-        "name": "RGB Split",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "trail",
-        "name": "Trail Length",
-        "type": "float",
-        "default": 0.8,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "freq",
-        "name": "Wave Freq",
-        "type": "float",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "amp",
-        "name": "Wave Amp",
-        "type": "float",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ],
-    "name": "Spectral Slit Scan"
   },
   {
     "id": "steampunk-gear-lens",
@@ -4048,7 +4313,7 @@
     "id": "tilt-shift",
     "name": "Tilt Shift Miniature",
     "url": "shaders/tilt-shift.wgsl",
-    "description": "Simulates a tilt-shift lens effect, blurring top and bottom to make the scene look like a miniature model.",
+    "description": "Scheimpflug principle tilt-shift with angular blur kernel and depth-aware circle-of-confusion. Bass drives tilt angle oscillation, mouse positions the focal plane, depth controls local blur radius. Features boosted saturation, vignette on blurred regions, ACES tone mapping, and chromatic aberration in out-of-focus areas.",
     "params": [
       {
         "id": "strength",
@@ -4073,7 +4338,7 @@
       },
       {
         "id": "contrast",
-        "name": "Contrast",
+        "name": "Tilt Angle",
         "default": 0.6,
         "min": 0,
         "max": 1
@@ -4082,11 +4347,15 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "tilt-shift",
+      "miniature",
+      "depth-of-field"
     ]
   },
   {
@@ -4137,10 +4406,68 @@
     ]
   },
   {
+    "id": "velvet-scatter-bloom",
+    "name": "Velvet Scatter Bloom",
+    "url": "shaders/velvet-scatter-bloom.wgsl",
+    "description": "Rich velvet-like subsurface scattering on darker regions of the input, with living audio-reactive bloom and a moving mouse light that reveals hidden color beneath the surface. Feels luxurious and organic on both stills and video.",
+    "tags": [
+      "velvet",
+      "subsurface",
+      "bloom",
+      "atmospheric",
+      "audio-reactive",
+      "organic",
+      "cinematic"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "mouse-driven",
+      "mouse-light",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "scatter",
+        "name": "Scatter Amount",
+        "default": 0.85,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "id": "bloom",
+        "name": "Edge Bloom",
+        "default": 0.65,
+        "min": 0,
+        "max": 1.8,
+        "step": 0.01
+      },
+      {
+        "id": "subsurface",
+        "name": "Subsurface Depth",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "lightAngle",
+        "name": "Light Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "vhs-chroma-bleed",
     "name": "VHS Chroma Bleed",
-    "url": "/shaders/vhs-chroma-bleed.wgsl",
-    "description": "VHS tape aesthetic with horizontal chroma separation, luma noise, tracking jitter, and color burst errors.",
+    "category": "image",
+    "url": "shaders/vhs-chroma-bleed.wgsl",
+    "description": "VHS tape aesthetic with audio-reactive jitter: bass drives line dropouts, treble adds micro-glitch. Chromatic bleed with depth-scatter. RGB channels shift independently for analog decay.",
     "tags": [
       "vhs",
       "retro",
@@ -4149,12 +4476,18 @@
       "noise",
       "jitter",
       "tape",
-      "analog"
+      "analog",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic"
     ],
     "features": [
       "upgraded-rgba",
       "temporal",
-      "glitch"
+      "glitch",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic-bleed"
     ],
     "params": [
       {
@@ -4238,8 +4571,9 @@
   {
     "id": "voxel-depth-sort",
     "name": "Voxel Depth Sort",
+    "category": "image",
     "url": "shaders/voxel-depth-sort.wgsl",
-    "description": "Converts the image into a 3D grid of floating blocks. Block height is determined by brightness, and mouse position tilts the view.",
+    "description": "Converts the image into a 3D grid of isometric floating blocks. Block height is determined by brightness and depth, with ambient occlusion, soft shadows, and mouse-rotated isometric projection.",
     "params": [
       {
         "id": "gridSize",
@@ -4272,11 +4606,18 @@
     ],
     "features": [
       "mouse-driven",
-      "3d-effect"
+      "3d-effect",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "voxel",
+      "depth",
+      "3d",
+      "audio-reactive",
+      "isometric",
+      "ambient-occlusion"
     ]
   },
   {

@@ -7,7 +7,9 @@
     "mouse-driven",
     "generative",
     "fractal",
-    "julia-set"
+    "julia-set",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",

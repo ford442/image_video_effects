@@ -1,8 +1,11 @@
-// ----------------------------------------------------------------
-// Neuro-Kinetic Bloom
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Neuro-Kinetic Bloom
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -40,6 +43,8 @@ fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
 
 fn map(p: vec3<f32>) -> vec2<f32> {
     var pos = p;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
     let mouse_rot = (u.zoom_config.yz * 2.0 - 1.0) * 3.14;
 
     let rot_xz = pos.xz * rot(u.config.x * 0.1 + mouse_rot.x);
@@ -55,8 +60,8 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     var cell = floor(pos / spacing);
     pos = pos - spacing * round(pos / spacing);
 
-    // Audio-reactive Twist
-    let twist_amount = 0.5 + sin(u.config.x * 0.5 + u.config.y) * 0.2;
+    // Audio-reactive Twist (bass drives the writhing motion)
+    let twist_amount = 0.5 + sin(u.config.x * 0.5 + bass * 6.28) * 0.2 + bass * 0.15;
     let twisted_xy = pos.xy * rot(pos.z * twist_amount);
     pos.x = twisted_xy.x;
     pos.y = twisted_xy.y;
@@ -69,7 +74,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         pos = pos + push;
     }
 
-    let branch_length = 3.0 + sin(u.config.y * 2.0) * u.zoom_params.x;
+    let branch_length = 3.0 + sin(u.config.x * 0.7 + mids * 4.0) * u.zoom_params.x * (1.0 + mids * 0.4);
     let d_branch = sdCapsule(pos, vec3<f32>(0.0, 0.0, -branch_length), vec3<f32>(0.0, 0.0, branch_length), 0.3);
 
     // Vein displacement
@@ -93,6 +98,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = textureDimensions(writeTexture);
     if (coords.x >= i32(dims.x) || coords.y >= i32(dims.y)) { return; }
 
+    // Audio reactivity: bass = bloom pulse, mids = vein growth, treble = glow sparkle
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     let uv = (vec2<f32>(coords) - 0.5 * vec2<f32>(dims)) / f32(dims.y);
     let ro = vec3<f32>(0.0, 0.0, -12.0 + u.zoom_params.w);
     let rd = normalize(vec3<f32>(uv, 1.0));
@@ -110,18 +120,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.02, 0.05, 0.1); // Deep sea void
-    if (t < 50.0) {
+    let hit = t < 50.0;
+    var glowMass = 0.0;
+    if (hit) {
         let p = ro + rd * t;
         let n = calcNormal(p);
         let lig = normalize(vec3<f32>(0.8, 0.7, -0.6));
         let dif = clamp(dot(n, lig), 0.0, 1.0);
 
         let baseColor = vec3<f32>(0.05, 0.1, 0.15);
-        let veinColor = vec3<f32>(0.0, 1.0, 0.5) * max(0.0, mat_id) * (2.0 + u.config.y);
+        let veinColor = vec3<f32>(0.0, 1.0, 0.5) * max(0.0, mat_id) * (2.0 + mids * 3.0 + treble * 1.5);
 
-        col = baseColor * dif + veinColor * u.zoom_params.z;
+        col = baseColor * dif + veinColor * u.zoom_params.z * (1.0 + bass * 0.5);
         col = mix(col, vec3<f32>(0.01, 0.02, 0.05), 1.0 - exp(-0.02 * t * t));
+        glowMass = clamp(max(0.0, mat_id) * u.zoom_params.z + dif * 0.3, 0.0, 1.0);
     }
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    // Alpha encodes bloom presence: lit vein mass over the void, never flat 1.0
+    let alpha = clamp(select(0.0, 0.25, hit) + glowMass + treble * 0.1, 0.0, 1.0);
+    let out = vec4<f32>(col, alpha);
+
+    // Depth: ray-march hit distance mapped to [0,1] (near = closer to camera)
+    let depth = select(0.0, clamp(1.0 - t / 50.0, 0.0, 1.0), hit);
+    textureStore(writeTexture, coords, out);
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, out);
 }

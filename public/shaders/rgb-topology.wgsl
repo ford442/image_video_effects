@@ -1,14 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  RGB Topology - Contour visualization with RGB parallax and wavelength-alpha
-//  Category: artistic
-//  Features: contour-lines, depth-parallax, wavelength-dependent-alpha
-//
-//  SCIENTIFIC MODEL:
-//  - Dispersion parallax affects both position AND alpha per channel
-//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
-//  - Red (650nm): lowest absorption, highest transmission
-//  - Blue (450nm): highest absorption, lowest transmission
-// ═══════════════════════════════════════════════════════════════
+// ================================================================
+//  RGB Topology
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, contour
+//  Complexity: Medium
+//  Chunks From: rgb-topology
+//  Created: 2026-05-31
+//  By: Copilot
+// ================================================================
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -27,97 +25,58 @@
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=ContourDensity, y=LineThickness, z=ChannelSeparation, w=SourceBlend
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══════════════════════════════════════════════════════════════
-//  SPECTRAL PHYSICS CONSTANTS
-// ═══════════════════════════════════════════════════════════════
-const WAVELENGTH_RED:    f32 = 650.0;  // nm
-const WAVELENGTH_GREEN:  f32 = 550.0;  // nm
-const WAVELENGTH_BLUE:   f32 = 450.0;  // nm
-
-// ═══════════════════════════════════════════════════════════════
-//  WAVELENGTH-DEPENDENT ALPHA
-// ═══════════════════════════════════════════════════════════════
-fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
-    let lambda_norm = (800.0 - wavelength) / 400.0;
-    let absorption = mix(0.3, 1.0, lambda_norm);
-    return exp(-thickness * absorption);
+fn luminance(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.299, 0.587, 0.114));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    var mouse = u.zoom_config.yz;
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
+  let aspect = dims.x / dims.y;
+  let time = u.config.x;
+  let audio = plasmaBuffer[0].xyz;
 
-    // Params
-    let density = mix(10.0, 100.0, u.zoom_params.x);
-    let parallax = u.zoom_params.y * 0.1;
-    let lineThickness = u.zoom_params.z * 0.2 + 0.05;
-    let glow = u.zoom_params.w;
+  let contourDensity = mix(8.0, 64.0, u.zoom_params.x);
+  let lineThickness = mix(0.01, 0.16, u.zoom_params.y);
+  let channelSeparation = mix(0.0, 0.03, u.zoom_params.z);
+  let sourceBlend = mix(0.0, 0.85, u.zoom_params.w);
 
-    // Parallax logic - Mouse determines view angle
-    let tilt = (mouse - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0) * parallax;
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let topo = luminance(src.rgb) * 0.65 + depth * 0.35;
+  let centered = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let tilt = centered * channelSeparation * (0.6 + audio.x * 0.6);
 
-    // Offsets - R closest, B furthest
-    let offsetR = tilt * 1.0;
-    let offsetG = tilt * 0.5;
-    let offsetB = tilt * 0.0;
+  let topoR = topo + centered.x * 0.35;
+  let topoG = topo + centered.y * 0.25;
+  let topoB = topo - length(centered) * 0.2;
+  let lineR = 1.0 - smoothstep(0.0, lineThickness, abs(sin((topoR + time * 0.03) * contourDensity)));
+  let lineG = 1.0 - smoothstep(0.0, lineThickness, abs(sin((topoG + time * 0.04) * contourDensity)));
+  let lineB = 1.0 - smoothstep(0.0, lineThickness, abs(sin((topoB - time * 0.05) * contourDensity)));
 
-    let rVal = textureSampleLevel(readTexture, u_sampler, uv + offsetR, 0.0).r;
-    let gVal = textureSampleLevel(readTexture, u_sampler, uv + offsetG, 0.0).g;
-    let bVal = textureSampleLevel(readTexture, u_sampler, uv + offsetB, 0.0).b;
+  let sampleR = textureSampleLevel(readTexture, u_sampler, clamp(uv + tilt, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let sampleG = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
+  let sampleB = textureSampleLevel(readTexture, u_sampler, clamp(uv - tilt, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let contourColor = vec3<f32>(lineR * sampleR, lineG * sampleG, lineB * sampleB);
+  let glowTint = mix(vec3<f32>(0.08, 0.9, 1.0), vec3<f32>(1.0, 0.35, 0.8), 0.5 + 0.5 * sin(time + topo * 16.0));
+  var finalColor = mix(contourColor, src.rgb, sourceBlend);
+  finalColor = finalColor + glowTint * max(max(lineR, lineG), lineB) * (0.08 + audio.y * 0.12);
 
-    // Generate contours
-    let rLine = smoothstep(lineThickness, 0.0, abs(sin(rVal * density + u.config.x)));
-    let gLine = smoothstep(lineThickness, 0.0, abs(sin(gVal * density + u.config.x * 1.1)));
-    let bLine = smoothstep(lineThickness, 0.0, abs(sin(bVal * density + u.config.x * 0.9)));
+  let contourMask = max(max(lineR, lineG), lineB);
+  let finalAlpha = clamp(mix(src.a * sourceBlend, 0.72 + contourMask * 0.18, 1.0 - sourceBlend * 0.3), 0.04, 0.98);
+  let outDepth = clamp(mix(depth, 0.20 + contourMask * 0.72, 0.24), 0.0, 1.0);
 
-    // Composite
-    var finalColor = vec3<f32>(0.0);
-
-    finalColor += vec3<f32>(rLine, 0.0, 0.0);
-    finalColor += vec3<f32>(0.0, gLine, 0.0);
-    finalColor += vec3<f32>(0.0, 0.0, bLine);
-
-    // Add glow
-    if (glow > 0.0) {
-        finalColor += vec3<f32>(rVal, 0.0, 0.0) * glow * 0.5;
-        finalColor += vec3<f32>(0.0, gVal, 0.0) * glow * 0.5;
-        finalColor += vec3<f32>(0.0, 0.0, bVal) * glow * 0.5;
-    }
-
-    // Background dimming
-    finalColor += vec3<f32>(0.05);
-
-    // ═══════════════════════════════════════════════════════════════
-    //  WAVELENGTH-DEPENDENT ALPHA
-    //  Thickness derived from parallax amount
-    // ═══════════════════════════════════════════════════════════════
-    let parallaxLength = length(tilt);
-    let dispersionThickness = parallaxLength * 15.0;
-    
-    let alphaR = calculateChannelAlpha(dispersionThickness, WAVELENGTH_RED);
-    let alphaG = calculateChannelAlpha(dispersionThickness, WAVELENGTH_GREEN);
-    let alphaB = calculateChannelAlpha(dispersionThickness, WAVELENGTH_BLUE);
-    
-    let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
-    let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
-    
-    let alphaModulatedColor = vec3<f32>(
-        finalColor.r * alphaR,
-        finalColor.g * alphaG,
-        finalColor.b * alphaB
-    );
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(alphaModulatedColor, finalAlpha));
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(lineR, lineG, lineB, finalAlpha));
 }

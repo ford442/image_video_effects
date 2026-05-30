@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Hopf Fibration Fiber Bundle
 //  Category: generative
-//  Features: audio-reactive, mouse-driven, temporal
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-05-30
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -42,6 +42,8 @@ fn hash11(n: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = vec2<f32>(u.config.zw);
+  let coord = vec2<i32>(global_id.xy);
+  if (coord.x >= i32(res.x) || coord.y >= i32(res.y)) { return; }
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
@@ -135,5 +137,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Alpha: fiber density × crossing_intensity × depth
   let alpha = clamp(alphaAcc * 0.4 * (1.0 + crossingInt) * maxDepth, 0.0, 1.0);
-  textureStore(writeTexture, global_id.xy, vec4<f32>(accum, alpha));
+  let out = vec4<f32>(accum, alpha);
+
+  // Depth: nearest fiber crossing occludes deeper bundle layers
+  textureStore(writeTexture, coord, out);
+  textureStore(writeDepthTexture, coord, vec4<f32>(clamp(maxDepth, 0.0, 1.0), 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, out);
 }

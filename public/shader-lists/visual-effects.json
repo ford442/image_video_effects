@@ -290,60 +290,118 @@
   {
     "id": "anaglyph-3d",
     "name": "Anaglyph 3D",
+    "category": "visual-effects",
     "url": "shaders/anaglyph-3d.wgsl",
-    "description": "Red-cyan stereoscopic anaglyph from a single camera feed. The red channel is sampled at a leftward horizontal offset and cyan (G+B) at a rightward offset, creating the classic red/cyan 3D glasses effect. Separation widens with distance from the mouse focal point; a secondary ghost layer adds fringing depth. Bass pulses the split width; mids warm the left ghost; mouse controls the depth focal centre.",
-    "tags": [
-      "stereoscopic",
-      "anaglyph",
-      "3d",
-      "chromatic",
-      "audio-reactive",
-      "mouse-driven"
-    ],
+    "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, and bass-pulsed split width.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal",
+      "chromatic"
+    ],
+    "tags": [
+      "anaglyph",
+      "3d",
+      "depth-aware",
+      "stereo",
+      "audio-reactive",
+      "temporal",
+      "chromatic",
+      "ghost"
     ],
     "params": [
       {
         "id": "separation",
-        "name": "Stereo Separation",
+        "name": "Separation",
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x"
+        "step": 0.01
       },
       {
         "id": "depthCurve",
-        "name": "Depth Falloff",
-        "default": 0.4,
+        "name": "Depth Curve",
+        "default": 0.45,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y"
+        "step": 0.01
       },
       {
-        "id": "ghostStrength",
-        "name": "Ghost Fringing",
-        "default": 0.3,
+        "id": "ghostAmount",
+        "name": "Ghost Amount",
+        "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z"
+        "step": 0.01
       },
       {
-        "id": "grain",
-        "name": "Film Grain",
-        "default": 0.2,
+        "id": "grainAmount",
+        "name": "Grain Amount",
+        "default": 0.35,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w"
+        "step": 0.01
       }
+    ]
+  },
+  {
+    "id": "anamorphic-caustic-flare",
+    "name": "Anamorphic Caustic Flare",
+    "url": "shaders/anamorphic-caustic-flare.wgsl",
+    "description": "Premium cinematic anamorphic lens flares combined with living, refracting water caustics that distort and project the source footage. Bass stretches the flares dramatically while treble animates the caustic ripples. Mouse tilts the virtual lens.",
+    "tags": [
+      "anamorphic",
+      "caustic",
+      "lens-flare",
+      "cinematic",
+      "refraction",
+      "audio-reactive",
+      "water"
     ],
-    "coordinate": 889
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "mouse-driven",
+      "mouse-tilt",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "flare",
+        "name": "Anamorphic Flare",
+        "default": 0.7,
+        "min": 0,
+        "max": 1.6,
+        "step": 0.01
+      },
+      {
+        "id": "caustic",
+        "name": "Caustic Intensity",
+        "default": 0.85,
+        "min": 0,
+        "max": 1.8,
+        "step": 0.01
+      },
+      {
+        "id": "refraction",
+        "name": "Refraction Amount",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "stretch",
+        "name": "Caustic Stretch",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
   },
   {
     "id": "ascii-shockwave",
@@ -395,8 +453,9 @@
   {
     "id": "breathing-kaleidoscope",
     "name": "Breathing Kaleidoscope",
+    "category": "visual-effects",
     "url": "shaders/breathing-kaleidoscope.wgsl",
-    "description": "Smoothly folds and unfolds the image into mirrored segments with a breathing animation; center and rotation are controllable.",
+    "description": "Organic breathing kaleidoscope driven by domain-warped FBM, fractional symmetry, jewel-tone palette cycling, film grain, and depth-aware sector fading.",
     "params": [
       {
         "id": "cycleSpeed",
@@ -433,14 +492,16 @@
       "visual-effects",
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing",
+      "kaleidoscope",
+      "petals",
       "audio",
-      "music",
-      "reactive"
+      "reactive",
+      "organic",
+      "fbm"
     ]
   },
   {
@@ -597,7 +658,7 @@
     "id": "crt-clear-zone",
     "name": "CRT Clear Zone",
     "url": "shaders/crt-clear-zone.wgsl",
-    "description": "Heavy CRT distortion with chromatic aberration, scanlines, and vignette. A clean, high-resolution zone follows the mouse cursor with an audio-reactive scanline intensity.",
+    "description": "Accurate CRT electron beam simulation with Gaussian spot spread, inline shadow mask, phosphor decay via temporal feedback, barrel distortion with corner darkening, per-RGB chromatic aberration, and ACES tone mapping.",
     "params": [
       {
         "name": "Distortion",
@@ -639,13 +700,15 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal"
     ],
     "tags": [
       "crt",
       "retro",
-      "glitch",
-      "filter",
+      "electron-beam",
+      "shadow-mask",
+      "temporal",
       "image-processing"
     ]
   },
@@ -698,66 +761,67 @@
   {
     "id": "cyber-physical-portal",
     "name": "Cyber Physical Portal",
+    "category": "visual-effects",
     "url": "shaders/cyber-physical-portal.wgsl",
-    "description": "Reveals a cybernetic wireframe world through a glitchy portal at your mouse cursor.",
+    "description": "Opens a swirling digital portal in the source image, with scrolling ring grids and beat-driven core glow around the cursor.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "portal"
+    ],
+    "tags": [
+      "portal",
+      "cyber",
+      "swirl",
+      "grid",
+      "audio-reactive"
+    ],
     "params": [
       {
-        "id": "radius",
-        "name": "Radius",
-        "default": 0.5,
+        "id": "portal_radius",
+        "name": "Portal Radius",
+        "default": 0.35,
         "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Base radius of the portal"
+        "max": 1
       },
       {
-        "id": "glitch_speed",
-        "name": "Glitch Speed",
-        "default": 0.5,
+        "id": "swirl_amount",
+        "name": "Swirl Amount",
+        "default": 0.45,
         "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Speed of portal edge glitch jitter"
-      },
-      {
-        "id": "glow_sharpness",
-        "name": "Glow Sharpness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Sharpness of the portal edge glow"
+        "max": 1
       },
       {
         "id": "grid_density",
         "name": "Grid Density",
-        "default": 0.5,
+        "default": 0.4,
         "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Density of the cyber grid inside the portal"
+        "max": 1
+      },
+      {
+        "id": "glow",
+        "name": "Glow",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
       }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
     "id": "cyber-scan",
     "name": "Cyber Scan",
+    "category": "visual-effects",
     "url": "shaders/cyber-scan.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal-scan-pass",
+      "chromatic-scan"
     ],
-    "description": "A digital scanning line that follows the mouse, highlighting edges and overlaying a cybernetic grid.",
+    "description": "A digital scanning line follows the mouse with temporal smear and depth-based colorization. Audio drives scan speed; chromatic separation shifts RGB per treble intensity.",
     "params": [
       {
         "id": "scanWidth",
@@ -768,30 +832,35 @@
       },
       {
         "id": "gridIntensity",
-        "name": "Grid Intensity",
+        "name": "Trail Length",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "colorSpeed",
-        "name": "Color Speed",
+        "name": "Scan Width",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "edgeStrength",
-        "name": "Edge Strength",
+        "name": "Color Shift",
         "default": 0.5,
         "min": 0,
         "max": 1
       }
     ],
     "tags": [
-      "vfx",
-      "particles",
-      "glow"
+      "cyber",
+      "scan",
+      "hud",
+      "glow",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic",
+      "temporal"
     ]
   },
   {
@@ -908,13 +977,18 @@
   {
     "id": "electric-contours",
     "name": "Electric Contours",
+    "category": "visual-effects",
     "url": "shaders/electric-contours.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "field-line-tracing",
+      "equipotential-surfaces",
+      "dielectric-polarization",
+      "corona-discharge"
     ],
-    "description": "Edge detection with electric glowing contours that react to mouse proximity.",
+    "description": "Electric field line tracing from charge distributions with equipotential surfaces and field line density. Dielectric boundary conditions with plasma-like glow, polarization colors, HDR bloom on high-field regions, ACES tone mapping, and corona discharge approximation.",
     "params": [
       {
         "id": "edge_threshold",
@@ -937,14 +1011,14 @@
         "description": "Intensity multiplier for the electric glow"
       },
       {
-        "id": "threshold_range",
-        "name": "Edge Threshold Range",
+        "id": "field_density",
+        "name": "Field Line Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.z",
-        "description": "Range of the adaptive edge threshold"
+        "description": "Density of field and equipotential lines"
       },
       {
         "id": "spark_speed",
@@ -959,7 +1033,16 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "electric-field",
+      "equipotential",
+      "dielectric",
+      "corona",
+      "plasma-glow",
+      "hdr-bloom",
+      "aces-tone-mapping",
+      "audio-reactive",
+      "mouse-driven"
     ]
   },
   {
@@ -1051,6 +1134,60 @@
       "vfx",
       "particles",
       "glow"
+    ]
+  },
+  {
+    "id": "holographic-flicker",
+    "name": "Holographic Flicker",
+    "category": "visual-effects",
+    "url": "shaders/holographic-flicker.wgsl",
+    "description": "Holographic flicker with temporal ghosting and depth-rainbow colorization. Bass drives blackout probability, treble adds micro-glitch. Chromatic ghosting separates RGB channels across frames.",
+    "params": [
+      {
+        "id": "flickerSpeed",
+        "name": "Flicker Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glitchAmt",
+        "name": "Glitch Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "hologramIntensity",
+        "name": "Hologram Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "ghostAmt",
+        "name": "Ghost Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal-flicker",
+      "chromatic-ghosting"
+    ],
+    "tags": [
+      "hologram",
+      "flicker",
+      "glitch",
+      "ghost",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic",
+      "temporal"
     ]
   },
   {
@@ -1154,40 +1291,46 @@
   },
   {
     "id": "holographic-sticker",
+    "name": "Holographic Sticker",
     "url": "shaders/holographic-sticker.wgsl",
+    "description": "Mouse-centered iridescent sticker with chromatic view-angle dispersion, temporal foil shimmer persistence, audio-driven sticker pulse, depth-layered alpha, and rainbow phase shift.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "temporal",
+      "chromatic",
+      "depth-aware"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "radius",
+        "name": "Sticker Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "intensity",
+        "name": "Foil Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "rainbowSpeed",
+        "name": "Rainbow Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "depthWeight",
+        "name": "Depth Weight",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -1199,9 +1342,13 @@
       "particles",
       "glow",
       "audio",
-      "music"
-    ],
-    "name": "Holographic Sticker"
+      "music",
+      "holographic",
+      "sticker",
+      "chromatic",
+      "temporal",
+      "iridescent"
+    ]
   },
   {
     "id": "hyper-space-jump",
@@ -1254,39 +1401,40 @@
     "id": "interactive-fresnel",
     "name": "Interactive Fresnel",
     "url": "shaders/interactive-fresnel.wgsl",
-    "description": "Simulates a Fresnel lens with stepped concentric rings. Features chromatic aberration with alpha-aware blending, depth influence, and audio reactivity.",
+    "description": "Gravitational lensing with chromatic Einstein rings and depth mass simulation. Concentric rings warp the image with per-channel dispersion; depth acts as gravitational mass. Bass multiplies lensing power, treble sharpens chromatic separation.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven",
+      "chromatic-aberration",
+      "depth-mass",
       "upgraded-rgba"
     ],
     "params": [
       {
-        "id": "ringDensity",
-        "name": "Ring Density",
+        "id": "effectStrength",
+        "name": "Lensing Power",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "magnification",
-        "name": "Magnification",
+        "id": "ringCount",
+        "name": "Ring Count",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "aberration",
-        "name": "Aberration",
+        "id": "ringThickness",
+        "name": "Ring Thickness",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "depthInfluence",
-        "name": "Depth Influence",
-        "default": 0,
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.5,
         "min": 0,
         "max": 1
       }
@@ -1296,7 +1444,10 @@
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "fresnel",
+      "lensing",
+      "chromatic"
     ]
   },
   {
@@ -1349,10 +1500,16 @@
   {
     "id": "luma-smear-interactive",
     "name": "Kinetic Echo",
+    "category": "visual-effects",
     "url": "shaders/luma-smear-interactive.wgsl",
-    "description": "Creates a motion trail based on brightness. Bright objects leave trails that decay over time. Mouse clears the trails.",
+    "description": "Creates a motion trail with chromatic smear (R lags, B leads). Bright objects leave decaying trails. Curl turbulence and audio gusts add organic chaos. Depth controls viscosity.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "chromatic-smear",
+      "curl-turbulence"
     ],
     "params": [
       {
@@ -1386,7 +1543,78 @@
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "smear",
+      "echo",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic",
+      "curl-noise"
+    ]
+  },
+  {
+    "id": "neon-edge-glow",
+    "name": "Neon Edge Glow",
+    "url": "shaders/neon-edge-glow.wgsl",
+    "category": "visual-effects",
+    "description": "Gas discharge tube simulation with accurate neon emission spectrum, AC rectification flicker, mercury vapor secondary lines, electrode sputtering, and atmospheric haze. Bass drives flicker frequency, mouse bends the tube, depth controls atmospheric scatter.",
+    "tags": [
+      "neon",
+      "edge",
+      "glow",
+      "bloom",
+      "sobel",
+      "gas-discharge",
+      "spectrum",
+      "colorful",
+      "post-processing",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "features": [
+      "audio-reactive",
+      "post-processing",
+      "depth-aware",
+      "semantic-alpha",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "edgeStrength",
+        "name": "Edge Strength",
+        "default": 0.85,
+        "min": 0,
+        "max": 2,
+        "step": 0.01,
+        "param": "zoom_params.x"
+      },
+      {
+        "id": "glowRadius",
+        "name": "Glow Radius",
+        "default": 0.6,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01,
+        "param": "zoom_params.y"
+      },
+      {
+        "id": "neonTint",
+        "name": "Neon Tint / Hue",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.z"
+      },
+      {
+        "id": "intensity",
+        "name": "Overall Intensity",
+        "default": 0.9,
+        "min": 0,
+        "max": 2,
+        "step": 0.01,
+        "param": "zoom_params.w"
+      }
     ]
   },
   {
@@ -1645,7 +1873,8 @@
     "id": "quantum-field-visualizer",
     "name": "Quantum Field Visualizer",
     "url": "shaders/quantum-field-visualizer.wgsl",
-    "description": "Visualizes quantum fluctuations as colorful noise. The act of observation (mouse proximity) collapses the wave function, clearing the image.",
+    "category": "visual-effects",
+    "description": "Complex wavefunction visualization with real/imaginary parts mapped to hue, probability density to brightness, and phase to saturation. Features two-slit interference, Gaussian packet spreading, and mouse-driven quantum measurement collapse.",
     "params": [
       {
         "id": "observation_strength",
@@ -1679,12 +1908,79 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [
       "vfx",
-      "particles",
-      "glow"
+      "quantum",
+      "interference",
+      "glow",
+      "hdr",
+      "abstract"
+    ]
+  },
+  {
+    "id": "quantum-ghost",
+    "name": "Quantum Ghost",
+    "category": "visual-effects",
+    "url": "shaders/quantum-ghost.wgsl",
+    "description": "Quantum uncertainty visualization with Gaussian wave packet spreading, interference patterns from partial measurement, and entanglement correlation lines between ghost copies. Ghostly translucent copies with phase-dependent opacity, neon quantum numbers, HDR bloom on measurement events, ACES tone mapping, and chromatic separation by momentum uncertainty.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal-ghosting",
+      "interference-fringes",
+      "quantum-uncertainty",
+      "wave-packet",
+      "entanglement-correlation"
+    ],
+    "params": [
+      {
+        "id": "offset",
+        "name": "Ghost Offset",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fringes",
+        "name": "Fringe Frequency",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "decay",
+        "name": "Ghost Decay",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chroma",
+        "name": "Chromatic Shift",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "quantum",
+      "ghost",
+      "interference",
+      "fringes",
+      "temporal",
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic",
+      "wave-packet",
+      "entanglement",
+      "hdr-bloom",
+      "aces-tone-mapping"
     ]
   },
   {
@@ -1736,45 +2032,51 @@
   {
     "id": "rgb-topology",
     "name": "RGB Topology",
+    "category": "visual-effects",
     "url": "shaders/rgb-topology.wgsl",
-    "description": "Visualizes the image as 3D topographic maps, one for each color channel (Red, Green, Blue). The layers are offset based on mouse tilt.",
+    "description": "Draws RGB contour lines from image luminance and depth, then blends them back over the source with neon topology glow.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "depth-aware"
+    ],
+    "tags": [
+      "topology",
+      "contour",
+      "rgb",
+      "depth-aware",
+      "audio-reactive"
+    ],
     "params": [
       {
+        "id": "contour_density",
         "name": "Contour Density",
-        "id": "zoomParam1",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Parallax Height",
-        "id": "zoomParam2",
         "default": 0.4,
         "min": 0,
         "max": 1
       },
       {
+        "id": "line_thickness",
         "name": "Line Thickness",
-        "id": "zoomParam3",
-        "default": 0.2,
+        "default": 0.22,
         "min": 0,
         "max": 1
       },
       {
-        "name": "Glow",
-        "id": "zoomParam4",
-        "default": 0.3,
+        "id": "channel_separation",
+        "name": "Channel Separation",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "source_blend",
+        "name": "Source Blend",
+        "default": 0.4,
         "min": 0,
         "max": 1
       }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "vfx",
-      "particles",
-      "glow"
     ]
   },
   {
@@ -2053,55 +2355,58 @@
   {
     "id": "warp-drive",
     "name": "Warp Drive",
+    "category": "visual-effects",
     "url": "shaders/warp_drive.wgsl",
-    "description": "Intense radial blur and chromatic aberration centered on the mouse.",
+    "description": "Launches the source image into a chromatic warp tunnel with beat-synced core glow and radial streaking.",
     "features": [
-      "mouse-driven"
+      "audio-reactive",
+      "upgraded-rgba",
+      "radial-blur"
+    ],
+    "tags": [
+      "warp",
+      "streak",
+      "space",
+      "chromatic",
+      "audio-reactive"
     ],
     "params": [
       {
-        "id": "intensity",
+        "id": "warp_speed",
         "name": "Warp Speed",
-        "type": "float",
-        "default": 0.5,
+        "default": 0.45,
         "min": 0,
         "max": 1
       },
       {
-        "id": "aberration",
+        "id": "prism_split",
         "name": "Prism Split",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "brightness",
+        "id": "core_glow",
         "name": "Core Glow",
-        "type": "float",
-        "default": 0.2,
+        "default": 0.45,
         "min": 0,
         "max": 1
       },
       {
-        "id": "samples",
+        "id": "blur_quality",
         "name": "Blur Quality",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1
       }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
     "id": "zipper-reveal",
     "name": "Zipper Reveal",
+    "category": "visual-effects",
     "url": "shaders/zipper-reveal.wgsl",
-    "description": "Unzips the image to reveal darkness, controlled by the mouse position.",
+    "description": "Mechanical zipper with interlocking tooth simulation, fabric physics, metallic specular highlights, and chromatic aberration on fast-moving teeth. Bass drives zipper speed and mouse controls pull position.",
     "params": [
       {
         "id": "zipper_width",
@@ -2145,11 +2450,19 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "zipper",
+      "fashion",
+      "reveal",
+      "metal",
+      "fabric",
+      "chromatic",
+      "audio-reactive"
     ]
   }
 ]

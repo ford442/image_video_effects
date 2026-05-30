@@ -250,41 +250,74 @@ bool WebGPURenderer::CreateDevice() {
         return false;
     }
 
-    // Request adapter using callback-based API
-    WGPURequestAdapterOptions adapterOpts = {};
-    adapterOpts.nextInChain = nullptr;
-    adapterOpts.compatibleSurface = nullptr;
-    // Prefer the high-performance GPU (discrete GPU) to match the TypeScript renderer.
-    adapterOpts.powerPreference = WGPUPowerPreference_HighPerformance;
-
-    WGPUAdapter rawAdapter = nullptr;
-    auto adapterCallback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
-                               WGPUStringView message, void* userdata1, void* /*userdata2*/) {
-        if (status == WGPURequestAdapterStatus_Success) {
-            *static_cast<WGPUAdapter*>(userdata1) = adapter;
-        } else {
-            printf("❌ Adapter request failed! Status: %d\n", status);
-            if (message.data && message.length > 0) {
-                printf("   Message: %.*s\n", (int)message.length, message.data);
-            }
-        }
+    // Request adapter using callback-based API.
+    // We try multiple powerPreference values because on Windows + Chrome/Edge + emdawnwebgpu,
+    // WGPUPowerPreference_HighPerformance can fail or be ignored in ways that cause
+    // adapter acquisition to return Unavailable (see crbug.com/369219127).
+    //
+    // Strategy: HighPerformance → Undefined (most compatible) → LowPower (last resort).
+    const WGPUPowerPreference powerPrefsToTry[] = {
+        WGPUPowerPreference_HighPerformance,
+        WGPUPowerPreference_Undefined,
+        WGPUPowerPreference_LowPower
     };
 
-    // WGPUCallbackMode_WaitAnyOnly is required for wgpuInstanceWaitAny.
-    // Build must include -sASYNCIFY so that wgpuInstanceWaitAny can yield.
-    WGPUFuture adapterFuture = wgpuInstanceRequestAdapter(instance_.get(), &adapterOpts,
-        WGPURequestAdapterCallbackInfo{
-            nullptr, WGPUCallbackMode_WaitAnyOnly, adapterCallback, &rawAdapter, nullptr
-        });
+    WGPUAdapter rawAdapter = nullptr;
 
-    WGPUFutureWaitInfo adapterWait = {};
-    adapterWait.future = adapterFuture;
-    wgpuInstanceWaitAny(instance_.get(), 1, &adapterWait, UINT64_MAX);
+    for (size_t attempt = 0; attempt < 3 && rawAdapter == nullptr; ++attempt) {
+        WGPUPowerPreference pref = powerPrefsToTry[attempt];
+        const char* prefName = (pref == WGPUPowerPreference_HighPerformance) ? "HighPerformance" :
+                               (pref == WGPUPowerPreference_Undefined)       ? "Undefined"       :
+                               "LowPower";
+
+        printf("[WASM] Requesting WebGPU adapter (attempt %zu/3, powerPreference=%s)...\n",
+               attempt + 1, prefName);
+
+        WGPURequestAdapterOptions adapterOpts = {};
+        adapterOpts.nextInChain = nullptr;
+        adapterOpts.compatibleSurface = nullptr;
+        adapterOpts.powerPreference = pref;
+
+        WGPUAdapter adapterFromCallback = nullptr;
+
+        auto adapterCallback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
+                                   WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+            auto* outAdapter = static_cast<WGPUAdapter*>(userdata1);
+            if (status == WGPURequestAdapterStatus_Success && adapter) {
+                *outAdapter = adapter;
+            } else {
+                printf("❌ Adapter request failed (status=%d)\n", (int)status);
+                if (message.data && message.length > 0) {
+                    printf("   Message: %.*s\n", (int)message.length, message.data);
+                }
+            }
+        };
+
+        // WGPUCallbackMode_WaitAnyOnly + ASYNCIFY is required for wgpuInstanceWaitAny.
+        WGPUFuture adapterFuture = wgpuInstanceRequestAdapter(instance_.get(), &adapterOpts,
+            WGPURequestAdapterCallbackInfo{
+                nullptr, WGPUCallbackMode_WaitAnyOnly, adapterCallback, &adapterFromCallback, nullptr
+            });
+
+        WGPUFutureWaitInfo adapterWait = {};
+        adapterWait.future = adapterFuture;
+        wgpuInstanceWaitAny(instance_.get(), 1, &adapterWait, UINT64_MAX);
+
+        if (adapterFromCallback) {
+            rawAdapter = adapterFromCallback;
+            printf("[WASM] Successfully obtained adapter on attempt %zu (powerPref=%s)\n",
+                   attempt + 1, prefName);
+        } else {
+            printf("[WASM] Adapter attempt %zu failed.\n", attempt + 1);
+        }
+    }
 
     adapter_.reset(rawAdapter);
 
     if (!adapter_) {
-        printf("❌ Failed to get WebGPU adapter\n");
+        printf("❌ Failed to get WebGPU adapter after all fallback attempts.\n");
+        printf("   This commonly happens on Windows with Chrome/Edge when using emdawnwebgpu.\n");
+        printf("   The JS WebGPU renderer is unaffected. Consider using ?renderer=webgpu or the UI toggle.\n");
         return false;
     }
 
@@ -367,9 +400,11 @@ bool WebGPURenderer::CreateDevice() {
     device_.reset(rawDevice);
 
     if (!device_) {
-        printf("❌ Failed to get WebGPU device\n");
+        printf("❌ Failed to get WebGPU device after adapter was obtained.\n");
         return false;
     }
+
+    printf("[WASM] Successfully created WebGPU device and queue.\n");
 
     queue_.reset(wgpuDeviceGetQueue(device_.get()));
 

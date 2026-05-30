@@ -233,11 +233,15 @@
   },
   {
     "id": "block-distort-interactive",
+    "name": "Block Distort",
+    "category": "interactive-mouse",
     "url": "shaders/block-distort-interactive.wgsl",
     "icon": "grid",
-    "description": "Image is divided into blocks that are pushed away by the mouse, creating a pixelated distortion field.",
+    "description": "Cursor pressure shoves image blocks into a prismatic distortion field with beat-reactive grid highlights.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -271,15 +275,17 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
-    ],
-    "name": "Block Distort"
+      "interactive",
+      "grid",
+      "glitch",
+      "audio-reactive"
+    ]
   },
   {
     "id": "blueprint-reveal",
     "name": "Blueprint Reveal",
     "url": "shaders/blueprint-reveal.wgsl",
-    "description": "Interactive blueprint schematic that you can erase to reveal reality.",
+    "description": "Temporal ink dissolve with depth hatch density and audio surge. Sobel edge detection draws blueprint lines; previous reveal state bleeds outward like spreading ink. Depth modulates hatch fineness, bass creates ink ripple surges from the mouse.",
     "params": [
       {
         "id": "edgeStrength",
@@ -311,11 +317,19 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-ink",
+      "depth-hatch",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "blueprint",
+      "ink",
+      "reveal",
+      "schematic"
     ]
   },
   {
@@ -463,7 +477,7 @@
     "id": "chroma-kinetic",
     "name": "Chroma Kinetic",
     "url": "shaders/chroma-kinetic.wgsl",
-    "description": "Mouse-driven chromatic aberration modulated by image luminance and audio bass.",
+    "description": "Velocity chromatic aberration with directional smear and audio split. R channel leads, B lags based on motion direction; bass drives lead amount, mids drive smear glow. Directional motion trails sample along the velocity vector for cinematic motion blur.",
     "params": [
       {
         "id": "strength",
@@ -501,6 +515,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "velocity-chromatic",
+      "directional-smear",
       "upgraded-rgba"
     ],
     "tags": [
@@ -508,7 +524,9 @@
       "image-processing",
       "chromatic-aberration",
       "kinetic",
-      "mouse"
+      "mouse",
+      "motion-blur",
+      "velocity"
     ]
   },
   {
@@ -710,8 +728,9 @@
   {
     "id": "chronos-brush",
     "name": "Chronos Brush",
+    "category": "interactive-mouse",
     "url": "shaders/chronos-brush.wgsl",
-    "description": "Freeze time by painting over the video feed.",
+    "description": "Freeze time by painting over the video feed with chromatic brush tints that cycle per click. Audio boosts brush size and opacity; depth modulates paint intensity.",
     "params": [
       {
         "id": "brushSize",
@@ -748,11 +767,20 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic-brush",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "brush",
+      "temporal",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic"
     ]
   },
   {
@@ -801,9 +829,12 @@
   {
     "id": "cmyk-halftone-interactive",
     "name": "CMYK Halftone Interactive",
+    "category": "interactive-mouse",
     "url": "shaders/cmyk-halftone-interactive.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -836,8 +867,10 @@
       }
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "cmyk",
+      "halftone",
+      "print",
+      "audio-reactive"
     ]
   },
   {
@@ -883,51 +916,6 @@
       "interactive"
     ],
     "name": "Codebreaker Reveal"
-  },
-  {
-    "id": "contour-flow",
-    "name": "Contour Flow",
-    "url": "shaders/contour-flow.wgsl",
-    "description": "Image pixels flow along their luminance contours, reacting to mouse proximity.",
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "upgraded-rgba"
-    ],
-    "params": [
-      {
-        "name": "Flow Speed",
-        "id": "flowSpeed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Flow Length",
-        "id": "flowLength",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Mouse Radius",
-        "id": "mouseRadius",
-        "default": 0.4,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "name": "Edge Sens.",
-        "id": "edgeDetect",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
   },
   {
     "id": "cross-mouse-spec-dispersion-lens",
@@ -1298,8 +1286,9 @@
   {
     "id": "cyber-glitch-hologram",
     "name": "Cyber Glitch Hologram",
+    "category": "interactive-mouse",
     "url": "shaders/cyber-glitch-hologram.wgsl",
-    "description": "A sci-fi holographic projection with interactive interference and chromatic aberration.",
+    "description": "Block-based datamoshing with structure-tensor motion estimation, holographic cosine interference fringes, cyan/magenta color separation, chromatic aberration on glitch blocks, and ACES tone mapping.",
     "params": [
       {
         "id": "hologramIntensity",
@@ -1323,19 +1312,25 @@
         "max": 2
       },
       {
-        "id": "mouseRadius",
-        "name": "Mouse Inf.",
-        "default": 0.3,
+        "id": "blockScale",
+        "name": "Block Scale",
+        "default": 0.5,
         "min": 0,
         "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "hologram",
+      "glitch",
+      "cyber",
+      "datamosh",
+      "interference",
+      "audio-reactive"
     ]
   },
   {
@@ -1442,10 +1437,13 @@
   {
     "id": "cyber-magnifier",
     "name": "Cyber Magnifier",
+    "category": "interactive-mouse",
     "url": "shaders/cyber-magnifier.wgsl",
     "description": "High-tech magnifying lens with chromatic aberration and HUD overlay.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1483,14 +1481,18 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "magnifier",
+      "cyber",
+      "hud"
     ]
   },
   {
     "id": "cyber-organic",
     "name": "Cyber Organic Scanner",
+    "category": "interactive-mouse",
     "url": "shaders/cyber-organic.wgsl",
-    "description": "Scans the image to reveal a pulsating organic layer beneath.",
+    "description": "Biotech scan lines reveal pulsing synthetic veins beneath the image, concentrated around the cursor.",
     "params": [
       {
         "id": "scanSpeed",
@@ -1522,11 +1524,16 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "scanner",
+      "organic",
+      "biotech",
+      "pulse",
+      "audio-reactive"
     ]
   },
   {
@@ -1968,33 +1975,33 @@
     "id": "digital-mold",
     "name": "Digital Mold",
     "url": "shaders/digital-mold.wgsl",
-    "description": "A digital decay effect that grows from the mouse cursor, eating away the image.",
+    "description": "Reaction-diffusion growth with spore noise and depth humidity. Gray-Scott simulation grows mold patterns from the mouse cursor; depth modulates growth speed. Bass injects spores, treble adds bright sporulation highlights.",
     "params": [
       {
-        "id": "decay",
-        "name": "Decay Rate",
+        "id": "feedRate",
+        "name": "Feed Rate",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "scale",
-        "name": "Noise Scale",
+        "id": "killRate",
+        "name": "Kill Rate",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "spread",
-        "name": "Spread Radius",
+        "id": "diffusionA",
+        "name": "Diffusion A",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "shift",
-        "name": "Color Shift",
-        "default": 0.2,
+        "id": "diffusionB",
+        "name": "Diffusion B",
+        "default": 0.5,
         "min": 0,
         "max": 1
       }
@@ -2002,7 +2009,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven",
+      "reaction-diffusion",
+      "spore-noise",
+      "depth-humidity",
       "upgraded-rgba"
     ],
     "tags": [
@@ -2010,14 +2019,18 @@
       "image-processing",
       "audio",
       "music",
-      "reactive"
+      "reactive",
+      "mold",
+      "reaction-diffusion",
+      "organic"
     ]
   },
   {
     "id": "digital-reveal",
     "name": "Digital Rain Reveal",
+    "category": "interactive-mouse",
     "url": "shaders/digital-reveal.wgsl",
-    "description": "Hides the image behind digital rain; move the mouse to reveal the content.",
+    "description": "Hides the image behind chromatic digital rain; move the mouse to reveal content. Audio shifts rain colors (bass green, treble white). Depth makes near objects reveal faster.",
     "params": [
       {
         "id": "density",
@@ -2050,11 +2063,21 @@
     ],
     "features": [
       "mouse-driven",
-      "artistic"
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal-digital-rain",
+      "chromatic-drops"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "digital-rain",
+      "reveal",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic",
+      "temporal"
     ]
   },
   {
@@ -2271,9 +2294,10 @@
   },
   {
     "id": "edge-glow-mouse",
-    "name": "Edge Glow",
+    "name": "Edge Glow Mouse",
+    "category": "interactive-mouse",
     "url": "shaders/edge-glow-mouse.wgsl",
-    "description": "Detects edges in the image which glow intensely when near the mouse cursor.",
+    "description": "Unsharp-masked edges bloom into neon HDR halos with anisotropic diffusion, chromatic aberration, ACES tone mapping, and film grain. Bass drives glow radius, mouse creates local edge emphasis, depth controls falloff.",
     "params": [
       {
         "id": "threshold",
@@ -2305,60 +2329,20 @@
       }
     ],
     "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
-    "id": "elastic-strip",
-    "name": "Elastic Strip",
-    "url": "shaders/elastic-strip.wgsl",
-    "description": "Divides the image into strips that stretch elastically towards the mouse cursor.",
-    "params": [
-      {
-        "id": "density",
-        "name": "Strip Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "strength",
-        "name": "Stretch Strength",
-        "default": 0.7,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "falloff",
-        "name": "Influence Radius",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "dir",
-        "name": "Direction (V/H)",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "labels": [
-          "Vertical Strips",
-          "Horizontal Strips"
-        ]
-      }
-    ],
-    "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "edges",
+      "glow",
+      "neon",
+      "cursor",
+      "audio-reactive",
+      "bloom",
+      "chromatic",
+      "HDR"
     ]
   },
   {
@@ -2732,8 +2716,9 @@
   {
     "id": "glass-bead-curtain",
     "name": "Glass Bead Curtain",
+    "category": "interactive-mouse",
     "url": "shaders/glass-bead-curtain.wgsl",
-    "description": "A curtain of refractive glass beads that parts for the cursor.",
+    "description": "Physical glass bead curtain with Fresnel refraction, chromatic caustics, subsurface scattering, and bead-collision physics. Bass drives wind sway, mouse pushes beads aside, depth controls perspective bead size.",
     "params": [
       {
         "id": "size",
@@ -2743,7 +2728,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
-        "description": "Size of glass beads"
+        "description": "Relative bead size"
       },
       {
         "id": "refraction",
@@ -2763,7 +2748,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.z",
-        "description": "Curtain tension on interaction"
+        "description": "How strongly the curtain bends toward cursor motion"
       },
       {
         "id": "glass_density",
@@ -2773,20 +2758,30 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Beer-Lambert density factor"
+        "description": "Transmission strength through the bead field"
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "glass",
+      "beads",
+      "iridescent",
+      "refraction",
+      "caustics",
+      "fresnel",
+      "audio-reactive",
+      "depth-aware"
     ]
   },
   {
     "id": "glass-shatter",
     "name": "Glass Shatter",
+    "category": "interactive-mouse",
     "url": "shaders/glass-shatter.wgsl",
     "description": "Interactive shattered glass effect where shards are pushed by the mouse.",
     "params": [
@@ -2821,11 +2816,15 @@
     ],
     "features": [
       "mouse-driven",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "glass",
+      "shards",
+      "prismatic",
+      "distortion"
     ]
   },
   {
@@ -3019,8 +3018,9 @@
   {
     "id": "hex-pulse",
     "name": "Hex Pulse",
+    "category": "interactive-mouse",
     "url": "shaders/hex-pulse.wgsl",
-    "description": "Hexagonal pixelation that pulses in size based on proximity to the mouse cursor.",
+    "description": "Honeycomb hexagonal lattice with damped wave equation interference. Bioluminescent cell glow, chromatic dispersion at edges, and HDR bloom on constructive interference nodes. Mouse excites local cells; bass triggers cascades.",
     "params": [
       {
         "id": "baseSize",
@@ -3037,81 +3037,92 @@
         "max": 1
       },
       {
-        "id": "radius",
-        "name": "Radius",
-        "default": 0.4,
+        "id": "waveDecay",
+        "name": "Wave Decay",
+        "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "speed",
-        "name": "Speed",
+        "name": "Wave Speed",
         "default": 0.5,
         "min": 0,
         "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "hex",
+      "honeycomb",
+      "wave-equation",
+      "interference",
+      "bioluminescent",
+      "chromatic",
+      "HDR"
     ]
   },
   {
     "id": "holographic-edge-ripple",
     "name": "Holographic Edge Ripple",
     "url": "shaders/holographic-edge-ripple.wgsl",
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "audio-driven",
-      "upgraded-rgba"
-    ],
-    "description": "Edges ripple and split into RGB components based on mouse proximity.",
+    "category": "interactive-mouse",
+    "description": "SDF edge detection with Laplacian zero-crossings, damped wave equation ripples, holographic rainbow diffraction, and Fresnel iridescence with ACES tone mapping.",
     "params": [
       {
-        "name": "Wave Speed",
-        "id": "wave-speed",
-        "default": 2,
-        "min": 0,
-        "max": 10
-      },
-      {
-        "name": "Frequency",
-        "id": "frequency",
-        "default": 20,
-        "min": 1,
-        "max": 100
-      },
-      {
-        "name": "Aberration",
-        "id": "aberration",
-        "default": 0.02,
-        "min": 0,
-        "max": 0.1
-      },
-      {
-        "name": "Edge Threshold",
         "id": "edge-threshold",
-        "default": 0.2,
-        "min": 0.01,
+        "name": "Edge Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "ripple-speed",
+        "name": "Ripple Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "ripple-damping",
+        "name": "Ripple Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "holographic-shift",
+        "name": "Holographic Shift",
+        "default": 0.5,
+        "min": 0,
         "max": 1
       }
     ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
     "tags": [
-      "filter",
-      "image-processing",
-      "audio",
-      "music"
+      "holographic",
+      "edge-detect",
+      "diffraction",
+      "iridescence",
+      "filter"
     ]
   },
   {
     "id": "holographic-prism",
     "name": "Holographic Prism",
+    "category": "interactive-mouse",
     "url": "shaders/holographic-prism.wgsl",
-    "description": "Splits the image into spectral shards that rotate and shift, creating a holographic lens effect.",
+    "description": "Triangular prism dispersion with Snell's law refraction, wavelength-accurate rainbow spectrum, holographic interference fringes and speckle. Bass rotates prism, mouse controls incident angle, depth drives parallax.",
     "params": [
       {
         "id": "facets",
@@ -3146,13 +3157,19 @@
       "mouse-driven",
       "chromatic-aberration",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing",
+      "prism",
+      "holographic",
+      "dispersion",
+      "interference",
+      "speckle",
       "audio",
-      "music"
+      "chromatic",
+      "depth-aware"
     ]
   },
   {
@@ -3549,6 +3566,7 @@
   {
     "id": "interactive-film-burn",
     "name": "Film Burn",
+    "category": "interactive-mouse",
     "url": "shaders/interactive-film-burn.wgsl",
     "description": "Simulates burning film reel with organic edges and grain, centered on the cursor.",
     "params": [
@@ -3584,11 +3602,15 @@
     "features": [
       "mouse-driven",
       "noise",
-      "texture"
+      "texture",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "film",
+      "burn",
+      "embers",
+      "analog"
     ]
   },
   {
@@ -4025,8 +4047,9 @@
   {
     "id": "interactive-ripple",
     "name": "Interactive Ripple",
+    "category": "interactive-mouse",
     "url": "shaders/interactive-ripple.wgsl",
-    "description": "Classic water ripple effect following cursor.",
+    "description": "Persistent cursor ripples travel across the frame like a metallic pond, with audio adding wet specular sheen.",
     "params": [
       {
         "id": "amplitude",
@@ -4059,11 +4082,16 @@
     ],
     "features": [
       "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
       "wave"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "ripple",
+      "water",
+      "metallic",
+      "wave",
+      "audio-reactive"
     ]
   },
   {
@@ -4427,6 +4455,7 @@
   {
     "id": "knitted-fabric",
     "name": "Knitted Fabric",
+    "category": "interactive-mouse",
     "url": "shaders/knitted-fabric.wgsl",
     "description": "Simulates a knitted wool texture. Mouse interaction pulls and stretches the fabric.",
     "params": [
@@ -4461,18 +4490,22 @@
     ],
     "features": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "woven",
+      "textile",
+      "fabric",
+      "audio-reactive"
     ]
   },
   {
     "id": "laser-burn",
     "name": "Laser Burn",
     "url": "shaders/laser-burn.wgsl",
-    "description": "Interactive laser that burns the image permanently (or heals slowly).",
+    "description": "Temporal burn accumulation with ember glow and audio spark showers. Mouse beam chars the surface persistently; embers fade slower than heat for lingering glow. Treble creates flying spark particles near the beam, bass deepens the char.",
     "params": [
       {
         "id": "beamSize",
@@ -4505,8 +4538,9 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence",
-      "audio-reactive",
+      "temporal-accumulation",
+      "ember-glow",
+      "audio-sparks",
       "upgraded-rgba"
     ],
     "tags": [
@@ -4515,7 +4549,9 @@
       "laser",
       "burn",
       "interactive",
-      "fire"
+      "fire",
+      "embers",
+      "sparks"
     ]
   },
   {
@@ -4616,10 +4652,11 @@
     "id": "liquid-lens",
     "name": "Liquid Lens",
     "url": "shaders/liquid-lens.wgsl",
-    "description": "Simulates a magnifying liquid lens at the mouse position with chromatic aberration.",
+    "category": "interactive-mouse",
+    "description": "Spherical aberration simulation with Snell's law refraction at curved interfaces, 7-sample chromatic dispersion, caustic highlights, Fresnel reflections, and ACES tone mapping.",
     "params": [
       {
-        "id": "strength",
+        "id": "refraction",
         "name": "Refraction",
         "default": 0.5,
         "min": 0,
@@ -4633,15 +4670,15 @@
         "max": 1
       },
       {
-        "id": "abberation",
-        "name": "Aberration",
+        "id": "dispersion",
+        "name": "Dispersion",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "edge",
-        "name": "Edge Shade",
+        "id": "surface-wave",
+        "name": "Surface Wave",
         "default": 0.3,
         "min": 0,
         "max": 1
@@ -4649,13 +4686,16 @@
     ],
     "features": [
       "mouse-driven",
-      "distortion",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "lens",
+      "refraction",
+      "chromatic",
+      "caustics",
+      "liquid"
     ]
   },
   {
@@ -4842,10 +4882,12 @@
   {
     "id": "luma-echo-warp",
     "url": "shaders/luma-echo-warp.wgsl",
-    "description": "Distorts the image based on pixel brightness and mouse position, creating a warping echo effect.",
+    "description": "Temporal echo accumulation with depth-parallax attenuation and curl-warped flow. Bass drives echo amplitude, treble adds sparkle to high-luma regions, and previous frames bleed through via dataTextureC.",
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "temporal-echo",
+      "depth-attenuation",
       "upgraded-rgba"
     ],
     "params": [
@@ -4880,37 +4922,41 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "temporal-feedback",
+      "depth-aware",
+      "echo",
+      "warp"
     ],
     "name": "Luma Echo Warp"
   },
   {
     "id": "luma-force",
     "name": "Luma Force",
+    "category": "interactive-mouse",
     "url": "shaders/luma-force.wgsl",
-    "description": "Repels or attracts pixels based on mouse position and luminance weight.",
+    "description": "Physics-based particle advection driven by luma gradients: bright regions repel, dark attracts. Curl noise for divergence-free flow, mouse vortex, spectral chromatic aberration, and HDR velocity glow.",
     "params": [
       {
-        "id": "strength",
-        "name": "Strength",
+        "id": "forceMag",
+        "name": "Force Magnitude",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "radius",
-        "name": "Radius",
+        "name": "Vortex Radius",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "mode",
-        "name": "Mode (Repel/Attract)",
-        "default": 0,
+        "id": "curlWeight",
+        "name": "Curl Noise",
+        "default": 0.5,
         "min": 0,
-        "max": 1,
-        "step": 1
+        "max": 1
       },
       {
         "id": "lumaWeight",
@@ -4922,63 +4968,68 @@
     ],
     "features": [
       "mouse-driven",
-      "distortion",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "particle-advection",
+      "curl-noise",
+      "spectral",
+      "HDR",
+      "physics",
+      "vortex"
     ]
   },
   {
     "id": "luma-magnetism",
+    "name": "Luma Magnetism",
     "url": "shaders/luma-magnetism.wgsl",
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "upgraded-rgba"
-    ],
+    "category": "interactive-mouse",
+    "description": "Magnetic field line simulation with Runge-Kutta integration. Bright pixels act as north poles, dark as south. Renders glowing iron-filing filaments with HDR bloom and ACES tone mapping.",
     "params": [
       {
-        "id": "strength",
-        "name": "Magnet Strength",
-        "type": "float",
+        "id": "field-strength",
+        "name": "Field Strength",
         "default": 0.5,
-        "min": -1,
+        "min": 0,
         "max": 1
       },
       {
         "id": "radius",
         "name": "Effect Radius",
-        "type": "float",
         "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "hardness",
-        "name": "Edge Hardness",
-        "type": "float",
+        "id": "filament-density",
+        "name": "Filament Density",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "threshold",
-        "name": "Luma Threshold",
-        "type": "float",
-        "default": 0.2,
+        "id": "depth-layer",
+        "name": "Depth Layer",
+        "default": 0.5,
         "min": 0,
         "max": 1
       }
     ],
-    "description": "Bright pixels are magnetically attracted to the mouse cursor.",
-    "tags": [
+    "features": [
       "mouse-driven",
-      "interactive"
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
-    "name": "Luma Magnetism"
+    "tags": [
+      "magnetic",
+      "field-lines",
+      "iron-filings",
+      "distortion",
+      "interactive"
+    ]
   },
   {
     "id": "luma-slice-interactive",
@@ -5125,6 +5176,7 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "params": [
@@ -5159,7 +5211,10 @@
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "neon",
+      "edge-detection",
+      "chromatic-aberration"
     ],
     "name": "Magnetic Edge"
   },
@@ -5256,34 +5311,35 @@
   {
     "id": "magnetic-pixels",
     "name": "Magnetic Pixels",
+    "category": "interactive-mouse",
     "url": "shaders/magnetic-pixels.wgsl",
-    "description": "Pixels are magnetically repelled by the cursor, creating a void.",
+    "description": "Pixels behave as iron filings in a magnetic dipole field. Mouse positions the dipole; bass oscillates field strength. Metallic sheen, chromatic aberration, and HDR bloom on field concentrations.",
     "params": [
       {
-        "id": "strength",
-        "name": "Force Strength",
+        "id": "dipoleStrength",
+        "name": "Dipole Strength",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "radius",
-        "name": "Effect Radius",
+        "id": "fieldRadius",
+        "name": "Field Radius",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "hardness",
-        "name": "Edge Hardness",
+        "id": "metallic",
+        "name": "Metallic Sheen",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "chaos",
-        "name": "Chaos",
-        "default": 0,
+        "id": "chroma",
+        "name": "Chromatic Aberration",
+        "default": 0.3,
         "min": 0,
         "max": 1
       }
@@ -5291,11 +5347,17 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "magnetic",
+      "dipole",
+      "iron-filings",
+      "metallic",
+      "chromatic",
+      "HDR",
+      "physics"
     ]
   },
   {
@@ -5397,8 +5459,9 @@
   {
     "id": "matrix-curtain",
     "name": "Matrix Curtain",
+    "category": "interactive-mouse",
     "url": "shaders/matrix-curtain.wgsl",
-    "description": "Digital rain streams that part horizontally based on mouse position.",
+    "description": "Conway's Game of Life on a falling phosphor character grid with Perlin-noise column velocities, CRT glow, ghosting trails, and ACES tone mapping. Bass drives spawn rate, mouse scrubs horizontal shift and rain speed, depth creates parallax.",
     "params": [
       {
         "id": "speed",
@@ -5422,19 +5485,27 @@
         "max": 1
       },
       {
-        "id": "glitch",
-        "name": "Glitchiness",
-        "default": 0.2,
+        "id": "glow",
+        "name": "Phosphor Glow",
+        "default": 0.4,
         "min": 0,
         "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "matrix",
+      "code-rain",
+      "conway",
+      "phosphor",
+      "crt",
+      "audio-reactive",
+      "temporal"
     ]
   },
   {
@@ -5444,42 +5515,49 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "temporal-trail",
+      "chromatic-ghost",
+      "audio-shatter",
       "upgraded-rgba"
     ],
-    "description": "Mirrors the image across an axis defined by the mouse position.",
+    "description": "Temporal mirror trail with chromatic ghost displacement and audio shatter. Previous frames persist as decaying echoes; R and B channels trail at different rates. Treble shatters the mirror into angular shards with glow.",
     "params": [
       {
-        "id": "side",
-        "name": "Flip Side",
-        "default": 0,
+        "id": "drag",
+        "name": "Drag Strength",
+        "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "flipY",
-        "name": "Mirror Y",
-        "default": 0,
+        "id": "mirror",
+        "name": "Mirror Amount",
+        "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "smoothness",
-        "name": "Edge Smoothness",
-        "default": 0,
+        "id": "trailDecay",
+        "name": "Trail Decay",
+        "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "mode",
-        "name": "Mode",
-        "default": 0,
+        "id": "shatter",
+        "name": "Shatter Amount",
+        "default": 0.3,
         "min": 0,
         "max": 1
       }
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "mirror",
+      "temporal",
+      "chromatic",
+      "shatter"
     ]
   },
   {
@@ -5622,7 +5700,8 @@
     "id": "motion-revealer",
     "name": "Motion Revealer",
     "url": "shaders/motion-revealer.wgsl",
-    "description": "The screen is dark by default; use the mouse as a brush to paint the live video feed onto the canvas with trailing fades.",
+    "category": "interactive-mouse",
+    "description": "The screen is dark by default; use the mouse as a brush to paint the live video feed onto the canvas with trailing fades. Audio-reactive pigment shifts RGB channels with bass/mids/treble. Depth-aware stroke opacity makes near objects paint more vividly.",
     "params": [
       {
         "id": "size",
@@ -5655,11 +5734,20 @@
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence"
+      "temporal-persistence",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic-mixing",
+      "upgraded-rgba"
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "audio-reactive",
+      "depth-aware",
+      "temporal",
+      "brush",
+      "chromatic"
     ]
   },
   {
@@ -5896,6 +5984,66 @@
       "hyperbolic",
       "infinite",
       "psychedelic"
+    ]
+  },
+  {
+    "id": "mouse-ink-bleed",
+    "name": "Mouse Ink Bleed",
+    "url": "shaders/mouse-ink-bleed.wgsl",
+    "category": "interactive-mouse",
+    "description": "Organic ink that bleeds and diffuses outward from the mouse position with turbulent, painterly motion. Audio adds life to the spread and color.",
+    "tags": [
+      "ink",
+      "bleed",
+      "paint",
+      "organic",
+      "diffusion",
+      "artistic",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "semantic-alpha"
+    ],
+    "params": [
+      {
+        "id": "spread",
+        "name": "Spread Radius",
+        "default": 0.55,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.x"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.6,
+        "min": 0,
+        "max": 1.4,
+        "step": 0.01,
+        "param": "zoom_params.y"
+      },
+      {
+        "id": "decay",
+        "name": "Edge Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.z"
+      },
+      {
+        "id": "colorIntensity",
+        "name": "Color Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01,
+        "param": "zoom_params.w"
+      }
     ]
   },
   {
@@ -6963,6 +7111,7 @@
   {
     "id": "neural-nexus",
     "name": "Neural Nexus",
+    "category": "interactive-mouse",
     "url": "shaders/neural-nexus.wgsl",
     "description": "Biological neural network simulation with pulsing electrical signals; mouse sends shockwaves through synapses.",
     "params": [
@@ -6999,11 +7148,15 @@
       "interactive",
       "organic",
       "network",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "neural",
+      "synapse",
+      "electric",
+      "audio-reactive"
     ]
   },
   {
@@ -7100,44 +7253,64 @@
   {
     "id": "origami-fold",
     "name": "Origami Fold",
+    "category": "interactive-mouse",
     "url": "shaders/origami-fold.wgsl",
-    "description": "Simulates a paper fold effect where the image is creased and folded based on the mouse position.",
+    "description": "Upgraded paper folding with mountain/valley crease patterns, dihedral angle constraints, Kawasaki-Justin flat-foldable vertices, paper fiber texture, shadow casting, HDR specular highlights on creases, ACES tone mapping, and chromatic edge darkening. Bass drives fold animation speed, mouse performs folds (mountain vs valley by click parity), depth controls paper layer ordering.",
     "params": [
       {
-        "id": "radius",
-        "name": "Fold Radius",
+        "id": "foldSpeed",
+        "name": "Fold Speed",
         "default": 0.1,
         "min": 0,
-        "max": 0.5
+        "max": 0.5,
+        "step": 0.01,
+        "param": "zoom_params.x"
       },
       {
         "id": "shadowStrength",
         "name": "Shadow Strength",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.y"
       },
       {
         "id": "angle",
         "name": "Fold Angle",
         "default": 0,
         "min": 0,
-        "max": 6.28
+        "max": 6.28,
+        "step": 0.01,
+        "param": "zoom_params.z"
       },
       {
-        "id": "transparency",
-        "name": "Transparency",
+        "id": "paperOpacity",
+        "name": "Paper Opacity",
         "default": 0.1,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.w"
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "semantic-alpha",
+      "chromatic-edge"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "origami",
+      "paper",
+      "fold",
+      "interactive",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic",
+      "mountain-valley",
+      "Kawasaki-Justin"
     ]
   },
   {
@@ -7418,11 +7591,15 @@
     "id": "phosphor-magnifier",
     "label": "Phosphor Magnifier",
     "name": "Phosphor Magnifier",
+    "category": "interactive-mouse",
     "url": "shaders/phosphor-magnifier.wgsl",
     "icon": "search",
-    "description": "Simulates a CRT phosphor mask. Use mouse to magnify the screen pixels.",
+    "description": "P22 phosphor decay CRT magnifier with chromatic aberration, barrel distortion, shadow mask, scanline beats, HDR bloom, ACES tone mapping, and afterimage trails. Bass drives excitation, mouse positions lens, depth controls magnification power.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7455,8 +7632,11 @@
       }
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "crt",
+      "phosphor",
+      "lens",
+      "retro",
+      "audio-reactive"
     ]
   },
   {
@@ -7654,7 +7834,8 @@
     "id": "pixel-reveal",
     "name": "Pixel Reveal",
     "url": "shaders/pixel-reveal.wgsl",
-    "description": "Pixelates the image, with a clear window (or obscuring block) around the mouse.",
+    "category": "interactive-mouse",
+    "description": "Pixel sorting with threshold-based reveal and temporal noise accumulation. Revealed pixels decay back to hidden over time. Glitch chromatic separation on edges, scanline bands, film grain, and depth-controlled pixel perspective.",
     "params": [
       {
         "id": "pixelSize",
@@ -7678,19 +7859,27 @@
         "max": 1
       },
       {
-        "id": "invert",
-        "name": "Invert Mode",
-        "default": 0,
+        "id": "decay_rate",
+        "name": "Temporal Decay",
+        "default": 0.5,
         "min": 0,
         "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "pixel-sort",
+      "glitch",
+      "scanlines",
+      "film-grain",
+      "chromatic",
+      "temporal"
     ]
   },
   {
@@ -8824,8 +9013,9 @@
   {
     "id": "refraction-shards",
     "name": "Refraction Shards",
+    "category": "interactive-mouse",
     "url": "shaders/refraction-shards.wgsl",
-    "description": "Splits the image into glass-like shards that refract light based on mouse position.",
+    "description": "Voronoi crystal shards refract and prism-split the source image, with extra sparkle near the cursor.",
     "params": [
       {
         "id": "scale",
@@ -8857,11 +9047,17 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "chromatic-aberration"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "crystal",
+      "shards",
+      "refraction",
+      "prismatic",
+      "audio-reactive"
     ]
   },
   {
@@ -9369,36 +9565,37 @@
     "url": "shaders/scanline-wave.wgsl",
     "features": [
       "mouse-driven",
-      "upgraded-rgba",
-      "depth-aware",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal-persistence",
+      "chromatic-CRT",
+      "upgraded-rgba"
     ],
-    "description": "Sine-wave horizontal scanline distortion with HDR bloom, atmospheric depth fog, and warm highlight grading. Mouse modulates wave intensity by vertical proximity.",
+    "description": "Temporal scanline persistence with chromatic CRT aberration and audio roll. Each scanline undulates with bass-driven amplitude; previous frames decay into the signal. Treble adds per-scanline chromatic shift, bass rolls the entire field vertically.",
     "params": [
       {
-        "id": "frequency",
-        "name": "Frequency",
+        "id": "waveAmount",
+        "name": "Wave Amount",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "amplitude",
-        "name": "Amplitude",
+        "id": "lineCount",
+        "name": "Line Count",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "speed",
-        "name": "Wave Speed",
+        "id": "persistence",
+        "name": "Persistence",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "mouse_influence",
-        "name": "Mouse Influence",
+        "id": "rollSpeed",
+        "name": "Roll Speed",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -9409,9 +9606,9 @@
       "interactive",
       "distortion",
       "scanlines",
-      "hdr",
-      "bloom",
-      "atmospheric"
+      "CRT",
+      "temporal",
+      "chromatic"
     ]
   },
   {
@@ -9554,8 +9751,9 @@
   {
     "id": "sketch-reveal",
     "name": "Sketch Reveal",
+    "category": "interactive-mouse",
     "url": "shaders/sketch-reveal.wgsl",
-    "description": "Transforms the world into a pencil sketch, allowing you to 'paint' the reality back in with your mouse.",
+    "description": "Gradient-directed pencil and charcoal cross-hatching with graphite sheen, paper tooth texture, smudge effects, and chromatic edge darkening. Bass drives reveal progression, mouse acts as the pencil, depth controls stroke size perspective.",
     "params": [
       {
         "id": "brushSize",
@@ -9587,11 +9785,20 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "sketch",
+      "pencil",
+      "reveal",
+      "brush",
+      "audio-reactive",
+      "charcoal",
+      "hatching",
+      "graphite"
     ]
   },
   {
@@ -9684,8 +9891,9 @@
   {
     "id": "solarize-warp",
     "name": "Solarize Warp",
+    "category": "interactive-mouse",
     "url": "shaders/solarize-warp.wgsl",
-    "description": "Twists the image around the mouse cursor while applying a solarization effect.",
+    "description": "Sabattier solarization with domain-warped fBm displacement, Mackie edge lines, split-tone shadows/highlights, ACES tone mapping, and film grain. Bass drives threshold oscillation, mouse warps field, depth controls parallax.",
     "params": [
       {
         "id": "twist",
@@ -9709,19 +9917,25 @@
         "max": 1
       },
       {
-        "id": "unused",
-        "name": "Unused",
-        "default": 0,
+        "id": "intensity",
+        "name": "Effect Intensity",
+        "default": 0.4,
         "min": 0,
         "max": 1
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
-      "filter",
-      "image-processing"
+      "solarize",
+      "darkroom",
+      "warp",
+      "twist",
+      "audio-reactive"
     ]
   },
   {
@@ -10128,52 +10342,6 @@
     ]
   },
   {
-    "id": "spirograph-reveal",
-    "name": "Spirograph Reveal",
-    "url": "shaders/spirograph-reveal.wgsl",
-    "description": "Reveals the image through a complex, rotating spirograph pattern centered on the mouse.",
-    "params": [
-      {
-        "id": "petals",
-        "name": "Petals",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "complexity",
-        "name": "Complexity",
-        "default": 0.3,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "rotation",
-        "name": "Rotation Speed",
-        "default": 0.2,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "thickness",
-        "name": "Line Thickness",
-        "default": 0.1,
-        "min": 0,
-        "max": 1
-      }
-    ],
-    "features": [
-      "mouse-driven",
-      "interactive",
-      "audio-reactive",
-      "upgraded-rgba"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
-  },
-  {
     "id": "split-dimension",
     "name": "Split Dimension",
     "url": "shaders/split-dimension.wgsl",
@@ -10562,10 +10730,11 @@
     "id": "thermal-touch",
     "name": "Thermal Touch",
     "url": "shaders/thermal-touch.wgsl",
-    "description": "False-color thermal vision where the mouse acts as a heat source.",
+    "category": "interactive-mouse",
+    "description": "Heat diffusion simulation with Gaussian blur approximation, blackbody radiation color mapping, persistent mouse heat trails, and HDR glow with ACES tone mapping.",
     "params": [
       {
-        "id": "heatIntensity",
+        "id": "heat-intensity",
         "name": "Heat Intensity",
         "default": 0.5,
         "min": 0,
@@ -10579,16 +10748,16 @@
         "max": 1
       },
       {
-        "id": "ambientTemp",
+        "id": "ambient-temp",
         "name": "Ambient Temp",
         "default": 0.2,
         "min": 0,
         "max": 1
       },
       {
-        "id": "colorMode",
-        "name": "Color Mode",
-        "default": 0,
+        "id": "cooling-rate",
+        "name": "Cooling Rate",
+        "default": 0.3,
         "min": 0,
         "max": 1
       }
@@ -10596,9 +10765,13 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "temporal",
       "upgraded-rgba"
     ],
     "tags": [
+      "thermal",
+      "heat",
+      "blackbody",
       "filter",
       "image-processing"
     ]
@@ -11092,7 +11265,7 @@
     "id": "volumetric-god-rays",
     "name": "Volumetric God Rays",
     "url": "shaders/volumetric-god-rays.wgsl",
-    "description": "Generates volumetric light rays emanating from the mouse position, using image highlights as the source. Audio-reactive weight modulation enhances the rays with bass frequencies.",
+    "description": "Ray-marched volumetric lighting with Mie scattering phase function, dust particle scatter, chromatic dispersion at shaft edges, ACES tone mapping, HDR bloom, and atmospheric haze. Bass drives dust density, mouse positions the light source, depth controls shaft occlusion and extinction.",
     "params": [
       {
         "id": "density",
@@ -11126,6 +11299,7 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "tags": [
@@ -11133,7 +11307,8 @@
       "image-processing",
       "lighting",
       "rays",
-      "volumetric"
+      "volumetric",
+      "atmosphere"
     ]
   },
   {

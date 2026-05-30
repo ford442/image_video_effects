@@ -1,47 +1,60 @@
 {
   "id": "holographic-shatter",
   "name": "Holographic Shatter",
-  "description": "Fractures the image into digital shards that react to cursor movement with holographic interference patterns.",
   "url": "shaders/holographic-shatter.wgsl",
+  "description": "Fractures the image into digital shards with temporal shard velocity persistence, chromatic edge refraction per shard, audio-driven impact intensity, holographic interference patterns, and plasma palette tinting.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "params": [
     {
-      "id": "scale",
-      "name": "Shard Scale",
+      "id": "shatterAmount",
+      "name": "Shatter Amount",
       "default": 0.5,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
       "id": "holo",
       "name": "Hologram Intensity",
-      "default": 0.3,
-      "min": 0,
-      "max": 1
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "displace",
-      "name": "Displacement",
-      "default": 0.6,
-      "min": 0,
-      "max": 1
+      "id": "depthWeight",
+      "name": "Depth Weight",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "speed",
-      "name": "Glitch Speed",
-      "default": 0.4,
-      "min": 0,
-      "max": 1
+      "id": "shardCount",
+      "name": "Shard Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio",
-    "music"
+    "music",
+    "shatter",
+    "holographic",
+    "chromatic",
+    "temporal",
+    "shard"
   ]
 }

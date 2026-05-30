@@ -1,7 +1,11 @@
-// ----------------------------------------------------------------
-// Radiant Chrono-Glass Nautilus
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Radiant Chrono-Glass Nautilus
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -52,7 +56,8 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 fn map(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
     let t = u.config.x;
-    let audio = u.config.y * u.zoom_params.w;
+    // Audio drives chamber breathing (bass) scaled by the Audio Reactivity param
+    let audio = plasmaBuffer[0].x * u.zoom_params.w;
 
     // Gravity well interaction
     let mouse = u.zoom_config.yz;
@@ -92,8 +97,14 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
+    let coord = vec2<i32>(global_id.xy);
+    if (coord.x >= i32(resolution.x) || coord.y >= i32(resolution.y)) { return; }
     let fragCoord = vec2<f32>(f32(global_id.x), f32(global_id.y));
     var uv = (fragCoord * 2.0 - resolution) / min(resolution.x, resolution.y);
+
+    // Audio reactivity: mids tint the glass shimmer, treble sparkles the bloom
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let ro = vec3<f32>(0.0, 0.0, -3.0);
     let rd = normalize(vec3<f32>(uv, 1.0));
@@ -116,21 +127,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
-    if (t < 10.0) {
+    let hit = t < 10.0;
+    var fresnel = 0.0;
+    if (hit) {
         let p = ro + rd * t;
         let n = calcNormal(p);
 
         let refraction = u.zoom_params.z;
         let f = pow(1.0 - max(dot(n, -rd), 0.0), refraction); // Fresnel
+        fresnel = f;
 
-        if (id == 1.0) { // Shell
-            col = vec3<f32>(0.1, 0.8, 0.9) * f + vec3<f32>(0.9, 0.1, 0.5) * (1.0 - f);
-        } else { // Interior
-            col = vec3<f32>(0.2, 0.0, 0.8) + vec3<f32>(0.0, 0.8, 1.0) * glow;
-        }
+        let shell = vec3<f32>(0.1, 0.8, 0.9) * f + vec3<f32>(0.9, 0.1, 0.5) * (1.0 - f);
+        let interior = vec3<f32>(0.2, 0.0, 0.8) + vec3<f32>(0.0, 0.8, 1.0) * glow;
+        col = select(interior, shell, id == 1.0);
+        // Mid-frequency chromatic shimmer across the glass
+        col += vec3<f32>(0.2, 0.05, 0.3) * f * mids;
     }
 
     col += vec3<f32>(0.0, 0.5, 1.0) * glow * 0.1;
+    col += vec3<f32>(1.0, 0.9, 0.7) * glow * treble * 0.05; // treble sparkle
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    // Alpha: glass coverage from fresnel + plasma bloom energy, never flat 1.0
+    let alpha = clamp(select(0.0, 0.3, hit) + fresnel * 0.5 + glow * 0.15, 0.0, 1.0);
+    let out = vec4<f32>(col, alpha);
+
+    // Depth: ray-march hit distance (near = closer)
+    let depth = select(0.0, clamp(1.0 - t / 10.0, 0.0, 1.0), hit);
+    textureStore(writeTexture, coord, out);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, out);
 }

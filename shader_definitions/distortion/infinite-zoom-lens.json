@@ -1,43 +1,50 @@
 {
   "id": "infinite-zoom-lens",
   "name": "Infinite Zoom Lens",
+  "category": "distortion",
   "url": "shaders/infinite-zoom-lens.wgsl",
-  "description": "A recursive feedback lens that creates infinite tunnels inside a mouse-controlled circle.",
+  "description": "A temporal zoom tunnel spirals the source image inward around the cursor and feeds the previous frame back into itself.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal"
+  ],
+  "tags": [
+    "zoom",
+    "tunnel",
+    "temporal",
+    "spiral",
+    "audio-reactive"
   ],
   "params": [
     {
-      "id": "zoom",
+      "id": "zoom_strength",
       "name": "Zoom Strength",
-      "default": 0.5,
+      "default": 0.45,
       "min": 0,
       "max": 1
     },
     {
-      "id": "radius",
+      "id": "lens_radius",
       "name": "Lens Radius",
-      "default": 0.3,
-      "min": 0.1,
+      "default": 0.35,
+      "min": 0,
       "max": 1
     },
     {
-      "id": "decay",
+      "id": "feedback_persistence",
       "name": "Feedback Persistence",
-      "default": 0.9,
-      "min": 0.5,
-      "max": 0.99
+      "default": 0.65,
+      "min": 0,
+      "max": 1
     },
     {
-      "id": "rotation",
+      "id": "twist",
       "name": "Twist",
       "default": 0.5,
       "min": 0,
       "max": 1
     }
-  ],
-  "tags": [
-    "filter",
-    "image-processing"
   ]
 }

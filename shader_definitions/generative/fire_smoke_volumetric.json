@@ -2,55 +2,59 @@
   "id": "fire_smoke_volumetric",
   "name": "Fire Smoke Volumetric",
   "url": "shaders/fire_smoke_volumetric.wgsl",
-  "description": "Volumetric fire and smoke with ray marching, curl noise turbulence, blackbody temperature coloring, and density-based alpha",
+  "description": "Volumetric fire and smoke simulation with chromatic temperature gradients (R hot to B cool), temporal smoke persistence via dataTextureC, audio-driven turbulence enhancement, physical transmittance, and depth-layered alpha.",
   "tags": [
     "fire",
     "smoke",
     "volumetric",
-    "blackbody",
     "simulation",
-    "curl"
+    "temporal",
+    "audio-reactive",
+    "chromatic",
+    "depth-aware",
+    "blackbody"
   ],
   "features": [
-    "rgba",
+    "upgraded-rgba",
     "volumetric",
     "fire",
     "smoke",
-    "blackbody",
-    "curl-noise"
+    "audio-reactive",
+    "temporal",
+    "depth-aware"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Fire Height",
+      "id": "fireIntensity",
+      "name": "Fire Intensity",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "param2",
+      "id": "smokeDensity",
+      "name": "Smoke Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "depthWeight",
+      "name": "Depth Weight",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "turbulence",
       "name": "Turbulence",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
-    },
-    {
-      "id": "param3",
-      "name": "Smoke",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
-    },
-    {
-      "id": "param4",
-      "name": "Glow",
-      "default": 0.7,
-      "min": 0,
-      "max": 1,
-      "step": 0.1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "target_rating": 4.7

@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Interactive Zoom Blur
-//  Category: distortion
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Category: image
+//  Features: mouse-centered, chromatic-aberration, dithered-sampling, audio-reactive,
+//            temporal-blur-trail, chromatic-radial-streaks, depth-blur-attenuation
 //  Complexity: Medium
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,81 +22,94 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(8, 8, 1)
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+
+fn hash11(p: f32) -> f32 {
+    return fract(sin(p * 12.9898) * 43758.5453);
+}
+
+fn bayer(x: i32, y: i32) -> f32 {
+    let matrix = array<f32, 16>(
+        0.0, 0.5, 0.125, 0.625,
+        0.75, 0.25, 0.875, 0.375,
+        0.1875, 0.6875, 0.0625, 0.5625,
+        0.9375, 0.4375, 0.8125, 0.3125
+    );
+    return matrix[(y % 4) * 4 + (x % 4)];
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) {
-    return;
-  }
-  let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(0.001));
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-  // Audio reactivity
-  let bass   = plasmaBuffer[0].x;
-  let mids   = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+    let center = u.zoom_config.yz;
+    let strength = u.zoom_params.x * (1.0 + bass * 0.25);
+    let chromatic = u.zoom_params.y;
+    let sampleCount = u.zoom_params.z;
+    let depthAttenuation = u.zoom_params.w;
 
-  // Mouse Input (branchless)
-  let mouse = u.zoom_config.yz;
-  let center = select(vec2<f32>(0.5, 0.5), mouse, mouse.x >= 0.0);
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  // Parameters
-  let blurStrength = clamp(u.zoom_params.x * (1.0 + bass * 0.2), 0.0, 1.0) * 0.1;
-  let samplesFloat = mix(4.0, 32.0, clamp(u.zoom_params.y, 0.0, 1.0));
-  let centerBias   = clamp(u.zoom_params.z * (1.0 + mids * 0.15), 0.0, 1.0);
-  let aberration   = clamp(u.zoom_params.w * (1.0 + treble * 0.1), 0.0, 1.0) * 0.05;
+    let dir = uv - center;
+    let dist = length(dir);
+    let dirNorm = normalize(dir + vec2<f32>(1e-4));
 
-  let aspect = resolution.x / max(resolution.y, 0.001);
-  let uv_aspect = uv * vec2<f32>(aspect, 1.0);
-  let center_aspect = center * vec2<f32>(aspect, 1.0);
+    // Depth-scaled blur attenuation: deeper pixels blur less
+    let attenuatedStrength = strength * (1.0 - depth * depthAttenuation);
 
-  // Direction vector from pixel to mouse center
-  let dir = center_aspect - uv_aspect;
-  let dirUV = center - uv;
+    let samples = i32(sampleCount * 30.0 + 5.0);
+    let dither = bayer(i32(global_id.x), i32(global_id.y)) / f32(samples);
 
-  var color = vec3<f32>(0.0);
-  var totalWeight = 0.0;
+    // Chromatic radial streak separation
+    let rSpread = chromatic * 0.008 * (1.0 + treble * 0.3);
+    let gSpread = chromatic * 0.008;
+    let bSpread = chromatic * 0.008 * (1.0 - bass * 0.2);
 
-  // Random dither to break banding
-  let random = max(fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453), 0.001);
-  let samples = i32(samplesFloat);
+    var rAcc = vec3<f32>(0.0);
+    var gAcc = vec3<f32>(0.0);
+    var bAcc = vec3<f32>(0.0);
 
-  for (var i = 0; i < samples; i = i + 1) {
-    let t = (f32(i) + random) / max(f32(samples), 0.0001);
+    for (var i: i32 = 0; i < samples; i = i + 1) {
+        let t = (f32(i) + dither) / f32(samples);
+        let rT = t + rSpread * t;
+        let gT = t;
+        let bT = t - bSpread * t;
+        rAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + rT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        gAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + gT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        bAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + bT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    }
+    let invSamples = 1.0 / f32(samples);
+    rAcc *= invSamples;
+    gAcc *= invSamples;
+    bAcc *= invSamples;
 
-    // Non-linear sampling weight (branchless)
-    let weight = select(1.0, max(mix(1.0, 1.0 - t, centerBias), 0.001), centerBias > 0.0);
+    var color = vec3<f32>(rAcc.r, gAcc.g, bAcc.b);
 
-    let percent = t * blurStrength;
+    // Temporal blur trail persistence
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let trail = mix(color, prev * 0.88, 0.05 + mids * 0.02);
+    color = mix(color, trail, 0.3);
 
-    // Sample R, G, B with slight offsets for aberration (clamped)
-    let sampleUV = clamp(uv + dirUV * percent, vec2<f32>(0.0), vec2<f32>(1.0));
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let effectBlend = smoothstep(0.0, 1.0, dist * attenuatedStrength);
+    color = mix(baseColor.rgb, color, effectBlend);
 
-    let r = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - dirUV * aberration * t, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + dirUV * aberration * t, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    let alpha = mix(baseColor.a, 1.0, effectBlend * 0.5);
 
-    color = color + vec3<f32>(r, g, b) * weight;
-    totalWeight = totalWeight + weight;
-  }
-
-  color = color / max(totalWeight, 0.001);
-
-  // Alpha: blur haze weight — stronger blur streaks = higher compositing blend
-  let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-  let blurMag = length(dirUV) * blurStrength;
-  let alpha = clamp(blurMag * 4.0 + luma * 0.3 + 0.1, 0.0, 1.0);
-  let finalColor = vec4<f32>(color, alpha);
-
-  // Depth read and mandatory writes
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-  textureStore(dataTextureA, global_id.xy, finalColor);
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0, 0, 1));
 }

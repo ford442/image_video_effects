@@ -47,5 +47,10 @@
       "step": 0.01
     }
   ],
-  "url": "shaders/gen-celestial-nanite-swarm-nebula.wgsl"
+  "url": "shaders/gen-celestial-nanite-swarm-nebula.wgsl",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
 }

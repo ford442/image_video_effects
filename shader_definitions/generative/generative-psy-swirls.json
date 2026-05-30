@@ -2,48 +2,59 @@
   "id": "generative-psy-swirls",
   "name": "Psychedelic Swirls",
   "url": "shaders/generative-psy-swirls.wgsl",
-  "description": "Generative swirling vortex fields with multi-layer procedural noise flow and spectral rainbow HSV cycles.",
+  "description": "Multi-layer polar swirl vortex with chromatic hue separation per layer, temporal swirl accumulation, audio-driven twist modulation, HSV rainbow cycles, and ripple glow trails.",
   "features": [
     "mouse-driven",
     "generative",
     "procedural",
-    "psychedelic"
+    "psychedelic",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "audio-reactive"
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "swirl",
+    "psychedelic",
+    "chromatic",
+    "temporal",
+    "audio-reactive",
+    "vortex",
+    "rainbow"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
+      "id": "twist",
+      "name": "Twist Amount",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Speed",
+      "id": "layers",
+      "name": "Layer Count",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
+      "id": "frequency",
+      "name": "Frequency",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Detail",
+      "id": "depthReduction",
+      "name": "Depth Reduction",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     }
   ]

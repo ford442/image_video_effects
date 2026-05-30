@@ -341,6 +341,63 @@
     "target_rating": 4.8
   },
   {
+    "id": "cinematic-flare",
+    "name": "Cinematic Flare",
+    "category": "lighting-effects",
+    "url": "shaders/cinematic-flare.wgsl",
+    "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, rainbow chromatic aberration, ACES tone mapping, and film grain. Mouse positions light source.",
+    "features": [
+      "audio-reactive",
+      "depth-aware",
+      "mouse-driven",
+      "upgraded-rgba",
+      "chromatic-streak",
+      "bloom-based"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Flare Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "length",
+        "name": "Streak Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chroma",
+        "name": "Chromatic Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "threshold",
+        "name": "Bloom Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "lens-flare",
+      "anamorphic",
+      "cinematic",
+      "bloom",
+      "chromatic",
+      "cooke-triplet",
+      "diffraction",
+      "film-grain",
+      "audio-reactive",
+      "depth-aware"
+    ]
+  },
+  {
     "id": "divine-light-gpt52",
     "name": "Divine Light Cathedral gpt52",
     "url": "shaders/divine-light-gpt52.wgsl",

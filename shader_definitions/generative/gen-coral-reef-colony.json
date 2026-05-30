@@ -3,8 +3,8 @@
   "name": "Coral Reef Colony",
   "url": "shaders/gen-coral-reef-colony.wgsl",
   "category": "generative",
-  "description": "Organic, growing coral structures that respond to audio and are attracted to the mouse. Feels alive and underwater.",
-  "tags": ["coral", "organic", "generative", "audio-reactive", "mouse-interactive", "underwater"],
+  "description": "Upgraded coral reef with space colonization branching, DLA patterns, fBm polyp detail, bioluminescent fluorescent proteins, subsurface scattering, caustic light, HDR bloom, and ACES tone mapping. Bass drives nutrient availability, mids steer current, treble triggers spawning. Mouse attracts growth; depth filters water color.",
+  "tags": ["coral", "organic", "generative", "audio-reactive", "mouse-interactive", "underwater", "bioluminescence", "DLA", "caustics", "HDR"],
   "features": [
     "audio-reactive",
     "mouse-driven",

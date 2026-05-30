@@ -2,14 +2,15 @@
   "id": "gen-hopf-fibration-fiber-bundle",
   "name": "Hopf Fibration Fiber Bundle",
   "url": "shaders/gen-hopf-fibration-fiber-bundle.wgsl",
-  "description": "Hopf fibration visualization from S³ to S². Each screen pixel maps to a point on S² whose fiber is a circle in S³, projected via stereographic projection to 2D. Linked circles colored by base-space coordinate with HDR bloom at crossings.",
+  "description": "Hopf fibration visualization from S\u00b3 to S\u00b2. Each screen pixel maps to a point on S\u00b2 whose fiber is a circle in S\u00b3, projected via stereographic projection to 2D. Linked circles colored by base-space coordinate with HDR bloom at crossings.",
   "features": [
     "audio-reactive",
     "mouse-driven",
     "temporal",
     "procedural",
     "generative",
-    "3d"
+    "3d",
+    "upgraded-rgba"
   ],
   "tags": [
     "hopf",
