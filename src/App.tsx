@@ -6,7 +6,7 @@ import LiveStudioTab from './components/LiveStudioTab';
 import { StorageBrowser } from './components/StorageBrowser';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { RendererType, RendererManager } from './renderer/RendererManager';
-import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
+import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
 import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
@@ -19,6 +19,7 @@ import {
 } from './config/appConfig';
 import { fetchContentManifest, LoadedContent } from './services/contentLoader';
 import { VideoSegment, pickRandomSegment, hydrateDurations } from './services/videoSegmentManager';
+import { savePreset } from './services/vjPresets';
 import './style.css';
 
 // --- Webcam Fun Shaders ---
@@ -285,6 +286,8 @@ function MainApp() {
 
     // --- Refs ---
     const rendererRef = useRef<RendererManager | null>(null);
+    const modesRef = useRef<RenderMode[]>(modes);
+    const availableModesRef = useRef<ShaderEntry[]>(availableModes);
 
     // --- Renderer backend state ---
     const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
@@ -311,6 +314,44 @@ function MainApp() {
     const webgpuCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
     // --- Helpers ---
+    useEffect(() => {
+        modesRef.current = modes;
+    }, [modes]);
+
+    useEffect(() => {
+        availableModesRef.current = availableModes;
+    }, [availableModes]);
+
+    const mapShaderParamUpdates = useCallback((slotParamsUpdates: Record<string, number>, slotIndex: number): Partial<SlotParams> => {
+        const shaderId = modesRef.current[slotIndex];
+        const shaderEntry = availableModesRef.current.find(m => m.id === shaderId);
+        if (!shaderEntry || !shaderEntry.params) return {};
+
+        const updates: Partial<SlotParams> = {};
+        for (const [key, value] of Object.entries(slotParamsUpdates)) {
+            const paramIndex = shaderEntry.params.findIndex(p => p.id === key);
+            if (paramIndex === 0) updates.zoomParam1 = value;
+            else if (paramIndex === 1) updates.zoomParam2 = value;
+            else if (paramIndex === 2) updates.zoomParam3 = value;
+            else if (paramIndex === 3) updates.zoomParam4 = value;
+        }
+        return updates;
+    }, []);
+
+    const handleApplyParamsDirect = useCallback((paramsList: Record<string, number>[]) => {
+        paramsList.forEach((slotParamsUpdates, slotIndex) => {
+            const updates = mapShaderParamUpdates(slotParamsUpdates, slotIndex);
+            if (Object.keys(updates).length > 0) {
+                rendererRef.current?.updateSlotParams({
+                    zoomParam1: updates.zoomParam1,
+                    zoomParam2: updates.zoomParam2,
+                    zoomParam3: updates.zoomParam3,
+                    zoomParam4: updates.zoomParam4,
+                }, slotIndex);
+            }
+        });
+    }, [mapShaderParamUpdates]);
+
     const setMode = useCallback(async (index: number, mode: RenderMode) => {
         // Guard: if a shader is already compiling on this slot, skip to prevent chaos-mode pile-up
         if (slotShaderStatusRef.current[index] === 'loading') return;
@@ -413,22 +454,12 @@ function MainApp() {
 
     const handleUpdateParams = useCallback((paramsList: Record<string, number>[]) => {
         paramsList.forEach((slotParamsUpdates, slotIndex) => {
-            const shaderId = modes[slotIndex];
-            const shaderEntry = availableModes.find(m => m.id === shaderId);
-            if (!shaderEntry || !shaderEntry.params) return;
-            const updates: Partial<SlotParams> = {};
-            for (const [key, value] of Object.entries(slotParamsUpdates)) {
-                const paramIndex = shaderEntry.params.findIndex(p => p.id === key);
-                if (paramIndex === 0) updates.zoomParam1 = value;
-                else if (paramIndex === 1) updates.zoomParam2 = value;
-                else if (paramIndex === 2) updates.zoomParam3 = value;
-                else if (paramIndex === 3) updates.zoomParam4 = value;
-            }
+            const updates = mapShaderParamUpdates(slotParamsUpdates, slotIndex);
             if (Object.keys(updates).length > 0) {
                 updateSlotParam(slotIndex, updates);
             }
         });
-    }, [modes, availableModes, updateSlotParam]);
+    }, [mapShaderParamUpdates, updateSlotParam]);
 
     // --- EFFECT: Auto-Switch Generative Mode ---
     // This fixes the issue where generative mode wouldn't replace image/video input
@@ -743,6 +774,9 @@ function MainApp() {
                         tags: shaderEntry.tags || [],
                     } : null;
                     return { currentImage: imgRecord, currentShader: shaderRecord };
+                },
+                {
+                    applyParamsDirect: handleApplyParamsDirect,
                 }
             );
             vj.onStatusChange = (s, m) => { setAiVjStatus(s); setAiVjMessage(m); };
@@ -770,7 +804,7 @@ function MainApp() {
                 }
             }
         }
-    }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl, handleUpdateStack, handleUpdateParams]);
+    }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl, handleUpdateStack, handleUpdateParams, handleApplyParamsDirect]);
 
     const handleGenerateFromVibe = useCallback(async (vibe: string) => {
         if (!aiVj) {
@@ -778,6 +812,28 @@ function MainApp() {
             return;
         }
         await aiVj.generateFromVibe(vibe);
+    }, [aiVj]);
+
+    const handleRandomizeParams = useCallback(async () => {
+        if (!aiVj) return;
+        await aiVj.randomizeActiveParams();
+    }, [aiVj]);
+
+    const handleSavePreset = useCallback((name: string) => {
+        if (!aiVj) return;
+        const shaderIds = aiVj.getActiveShaderIds();
+        const params = aiVj.getCurrentParams();
+        if (shaderIds.length === 0 || params.length === 0) return;
+        savePreset(name, shaderIds, params);
+    }, [aiVj]);
+
+    const startAutoTransition = useCallback(async (config: AutoTransitionConfig) => {
+        if (!aiVj) return false;
+        return aiVj.startAutoTransition(config);
+    }, [aiVj]);
+
+    const stopAutoTransition = useCallback(() => {
+        aiVj?.stopAutoTransition();
     }, [aiVj]);
     
     const onInitCanvas = useCallback(() => {
@@ -1454,6 +1510,10 @@ function MainApp() {
                         isAiVjMode={isAiVjMode} onToggleAiVj={toggleAiVj} aiVjStatus={aiVjStatus}
                         aiVjMessage={aiVjMessage} onGenerateFromVibe={handleGenerateFromVibe}
                         onUpdateStack={handleUpdateStack} onUpdateParams={handleUpdateParams}
+                        onRandomizeParams={handleRandomizeParams}
+                        onSavePreset={handleSavePreset}
+                        onStartAutoTransition={startAutoTransition}
+                        onStopAutoTransition={stopAutoTransition}
                         isWebcamActive={isWebcamActive}
                         onStartWebcam={startWebcam}
                         onStopWebcam={stopWebcam}

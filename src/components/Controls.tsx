@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
-import { AIStatus } from '../AutoDJ';
+import { AIStatus, AutoTransitionConfig } from '../AutoDJ';
 import { VideoRecord } from '../syncTypes';
 // @ts-ignore
 import shaderCoordinates from '../shader_coordinates.json';
@@ -70,6 +70,8 @@ interface ControlsProps {
     onUpdateParams?: (params: Record<string, number>[]) => void;
     onRandomizeParams?: () => void;
     onSavePreset?: (name: string) => void;
+    onStartAutoTransition?: (config: AutoTransitionConfig) => Promise<boolean> | boolean;
+    onStopAutoTransition?: () => void;
     // Webcam Props
     isWebcamActive?: boolean;
     onStartWebcam?: () => void;
@@ -132,6 +134,8 @@ const Controls: React.FC<ControlsProps> = ({
     onUpdateParams,
     onRandomizeParams,
     onSavePreset,
+    onStartAutoTransition,
+    onStopAutoTransition,
     isWebcamActive = false,
     onStartWebcam,
     onStopWebcam,
@@ -177,6 +181,45 @@ const Controls: React.FC<ControlsProps> = ({
     const [presets, setPresets] = useState<VJPreset[]>(() => loadPresets());
     const [presetsOpen, setPresetsOpen] = useState(false);
     const [presetName, setPresetName] = useState('');
+    const [autoTransitionOpen, setAutoTransitionOpen] = useState(false);
+    const [autoTransitionEnabled, setAutoTransitionEnabled] = useState(false);
+    const [autoTransitionSource, setAutoTransitionSource] = useState<'timer' | 'beat'>('timer');
+    const [autoTransitionIntervalMs, setAutoTransitionIntervalMs] = useState(8000);
+    const [autoTransitionDurationMs, setAutoTransitionDurationMs] = useState(2000);
+    const [autoTransitionMode, setAutoTransitionMode] = useState<'randomize' | 'cyclePresets'>('randomize');
+    const stopAutoTransitionRef = React.useRef(onStopAutoTransition);
+
+    useEffect(() => {
+        stopAutoTransitionRef.current = onStopAutoTransition;
+    }, [onStopAutoTransition]);
+
+    useEffect(() => {
+        if (!autoTransitionEnabled || !isAiVjMode) {
+            onStopAutoTransition?.();
+            return;
+        }
+        onStartAutoTransition?.({
+            source: autoTransitionSource,
+            intervalMs: autoTransitionIntervalMs,
+            durationMs: autoTransitionDurationMs,
+            mode: autoTransitionMode,
+        });
+    }, [
+        autoTransitionEnabled,
+        autoTransitionSource,
+        autoTransitionIntervalMs,
+        autoTransitionDurationMs,
+        autoTransitionMode,
+        isAiVjMode,
+        onStartAutoTransition,
+        onStopAutoTransition
+    ]);
+
+    useEffect(() => {
+        return () => {
+            stopAutoTransitionRef.current?.();
+        };
+    }, []);
 
     useEffect(() => {
         setHistory(loadVJHistory());
@@ -1042,6 +1085,78 @@ const Controls: React.FC<ControlsProps> = ({
                             </div>
                         </div>
                     )}
+
+                    <div className="control-group glass-panel" style={{padding: '12px', marginTop: '10px'}}>
+                        <div
+                            className="gold-section-header"
+                            style={{fontSize: '12px', marginTop: '0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer'}}
+                            onClick={() => setAutoTransitionOpen(o => !o)}
+                        >
+                            <span>Auto Transition</span>
+                            <span style={{transform: autoTransitionOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s'}}>▼</span>
+                        </div>
+                        {autoTransitionOpen && (
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px'}}>
+                                <label style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px'}}>
+                                    <span>Enabled</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={autoTransitionEnabled}
+                                        onChange={(e) => setAutoTransitionEnabled(e.target.checked)}
+                                        disabled={!isAiVjMode}
+                                    />
+                                </label>
+                                <label style={{fontSize: '12px'}}>
+                                    Source
+                                    <select
+                                        className="glass-select"
+                                        value={autoTransitionSource}
+                                        onChange={(e) => setAutoTransitionSource(e.target.value as 'timer' | 'beat')}
+                                    >
+                                        <option value="timer">Timer</option>
+                                        <option value="beat">Audio Beat</option>
+                                    </select>
+                                </label>
+                                {autoTransitionSource === 'timer' && (
+                                    <label style={{fontSize: '12px'}}>
+                                        Interval: {(autoTransitionIntervalMs / 1000).toFixed(1)}s
+                                        <input
+                                            type="range"
+                                            min={1000}
+                                            max={20000}
+                                            step={250}
+                                            value={autoTransitionIntervalMs}
+                                            onChange={(e) => setAutoTransitionIntervalMs(Number(e.target.value))}
+                                            style={{width: '100%'}}
+                                        />
+                                    </label>
+                                )}
+                                <label style={{fontSize: '12px'}}>
+                                    Duration: {(autoTransitionDurationMs / 1000).toFixed(1)}s
+                                    <input
+                                        type="range"
+                                        min={200}
+                                        max={10000}
+                                        step={100}
+                                        value={autoTransitionDurationMs}
+                                        onChange={(e) => setAutoTransitionDurationMs(Number(e.target.value))}
+                                        style={{width: '100%'}}
+                                    />
+                                </label>
+                                <label style={{fontSize: '12px'}}>
+                                    Mode
+                                    <select
+                                        className="glass-select"
+                                        value={autoTransitionMode}
+                                        onChange={(e) => setAutoTransitionMode(e.target.value as 'randomize' | 'cyclePresets')}
+                                    >
+                                        <option value="randomize">Randomize</option>
+                                        <option value="cyclePresets">Cycle Presets</option>
+                                    </select>
+                                </label>
+                            </div>
+                        )}
+                    </div>
 
                     {/* VJ History */}
                     <div className="control-group glass-panel" style={{padding: '12px', marginTop: '10px'}}>
