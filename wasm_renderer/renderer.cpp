@@ -268,10 +268,11 @@ bool WebGPURenderer::CreateDevice() {
         { WGPUPowerPreference_LowPower,        false },
         { WGPUPowerPreference_Undefined,       true  }
     };
+    constexpr size_t kAdapterAttemptCount = sizeof(adapterAttempts) / sizeof(adapterAttempts[0]);
 
     WGPUAdapter rawAdapter = nullptr;
 
-    for (size_t attempt = 0; attempt < sizeof(adapterAttempts) / sizeof(adapterAttempts[0]) && rawAdapter == nullptr; ++attempt) {
+    for (size_t attempt = 0; attempt < kAdapterAttemptCount && rawAdapter == nullptr; ++attempt) {
         WGPUPowerPreference pref = adapterAttempts[attempt].powerPreference;
         bool useFallbackAdapter = adapterAttempts[attempt].forceFallbackAdapter;
         const char* prefName = (pref == WGPUPowerPreference_HighPerformance) ? "HighPerformance" :
@@ -280,7 +281,7 @@ bool WebGPURenderer::CreateDevice() {
 
         printf("[WASM] Requesting WebGPU adapter (attempt %zu/%zu, powerPreference=%s, fallbackAdapter=%s)...\n",
                attempt + 1,
-               sizeof(adapterAttempts) / sizeof(adapterAttempts[0]),
+               kAdapterAttemptCount,
                prefName,
                useFallbackAdapter ? "true" : "false");
 
