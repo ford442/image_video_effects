@@ -38,14 +38,17 @@ Routine maintains this automatically — you can add items too.
 - [ ] Confirm CORS allowlist (`https://test1.1ink.us`) shipped to the VPS
 - [ ] `sync-images` / `sync-videos` admin endpoints need a dry-run mode before first prod run (note: `npm run sync:shaders:dry` exists for shader sync)
 - [ ] Bind-group compatibility report (`reports/bindgroup_compatibility_report.json`, 22k-line JSON) needs triage pass — many shaders flagged for mismatched layouts → **TODAY'S FOCUS**
-- [ ] Test runner broken: `typescript` missing from `node_modules`; run `npm ci` in project root before `npm test` (react-scripts test / Jest) or it fails MODULE_NOT_FOUND. `npm run build` is unaffected. Confirmed still broken 2026-05-30.
-- [ ] `layerChain.spec.ts` (292-line multi-slot regression harness, `src/__tests__/`) passes structurally but cannot run until the `typescript` dep is restored — add a CI step to enforce `npm ci` before test.
+- [ ] **37 shader definitions reference missing local WGSL files** (surfaced by sync dry-run 2026-05-30) — triage whether these are intentional storage-only entries or broken refs.
+- [ ] ~~Test runner broken: `typescript` missing from `node_modules`~~ → **CLOSED 2026-05-30**: `npm ci` restores it; CI already enforces `npm ci` before test via `ci.yml`.
+- [ ] ~~`layerChain.spec.ts` — add a CI step to enforce `npm ci` before test~~ → **CLOSED 2026-05-30**: `ci.yml` already has `npm ci` + explicit TypeScript resolution gate before `npm test`.
 
 ## Done
 <!--
 Completed items, routine archives here with date.
 Prune occasionally when this gets long.
 -->
+- 2026-05-30: Hardcoded SFTP password removed from `scripts/deploy.py` (line 251) and `scripts/deploy_app_only.py` (line 38). Both now read `DEPLOY_PASS` env var; `deploy.py` falls back to `getpass.getpass()` interactive prompt; `deploy_app_only.py` already had that fallback. **Rotate the DreamHost credential** — it was committed in plaintext to a public repo.
+- 2026-05-30: Pipeline hygiene pass (Claude Code E task) — all 6 stages green: `npm ci` restored typescript@4.9.5; `npm run build` clean (963 shaders, Compiled successfully); `layerChain.spec.ts` 25/25 PASS; sync dry-run (34 to upload, no writes); deploy scripts verified correct; storage manager AST-clean. Closed two stale backlog items (test runner / CI enforcement — both already solved in ci.yml).
 - 2026-05-23: Per-shader param presets + AI VJ randomizer — `vjPresets.ts` (VJPreset interface; savePreset/loadPresets/deletePreset, localStorage, max 50; `randomizeParams(shaderIds, catalog)` samples uniform [min,max], snaps to step, clamps overshoot), `randomizeActiveParams()` public method on `Alucinate` (`src/AutoDJ.ts`), and Controls.tsx UI: Randomize Params + Randomize Slot + Randomize All Slots buttons and collapsible Presets panel (save named / restore / delete). tsc PASS. Confirmed via repo audit 2026-05-30 (commits 1969be8, be1ccfa).
 - 2026-05-23: AI VJ stack persistence + history panel — vjHistory.ts service (save/load/clear/removeEntry, max 20 entries, localStorage), saveVJStack wired into AutoDJ.generateFromVibe, collapsible "VJ History" panel in Controls.tsx with per-entry Restore (exact stack+params) and Regen (re-fires generateFromVibe with same vibe string) buttons, Clear History button.
 - 2026-05-16: WGSL runtime-error fix pass — all 49 critical shaders in `reports/runtime_errors_report.json` fixed and validated via naga. Patterns: bulk canonical binding renames (videoSampler→u_sampler, outTex→writeTexture, etc.) resolved the majority; false-positive invalid_binding flags cleared for 8 multi-pass shaders; array_bounds ripple clamps added where needed. 49/49 naga OK per `.swarm-state.md`.
