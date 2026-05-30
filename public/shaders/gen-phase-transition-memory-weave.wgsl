@@ -190,7 +190,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 viscosity * 0.4);
 
     // Phase boundary glow (hysteresis visualization)
-    let phaseBoundary = abs(order - 0.5) < 0.08 ? 1.0 : 0.0;
+    let phaseBoundary = select(0.0, 1.0, abs(order - 0.5) < 0.08);
     color += vec3<f32>(1.0, 0.9, 0.7) * phaseBoundary * mids * 0.6;
 
     // Mouse forced region highlight

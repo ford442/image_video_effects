@@ -142,8 +142,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gridScale = 5.0 * complexity;
     let gridUV = uvA * gridScale;
     let gridCell = floor(gridUV);
-    let gridFrac = fract(gridUV);
-    _ = gridFrac; // suppress warning
 
     var totalInk = 0.0;
     var inkColor = vec3<f32>(0.0);
