@@ -1,15 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
 //  alucinate-hdr
 //  Category: advanced-hybrid
-//  Features: psychedelic-warping, hdr-bloom, tone-mapping, mouse-driven
-//  Complexity: High
-//  Chunks From: alucinate.wgsl, alpha-hdr-bloom-chain.wgsl
+//  Features: ai-vj-conductor, music-reactive-glyphs, living-spectrogram, hdr-atmosphere, meta-visualizer
+//  Complexity: Medium-High
+//  Chunks From: alucinate.wgsl, alpha-hdr-bloom-chain.wgsl + new glyph/spectrogram system
 //  Created: 2026-04-18
-//  By: Agent CB-16 — Generative & Cosmic Enhancer
+//  Updated: 2026-05-31
+//  By: Grok (AI VJ conductor's baton + living spectrogram upgrade)
 // ═══════════════════════════════════════════════════════════════════
-//  Psychedelic interactive warping meets HDR bloom chain. Warped UVs
-//  generate chromatic displacement; bloom kernel accumulates on the
-//  warped result. ACES tone mapping brings HDR values back to LDR.
+//  When Alucinate (AI VJ) mode is active, this acts as a visual "conductor's
+//  baton" — elegant, minimal music-reactive glyphs and spectrogram elements
+//  that represent the current vibe stack. The psychedelic warp + HDR bloom
+//  provides a rich atmospheric underlayer.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -40,6 +42,38 @@ fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     let d = 0.59;
     let e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══ Living Spectrogram / Conductor Glyphs (AI VJ meta layer) ═══
+fn vibeGlyphs(uv: vec2<f32>, bass: f32, mids: f32, treble: f32, mouse: vec2<f32>, mouseDown: f32) -> vec3<f32> {
+    var col = vec3<f32>(0.0);
+    let centerY = 0.5;
+    let conductor = smoothstep(0.25, 0.0, distance(uv, mouse)) * (0.6 + mouseDown * 0.8);
+
+    // 6 elegant vertical bands (stylized frequency response)
+    for (var i = 0; i < 6; i++) {
+        let fi = f32(i);
+        let bandX = 0.18 + fi * 0.13;
+        let distX = abs(uv.x - bandX);
+        let width = 0.018 + conductor * 0.012;
+
+        // Heights driven by different plasma bands with musical feel
+        let h = select(bass, mids, i > 1);
+        let hh = select(h, treble, i > 3);
+        let height = 0.08 + hh * (0.28 + fi * 0.015);
+
+        let inBar = smoothstep(width, 0.0, distX) * smoothstep(height, 0.0, abs(uv.y - centerY));
+        
+        // Elegant gold-to-cyan gradient per band, stronger on conductor
+        let bandCol = mix(vec3<f32>(0.95, 0.75, 0.35), vec3<f32>(0.3, 0.85, 0.95), fi / 5.5);
+        col += bandCol * inBar * (0.7 + conductor * 1.2);
+    }
+
+    // Subtle horizontal "beat line" that pulses with bass
+    let beatLine = smoothstep(0.012, 0.0, abs(uv.y - centerY)) * bass * 1.4;
+    col += vec3<f32>(0.6, 0.9, 1.0) * beatLine;
+
+    return col;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -116,14 +150,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let toneMapExp = mix(0.5, 2.0, u.zoom_params.z);
     let ldrColor = toneMapACES(hdrColor * toneMapExp);
 
-    let luma = dot(ldrColor, vec3<f32>(0.299, 0.587, 0.114));
-    let warpAlpha = mix(0.8, 1.0, mouse_effect + warp_amp * 10.0);
-    let alpha = mix(warpAlpha * 0.85, warpAlpha, luma);
+    // === AI VJ CONDUCTOR LAYER (the high-signal meta upgrade) ===
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let mouseDown = u.zoom_config.w;
+
+    let glyphs = vibeGlyphs(uv, bass, mids, treble, mouse_uv, mouseDown);
+
+    // Blend the atmospheric HDR warp/bloom underneath elegant glyphs
+    let atmosphere = ldrColor * (0.65 + mouse_effect * 0.25);
+    let finalColor = atmosphere + glyphs * (0.85 + mouseDown * 0.4);
+
+    // Meaningful alpha: higher when glyphs are prominent or during strong musical moments
+    let glyphStrength = length(glyphs);
+    let musicalEnergy = bass * 0.3 + mids * 0.4 + treble * 0.5;
+    let alpha = clamp(0.55 + glyphStrength * 0.9 + musicalEnergy * 0.6 + mouseDown * 0.25, 0.0, 1.15);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let finalAlpha = mix(alpha * 0.8, alpha, depth);
+    let finalAlpha = mix(alpha * 0.75, alpha, depth);
 
-    textureStore(writeTexture, coord, vec4<f32>(ldrColor, finalAlpha));
+    // Premultiplied for clean layering over the actual AI VJ output
+    let a = clamp(finalAlpha, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(finalColor * a, a));
+
+    // Store HDR for downstream use if needed
     textureStore(dataTextureA, coord, vec4<f32>(hdrColor, max(0.0, max(hdrColor.r, max(hdrColor.g, hdrColor.b)) - 1.0)));
 
     let depthOut = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

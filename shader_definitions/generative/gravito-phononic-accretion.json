@@ -1,0 +1,64 @@
+{
+  "id": "gravito-phononic-accretion",
+  "name": "Gravito-Phononic Accretion",
+  "url": "shaders/gravito-phononic-accretion.wgsl",
+  "category": "generative",
+  "description": "Multiple gravitational centers driven by different audio bands accrete density into beautiful organic structures. Includes gravitational lensing distortion. Mouse can temporarily increase gravity in a region.",
+  "features": [
+    "gravitational-accretion",
+    "audio-driven",
+    "lensing",
+    "particle-density",
+    "mouse-gravity"
+  ],
+  "tags": [
+    "gravitational",
+    "accretion",
+    "cosmic",
+    "organic",
+    "audio-reactive",
+    "lensing"
+  ],
+  "params": [
+    {
+      "id": "accretionSpeed",
+      "name": "Accretion Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "How fast material collects around gravitational centers"
+    },
+    {
+      "id": "lensing",
+      "name": "Lensing Strength",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Amount of gravitational light distortion"
+    },
+    {
+      "id": "diffusion",
+      "name": "Material Diffusion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How much material spreads out"
+    },
+    {
+      "id": "mouseMass",
+      "name": "Mouse Gravity Power",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Temporary mass added when mouse is held"
+    }
+  ]
+}

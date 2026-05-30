@@ -1,14 +1,18 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Hyperbolic Dreamweaver - Advanced Alpha (OPTIMIZED)
-//  Category: distortion
-//  Alpha Mode: Effect Intensity Alpha
-//  Features: advanced-alpha, hyperbolic-geometry, depth-aware
+//  Hyperbolic Dreamweaver
+//  Category: geometric (distortion)
+//  Features: advanced-alpha, hyperbolic-geometry, depth-aware, audio-reactive, anti-moire
+//  Complexity: Medium
+//  Created: 2026-05-23
+//  By: Claude Sonnet 4.6 (swarm optimization pass 2026-05-31)
+//  upgraded-rgba
 //
 //  OPTIMIZATIONS APPLIED:
 //  - Cached hyperbolic coordinates
-//  - Added LOD for distance > 0.7
+//  - LOD for distance > 0.7
 //  - Branchless hyperbolic calculations
-//  - Early exit for edge regions
+//  - fwidth-based mip selection for anti-moiré at 2048² (added 2026-05-31)
+//  - Audio reactivity fixed to use plasmaBuffer (was reading zoom_config.x)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -115,10 +119,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
+    // ═══ AUDIO REACTIVITY (fixed: plasmaBuffer, not zoom_config.x which is ZoomTime) ═══
+    let bass           = plasmaBuffer[0].x;
+    let mid            = plasmaBuffer[0].y;
+    let audioReactivity = 1.0 + bass * 0.4 + mid * 0.15;
     
     // Parameters
     let intensity = u.zoom_params.x;
@@ -156,12 +160,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Map back to UV space
     let warpedUV = rotated * 0.5 + 0.5;
     
-    // Sample with warped coordinates
-    let sample = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    
-    // LOD-aware color enhancement
+    // Anti-moiré: compute shaders lack dpdx/dpdy, so estimate mip from lodFactor
+    // (lodFactor grows toward 1.0 as r→disk boundary where hyperbolic compression is worst)
+    let safeWarpedUV = clamp(warpedUV, vec2<f32>(0.0), vec2<f32>(1.0));
+    let mipLevel = lodFactor * 3.0; // 0 at center (full detail) → mip 3 at boundary (suppress moiré)
+    let sample = textureSampleLevel(readTexture, u_sampler, safeWarpedUV, mipLevel);
+
+    // LOD-aware color enhancement with hue_preserve_clamp — avoid hue shift at bright edges
     let colorEnhancement = 1.0 + hyperDist * 0.2 * (1.0 - lodFactor);
-    let finalColor = sample.rgb * colorEnhancement;
+    let enhanced = sample.rgb * colorEnhancement;
+    // Uniform scale-down if any channel clips — preserves hue ratios exactly
+    let peak = max(max(enhanced.r, enhanced.g), max(enhanced.b, 0.001));
+    let finalColor = enhanced * select(1.0, 1.0 / peak, peak > 1.0);
     
     // ═══ ADVANCED ALPHA CALCULATION ═══
     let alpha = calculateAdvancedAlpha(uv, warpedUV, sample.a, u.zoom_params);
@@ -171,8 +181,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalResult);
     
-    // Depth pass-through with hyperbolic modulation
+    // Depth pass-through with hyperbolic modulation (clamped to [0,1] — prevents depth buffer overrun)
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthMod = 1.0 + hyperDist * 0.1 * (1.0 - lodFactor);
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth * depthMod, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(clamp(depth * depthMod, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

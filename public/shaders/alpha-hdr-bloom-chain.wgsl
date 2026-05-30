@@ -3,6 +3,10 @@
 //  Category: visual-effects
 //  Features: mouse-driven, rgba-data-channel
 //  Complexity: Medium
+//  Chunks From: alpha-hdr-bloom-chain
+//  Created: 2026-05-31
+//  By: Copilot CLI (tactical swarm)
+// ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
 //    R = HDR red channel (can exceed 1.0)
 //    G = HDR green channel (can exceed 1.0)
@@ -10,7 +14,6 @@
 //    A = Exposure/overexposure value (stops above white point)
 //  Why f32: HDR values routinely exceed 1.0 and bloom kernel
 //  accumulates many samples; 8-bit would clip immediately.
-// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -114,6 +117,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let toneMapExp = mix(0.5, 2.0, u.zoom_params.z);
     let ldrColor = toneMapACES(hdrColor * toneMapExp);
 
+    // Alpha is intentional exposure metadata for downstream passes, not coverage alpha.
     // === STORE HDR STATE ===
     textureStore(dataTextureA, coord, vec4<f32>(hdrColor, exposure));
 

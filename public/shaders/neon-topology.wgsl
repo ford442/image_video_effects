@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Topology
 //  Category: visual-effects
-//  Features: advanced-alpha, topology, neon, contours, mouse-driven, audio-reactive
-//  Complexity: Medium
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
+//  Features: advanced-alpha, topology, neon, contours, mouse-driven, audio-reactive, depth-haze, upgraded-rgba
+//  Complexity: High
+//  Chunks From: neon-topology, bass_env, depth-aware-fog
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,9 +31,10 @@ struct Uniforms {
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
 
-// ═══ ADVANCED ALPHA FUNCTIONS ═══
+fn bass_env(bass: f32, mids: f32) -> f32 {
+  return 1.0 + bass * 0.5 + mids * 0.2;
+}
 
-// Mode 2: Edge-Preserve Alpha
 fn edgePreserveAlpha(uv: vec2<f32>, pixelSize: vec2<f32>, edgeThreshold: f32) -> f32 {
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).r;
@@ -53,38 +54,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixelSize = 1.0 / resolution;
     let time = u.config.x;
     let audioBass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Bass adds extra contour density (more rings on beat)
     let contourLevels = u.zoom_params.x * 10.0 + 3.0 + audioBass * 4.0;
     let edgeThreshold = u.zoom_params.y * 0.1 + 0.02;
-    let intensity = u.zoom_params.z * 2.0 * (1.0 + audioBass * 0.3);
+    let intensity = u.zoom_params.z * 2.0 * bass_env(audioBass, mids);
     let colorShift = u.zoom_params.w;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Branchless contour lines — pre-multiplied phase saves ALU
+    // Branchless contour lines
     let contourPhase = depth * contourLevels;
     let contour = fract(contourPhase);
     let line = smoothstep(0.05, 0.0, contour);
-    // Major every 5 contours (highlighted)
     let major = step(0.95, fract(contourPhase * 0.2));
     let lineWithMajor = line * (1.0 + major * 0.6);
 
-    // Neon color — single phase, branchless vec3 sin
-    let phase = depth * 10.0 + colorShift * TAU + time;
+    // Audio elevation: bass adds phantom contours above actual depth
+    let phantomPhase = (depth + audioBass * 0.1) * contourLevels * 0.5;
+    let phantomLine = smoothstep(0.03, 0.0, fract(phantomPhase)) * audioBass * 0.5;
+
+    // Neon color with treble shimmer
+    let phase = depth * 10.0 + colorShift * TAU + time + treble * 2.0;
     let neonColor = 0.5 + 0.5 * sin(vec3<f32>(phase, phase + 2.094, phase + 4.188));
 
-    // Composite onto desaturated background image (preserve photo context)
+    // Depth atmospheric haze
+    let haze = exp(-depth * 3.0) * 0.3;
+
     let bgSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let bg = bgSample.rgb;
     let bgGray = vec3<f32>(dot(bg, vec3<f32>(0.299, 0.587, 0.114))) * 0.4;
-    let emission = neonColor * lineWithMajor * intensity;
-    let final_color = bgGray + emission;
+    let emission = neonColor * (lineWithMajor + phantomLine) * intensity;
+    let final_color = mix(bgGray + emission, vec3<f32>(0.1, 0.15, 0.25), haze);
 
     let alpha = clamp(edgePreserveAlpha(uv, pixelSize, edgeThreshold) * lineWithMajor
-                      + dot(emission, vec3<f32>(0.299, 0.587, 0.114)) * 0.3, 0.0, 1.0);
+                      + dot(emission, vec3<f32>(0.299, 0.587, 0.114)) * 0.3 + phantomLine * 0.2, 0.0, 1.0);
     let finalAlpha = mix(bgSample.a, 1.0, intensity * lineWithMajor * 0.7);
-    
+
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, finalAlpha));
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(final_color, finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

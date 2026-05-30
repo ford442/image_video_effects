@@ -1,15 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alien Flora Ecosystem
-//  Category: advanced-hybrid
-//  Features: raymarching, ecosystem-simulation, subsurface-scattering, temporal
+//  Category: generative
+//  Features: multi-species-flora, audio-seasons, mouse-pollinator, depth-canopy, symbiotic
 //  Complexity: Very High
 //  Chunks From: gen-alien-flora.wgsl, alpha-multi-state-ecosystem.wgsl
 //  Created: 2026-04-18
-//  By: Agent CB-20 — Generative Nature Enhancer
+//  Updated: 2026-05-31
+//  By: Grok (audio-driven symbiosis + mouse as pollinator/disturber)
 // ═══════════════════════════════════════════════════════════════════
 //  Procedural alien flora terrain where each plant cell hosts a
-//  multi-species ecosystem. Species densities modulate plant color,
-//  bioluminescence, and terrain tint. Mouse nurtures local patches.
+//  multi-species ecosystem. Bass = harsh season (dormancy), mids = bloom,
+//  treble = volatile pollination. Mouse acts as pollinator or disturbance.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -236,9 +237,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let mouseWorld = vec2<f32>(mouseWorldX, mouseWorldZ);
         let mouseDist = length(p.xz - mouseWorld);
         let mouseNurture = exp(-mouseDist * 0.3) * select(0.0, 1.0, u.zoom_config.w > 0.5);
+
+        // Grok upgrade: Audio seasons
+        let bass = plasmaBuffer[0].x;
+        let mids = plasmaBuffer[0].y;
+        let treble = plasmaBuffer[0].z;
+        let seasonBloom = mids * 0.8;           // Mids = explosive growth
+        let seasonHarsh = bass * 0.6;           // Bass = dormancy / stress
+        let seasonVolatile = treble * 0.9;      // Treble = chaotic pollination / mutation
+
         var s1 = eco.r + mouseNurture * 0.3;
         var s2 = eco.g + mouseNurture * 0.2;
         var resource = eco.b + mouseNurture * 0.2;
+
+        // Seasonal modulation
+        s1 *= (1.0 - seasonHarsh * 0.3);
+        s2 *= (1.0 - seasonHarsh * 0.25);
+        resource += seasonBloom * 0.4;
+        s1 += seasonVolatile * 0.15;  // Treble causes more chaotic species mixing
+
         s1 = clamp(s1, 0.0, 1.0);
         s2 = clamp(s2, 0.0, 1.0);
 
@@ -284,6 +301,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = mix(fogColor, vec3<f32>(0.0, 0.0, 0.05), rd.y * 0.5 + 0.5);
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    // Grok upgrade: Better alpha for compositing + seasonal life force
+    let lifeForce = (s1 + s2) * 0.4 + seasonBloom * 0.3;
+    let finalAlpha = clamp(alpha * (0.8 + lifeForce), 0.0, 1.1);
+    let a = clamp(finalAlpha, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color * a, a));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
 }

@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  aero-chromatics-prismatic
+//  Aero Chromatics Prismatic
 //  Category: advanced-hybrid
-//  Features: prismatic-dispersion, chromatic-advection, cauchy-equation
+//  Features: prismatic-dispersion, chromatic-advection, cauchy-equation, audio-dispersion, depth-atmosphere
 //  Complexity: High
+//  Updated: 2026-05-31 — Grok (audio dispersion + depth atmosphere)
 //  Chunks From: aero-chromatics.wgsl, spec-prismatic-dispersion.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-8 — Thermal & Atmospheric Enhancer
@@ -14,6 +15,10 @@
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
+
+let bass = plasmaBuffer[0].x;
+let mids = plasmaBuffer[0].y;
+let treble = plasmaBuffer[0].z;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;

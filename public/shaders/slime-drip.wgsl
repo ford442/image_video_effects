@@ -1,8 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Slime Drip - Image Effect with Mucus Material Properties
+// ═══════════════════════════════════════════════════════════════════
+//  Slime Drip
 //  Category: image
-//  Features: Viscous slime, light transmission, surface wetness alpha
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: slime-drip
+//  Created: 2026-05-30
+//  By: Copilot CLI
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -97,12 +101,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
     var mouse = u.zoom_config.yz;
     let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
     // Params
-    let speed = u.zoom_params.x * 2.0;
+    let speed = u.zoom_params.x * (2.0 + bass * 0.6);
     let viscosity = u.zoom_params.y;
     let amount = u.zoom_params.z;
-    let tint_str = u.zoom_params.w;
+    let tint_str = u.zoom_params.w * (1.0 + treble * 0.35);
 
     // Drip Logic
     let noise_scale = mix(5.0, 20.0, viscosity);
@@ -119,7 +127,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse Wipe
     let mouse_dist = distance((uv - mouse) * vec2<f32>(aspect, 1.0), vec2<f32>(0.0));
     let wipe = smoothstep(0.2, 0.0, mouse_dist);
-    sample_uv = mix(sample_uv, uv, wipe);
+    sample_uv = clamp(mix(sample_uv, uv, wipe), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
 
     // Sample base image
     var baseColor = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
@@ -142,7 +150,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Add specular highlight to slime (wet surface)
     if (tint_mask > 0.1) {
-        let specular = 0.3 * tint_mask * (0.5 + 0.5 * sin(uv.y * 100.0 + time * 2.0));
+        let specular = 0.3 * tint_mask * (0.5 + 0.5 * sin(uv.y * 100.0 + time * (2.0 + mids * 1.5)));
         finalColor += vec3<f32>(specular);
     }
 
@@ -152,5 +160,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Blend alpha with base image
     let blendedAlpha = mix(baseColor.a, finalAlpha, tint_mask * 0.8);
 
+    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, sample_uv, 0.0).r + slimeThickness * 0.08, 0.0, 1.0);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, blendedAlpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(drip, slimeThickness, tint_mask, blendedAlpha));
 }

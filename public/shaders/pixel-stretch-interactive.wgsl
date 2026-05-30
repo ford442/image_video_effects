@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Pixel Stretch Interactive
 //  Category: image
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Low
-//  Upgraded: 2026-05-17
+//  Features: mouse-driven, audio-reactive, chromatic-stretch, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Chunks From: pixel-stretch-interactive, bass_env, depth-aware-fog
+//  Created: 2026-05-17
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,6 +29,10 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn bass_env(bass: f32, mids: f32) -> f32 {
+  return 1.0 + bass * 0.5 + mids * 0.2;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -42,6 +48,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let jitterStr = u.zoom_params.y;
   let rgbShift = u.zoom_params.z * (1.0 + mids * 0.3);
 
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthStretch = mix(1.4, 0.6, depth);
+
   let isRight = modeParam < 0.33;
   let isLeft = modeParam >= 0.33 && modeParam < 0.66;
   let isCross = modeParam >= 0.66;
@@ -51,26 +60,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let stretchCrossX = isCross && uv.x > mouse.x;
   let stretchCrossY = isCross && uv.y > mouse.y;
 
-  var sample_uv = uv;
-  sample_uv.x = select(sample_uv.x, mouse.x, stretchRight || stretchLeft || stretchCrossX);
-  sample_uv.y = select(sample_uv.y, mouse.y, stretchCrossY);
+  var sampleUV = uv;
+  sampleUV.x = select(sampleUV.x, mouse.x, stretchRight || stretchLeft || stretchCrossX);
+  sampleUV.y = select(sampleUV.y, mouse.y, stretchCrossY);
   let is_stretched = stretchRight || stretchLeft || stretchCrossX || stretchCrossY;
 
   let noise = fract(sin(dot(uv * time, vec2<f32>(12.9898, 78.233))) * 43758.5453);
   let jitter = select(vec2<f32>(0.0), vec2<f32>((noise - 0.5) * 0.1 * jitterStr), is_stretched && noise > 0.5 && jitterStr > 0.0);
-  sample_uv = clamp(sample_uv + jitter, vec2<f32>(0.0), vec2<f32>(1.0));
+  sampleUV = clamp(sampleUV + jitter, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let shift = rgbShift * 0.02;
-  let r = textureSampleLevel(readTexture, u_sampler, sample_uv + vec2<f32>(shift, 0.0), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, sample_uv - vec2<f32>(shift, 0.0), 0.0).b;
+  let chromaIntensity = rgbShift * 0.025 * depthStretch * bass_env(bass, mids);
+  let rShift = chromaIntensity * 1.5;
+  let gShift = chromaIntensity * 0.5;
+  let bShift = -chromaIntensity * 0.8;
+
+  let rDir = select(vec2<f32>(rShift, 0.0), vec2<f32>(rShift, rShift * 0.3), isCross);
+  let gDir = select(vec2<f32>(0.0, 0.0), vec2<f32>(gShift, -gShift * 0.2), isCross);
+  let bDir = select(vec2<f32>(-bShift, 0.0), vec2<f32>(-bShift, bShift * 0.4), isCross);
+
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + rDir, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + gDir, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + bDir, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   let caColor = vec4<f32>(r, g, b, 1.0);
-  let normalColor = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
+  let normalColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
   let color = select(normalColor, caColor, is_stretched && rgbShift > 0.0);
-  let alpha = clamp(color.a + select(0.0, 0.2 * bass, is_stretched), 0.0, 1.0);
-
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let stretchAmount = select(0.0, length(vec2<f32>(uv.x - mouse.x, uv.y - mouse.y)) * depthStretch, is_stretched);
+  let alpha = clamp(color.a + stretchAmount * 0.3 + bass * 0.15, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(color.rgb, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -1,16 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Reaction Diffusion RGBA
 //  Category: simulation
-//  Features: mouse-driven, temporal, rgba-state-machine
+//  Features: multi-species-ecosystem, predator-prey, audio-reactive, depth-stratified, mouse-keystone
 //  Complexity: High
 //  RGBA Channels:
-//    R = Chemical A (activator 1)
-//    G = Chemical B (inhibitor 1)
-//    B = Chemical C (activator 2)
-//    A = Chemical D (inhibitor 2)
+//    R = Chemical A (activator / prey 1)
+//    G = Chemical B (inhibitor / predator 1)
+//    B = Chemical C (activator / prey 2)
+//    A = Chemical D (inhibitor / predator 2)
 //  Why f32: Reaction-diffusion requires precise sub-threshold
 //  concentrations; 8-bit quantization collapses subtle gradients
 //  and destroys pattern formation.
+//  Updated: 2026-05-31 — Grok (ecosystem + audio mutation + depth diffusion)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -81,22 +82,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let lapC = left.b + right.b + down.b + up.b - 4.0 * C;
     let lapD = left.a + right.a + down.a + up.a - 4.0 * D;
 
-    // === PARAMETERS ===
-    let feed = mix(0.02, 0.06, u.zoom_params.x);
-    let kill = mix(0.04, 0.07, u.zoom_params.y);
-    let diffA = 0.8; // A diffuses faster
-    let diffB = 0.3;
-    let diffC = 0.7;
-    let diffD = 0.25;
-    let crossInhibit = u.zoom_params.z * 0.3;
-    let dt = 0.8;
+    // === AUDIO-DRIVEN ECOSYSTEM PARAMETERS ===
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // === 4-SPECIES REACTION ===
-    // A feeds B, C feeds D
-    // B inhibits C, D inhibits A
-    let dA = diffA * lapA - A * B * B + feed * (1.0 - A) - crossInhibit * A * D;
+    // Bass increases "predation" (kill rate) — predators thrive when the beat hits
+    let feed = mix(0.018, 0.065, u.zoom_params.x);
+    let baseKill = mix(0.038, 0.072, u.zoom_params.y);
+    let kill = baseKill + bass * 0.035;                    // bass = more aggressive predators
+
+    // Diffusion becomes asymmetric and audio-reactive (ecosystem "seasons")
+    let diffA = 0.82 + mids * 0.18;   // A (prey 1) diffuses faster in mids
+    let diffB = 0.28 + bass * 0.12;   // B (predator 1) slows when bass is high
+    let diffC = 0.74 + treble * 0.22; // C (prey 2) gets bursty diffusion on treble
+    let diffD = 0.24 + bass * 0.08;
+
+    let crossInhibit = (u.zoom_params.z * 0.32) + (mids * 0.18); // mids increase competition between the two ecosystems
+    let dt = 0.82;
+
+    // === 4-SPECIES PREDATOR-PREY REACTION (evolved) ===
+    // Two loosely coupled ecosystems with audio-modulated mutation pressure
+    // Bass makes predators hungrier, treble makes prey more "spore-like" (erratic diffusion)
+    let dA = diffA * lapA - A * B * B + feed * (1.0 - A) - crossInhibit * A * D * (1.0 + bass * 0.4);
     let dB = diffB * lapB + A * B * B - (feed + kill) * B;
-    let dC = diffC * lapC - C * D * D + feed * (1.0 - C) - crossInhibit * C * B;
+    let dC = diffC * lapC - C * D * D + feed * (1.0 - C) - crossInhibit * C * B * (1.0 + treble * 0.5);
     let dD = diffD * lapD + C * D * D - (feed + kill) * D;
 
     A = A + dA * dt;
@@ -110,15 +120,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     C = clamp(C, 0.0, 1.0);
     D = clamp(D, 0.0, 1.0);
 
-    // === MOUSE INJECTION ===
+    // === MOUSE AS KEYSTONE SPECIES ===
+    // Mouse down introduces "invasive" predator pressure (B + D)
+    // Holding creates localized extinction events that the ecosystem must recover from
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     let mouseDist = length(uv - mousePos);
-    let mouseInfluence = smoothstep(0.1, 0.0, mouseDist) * mouseDown;
-    B += mouseInfluence * 0.3;
-    D += mouseInfluence * 0.2;
+    let mouseInfluence = smoothstep(0.12, 0.0, mouseDist) * mouseDown;
+
+    // Bass + mouse = more violent introduction (stronger perturbation)
+    let keystoneStrength = 0.32 + bass * 0.25;
+    B += mouseInfluence * keystoneStrength;
+    D += mouseInfluence * (keystoneStrength * 0.7);
+
+    // Treble + mouse = occasional "spore burst" of the second ecosystem (C)
+    if (treble > 0.6) {
+        C += mouseInfluence * treble * 0.6;
+    }
+
     B = clamp(B, 0.0, 1.0);
     D = clamp(D, 0.0, 1.0);
+    C = clamp(C, 0.0, 1.0);
 
     // === RIPPLE PERTURBATION ===
     let rippleCount = min(u32(u.config.y), 50u);
@@ -138,23 +160,45 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // === STORE STATE ===
     textureStore(dataTextureA, coord, vec4<f32>(A, B, C, D));
 
-    // === VISUALIZATION ===
-    // Map chemicals to distinct colors
-    let colorA = vec3<f32>(0.0, 0.4, 1.0) * A;   // Blue
-    let colorB = vec3<f32>(1.0, 0.2, 0.0) * B;   // Red-orange
-    let colorC = vec3<f32>(0.0, 1.0, 0.3) * C;   // Green
-    let colorD = vec3<f32>(1.0, 0.8, 0.0) * D;   // Gold
-    var displayColor = colorA + colorB + colorC + colorD;
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    // === ECOSYSTEM VISUALIZATION + DEPTH STRATIFICATION ===
+    // Two competing ecosystems with more organic color mixing
+    let colorPrey1   = vec3<f32>(0.15, 0.55, 0.95) * A;     // Cool blue prey
+    let colorPred1   = vec3<f32>(0.95, 0.25, 0.1) * B;     // Hot predator
+    let colorPrey2   = vec3<f32>(0.2, 0.9, 0.45) * C;     // Acid green prey
+    let colorPred2   = vec3<f32>(0.95, 0.85, 0.15) * D;    // Gold predator
 
-    // Mix with source image based on param4
+    // When one pair dominates, the other ecosystem gets slightly desaturated (extinction pressure)
+    let biomass1 = A + B;
+    let biomass2 = C + D;
+    let dominance = clamp((biomass1 - biomass2) * 0.8, -0.6, 0.6);
+
+    var eco1 = colorPrey1 + colorPred1;
+    var eco2 = colorPrey2 + colorPred2;
+
+    // Depth modulates diffusion "layers" — deeper = slower, more stable patterns
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthDamp = mix(0.6, 1.05, depth); // deeper areas evolve more slowly
+
+    // Final ecosystem blend with dominance fade
+    var displayColor = mix(eco1, eco2, 0.5 + dominance * 0.4) * depthDamp;
+    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.15));
+
+    // Source mix now also carries a little "nutrient" from the image into the simulation
     let sourceMix = u.zoom_params.w;
     let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let finalColor = mix(displayColor, sourceColor, sourceMix * 0.5);
+    let nutrient = dot(sourceColor, vec3<f32>(0.33)) * 0.08 * sourceMix;
+    displayColor += nutrient;
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, A + C));
+    // Alpha now represents total "ecosystem instability" (good for compositing)
+    let instability = abs(dA) + abs(dB) + abs(dC) + abs(dD);
+    let biomassAlpha = clamp((biomass1 + biomass2) * 0.65 + instability * 2.0, 0.3, 1.0);
+    let finalAlpha = mix(biomassAlpha * 0.75, biomassAlpha, depth);
 
-    // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // Premultiplied write
+    let a = clamp(finalAlpha, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(displayColor * a, a));
+
+    // Write depth (slightly modulated by biomass for interesting layering)
+    let outDepth = mix(depth, depth * 0.85 + (biomass1 - biomass2) * 0.08, 0.5);
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(outDepth, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

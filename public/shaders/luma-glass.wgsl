@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Luma Glass
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-30
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,92 +12,84 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
-
-// Luma Glass
-// P1: Refraction Strength (Depth of glass)
-// P2: Smoothness (Blur of normals)
-// P3: Specular Sharpness
-// P4: Light Height (Imitates light distance)
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+        return;
+    }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let texel = vec2<f32>(1.0 / resolution.x, 1.0 / resolution.y);
+    let mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
-    var mouse = u.zoom_config.yz;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
-    // Params
-    let strength = u.zoom_params.x * 0.1; // Refraction scale
-    let smoothness = 1.0 + u.zoom_params.y * 2.0; // Kernel spacing
-    let specularPower = mix(10.0, 100.0, u.zoom_params.z);
-    let lightHeight = u.zoom_params.w + 0.1;
+    let refractDepth = u.zoom_params.x * (1.0 + bass * 0.2);
+    let smoothness = u.zoom_params.y;
+    let specularShine = u.zoom_params.z * (1.0 + treble * 0.25);
+    let lightDistance = u.zoom_params.w;
 
-    // Calculate Luma Gradient (Pseudo-Normal)
-    let step = vec2<f32>(1.0 / resolution.x, 1.0 / resolution.y) * smoothness;
+    let uvT = clamp(uv + vec2<f32>(0.0, -texel.y), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+    let uvB = clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+    let uvL = clamp(uv + vec2<f32>(-texel.x, 0.0), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+    let uvR = clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
 
-    // Sobel-ish sampling
-    let t = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -step.y), 0.0).rgb;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, step.y), 0.0).rgb;
-    let l = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-step.x, 0.0), 0.0).rgb;
-    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(step.x, 0.0), 0.0).rgb;
+    let sampleT = textureSampleLevel(readTexture, u_sampler, uvT, 0.0);
+    let sampleB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0);
+    let sampleL = textureSampleLevel(readTexture, u_sampler, uvL, 0.0);
+    let sampleR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0);
 
-    let lumT = dot(t, vec3<f32>(0.333));
-    let lumB = dot(b, vec3<f32>(0.333));
-    let lumL = dot(l, vec3<f32>(0.333));
-    let lumR = dot(r, vec3<f32>(0.333));
+    let lum = vec3<f32>(0.299, 0.587, 0.114);
+    let lumaT = dot(sampleT.rgb, lum);
+    let lumaB = dot(sampleB.rgb, lum);
+    let lumaL = dot(sampleL.rgb, lum);
+    let lumaR = dot(sampleR.rgb, lum);
 
-    // Normal vector from height map (luma)
-    // dx = Right - Left, dy = Bottom - Top
-    let dX = (lumR - lumL) * strength * 10.0;
-    let dY = (lumB - lumT) * strength * 10.0;
+    let dX = lumaR - lumaL;
+    let dY = lumaB - lumaT;
+    let surfaceNormal = normalize(vec3<f32>(-dX * mix(50.0, 10.0, smoothness), -dY * mix(50.0, 10.0, smoothness), 1.0));
+    let refractedUV = clamp(uv + surfaceNormal.xy * refractDepth * 0.08, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+    let baseColor = textureSampleLevel(readTexture, u_sampler, refractedUV, 0.0);
 
-    // Surface Normal (approximate)
-    let normal = normalize(vec3<f32>(-dX, -dY, 1.0));
-
-    // Light Vector (Mouse is light source)
     let pixelPos = vec3<f32>(uv.x * aspect, uv.y, 0.0);
-    let lightPos = vec3<f32>(mouse.x * aspect, mouse.y, lightHeight);
+    let lightPos = vec3<f32>(mousePos.x * aspect, mousePos.y, 0.25 + lightDistance * 1.2);
     let lightDir = normalize(lightPos - pixelPos);
-
-    // Refraction:
-    // We want to sample the texture at a displaced UV based on the normal.
-    // If normal tilts right, we see pixels from the left?
-    // Snells law is complex, let's approximate:
-    // Offset = Normal.xy * RefractionIndex
-    let refractOffset = normal.xy * strength;
-
-    let finalUV = uv + refractOffset;
-    let baseColor = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
-
-    // Specular Highlight (Phong)
-    // View dir is roughly straight down (0,0,1)
     let viewDir = vec3<f32>(0.0, 0.0, 1.0);
     let halfDir = normalize(lightDir + viewDir);
-    let specAngle = max(dot(normal, halfDir), 0.0);
-    let specular = pow(specAngle, specularPower);
+    let specular = pow(max(dot(surfaceNormal, halfDir), 0.0), mix(12.0, 96.0, specularShine));
+    let fresnel = pow(1.0 - max(dot(surfaceNormal, viewDir), 0.0), 3.0);
 
-    // Mix
-    var finalColor = baseColor.rgb + vec3<f32>(specular);
+    let lumaBase = dot(baseColor.rgb, lum);
+    let tint = mix(
+        vec3<f32>(1.0, 1.0, 1.0),
+        vec3<f32>(lumaBase, lumaBase * (0.82 + mids * 0.08), 1.0 - lumaBase * 0.3 + treble * 0.1),
+        0.3 + specularShine * 0.5
+    );
+    let shimmer = vec3<f32>(0.2, 0.5 + treble * 0.1, 0.8) * specular * (0.5 + bass * 0.5);
+    let finalColor = baseColor.rgb * tint + shimmer + fresnel * 0.15;
+    let alpha = clamp(baseColor.a * 0.45 + fresnel * 0.2 + specular * 0.25 + bass * 0.04, 0.08, 1.0);
+    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, refractedUV, 0.0).r + fresnel * 0.04, 0.0, 1.0);
+    let finalPixel = vec4<f32>(finalColor, alpha);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
-
-    // Pass depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalPixel);
 }

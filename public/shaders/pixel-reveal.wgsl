@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Pixel Reveal
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, chromatic-pixelation, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Chunks From: pixel-reveal, bass_env, depth-aware-fog
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,82 +19,66 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=PixelSize, y=Radius, z=Softness, w=Invert
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+fn bass_env(bass: f32, mids: f32) -> f32 {
+  return 1.0 + bass * 0.3 + mids * 0.1;
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    var mousePos = u.zoom_config.yz;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let mousePos = u.zoom_config.yz;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    let pixelSizeParam = max(0.001, u.zoom_params.x * 0.1); // 0.001 to 0.1 (screen relative)
-    let radius = u.zoom_params.y * 0.5; // 0.0 to 0.5
-    let softness = u.zoom_params.z * 0.2; // 0.0 to 0.2
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthBlock = mix(0.6, 1.4, depth);
+
+    let pixelSizeParam = max(0.001, u.zoom_params.x * 0.1 * depthBlock * (1.0 - bass * 0.2));
+    let radius = u.zoom_params.y * 0.5 * (1.0 + bass * 0.08);
+    let softness = max(u.zoom_params.z * 0.2, 0.001);
     let invert = u.zoom_params.w > 0.5;
-
-    // Calculate Pixelated UV
-    // Snap UV to grid
-    let grid = vec2<f32>(pixelSizeParam, pixelSizeParam * (resolution.x / resolution.y));
-    // Or just use square pixels
-    // Let's use square pixels based on width
-    let px = pixelSizeParam;
-    let py = pixelSizeParam * (resolution.x / resolution.y);
-    // Wait, if resolution.y < resolution.x, py should be larger to maintain squareness?
-    // pixelSizeParam is fraction of width.
-    // X steps: 1/px. Y steps: 1/py.
-    // To make square: stepX_pixels = stepY_pixels.
-    // stepX_uv * ResX = stepY_uv * ResY
-    // stepY_uv = stepX_uv * (ResX / ResY)
 
     let stepX = pixelSizeParam;
     let stepY = pixelSizeParam * (resolution.x / resolution.y);
-
-    let pixelatedUV = vec2<f32>(
-        floor(uv.x / stepX) * stepX + stepX * 0.5,
-        floor(uv.y / stepY) * stepY + stepY * 0.5
+    let jitter = vec2<f32>(
+      (treble * 0.01) * sin(uv.y * 50.0 + u.config.x * 10.0),
+      (treble * 0.01) * cos(uv.x * 50.0 + u.config.x * 10.0)
     );
+    let pixelatedUV = clamp(vec2<f32>(
+        floor(uv.x / stepX) * stepX + stepX * 0.5 + jitter.x,
+        floor(uv.y / stepY) * stepY + stepY * 0.5 + jitter.y
+    ), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
 
-    // Distance to mouse
     let aspect = resolution.x / resolution.y;
-    let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
+    let dist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
+    let revealMask = smoothstep(radius, radius + softness + 0.001, dist);
+    let mask = select(revealMask, 1.0 - revealMask, invert);
 
-    // Mask
-    // smoothstep(edge0, edge1, x) returns 0 if x < edge0, 1 if x > edge1
-    // We want mask=1 for "Pixelated", mask=0 for "Clear"
-    // If Invert (Obscure mode): Pixelated near mouse.
-    //    Dist < Radius -> Pixelated.
-    //    mask = 1.0 - smoothstep(Radius, Radius + Softness, Dist)
-    // If !Invert (Reveal mode): Clear near mouse.
-    //    Dist < Radius -> Clear.
-    //    mask = smoothstep(Radius, Radius + Softness, Dist)
+    let clearColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let px = pixelatedUV;
+    let chromaShift = 0.003 * (1.0 + mids * 0.5);
+    let r = textureSampleLevel(readTexture, non_filtering_sampler, px + vec2<f32>(chromaShift, 0.0), 0.0).r;
+    let g = textureSampleLevel(readTexture, non_filtering_sampler, px, 0.0).g;
+    let b = textureSampleLevel(readTexture, non_filtering_sampler, px - vec2<f32>(chromaShift, 0.0), 0.0).b;
+    let pixelColor = vec4<f32>(r, g, b, clearColor.a);
 
-    var mask = 0.0;
-    if (invert) {
-        mask = 1.0 - smoothstep(radius, radius + softness + 0.001, dist);
-    } else {
-        mask = smoothstep(radius, radius + softness + 0.001, dist);
-    }
+    let finalColor = mix(clearColor.rgb, pixelColor.rgb, mask);
+    let alpha = clamp(mix(clearColor.a, pixelColor.a, mask) * 0.55 + abs(mask - 0.5) * 0.25 + treble * 0.05 + bass * 0.08, 0.08, 1.0);
+    let finalPixel = vec4<f32>(finalColor, alpha);
 
-    // Mix UVs
-    // Ideally we don't mix UVs because that interpolates between blocky and smooth, looking weird.
-    // We should mix the COLORS.
-
-    let colorClear = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let colorPixel = textureSampleLevel(readTexture, non_filtering_sampler, pixelatedUV, 0.0); // Use non_filtering for crisp blocks
-
-    let finalColor = mix(colorClear, colorPixel, mask);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalPixel);
 }

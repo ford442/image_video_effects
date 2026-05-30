@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Reactive Glass Grid
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, caustics, chromatic-dispersion, fresnel, upgraded-rgba
+//  Complexity: High
+//  Chunks From: reactive-glass-grid, bass_env, fresnel
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,88 +19,82 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Density, y=Refraction, z=Glow, w=EdgeSmooth
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+fn bass_env(bass: f32, mids: f32) -> f32 {
+  return 1.0 + bass * 0.4 + mids * 0.15;
+}
+
+fn hash21(p: vec2<f32>) -> f32 {
+  let h = dot(p, vec2<f32>(127.1, 311.7));
+  return fract(sin(h) * 43758.5453123);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    var mouse = u.zoom_config.yz;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+    let mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Parameters
-    let density = u.zoom_params.x * 50.0 + 5.0; // 5 to 55
-    let refr_strength = u.zoom_params.y * 0.1;
-    let glow_strength = u.zoom_params.z;
-    let edge_smooth = u.zoom_params.w * 0.4 + 0.01;
+    let cellDensity = mix(4.0, 40.0, u.zoom_params.x) * bass_env(bass, mids);
+    let refractionAmount = u.zoom_params.y * (1.0 + mids * 0.3);
+    let glowIntensity = u.zoom_params.z * bass_env(bass, mids);
+    let edgeSmooth = mix(0.12, 0.48, u.zoom_params.w);
 
-    // Grid calculations
-    let grid_uv = uv * density;
-    let cell_id = floor(grid_uv);
-    let cell_uv = fract(grid_uv); // 0.0 to 1.0 inside cell
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let ior = mix(1.1, 1.5, depth);
 
-    // Cell center in screen UV space
-    let cell_center = (cell_id + 0.5) / density;
+    let gridUV = uv * cellDensity;
+    let localUV = fract(gridUV) - 0.5;
+    let mouseDist = length((mousePos - uv) * vec2<f32>(aspect, 1.0));
+    let influence = smoothstep(0.45, 0.0, mouseDist) * (0.5 + glowIntensity * 0.5);
+    let wave = sin(time * (2.0 + bass * 2.0) * (1.0 + mids * 0.35) - mouseDist * 24.0) * 0.5 + 0.5;
+    let bump = localUV * influence * (0.5 + wave * 0.5);
+    let normal = normalize(vec3<f32>(-bump.x * 8.0, -bump.y * 8.0, 1.0));
 
-    // Distance from mouse to this cell (using aspect corrected distance)
-    let dist_vec = (cell_center - mouse) * vec2<f32>(aspect, 1.0);
-    let dist_to_mouse = length(dist_vec);
+    let refract = normal.xy * 0.06 * refractionAmount * (1.0 + treble * 0.25) / ior;
+    let finalUV = clamp(uv + refract, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
 
-    // Mouse influence falls off with distance
-    let influence = smoothstep(0.5, 0.0, dist_to_mouse);
+    // Caustic sparkle
+    let caustic = hash21(floor(gridUV) + time * 0.5) * influence * treble * 2.0;
 
-    // Calculate a pseudo-normal for the glass tile (pillow shape)
-    // 0.5 at center, -0.5 at left/bottom, 0.5 at right/top
-    let local_p = cell_uv - 0.5;
+    // Chromatic dispersion scaled by depth
+    let aberration = refractionAmount * 0.012 * (1.0 + treble * 0.3) * (ior - 1.0);
+    let rUV = clamp(finalUV + vec2<f32>(aberration, 0.0), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+    let gUV = finalUV;
+    let bUV = clamp(finalUV - vec2<f32>(aberration, 0.0), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
 
-    // Tilt the normal based on mouse position?
-    // Let's just do a simple lens refraction per tile + offset by mouse
+    let gColor = textureSampleLevel(readTexture, u_sampler, gUV, 0.0);
+    let edge = 1.0 - smoothstep(edgeSmooth, 0.5, length(localUV));
+    let gridGlow = vec3<f32>(0.1 + caustic, 0.25 + treble * 0.08 + caustic * 0.5, 0.35 + caustic * 0.3) * edge * influence * glowIntensity * 1.5;
+    let finalColor = vec3<f32>(
+        textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
+        gColor.g,
+        textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b
+    ) + gridGlow;
 
-    // Displace lookup based on local curvature (glass block effect)
-    var displacement = local_p * refr_strength * (1.0 + influence * 2.0);
+    // Fresnel rim on tile edges
+    let fresnel = pow(1.0 - abs(dot(normal, vec3<f32>(0.0, 0.0, 1.0))), 2.0);
+    finalColor = finalColor + vec3<f32>(0.3, 0.5, 0.7) * fresnel * edge * influence;
 
-    // Add some chromatic aberration near mouse
-    let aberration = influence * refr_strength * 0.5;
+    let alpha = clamp(gColor.a * 0.45 + edge * 0.18 + influence * 0.25 + bass * 0.05 + fresnel * 0.1, 0.08, 1.0);
+    let depthOut = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, finalUV, 0.0).r + influence * 0.05, 0.0, 1.0);
+    let finalPixel = vec4<f32>(finalColor, alpha);
 
-    // Sample texture
-    let final_uv = uv - displacement;
-    let r_uv = final_uv + aberration;
-    let b_uv = final_uv - aberration;
-
-    var color = vec4<f32>(
-        textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r,
-        textureSampleLevel(readTexture, u_sampler, final_uv, 0.0).g,
-        textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b,
-        1.0
-    );
-
-    // Tile Edges (Grout/Bevel)
-    // Distance from center 0..0.5
-    let d_edge = max(abs(local_p.x), abs(local_p.y)); // Chebyshev distance 0..0.5
-    // Smoothstep for edge darkening
-    let edge_mask = 1.0 - smoothstep(0.5 - edge_smooth, 0.5, d_edge);
-
-    color = color * edge_mask;
-
-    // Add glow/emission based on influence
-    // Use a warm color or the pixel color
-    let glow_color = vec3<f32>(0.2, 0.6, 1.0) * glow_strength * influence;
-
-    // Add glow to the tile edges specifically?
-    let edge_glow = (1.0 - edge_mask) * influence * glow_strength * 2.0;
-
-    color = vec4<f32>(color.rgb + glow_color + edge_glow, 1.0);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    // Pass depth
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, final_uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalPixel);
 }

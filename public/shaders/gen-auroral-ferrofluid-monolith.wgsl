@@ -1,8 +1,13 @@
-// ----------------------------------------------------------------
-// Auroral Ferrofluid-Monolith
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Auroral Ferrofluid-Monolith
+//  Category: generative
+//  Features: ferrofluid-sculpture, magnetic-glyphs, audio-collapse, mouse-magnetic-field, auroral
+//  Complexity: High
+//  Chunks From: ferrofluid patterns + magnetic field math
+//  Created: 2026-05-23
+//  Updated: 2026-05-31
+//  By: Grok (magnetic glyph formation + bass/treble collapse behavior)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -86,20 +91,28 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     p.x = rot_xz.x;
     p.z = rot_xz.y;
 
-    // Mouse magnetic pole distortion
-    let mx = (u.zoom_config.y - 0.5) * 10.0;
-    let my = -(u.zoom_config.z - 0.5) * 10.0;
+    // Mouse as external rotating magnetic field (drag = field rotation)
+    let mx = (u.zoom_config.y - 0.5) * 12.0;
+    let my = -(u.zoom_config.z - 0.5) * 12.0;
+    let mouseAngle = u.config.x * 1.2 + u.zoom_config.w * 8.0; // stronger rotation when mouse is down
     let mousePole = vec3<f32>(mx, my, 0.0);
-    let dPole = length(p - mousePole);
-    let poleDistort = exp(-dPole * 0.5) * 0.5;
+    let rotatedPole = vec3<f32>(mousePole.x * cos(mouseAngle) - mousePole.z * sin(mouseAngle), mousePole.y, mousePole.x * sin(mouseAngle) + mousePole.z * cos(mouseAngle));
+    let dPole = length(p - rotatedPole);
+    let poleDistort = exp(-dPole * 0.45) * (0.6 + u.zoom_config.w * 0.8);
 
     // Monolith base shape
     let size = vec3<f32>(1.0 - p.y*0.05, 4.0, 1.0 - p.y*0.05);
     var d1 = sdBox(p, size);
 
-    // Ferrofluid spikes
-    let audio = u.config.y;
-    let spikeLength = u.zoom_params.x * (1.0 + audio * 2.0) + poleDistort;
+    // Audio state
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // Ferrofluid spikes — strong bass forms readable magnetic glyphs, treble collapses them into chaos
+    let glyphForm = smoothstep(0.4, 0.85, bass) * (1.0 - treble * 0.8);
+    let chaos = treble * 1.8 + mids * 0.3;
+    let spikeLength = u.zoom_params.x * (0.7 + bass * 2.2 * glyphForm) + poleDistort - chaos * 0.4;
 
     var sp = p * 4.0;
     let n = abs(noise(sp + vec3<f32>(0.0, -u.config.x * 2.0, 0.0)));
@@ -243,9 +256,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let bgGlow = max(0.0, 1.0 - length(uv)) * 0.1;
     col += vec3<f32>(0.1, 0.1, 0.2) * bgGlow;
 
+    // Bass forms glyphs → stronger metallic readable structure
+    // Treble collapses → softer, more chaotic auroral breakup
+    let glyphStrength = smoothstep(0.35, 0.8, bass) * (1.0 - treble * 0.7);
+    col = mix(col, col * 1.15 + vec3<f32>(0.2, 0.4, 0.9) * 0.3, glyphStrength * 0.4);
+
     // Tone mapping
     col = col / (1.0 + col);
     col = pow(col, vec3<f32>(1.0 / 2.2));
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Meaningful alpha: magnetic field strength + auroral intensity
+    let magneticField = u.zoom_config.w * 0.6 + bass * 0.4;
+    let aurIntensity = length(aurCol) * 0.8;
+    let alpha = clamp(0.65 + magneticField * 0.5 + aurIntensity * 0.6, 0.0, 1.1);
+
+    let a = clamp(alpha, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col * a, a));
 }

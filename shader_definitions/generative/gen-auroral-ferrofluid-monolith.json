@@ -2,18 +2,22 @@
   "id": "gen-auroral-ferrofluid-monolith",
   "name": "Auroral Ferrofluid-Monolith",
   "url": "shaders/gen-auroral-ferrofluid-monolith.wgsl",
-  "coordinate": 149,
-  "description": "A colossal, liquid-metal obelisk suspended in a void, its surface rippling with spiky, audio-reactive ferrofluid structures while crackling with volumetric auroral energy.",
+  "category": "generative",
+  "description": "A colossal liquid-metal monolith whose surface forms readable magnetic glyphs under strong bass, then collapses into chaotic auroral breakup on treble. Mouse drag rotates an external magnetic field that sculpts the ferrofluid in real time.",
   "tags": [
     "ferrofluid",
     "monolith",
     "aurora",
     "liquid-metal",
-    "audio-reactive"
+    "glyphs",
+    "audio-reactive",
+    "collapse"
   ],
   "features": [
-    "mouse-driven",
-    "audio-driven"
+    "mouse-magnetic-field",
+    "bass-glyph-formation",
+    "treble-collapse",
+    "audio-reactive"
   ],
   "params": [
     {
@@ -22,7 +26,9 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Base spike length (strongly amplified by bass into glyph structures)"
     },
     {
       "id": "auroraIntensity",
@@ -30,7 +36,9 @@
       "default": 0.8,
       "min": 0,
       "max": 2,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Strength of the surrounding auroral volumetric field"
     },
     {
       "id": "magneticTwist",
@@ -38,15 +46,19 @@
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Internal twisting of the monolith under magnetic forces"
     },
     {
       "id": "fluidMetallic",
-      "name": "Fluid Metallic",
+      "name": "Fluid Metallic Response",
       "default": 0.9,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How sharply the ferrofluid surface reflects and behaves metallically"
     }
   ]
 }
