@@ -1,0 +1,4 @@
+- Applied a minimal header completion pass by adding the missing `By` line; canonical bindings were already correct.
+- JSON changes: added explicit `category`, normalized the relative shader `url`, and added the missing `glitch` tag.
+- Confidence: High.
+- Suspicious but left alone: it still lives in the `image` library even though its styling overlaps retro-glitch.

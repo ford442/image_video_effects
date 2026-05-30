@@ -1,0 +1,5 @@
+# radial-blur v2 — Second-Pass Notes
+
+- **Surprising behavior**: When the mouse is held down, the focal point dynamically migrates toward the cursor and the local CoC blooms into a spotlight of sharpness surrounded by radial blur; fast mouse motion injects anamorphic streaks aligned to velocity, so dragging horizontally stretches bokeh into cinematic streaks while vertical motion creates comet-tails.
+- **Audio reactivity**: Bass directly multiplies blur radius in real-time, so kick drums pump the defocus like a breathing lens; the bokeh shape parameter is audio-morphed, causing circle→hexagon→star transitions synced to low-frequency transients for a shapeshifting aperture effect.
+- **Alpha semantics**: Alpha encodes `CoC * motionEnergy * localFocusBoost` — it is zero for perfectly in-focus pixels, rises with depth-of-field circle-of-confusion, surges with mouse velocity (motion blur contribution), and peaks under the active cursor focus zone, making the blurred layer translucent only where optical distortion actually occurs.

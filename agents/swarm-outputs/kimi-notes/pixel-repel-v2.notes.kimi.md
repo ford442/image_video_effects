@@ -1,0 +1,5 @@
+# pixel-repel v2 — 4-Agent Swarm Notes
+
+- **Surprising behavior**: The 4 Lissajous wave sources orbit the mouse on independent frequencies, but their superellipse masks (exponents 2.4–3.6) create non-circular repulsion zones that stretch and squash as they spin; combined with divergence-free curl noise, particles can be pushed in loops that never quite settle, producing organic fluid-like trails rather than radial bursts.
+- **Audio reactivity**: Bass scales total repel strength (×1.0–1.6×) and expands the falloff radius; mids inject curl turbulence into the flow field, warping straight repulsion into swirling vortices; treble drives Fresnel rim intensity on displaced edges so bright audio peaks flash gold along the silhouette of the distortion.
+- **Alpha semantics**: Alpha carries displacement confidence — untouched pixels emit α≈0.3–0.7 scaled by depth (background is ghostlier), while heavily displaced regions ramp α up to 0.9, encoding how aggressively the pixel was moved; this lets chained shaders treat high-alpha pixels as "foreground distortion" and low-alpha as "preserved background."

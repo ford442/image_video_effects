@@ -1,0 +1,4 @@
+- Applied the header standardization pass by adding the missing `Chunks From` line; canonical bindings were already correct.
+- JSON changes: added explicit `category`.
+- Confidence: High.
+- Suspicious but left alone: this shader was already clean enough that no binding or logic edits were warranted.
