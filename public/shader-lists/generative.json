@@ -427,6 +427,65 @@
     "target_rating": 4.7
   },
   {
+    "id": "gen-4d-projection-dream-weavers",
+    "name": "4D Projection Dream Weavers",
+    "url": "shaders/gen-4d-projection-dream-weavers.wgsl",
+    "description": "Smooth continuous slicing and projection through higher-dimensional fractals and lattices. Mouse controls navigation through the extra two dimensions providing genuine higher-dimensional exploration. Audio affects fractal parameters and projection quality. Ethereal mathematical dream-like forms.",
+    "tags": [
+      "generative",
+      "4d",
+      "fractal",
+      "higher-dimensional",
+      "julia",
+      "mathematical",
+      "audio-reactive",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "zoomLevel",
+        "name": "Zoom Level",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Zoom level in 4D fractal space"
+      },
+      {
+        "id": "rotSpeed",
+        "name": "Rotation Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Speed of 4D rotation through hyperspace"
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Hue rotation of the color palette"
+      },
+      {
+        "id": "detailLevel",
+        "name": "Detail Level",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Fractal iteration depth and detail"
+      }
+    ]
+  },
+  {
     "id": "gen-abyssal-chrono-coral",
     "name": "Abyssal Chrono-Coral",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-abyssal-chrono-coral.wgsl",
@@ -1982,6 +2041,13 @@
     ]
   },
   {
+    "id": "gen-chrono-voronoi-mycelium",
+    "name": "Chrono-Voronoi Mycelium",
+    "url": "shaders/gen-chrono-voronoi-mycelium.wgsl",
+    "description": "Multi-temporal Voronoi fungal growth system where different generations of mycelium exist as layered temporal states, creating organic networks that evolve across time. Mouse introduces nutrients affecting multiple time layers. Audio controls growth vs decay rates.",
+    "tags": [
+      "generative",
+      "voronoi",
     "id": "gen-chrono-mycelial-tapestry",
     "name": "Chrono-Mycelial Tapestry",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-chrono-mycelial-tapestry.wgsl",
@@ -1995,6 +2061,12 @@
       "procedural",
       "audio",
       "music",
+      "reactive"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven"
       "reactive",
       "ambient"
     ],
@@ -2007,6 +2079,38 @@
       {
         "id": "growthRate",
         "name": "Growth Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Speed of mycelial growth across time layers"
+      },
+      {
+        "id": "generations",
+        "name": "Generations",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Number of temporal mycelium generations"
+      },
+      {
+        "id": "decay",
+        "name": "Decay Rate",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "How quickly older generations fade"
+      },
+      {
+        "id": "glow",
+        "name": "Tip Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Intensity of glowing network tips"
         "default": 0.6,
         "min": 0,
         "max": 1,
@@ -2906,6 +3010,65 @@
     ]
   },
   {
+    "id": "gen-emergent-calligraphic-ecosystems",
+    "name": "Emergent Calligraphic Ecosystems",
+    "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
+    "description": "A system of interacting calligraphic strokes following local orientation rules that spontaneously form complex alien writing systems. Mouse plants seeds or disturbs regions. Audio influences stroke behavior and interaction rules. Elegant ink-like or neon self-organizing glyphs.",
+    "tags": [
+      "generative",
+      "calligraphy",
+      "emergent",
+      "flow-field",
+      "organic",
+      "audio-reactive",
+      "procedural",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "strokeDensity",
+        "name": "Stroke Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Number of calligraphic strokes per glyph cluster"
+      },
+      {
+        "id": "inkWidth",
+        "name": "Ink Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Width of individual brush strokes"
+      },
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Scale and complexity of glyph clusters"
+      },
+      {
+        "id": "neonMode",
+        "name": "Neon Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "0=dark ink on paper, 1=neon calligraphy"
+      }
+    ]
+  },
+  {
     "id": "gen-ethereal-anemone-bloom",
     "name": "Ethereal Anemone Bloom",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-anemone-bloom.wgsl",
@@ -3007,6 +3170,65 @@
         "step": 0.1,
         "mapping": "zoom_params.w",
         "description": "Mouse repulsion strength"
+      }
+    ]
+  },
+  {
+    "id": "gen-evolutionary-cellular-gardens",
+    "name": "Evolutionary Cellular Gardens",
+    "url": "shaders/gen-evolutionary-cellular-gardens.wgsl",
+    "description": "Multi-state cellular automata where the rules themselves slowly evolve based on local conditions and global audio input. Audio drives genetic pressure on the automata. Mouse introduces invasive species or protected zones. Organic coral-like emergent structures that change fundamental behavior over time.",
+    "tags": [
+      "generative",
+      "cellular-automata",
+      "evolutionary",
+      "organic",
+      "coral",
+      "audio-reactive",
+      "procedural",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "cellScale",
+        "name": "Cell Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Scale of the cellular automata grid"
+      },
+      {
+        "id": "evolutionSpeed",
+        "name": "Evolution Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Speed of rule evolution and mutation"
+      },
+      {
+        "id": "invasiveForce",
+        "name": "Invasive Force",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Strength of mouse-planted invasive species"
+      },
+      {
+        "id": "glow",
+        "name": "Bioluminescence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Bioluminescent glow intensity"
       }
     ]
   },
@@ -3362,6 +3584,65 @@
         "default": 0.4,
         "step": 0.01,
         "description": "Brightness of tidal emission at field gradient maxima."
+      }
+    ]
+  },
+  {
+    "id": "gen-gravito-phononic-accretion",
+    "name": "Gravito-Phononic Accretion",
+    "url": "shaders/gen-gravito-phononic-accretion.wgsl",
+    "description": "Multiple audio-driven gravitational centers that accrete and sculpt procedural density fields with gravitational lensing distortion. Different audio bands control different gravitational bodies. Mouse can add temporary mass concentration. Dark cores with swirling filamentary gas.",
+    "tags": [
+      "generative",
+      "gravity",
+      "lensing",
+      "cosmic",
+      "accretion",
+      "audio-reactive",
+      "procedural",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "massScale",
+        "name": "Mass Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Mass of gravitational bodies"
+      },
+      {
+        "id": "numBodies",
+        "name": "Body Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Number of gravitational bodies"
+      },
+      {
+        "id": "lensStrength",
+        "name": "Lens Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Intensity of gravitational lensing distortion"
+      },
+      {
+        "id": "densityAmt",
+        "name": "Gas Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Density of accreted gas and filamentary structures"
       }
     ]
   },
@@ -3786,6 +4067,65 @@
         "step": 0.05,
         "param": "zoom_params.w",
         "description": "Intensity of the background storm"
+      }
+    ]
+  },
+  {
+    "id": "gen-hyperbolic-crystal-symbiosis",
+    "name": "Hyperbolic Crystal Symbiosis",
+    "url": "shaders/gen-hyperbolic-crystal-symbiosis.wgsl",
+    "description": "Competing and cooperating crystal growth occurring in hyperbolic (Poincaré disk) geometry. Local curvature influenced by audio and mouse position. Exquisite non-Euclidean tiling patterns with iridescent jewel-like coloring and beautiful symmetry breaking.",
+    "tags": [
+      "generative",
+      "hyperbolic",
+      "geometry",
+      "crystal",
+      "non-euclidean",
+      "iridescent",
+      "audio-reactive",
+      "mathematical"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "growthSpeed",
+        "name": "Growth Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Speed of hyperbolic crystal growth"
+      },
+      {
+        "id": "competition",
+        "name": "Competition",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Crystal competition level and symmetry breaking"
+      },
+      {
+        "id": "curvature",
+        "name": "Curvature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Hyperbolic curvature magnitude"
+      },
+      {
+        "id": "mutation",
+        "name": "Mutation",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Crystal growth mutation and irregularity"
       }
     ]
   },
@@ -5366,6 +5706,65 @@
     ]
   },
   {
+    "id": "gen-phase-transition-memory-weave",
+    "name": "Phase-Transition Memory Weave",
+    "url": "shaders/gen-phase-transition-memory-weave.wgsl",
+    "description": "A viscous history-dependent field undergoing phase transitions between fluid, crystalline, and chaotic states with strong visual memory of past configurations. Audio controls phase transition thresholds. Mouse locally forces phase changes. Beautiful hysteresis and pattern retention.",
+    "tags": [
+      "generative",
+      "phase-transition",
+      "fluid",
+      "crystalline",
+      "temporal",
+      "audio-reactive",
+      "abstract",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Material memory and viscous resistance to change"
+      },
+      {
+        "id": "phaseScale",
+        "name": "Phase Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Spatial scale of phase domain structures"
+      },
+      {
+        "id": "transitionSharpness",
+        "name": "Transition Sharpness",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Sharpness of phase boundary transitions"
+      },
+      {
+        "id": "glow",
+        "name": "Glow Intensity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Overall glow and luminosity of the material"
+      }
+    ]
+  },
+  {
     "id": "gen-photonic-crystal-brain",
     "name": "Photonic Crystal-Brain",
     "author": "Jules",
@@ -6490,6 +6889,65 @@
     ]
   },
   {
+    "id": "gen-recursive-ancestral-terrains",
+    "name": "Recursive Ancestral Terrains",
+    "url": "shaders/gen-recursive-ancestral-terrains.wgsl",
+    "description": "Fractal landscape generator where terrain features carry genetic parameters from parent generations. The mouse position locally selects which ancestral lineage is expressed, creating alien mountain ranges with evolutionary history. Audio controls mutation rate and generational blending.",
+    "tags": [
+      "generative",
+      "fractal",
+      "terrain",
+      "landscape",
+      "procedural",
+      "evolutionary",
+      "audio-reactive",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "mutationRate",
+        "name": "Mutation Rate",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Rate of genetic mutation between terrain generations"
+      },
+      {
+        "id": "generationalBlend",
+        "name": "Generation Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Number of ancestral generations rendered"
+      },
+      {
+        "id": "heightScale",
+        "name": "Height Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Vertical exaggeration of the terrain"
+      },
+      {
+        "id": "erosion",
+        "name": "Erosion",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Amount of geological erosion carving channels"
+      }
+    ]
+  },
+  {
     "id": "gen-rgb-diffraction",
     "name": "RGB Diffraction",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-rgb-diffraction.wgsl",
@@ -7122,6 +7580,65 @@
     ]
   },
   {
+    "id": "gen-symbiotic-light-networks",
+    "name": "Symbiotic Light Networks",
+    "url": "shaders/gen-symbiotic-light-networks.wgsl",
+    "description": "A network of light-conducting organic structures that grow, compete, and support each other while transporting and transforming light in complex ways. Audio influences light color, intensity, and transmission rules. Mouse seeds or prunes the network. Bioluminescent organic networks with complex internal light transport.",
+    "tags": [
+      "generative",
+      "network",
+      "bioluminescent",
+      "organic",
+      "light-transport",
+      "audio-reactive",
+      "procedural",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "networkDensity",
+        "name": "Network Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Density and complexity of the light network"
+      },
+      {
+        "id": "competition",
+        "name": "Competition",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "0=symbiotic amplification, 1=competitive suppression"
+      },
+      {
+        "id": "lightIntensity",
+        "name": "Light Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Intensity of bioluminescent light transport"
+      },
+      {
+        "id": "growthAmt",
+        "name": "Growth Phase",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Network growth phase (0=growing, 1=mature)"
+      }
+    ]
+  },
+  {
     "id": "gen-temporal-motion-smear",
     "name": "Temporal Motion Smear",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-temporal-motion-smear.wgsl",
@@ -7177,6 +7694,24 @@
     ]
   },
   {
+    "id": "gen-topological-acoustic-knots",
+    "name": "Topological Acoustic Knots",
+    "url": "shaders/gen-topological-acoustic-knots.wgsl",
+    "description": "Orientational director field inspired by liquid crystals where audio frequencies drive topological defect creation, motion, and annihilation. Mouse can pin or create defects. Iridescent oil-slick coloring with flowing directional fields.",
+    "tags": [
+      "generative",
+      "topological",
+      "liquid-crystal",
+      "audio-reactive",
+      "flow-field",
+      "iridescent",
+      "abstract",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven"
     "id": "gen-topological-phase-weave",
     "name": "Topological Phase Weave",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-topological-phase-weave.wgsl",
@@ -7207,6 +7742,35 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
+        "step": 0.01,
+        "description": "Number of topological defect singularities"
+      },
+      {
+        "id": "defectSpeed",
+        "name": "Defect Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "How fast defects move and pair/annihilate"
+      },
+      {
+        "id": "irisIntensity",
+        "name": "Iridescence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Intensity of oil-slick iridescent coloring"
+      },
+      {
+        "id": "flowStrength",
+        "name": "Flow Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Strength of painterly flow field stripes"
         "step": 0.01
       },
       {

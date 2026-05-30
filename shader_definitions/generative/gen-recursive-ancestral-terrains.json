@@ -1,0 +1,59 @@
+{
+  "id": "gen-recursive-ancestral-terrains",
+  "name": "Recursive Ancestral Terrains",
+  "url": "shaders/gen-recursive-ancestral-terrains.wgsl",
+  "description": "Fractal landscape generator where terrain features carry genetic parameters from parent generations. The mouse position locally selects which ancestral lineage is expressed, creating alien mountain ranges with evolutionary history. Audio controls mutation rate and generational blending.",
+  "tags": [
+    "generative",
+    "fractal",
+    "terrain",
+    "landscape",
+    "procedural",
+    "evolutionary",
+    "audio-reactive",
+    "music"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "mutationRate",
+      "name": "Mutation Rate",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Rate of genetic mutation between terrain generations"
+    },
+    {
+      "id": "generationalBlend",
+      "name": "Generation Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Number of ancestral generations rendered"
+    },
+    {
+      "id": "heightScale",
+      "name": "Height Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Vertical exaggeration of the terrain"
+    },
+    {
+      "id": "erosion",
+      "name": "Erosion",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Amount of geological erosion carving channels"
+    }
+  ]
+}
