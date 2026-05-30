@@ -4,6 +4,7 @@ import Controls from './components/Controls';
 import ShaderScanner from './components/ShaderScanner';
 import LiveStudioTab from './components/LiveStudioTab';
 import { StorageBrowser } from './components/StorageBrowser';
+import { RendererToggle } from './components/RendererToggle';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { RendererType, RendererManager } from './renderer/RendererManager';
 import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from './AutoDJ';
@@ -291,17 +292,49 @@ function MainApp() {
 
     // --- Renderer backend state ---
     const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
+    const [jsFps, setJsFps] = useState(0);
+    const [wasmFps, setWasmFps] = useState(0);
+    const [isRendererSwitching, setIsRendererSwitching] = useState(false);
+
     const handleSwitchRenderer = useCallback(async (type: RendererType) => {
         const manager = rendererRef.current;
         if (!manager) return;
+
+        setIsRendererSwitching(true);
         setStatus(`Switching to ${type} renderer…`);
+
+        // Snapshot current FPS into the correct bucket before switching
+        const currentFps = manager.getCurrentFPS?.() ?? 0;
+        if (activeRendererType === 'webgpu' || activeRendererType === 'js') {
+            setJsFps(currentFps);
+        } else if (activeRendererType === 'wasm') {
+            setWasmFps(currentFps);
+        }
+
         const ok = await manager.switchRenderer(type);
+
         if (ok) {
             setActiveRendererType(type);
             setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
         } else {
             setStatus(`⚠️ Failed to switch to ${type} renderer — staying on ${activeRendererType}.`);
         }
+        setIsRendererSwitching(false);
+    }, [activeRendererType]);
+
+    // Poll real FPS from the active renderer and keep separate buckets for comparison
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const manager = rendererRef.current;
+            if (!manager) return;
+            const fps = manager.getCurrentFPS?.() ?? 0;
+            if (activeRendererType === 'wasm') {
+                setWasmFps(fps);
+            } else {
+                setJsFps(fps);
+            }
+        }, 800);
+        return () => clearInterval(interval);
     }, [activeRendererType]);
     const fileInputImageRef = useRef<HTMLInputElement>(null);
     const fileInputVideoRef = useRef<HTMLInputElement>(null);
@@ -1577,21 +1610,17 @@ function MainApp() {
                             {activeRendererType === 'wasm' ? '⚡ C++ WASM' : activeRendererType === 'js' ? '🎨 Canvas2D' : '🔷 WebGPU'}
                         </span>
 
-                        {/* Prominent one-click switch button between the two serious renderers */}
-                        {onSwitchRenderer && (activeRendererType === 'webgpu' || activeRendererType === 'wasm') && (
-                            <button
-                                className="renderer-switch-btn"
-                                onClick={() => {
-                                    const target: RendererType = activeRendererType === 'webgpu' ? 'wasm' : 'webgpu';
-                                    handleSwitchRenderer(target);
-                                }}
-                                title={activeRendererType === 'webgpu' 
-                                    ? 'Switch to the high-performance C++ WASM renderer' 
-                                    : 'Switch back to the TypeScript WebGPU renderer'}
-                            >
-                                {activeRendererType === 'webgpu' ? '⚡ Switch to C++ WASM' : '🔷 Switch to WebGPU'}
-                            </button>
-                        )}
+                        {/* FPS Comparison + Switch Toggle (JS WebGPU vs C++ WASM) */}
+                        <RendererToggle
+                            isWASM={activeRendererType === 'wasm'}
+                            onToggle={async (useWasm) => {
+                                const target: RendererType = useWasm ? 'wasm' : 'webgpu';
+                                await handleSwitchRenderer(target);
+                            }}
+                            isLoading={isRendererSwitching}
+                            jsFps={jsFps}
+                            wasmFps={wasmFps}
+                        />
                     </div>
                 </main>
             </div>

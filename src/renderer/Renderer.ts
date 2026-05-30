@@ -51,6 +51,9 @@ export interface Renderer {
   setRecording?: (isRecording: boolean) => void;
   setRecordingMode?: (mode: 'loop' | 'continuous') => void;
   updateSlotParams?: (params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number }, slotIndex?: number) => void;
+
+  /** Optional: Return current FPS for performance comparison (used by dual-FPS toggle). */
+  getFPS?: () => number;
 }
 
 export interface RendererConfig {

@@ -135,10 +135,12 @@ export class RendererManager {
   }
 
   private startMetricsCollection(): void {
-    // In a real implementation, the renderers would expose getMetrics()
-    // For now, we'll use simulated/placeholder metrics
     const updateMetrics = () => {
-      // This would come from the renderer in a full implementation
+      // Pull real FPS from the active renderer when available
+      const renderer = this.currentRenderer as any;
+      if (renderer && typeof renderer.getFPS === 'function') {
+        this.metrics.fps = renderer.getFPS() || 0;
+      }
       this.onMetricsUpdate?.(this.metrics);
       requestAnimationFrame(updateMetrics);
     };
@@ -373,6 +375,11 @@ export class RendererManager {
   destroy(): void {
     this.currentRenderer?.destroy();
     this.currentRenderer = null;
+  }
+
+  /** Get latest FPS from the active renderer (real measured value). */
+  getCurrentFPS(): number {
+    return this.metrics.fps || 0;
   }
 }
 
