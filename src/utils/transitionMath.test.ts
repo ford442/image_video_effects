@@ -11,4 +11,3 @@ describe('transitionMath', () => {
     expect(snapToStep(1.2, 0, 1, 0.1)).toBe(1);
   });
 });
-

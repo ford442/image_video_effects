@@ -72,6 +72,7 @@ export class Alucinate {
   public onApplyParamsDirect?: (params: Record<string, number>[]) => void;
   public getCurrentState: () => { currentImage: ImageRecord | null, currentShader: ShaderRecord | null };
   private currentParams: Record<string, number>[] = [];
+  private currentParamsSignature = '';
   private catalogCache: CatalogShader[] | null = null;
   private transitionOrchestrator: TransitionOrchestrator | null = null;
   private transitionRafId: number | null = null;
@@ -229,6 +230,7 @@ export class Alucinate {
             this.activeShaderIds = ids;
             this.onUpdateStack(ids);
             this.currentParams = params.map(p => ({ ...p }));
+            this.currentParamsSignature = this.shaderSignature(ids);
             if (this.onUpdateParams) {
                 this.onUpdateParams(params);
             }
@@ -283,6 +285,7 @@ export class Alucinate {
             this.activeShaderIds = ids;
             this.onUpdateStack(ids);
             this.currentParams = params.map(p => ({ ...p }));
+            this.currentParamsSignature = this.shaderSignature(ids);
             if (this.onUpdateParams) {
                 this.onUpdateParams(params);
             }
@@ -452,6 +455,7 @@ Your Selection:
     const catalog = await this.getCatalog();
     const params = randomizeParams(this.activeShaderIds, catalog);
     this.currentParams = params.map((p) => ({ ...p }));
+    this.currentParamsSignature = this.shaderSignature(this.activeShaderIds);
     if (this.onUpdateParams) this.onUpdateParams(params);
   }
 
@@ -470,11 +474,12 @@ Your Selection:
     const catalog = await this.getCatalog();
     const schema = this.buildTransitionSchema(this.activeShaderIds, catalog);
     if (schema.length === 0) return false;
+    const activeSignature = this.shaderSignature(this.activeShaderIds);
 
-    const baseline = this.sanitizeParamsToSchema(
-      this.currentParams.length ? this.currentParams : this.buildDefaultsFromSchema(schema),
-      schema
-    );
+    const baselineSource = this.currentParams.length > 0 && this.currentParamsSignature === activeSignature
+      ? this.currentParams
+      : this.buildDefaultsFromSchema(schema);
+    const baseline = this.sanitizeParamsToSchema(baselineSource, schema);
 
     this.autoTransitionConfig = {
       mode: 'randomize',
@@ -492,7 +497,7 @@ Your Selection:
     this.transitionOrchestrator.start({
       params: baseline,
       schema,
-      shaderSignature: this.shaderSignature(this.activeShaderIds),
+      shaderSignature: activeSignature,
     });
 
     if (this.autoTransitionConfig.source === 'beat') {
@@ -512,6 +517,7 @@ Your Selection:
   public stopAutoTransition() {
     if (this.transitionOrchestrator?.getState() === 'TRANSITIONING') {
       this.currentParams = this.transitionOrchestrator.getCurrentParams();
+      this.currentParamsSignature = this.transitionOrchestrator.getShaderSignature();
     }
     if (this.transitionRafId !== null) {
       cancelAnimationFrame(this.transitionRafId);
@@ -540,6 +546,7 @@ Your Selection:
     const result = await this.transitionOrchestrator.update(now);
     if (result?.params) {
       this.currentParams = result.params.map((p) => ({ ...p }));
+      this.currentParamsSignature = this.transitionOrchestrator.getShaderSignature();
       if (this.onApplyParamsDirect) {
         this.onApplyParamsDirect(result.params);
       }
@@ -640,9 +647,17 @@ Your Selection:
         this.presetCursor += 1;
         this.activeShaderIds = [...hardPreset.shaderIds];
         this.currentParams = hardPreset.params.map((p) => ({ ...p }));
+        const nextSignature = this.shaderSignature(hardPreset.shaderIds);
+        this.currentParamsSignature = nextSignature;
         this.onUpdateStack(hardPreset.shaderIds);
         this.onApplyParamsDirect?.(hardPreset.params);
         this.onUpdateParams?.(hardPreset.params);
+        const hardSchema = this.buildTransitionSchema(hardPreset.shaderIds, catalog);
+        this.transitionOrchestrator?.setBaseline({
+          params: this.sanitizeParamsToSchema(hardPreset.params, hardSchema),
+          schema: hardSchema,
+          shaderSignature: nextSignature,
+        });
         return null;
       }
     }

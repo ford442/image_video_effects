@@ -26,6 +26,8 @@ export interface TransitionTickResult {
 }
 
 const cloneMaps = (maps: ParamMap[]): ParamMap[] => maps.map((m) => ({ ...m }));
+const DEFAULT_TIMER_INTERVAL_MS = 4000;
+const MIN_TRANSITION_DURATION_MS = 1;
 
 const snapMapsToSchema = (maps: ParamMap[], schema: TransitionSchemaSlot[]): ParamMap[] =>
   maps.map((map, index) => {
@@ -145,7 +147,7 @@ export class TransitionOrchestrator {
     if (this.state === 'WAITING') {
       this.waitingElapsed += dt;
       const shouldTriggerByTimer =
-        this.config.source === 'timer' && this.waitingElapsed >= Math.max(1, this.config.intervalMs ?? 4000);
+        this.config.source === 'timer' && this.waitingElapsed >= Math.max(MIN_TRANSITION_DURATION_MS, this.config.intervalMs ?? DEFAULT_TIMER_INTERVAL_MS);
       const shouldTriggerByBeat = this.config.source === 'beat' && this.consumeBeatInWindow(now - dt, now);
 
       if ((shouldTriggerByTimer || shouldTriggerByBeat) && this.targetFactory && !this.pendingFactoryCall) {
@@ -165,7 +167,7 @@ export class TransitionOrchestrator {
     }
 
     this.transitionElapsed += dt;
-    const durationMs = Math.max(1, this.config.durationMs);
+    const durationMs = Math.max(MIN_TRANSITION_DURATION_MS, this.config.durationMs);
     const linearProgress = Math.max(0, Math.min(1, this.transitionElapsed / durationMs));
     const easing = this.config.easing || easeInOutSine;
     const easedProgress = easing(linearProgress);
@@ -218,4 +220,3 @@ export class TransitionOrchestrator {
     return consumed;
   }
 }
-

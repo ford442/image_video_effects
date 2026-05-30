@@ -30,4 +30,3 @@ describe('BeatDetector', () => {
     expect(beats).toEqual([0, 500]);
   });
 });
-

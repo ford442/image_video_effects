@@ -1,5 +1,13 @@
 type AudioSourceType = 'mic' | 'element';
 
+// Lowpass filter tuned to isolate kick/bass band for beat-triggering.
+const LOWPASS_CUTOFF_HZ = 120;
+// Butterworth Q for a smooth, maximally-flat passband response.
+const LOWPASS_Q = 0.707;
+// FFT resolution + smoothing tuned for responsive, stable beat energy estimates.
+const ANALYSER_FFT_SIZE = 1024;
+const ANALYSER_SMOOTHING = 0.6;
+
 let sharedContext: AudioContext | null = null;
 let currentSourceType: AudioSourceType | null = null;
 let sourceNode: MediaStreamAudioSourceNode | MediaElementAudioSourceNode | null = null;
@@ -57,12 +65,12 @@ export async function connectSource(
 
   lowpassNode = context.createBiquadFilter();
   lowpassNode.type = 'lowpass';
-  lowpassNode.frequency.value = 120;
-  lowpassNode.Q.value = 0.707;
+  lowpassNode.frequency.value = LOWPASS_CUTOFF_HZ;
+  lowpassNode.Q.value = LOWPASS_Q;
 
   analyserNode = context.createAnalyser();
-  analyserNode.fftSize = 1024;
-  analyserNode.smoothingTimeConstant = 0.6;
+  analyserNode.fftSize = ANALYSER_FFT_SIZE;
+  analyserNode.smoothingTimeConstant = ANALYSER_SMOOTHING;
 
   sourceNode.connect(lowpassNode);
   lowpassNode.connect(analyserNode);
@@ -80,4 +88,3 @@ export async function disposeAudioGraph(): Promise<void> {
   }
   mediaElement = null;
 }
-
