@@ -2,17 +2,24 @@
   "id": "gen-abyssal-chrono-coral",
   "name": "Abyssal Chrono-Coral",
   "url": "shaders/gen-abyssal-chrono-coral.wgsl",
-  "description": "A hyper-dimensional, endlessly growing bioluminescent reef suspended in a cosmic void, where time-dilation forces crystalline coral branches to blossom and shatter in sync with quantum audio frequencies.",
+  "category": "generative",
+  "description": "A vast abyssal coral reef drifting through gravitational time. Slow geological growth rings expand over eons. Mids and treble drive bioluminescent pulses. Mouse clicks create sediment disturbance events that trigger sudden bloom explosions across the reef. Gravitational lensing bends light around dense coral structures.",
   "tags": [
     "organic",
     "fractal",
     "bioluminescence",
     "raymarching",
-    "audio-reactive"
+    "gravitational",
+    "geological-time",
+    "audio-reactive",
+    "sediment-bloom"
   ],
   "features": [
-    "mouse-driven",
-    "audio-reactive"
+    "mouse-keystone",
+    "audio-seasonal-pulses",
+    "gravitational-lensing",
+    "time-dilated-rings",
+    "raymarched"
   ],
   "params": [
     {
@@ -22,7 +29,8 @@
       "min": 0.1,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.x"
+      "mapping": "zoom_params.x",
+      "description": "Overall density and thickness of the coral structures"
     },
     {
       "id": "branchComplexity",
@@ -31,16 +39,18 @@
       "min": 1,
       "max": 8,
       "step": 1,
-      "mapping": "zoom_params.y"
+      "mapping": "zoom_params.y",
+      "description": "How many iterative folds the fractal coral performs"
     },
     {
       "id": "bioluminescenceGlow",
-      "name": "Bioluminescence Glow",
+      "name": "Bioluminescence Intensity",
       "default": 1,
       "min": 0,
       "max": 3,
       "step": 0.1,
-      "mapping": "zoom_params.z"
+      "mapping": "zoom_params.z",
+      "description": "Base strength of the glowing nodes (further driven by mids/treble)"
     },
     {
       "id": "timeDilationField",
@@ -49,8 +59,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.w"
+      "mapping": "zoom_params.w",
+      "description": "How strongly the mouse slows local geological time"
     }
-  ],
-  "coordinate": 856
+  ]
 }

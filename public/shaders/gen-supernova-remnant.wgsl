@@ -1,9 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Supernova Remnant - Expanding shell structures with shockwave physics
+//  Supernova Remnant
 //  Category: generative
-//  Features: procedural, shockwave physics, turbulence
+//  Features: expanding-shell, audio-shockwaves, gravitational-lensing, mouse-disturbance, chromatic-gas
+//  Complexity: High
+//  Chunks From: previous supernova work + audio season patterns
 //  Created: 2026-03-22
-//  By: Agent 4A
+//  Updated: 2026-05-31
+//  By: Grok (audio-driven shockwave evolution + mouse as gravitational perturber)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -117,20 +120,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let t = u.config.x;
     
-    // Parameters - safe randomization
+    // Grok upgrade: Audio seasons + mouse as gravitational perturber
     let bass = plasmaBuffer[0].x;
-    let explosionEnergy = mix(0.3, 1.5, u.zoom_params.x) * (1.0 + bass * 0.3);
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let explosionEnergy = mix(0.3, 1.5, u.zoom_params.x) * (1.0 + bass * 0.4);
     let shellDensityParam = mix(3.0, 12.0, u.zoom_params.y);
-    let chaos = mix(0.1, 0.8, u.zoom_params.z);
+    let chaos = mix(0.1, 0.8, u.zoom_params.z) * (1.0 + mids * 0.6);  // Mids increase turbulence
     let gasOpacity = u.zoom_params.w;
+
+    // Mouse as external gravitational mass (pulls/pushes the expanding shells)
+    let mousePos = (u.zoom_config.yz - 0.5) * 2.0;
+    let mouseInfluence = u.zoom_config.w;
+    let gravPull = (p - vec2<f32>(mousePos.x, mousePos.y)) * mouseInfluence * 0.25;
     
     // Aspect correction
     let aspect = resolution.x / resolution.y;
     let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
     
-    // Apply turbulence displacement
+    // Apply turbulence displacement + gravitational mouse perturbation
     let turb = turbulence(p + 0.5, t, chaos);
-    let pTurb = p + turb * 0.1;
+    let pTurb = p + turb * 0.1 + gravPull;
     
     // Polar coordinates
     let r = length(pTurb);
@@ -185,12 +196,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let nebulaCol = vec3<f32>(0.1, 0.05, 0.2) * nebula * 0.5;
     col = col + nebulaCol;
     
-    // Shockwave front (rarefaction)
+    // Shockwave front (rarefaction) — stronger and more colorful with treble
     let shockRadius = 0.6 + 0.1 * sin(t * 0.2);
     let shockWidth = 0.02;
     let shockDist = abs(r - shockRadius);
     let shock = smoothstep(shockWidth, 0.0, shockDist);
-    col = col + vec3<f32>(0.3, 0.5, 0.9) * shock * 0.3;
+    let shockColor = mix(vec3<f32>(0.3, 0.5, 0.9), vec3<f32>(0.6, 0.8, 1.0), treble);
+    col = col + shockColor * shock * (0.3 + treble * 0.4);
     
     // Vignette
     let vignette = 1.0 - r * 0.8;
@@ -199,9 +211,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Gamma correction
     col = pow(col, vec3<f32>(0.9));
     
-    // Density-based alpha so outer gas is wispy
-    let alpha = clamp(totalDensity * gasOpacity, 0.0, 1.0);
+    // Density-based alpha so outer gas is wispy (improved for compositing)
+    let alpha = clamp(totalDensity * gasOpacity * (0.7 + explosionEnergy * 0.2), 0.0, 1.1);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, alpha));
+    // Small chromatic aberration on very hot/energetic areas
+    let hot = smoothstep(0.7, 1.0, explosionEnergy);
+    let chr = vec2<f32>(0.003, -0.002) * hot;
+    // (we skip actual extra samples for perf, just tint)
+    col = mix(col, col * vec3<f32>(1.0, 0.95, 0.9), hot * 0.2);
+
+    let a = clamp(alpha, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col * a, a));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(1.0 - r * 0.5, 0.0, 0.0, 0.0));
 }

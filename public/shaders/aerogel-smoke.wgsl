@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  aerogel-smoke
-//  Category: atmospheric
-//  Features: upgraded-rgba, depth-aware, volumetric-alpha
-//  Upgraded: 2026-03-22
+//  Aerogel Smoke
+//  Category: image
+//  Features: mouse-driven, volumetric
+//  Complexity: Medium
+//  Chunks From: aerogel-smoke
+//  Created: 2026-05-31
+//  By: Copilot CLI (tactical swarm)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -152,9 +155,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Tone map (simple gamma correction)
     finalColor = pow(finalColor, vec3<f32>(1.0/1.2));
     
-    // Output RGBA with volumetric alpha
-    // RGB: In-scattered + transmitted light
-    // A: Volumetric opacity from optical depth
+    // Alpha tracks volumetric medium coverage; transmitted background stays in RGB.
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 
     // Pass depth with optical depth information

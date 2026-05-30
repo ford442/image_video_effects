@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  ascii-flow
-//  Category: stylize
-//  Features: upgraded-rgba, depth-aware
-//  Upgraded: 2026-03-22
+//  ASCII Flow
+//  Category: retro-glitch
+//  Features: mouse-driven, retro-stylize
+//  Complexity: Medium
+//  Chunks From: ascii-flow
+//  Created: 2026-05-31
+//  By: Copilot CLI (tactical swarm)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;

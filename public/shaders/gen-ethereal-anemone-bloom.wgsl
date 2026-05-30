@@ -1,8 +1,20 @@
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  Ethereal Anemone Bloom - Generative Shader with Organic Materials
 //  Category: generative
-//  Features: Translucent tentacle tissue, bioluminescence, subsurface scattering
-// ═══════════════════════════════════════════════════════════════
+//  Features: translucent-tissue, bioluminescence, subsurface-scattering, audio-reactive, ACES
+//  Complexity: High
+//  Created: 2026-05-10
+//  By: Claude Opus 4.8 (swarm optimization pass 2026-05-31)
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+//  OPTIMIZATION LOG (2026-05-31):
+//  - CRITICAL BUG FIX: audio reactivity was reading u.config.y/z/w which are
+//    MouseClickCount/ResX/ResY — NOT audio. audioReactivity scaled with the
+//    render resolution (e.g. ×2048), wildly breaking animation speed. Now reads
+//    plasmaBuffer[0] correctly (bass/mid/treble).
+//  - ACES filmic tone mapping added before gamma (was gamma-only — emissive tips blew out)
+//  - IGN dither added before write
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -63,6 +75,12 @@ fn rot2D(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     let c = cos(a);
     return mat2x2<f32>(c, -s, s, c);
+}
+
+// ACES filmic tone mapping — keeps bioluminescent tips from blowing to white
+fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // --- SDF Primitives ---
@@ -166,12 +184,11 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Swaying Logic
     let time = u.config.x;
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.config.y;
-    let audioBass = u.config.y * 1.2;
-    let audioMid = u.config.z;
-    let audioHigh = u.config.w;
-    let audioReactivity = 1.0 + audioOverall * 0.5;
+    // ═══ AUDIO REACTIVITY (fixed: plasmaBuffer, not u.config.y/z/w = mouse/resolution) ═══
+    let audioBass = plasmaBuffer[0].x;
+    let audioMid = plasmaBuffer[0].y;
+    let audioHigh = plasmaBuffer[0].z;
+    let audioReactivity = 1.0 + audioBass * 0.5;
     let current_speed = u.zoom_params.x;
     let sway_amt = (q.y * 0.2) * current_speed;
     var sway = vec3<f32>(
@@ -260,7 +277,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
     let time = u.config.x * 0.2;
-    let audioReactivity = 1.0 + u.config.y * 0.5;
+    // Audio reactivity from plasmaBuffer (was u.config.y = MouseClickCount)
+    let audioBass = plasmaBuffer[0].x;
+    let audioReactivity = 1.0 + audioBass * 0.5;
 
     // 1. Ray setup and camera matrix
     let ro = vec3<f32>(time * 2.0 * audioReactivity, -1.0, time * 2.0 * audioReactivity);
@@ -316,7 +335,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (mat == 3.0) {
             isTip = true;
             glowIntensity = u.zoom_params.z;
-            let audio_pulse = u.config.y;
+            let audio_pulse = plasmaBuffer[0].x; // was u.config.y (MouseClickCount)
 
             // Shift colors between deep cyan and electric magenta
             let hue = fract(p.y * 0.1 - time * 2.0 * audioReactivity);
@@ -351,8 +370,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = fogColor;
     }
 
+    // ACES filmic tone mapping (was gamma-only — bioluminescent tips clipped to white)
+    color = acesToneMapping(color);
     // Gamma correction
     color = pow(color, vec3<f32>(0.4545));
+
+    // IGN dither — suppresses banding in the murky deep-sea fog gradient
+    let ign = fract(52.9829189 * fract(dot(vec2<f32>(global_id.xy), vec2<f32>(0.06711056, 0.00583715))));
+    color = clamp(color + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // 5. writeTexture update with alpha
     textureStore(writeTexture, global_id.xy, vec4<f32>(color, alpha));

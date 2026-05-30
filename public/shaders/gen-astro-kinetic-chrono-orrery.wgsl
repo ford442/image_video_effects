@@ -1,11 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Astro Kinetic Chrono Orrery - Physically Accurate Orbital System
+//  Astro Kinetic Chrono Orrery
 //  Category: generative
-//  Features: mouse-driven
+//  Features: orbital, mechanical, cosmic, audio-orbit, mouse-gravity
 //  Complexity: High
+//  Updated: 2026-05-31 — Grok (audio orbit modulation + mouse gravity)
+// ═══════════════════════════════════════════════════════════════════
 //  Physics: Keplerian orbits, blackbody radiation, accretion disk
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
+
+let bass = plasmaBuffer[0].x;
+let mids = plasmaBuffer[0].y;
+let treble = plasmaBuffer[0].z;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;

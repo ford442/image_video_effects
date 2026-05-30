@@ -1,0 +1,64 @@
+{
+  "id": "topological-acoustic-knots",
+  "name": "Topological Acoustic Knots",
+  "url": "shaders/topological-acoustic-knots.wgsl",
+  "category": "generative",
+  "description": "A nematic orientation field where audio frequencies drive the birth, motion, and annihilation of topological defects. Bass and treble create defects while mids control their mobility. Mouse can pin or generate new singularities.",
+  "features": [
+    "topological-defects",
+    "nematic-fields",
+    "audio-driven",
+    "mouse-pinning",
+    "defect-dynamics"
+  ],
+  "tags": [
+    "topological",
+    "liquid-crystal",
+    "defects",
+    "audio-reactive",
+    "scientific",
+    "abstract"
+  ],
+  "params": [
+    {
+      "id": "defectDensity",
+      "name": "Defect Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "How many defects are created by audio"
+    },
+    {
+      "id": "mobility",
+      "name": "Defect Mobility",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "How fast defects move and interact"
+    },
+    {
+      "id": "pairing",
+      "name": "Defect Pairing",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Tendency for defects to annihilate in pairs"
+    },
+    {
+      "id": "mousePower",
+      "name": "Mouse Pinning Strength",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How strongly the mouse can pin or create defects"
+    }
+  ]
+}

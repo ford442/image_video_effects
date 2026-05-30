@@ -1,7 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  Biomimetic Scales
-//  Overlapping procedural scales that react to mouse presence.
-// ═══════════════════════════════════════════════════════════════
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: biomimetic-scales
+//  Created: 2026-05-30
+//  By: Copilot CLI
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -33,12 +38,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     var mouse = u.zoom_config.yz;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
     // Parameters
-    let density = mix(10.0, 60.0, u.zoom_params.x); // Scale count
+    let density = mix(10.0, 60.0, u.zoom_params.x) * (1.0 + bass * 0.12); // Scale count
     let roughness = u.zoom_params.y;
     let reactionRadius = u.zoom_params.z * 0.5;
-    let liftStrength = u.zoom_params.w;
+    let liftStrength = u.zoom_params.w * (1.0 + mids * 0.3);
 
     // Grid Setup (Staggered)
     // We scale UV.y by a factor to make scales somewhat circular in aspect
@@ -104,7 +113,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     if (mouseDist < reactionRadius) {
                         let force = smoothstep(reactionRadius, 0.0, mouseDist) * liftStrength;
                         // Tilt away from mouse
-                        let pushDir = normalize(mouseVec);
+                        let pushDir = mouseVec / max(length(mouseVec), 0.0001);
                         interact = vec3<f32>(pushDir.x, pushDir.y, 0.0) * force;
                     }
 
@@ -123,20 +132,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Sampling
         // Use normal to refract sample
-        let sampleUV = uv - finalNormal.xy * 0.02 * (1.0 - roughness);
+        let sampleUV = clamp(uv - finalNormal.xy * 0.02 * (1.0 - roughness), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
         var texColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
 
         // Apply roughness/lighting
-        let lighting = (diff * 0.8 + 0.2) + spec * (1.0 - roughness);
+        let lighting = (diff * 0.8 + 0.2) + spec * (1.0 - roughness + treble * 0.1);
 
         // Add subtle edge darkening for scale definition
         // (Implicit in the curvature normal, but we can boost it)
 
         finalColor = texColor * lighting;
+        let alpha = clamp(0.22 + diff * 0.25 + spec * 0.2 + bass * 0.08, 0.1, 0.92);
+        let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r + spec * 0.05, 0.0, 1.0);
+        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+        textureStore(dataTextureA, global_id.xy, vec4<f32>(diff, spec, 1.0, alpha));
     } else {
         // Gap between scales (shouldn't happen with sufficient overlap/radius)
         finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb * 0.2;
+        let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 0.14));
+        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+        textureStore(dataTextureA, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.14));
     }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 }

@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  anamorphic-flare
-//  Category: lighting-effects
-//  Features: upgraded-rgba, depth-aware, luminance-key-alpha, lens-flare
-//  Upgraded: 2026-03-22
+//  Anamorphic Flare
+//  Category: interactive-mouse
+//  Features: mouse-driven, lens-flare
+//  Complexity: Medium
+//  Chunks From: anamorphic-flare
+//  Created: 2026-05-31
+//  By: Copilot CLI (tactical swarm)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;

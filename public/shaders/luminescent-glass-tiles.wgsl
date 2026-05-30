@@ -1,8 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-// Luminescent Glass Tiles - Physical glass transmission with Beer-Lambert law
-// Category: distortion
-// Features: luma-driven distortion, mouse influence, physically-based alpha
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Luminescent Glass Tiles
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: luminescent-glass-tiles
+//  Created: 2026-05-30
+//  By: Copilot CLI
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -34,11 +38,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
-    let density = max(u.zoom_params.x * 50.0, 1.0);
-    let refractStr = u.zoom_params.y * 0.5;
+    let density = max(u.zoom_params.x * 50.0 * (1.0 + bass * 0.15), 1.0);
+    let refractStr = u.zoom_params.y * 0.5 * (1.0 + mids * 0.25);
     let radius = max(u.zoom_params.z, 0.01);
-    let turbulence = u.zoom_params.w;
+    let turbulence = u.zoom_params.w * (1.0 + treble * 0.35);
     let glassDensity = 1.0 + turbulence * 1.5; // Beer-Lambert density
 
     // Grid calculations
@@ -76,7 +84,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     distUV = distUV + 0.5;
 
     // Reconstruct Global UV from distorted Cell UV
-    let finalUV = (cellID + distUV) / vec2<f32>(density * aspect, density);
+    let finalUV = clamp(
+        (cellID + distUV) / vec2<f32>(density * aspect, density),
+        vec2<f32>(0.001, 0.001),
+        vec2<f32>(0.999, 0.999)
+    );
 
     // Border distance
     let border = max(abs(distUV.x - 0.5), abs(distUV.y - 0.5));
@@ -99,7 +111,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Luminescent glass color - shifts with luma
     let baseGlassColor = vec3<f32>(0.92, 0.96, 1.0);
     let luminescentTint = vec3<f32>(0.8 + luma * 0.4, 0.9 + luma * 0.2, 1.0);
-    let glassColor = mix(baseGlassColor, luminescentTint, luma * 0.5);
+    let glassColor = mix(baseGlassColor, luminescentTint, luma * 0.5) + vec3<f32>(0.03 * bass, 0.05 * mids, 0.08 * treble);
     
     // Beer-Lambert absorption
     let absorption = exp(-(1.0 - glassColor) * thickness * glassDensity);
@@ -122,8 +134,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = vec4<f32>(color.rgb * glassColor, transmission);
 
     // Highlight based on luma (glass glow) - adds to transmission
-    let glow = luma * 0.2 * mouseFactor;
+    let glow = luma * (0.2 + bass * 0.12) * mouseFactor;
     color = color + vec4<f32>(glow, glow, glow, glow * 0.5);
 
+    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, finalUV, 0.0).r + fresnel * 0.03, 0.0, 1.0);
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(transmission, luma, mouseFactor, color.a));
 }

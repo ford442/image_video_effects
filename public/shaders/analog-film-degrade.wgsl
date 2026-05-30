@@ -5,6 +5,7 @@
 //  Complexity: Medium
 //  Chunks From: valueNoise, hash21
 //  Created: 2026-05-23
+//  By: Copilot CLI (tactical swarm)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;

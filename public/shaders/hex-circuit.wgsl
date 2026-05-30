@@ -1,8 +1,12 @@
-// ────────────────────────────────────────────────────────────────────────────────
-//  Hex Circuit – Cybernetic Grid Overlay
-//  - Overlays a hexagonal grid that reacts to image edges and mouse pulses.
-//  - High-tech, futuristic aesthetic.
-// ────────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+//  Hex Circuit
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: hex-circuit
+//  Created: 2026-05-30
+//  By: Copilot CLI
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -41,11 +45,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / dims;
     let aspect = dims.x / dims.y;
     let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
     // Params
     let gridSize = mix(10.0, 50.0, u.zoom_params.x);
-    let glowStrength = mix(0.5, 3.0, u.zoom_params.y);
-    let pulseSpeed = u.zoom_params.z * 5.0;
+    let glowStrength = mix(0.5, 3.0, u.zoom_params.y) * (1.0 + bass * 0.5);
+    let pulseSpeed = u.zoom_params.z * 5.0 * (1.0 + mids * 0.35);
     let edgeSens = u.zoom_params.w;
 
     var p = uvCorrected * gridSize;
@@ -79,8 +87,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Edge Detection from Image
     let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let texel = 1.0 / dims;
-    let cR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).rgb;
-    let cU = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).rgb;
+    let cR = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let cU = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
 
     let luma = dot(c, vec3<f32>(0.333));
     let lumaR = dot(cR, vec3<f32>(0.333));
@@ -93,7 +101,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseDist = distance(uvCorrected, vec2<f32>(mouse.x * aspect, mouse.y));
     let pulseTime = u.config.x * pulseSpeed;
     let wave = sin(mouseDist * 10.0 - pulseTime);
-    let pulse = smoothstep(0.8, 1.0, wave); // Sharp wave ring
+    let pulse = smoothstep(0.8 - treble * 0.08, 1.0, wave); // Sharp wave ring
 
     // Final color logic
     var color = c * 0.7; // Dim background
@@ -104,22 +112,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let isHexLine = 1.0 - smoothstep(0.0, lineThickness, distToEdge);
 
     // Determine glow color
-    let hexColor = mix(vec3<f32>(0.0, 0.5, 1.0), vec3<f32>(1.0, 0.0, 0.5), pulse);
+    let hexColor = mix(vec3<f32>(0.0, 0.5, 1.0), vec3<f32>(1.0, 0.0, 0.5), pulse + bass * 0.15);
 
     // Light up hexes that contain image edges OR are hit by pulse
-    let activeHex = step(edgeSens * 0.1, imgEdge) * 0.8 + pulse * 0.5;
+    let activeHex = step(edgeSens * 0.1, imgEdge) * (0.7 + treble * 0.3) + pulse * (0.45 + bass * 0.45);
 
-    if (isHexLine > 0.0) {
-        color = mix(color, hexColor * glowStrength, isHexLine * clamp(activeHex + 0.2, 0.2, 1.0));
-    } else {
-        // Fill hex slightly if active
-        color += hexColor * activeHex * 0.2;
-    }
+    color = mix(color, hexColor * glowStrength, isHexLine * clamp(activeHex + 0.2, 0.2, 1.0));
+    color += (1.0 - isHexLine) * hexColor * activeHex * 0.2;
 
     // Highlight near mouse
     // Fixed undefined smoothstep behavior
     let mouseHover = 1.0 - smoothstep(0.0, 0.2, mouseDist);
     color += mouseHover * vec3<f32>(0.1, 0.1, 0.2);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    let finalAlpha = clamp(0.14 + isHexLine * clamp(activeHex + 0.15, 0.0, 1.0) * 0.45 + pulse * 0.18 + bass * 0.08, 0.08, 0.96);
+    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + isHexLine * 0.05 + pulse * 0.02, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, finalAlpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(imgEdge, activeHex, pulse, finalAlpha));
 }

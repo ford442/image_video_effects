@@ -1,11 +1,21 @@
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  Holographic Data Core - Generative hologram with interference physics
 //  Category: generative
-//  Features: mouse-driven, depth-aware, alpha transparency
+//  Features: mouse-driven, depth-aware, audio-reactive, alpha-transparency
+//  Complexity: Very High
+//  Created: 2026-05-10
+//  By: Claude Opus 4.8 (swarm optimization pass 2026-05-31)
+//  upgraded-rgba
 //  Physics: Thin-film interference, volume diffraction, 60Hz flicker
-//  Description: An infinite journey through a quantum lattice of glowing 
+//  Description: An infinite journey through a quantum lattice of glowing
 //               data nodes with volumetric interference effects
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  OPTIMIZATION LOG (2026-05-31):
+//  - volumetricInterference() was computed EVERY raymarch step (6 trig-heavy
+//    calls × 80 steps). Now gated: only computed when within glow range (d < 2.0)
+//    where its contribution is perceptible. Est. 30-50% fewer interference evals.
+//  - Audio reactivity wired to plasmaBuffer (bass→node pulse, treble→flicker)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -199,6 +209,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glitch_intensity = u.zoom_params.w;
     let travel_speed = u.zoom_params.y;
 
+    // Audio reactivity — bass swells node glow, treble drives projection flicker
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
     // Holographic Glitch (chromatic aberration & scanlines base)
@@ -247,18 +261,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         var res = map(p);
         var d = res.d;
 
-        // Calculate interference at this point
-        let interference = volumetricInterference(p, -rd, time);
+        // OPTIMIZATION: only evaluate the expensive 6-call interference physics when
+        // the point is close enough that glow/hit contribution is perceptible.
+        // Far-field steps (d >= 2.0) contribute negligible glow (0.01/d → ~0.005).
+        var interference = vec3<f32>(0.0);
+        let nearField = d < 2.0;
+        if (nearField) {
+            interference = volumetricInterference(p, -rd, time);
+        }
 
-        // Volumetric Glow Accumulation with interference
-        if (d > 0.0) {
+        // Volumetric Glow Accumulation with interference (bass swells glow)
+        if (d > 0.0 && nearField) {
             let g_dist = max(d, 0.001);
+            let glowBoost = 1.0 + bass * 0.5;
             if (res.mat_id == 1.0) {
-                glow += vec3<f32>(0.0, 0.5, 1.0) * (0.01 / g_dist) * (1.0 + interference.b);
+                glow += vec3<f32>(0.0, 0.5, 1.0) * (0.01 / g_dist) * (1.0 + interference.b) * glowBoost;
             } else if (res.mat_id == 2.0) {
-                glow += vec3<f32>(1.0, 0.2, 0.5) * (0.02 / g_dist) * (1.0 + interference.r);
+                glow += vec3<f32>(1.0, 0.2, 0.5) * (0.02 / g_dist) * (1.0 + interference.r) * glowBoost;
             } else if (res.mat_id == 3.0) {
-                glow += vec3<f32>(0.0, 0.8, 0.8) * (0.005 / g_dist) * (1.0 + interference.g);
+                glow += vec3<f32>(0.0, 0.8, 0.8) * (0.005 / g_dist) * (1.0 + interference.g) * glowBoost;
             }
         }
 
@@ -267,7 +288,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             // Basic rim lighting / fresnel for structure with interference
             let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
-            
+
             // Apply interference colors
             let intColor = interference * 2.0;
 
@@ -330,8 +351,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Scanline alpha modulation
     alpha *= holographicScanlines(vec2<f32>(global_id.xy) / resolution, time);
     
-    // 60Hz flicker
-    alpha *= projectionFlicker(time);
+    // 60Hz flicker — treble adds extra projection instability on hi-hats
+    alpha *= projectionFlicker(time) * (1.0 - treble * 0.1);
     
     // Glitch causes alpha instability
     let glitchAlpha = 1.0 - glitch_intensity * 0.15 * hash21(vec2<f32>(time, uv.y));

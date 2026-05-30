@@ -1,8 +1,13 @@
-// ═══════════════════════════════════════════════════════════════
-//  Bioluminescent Abyss - Generative Shader with Deep Sea Organism Properties
+// ═══════════════════════════════════════════════════════════════════
+//  Bioluminescent Abyss
 //  Category: generative
-//  Features: Tube worm tissue, bioluminescent emission, organic transparency, audio-reactive
-// ═══════════════════════════════════════════════════════════════
+//  Features: deep-sea-ecosystem, seasonal-audio, mouse-as-light, volumetric-bioluminescence, depth-stratified
+//  Complexity: High
+//  Chunks From: previous abyssal work + audio season patterns
+//  Created: 2026-05-23
+//  Updated: 2026-05-31
+//  By: Grok (seasonal audio ecosystem + submarine light mouse upgrade)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -274,6 +279,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let up = cross(forward, right);
     let rd = normalize(forward + right * uv.x + up * uv.y);
 
+    // === AUDIO SEASONS FOR THE ABYSS (Grok upgrade) ===
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // Bass = harsh/deep currents (more sway, slightly reduced glow)
+    // Mids = bloom / nutrient upwelling (stronger bioluminescence)
+    // Treble = volatile / "feeding frenzy" (erratic pulses, higher local glow)
+    let seasonBloom = mids * 0.7;
+    let seasonHarsh = bass * 0.55;
+    let seasonVolatile = treble * 0.8;
+
     var res = raymarch(ro, rd);
     var t = res.x;
     var mat = res.y;
@@ -310,7 +327,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             
         } else if (mat == 3.0) { // Worm Tip
             isGlowing = true;
-            glowIntensity = u.zoom_params.z * (1.0 + bass * 0.3);
+            
+            // Grok upgrade: Audio seasons + mouse as submarine spotlight
+            let mouseSpot = smoothstep(0.4, 0.05, length(p.xz - vec2<f32>(mouse.x*10.0 - 5.0, mouse.y*8.0 - 4.0))) * u.zoom_config.w;
+            let seasonGlow = seasonBloom * 0.6 + seasonVolatile * 0.9;
+            glowIntensity = u.zoom_params.z * (0.7 + seasonGlow + mouseSpot * 1.8 + bass * 0.25);
+            
             let hue = p.y * 0.1;
 
             let k = vec3<f32>(1.0, 2.0/3.0, 1.0/3.0);
@@ -353,11 +375,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             alpha = mix(alpha, 0.35, glowIntensity * 0.15);
         }
 
+        // Grok upgrade: Mouse spotlight + bloom seasons + ripple disturbance (life is attracted to movement)
+        if (isGlowing) {
+            alpha = mix(alpha, alpha * 0.6 + 0.3, mouseSpot * 0.5 + seasonBloom * 0.3);
+        }
+
+        // Ripples create local "feeding" blooms (small creative spark)
+        let rippleCount = min(u32(u.config.y), 50u);
+        for (var i = 0u; i < rippleCount; i = i + 1u) {
+            let ripple = u.ripples[i];
+            let rDist = length(p.xz - ripple.xy * 8.0);
+            if (rDist < 1.5) {
+                let rAge = time - ripple.z;
+                if (rAge > 0.0 && rAge < 3.0) {
+                    let bloom = exp(-rDist) * (1.0 - rAge * 0.3) * 0.4;
+                    if (isGlowing) {
+                        glowIntensity += bloom;
+                        alpha = mix(alpha, 0.5, bloom * 0.5);
+                    }
+                }
+            }
+        }
+
     } else {
         color = fogColor;
         alpha = 0.0;
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    // Final premultiplied write with improved alpha for layering
+    let a = clamp(alpha, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color * a, a));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
 }

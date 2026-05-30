@@ -1,4 +1,10 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Thermal Vision
+//  Category: artistic
+//  Features: audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-30
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -6,44 +12,49 @@
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2 (w=isMouseDown)
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-fn thermal_gradient(t: f32, shift: f32) -> vec3<f32> {
-    // Offset t by shift
-    let t_mod = fract(t + shift);
-    var col = vec3<f32>(0.0);
+fn hash(p: vec2<f32>) -> f32 {
+    let h = dot(p, vec2<f32>(127.1, 311.7));
+    return fract(sin(h) * 43758.5453123);
+}
 
-    // Gradient: Black -> Blue -> Purple -> Red -> Orange -> Yellow -> White
-    if (t_mod < 0.2) {
-        // Black to Blue
-        col = mix(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), t_mod * 5.0);
-    } else if (t_mod < 0.4) {
-        // Blue to Purple/Magenta
-        col = mix(vec3(0.0, 0.0, 1.0), vec3(1.0, 0.0, 1.0), (t_mod - 0.2) * 5.0);
-    } else if (t_mod < 0.6) {
-        // Purple to Red
-        col = mix(vec3(1.0, 0.0, 1.0), vec3(1.0, 0.0, 0.0), (t_mod - 0.4) * 5.0);
-    } else if (t_mod < 0.8) {
-        // Red to Yellow
-        col = mix(vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 0.0), (t_mod - 0.6) * 5.0);
-    } else {
-        // Yellow to White
-        col = mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0), (t_mod - 0.8) * 5.0);
-    }
-    return col;
+fn noise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let a = hash(i);
+    let b = hash(i + vec2<f32>(1.0, 0.0));
+    let c = hash(i + vec2<f32>(0.0, 1.0));
+    let d = hash(i + vec2<f32>(1.0, 1.0));
+    let u2 = f * f * (3.0 - 2.0 * f);
+    return mix(mix(a, b, u2.x), mix(c, d, u2.x), u2.y);
+}
+
+fn thermal_gradient(t: f32) -> vec3<f32> {
+    let c0 = mix(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.0, 0.0, 1.0), clamp(t * 5.0, 0.0, 1.0));
+    let c1 = mix(vec3<f32>(0.0, 0.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), clamp((t - 0.2) * 5.0, 0.0, 1.0));
+    let c2 = mix(vec3<f32>(1.0, 0.0, 1.0), vec3<f32>(1.0, 0.0, 0.0), clamp((t - 0.4) * 5.0, 0.0, 1.0));
+    let c3 = mix(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 0.0), clamp((t - 0.6) * 5.0, 0.0, 1.0));
+    let c4 = mix(vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(1.0, 1.0, 1.0), clamp((t - 0.8) * 5.0, 0.0, 1.0));
+
+    var color = c0;
+    color = mix(color, c1, step(0.2, t));
+    color = mix(color, c2, step(0.4, t));
+    color = mix(color, c3, step(0.6, t));
+    color = mix(color, c4, step(0.8, t));
+    return color;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -52,35 +63,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
 
-    // Parameters
-    let heatIntensity = u.zoom_params.x * 2.0 - 1.0; // -1.0 to 1.0
-    let heatRadius = u.zoom_params.y; // 0.0 to 1.0
-    let contrast = mix(0.2, 5.0, u.zoom_params.z); // 0.2 to 5.0
-    let shift = u.zoom_params.w; // 0.0 to 1.0
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+    let texel = vec2<f32>(1.0 / resolution.x, 1.0 / resolution.y);
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
-    let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    var lum = dot(base.rgb, vec3(0.299, 0.587, 0.114));
+    let heatSensitivity = mix(0.5, 3.0, u.zoom_params.x) * (1.0 + bass * 0.2);
+    let colorRange = u.zoom_params.y;
+    let sensorNoise = u.zoom_params.z * (1.0 + mids * 0.25);
+    let thermalBlur = u.zoom_params.w;
 
-    // Contrast
-    lum = pow(lum, contrast);
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let luma = dot(baseColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let blurredLuma = mix(
+        luma,
+        (
+            luma +
+            dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114)) +
+            dot(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(texel.x, 0.0), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114)) +
+            dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114)) +
+            dot(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, texel.y), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114))
+        ) / 5.0,
+        thermalBlur
+    );
+    let driftSpeed = 0.6 + treble * 1.6;
+    let n = noise(uv * resolution.xy * 0.04 + vec2<f32>(time * driftSpeed, -time * driftSpeed * 0.6));
+    let heat = clamp((blurredLuma + (n - 0.5) * sensorNoise) * heatSensitivity, 0.0, 1.0);
+    let thermalColor = thermal_gradient(pow(heat, mix(1.5, 0.55, colorRange)));
+    let hotspot = smoothstep(0.75, 1.0, heat) * (0.15 + treble * 0.1);
+    let finalColor = mix(baseColor.rgb * 0.25, thermalColor, 0.85) + vec3<f32>(hotspot);
+    let alpha = clamp(baseColor.a * 0.4 + heat * 0.35 + bass * 0.05, 0.08, 1.0);
+    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + heat * 0.04, 0.0, 1.0);
+    let finalPixel = vec4<f32>(finalColor, alpha);
 
-    // Mouse Heat
-    var mousePos = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
-    // Aspect correct distance
-    let dist = distance(uv * vec2(aspect, 1.0), mousePos * vec2(aspect, 1.0));
-
-    let r = heatRadius * 0.5;
-    let heat = smoothstep(r, 0.0, dist) * heatIntensity;
-
-    lum = clamp(lum + heat, 0.0, 1.0);
-
-    let finalColor = thermal_gradient(lum, shift);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(finalColor, 1.0));
-
-    // Pass-through depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalPixel);
 }

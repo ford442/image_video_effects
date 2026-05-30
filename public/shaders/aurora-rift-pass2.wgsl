@@ -1,9 +1,15 @@
-// ===============================================================
-// Aurora Rift – Pass 2: Atmospheric Scattering & Grading
-// Applies atmospheric scattering, color grading, and tone mapping
-// Inputs: dataTextureA (volumetric data from Pass 1), readTexture (Pass 1 color)
-// Outputs: writeTexture (final color), writeDepthTexture
-// ===============================================================
+// ═══════════════════════════════════════════════════════════════════
+//  Aurora Rift – Pass 2: Atmospheric Scattering & Grading
+//  Category: lighting-effects (multi-pass)
+//  Features: multi-pass-2, post-processing, ACES, chromatic-dispersion, audio-reactive
+//  Complexity: Medium
+//  Chunks From: aurora-rift-pass1.wgsl (ACES), aurora-rift.wgsl (atmospheric model)
+//  Created: 2026-05-31
+//  By: Claude Sonnet 4.6 (swarm optimization pass)
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+//  Inputs:  dataTextureC (volumetric RGBA from Pass 1 — color.rgb + density in .a)
+//  Outputs: writeTexture (final composited + graded color)
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
 @group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
@@ -143,12 +149,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = (vec2<f32>(gid.xy) + 0.5) / dims;
     let texel = 1.0 / dims;
     let time = u.config.x;
-    let globalIntensity = 1.0;
-    
-    // Parameters
-    let chromaSpread = u.zoom_config.w * 0.5;
+    // globalIntensity from uniform (was hardcoded 1.0 — now param-driven)
+    let globalIntensity = clamp(u.config.y, 0.1, 1.5);
+
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mid  = plasmaBuffer[0].y;
+
+    // Parameters — bass expands chromatic spread for energy bursts
+    let chromaSpread = u.zoom_config.w * 0.5 * (1.0 + bass * 0.4);
     let diffusionRate = u.zoom_params.z * 0.8 + 0.1;
-    let rotSpeed = u.zoom_config.x * 1.9 + 0.1;
+    let rotSpeed = u.zoom_config.x * 1.9 + 0.1 + mid * 0.3; // mid-range energy adds subtle hue spin
     
     // Sample source color & depth
     let srcCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
@@ -211,14 +222,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Tone mapping
     let toneMapped = acesToneMapping(withVignette);
-    
+
+    // IGN dither to suppress banding in ACES shadow compression
+    let ign = fract(52.9829189 * fract(dot(vec2<f32>(gid.xy), vec2<f32>(0.06711056, 0.00583715))));
+    let dithered = toneMapped + (ign - 0.5) * (1.0 / 255.0);
+
     // Final intensity blend
-    let finalCol = mix(srcCol, toneMapped, globalIntensity);
-    
+    let finalCol = mix(srcCol, clamp(dithered, vec3<f32>(0.0), vec3<f32>(1.0)), globalIntensity);
+
+    // Premultiplied-alpha: density drives how strongly the aurora overrides source
+    let finalAlpha = clamp(density * 0.8 + 0.2, 0.0, 1.0);
+
     // Update history buffer (via dataTextureA)
-    textureStore(dataTextureA, gid.xy, vec4<f32>(diffused, 1.0));
-    
-    // Output final color
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalCol, 1.0));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(diffused, finalAlpha));
+
+    // Output final color with density-driven alpha for downstream slot blending
+    textureStore(writeTexture, gid.xy, vec4<f32>(finalCol, finalAlpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

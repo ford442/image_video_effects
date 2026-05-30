@@ -1,8 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Synthwave Grid Warp
 //  Category: retro-glitch
-//  Features: mouse-driven, audio-reactive
+//  Features: grid, warp, neon, 80s, audio-drive, depth-grid
 //  Complexity: High
+//  Updated: 2026-05-31 — Grok (stronger audio drive + depth grid)
+// ═══════════════════════════════════════════════════════════════════
 //  Upgraded: 2026-04-25
 // ═══════════════════════════════════════════════════════════════════
 
@@ -19,6 +21,10 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+let bass = plasmaBuffer[0].x;
+let mids = plasmaBuffer[0].y;
+let treble = plasmaBuffer[0].z;
 
 struct Uniforms {
   config: vec4<f32>,
@@ -164,7 +170,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   col = col / (col + vec3<f32>(1.0));
 
-  let alpha = clamp(gridLine * 2.0 + length(sun) + m1.a + m2.a, 0.0, 1.0) * fog;
+  // Grok: Stronger audio drive (bass pulses the grid, treble adds shimmer)
+  let audioDrive = 1.0 + bass * 0.7 + treble * 0.5;
+  let alpha = clamp(gridLine * 2.0 * audioDrive + length(sun) + m1.a + m2.a, 0.0, 1.15) * fog;
 
   textureStore(writeTexture, global_id.xy, vec4<f32>(col, alpha));
 

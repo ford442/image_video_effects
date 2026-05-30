@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Focal Pixelate
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Low
+//  Chunks From: focal-pixelate
+//  Created: 2026-05-30
+//  By: Copilot CLI
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,8 +20,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -29,6 +35,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     var mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let treble = audio.z;
 
     // Params
     // x: min grid size (0.0 = high res/no pixelation, 1.0 = big blocks)
@@ -59,7 +68,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Param Z: Focus Falloff (Softness)
     // Param W: Invert (0 = Clear Center, 1 = Pixelated Center)
 
-    let pixel_strength = mix(500.0, 20.0, u.zoom_params.x); // 500 = small blocks, 20 = huge blocks
+    let pixel_strength = mix(500.0, 20.0, u.zoom_params.x) * (1.0 - bass * 0.3); // 500 = small blocks, 20 = huge blocks
     let focus_radius = u.zoom_params.y;
     let focus_falloff = u.zoom_params.z;
     let invert = u.zoom_params.w > 0.5;
@@ -72,15 +81,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // if mix_factor is 0 (center), we want high res. If 1 (edge), we want pixel_strength.
     // Ideally high res is direct sampling.
     // But for pixelation code:
-    let blocks = mix(2000.0, pixel_strength, mix_factor);
+    let blocks = max(mix(2000.0, pixel_strength, mix_factor), 1.0);
 
-    let pixel_uv = floor(uv * blocks) / blocks + (0.5 / blocks); // Center sample
+    let pixel_uv = clamp(floor(uv * blocks) / blocks + (0.5 / blocks), vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999)); // Center sample
 
     let color = textureSampleLevel(readTexture, non_filtering_sampler, pixel_uv, 0.0).rgb;
+    let finalAlpha = clamp(0.18 + mix_factor * 0.35 + treble * 0.08, 0.08, 0.9);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(color, finalAlpha));
 
     // Pass depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, pixel_uv, 0.0).r + mix_factor * 0.03, 0.0, 1.0);
     textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(mix_factor, 1.0 / blocks, bass, finalAlpha));
 }

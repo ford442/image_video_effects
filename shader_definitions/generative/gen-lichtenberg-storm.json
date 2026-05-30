@@ -1,0 +1,64 @@
+{
+  "id": "gen-lichtenberg-storm",
+  "name": "Lichtenberg Storm",
+  "url": "shaders/gen-lichtenberg-storm.wgsl",
+  "description": "Dielectric breakdown fractal patterns with phosphorescent afterglow and storm pulses. Branching discharge trees grow from multiple seed points with HDR bloom, halation glow, and electric palette.",
+  "tags": [
+    "generative",
+    "procedural",
+    "lichtenberg",
+    "fractal",
+    "lightning",
+    "electric",
+    "discharge",
+    "branching",
+    "phosphorescent",
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal"
+  ],
+  "author": "AI",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Branch Jitter",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01,
+      "description": "Brownian motion jitter on branch angles"
+    },
+    {
+      "id": "param2",
+      "name": "Glow Intensity",
+      "min": 0,
+      "max": 1,
+      "default": 0.6,
+      "step": 0.01,
+      "description": "HDR bloom intensity on discharge branches and tips"
+    },
+    {
+      "id": "param3",
+      "name": "Storm Frequency",
+      "min": 0,
+      "max": 1,
+      "default": 0.4,
+      "step": 0.01,
+      "description": "Frequency of periodic electrical storm pulses"
+    },
+    {
+      "id": "param4",
+      "name": "Afterglow Persistence",
+      "min": 0,
+      "max": 1,
+      "default": 0.7,
+      "step": 0.01,
+      "description": "Phosphorescent afterglow decay persistence via temporal feedback"
+    }
+  ]
+}
