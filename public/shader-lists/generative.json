@@ -5501,6 +5501,65 @@
     ]
   },
   {
+    "id": "gen-multi-scale-evolutionary-cellular-gardens",
+    "name": "Multi-Scale Evolutionary Cellular Gardens",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-multi-scale-evolutionary-cellular-gardens.wgsl",
+    "description": "A multi-state cellular automata system where growth rules slowly evolve based on local conditions and global audio input. Audio drives genetic pressure on the automata. Mouse introduces invasive species or protected zones. Organic, plant-like emergent structures that change their fundamental behavior over time.",
+    "tags": [
+      "generative",
+      "cellular-automata",
+      "evolutionary",
+      "organic",
+      "garden",
+      "audio-reactive",
+      "emergent",
+      "music"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "mutationRate",
+        "name": "Mutation Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "How quickly the growth rules evolve over time"
+      },
+      {
+        "id": "competition",
+        "name": "Species Competition",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "How fiercely species compete for resources"
+      },
+      {
+        "id": "fertility",
+        "name": "Fertility",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Resource regeneration rate in the environment"
+      },
+      {
+        "id": "diversity",
+        "name": "Diversity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Number of distinct species behaviors present"
+      }
+    ]
+  },
+  {
     "id": "gen-murmuration-phantom",
     "name": "Murmuration Phantom",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-murmuration-phantom.wgsl",
