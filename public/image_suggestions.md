@@ -5361,6 +5361,71 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Tests the blending of futuristic, high-tech themes with the gritty, muted, historical painting style of the Ashcan School.
 
 
+### Suggestion: Bioluminescent Floating Jellyfish City
+- **Date:** 2026-12-05
+- **Prompt:** "A sprawling, futuristic city built upon the caps of colossal, bioluminescent jellyfish floating through a dense, starry nebula. The organic architecture features sweeping, translucent domes and delicate, glowing tendrils connecting the structures. The lighting is completely diegetic, emitting soft neon blues and pulsing magenta from the jellyfish and city lights. The mood is awe-inspiring, serene, and otherworldly. Captured with an ultra-wide 14mm lens to emphasize the majestic scale against the cosmic sky."
+- **Negative prompt:** "earth, daylight, ocean water, dark, grim, dystopian, lowres, blurry"
+- **Tags:** sci-fi, space, bioluminescent, city, surreal
+- **Style / Reference:** cinematic space art, photorealistic 3D render
+- **Composition:** wide expansive view, rule of thirds, deep perspective
+- **Color palette:** neon blue, pulsing magenta, deep cosmic black, stark white stars
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261205_jellyfish-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating soft emissive lighting against a dark cosmic background and transparent organic textures.
+
+### Suggestion: Clockwork Solar System Orrery
+- **Date:** 2026-12-05
+- **Prompt:** "A hyper-detailed, macro photograph of an intricate, antique brass and copper clockwork orrery depicting the solar system. The planets are represented by polished gemstones like lapis lazuli, tiger's eye, and malachite. The lighting is warm, directional studio lighting, catching the microscopic scratches on the brass gears and creating sharp, bright specular highlights on the polished gemstones. The mood is intellectual, antique, and precise. Captured with a 100mm macro lens, incredibly shallow depth of field focusing strictly on the central brass sun mechanism."
+- **Negative prompt:** "modern, plastic, flat lighting, messy, bright background, digital"
+- **Tags:** steampunk, macro, still life, mechanism, vintage
+- **Style / Reference:** photorealistic macro product photography, steampunk aesthetic
+- **Composition:** close-up, rule of thirds, shallow depth of field
+- **Color palette:** warm brass, polished copper, deep gemstone blue and green, rich dark brown
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261205_clockwork-orrery.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for pushing the model's detailing capabilities on micro-mechanical parts and highly reflective curved gemstone surfaces.
+
+### Suggestion: Obsidian Art Deco Skyscraper
+- **Date:** 2026-12-05
+- **Prompt:** "A towering, imposing skyscraper designed in a lavish Art Deco style, constructed entirely from flawless, highly reflective black obsidian and polished gold inlays. The subject stands in the center of a stormy, lightning-filled metropolis. The lighting is dramatic and high-contrast, with a sudden flash of lightning illuminating the slick, wet obsidian surface and reflecting brightly off the gold geometric patterns. The mood is powerful, dark, and luxurious. Captured with a low-angle perspective using a 24mm lens to emphasize the monolithic height and sharp geometric lines."
+- **Negative prompt:** "daylight, bright, cheerful, colorful, soft curves, ruin, rusted"
+- **Tags:** architecture, dark, art deco, obsidian, lightning
+- **Style / Reference:** dark architectural visualization, cinematic rendering
+- **Composition:** low angle looking up, symmetrical, towering scale
+- **Color palette:** pitch black obsidian, brilliant gold, cold electric blue, dark stormy grey
+- **Aspect ratio:** 9:16
+- **Reference images:** `public/images/suggestions/20261205_obsidian-skyscraper.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the interaction between highly reflective dark surfaces and sharp, sudden intense directional light like lightning.
+
+### Suggestion: Porcelain Cybernetic Samurai
+- **Date:** 2026-12-05
+- **Prompt:** "A striking, photorealistic portrait of a cybernetic samurai whose armor and faceplate are crafted from pristine white porcelain with delicate, traditional blue floral patterns. The subject is standing in a quiet, mist-filled bamboo forest. The lighting is soft, diffused overcast daylight filtering through the canopy, highlighting the smooth, glossy texture of the porcelain and the subtle glowing cyan circuitry beneath the joints. The mood is calm, elegant, and slightly melancholic. Captured with an 85mm portrait lens, shallow depth of field blurring the bamboo in the background."
+- **Negative prompt:** "metal armor, rusty, bright sunlight, violent, messy, low quality"
+- **Tags:** cyberpunk, portrait, porcelain, samurai, serene
+- **Style / Reference:** hyper-realistic portrait photography, surreal material swap
+- **Composition:** waist-up portrait, balanced framing, soft background bokeh
+- **Color palette:** pristine white, traditional porcelain blue, soft bamboo green, glowing cyan
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261205_porcelain-samurai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of clean, glossy materials with intricate surface patterns under soft, diffused natural lighting.
+
+### Suggestion: Iridescent Crystal Cavern River
+- **Date:** 2026-12-05
+- **Prompt:** "A vast subterranean landscape featuring a fast-flowing river of liquid silver winding through a cavern composed of colossal, jagged crystals that shift in iridescent shades of purple, green, and pink. The lighting is ethereal and subterranean, with the liquid silver reflecting the luminescent glow of the surrounding crystals to illuminate the dark cavern walls. The mood is magical, untouched, and serene. Captured with a wide-angle 14mm lens, deep focus to capture the endless frozen reflections and the dynamic flow of the liquid metal."
+- **Negative prompt:** "daylight, sunlight, dirt, organic plants, people, blurry, flat lighting"
+- **Tags:** fantasy, landscape, crystal, ethereal, subterranean
+- **Style / Reference:** fantasy environment design, photorealistic 3D render
+- **Composition:** wide landscape, deep perspective, river creating a leading line
+- **Color palette:** iridescent purple and green, liquid silver, deep dark cave shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261205_iridescent-cavern-river.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing liquid metal reflections combined with multi-colored iridescent crystalline light sources.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
