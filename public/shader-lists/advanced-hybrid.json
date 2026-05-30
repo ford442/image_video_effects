@@ -112,6 +112,137 @@
     "target_rating": 4.8
   },
   {
+    "id": "alucinate-hdr",
+    "name": "Alucinate HDR",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alucinate-hdr.wgsl",
+    "category": "advanced-hybrid",
+    "description": "When Alucinate (AI VJ) mode is active, this serves as a visual 'conductor's baton' — elegant, minimal music-reactive glyphs and a living spectrogram that represent the current vibe stack. The psychedelic warp + HDR bloom provides a rich atmospheric underlayer. Mouse acts as the conductor's hand.",
+    "features": [
+      "ai-vj-conductor",
+      "music-reactive-glyphs",
+      "living-spectrogram",
+      "hdr-atmosphere",
+      "meta-visualizer",
+      "mouse-driven"
+    ],
+    "tags": [
+      "ai-vj",
+      "conductor",
+      "spectrogram",
+      "glyphs",
+      "meta",
+      "hdr",
+      "audio-reactive",
+      "elegant"
+    ],
+    "params": [
+      {
+        "id": "bloomRadius",
+        "name": "Atmosphere Bloom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Richness of the underlying HDR atmospheric bloom"
+      },
+      {
+        "id": "bloomIntensity",
+        "name": "Bloom Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of the psychedelic underlayer"
+      },
+      {
+        "id": "toneMapExposure",
+        "name": "Tone Map Exposure",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How the HDR atmosphere is exposed before tone mapping"
+      },
+      {
+        "id": "glyphProminence",
+        "name": "Glyph Prominence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "How strongly the conductor glyphs and spectrogram overlay the atmosphere"
+      }
+    ]
+  },
+  {
+    "id": "ambient-liquid-coupled",
+    "name": "Ambient Liquid Coupled",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ambient-liquid-coupled.wgsl",
+    "category": "advanced-hybrid",
+    "description": "Two viscous liquid layers coupled through a living membrane. Mouse presses like a finger into the surface, creating tears that slowly heal. Bass increases surface tension, making deformations more dramatic and persistent.",
+    "features": [
+      "mouse-pressure",
+      "liquid-membrane",
+      "audio-reactive",
+      "depth-aware",
+      "temporal-feedback"
+    ],
+    "tags": [
+      "liquid",
+      "membrane",
+      "viscous",
+      "organic",
+      "audio-reactive",
+      "hybrid"
+    ],
+    "params": [
+      {
+        "id": "wave_strength",
+        "name": "Wave Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Amplitude of ambient surface waves"
+      },
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "How thick and resistant the coupled liquids feel"
+      },
+      {
+        "id": "vortex_strength",
+        "name": "Vortex Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How strongly the mouse twists the membrane"
+      },
+      {
+        "id": "layer_separation",
+        "name": "Layer Separation",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "How much the subsurface layer shows through when the membrane is torn"
+      }
+    ]
+  },
+  {
     "id": "anisotropic-kuwahara-nlm",
     "name": "Anisotropic Kuwahara + NLM",
     "url": "https://test.1ink.us/image_video_effects/shaders/anisotropic-kuwahara-nlm.wgsl",
