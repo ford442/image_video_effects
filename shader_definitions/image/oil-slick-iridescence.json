@@ -1,0 +1,43 @@
+{
+  "id": "oil-slick-iridescence",
+  "name": "Oil Slick Iridescence",
+  "url": "shaders/oil-slick-iridescence.wgsl",
+  "category": "image",
+  "description": "Thin-film optical interference simulation, like oil on water. A procedural flowing height map modulates film thickness, producing shifting rainbow iridescence. Bass warps the film; mouse creates ripples.",
+  "tags": ["iridescence", "oil", "thin-film", "rainbow", "interference", "audio-reactive", "cinematic"],
+  "features": ["mouse-driven", "audio-reactive", "upgraded-rgba", "semantic-alpha"],
+  "params": [
+    {
+      "id": "thickness",
+      "name": "Film Thickness",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "iridescent_strength",
+      "name": "Iridescent Strength",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "flow_speed",
+      "name": "Flow Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "blend",
+      "name": "Blend",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

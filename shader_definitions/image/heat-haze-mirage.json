@@ -1,0 +1,43 @@
+{
+  "id": "heat-haze-mirage",
+  "name": "Heat Haze Mirage",
+  "url": "shaders/heat-haze-mirage.wgsl",
+  "category": "image",
+  "description": "Vertical heat shimmer driven by a rising hot-air column. Time-varying noise is advected upward, displacing the UV sample with chromatic separation. Bass injects fresh heat bursts; mouse creates a heat source.",
+  "tags": ["heat", "haze", "mirage", "distortion", "atmospheric", "audio-reactive", "mouse-driven"],
+  "features": ["mouse-driven", "audio-reactive", "temporal", "upgraded-rgba"],
+  "params": [
+    {
+      "id": "heat_intensity",
+      "name": "Heat Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "rise_speed",
+      "name": "Rise Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "wavy_scale",
+      "name": "Wave Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chroma_shift",
+      "name": "Chroma Shift",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "id": "pixel-tornado",
+  "name": "Pixel Tornado",
+  "url": "shaders/pixel-tornado.wgsl",
+  "category": "image",
+  "description": "A pixel-level tornado vortex whose eye tracks the mouse. Bass energy widens the funnel; treble adds turbulent jitter. Click ripples send radial shockwaves through the frame.",
+  "tags": ["vortex", "tornado", "distortion", "mouse-driven", "audio-reactive", "cinematic"],
+  "features": ["mouse-driven", "audio-reactive", "upgraded-rgba", "semantic-alpha"],
+  "params": [
+    {
+      "id": "strength",
+      "name": "Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "funnel_width",
+      "name": "Funnel Width",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "inward_pull",
+      "name": "Inward Pull",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}
