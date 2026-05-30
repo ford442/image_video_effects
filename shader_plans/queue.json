@@ -577,6 +577,13 @@
       "added": "2026-05-26T15:11:09.110950",
       "status": "completed",
       "completed_at": "2026-05-29T07:56:50.578853"
+    },
+    {
+      "filename": "2026-05-29_abyssal-quantum-leviathan-skeleton.md",
+      "title": "Abyssal Quantum-Leviathan Skeleton",
+      "added": "2026-05-29T15:12:02.977716",
+      "status": "completed",
+      "completed_at": "2026-05-30T08:07:04.507041Z"
     }
   ],
   "rejected": [],
@@ -806,7 +813,7 @@
       "filename": "2026-05-24_quantum-entangled-ferrofluid-engine.md",
       "title": "Quantum-Entangled Ferrofluid Engine",
       "added": "2026-05-24T15:31:55.781492"
-
+    },
     {
       "filename": "2026-05-26_prismatic-void-weaver-ouroboros.md",
       "title": "Prismatic Void-Weaver Ouroboros",
@@ -821,11 +828,6 @@
       "filename": "2026-05-28_ethereal-quantum-hologram-bonsai.md",
       "title": "Ethereal Quantum-Hologram Bonsai",
       "added": "2026-05-28T15:23:06.697098"
-    },
-    {
-      "filename": "2026-05-29_abyssal-quantum-leviathan-skeleton.md",
-      "title": "Abyssal Quantum-Leviathan Skeleton",
-      "added": "2026-05-29T15:12:02.977716"
     }
   ],
   "in_progress": null
