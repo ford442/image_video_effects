@@ -251,32 +251,44 @@ bool WebGPURenderer::CreateDevice() {
     }
 
     // Request adapter using callback-based API.
-    // We try multiple powerPreference values because on Windows + Chrome/Edge + emdawnwebgpu,
-    // WGPUPowerPreference_HighPerformance can fail or be ignored in ways that cause
-    // adapter acquisition to return Unavailable (see crbug.com/369219127).
-    //
-    // Strategy: HighPerformance → Undefined (most compatible) → LowPower (last resort).
-    const WGPUPowerPreference powerPrefsToTry[] = {
-        WGPUPowerPreference_HighPerformance,
-        WGPUPowerPreference_Undefined,
-        WGPUPowerPreference_LowPower
+    // On Windows + Chrome/Edge, crbug.com/369219127 reports powerPreference is ignored
+    // for requestAdapter() and emdawnwebgpu can return Unavailable despite JS WebGPU
+    // succeeding. We therefore try a broader fallback ladder:
+    //   1) HighPerformance (preferred)
+    //   2) Undefined       (browser default)
+    //   3) LowPower        (alternate hardware path)
+    //   4) Undefined + forceFallbackAdapter=true (software adapter last resort)
+    struct AdapterAttempt {
+        WGPUPowerPreference powerPreference;
+        bool forceFallbackAdapter;
+    };
+    const AdapterAttempt adapterAttempts[] = {
+        { WGPUPowerPreference_HighPerformance, false },
+        { WGPUPowerPreference_Undefined,       false },
+        { WGPUPowerPreference_LowPower,        false },
+        { WGPUPowerPreference_Undefined,       true  }
     };
 
     WGPUAdapter rawAdapter = nullptr;
 
-    for (size_t attempt = 0; attempt < 3 && rawAdapter == nullptr; ++attempt) {
-        WGPUPowerPreference pref = powerPrefsToTry[attempt];
+    for (size_t attempt = 0; attempt < sizeof(adapterAttempts) / sizeof(adapterAttempts[0]) && rawAdapter == nullptr; ++attempt) {
+        WGPUPowerPreference pref = adapterAttempts[attempt].powerPreference;
+        bool useFallbackAdapter = adapterAttempts[attempt].forceFallbackAdapter;
         const char* prefName = (pref == WGPUPowerPreference_HighPerformance) ? "HighPerformance" :
                                (pref == WGPUPowerPreference_Undefined)       ? "Undefined"       :
                                "LowPower";
 
-        printf("[WASM] Requesting WebGPU adapter (attempt %zu/3, powerPreference=%s)...\n",
-               attempt + 1, prefName);
+        printf("[WASM] Requesting WebGPU adapter (attempt %zu/%zu, powerPreference=%s, fallbackAdapter=%s)...\n",
+               attempt + 1,
+               sizeof(adapterAttempts) / sizeof(adapterAttempts[0]),
+               prefName,
+               useFallbackAdapter ? "true" : "false");
 
         WGPURequestAdapterOptions adapterOpts = {};
         adapterOpts.nextInChain = nullptr;
         adapterOpts.compatibleSurface = nullptr;
         adapterOpts.powerPreference = pref;
+        adapterOpts.forceFallbackAdapter = useFallbackAdapter;
 
         WGPUAdapter adapterFromCallback = nullptr;
 
@@ -305,8 +317,8 @@ bool WebGPURenderer::CreateDevice() {
 
         if (adapterFromCallback) {
             rawAdapter = adapterFromCallback;
-            printf("[WASM] Successfully obtained adapter on attempt %zu (powerPref=%s)\n",
-                   attempt + 1, prefName);
+            printf("[WASM] Successfully obtained adapter on attempt %zu (powerPref=%s, fallbackAdapter=%s)\n",
+                   attempt + 1, prefName, useFallbackAdapter ? "true" : "false");
         } else {
             printf("[WASM] Adapter attempt %zu failed.\n", attempt + 1);
         }
