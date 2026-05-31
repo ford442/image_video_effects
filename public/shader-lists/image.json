@@ -3934,11 +3934,13 @@
       "segmentation",
       "union-find"
     ],
+    "category": "image",
     "features": [
       "cooperative-workgroup",
       "edge-linking",
       "segmentation",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
