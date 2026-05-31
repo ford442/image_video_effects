@@ -45,6 +45,18 @@ struct Uniforms {
 
 ## 2. What "Upgraded" Means
 
+### 2.0 First Principle — The Upgrade Is Visual
+
+> **Upgrading means changing what the viewer sees.** The point of an upgrade is
+> to add visual effects, detail, or creative alterations of the output that were
+> not there before — new color/lighting, depth, motion, texture, generative
+> structure, or interactivity. Everything in §2.1–2.5 below (correct bindings,
+> the workgroup boundary guard, branchless safety, depth/data writes, `naga`
+> validation, JSON updates) is the **floor** — necessary plumbing, not the
+> upgrade. A shader that newly compiles, writes depth, and has meaningful alpha
+> but renders the same picture as before is **not** upgraded. If the diff does
+> not make the output look meaningfully richer or different, the work is not done.
+
 A shader is `upgraded-rgba` when it satisfies **all** of the following criteria.
 
 ### 2.1 RGBA Awareness (25 pts)
