@@ -2831,6 +2831,67 @@
     ]
   },
   {
+    "id": "gen-celestial-aether-seraphim-wings",
+    "name": "Celestial Aether-Seraphim Wings",
+    "url": "shaders/gen-celestial-aether-seraphim-wings.wgsl",
+    "category": "generative",
+    "description": "A majestic, hyper-dimensional array of ethereal, fractal wings woven from liquid plasma and quantum light that endlessly fold, beat, and shatter into geometric feathers in response to cosmic audio resonance.",
+    "tags": [
+      "wings",
+      "angelic",
+      "plasma",
+      "fractal",
+      "audio-reactive",
+      "raymarching"
+    ],
+    "features": [
+      "audio-reactive",
+      "raymarched"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Fractal Spread",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.x",
+        "description": "Adjusts the spread of the fractal wings"
+      },
+      {
+        "id": "param2",
+        "name": "Feather Thickness",
+        "default": 0.2,
+        "min": 0.05,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Adjusts the thickness of the geometric feathers"
+      },
+      {
+        "id": "param3",
+        "name": "Iridescence Hue",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Shifts the iridescence hue"
+      },
+      {
+        "id": "param4",
+        "name": "Ascent Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.w",
+        "description": "Adjusts the vertical movement speed"
+      }
+    ]
+  },
+  {
     "id": "gen-celestial-forge",
     "name": "Celestial Forge",
     "url": "shaders/gen-celestial-forge.wgsl",
