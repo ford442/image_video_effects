@@ -1,0 +1,74 @@
+{
+  "batch_name": "Batch 1 — Generative Shaders (Easiest)",
+  "count": 10,
+  "category": "generative",
+  "selection_criteria": [
+    "Standard @workgroup_size(16, 16, 1)",
+    "Already include plasmaBuffer, readDepthTexture, chromatic aberration, and dataTextureC",
+    "Missing ONLY ACES tone mapping (single-feature upgrade)",
+    "Hardcoded alpha = 1.0 (easy semantic-alpha fix)",
+    "Under 105 lines"
+  ],
+  "shaders": [
+    {
+      "id": "gen-celestial-weave",
+      "lines": 93,
+      "missing": ["ACES"],
+      "notes": "Cosmic weave pattern — add ACES + semantic alpha (weave density × depth)"
+    },
+    {
+      "id": "gen-magnetic-kelp",
+      "lines": 93,
+      "missing": ["ACES"],
+      "notes": "Magnetic kelp strands — add ACES + semantic alpha (strand density × depth)"
+    },
+    {
+      "id": "gen-vortex-cathedral",
+      "lines": 93,
+      "missing": ["ACES"],
+      "notes": "Vortex cathedral geometry — add ACES + semantic alpha (vortex intensity × depth)"
+    },
+    {
+      "id": "gen-luminous-cauldron",
+      "lines": 94,
+      "missing": ["ACES"],
+      "notes": "Luminous bubbling cauldron — add ACES + semantic alpha (bubble glow × depth)"
+    },
+    {
+      "id": "gen-neon-snowfall",
+      "lines": 94,
+      "missing": ["ACES"],
+      "notes": "Neon snowfall particles — add ACES + semantic alpha (snow density × depth)"
+    },
+    {
+      "id": "gen-bioreactor-bloom",
+      "lines": 95,
+      "missing": ["ACES"],
+      "notes": "Bioreactor organic growth — add ACES + semantic alpha (growth density × depth)"
+    },
+    {
+      "id": "gen-opal-circuit",
+      "lines": 95,
+      "missing": ["ACES"],
+      "notes": "Opal circuit board patterns — add ACES + semantic alpha (circuit activity × depth)"
+    },
+    {
+      "id": "holographic-crystal",
+      "lines": 95,
+      "missing": ["ACES"],
+      "notes": "Holographic crystal refraction — add ACES + semantic alpha (refraction intensity × depth)"
+    },
+    {
+      "id": "spore-galaxy",
+      "lines": 98,
+      "missing": ["ACES"],
+      "notes": "Spore galaxy particle field — add ACES + semantic alpha (spore density × depth)"
+    },
+    {
+      "id": "acoustic-string-theory",
+      "lines": 100,
+      "missing": ["ACES"],
+      "notes": "Acoustic string vibration — add ACES + semantic alpha (string amplitude × depth)"
+    }
+  ]
+}
