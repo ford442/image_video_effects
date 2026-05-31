@@ -5426,6 +5426,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Great for testing liquid metal reflections combined with multi-colored iridescent crystalline light sources.
 
+### Suggestion: Ashcan School Graphene Skyscraper Construction
+- **Date:** 2026-12-10
+- **Prompt:** "A gritty, unidealized depiction of construction workers assembling a colossal skyscraper made of light-absorbing matte black graphene, rendered in the painterly, muted style of the Ashcan School. The subject features weary, muscular laborers hoisting massive, sleek geometric graphene beams against a smog-filled, overcast sky. The lighting is dull and naturalistic, casting murky, diffuse shadows that emphasize the harsh reality of urban labor, contrasted sharply by the impossibly sleek, futuristic material they are working with. The mood is melancholic, industrious, and gritty. Captured from a dynamic, low-angle perspective to emphasize the towering scale of the dark architecture."
+- **Negative prompt:** "bright, cheerful, clean, highly saturated, glossy, 3d render, anime, photorealistic"
+- **Tags:** art, historical, ashcan school, graphene, construction
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** low angle, crowded foreground, towering background
+- **Color palette:** muted browns, charcoal grays, matte pitch black, dull slate sky
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261210_ashcan-graphene-construction.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the integration of highly advanced, futuristic materials (graphene) into a historical, gritty painting style representing everyday labor.
+
+### Suggestion: Italian Futurism Bismuth Train
+- **Date:** 2026-12-10
+- **Prompt:** "A chaotic, high-speed scene of a massive locomotive constructed entirely from iridescent, geometric bismuth crystals, depicted in the harsh, fragmented style of Italian Futurism. The crystalline subject is deconstructed into jagged diagonal lines and overlapping stepped-planes that capture immense kinetic energy and forward momentum. The lighting is dramatic, splintered, and directional, causing the metallic bismuth facets to flash with vibrant rainbow colors amidst the blurred, fractured environment. The mood is energetic, aggressive, and dazzling. Captured with a dynamic, tilted perspective to emphasize raw motion and violent speed."
+- **Negative prompt:** "calm, realistic, smooth curves, organic, gentle, photorealistic, slow, stationary"
+- **Tags:** abstract, art, italian futurism, speed, bismuth, train
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** vibrant iridescent pinks and blues, steel greys, stark black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261210_futurism-bismuth-train.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to highly structured, colorful hopper crystal geometry.
+
+### Suggestion: Damascus Steel Exoplanet Core
+- **Date:** 2026-12-10
+- **Prompt:** "A colossal, surreal visualization deep within the core of a massive exoplanet, where the crushing pressure has formed an ocean of rippling, liquid Damascus steel. The subject features immense, flowing metallic waves showcasing intricate, woodgrain-like patterns of dark and light silver. The lighting is terrifyingly intense and internal, erupting from deep, glowing fissures of molten amber and white-hot energy that cast sharp, glaring highlights across the complex metallic ridges. The mood is oppressive, alien, and awe-inspiring. Captured with an extreme wide-angle 14mm lens to encompass the vast, churning scale of the planetary core."
+- **Negative prompt:** "soft, organic, earth-like, calm, daylight, water, blurry, low resolution"
+- **Tags:** sci-fi, space, landscape, damascus steel, exoplanet
+- **Style / Reference:** cinematic sci-fi environment design, photorealistic material rendering
+- **Composition:** wide expansive view, chaotic flowing lines, deep perspective
+- **Color palette:** dark metallic grays, polished silver, blinding white-hot core, glowing amber
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261210_damascus-exoplanet-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the complex, flowing texture generation of Damascus steel mapped onto massive, churning fluid dynamics under extreme lighting.
+
+### Suggestion: Mother of Pearl Beaver Dam
+- **Date:** 2026-12-10
+- **Prompt:** "A highly detailed, surreal landscape photograph of an intricate beaver dam blocking a serene forest stream, but the entire structure is woven from massive, shimmering pieces of iridescent Mother of Pearl instead of wood. The delicate, pearlescent subject holds back a deep pool of crystal-clear water. The lighting is crisp, early morning sunlight piercing through a dense, foggy forest canopy, catching the micro-ridges of the nacre to reveal intense rainbow interference patterns and casting dappled light on the still water. The mood is peaceful, magical, and highly unusual. Captured with a 35mm lens from the edge of the water, showcasing the exquisite textures of the pearlescent dam."
+- **Negative prompt:** "wood, bark, muddy, dirty, dull, urban, modern, people"
+- **Tags:** nature, landscape, surreal, mother of pearl, ethereal
+- **Style / Reference:** photorealistic surrealism, National Geographic style nature photography
+- **Composition:** wide shot, low angle near water surface, clear reflection
+- **Color palette:** pearlescent whites, soft pinks and baby blues, lush forest greens
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261210_nacre-beaver-dam.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating iridescent material rendering and thin-film interference applied to a chaotic, organic structure normally made of wood.
+
+### Suggestion: Tweed Supernova Remnant
+- **Date:** 2026-12-10
+- **Prompt:** "An epic, surreal depiction of a cataclysmic supernova remnant expanding through deep space, where the cosmic dust and plasma are replaced by billions of woven threads of coarse, multi-colored tweed fabric. The soft, fibrous subject is tearing apart in a chaotic, expanding spherical cloud, revealing intricate herringbone and houndstooth patterns on a cosmic scale. The lighting is extremely bright and dynamic, emanating from a blindingly white dwarf star at the center, casting dramatic, harsh light that highlights the microscopic fuzzy textures of the wool against the pitch-black void. The mood is awe-inspiring, bizarre, and highly tactile. Captured as if by the James Webb Space Telescope, combining cosmic scale with macro fabric details."
+- **Negative prompt:** "smooth, plasma, gas, liquid, realistic space, blurry, low contrast"
+- **Tags:** sci-fi, surreal, space, supernova, tweed, fabric
+- **Style / Reference:** hyper-detailed material swap, astrophotography style
+- **Composition:** wide angle, expansive, centered explosion, high detail
+- **Color palette:** earthy brown and green tweed threads, blinding white core, pitch black void
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261210_tweed-supernova.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Pushes the model to generate soft, woven micro-textures (tweed) placed in an environment of extreme cosmic scale and harsh, single-point lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
