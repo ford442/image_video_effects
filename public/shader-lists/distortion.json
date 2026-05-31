@@ -257,39 +257,44 @@
     "name": "Cyber Lens",
     "category": "distortion",
     "url": "shaders/cyber-lens.wgsl",
-    "description": "A scanning cybernetic magnifier overlays chromatic split and holographic grid lines onto the source image.",
+    "description": "AR-style cybernetic lens with cyan holographic HUD, targeting reticle, scan lines, hex threat zones, glitch artifacts, chromatic aberration, and depth-parallax layers. Bass drives HUD flicker; mouse moves the reticle; depth controls layer parallax.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "hud-overlay",
+      "glitch"
     ],
     "tags": [
       "cyber",
       "lens",
       "grid",
       "chromatic",
-      "audio-reactive"
+      "audio-reactive",
+      "hud",
+      "glitch",
+      "holographic"
     ],
     "params": [
       {
-        "id": "lens_radius",
-        "name": "Lens Radius",
+        "id": "hud_scale",
+        "name": "HUD Scale",
         "default": 0.35,
         "min": 0,
         "max": 1
       },
       {
-        "id": "zoom_strength",
-        "name": "Zoom Strength",
-        "default": 0.5,
+        "id": "target_size",
+        "name": "Target Size",
+        "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
-        "id": "grid_intensity",
-        "name": "Grid Intensity",
-        "default": 0.4,
+        "id": "glitch_intensity",
+        "name": "Glitch Intensity",
+        "default": 0.25,
         "min": 0,
         "max": 1
       },
@@ -827,11 +832,15 @@
     "id": "gen-chromatic-vortex",
     "name": "Chromatic Vortex",
     "url": "shaders/gen-chromatic-vortex.wgsl",
-    "description": "Rotates image in polar coordinates with psychedelic color-space warping driven by audio. Combines spiral distortion with YUV hue shifting.",
+    "description": "Rotates image in polar coordinates with psychedelic color-space warping, chromatic sector dispersion, temporal spiral drift via dataTextureC, and audio-driven YUV hue rotation.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "distortion"
+      "distortion",
+      "temporal",
+      "chromatic",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "vortex",
@@ -840,7 +849,10 @@
       "color-warp",
       "audio",
       "distortion",
-      "psychedelic"
+      "psychedelic",
+      "temporal",
+      "chromatic",
+      "depth-aware"
     ],
     "params": [
       {
@@ -1193,7 +1205,7 @@
     "name": "Infinite Zoom Lens",
     "category": "distortion",
     "url": "shaders/infinite-zoom-lens.wgsl",
-    "description": "A temporal zoom tunnel spirals the source image inward around the cursor and feeds the previous frame back into itself.",
+    "description": "Droste effect with recursive self-similar zoom via logarithmic spiral Möbius transformation. Escher-like infinite recursion with chromatic aberration on spiral arms, HDR bloom on focal points, film grain, and temporal feedback.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1205,7 +1217,10 @@
       "tunnel",
       "temporal",
       "spiral",
-      "audio-reactive"
+      "audio-reactive",
+      "droste",
+      "escher",
+      "recursive"
     ],
     "params": [
       {
@@ -3137,19 +3152,24 @@
     "name": "Zoom Burst",
     "category": "distortion",
     "url": "shaders/zoom-burst.wgsl",
-    "description": "Radially smears the source image away from the cursor with controllable spin, chroma, and beat-reactive burst energy.",
+    "description": "Exponential zoom burst with radial motion blur, angular streak sampling, starburst light rays, chromatic radial dispersion, HDR bloom, film grain, and ACES tone mapping. Bass accelerates the burst; mouse positions the center; depth controls streak perspective.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "radial-blur"
+      "radial-blur",
+      "starburst",
+      "film-grain"
     ],
     "tags": [
       "zoom",
       "burst",
       "radial",
       "chromatic",
-      "audio-reactive"
+      "audio-reactive",
+      "starburst",
+      "bloom",
+      "film-grain"
     ],
     "params": [
       {

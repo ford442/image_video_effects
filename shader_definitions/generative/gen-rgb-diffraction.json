@@ -6,7 +6,10 @@
   "features": [
     "audio-reactive",
     "audio-driven",
-    "procedural"
+    "procedural",
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "tags": [
     "psychedelic",

@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Frequency Domain Notch
 //  Category: image
-//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven
+//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware
 //  Convolution Type: spatial-frequency-notch-approximation
 //  Complexity: High
 //  Created: 2026-04-18
@@ -45,6 +45,15 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn notchFilterResponse(freq: f32, targetFreq: f32, bandwidth: f32) -> f32 {
     let dist = abs(freq - targetFreq);
     return 1.0 - exp(-dist * dist / (bandwidth * bandwidth + 0.001));
@@ -64,16 +73,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
+    let pixel = vec2<i32>(global_id.xy);
+    
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    
+    // Depth awareness
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthFactor = mix(0.6, 1.4, depth);
     
     // Parameters
     let numBands = i32(mix(2.0, 6.0, u.zoom_params.x));
-    let bandwidth = mix(0.02, 0.1, u.zoom_params.y);
-    let boostCut = mix(-1.0, 1.0, u.zoom_params.z);  // Negative = notch, positive = boost
+    let bandwidth = mix(0.02, 0.1, u.zoom_params.y) * (1.0 + treble * 0.3);
+    let boostCut = mix(-1.0, 1.0, u.zoom_params.z);
     let mouseInfluence = u.zoom_params.w;
     
     // Mouse selects target frequency
     let mouseDist = length(uv - mousePos);
-    let mouseFreq = mouseDist * 2.0; // Frequency increases with distance from mouse
+    let mouseFreq = mouseDist * 2.0;
     let mouseFactor = exp(-mouseDist * mouseDist * 4.0) * mouseInfluence;
     
     // Ripple frequency sweeps
@@ -91,6 +110,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     
+    // Bass-driven notch frequency modulation
+    let bassFreqMod = bass * 0.1;
+    
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     var filtered = vec3<f32>(0.0);
     var totalResponse = 0.0;
@@ -98,8 +120,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let maxRadius = 6;
     
     for (var band = 0; band < numBands; band++) {
-        let bandFreq = mix(0.05, 0.5, f32(band) / f32(numBands - 1)) + rippleFreq;
-        let targetFreq = mix(bandFreq, mouseFreq, mouseFactor);
+        let bandFreq = mix(0.05, 0.5, f32(band) / f32(numBands - 1)) + rippleFreq + bassFreqMod;
+        let targetFreq = mix(bandFreq, mouseFreq, mouseFactor) * depthFactor;
         
         // Sinusoidal convolution kernel for this band
         var bandAccum = vec3<f32>(0.0);
@@ -136,12 +158,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Colorize by frequency band response
     let responseNorm = clamp(totalResponse / f32(numBands), 0.0, 1.0);
     let freqColor = palette(responseNorm + time * 0.05, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
-    let finalColor = mix(filtered, filtered * freqColor * 1.5, abs(boostCut) * 0.3);
+    var finalColor = mix(filtered, filtered * freqColor * 1.5, abs(boostCut) * 0.3);
     
-    // Store: RGB = frequency-filtered image, Alpha = total frequency response
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, responseNorm));
+    // Chromatic aberration on filtered bands
+    let caStrength = responseNorm * (1.0 + mids * 0.5) * 0.6;
+    let caOffset = pixelSize * caStrength;
+    let chrR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(caOffset.x, 0.0), 0.0).r;
+    let chrG = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
+    let chrB = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(caOffset.x, 0.0), 0.0).b;
+    let chromatic = vec3<f32>(chrR, chrG, chrB);
+    finalColor = mix(finalColor, chromatic, caStrength * 0.4);
+    
+    // ACES tone mapping
+    finalColor = acesToneMap(finalColor);
+    
+    // Temporal feedback morphing
+    let prevColor = textureLoad(dataTextureC, pixel, 0).rgb;
+    let decay = 0.88;
+    finalColor = mix(finalColor, prevColor * decay, 0.15 + bass * 0.2);
+    
+    // Semantic alpha: spectral response modulated by depth and audio
+    let alpha = responseNorm * (0.5 + depth * 0.5) * (0.6 + bass * 0.4);
+    
+    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
     
     // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

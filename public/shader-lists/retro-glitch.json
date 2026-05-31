@@ -417,6 +417,65 @@
     ]
   },
   {
+    "id": "data-moshing-diffusion",
+    "name": "Data Moshing Diffusion",
+    "url": "shaders/data-moshing-diffusion.wgsl",
+    "category": "advanced-hybrid",
+    "description": "Data moshing with anisotropic diffusion, chromatic per-channel diffusion offsets, audio-reactive smear strength, temporal smear persistence, and mouse swirl injection.",
+    "tags": [
+      "glitch",
+      "data-mosh",
+      "diffusion",
+      "anisotropic",
+      "audio-reactive",
+      "temporal",
+      "chromatic",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "chromatic",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "smearStrength",
+        "name": "Smear Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "kappa",
+        "name": "Diffusion Kappa",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dt",
+        "name": "Time Step",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "quantize",
+        "name": "Quantize",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "data-moshing",
     "name": "Data Moshing",
     "url": "shaders/data-moshing.wgsl",
@@ -1186,46 +1245,59 @@
     "id": "pixelation-drift",
     "name": "Pixelation Drift",
     "url": "shaders/pixelation-drift.wgsl",
-    "description": "Dynamic pixelated mosaic with organic drifting motion and depth-aware pixel sizing. Watch as chunky pixels slowly morph and flow across the image.",
+    "description": "Dynamic pixelated mosaic with audio-reactive pixel sizing, chromatic RGB pixel separation, depth-aware sizing, organic noise drift, and temporal persistence.",
     "params": [
       {
         "id": "pixelSize",
         "name": "Pixel Size",
         "default": 0.15,
         "min": 0.01,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "driftSpeed",
         "name": "Drift Speed",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "colorBleed",
         "name": "Color Bleed",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "depthInfluence",
         "name": "Depth Influence",
         "default": 0.6,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
       "depth-aware",
       "temporal-persistence",
       "organic-motion",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "chromatic",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "pixelation",
+      "drift",
+      "audio-reactive",
+      "temporal",
+      "chromatic",
+      "depth-aware"
     ]
   },
   {

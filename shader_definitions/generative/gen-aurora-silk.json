@@ -1,0 +1,16 @@
+{
+  "id": "gen-aurora-silk",
+  "name": "Aurora Silk",
+  "url": "shaders/gen-aurora-silk.wgsl",
+  "category": "generative",
+  "description": "Flowing aurora curtains with silky spectral ribbons that breathe to bass and shimmer to treble.",
+  "tags": ["generative", "aurora", "silk", "atmospheric", "audio-reactive", "neon"],
+  "features": ["procedural", "audio-reactive", "mouse-driven", "upgraded-rgba", "temporal", "chromatic", "depth-aware"],
+  "params": [
+    { "id": "bandCount", "name": "Band Count", "default": 0.52, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "flowSpeed", "name": "Flow Speed", "default": 0.44, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "ribbonWidth", "name": "Ribbon Width", "default": 0.48, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "glow", "name": "Glow", "default": 0.63, "min": 0, "max": 1, "step": 0.01 }
+  ]
+}
+

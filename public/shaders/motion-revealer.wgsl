@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Motion Revealer
+//  Motion Revealer v2
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, temporal-painting, depth-aware-stroke, chromatic-mixing, upgraded-rgba
-//  Complexity: High
-//  Chunks From: motion-revealer, bass_env, temporal-feedback
+//  Features: mouse-driven, audio-reactive, optical-flow, motion-trails, depth-aware, upgraded-rgba
+//  Complexity: Very High
+//  Chunks From: motion-revealer, structure-tensor, aces-tonemap
 //  Created: 2024-01-01
 //  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
@@ -23,74 +23,106 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-fn bass_env(bass: f32, mids: f32) -> f32 {
-  return 1.0 + bass * 0.5 + mids * 0.2;
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 2.51 + 0.03);
+  let b = x * (x * 2.43 + 0.59) + 0.14;
+  return clamp(a / b, vec3(0.0), vec3(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let texel = 1.0 / resolution;
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let sensitivity = u.zoom_params.x * (1.0 + bass * 0.5);
+  let trailLen = u.zoom_params.y;
+  let glowStr = u.zoom_params.z;
+  let chromaSep = u.zoom_params.w;
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    let mousePos = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthFactor = mix(0.4, 1.0, depth);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthOpacity = mix(0.6, 1.0, depth);
+  // Current and previous frame for motion detection
+  let live = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
 
-    let brushSize = u.zoom_params.x * bass_env(bass, mids);
-    let fadeSpeed = u.zoom_params.y;
-    let softness = u.zoom_params.z;
-    let opacity = u.zoom_params.w * depthOpacity;
+  // Structure tensor for optical flow direction
+  let rx = textureSampleLevel(readTexture, u_sampler, uv + vec2(texel.x, 0.0), 0.0).rgb;
+  let lx = textureSampleLevel(readTexture, u_sampler, uv - vec2(texel.x, 0.0), 0.0).rgb;
+  let ty = textureSampleLevel(readTexture, u_sampler, uv + vec2(0.0, texel.y), 0.0).rgb;
+  let by = textureSampleLevel(readTexture, u_sampler, uv - vec2(0.0, texel.y), 0.0).rgb;
+  let gx = (rx - lx) * 0.5;
+  let gy = (ty - by) * 0.5;
+  let E = dot(gx, gx);
+  let G = dot(gy, gy);
+  let F = dot(gx, gy);
+  let lambda = sqrt((E - G) * (E - G) + 4.0 * F * F);
+  let theta = atan2(2.0 * F, E - G + lambda) * 0.5;
+  let flowDir = vec2(cos(theta), sin(theta));
 
-    let aspect = resolution.x / resolution.y;
-    let aspectCorrection = vec2<f32>(aspect, 1.0);
+  // Motion magnitude from frame difference
+  let diff = length(live - prev);
+  let motionMag = diff * (1.0 + lambda * 2.0);
 
-    let diff = (uv - mousePos) * aspectCorrection;
-    let dist = length(diff);
+  // Mouse motion mask
+  let aspect = resolution.x / resolution.y;
+  let mouseDist = length((uv - mouse) * vec2(aspect, 1.0));
+  let mouseMask = 1.0 - smoothstep(0.0, 0.4, mouseDist);
 
-    let radius = 0.01 + brushSize * 0.4;
-    let edgeWidth = softness * radius;
-    let brush = 1.0 - smoothstep(radius - max(edgeWidth, 0.001), radius, dist);
+  // Motion confidence threshold (bass drives sensitivity)
+  let threshold = 0.03 / max(sensitivity, 0.01);
+  let motionConfidence = smoothstep(threshold, threshold * 2.0, motionMag + mouseMask * 0.2);
 
-    let historyColor = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let liveColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // Motion trails with spectral chromatic aberration
+  var trailR = vec3(0.0);
+  var trailG = vec3(0.0);
+  var trailB = vec3(0.0);
+  var glow = vec3(0.0);
+  let steps = 7;
+  let maxTrail = trailLen * depthFactor * 0.08;
+  for (var i = 0; i < steps; i = i + 1) {
+    let t = f32(i) / f32(steps - 1);
+    let offset = flowDir * maxTrail * t;
+    let rUV = clamp(uv + offset * (1.0 + chromaSep * 0.3), vec2(0.0), vec2(1.0));
+    let gUV = clamp(uv + offset, vec2(0.0), vec2(1.0));
+    let bUV = clamp(uv + offset * (1.0 - chromaSep * 0.3), vec2(0.0), vec2(1.0));
+    trailR = trailR + textureSampleLevel(readTexture, u_sampler, rUV, 0.0).rgb;
+    trailG = trailG + textureSampleLevel(readTexture, u_sampler, gUV, 0.0).rgb;
+    trailB = trailB + textureSampleLevel(readTexture, u_sampler, bUV, 0.0).rgb;
+    let samp = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).rgb;
+    let lum = dot(samp, vec3(0.299, 0.587, 0.114));
+    glow = glow + samp * smoothstep(0.5, 0.85, lum) * motionMag;
+  }
+  let invSteps = 1.0 / f32(steps);
+  var color = vec3(trailR.r, trailG.g, trailB.b) * invSteps;
 
-    let decay = 1.0 - (fadeSpeed * 0.1) * (1.0 - bass * 0.05);
-    var newHistoryColor = historyColor * decay;
+  // HDR glow on fast-moving objects
+  glow = glow * invSteps * glowStr * 4.0;
+  color = color + glow * vec3(1.0, 0.85, 0.7);
 
-    let mixFactor = brush * opacity * (1.0 + bass * 0.3);
-    newHistoryColor = mix(newHistoryColor, liveColor, mixFactor);
+  // Motion blur on trails
+  color = mix(live * 0.3, color, motionConfidence);
 
-    // Chromatic color mixing: bass shifts R, mids shift G, treble shifts B
-    let chromaShift = vec3<f32>(
-        sin(time * 2.0 + bass * 3.14) * 0.05,
-        sin(time * 1.5 + mids * 3.14) * 0.05,
-        sin(time * 2.5 + treble * 3.14) * 0.05
-    );
-    let chromaColor = vec4<f32>(
-        clamp(newHistoryColor.r + chromaShift.r, 0.0, 1.0),
-        clamp(newHistoryColor.g + chromaShift.g, 0.0, 1.0),
-        clamp(newHistoryColor.b + chromaShift.b, 0.0, 1.0),
-        newHistoryColor.a
-    );
+  // ACES tone mapping
+  color = aces(color * 1.2);
 
-    let alpha = clamp(chromaColor.a + brush * 0.2 + bass * 0.05, 0.0, 1.0);
-    let finalColor = vec4<f32>(chromaColor.rgb, alpha);
+  let trailIntensity = motionConfidence * depthFactor;
+  let alpha = clamp(motionConfidence * trailIntensity * depthFactor, 0.02, 0.96);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, coord, vec4(color, alpha));
+  textureStore(dataTextureA, coord, vec4(color, alpha));
+  textureStore(writeDepthTexture, coord, vec4(depth, 0.0, 0.0, 0.0));
 }

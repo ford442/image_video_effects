@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Lorenz Attractor Flow
 //  Category: generative
-//  Features: generative, mouse-driven, temporal
-//  Complexity: Medium
+//  Features: generative, mouse-driven, temporal, chromatic, depth-aware
+//  Complexity: High
 //  Chunks From: none (original)
 //  Created: 2026-05-09
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -49,6 +50,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let glowIntensity = u.zoom_params.z;
     let mouseInfluence = u.zoom_params.w;
 
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Map UV to phase space (scaled Lorenz coordinates)
     var p = vec3<f32>(
         (uv.x - 0.5) * 50.0 + sin(t * 0.3) * 2.0,
@@ -89,13 +94,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var rgb = hsv2rgb(vec3<f32>(hue, sat, val));
 
-    // Add subtle glow around attractor lobes (famous butterfly wings)
-    let lobeDist = min(
-        length(vec2<f32>(p.x + 8.0, p.y) * 0.08),
-        length(vec2<f32>(p.x - 8.0, p.y) * 0.08)
+    // Chromatic dispersion: offset lobe glow per channel by audio
+    let lobeDistR = min(
+        length(vec2<f32>(p.x + 8.0 + bass * 1.5, p.y + mids * 0.5) * 0.08),
+        length(vec2<f32>(p.x - 8.0 + bass * 1.5, p.y + mids * 0.5) * 0.08)
     );
-    let glow = exp(-lobeDist * 1.8) * 0.35 * glowIntensity;
-    rgb = rgb * (0.85 + glow);
+    let lobeDistG = min(
+        length(vec2<f32>(p.x + 8.0 - treble * 1.0, p.y + bass * 1.0) * 0.08),
+        length(vec2<f32>(p.x - 8.0 - treble * 1.0, p.y + bass * 1.0) * 0.08)
+    );
+    let lobeDistB = min(
+        length(vec2<f32>(p.x + 8.0 + mids * 0.8, p.y - treble * 1.2) * 0.08),
+        length(vec2<f32>(p.x - 8.0 + mids * 0.8, p.y - treble * 1.2) * 0.08)
+    );
+    let glowR = exp(-lobeDistR * 1.8) * 0.35 * glowIntensity;
+    let glowG = exp(-lobeDistG * 1.8) * 0.35 * glowIntensity;
+    let glowB = exp(-lobeDistB * 1.8) * 0.35 * glowIntensity;
+    rgb = vec3<f32>(rgb.r * (0.85 + glowR), rgb.g * (0.85 + glowG), rgb.b * (0.85 + glowB));
 
     // Mouse click ripple boost
     if (click > 0.5) {
@@ -108,10 +123,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let vignette = 1.0 - length(uv - 0.5) * 0.6;
     rgb *= vignette;
 
+    // Temporal feedback
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    rgb = mix(rgb, prev.rgb * 0.9, 0.03 + bass * 0.01);
+
     // Luminance-key alpha: brighter regions more opaque
     let luma = dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = mix(0.75, 1.0, smoothstep(0.2, 0.6, luma));
 
     textureStore(writeTexture, gid.xy, vec4<f32>(rgb, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(0.5, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(rgb, alpha));
 }

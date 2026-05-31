@@ -1,0 +1,58 @@
+{
+  "id": "gen-belousov-zhabotinsky",
+  "name": "Belousov-Zhabotinsky Reaction",
+  "url": "shaders/gen-belousov-zhabotinsky.wgsl",
+  "description": "Chemical oscillator producing spiral waves and target patterns via reaction-diffusion dynamics. Bass modulates reaction rate, mouse seeds new spiral centers, depth controls diffusion.",
+  "features": [
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "audio-reactive",
+    "temporal",
+    "simulation"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "simulation",
+    "reaction-diffusion",
+    "chemical",
+    "spiral-waves",
+    "audio-reactive",
+    "vj"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Reaction Rate",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Activator Diffusion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Inhibitor Diffusion",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Feed Rate",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

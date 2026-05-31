@@ -1,0 +1,65 @@
+{
+  "id": "solar-flare-cascade",
+  "name": "Solar Flare Cascade",
+  "url": "shaders/solar-flare-cascade.wgsl",
+  "category": "generative",
+  "description": "Solar prominence and flare cascades erupting from a stellar limb. Bass drives flare intensity, mids create magnetic loop structures, treble adds coronal mass ejection particles. Mouse position shifts the stellar limb.",
+  "tags": [
+    "generative",
+    "solar",
+    "flare",
+    "stellar",
+    "corona",
+    "space",
+    "audio-reactive",
+    "chromatic",
+    "temporal"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "flareIntensity",
+      "name": "Flare Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Overall intensity of solar flares and prominences"
+    },
+    {
+      "id": "loopComplexity",
+      "name": "Loop Complexity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Number of magnetic loop structures around the limb"
+    },
+    {
+      "id": "particleDensity",
+      "name": "Particle Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Density of coronal mass ejection particles"
+    },
+    {
+      "id": "coronaSpread",
+      "name": "Corona Spread",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "How far the coronal glow extends from the surface"
+    }
+  ]
+}

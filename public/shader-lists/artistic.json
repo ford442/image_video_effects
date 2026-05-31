@@ -1476,19 +1476,23 @@
     "name": "Encaustic Wax",
     "category": "artistic",
     "url": "shaders/encaustic-wax.wgsl",
-    "description": "Melts the source image into a glossy encaustic painting with audio-pulsed wax ridges and warm pigment bloom.",
+    "description": "Thermal wax flow simulation with layered strata, subsurface scattering, metallic pigment sparkle, HDR specular ridges, ACES tone mapping, and canvas grain. Bass drives heat gun intensity; mouse applies local heat; depth controls wax thickness.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "painterly"
+      "painterly",
+      "thermal-flow"
     ],
     "tags": [
       "wax",
       "encaustic",
       "painting",
       "glossy",
-      "audio-reactive"
+      "audio-reactive",
+      "strata",
+      "metallic",
+      "canvas"
     ],
     "params": [
       {
@@ -1526,19 +1530,22 @@
     "name": "Engraving Stipple",
     "category": "artistic",
     "url": "shaders/engraving-stipple.wgsl",
-    "description": "Etches the frame into engraved hatch lines and stippled paper tones with cursor-directed burnishing.",
+    "description": "Upgraded copperplate engraving with gradient-aware contour hatching, burr effects at crossings, ink pooling, paper texture, and chromatic edge darkening. Bass drives tool pressure, mouse acts as burin, depth controls line width.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "line-art"
+      "line-art",
+      "depth-aware"
     ],
     "tags": [
       "engraving",
       "stipple",
       "etching",
       "line-art",
-      "audio-reactive"
+      "audio-reactive",
+      "cross-hatch",
+      "copperplate"
     ],
     "params": [
       {
@@ -2451,42 +2458,51 @@
     "id": "lenia",
     "name": "Lenia Cellular Automata",
     "url": "shaders/lenia.wgsl",
-    "description": "Continuous cellular automata (Lenia) with ring kernel growth functions.",
+    "description": "Continuous cellular automata with audio-driven growth rate, chromatic species colors (R/G/B evolve at different thresholds), temporal accumulation, mouse life injection, and neighborhood kernel expansion.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "chromatic",
+      "upgraded-rgba"
     ],
     "tags": [
       "simulation",
-      "physics"
+      "physics",
+      "cellular-automata",
+      "lenia",
+      "audio-reactive",
+      "temporal",
+      "chromatic"
     ],
     "params": [
       {
-        "id": "param1",
-        "name": "Intensity",
+        "id": "radius",
+        "name": "Neighborhood Radius",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param2",
-        "name": "Speed",
+        "id": "growthRate",
+        "name": "Growth Rate",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param3",
-        "name": "Scale",
+        "id": "accumulation",
+        "name": "Accumulation",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "id": "threshold",
+        "name": "Threshold",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -4028,19 +4044,23 @@
     "name": "Rain",
     "category": "artistic",
     "url": "shaders/rain.wgsl",
-    "description": "Adds refractive rain streaks and wet mist to the source image, with cursor interaction and audio-driven shimmer.",
+    "description": "Upgraded rain with gravity-accelerated streak physics, chromatic droplet lensing, HDR bloom on light sources, fog layers, and splash particles. Bass drives intensity, mouse creates wind gusts, depth controls droplet perspective.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "atmospheric"
+      "atmospheric",
+      "depth-aware"
     ],
     "tags": [
       "rain",
       "wet",
       "mist",
       "atmospheric",
-      "audio-reactive"
+      "audio-reactive",
+      "chromatic",
+      "bloom",
+      "physics"
     ],
     "params": [
       {
@@ -4078,19 +4098,23 @@
     "name": "Rainbow Cloud",
     "category": "artistic",
     "url": "shaders/rainbow-cloud.wgsl",
-    "description": "Floats iridescent rainbow cloud layers over the source image, thickening around the cursor and pulsing with the beat.",
+    "description": "Ray-marched volumetric clouds with 3D Perlin noise density, Mie scattering, iridescent nacreous colors, HDR god rays through cloud gaps, ACES tone mapping, and atmospheric perspective. Bass drives cloud turbulence, mouse scatters cloud particles, depth controls density layering.",
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "volumetric-cloud",
+      "mie-scattering",
       "upgraded-rgba",
       "atmospheric"
     ],
     "tags": [
       "rainbow",
       "cloud",
-      "nebula",
+      "volumetric",
+      "iridescent",
       "atmospheric",
-      "audio-reactive"
+      "audio-reactive",
+      "raymarched"
     ],
     "params": [
       {
@@ -4098,28 +4122,32 @@
         "name": "Cloud Scale",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "drift_speed",
         "name": "Drift Speed",
         "default": 0.35,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "density",
         "name": "Density",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
-        "id": "rainbow_intensity",
-        "name": "Rainbow Intensity",
+        "id": "iridescence",
+        "name": "Iridescence",
         "default": 0.55,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -4231,51 +4259,58 @@
     "id": "rorschach-inkblot",
     "name": "Rorschach Inkblot",
     "url": "shaders/rorschach-inkblot.wgsl",
-    "description": "Symmetrical inkblot visualization using the Rorschach test aesthetic.",
+    "description": "Symmetrical inkblot visualization with audio-driven ink flow, chromatic ink tints, temporal ink diffusion memory, mouse-controlled symmetry axis, and depth-aware ink density.",
     "params": [
       {
         "name": "Threshold",
-        "type": "float",
         "default": 0.4,
         "min": 0,
         "max": 1,
-        "target": "zoom_params.x",
+        "step": 0.01,
         "id": "threshold"
       },
       {
         "name": "Distortion",
-        "type": "float",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "target": "zoom_params.y",
+        "step": 0.01,
         "id": "distortion"
       },
       {
         "name": "Smoothness",
-        "type": "float",
         "default": 0.1,
         "min": 0,
         "max": 1,
-        "target": "zoom_params.z",
+        "step": 0.01,
         "id": "smoothness"
       },
       {
         "name": "Invert Mode",
-        "type": "float",
         "default": 0,
         "min": 0,
         "max": 1,
-        "target": "zoom_params.w",
+        "step": 0.01,
         "id": "invert_mode"
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "chromatic",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "inkblot",
+      "rorschach",
+      "temporal",
+      "audio-reactive",
+      "chromatic",
+      "depth-aware"
     ]
   },
   {
@@ -4283,19 +4318,23 @@
     "name": "Rotoscope Ink",
     "category": "artistic",
     "url": "shaders/rotoscope-ink.wgsl",
-    "description": "Posterizes the source frame into rotoscoped color blocks and animated ink outlines with cursor-boosted edge glow.",
+    "description": "Upgraded rotoscope ink with temporal edge detection, brushstroke-tapered outlines following motion vectors, paint-bucket bleed, film grain, and chromatic separation on fast edges. Bass drives jitter, mouse paints strokes, depth controls parallax.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "edge-stylization"
+      "edge-stylization",
+      "depth-aware"
     ],
     "tags": [
       "rotoscope",
       "ink",
       "posterize",
       "outline",
-      "audio-reactive"
+      "audio-reactive",
+      "cel-animation",
+      "chromatic",
+      "grain"
     ],
     "params": [
       {

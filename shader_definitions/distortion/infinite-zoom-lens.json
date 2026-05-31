@@ -3,7 +3,7 @@
   "name": "Infinite Zoom Lens",
   "category": "distortion",
   "url": "shaders/infinite-zoom-lens.wgsl",
-  "description": "A temporal zoom tunnel spirals the source image inward around the cursor and feeds the previous frame back into itself.",
+  "description": "Droste effect with recursive self-similar zoom via logarithmic spiral Möbius transformation. Escher-like infinite recursion with chromatic aberration on spiral arms, HDR bloom on focal points, film grain, and temporal feedback.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -15,7 +15,10 @@
     "tunnel",
     "temporal",
     "spiral",
-    "audio-reactive"
+    "audio-reactive",
+    "droste",
+    "escher",
+    "recursive"
   ],
   "params": [
     {

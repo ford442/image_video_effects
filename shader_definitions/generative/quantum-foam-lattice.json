@@ -1,0 +1,61 @@
+{
+  "id": "quantum-foam-lattice",
+  "name": "Quantum Foam Lattice",
+  "category": "generative",
+  "url": "shaders/quantum-foam-lattice.wgsl",
+  "description": "Quantum foam visualization: bubbling vacuum fluctuations forming a crystalline lattice that pulses to bass. Mids drive lattice distortions, treble creates sparkles at node intersections. Mouse warps the lattice locally.",
+  "features": [
+    "audio-reactive",
+    "temporal-feedback",
+    "chromatic-dispersion",
+    "quantum-foam",
+    "crystalline-lattice",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Lattice Density",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "foam",
+      "name": "Foam Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "warp",
+      "name": "Warp Strength",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "sparkle",
+      "name": "Sparkle Amount",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "generative",
+    "quantum",
+    "foam",
+    "lattice",
+    "crystalline",
+    "audio-reactive",
+    "chromatic",
+    "abstract",
+    "futuristic",
+    "particles"
+  ]
+}

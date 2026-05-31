@@ -231,31 +231,31 @@
     "name": "Digital Crease",
     "category": "geometric",
     "url": "shaders/digital-crease.wgsl",
-    "description": "Paper-fold creases radiate from center with depth-curve distortion. Temporal persistence simulates paper memory. Chromatic folding separates R/B channels per crease. Audio modulates fold amplitude.",
+    "description": "Origami crease pattern simulation with mountain/valley assignment, Kawasaki-Justin flat-foldability approximation, depth-driven layer shadows, digital paper fiber texture, chromatic folding, HDR crease specular, and ACES tone mapping. Bass drives fold speed; mouse performs local folds; depth controls layer ordering.",
     "params": [
       {
-        "id": "foldCount",
+        "id": "fold-count",
         "name": "Fold Count",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "foldDepth",
+        "id": "fold-depth",
         "name": "Fold Depth",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "foldSoftness",
+        "id": "fold-softness",
         "name": "Fold Softness",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
-        "id": "chromaOffset",
+        "id": "chroma-offset",
         "name": "Chromatic Offset",
         "default": 0.5,
         "min": 0,
@@ -267,7 +267,8 @@
       "depth-aware",
       "upgraded-rgba",
       "temporal-paper-fold",
-      "chromatic-folding"
+      "chromatic-folding",
+      "origami"
     ],
     "tags": [
       "geometric",
@@ -277,7 +278,8 @@
       "audio-reactive",
       "depth-aware",
       "chromatic",
-      "temporal"
+      "temporal",
+      "origami"
     ]
   },
   {

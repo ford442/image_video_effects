@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Non-Local Means
 //  Category: image
-//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven
+//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware
 //  Convolution Type: non-local-means
 //  Complexity: Very High
 //  Created: 2026-04-18
@@ -44,6 +44,15 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn patchDistance(uv1: vec2<f32>, uv2: vec2<f32>, patchRadius: i32, pixelSize: vec2<f32>) -> f32 {
     var dist = 0.0;
     for (var dy = -patchRadius; dy <= patchRadius; dy++) {
@@ -68,12 +77,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
+    let pixel = vec2<i32>(global_id.xy);
+    
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    
+    // Depth awareness
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthFactor = mix(0.8, 1.2, depth);
     
     // Parameters
     let patchRadius = i32(mix(1.0, 3.0, u.zoom_params.x));
-    let searchRadius = i32(mix(3.0, 10.0, u.zoom_params.y));
-    let hParamBase = mix(0.001, 0.1, u.zoom_params.z);  // Filter strength
-    let overdrive = u.zoom_params.w;  // Artistic overdrive
+    let searchRadius = i32(mix(3.0, 10.0, u.zoom_params.y) * (1.0 + bass * 0.5));
+    let hParamBase = mix(0.001, 0.1, u.zoom_params.z) * depthFactor;
+    let overdrive = u.zoom_params.w;
     
     // Mouse focus zone
     let mouseDist = length(uv - mousePos);
@@ -138,13 +157,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let overdriveBlend = overdrive * (1.0 - avgSimilarity);
     result = mix(result, center, overdriveBlend);
     
-    // Self-similarity importance map: low similarity = unique = high alpha
-    let importance = 1.0 - avgSimilarity;
+    // Chromatic aberration on denoised edges
+    let edgeStrength = (1.0 - avgSimilarity) * (1.0 + mids * 0.5) * 0.5;
+    let caOffset = pixelSize * edgeStrength;
+    let chrR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(caOffset.x, 0.0), 0.0).r;
+    let chrG = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
+    let chrB = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(caOffset.x, 0.0), 0.0).b;
+    let chromatic = vec3<f32>(chrR, chrG, chrB);
+    result = mix(result, chromatic, edgeStrength * 0.4);
     
-    // Store: RGB = filtered/overdriven color, Alpha = importance map
+    // ACES tone mapping
+    result = acesToneMap(result);
+    
+    // Temporal noise history
+    let prevColor = textureLoad(dataTextureC, pixel, 0).rgb;
+    let decay = 0.85;
+    result = mix(result, prevColor * decay, 0.1 + bass * 0.2);
+    
+    // Semantic alpha: self-similarity importance modulated by depth and audio
+    let importance = (1.0 - avgSimilarity) * (0.5 + depth * 0.5) * (0.6 + treble * 0.4);
+    
     textureStore(writeTexture, global_id.xy, vec4<f32>(result, importance));
     
     // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

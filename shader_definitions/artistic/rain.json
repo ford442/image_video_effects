@@ -3,19 +3,23 @@
   "name": "Rain",
   "category": "artistic",
   "url": "shaders/rain.wgsl",
-  "description": "Adds refractive rain streaks and wet mist to the source image, with cursor interaction and audio-driven shimmer.",
+  "description": "Upgraded rain with gravity-accelerated streak physics, chromatic droplet lensing, HDR bloom on light sources, fog layers, and splash particles. Bass drives intensity, mouse creates wind gusts, depth controls droplet perspective.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
-    "atmospheric"
+    "atmospheric",
+    "depth-aware"
   ],
   "tags": [
     "rain",
     "wet",
     "mist",
     "atmospheric",
-    "audio-reactive"
+    "audio-reactive",
+    "chromatic",
+    "bloom",
+    "physics"
   ],
   "params": [
     {

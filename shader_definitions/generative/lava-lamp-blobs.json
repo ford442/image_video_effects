@@ -1,0 +1,15 @@
+{
+  "id": "lava-lamp-blobs",
+  "name": "Lava Lamp Blobs",
+  "url": "shaders/lava-lamp-blobs.wgsl",
+  "category": "generative",
+  "description": "Metaball lava blobs rise and merge with chromatic warm-cool color shifts and audio-reactive heat.",
+  "tags": ["generative", "lava", "metaballs", "organic", "retro", "audio-reactive"],
+  "features": ["procedural", "audio-reactive", "mouse-driven", "upgraded-rgba", "temporal", "chromatic", "depth-aware"],
+  "params": [
+    { "id": "blobCount", "name": "Blob Count", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "riseSpeed", "name": "Rise Speed", "default": 0.35, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "melt", "name": "Melt", "default": 0.38, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "heat", "name": "Heat", "default": 0.52, "min": 0, "max": 1, "step": 0.01 }
+  ]
+}

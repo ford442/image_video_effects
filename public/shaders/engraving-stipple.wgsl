@@ -1,12 +1,12 @@
-// ================================================================
-//  Engraving Stipple
+// ═══════════════════════════════════════════════════════════════════
+//  Engraving Stipple v2
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, line-art
-//  Complexity: Medium
+//  Complexity: High
 //  Chunks From: engraving-stipple
 //  Created: 2026-05-31
-//  By: Copilot
-// ================================================================
+//  By: 4-Agent Shader Upgrade Swarm
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,7 +25,7 @@
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=LineDensity, y=StippleScale, z=Contrast, w=LightRotation
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -35,6 +35,19 @@ fn luminance(c: vec3<f32>) -> f32 {
 
 fn sampleLuma(uv: vec2<f32>) -> f32 {
   return luminance(textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -50,30 +63,63 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let audio = plasmaBuffer[0].xyz;
 
-  let lineDensity = mix(60.0, 240.0, u.zoom_params.x);
-  let stippleScale = mix(4.0, 22.0, u.zoom_params.y);
-  let contrast = mix(0.8, 2.8, u.zoom_params.z);
-  let lightRotation = u.zoom_params.w * 6.28318 + time * 0.2;
+  let lineDensity = mix(50.0, 280.0, u.zoom_params.x);
+  let stippleScale = mix(3.0, 26.0, u.zoom_params.y);
+  let contrast = mix(0.7, 3.2, u.zoom_params.z);
+  let lightRotation = u.zoom_params.w * 6.28318 + time * 0.15;
 
+  let px = vec2<f32>(1.0 / dims.x, 1.0 / dims.y);
   let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let luma = pow(clamp(luminance(src.rgb), 0.0, 1.0), contrast);
+
+  let gx = sampleLuma(uv + vec2<f32>(px.x, 0.0)) - sampleLuma(uv - vec2<f32>(px.x, 0.0));
+  let gy = sampleLuma(uv + vec2<f32>(0.0, px.y)) - sampleLuma(uv - vec2<f32>(0.0, px.y));
+  let gradMag = length(vec2<f32>(gx, gy));
+  let gradDir = atan2(gy, gx);
+
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let lineWidth = mix(1.0, 0.4, depth) * (1.0 + audio.x * 0.3);
+
+  let contourDir = vec2<f32>(cos(gradDir), sin(gradDir));
   let hatchDir = vec2<f32>(cos(lightRotation), sin(lightRotation));
-  let hatch = 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), hatchDir) * lineDensity);
-  let crossHatch = 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), vec2<f32>(-hatchDir.y, hatchDir.x)) * lineDensity * 0.7);
-  let stipple = fract(sin(dot(floor(uv * stippleScale * 60.0), vec2<f32>(12.9898, 78.233))) * 43758.5453);
-  let ink = clamp((1.0 - luma) * 1.2 + hatch * 0.25 + crossHatch * 0.18 - stipple * 0.55, 0.0, 1.0);
+  let crossDir = vec2<f32>(-hatchDir.y, hatchDir.x);
+
+  let contourLine = 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), contourDir) * lineDensity * 0.6);
+  let hatchLine = 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), hatchDir) * lineDensity);
+  let crossLine = 0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), crossDir) * lineDensity * 0.7);
+
+  let densityMask = smoothstep(0.0, 0.35, gradMag);
+  let hatchMix = mix(hatchLine, contourLine, densityMask);
+  let combinedHatch = hatchMix * 0.55 + crossLine * 0.3;
+
+  let burrUV = uv * stippleScale * 60.0;
+  let stipple = hash12(floor(burrUV));
+  let burr = smoothstep(0.45, 0.55, sin(dot(uv, hatchDir) * lineDensity * 2.0) * sin(dot(uv, crossDir) * lineDensity * 1.4));
+
+  let pressure = 1.0 + audio.x * 0.5;
+  let ink = clamp((1.0 - luma) * pressure * 1.15 + combinedHatch * 0.28 - stipple * 0.5 + burr * 0.08, 0.0, 1.0);
 
   let mouseDelta = (uv - mouse) * vec2<f32>(aspect, 1.0);
-  let burnish = 1.0 - smoothstep(0.0, 0.45, length(mouseDelta));
-  let warmPaper = mix(vec3<f32>(0.96, 0.93, 0.87), vec3<f32>(0.90, 0.96, 1.0), audio.y * 0.15);
-  let inkColor = mix(vec3<f32>(0.12, 0.10, 0.08), vec3<f32>(0.05, 0.10, 0.18), audio.z * 0.25);
-  let finalColor = mix(warmPaper, inkColor, clamp(ink + burnish * 0.12, 0.0, 1.0));
+  let burin = 1.0 - smoothstep(0.0, 0.5, length(mouseDelta));
+  let burinCut = burin * smoothstep(0.3, 0.7, hash12(floor(uv * 90.0) + vec2<f32>(time * 3.0, 0.0))) * 0.18;
 
-  let finalAlpha = clamp(src.a * 0.35 + ink * 0.70 + burnish * 0.08, 0.05, 0.98);
-  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let outDepth = clamp(mix(baseDepth, 0.22 + ink * 0.72, 0.24), 0.0, 1.0);
+  let paperNoise = hash12(floor(uv * 400.0)) * 0.04;
+  let warmPaper = mix(vec3<f32>(0.95, 0.92, 0.85), vec3<f32>(0.88, 0.94, 0.98), audio.y * 0.2) + paperNoise;
+  let inkColor = mix(vec3<f32>(0.10, 0.08, 0.06), vec3<f32>(0.04, 0.09, 0.16), audio.z * 0.3);
+  let deepBlack = inkColor * 0.6 - vec3<f32>(0.02, 0.0, 0.01) * ink * 0.15;
+
+  let poolInk = smoothstep(0.75, 1.0, ink) * 0.12;
+  var finalColor = mix(warmPaper, inkColor, clamp(ink + burinCut, 0.0, 1.0));
+  finalColor = mix(finalColor, deepBlack, poolInk);
+  finalColor = acesToneMap(finalColor * 1.1);
+
+  let lineDensityAlpha = clamp(ink * 0.85 + combinedHatch * 0.35 + burinCut * 0.5, 0.0, 1.0);
+  let inkSat = length(inkColor);
+  let finalAlpha = clamp(lineDensityAlpha * inkSat * depth + 0.06, 0.05, 0.95);
+
+  let outDepth = clamp(mix(depth, 0.18 + ink * 0.75, 0.26), 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(ink, hatch, burnish, finalAlpha));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(ink, combinedHatch, burin, finalAlpha));
 }

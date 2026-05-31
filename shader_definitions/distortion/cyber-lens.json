@@ -3,39 +3,44 @@
   "name": "Cyber Lens",
   "category": "distortion",
   "url": "shaders/cyber-lens.wgsl",
-  "description": "A scanning cybernetic magnifier overlays chromatic split and holographic grid lines onto the source image.",
+  "description": "AR-style cybernetic lens with cyan holographic HUD, targeting reticle, scan lines, hex threat zones, glitch artifacts, chromatic aberration, and depth-parallax layers. Bass drives HUD flicker; mouse moves the reticle; depth controls layer parallax.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
-    "chromatic-aberration"
+    "chromatic-aberration",
+    "hud-overlay",
+    "glitch"
   ],
   "tags": [
     "cyber",
     "lens",
     "grid",
     "chromatic",
-    "audio-reactive"
+    "audio-reactive",
+    "hud",
+    "glitch",
+    "holographic"
   ],
   "params": [
     {
-      "id": "lens_radius",
-      "name": "Lens Radius",
+      "id": "hud_scale",
+      "name": "HUD Scale",
       "default": 0.35,
       "min": 0,
       "max": 1
     },
     {
-      "id": "zoom_strength",
-      "name": "Zoom Strength",
-      "default": 0.5,
+      "id": "target_size",
+      "name": "Target Size",
+      "default": 0.3,
       "min": 0,
       "max": 1
     },
     {
-      "id": "grid_intensity",
-      "name": "Grid Intensity",
-      "default": 0.4,
+      "id": "glitch_intensity",
+      "name": "Glitch Intensity",
+      "default": 0.25,
       "min": 0,
       "max": 1
     },

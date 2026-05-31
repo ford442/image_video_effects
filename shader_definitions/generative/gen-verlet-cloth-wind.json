@@ -1,0 +1,57 @@
+{
+  "id": "gen-verlet-cloth-wind",
+  "name": "Verlet Cloth Wind",
+  "url": "shaders/gen-verlet-cloth-wind.wgsl",
+  "description": "Verlet integration cloth simulation with wind forces, silk/fabric shading, anisotropic specular highlights, and audio-reactive gusts.",
+  "features": [
+    "generative",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "depth-aware"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "cloth",
+    "physics",
+    "fabric",
+    "wind",
+    "simulation",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Wind Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Fabric Weight",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Stiffness",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Sheen",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

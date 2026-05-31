@@ -3,19 +3,23 @@
   "name": "Rotoscope Ink",
   "category": "artistic",
   "url": "shaders/rotoscope-ink.wgsl",
-  "description": "Posterizes the source frame into rotoscoped color blocks and animated ink outlines with cursor-boosted edge glow.",
+  "description": "Upgraded rotoscope ink with temporal edge detection, brushstroke-tapered outlines following motion vectors, paint-bucket bleed, film grain, and chromatic separation on fast edges. Bass drives jitter, mouse paints strokes, depth controls parallax.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
-    "edge-stylization"
+    "edge-stylization",
+    "depth-aware"
   ],
   "tags": [
     "rotoscope",
     "ink",
     "posterize",
     "outline",
-    "audio-reactive"
+    "audio-reactive",
+    "cel-animation",
+    "chromatic",
+    "grain"
   ],
   "params": [
     {

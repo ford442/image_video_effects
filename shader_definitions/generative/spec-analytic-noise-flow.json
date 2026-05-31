@@ -15,7 +15,10 @@
     "analytic-derivatives",
     "flow-field",
     "noise",
-    "mouse-driven"
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "params": [
     {

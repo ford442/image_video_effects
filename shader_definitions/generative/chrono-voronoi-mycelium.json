@@ -3,13 +3,16 @@
   "name": "Chrono-Voronoi Mycelium",
   "url": "shaders/chrono-voronoi-mycelium.wgsl",
   "category": "generative",
-  "description": "A living fungal network that grows across multiple time scales. Different generations of mycelium coexist as translucent layers. Mouse seeds new growth while audio seasons control the balance between expansion and decay.",
+  "description": "A living fungal network that grows across multiple time scales. Different generations of mycelium coexist as translucent layers. Mouse seeds new growth while audio seasons control the balance between expansion and decay. Now with chromatic dispersion and enhanced temporal feedback.",
   "features": [
     "temporal-layers",
     "voronoi-growth",
     "audio-seasons",
     "mouse-seeding",
-    "multi-scale"
+    "multi-scale",
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "tags": [
     "organic",

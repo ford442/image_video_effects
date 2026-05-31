@@ -3373,41 +3373,48 @@
     "id": "infinite-spiral-zoom",
     "name": "Möbius–Droste Spiral",
     "url": "shaders/infinite-spiral-zoom.wgsl",
-    "description": "Möbius transformation f(z)=(az+b)/(cz+d) composed with log-polar mapping for a Droste self-similar infinite zoom. Animated parameter orbit, audio-driven rotation, multi-fold symmetry, chromatic ring fringing.",
+    "description": "Möbius transformation composed with log-polar mapping for Droste self-similar infinite zoom. Temporal Möbius drift, audio-driven zoom speed, depth-scaled chromatic aberration, and multi-fold symmetry.",
     "params": [
       {
         "id": "zoomSpeed",
         "name": "Zoom Speed",
         "default": 0.55,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "mobStrength",
         "name": "Möbius Strength",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "branches",
         "name": "Symmetry Folds",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "chromatic",
         "name": "Chromatic Fringe",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "chromatic",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "warp",
@@ -3416,7 +3423,10 @@
       "mobius",
       "droste",
       "spiral",
-      "zoom"
+      "zoom",
+      "temporal",
+      "audio-reactive",
+      "depth-aware"
     ]
   },
   {
@@ -3770,44 +3780,57 @@
     "id": "interactive-glitch-cubes",
     "name": "Interactive Glitch Cubes",
     "url": "shaders/interactive-glitch-cubes.wgsl",
-    "description": "Image is mapped onto a grid of extruded cubes that react to mouse height.",
+    "description": "Image mapped onto a grid of extruded cubes with audio-reactive extrusion, chromatic edge glow, temporal cube memory for settling physics, and depth-aware alpha.",
     "params": [
       {
         "id": "size",
         "name": "Cube Size",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "extrusion",
         "name": "Extrusion Height",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "gap",
         "name": "Grid Gap",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       },
       {
         "id": "shadow",
         "name": "Shadow Strength",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
       "mouse-driven",
-      "pseudo-3d"
+      "pseudo-3d",
+      "audio-reactive",
+      "temporal",
+      "chromatic",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "cubes",
+      "extrusion",
+      "audio-reactive",
+      "temporal",
+      "chromatic"
     ]
   },
   {
@@ -4049,7 +4072,7 @@
     "name": "Interactive Ripple",
     "category": "interactive-mouse",
     "url": "shaders/interactive-ripple.wgsl",
-    "description": "Persistent cursor ripples travel across the frame like a metallic pond, with audio adding wet specular sheen.",
+    "description": "2D wave equation solver with dispersion and Huygens wavelet superposition. Chromatic dispersion on ripple crests, caustic highlights in constructive interference zones, HDR bloom, subsurface scattering, and boundary reflection damping.",
     "params": [
       {
         "id": "amplitude",
@@ -4091,7 +4114,10 @@
       "water",
       "metallic",
       "wave",
-      "audio-reactive"
+      "audio-reactive",
+      "dispersion",
+      "caustics",
+      "huygens"
     ]
   },
   {
@@ -5701,40 +5727,45 @@
     "name": "Motion Revealer",
     "url": "shaders/motion-revealer.wgsl",
     "category": "interactive-mouse",
-    "description": "The screen is dark by default; use the mouse as a brush to paint the live video feed onto the canvas with trailing fades. Audio-reactive pigment shifts RGB channels with bass/mids/treble. Depth-aware stroke opacity makes near objects paint more vividly.",
+    "description": "Optical flow estimation via structure tensor reveals only moving regions. Motion trails with spectral chromatic aberration, HDR glow on fast objects, ACES tone mapping, and motion blur. Bass drives motion sensitivity, mouse creates a motion mask, depth controls trail length perspective.",
     "params": [
       {
-        "id": "size",
-        "name": "Brush Size",
+        "id": "sensitivity",
+        "name": "Motion Sensitivity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "trailLen",
+        "name": "Trail Length",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glowStr",
+        "name": "Glow Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromaSep",
+        "name": "Chromatic Separation",
         "default": 0.3,
         "min": 0,
-        "max": 1
-      },
-      {
-        "id": "fade",
-        "name": "Fade Speed",
-        "default": 0.1,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "softness",
-        "name": "Edge Softness",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
-      },
-      {
-        "id": "opacity",
-        "name": "Brush Opacity",
-        "default": 1,
-        "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01
       }
     ],
     "features": [
       "mouse-driven",
-      "temporal-persistence",
+      "optical-flow",
+      "motion-trails",
       "audio-reactive",
       "depth-aware",
       "chromatic-mixing",
@@ -5745,8 +5776,8 @@
       "interactive",
       "audio-reactive",
       "depth-aware",
-      "temporal",
-      "brush",
+      "optical-flow",
+      "motion-trails",
       "chromatic"
     ]
   },

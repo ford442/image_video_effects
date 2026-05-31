@@ -3,9 +3,10 @@
 //  Category: generative
 //  Description: Infinite interlocking brass gears rotating in perfect mechanical sync.
 //               Steampunk raymarched masterpiece with metallic PBR shading.
-//  Features: mouse-driven
+//  Features: mouse-driven, temporal, chromatic, depth-aware
 //  Tags: steampunk, mechanical, 3d, raymarching, gears
 //  Author: ford442
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -89,8 +90,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   // ═══ AUDIO REACTIVITY ═══
   let audioOverall = plasmaBuffer[0].x;
   let audioBass = plasmaBuffer[0].x * 1.2;
-  let audioMid = u.config.z;
-  let audioHigh = u.config.w;
+  let audioMid = plasmaBuffer[0].y;
+  let audioHigh = plasmaBuffer[0].z;
   let audioReactivity = 1.0 + audioOverall * 0.5;
   var mouse = u.zoom_config.yz;
   
@@ -128,9 +129,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       map(p + vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity) - map(p - vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity)
     ));
     col = shade(p, n, ro, material);
+
+    // ═══ Chromatic dispersion: per-channel spatial offsets on gear surface ═══
+    let chromAmt = 0.015 + audioBass * 0.02;
+    col.r = col.r + sin(p.x * 25.0 + time * 2.0) * chromAmt * audioBass;
+    col.g = col.g + cos(p.z * 20.0 + time * 1.7) * chromAmt * audioMid;
+    col.b = col.b + sin((p.x + p.z) * 18.0 + time * 1.3) * chromAmt * audioHigh;
+    col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
   }
 
+  // ═══ Temporal feedback ═══
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  col = mix(col, prev.rgb * 0.9, 0.03 + audioBass * 0.01);
+
   textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
+  textureStore(dataTextureA, id.xy, vec4<f32>(col, 1.0));
   
   var depth = 0.5;
   if (t < 199.0) {

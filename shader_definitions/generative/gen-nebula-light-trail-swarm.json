@@ -6,7 +6,10 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
-    "generative"
+    "generative",
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "tags": [
     "nebula",

@@ -3,40 +3,45 @@
   "name": "Motion Revealer",
   "url": "shaders/motion-revealer.wgsl",
   "category": "interactive-mouse",
-  "description": "The screen is dark by default; use the mouse as a brush to paint the live video feed onto the canvas with trailing fades. Audio-reactive pigment shifts RGB channels with bass/mids/treble. Depth-aware stroke opacity makes near objects paint more vividly.",
+  "description": "Optical flow estimation via structure tensor reveals only moving regions. Motion trails with spectral chromatic aberration, HDR glow on fast objects, ACES tone mapping, and motion blur. Bass drives motion sensitivity, mouse creates a motion mask, depth controls trail length perspective.",
   "params": [
     {
-      "id": "size",
-      "name": "Brush Size",
+      "id": "sensitivity",
+      "name": "Motion Sensitivity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "trailLen",
+      "name": "Trail Length",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "glowStr",
+      "name": "Glow Strength",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chromaSep",
+      "name": "Chromatic Separation",
       "default": 0.3,
       "min": 0,
-      "max": 1
-    },
-    {
-      "id": "fade",
-      "name": "Fade Speed",
-      "default": 0.1,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "softness",
-      "name": "Edge Softness",
-      "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "opacity",
-      "name": "Brush Opacity",
-      "default": 1,
-      "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01
     }
   ],
   "features": [
     "mouse-driven",
-    "temporal-persistence",
+    "optical-flow",
+    "motion-trails",
     "audio-reactive",
     "depth-aware",
     "chromatic-mixing",
@@ -47,8 +52,8 @@
     "interactive",
     "audio-reactive",
     "depth-aware",
-    "temporal",
-    "brush",
+    "optical-flow",
+    "motion-trails",
     "chromatic"
   ]
 }

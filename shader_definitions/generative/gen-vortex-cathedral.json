@@ -1,0 +1,16 @@
+{
+  "id": "gen-vortex-cathedral",
+  "name": "Vortex Cathedral",
+  "url": "shaders/gen-vortex-cathedral.wgsl",
+  "category": "generative",
+  "description": "Spinning radial arches and sanctum rings form a gothic vortex illuminated by bass-lit cores.",
+  "tags": ["generative", "vortex", "cathedral", "radial", "cosmic", "audio-reactive"],
+  "features": ["procedural", "audio-reactive", "mouse-driven", "upgraded-rgba", "temporal", "chromatic", "depth-aware"],
+  "params": [
+    { "id": "archCount", "name": "Arch Count", "default": 0.46, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "spin", "name": "Spin", "default": 0.43, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "haze", "name": "Haze", "default": 0.35, "min": 0, "max": 1, "step": 0.01 },
+    { "id": "sanctum", "name": "Sanctum Radius", "default": 0.44, "min": 0, "max": 1, "step": 0.01 }
+  ]
+}
+

@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Strange Field Flow
 //  Category: generative
-//  Features: audio-reactive, temporal, psychedelic, procedural
+//  Features: audio-reactive, temporal, psychedelic, procedural, chromatic, depth-aware
 //  Complexity: High
 //  Created: 2026-05-23
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 //  A 2D strange-attractor-inspired vector field where each pixel
 //  evaluates a modified Clifford / Peter de Jong attractor map and
@@ -133,6 +134,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prev  = textureSampleLevel(dataTextureC, u_sampler, histUV, 0.0).rgb;
   let fbMix = mix(0.1, 0.82, feedback);
   color = mix(color, prev * 0.91, fbMix);
+
+  // Chromatic dispersion: channel offsets modulated by audio
+  let cStr = 0.003 + bass * 0.005;
+  let cDir = normalize(uv - vec2<f32>(0.5) + 0.001);
+  let prevR = textureSampleLevel(dataTextureC, u_sampler, uv + cDir * cStr * (1.0 + mids), 0.0).r;
+  let prevG = textureSampleLevel(dataTextureC, u_sampler, uv + cDir * cStr * (0.5 + treble), 0.0).g;
+  let prevB = textureSampleLevel(dataTextureC, u_sampler, uv - cDir * cStr * (0.8 + bass * 0.5), 0.0).b;
+  color.r = mix(color.r, prevR * 0.9, 0.02 + treble * 0.01);
+  color.g = mix(color.g, prevG * 0.9, 0.02 + bass * 0.01);
+  color.b = mix(color.b, prevB * 0.9, 0.02 + mids * 0.01);
 
   let vign  = 1.0 - smoothstep(0.5, 1.1, length(q / scale));
   color = color * vign;

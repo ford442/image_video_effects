@@ -1,0 +1,55 @@
+{
+  "id": "chromatic-ghost-tunnel",
+  "name": "Chromatic Ghost Tunnel",
+  "url": "shaders/chromatic-ghost-tunnel.wgsl",
+  "description": "A perspective tunnel of chromatic ghost echoes. Each ring is RGB-split by audio bands. Bass warps tunnel depth, mids add spiral rotation, treble creates stroboscopic ring flashes. Mouse steers tunnel flight.",
+  "tags": [
+    "generative",
+    "tunnel",
+    "perspective",
+    "chromatic",
+    "ghost",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Tunnel Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Spiral Twist",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Ghost Echo Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Flash Intensity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

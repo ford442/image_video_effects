@@ -1,0 +1,67 @@
+{
+  "id": "neon-fern-garden",
+  "name": "Neon Fern Garden",
+  "url": "shaders/neon-fern-garden.wgsl",
+  "category": "generative",
+  "description": "Procedurally generated fern fronds unfurling in neon colors against dark soil. Bass drives growth animation, mids control frond density, treble creates dewdrop sparkles. Mouse attracts or repels frond tips.",
+  "tags": [
+    "generative",
+    "fern",
+    "garden",
+    "organic",
+    "neon",
+    "nature",
+    "audio-reactive",
+    "chromatic",
+    "temporal",
+    "growth"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware",
+    "organic-growth"
+  ],
+  "params": [
+    {
+      "id": "growthSpeed",
+      "name": "Growth Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Speed of fern unfurling growth animation"
+    },
+    {
+      "id": "frondDensity",
+      "name": "Frond Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Number of fern fronds in the garden"
+    },
+    {
+      "id": "dewAmount",
+      "name": "Dew Amount",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Amount of dewdrop sparkles on fronds"
+    },
+    {
+      "id": "mouseInfluence",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Attract or repel frond tips with mouse"
+    }
+  ]
+}

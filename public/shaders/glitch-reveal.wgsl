@@ -31,11 +31,14 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Glitch Reveal
-// P1: Block Size
-// P2: Scatter Amount (Chaos)
-// P3: Reveal Radius
-// P4: Glitch Jitter Speed
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash12(p: vec2<f32>) -> f32 {
 	var p3 = fract(vec3<f32>(p.xyx) * .1031);
@@ -55,86 +58,90 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    var mousePos = u.zoom_config.yz;
+    let mousePos = u.zoom_config.yz;
+    let pixel = vec2<i32>(global_id.xy);
 
-    // Parameters
-    let blockSize = u.zoom_params.x * 0.2 + 0.01; // 0.01 to 0.21 UV size
-    let scatter = u.zoom_params.y; // 0 to 1
+    // Depth awareness: foreground revealed from farther away
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    // Audio reactivity: bass drives scatter intensity, mids drive jitter
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let scatter = u.zoom_params.y * (1.0 + bass * 2.0);
+    let blockSize = u.zoom_params.x * 0.2 + 0.01;
     let revealRadius = u.zoom_params.z * 0.5 + 0.05;
     let speed = u.zoom_params.w * 10.0;
 
-    // Grid Coordinates
-    // Quantize UV to blocks
-    let gridUV = floor(uv / blockSize);
+    // Depth-based reveal radius
+    let effectiveRadius = revealRadius * mix(0.6, 1.4, depth);
 
-    // Determine offset for this block
-    // Add time to seed if speed > 0
-    let seed = gridUV + floor(u.config.x * speed);
+    // Grid coordinates with audio jitter
+    let gridUV = floor(uv / blockSize);
+    let seed = gridUV + floor(u.config.x * speed * (1.0 + mids));
     let rand = hash22(seed);
 
-    // Default Offset is random direction * scatter
     var blockOffset = (rand - 0.5) * scatter;
 
-    // Check distance to mouse
-    // Adjust mouse pos to aspect?
-    // We want the REVEAL to be circular in screen space.
+    // Mouse proximity reveal
     let dVec = uv - mousePos;
     let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
-    // Reveal Logic
-    // If inside radius, reduce offset to 0.
     var mask = 0.0;
-    if (dist < revealRadius) {
-        // smooth edge
-        mask = smoothstep(revealRadius * 0.8, revealRadius, dist);
+    if (dist < effectiveRadius) {
+        mask = smoothstep(effectiveRadius * 0.8, effectiveRadius, dist);
     } else {
         mask = 1.0;
     }
 
-    // Apply mask to offset
-    // Inside (mask=0), offset is 0. Outside (mask=1), offset is full.
     blockOffset = blockOffset * mask;
 
-    // Sample
-    // Clamp to prevent wrapping artifacts
     let sampleUV = clamp(uv + blockOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Color Glitch: occasionally swap channels on scattered blocks
+    // Chromatic aberration (enhanced glitch)
+    let caDir = (uv - 0.5) * 0.03 * mask * scatter * (1.0 + depth);
+    let rSampleUV = clamp(sampleUV + caDir, vec2<f32>(0.0), vec2<f32>(1.0));
+    let bSampleUV = clamp(sampleUV - caDir, vec2<f32>(0.0), vec2<f32>(1.0));
+
     var colorSample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
-    var color = colorSample.rgb;
+    let rSample = textureSampleLevel(readTexture, u_sampler, rSampleUV, 0.0).r;
+    let bSample = textureSampleLevel(readTexture, u_sampler, bSampleUV, 0.0).b;
+    var color = vec3<f32>(rSample, colorSample.g, bSample);
     var alpha = colorSample.a;
 
     if (mask > 0.01 && scatter > 0.0) {
          if (rand.x > 0.8) {
-             // Simple channel shift with alpha preservation
-             let rSample = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(0.01 * mask, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-             color = vec3<f32>(rSample.r, colorSample.g, colorSample.b);
-             // Scattered blocks have slightly corrupted alpha
-             alpha = mix(colorSample.a, rSample.a * 0.9 + 0.1, mask * 0.3);
+             let shiftSample = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(0.01 * mask, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+             color = vec3<f32>(shiftSample.r, colorSample.g, colorSample.b);
+             alpha = mix(colorSample.a, shiftSample.a * 0.9 + 0.1, mask * 0.3);
          } else if (rand.x < 0.2) {
-             // Invert with alpha modulation
              color = vec3<f32>(1.0 - colorSample.r, 1.0 - colorSample.g, 1.0 - colorSample.b);
              alpha = colorSample.a * 0.95;
          }
     }
 
-    // Add a digital border around the revealed area with alpha
-    let border = smoothstep(revealRadius, revealRadius + 0.01, dist) - smoothstep(revealRadius + 0.01, revealRadius + 0.02, dist);
+    // Temporal glitch persistence from previous frame
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    let persistence = 0.7;
+    color = mix(color, prev.rgb, mask * scatter * persistence);
+
+    // Digital border around reveal zone
+    let border = smoothstep(effectiveRadius, effectiveRadius + 0.01, dist)
+               - smoothstep(effectiveRadius + 0.01, effectiveRadius + 0.02, dist);
     if (border > 0.0 && mask < 0.9) {
         let borderColor = vec3<f32>(0.0, 1.0, 0.5);
         color = mix(color, borderColor, border * 0.5);
-        // Border has solid alpha
         alpha = mix(alpha, 1.0, border * 0.3);
     }
 
-    // Clamp alpha
+    // ACES tone mapping
+    color = acesToneMap(color);
+
+    // Semantic alpha: data integrity — scattered blocks transparent, revealed foreground solid
+    alpha = mix(mix(0.5, 1.0, depth), 1.0, 1.0 - mask * scatter);
     alpha = clamp(alpha, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-    
-    // Pass through depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

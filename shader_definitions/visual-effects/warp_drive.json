@@ -3,18 +3,22 @@
   "name": "Warp Drive",
   "category": "visual-effects",
   "url": "shaders/warp_drive.wgsl",
-  "description": "Launches the source image into a chromatic warp tunnel with beat-synced core glow and radial streaking.",
+  "description": "Alcubierre warp metric approximation with radial compression ahead and expansion behind. Star streaks with relativistic Doppler shift, HDR bloom on contracted stars, chromatic aberration on high-velocity regions, and ACES tone mapping.",
   "features": [
     "audio-reactive",
     "upgraded-rgba",
-    "radial-blur"
+    "radial-blur",
+    "mouse-driven"
   ],
   "tags": [
     "warp",
     "streak",
     "space",
     "chromatic",
-    "audio-reactive"
+    "audio-reactive",
+    "doppler",
+    "relativistic",
+    "alcubierre"
   ],
   "params": [
     {

@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chrono-Voronoi Mycelium
 //  Category: generative
-//  Features: temporal-layers, voronoi-growth, audio-seasons, mouse-seeding, multi-scale
+//  Features: temporal-layers, voronoi-growth, audio-seasons, mouse-seeding, multi-scale, temporal, chromatic, depth-aware
 //  Complexity: High
 //  Chunks From: standard voronoi + temporal feedback patterns
 //  Created: 2026-05-31
 //  By: Grok (creative technical artist)
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -104,13 +105,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     layer2 = min(layer2 + mouseSeed * 0.6, 1.6);
     layer3 = min(layer3 + mouseSeed * 0.9, 1.9);
     
+    // Chromatic dispersion: audio-modulated layer offsets
+    layer1 = layer1 + bass * 0.06;
+    layer2 = layer2 + mids * 0.05;
+    layer3 = layer3 + treble * 0.04;
+    
     // Store temporal layers
     textureStore(dataTextureA, gid.xy, vec4<f32>(layer1, layer2, layer3, 0.0));
     textureStore(dataTextureB, gid.xy, vec4<f32>(layer2, layer3, layer1, 0.0));
     
     // Visualization - layered organic colors
     let ageMix = vec3<f32>(layer1, layer2 * 0.8, layer3 * 0.6);
-    let col = mix(vec3<f32>(0.1, 0.15, 0.1), vec3<f32>(0.9, 0.95, 0.7), ageMix);
+    var col = mix(vec3<f32>(0.1, 0.15, 0.1), vec3<f32>(0.9, 0.95, 0.7), ageMix);
+    
+    // Temporal feedback blend
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    col = mix(col, prev.rgb * 0.9, 0.03 + bass * 0.01);
     
     // Subtle depth from layers
     let depth = (layer1 * 0.3 + layer2 * 0.5 + layer3 * 0.7) * 0.6 + 0.2;

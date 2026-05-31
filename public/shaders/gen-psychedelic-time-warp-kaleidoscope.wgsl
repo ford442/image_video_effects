@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Psychedelic Time-Warp Kaleidoscope
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Psychedelic Time-Warp Kaleidoscope
+//  Category: generative
+//  Features: kaleidoscope, noise, audio-reactive, temporal, chromatic, depth-aware
+//  Complexity: High
+//  Chunks From: standard kaleidoscope + temporal feedback patterns
+//  Created: original
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -116,6 +121,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Audio glow to the edges of the kaleidescope
     let glow = max(0.0, 1.0 - (dist / (res.x * 0.5))) * audio;
     color += vec3<f32>(0.2, 0.5, 1.0) * glow * plasmaVal;
+
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // Temporal feedback
+    let prev = textureSampleLevel(dataTextureC, u_sampler, norm_coords, 0.0);
+    color = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
+
+    // Chromatic dispersion: audio-modulated channel offsets on glow
+    color.r += glow * bass * 0.35;
+    color.g += glow * mids * 0.25;
+    color.b += glow * treble * 0.3;
 
     let _luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);

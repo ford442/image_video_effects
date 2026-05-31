@@ -3,19 +3,23 @@
   "name": "Encaustic Wax",
   "category": "artistic",
   "url": "shaders/encaustic-wax.wgsl",
-  "description": "Melts the source image into a glossy encaustic painting with audio-pulsed wax ridges and warm pigment bloom.",
+  "description": "Thermal wax flow simulation with layered strata, subsurface scattering, metallic pigment sparkle, HDR specular ridges, ACES tone mapping, and canvas grain. Bass drives heat gun intensity; mouse applies local heat; depth controls wax thickness.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
-    "painterly"
+    "painterly",
+    "thermal-flow"
   ],
   "tags": [
     "wax",
     "encaustic",
     "painting",
     "glossy",
-    "audio-reactive"
+    "audio-reactive",
+    "strata",
+    "metallic",
+    "canvas"
   ],
   "params": [
     {

@@ -1,8 +1,9 @@
 {
   "id": "holographic_interference",
   "name": "Holographic Interference",
+  "category": "generative",
   "url": "shaders/holographic_interference.wgsl",
-  "description": "Holographic rainbow interference patterns with thin-film diffraction, temporal phase drift, audio-reactive film thickness pulsing, depth-scaled viewing angle, and chromatic dispersion per wavelength.",
+  "description": "Laser interference pattern simulation with multiple coherent sources, object beam and reference beam phase accumulation, speckle pattern, chromatic dispersion on holographic fringes, HDR bloom, and ACES tone mapping. Bass drives reference beam angle, mouse moves the virtual object, depth controls holographic parallax.",
   "tags": [
     "holographic",
     "interference",
@@ -11,7 +12,9 @@
     "temporal",
     "audio-reactive",
     "depth-aware",
-    "chromatic"
+    "chromatic",
+    "speckle",
+    "generative"
   ],
   "features": [
     "upgraded-rgba",
@@ -21,7 +24,8 @@
     "rainbow",
     "audio-reactive",
     "temporal",
-    "depth-aware"
+    "depth-aware",
+    "generative"
   ],
   "params": [
     {
@@ -33,8 +37,8 @@
       "step": 0.01
     },
     {
-      "id": "wavelengthScale",
-      "name": "Wavelength Scale",
+      "id": "waveScale",
+      "name": "Wave Scale",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
@@ -49,13 +53,13 @@
       "step": 0.01
     },
     {
-      "id": "interferenceStrength",
-      "name": "Interference Strength",
-      "default": 0.5,
+      "id": "chromaAberr",
+      "name": "Chromatic Aberration",
+      "default": 0.3,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01
     }
   ],
-  "target_rating": 4.6
+  "target_rating": 4.7
 }

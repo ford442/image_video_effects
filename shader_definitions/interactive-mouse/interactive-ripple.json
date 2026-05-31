@@ -3,7 +3,7 @@
   "name": "Interactive Ripple",
   "category": "interactive-mouse",
   "url": "shaders/interactive-ripple.wgsl",
-  "description": "Persistent cursor ripples travel across the frame like a metallic pond, with audio adding wet specular sheen.",
+  "description": "2D wave equation solver with dispersion and Huygens wavelet superposition. Chromatic dispersion on ripple crests, caustic highlights in constructive interference zones, HDR bloom, subsurface scattering, and boundary reflection damping.",
   "params": [
     {
       "id": "amplitude",
@@ -45,6 +45,9 @@
     "water",
     "metallic",
     "wave",
-    "audio-reactive"
+    "audio-reactive",
+    "dispersion",
+    "caustics",
+    "huygens"
   ]
 }

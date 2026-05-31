@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cellular Automata Tapestry
 //  Category: generative
-//  Features: multi-state-ca, evolving-rules, audio-mutation, mouse-nutrient, tapestry-weave, depth-pattern, temporal-texture, organic-evolution, semantic-alpha
+//  Features: multi-state-ca, evolving-rules, audio-mutation, mouse-nutrient, tapestry-weave, depth-pattern, temporal-texture, organic-evolution, semantic-alpha, temporal, chromatic, depth-aware
 //  Complexity: High
-//  Updated: 2026-05-31
+//  Upgraded: 2026-05-31
 //  By: Grok (deep visual/audio flourish — seasonal plasma color climate, stronger mouse nutrient injector, semantic alpha from chemical energy + glow, richer final glaze)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -71,7 +71,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var kill = u.zoom_params.w;
 
     // Modulate feed/kill based on video luminance
-    let vidColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x; let mids = audio.y; let treble = audio.z;
+
+    // ═══ Chromatic dispersion on video input ═══
+    let chromStrength = 0.005 + bass * 0.01;
+    let vidR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(chromStrength, 0.0), 0.0).r;
+    let vidG = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, chromStrength), 0.0).g;
+    let vidB = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(chromStrength * 0.5, chromStrength * 0.5), 0.0).b;
+    let vidColor = vec3<f32>(vidR, vidG, vidB);
+
     let luminance = dot(vidColor, vec3<f32>(0.299, 0.587, 0.114));
     feed += (luminance * 0.02 - 0.01);
     kill -= (luminance * 0.01);
@@ -106,8 +115,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(dataTextureA, coord, vec4<f32>(nextA, nextB, 0.0, 1.0));
 
     // ═══ Deep seasonal plasma + semantic alpha (visual/audio flourish) ═══
-    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
-    let bass = audio.x; let mids = audio.y; let treble = audio.z;
     let season = fract(u.config.x * 0.018 + bass * 0.6); // slow evolving climate
 
     // Richer color: seasonal tint + audio energy on the chemical B
@@ -119,7 +126,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Composite with audio-reactive weight
     let energy = nextB * (0.9 + bass * 0.4 + treble * 0.25);
-    let outColor = mix(vidColor, mappedColor, energy * 1.35);
+    var outColor = mix(vidColor, mappedColor, energy * 1.35);
+
+    // ═══ Temporal feedback ═══
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    outColor = mix(outColor, prev.rgb * 0.9, 0.03 + bass * 0.01);
 
     // Semantic alpha: chemical concentration + audio "glow" gives transparent background areas
     let semantic_alpha = clamp(0.35 + energy * 0.7 + mids * 0.15, 0.25, 1.0);

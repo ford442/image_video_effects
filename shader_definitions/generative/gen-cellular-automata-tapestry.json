@@ -18,7 +18,9 @@
     "audio-driven",
     "semantic-alpha",
     "depth-aware",
-    "multi-pass"
+    "multi-pass",
+    "temporal",
+    "chromatic"
   ],
   "params": [
     {

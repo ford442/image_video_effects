@@ -1,15 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  spec-blackbody-thermal
+//  Blackbody Thermal
 //  Category: advanced-hybrid
-//  Features: blackbody-radiation, HDR, physical-color
-//  Complexity: Medium
-//  Chunks From: chunk-library (rgb2hsv)
-//  Created: 2026-04-18
-//  By: Agent 3C — Spectral Computation Pioneer
-// ═══════════════════════════════════════════════════════════════════
-//  Blackbody Radiation Coloring
-//  Maps image luminance to physically-correct blackbody colors
-//  using Planck's law approximation.
+//  Features: blackbody-radiation, HDR, physical-color, audio-reactive,
+//            temporal-ember-persistence, chromatic-temperature-gradient, depth-output
+//  Complexity: High
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -33,24 +28,20 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: toneMapACES (Agent 3C) ═══
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
     let b = 0.03;
     let c = 2.43;
     let d = 0.59;
     let e = 0.14;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3(0.0), vec3(1.0));
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Planck's law approximation via fitted polynomial
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
-
     var r: f32;
     var g: f32;
     var b: f32;
-
     if (t <= 6.5) {
         r = 1.0;
         g = clamp(0.39 * log(t) - 0.63, 0.0, 1.0);
@@ -60,8 +51,6 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
         g = clamp(1.29 * pow(t - 0.6, -0.076), 0.0, 1.0);
         b = 1.0;
     }
-
-    // Scale by Stefan-Boltzmann: total radiance ~ T^4
     let radiance = pow(t / 6.5, 4.0);
     return vec3<f32>(r, g, b) * radiance;
 }
@@ -71,10 +60,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let tempRangeLow = mix(800.0, 2500.0, u.zoom_params.x);
     let tempRangeHigh = mix(4000.0, 15000.0, u.zoom_params.y);
-    let thermalIntensity = mix(0.5, 3.0, u.zoom_params.z);
+    let thermalIntensity = mix(0.5, 3.0, u.zoom_params.z) * (1.0 + bass * 0.3);
     let glowAmount = mix(0.0, 0.8, u.zoom_params.w);
 
     let mousePos = u.zoom_config.yz;
@@ -83,19 +75,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let luma = dot(baseColor, vec3<f32>(0.299, 0.587, 0.114));
 
-    // Map luminance to temperature
+    // Audio-driven temperature modulation
     var temperature = mix(tempRangeLow, tempRangeHigh, luma);
+    temperature = temperature * (1.0 + mids * 0.2 * sin(time * 3.0));
 
-    // Mouse creates local hotspots
     if (isMouseDown) {
         let mouseDist = length(uv - mousePos);
         let mouseHeat = exp(-mouseDist * mouseDist * 400.0);
-        temperature += mouseHeat * tempRangeHigh * 0.5;
+        temperature += mouseHeat * tempRangeHigh * 0.5 * (1.0 + treble * 0.3);
     }
 
     var thermalColor = blackbodyColor(temperature) * thermalIntensity;
 
-    // Add ember glow around bright regions
+    // Chromatic temperature gradient: cooler = more blue, hotter = more red
+    let tempNorm = clamp((temperature - tempRangeLow) / (tempRangeHigh - tempRangeLow), 0.0, 1.0);
+    let chromaR = thermalColor * vec3<f32>(1.1, 0.95, 0.85) * (1.0 + treble * 0.15);
+    let chromaB = thermalColor * vec3<f32>(0.85, 0.95, 1.1) * (1.0 + bass * 0.15);
+    thermalColor = mix(chromaB, chromaR, tempNorm);
+
+    // Temporal ember persistence via dataTextureC
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let prevEmber = prev.rgb * prev.a * 15000.0;
+    let emberDecay = mix(0.85, 0.98, glowAmount);
+    let persistentEmber = blackbodyColor(prevEmber * emberDecay) * thermalIntensity * glowAmount;
+    thermalColor = max(thermalColor, persistentEmber);
+
+    // Glow around bright regions with audio reactivity
     if (glowAmount > 0.01) {
         let glowRadius = 0.03;
         var glowAccum = vec3<f32>(0.0);
@@ -109,13 +114,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             glowAccum += blackbodyColor(sTemp) * thermalIntensity;
         }
         glowAccum /= f32(glowSamples);
-        thermalColor = mix(thermalColor, glowAccum, glowAmount * 0.4);
+        thermalColor = mix(thermalColor, glowAccum, glowAmount * 0.4 * (1.0 + bass * 0.2));
     }
 
-    // Tone map HDR output
     let displayColor = toneMapACES(thermalColor);
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let alpha = clamp(temperature / 15000.0 * (1.0 + bass * 0.1), 0.0, 1.0);
 
-    // Alpha stores temperature for downstream shaders
-    textureStore(writeTexture, gid.xy, vec4<f32>(displayColor, temperature / 15000.0));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(thermalColor, temperature / 15000.0));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, gid.xy, vec4<f32>(displayColor, alpha));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(thermalColor, alpha));
 }

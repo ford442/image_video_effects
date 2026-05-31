@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Difference of Gaussians Cascade
 //  Category: image
-//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven
+//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware
 //  Convolution Type: multi-scale-DoG
 //  Complexity: High
 //  Created: 2026-04-18
@@ -46,6 +46,15 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn gaussianSample(uv: vec2<f32>, pixelSize: vec2<f32>, sigma: f32) -> f32 {
     var accum = 0.0;
     var weightSum = 0.0;
@@ -83,9 +92,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
+    let pixel = vec2<i32>(global_id.xy);
+    
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    
+    // Depth awareness
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthFactor = mix(0.7, 1.3, depth);
     
     // Parameters
-    let scaleBase = mix(0.5, 3.0, u.zoom_params.x);
+    let scaleBase = mix(0.5, 3.0, u.zoom_params.x) * (1.0 + bass * 0.4);
     let contrast = mix(0.5, 4.0, u.zoom_params.y);
     let colorShift = u.zoom_params.z;
     let mouseInfluence = u.zoom_params.w;
@@ -109,9 +128,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     
-    // Four-scale DoG cascade
+    // Four-scale DoG cascade with bass-driven scales
     let s0 = scaleBase;
-    let s1 = s0 * 1.6;
+    let s1 = s0 * 1.6 * depthFactor;
     let s2 = s1 * 1.6;
     let s3 = s2 * 1.6;
     
@@ -120,13 +139,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dog2 = dog(uv, pixelSize, s2 * (1.0 + rippleBurst * 0.1), s2 * 1.6) * contrast;
     let dog3 = dog(uv, pixelSize, s3, s3 * 1.6) * contrast;
     
-    // Mouse emphasis: near = fine detail, far = coarse
+    // Depth-based scale weighting
     let emphasis = mix(vec4<f32>(0.1, 0.3, 0.5, 0.9), vec4<f32>(0.8, 0.5, 0.3, 0.1), mouseFactor);
+    let depthEmphasis = mix(emphasis, emphasis.zyxw, depth * 0.5);
     
-    let rResponse = dog0 * emphasis.x;
-    let gResponse = dog1 * emphasis.y;
-    let bResponse = dog2 * emphasis.z;
-    let aResponse = dog3 * emphasis.w;
+    let rResponse = dog0 * depthEmphasis.x;
+    let gResponse = dog1 * depthEmphasis.y;
+    let bResponse = dog2 * depthEmphasis.z;
+    let aResponse = dog3 * depthEmphasis.w;
     
     // Map 4D response to psychedelic color
     let palR = palette(rResponse * 0.3 + 0.5 + colorShift, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
@@ -139,10 +159,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Boost edges
     color = color * (1.0 + length(vec3<f32>(rResponse, gResponse, bResponse)) * 0.5);
     
-    // Store: RGB = colored multi-scale edges, Alpha = ultra-coarse DoG (signed)
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, aResponse));
+    // Chromatic aberration on detected edges
+    let edgeStrength = clamp(length(vec3<f32>(dog0, dog1, dog2)) * 0.05, 0.0, 1.0);
+    let caOffset = pixelSize * edgeStrength * (1.0 + mids * 0.6);
+    let chrR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(caOffset.x, 0.0), 0.0).r;
+    let chrG = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
+    let chrB = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(caOffset.x, 0.0), 0.0).b;
+    let chromatic = vec3<f32>(chrR, chrG, chrB);
+    color = mix(color, chromatic, edgeStrength * 0.35);
+    
+    // ACES tone mapping
+    color = acesToneMap(color);
+    
+    // Temporal edge accumulation
+    let prevColor = textureLoad(dataTextureC, pixel, 0).rgb;
+    let decay = 0.9;
+    color = mix(color, prevColor * decay, 0.12 + bass * 0.18);
+    
+    // Semantic alpha: ultra-coarse DoG weighted by depth and audio
+    let alpha = clamp(abs(aResponse) * (0.4 + depth * 0.4) * (0.6 + treble * 0.4), 0.0, 1.0);
+    
+    textureStore(writeTexture, global_id.xy, vec4<f32>(color, alpha));
     
     // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

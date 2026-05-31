@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  RGB Diffraction
 //  Category: generative
-//  Features: audio-reactive, psychedelic, procedural
-//  Complexity: Medium
-//  Created: 2026-05-23
+//  Features: audio-reactive, psychedelic, procedural, temporal, chromatic, depth-aware
+//  Complexity: High
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 //  Simulates a diffraction grating: multiple virtual slits produce
 //  sinusoidal interference fringes whose spatial frequency, tilt
@@ -97,6 +97,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var g = 0.0;
   var b = 0.0;
 
+  // Chromatic offsets modulated by audio bands
+  let chromOffsetR = vec2<f32>(bass * 0.02, 0.0);
+  let chromOffsetG = vec2<f32>(0.0, mids * 0.02);
+  let chromOffsetB = vec2<f32>(-treble * 0.02, treble * 0.02);
+
   for (var si: i32 = 0; si < SLITS; si = si + 1) {
     let sf      = f32(si);
     let slitAngle = sf / f32(SLITS) * TAU + time * speed * 0.05;
@@ -104,9 +109,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let slitPos = (sf - f32(SLITS) * 0.5) * 0.18;
     let phase   = time * speed * (0.6 + sf * 0.23) + bass * TAU * 0.4;
 
-    r = r + slitIntensity(p, slitPos, axis, freq * lambdaR, phase, lambdaR);
-    g = g + slitIntensity(p, slitPos, axis, freq * lambdaG, phase + 0.3, lambdaG);
-    b = b + slitIntensity(p, slitPos, axis, freq * lambdaB, phase + 0.6, lambdaB);
+    r = r + slitIntensity(p + chromOffsetR, slitPos, axis, freq * lambdaR, phase, lambdaR);
+    g = g + slitIntensity(p + chromOffsetG, slitPos, axis, freq * lambdaG, phase + 0.3, lambdaG);
+    b = b + slitIntensity(p + chromOffsetB, slitPos, axis, freq * lambdaB, phase + 0.6, lambdaB);
   }
 
   // Normalize and boost
@@ -122,6 +127,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let vign  = 1.0 - smoothstep(0.6, 1.2, length(p * 0.5));
   color = color * vign;
   color = clamp(color, vec3<f32>(0.0), vec3<f32>(3.0));
+
+  // ═══ Temporal feedback ═══
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  color = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
 
   let depth = clamp((r + g + b) * norm * 0.4, 0.0, 1.0);
   let alpha = clamp(length(color) * 0.6, 0.0, 1.0);

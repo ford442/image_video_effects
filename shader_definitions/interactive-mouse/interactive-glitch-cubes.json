@@ -2,43 +2,56 @@
   "id": "interactive-glitch-cubes",
   "name": "Interactive Glitch Cubes",
   "url": "shaders/interactive-glitch-cubes.wgsl",
-  "description": "Image is mapped onto a grid of extruded cubes that react to mouse height.",
+  "description": "Image mapped onto a grid of extruded cubes with audio-reactive extrusion, chromatic edge glow, temporal cube memory for settling physics, and depth-aware alpha.",
   "params": [
     {
       "id": "size",
       "name": "Cube Size",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01
     },
     {
       "id": "extrusion",
       "name": "Extrusion Height",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01
     },
     {
       "id": "gap",
       "name": "Grid Gap",
       "default": 0.2,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01
     },
     {
       "id": "shadow",
       "name": "Shadow Strength",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01
     }
   ],
   "features": [
     "mouse-driven",
-    "pseudo-3d"
+    "pseudo-3d",
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "cubes",
+    "extrusion",
+    "audio-reactive",
+    "temporal",
+    "chromatic"
   ]
 }

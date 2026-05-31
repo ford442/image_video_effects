@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Superfluid Quantum-Foam
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, raymarched
+//  Features: mouse-driven, audio-reactive, raymarched, temporal, chromatic, depth-aware
 //  Complexity: High
-//  Created: 2026-05-30
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -89,6 +89,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = (vec2<f32>(coords) - 0.5 * vec2<f32>(dims)) / f32(dims.y);
   let t = u.config.x;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let env = 1.0 + bass * 2.0;
   
   let ro = vec3<f32>(0.0, 0.0, -8.0 + t * u.zoom_params.w);
@@ -112,7 +114,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let n = calcNormal(p);
     let v = -rd;
     let ndotv = clamp(dot(n, v), 0.0, 1.0);
-    let irid = 0.5 + 0.5 * cos(6.28318 * (vec3<f32>(1.0, 1.0, 1.0) * ndotv + vec3<f32>(0.0, 0.33, 0.67)));
+
+    // ═══ Chromatic dispersion: per-channel iridescence offsets ═══
+    let ndotvR = clamp(ndotv + bass * 0.05, 0.0, 1.0);
+    let ndotvG = clamp(ndotv + mids * 0.05, 0.0, 1.0);
+    let ndotvB = clamp(ndotv + treble * 0.05, 0.0, 1.0);
+
+    let irid = vec3<f32>(
+      0.5 + 0.5 * cos(6.28318 * (ndotvR + 0.0)),
+      0.5 + 0.5 * cos(6.28318 * (ndotvG + 0.33)),
+      0.5 + 0.5 * cos(6.28318 * (ndotvB + 0.67))
+    );
+
     let dif = clamp(dot(n, normalize(vec3<f32>(0.8, 0.7, -0.6))), 0.0, 1.0);
     col = mix(vec3<f32>(0.1, 0.1, 0.2), irid, 0.6) * dif;
     col = mix(col, vec3<f32>(0.02, 0.0, 0.05), 1.0 - exp(-0.02 * dist * dist));
@@ -126,7 +139,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
   col = max(col, lum * vec3<f32>(0.3, 0.2, 0.4));
+
+  // ═══ Temporal feedback ═══
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  col = mix(col, prev.rgb * 0.9, 0.03 + bass * 0.01);
   
   textureStore(writeTexture, coords, vec4<f32>(col * alpha, alpha));
   textureStore(writeDepthTexture, coords, vec4<f32>(min(dist / 30.0, 1.0), 0.0, 0.0, 1.0));
+  textureStore(dataTextureA, coords, vec4<f32>(col * alpha, alpha));
 }

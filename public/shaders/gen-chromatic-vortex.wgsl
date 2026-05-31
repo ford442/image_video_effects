@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Chromatic Vortex - Polar Distortion + Color-Space Warp
+//  Chromatic Vortex — Polar Distortion + Color-Space Warp + Temporal
 //  Category: distortion
-//  Description: Rotates image in polar coordinates with psychedelic
-//               color-space warping driven by audio.
-//  Features: mouse-driven, audio-reactive, distortion
+//  Features: mouse-driven, audio-reactive, temporal, chromatic, depth-aware
+//  Complexity: High
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,7 +31,6 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
-// RGB to YUV and back for color-space warping
 fn rgb2yuv(c: vec3<f32>) -> vec3<f32> {
     let y = dot(c, vec3<f32>(0.299, 0.587, 0.114));
     let u_ = dot(c, vec3<f32>(-0.14713, -0.28886, 0.436));
@@ -56,66 +55,79 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Vortex center (mouse-controlled)
     let center = u.zoom_config.yz;
 
-    // Parameters
     let swirlStrength = u.zoom_params.x * 8.0 + bass * 2.0;
     let radiusScale = u.zoom_params.y * 3.0 + 0.5;
     let polarDistort = u.zoom_params.z * 2.0;
     let colorWarp = u.zoom_params.w;
 
-    // Polar coordinates relative to center
     let delta = uv - center;
     let r = length(delta);
     let theta = atan2(delta.y, delta.x);
 
-    // Spiral distortion
-    let spiral = theta + swirlStrength * r * radiusScale + time * 0.3;
+    // Temporal spiral drift: previous frame angle blends in
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let prevAngle = prev.z;
+    let temporalDrift = mix(theta, prevAngle, 0.03 + bass * 0.01);
+
+    let spiral = temporalDrift + swirlStrength * r * radiusScale + time * 0.3;
     let warpedR = r + polarDistort * sin(spiral * 3.0 + time) * 0.1;
 
-    // Fold into polar sectors
     let sectors = 6.0 + floor(bass * 4.0);
     let foldedTheta = fract(spiral / 6.28318 * sectors) / sectors * 6.28318;
 
-    // Rebuild UV
-    let warpedUV = center + vec2<f32>(cos(foldedTheta), sin(foldedTheta)) * warpedR;
+    // Chromatic sector dispersion: R/B sample at different sector offsets
+    let rOffset = treble * 0.02 / sectors;
+    let bOffset = -bass * 0.02 / sectors;
+    let thetaR = fract((spiral + rOffset) / 6.28318 * sectors) / sectors * 6.28318;
+    let thetaB = fract((spiral + bOffset) / 6.28318 * sectors) / sectors * 6.28318;
 
-    // Sample with mirrored repetition for kaleidoscope effect
-    let sampleUV = abs(fract(warpedUV * 2.0) - 0.5) * 2.0;
-    let col = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let warpedUVR = center + vec2<f32>(cos(thetaR), sin(thetaR)) * warpedR;
+    let warpedUVB = center + vec2<f32>(cos(thetaB), sin(thetaB)) * warpedR;
+    let warpedUVG = center + vec2<f32>(cos(foldedTheta), sin(foldedTheta)) * warpedR;
+
+    let sampleUVR = abs(fract(warpedUVR * 2.0) - 0.5) * 2.0;
+    let sampleUVG = abs(fract(warpedUVG * 2.0) - 0.5) * 2.0;
+    let sampleUVB = abs(fract(warpedUVB * 2.0) - 0.5) * 2.0;
+
+    let colR = textureSampleLevel(readTexture, u_sampler, clamp(sampleUVR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let colG = textureSampleLevel(readTexture, u_sampler, clamp(sampleUVG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+    let colB = textureSampleLevel(readTexture, u_sampler, clamp(sampleUVB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    var col = vec3<f32>(colR, colG, colB);
 
     // Color-space warp
     var yuv = rgb2yuv(col);
-
-    // Audio-driven hue rotation via YUV phase shift
     let hueShift = time * 0.2 + bass * 1.5 + colorWarp * 3.14159;
     let cosH = cos(hueShift);
     let sinH = sin(hueShift);
-    let u_rot = yuv.y * cosH - yuv.z * sinH;
-    let v_rot = yuv.y * sinH + yuv.z * cosH;
-    yuv.y = u_rot;
-    yuv.z = v_rot;
+    yuv.y = yuv.y * cosH - yuv.z * sinH;
+    yuv.z = yuv.y * sinH + yuv.z * cosH;
 
-    // Treble boosts luminance, mids boost saturation
     yuv.x = yuv.x * (1.0 + treble * 0.5);
     yuv.y = yuv.y * (1.0 + mids * 0.3);
     yuv.z = yuv.z * (1.0 + mids * 0.3);
 
     var outCol = yuv2rgb(yuv);
 
-    // Vignette
     let vig = 1.0 - smoothstep(0.3, 1.0, r);
     outCol = outCol * (0.7 + 0.3 * vig);
 
-    // Spiral brightness streaks
     let streak = pow(sin(spiral * sectors + time * 2.0) * 0.5 + 0.5, 4.0);
     outCol = outCol + vec3<f32>(streak * bass * 0.3);
 
     outCol = clamp(outCol, vec3<f32>(0.0), vec3<f32>(2.0));
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeTexture, id.xy, vec4<f32>(outCol, 1.0));
+    // Temporal persistence blend
+    let prevCol = prev.rgb;
+    outCol = mix(outCol, prevCol * 0.92, 0.04 + mids * 0.02);
+
+    let effectStrength = clamp(streak * bass + r * 0.5, 0.0, 1.0);
+    let alpha = clamp(mix(0.5, 1.0, effectStrength) * (1.0 - depth * 0.2), 0.0, 1.0);
+
+    textureStore(writeTexture, id.xy, vec4<f32>(outCol, alpha));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, id.xy, vec4<f32>(outCol, alpha));
 }

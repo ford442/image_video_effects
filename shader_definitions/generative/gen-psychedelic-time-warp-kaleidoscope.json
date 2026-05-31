@@ -4,7 +4,15 @@
   "type": "compute",
   "coordinate": 872,
   "url": "shaders/gen-psychedelic-time-warp-kaleidoscope.wgsl",
-  "description": "Mirror the image around a dynamic axis with a time-varying mirror count. Reflection vectors are distorted by a 3D noise field for a shimmering kaleidoscope.",
+  "description": "Mirror the image around a dynamic axis with a time-varying mirror count. Reflection vectors are distorted by a 3D noise field for a shimmering kaleidoscope. Now with temporal feedback and chromatic dispersion.",
+  "features": [
+    "kaleidoscope",
+    "noise",
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
   "tags": [
     "psychedelic",
     "kaleidoscope",

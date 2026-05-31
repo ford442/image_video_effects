@@ -3,19 +3,23 @@
   "name": "Cyber Physical Portal",
   "category": "visual-effects",
   "url": "shaders/cyber-physical-portal.wgsl",
-  "description": "Opens a swirling digital portal in the source image, with scrolling ring grids and beat-driven core glow around the cursor.",
+  "description": "Upgraded cyber portal with event-horizon frame dragging, gravitational lensing, accretion disk bands, cyan-magenta holographic rim, chromatic aberration, and HDR bloom. Bass drives spin, mouse positions portal, depth controls lensing.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
-    "portal"
+    "portal",
+    "depth-aware"
   ],
   "tags": [
     "portal",
     "cyber",
     "swirl",
     "grid",
-    "audio-reactive"
+    "audio-reactive",
+    "lensing",
+    "hologram",
+    "chromatic"
   ],
   "params": [
     {

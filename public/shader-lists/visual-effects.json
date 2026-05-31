@@ -763,19 +763,23 @@
     "name": "Cyber Physical Portal",
     "category": "visual-effects",
     "url": "shaders/cyber-physical-portal.wgsl",
-    "description": "Opens a swirling digital portal in the source image, with scrolling ring grids and beat-driven core glow around the cursor.",
+    "description": "Upgraded cyber portal with event-horizon frame dragging, gravitational lensing, accretion disk bands, cyan-magenta holographic rim, chromatic aberration, and HDR bloom. Bass drives spin, mouse positions portal, depth controls lensing.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "portal"
+      "portal",
+      "depth-aware"
     ],
     "tags": [
       "portal",
       "cyber",
       "swirl",
       "grid",
-      "audio-reactive"
+      "audio-reactive",
+      "lensing",
+      "hologram",
+      "chromatic"
     ],
     "params": [
       {
@@ -2034,7 +2038,7 @@
     "name": "RGB Topology",
     "category": "visual-effects",
     "url": "shaders/rgb-topology.wgsl",
-    "description": "Draws RGB contour lines from image luminance and depth, then blends them back over the source with neon topology glow.",
+    "description": "Topographic contour extraction per RGB channel with 3D terrain visualization. Each channel is a heightfield with independent contour intervals, hypsometric tinting, HDR specular peaks, and chromatic blending at crossings.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2046,7 +2050,10 @@
       "contour",
       "rgb",
       "depth-aware",
-      "audio-reactive"
+      "audio-reactive",
+      "hypsometric",
+      "3d-terrain",
+      "hdr-specular"
     ],
     "params": [
       {
@@ -2357,18 +2364,22 @@
     "name": "Warp Drive",
     "category": "visual-effects",
     "url": "shaders/warp_drive.wgsl",
-    "description": "Launches the source image into a chromatic warp tunnel with beat-synced core glow and radial streaking.",
+    "description": "Alcubierre warp metric approximation with radial compression ahead and expansion behind. Star streaks with relativistic Doppler shift, HDR bloom on contracted stars, chromatic aberration on high-velocity regions, and ACES tone mapping.",
     "features": [
       "audio-reactive",
       "upgraded-rgba",
-      "radial-blur"
+      "radial-blur",
+      "mouse-driven"
     ],
     "tags": [
       "warp",
       "streak",
       "space",
       "chromatic",
-      "audio-reactive"
+      "audio-reactive",
+      "doppler",
+      "relativistic",
+      "alcubierre"
     ],
     "params": [
       {

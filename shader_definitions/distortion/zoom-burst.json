@@ -3,19 +3,24 @@
   "name": "Zoom Burst",
   "category": "distortion",
   "url": "shaders/zoom-burst.wgsl",
-  "description": "Radially smears the source image away from the cursor with controllable spin, chroma, and beat-reactive burst energy.",
+  "description": "Exponential zoom burst with radial motion blur, angular streak sampling, starburst light rays, chromatic radial dispersion, HDR bloom, film grain, and ACES tone mapping. Bass accelerates the burst; mouse positions the center; depth controls streak perspective.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
-    "radial-blur"
+    "radial-blur",
+    "starburst",
+    "film-grain"
   ],
   "tags": [
     "zoom",
     "burst",
     "radial",
     "chromatic",
-    "audio-reactive"
+    "audio-reactive",
+    "starburst",
+    "bloom",
+    "film-grain"
   ],
   "params": [
     {

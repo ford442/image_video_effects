@@ -3,7 +3,7 @@
   "name": "RGB Topology",
   "category": "visual-effects",
   "url": "shaders/rgb-topology.wgsl",
-  "description": "Draws RGB contour lines from image luminance and depth, then blends them back over the source with neon topology glow.",
+  "description": "Topographic contour extraction per RGB channel with 3D terrain visualization. Each channel is a heightfield with independent contour intervals, hypsometric tinting, HDR specular peaks, and chromatic blending at crossings.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -15,7 +15,10 @@
     "contour",
     "rgb",
     "depth-aware",
-    "audio-reactive"
+    "audio-reactive",
+    "hypsometric",
+    "3d-terrain",
+    "hdr-specular"
   ],
   "params": [
     {
