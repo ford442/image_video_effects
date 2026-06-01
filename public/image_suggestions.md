@@ -5491,6 +5491,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Pushes the model to generate soft, woven micro-textures (tweed) placed in an environment of extreme cosmic scale and harsh, single-point lighting.
 
+### Suggestion: Bioluminescent Silk Spiderweb
+- **Date:** 2026-12-20
+- **Prompt:** "An ultra-macro, mesmerizing photograph of an intricate spiderweb where every thread is woven from glowing, bioluminescent cyan silk. The web is perfectly suspended between two ancient, dark oak branches in a misty night forest. The lighting is exclusively from the glowing web, which casts soft, eerie cyan reflections on the wet bark and illuminates tiny, floating dust motes trapped in the surrounding fog. The mood is magical, quiet, and slightly haunting. Captured with a 100mm macro lens, razor-thin depth of field, with the dark forest blurring into smooth bokeh."
+- **Negative prompt:** "daylight, sun, bright background, artificial lights, blurry web, rough texture"
+- **Tags:** macro, nature, bioluminescent, magical, dark
+- **Style / Reference:** photorealistic macro photography, high contrast lighting
+- **Composition:** close-up, rule of thirds, shallow depth of field
+- **Color palette:** glowing neon cyan, deep forest black, dark brown bark
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261220_bioluminescent-spiderweb.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the generation of extremely fine, glowing filaments and soft macro bokeh effects in dark environments.
+
+### Suggestion: Steampunk Graphene Submarine
+- **Date:** 2026-12-20
+- **Prompt:** "An epic, underwater scene of a massive steampunk submarine exploring the deep ocean trench, constructed entirely from sleek, light-absorbing matte black graphene with ornate, polished brass portholes and glowing amber external lights. The submarine navigates past towering hydrothermal vents spewing thick black smoke. The lighting is dramatic and directional, emanating from the sub's intense amber searchlights that cut through the murky, particulate-filled water, while the graphene hull remains pitch black. The mood is oppressive, industrial, and adventurous. Captured with a wide-angle perspective to emphasize the crushing depth and scale of the vessel."
+- **Negative prompt:** "bright surface, sunlight, modern submarine, white plastic, cartoon, shallow water"
+- **Tags:** steampunk, underwater, sci-fi, dark, cinematic
+- **Style / Reference:** cinematic deep-sea exploration, photorealistic vehicle concept
+- **Composition:** wide shot, dynamic angle, leading lines from searchlights
+- **Color palette:** matte pitch black graphene, warm polished brass, glowing amber, murky deep sea green
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261220_graphene-submarine.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating the contrast between intensely bright underwater searchlights and highly light-absorbing matte materials.
+
+### Suggestion: De Stijl Neon Data Center
+- **Date:** 2026-12-20
+- **Prompt:** "A vast, futuristic server room designed strictly following the geometric abstraction of the De Stijl art movement. The towering server racks are composed of perfectly straight horizontal and vertical lines in stark black, interspersed with solid, glowing neon panels of pure primary red, blue, and yellow. The lighting is clean, bright, and completely uniform, emphasizing the flat, rigid geometry and primary colors without any natural shadows or gradients. The mood is analytical, orderly, and ultra-modern. Captured with an orthographic camera perspective to flatten the depth and accentuate the grid-like composition."
+- **Negative prompt:** "curves, organic shapes, gradients, messy, dark, moody, realistic servers"
+- **Tags:** abstract, interior, de stijl, sci-fi, geometric
+- **Style / Reference:** De Stijl art movement, Piet Mondrian inspired, minimalist 3D render
+- **Composition:** orthographic perspective, strict grid alignment, balanced primary colors
+- **Color palette:** pure primary red, pure primary blue, pure primary yellow, stark black, pristine white
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261220_de-stijl-datacenter.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the application of strict historical abstract art constraints (De Stijl) to a modern, technological interior using glowing materials.
+
+### Suggestion: Iridescent Obsidian Beetle
+- **Date:** 2026-12-20
+- **Prompt:** "An ultra-detailed macro photograph of a giant, otherworldly beetle resting on a bed of crushed, pale quartz. The beetle's carapace is formed from highly polished obsidian that exhibits a dazzling, iridescent oil-slick effect, shifting between deep purples, greens, and golds depending on the light angle. The lighting is a harsh, directional studio strobe that catches sharp specular highlights on the glossy black stone and triggers intense, rainbow interference patterns on the curved shell. The mood is scientific, alien, and luxurious. Captured with a 100mm macro lens, deep focus on the intricate joints of the insect."
+- **Negative prompt:** "soft lighting, blurry, ordinary insect, dull colors, natural dirt, outdoor"
+- **Tags:** macro, nature, insect, obsidian, iridescent
+- **Style / Reference:** photorealistic macro studio photography, high contrast
+- **Composition:** centered subject, extreme close-up, sharp focus
+- **Color palette:** glossy pitch black, iridescent purple/green/gold, pale white quartz
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261220_iridescent-obsidian-beetle.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the combination of highly reflective, dark, glossy materials (obsidian) with thin-film iridescence on complex organic curves.
+
+### Suggestion: Ethereal Bismuth Cathedral
+- **Date:** 2026-12-20
+- **Prompt:** "A breathtaking, wide-angle interior shot of a colossal fantasy cathedral constructed entirely from gigantic, naturally forming hopper crystals of iridescent bismuth. The massive, step-patterned pillars stretch up into a foggy, cavernous vault. The lighting is soft and ethereal, filtering down from an unseen opening high above, casting a celestial glow that illuminates the vibrant rainbow facets of the metallic walls in pinks, blues, and golds. The mood is majestic, sacred, and otherworldly. Captured from a low angle, emphasizing the immense, dizzying scale and the intricate geometric architecture."
+- **Negative prompt:** "wood, stone, traditional stained glass, dark, creepy, messy, low detail"
+- **Tags:** fantasy, architecture, interior, bismuth, majestic
+- **Style / Reference:** photorealistic fantasy environment design, epic scale
+- **Composition:** low angle looking up, deep symmetrical perspective
+- **Color palette:** highly iridescent rainbow (metallic pinks, blues, golds), soft white light
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261220_bismuth-cathedral.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for generating massive, step-patterned geometric structures and testing large-scale iridescent reflections in a foggy environment.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
