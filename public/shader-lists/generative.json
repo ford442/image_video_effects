@@ -5635,6 +5635,58 @@
     ]
   },
   {
+    "id": "gen-fractal-bioluminescence-spore-network",
+    "name": "Fractal Bioluminescence Spore-Network",
+    "tags": [
+      "fractal",
+      "organic",
+      "bioluminescence",
+      "audio-reactive",
+      "network",
+      "kifs"
+    ],
+    "description": "A hyper-organic, slowly expanding fractal network of glowing bioluminescent spores that mathematically bloom and connect via glowing filaments in response to audio frequencies.",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Spore Density",
+        "type": "slider",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "param2",
+        "name": "Network Complexity",
+        "type": "slider",
+        "default": 4,
+        "min": 1,
+        "max": 10,
+        "step": 1
+      },
+      {
+        "id": "param3",
+        "name": "Bioluminescence Intensity",
+        "type": "slider",
+        "default": 1.2,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Audio Reactivity",
+        "type": "slider",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      }
+    ],
+    "url": "shaders/gen-fractal-bioluminescence-spore-network.wgsl"
+  },
+  {
     "id": "gen-fractal-clockwork",
     "name": "Fractal Clockwork",
     "url": "shaders/gen-fractal-clockwork.wgsl",
