@@ -124,7 +124,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseDown = u.zoom_config.w;
     let mouseNorm = (mouse - resolution * 0.5) / min(resolution.x, resolution.y);
 
-    let audioIntensity = u.zoom_params.x;
+    var audioIntensity = u.zoom_params.x;
     let speed = u.zoom_params.y;
     let scale = u.zoom_params.z;
     let colorShift = u.zoom_params.w;
@@ -135,7 +135,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     let audioSpeed = speed * (0.8 + bass * 0.7);
-    let audioIntensity = audioIntensity * (0.85 + treble * 0.6);
+    audioIntensity = audioIntensity * (0.85 + treble * 0.6);
     let audioColor = colorShift + mids * 0.25;
 
     var col = vec3<f32>(0.0);

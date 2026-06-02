@@ -137,8 +137,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Chromatic aberration on filtered result
     let r = textureSampleLevel(readTexture, u_sampler, warpedUV + vec2<f32>(aberration, 0.0) * inSlice, 0.0).r;
     let g = filtered.g;
-    let b = textureSampleLevel(readTexture, u_sampler, warpedUV - vec2<f32>(aberration, 0.0) * inSlice, 0.0).b;
-    finalColor = vec3<f32>(r, g, b);
+    let bChan = textureSampleLevel(readTexture, u_sampler, warpedUV - vec2<f32>(aberration, 0.0) * inSlice, 0.0).b;
+    finalColor = vec3<f32>(r, g, bChan);
 
     // Mix between guided result and original based on depth influence
     let original = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0).rgb;

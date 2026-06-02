@@ -119,7 +119,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let sparkleSeed = hash21(floor(uv * resolution * 0.5) + floor(time * 8.0));
     let sparkle = step(0.985, sparkleSeed) * bandMask * treble * 1.5;
-    let finalRGB = clamp(composed + vec3<f32>(sparkle), vec3<f32>(0.0), vec3<f32>(4.0));
+    var finalRGB = clamp(composed + vec3<f32>(sparkle), vec3<f32>(0.0), vec3<f32>(4.0));
 
     // Depth-scaled ion intensity
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

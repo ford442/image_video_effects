@@ -140,7 +140,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     bloom *= bloomIntensity;
 
-    let hdrColor = finalColor + bloom;
+    var hdrColor = finalColor + bloom;
 
     // Mouse bloom boost
     let mouseDist = length(uv - mousePos);
