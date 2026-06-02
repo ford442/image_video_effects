@@ -70,21 +70,21 @@ fn rotate2D(p: vec2<f32>, angle: f32) -> vec2<f32> {
 
 // ═══ CHUNK: ecosystem state per cell (from alpha-multi-state-ecosystem.wgsl) ═══
 fn ecosystemState(cellId: vec2<f32>, time: f32, growthRate1: f32, growthRate2: f32) -> vec4<f32> {
-    // Procedural ecosystem: R=s1, G=s2, B=resource, A=toxin
+    // Procedural ecosystem: R=s1, G=s2, B=resourceLevel, A=toxin
     let n1 = hash(cellId + vec2<f32>(1.0, 2.0));
     let n2 = hash(cellId + vec2<f32>(3.0, 4.0));
     let n3 = hash(cellId + vec2<f32>(5.0, 6.0));
     
     var s1 = n1 * 0.6 + 0.1 * sin(time * growthRate1 * 2.0 + cellId.x);
     var s2 = n2 * 0.5 + 0.1 * cos(time * growthRate2 * 2.0 + cellId.y);
-    var resource = 0.4 + 0.3 * n3;
+    var resourceLevel = 0.4 + 0.3 * n3;
     var toxin = 0.05 * (s1 + s2);
     
     // Competition damping
     s1 = clamp(s1 * (1.0 - s2 * 0.3), 0.0, 1.0);
     s2 = clamp(s2 * (1.0 - s1 * 0.3), 0.0, 1.0);
     
-    return vec4<f32>(s1, s2, resource, toxin);
+    return vec4<f32>(s1, s2, resourceLevel, toxin);
 }
 
 fn calculateThickness(d: f32, normal: vec3<f32>, p: vec3<f32>) -> f32 {
@@ -213,6 +213,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = vec3<f32>(0.0);
     var alpha = 1.0;
+    var lifeForceOut = 0.0;
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
     let lightDir = normalize(vec3<f32>(0.5, 0.8, -0.5));
 
@@ -231,7 +232,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let cellId = floor(p.xz / density);
         let eco = ecosystemState(cellId, u.config.x, growthRate1, growthRate2);
 
-        // Mouse nurturing: add resource near mouse world position
+        // Mouse nurturing: add resourceLevel near mouse world position
         let mouseWorldX = (u.zoom_config.y - 0.5) * 40.0;
         let mouseWorldZ = (u.zoom_config.z - 0.5) * 40.0 + time * 10.0;
         let mouseWorld = vec2<f32>(mouseWorldX, mouseWorldZ);
@@ -248,12 +249,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         var s1 = eco.r + mouseNurture * 0.3;
         var s2 = eco.g + mouseNurture * 0.2;
-        var resource = eco.b + mouseNurture * 0.2;
+        var resourceLevel = eco.b + mouseNurture * 0.2;
 
         // Seasonal modulation
         s1 *= (1.0 - seasonHarsh * 0.3);
         s2 *= (1.0 - seasonHarsh * 0.25);
-        resource += seasonBloom * 0.4;
+        resourceLevel += seasonBloom * 0.4;
         s1 += seasonVolatile * 0.15;  // Treble causes more chaotic species mixing
 
         s1 = clamp(s1, 0.0, 1.0);
@@ -275,8 +276,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let glow = u.zoom_params.z;
             baseColor = baseColor * glow;
         } else if (mat == 1.0) {
-            // Terrain tinted by resource level
-            baseColor = mix(vec3<f32>(0.08, 0.15, 0.08), vec3<f32>(0.15, 0.35, 0.15), resource);
+            // Terrain tinted by resourceLevel level
+            baseColor = mix(vec3<f32>(0.08, 0.15, 0.08), vec3<f32>(0.15, 0.35, 0.15), resourceLevel);
             // Toxin purple tint
             baseColor = mix(baseColor, vec3<f32>(0.3, 0.0, 0.4), eco.a * 0.3);
         }
@@ -293,6 +294,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let fogAmount = 1.0 - exp(-t * 0.05);
         color = mix(color, fogColor, fogAmount);
         alpha = calculateOrganicAlpha(mat, thickness, n, lightDir);
+        lifeForceOut = (s1 + s2) * 0.4 + seasonBloom * 0.3;
         if (mat == 2.0 && u.zoom_params.z > 0.7) {
             alpha = mix(alpha, 0.75, 0.3);
         }
@@ -302,7 +304,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Grok upgrade: Better alpha for compositing + seasonal life force
-    let lifeForce = (s1 + s2) * 0.4 + seasonBloom * 0.3;
+    let lifeForce = lifeForceOut;
     let finalAlpha = clamp(alpha * (0.8 + lifeForce), 0.0, 1.1);
     let a = clamp(finalAlpha, 0.0, 1.0);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color * a, a));

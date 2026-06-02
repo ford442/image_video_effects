@@ -85,7 +85,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = sourceColor.g;
 
     let chromaSource = vec3<f32>(r, g, b);
-    let rgb = mix(chromaSource, scanColor, intensity * 0.5);
+    var rgb = mix(chromaSource, scanColor, intensity * 0.5);
     rgb = mix(rgb, smear, trail * 0.3);
     rgb = rgb + scanColor * intensity * 0.8 * depthColorize;
 

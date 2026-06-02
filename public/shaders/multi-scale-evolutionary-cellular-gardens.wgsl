@@ -53,7 +53,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let state = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     let s1 = state.r;
     let s2 = state.g;
-    let resource = state.b;
+    let resourceLevel = state.b;
 
     let mutationRate = 0.3 + mids * 0.9;
     let competition = 0.2 + bass * 0.6;
@@ -73,7 +73,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var newS1 = s1 + (avgRes * growth1 - competition * s1 * s2);
     var newS2 = s2 + (avgRes * growth2 - competition * s1 * s2 * 0.8);
-    var newRes = resource * 0.98 + 0.01 - (newS1 + newS2) * 0.008;
+    var newRes = resourceLevel * 0.98 + 0.01 - (newS1 + newS2) * 0.008;
 
     let mouseDist = length(uv - mouse);
     let mouseNurture = smoothstep(0.2, 0.0, mouseDist) * mouseDown * 0.6;

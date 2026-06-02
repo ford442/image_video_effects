@@ -82,7 +82,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Scanline dropouts
     let dropoutNoise = rand(vec2<f32>(uv.x * 200.0, time * 10.0));
     let dropout = step(0.96 - bar_intensity * 0.1, dropoutNoise);
-    color = mix(color, vec3<f32>(0.05), dropout * in_bar);
+    color = mix(color, vec3<f32>(0.05), dropout * f32(in_bar));
 
     // Tape hiss / grain
     let n = rand(uv + vec2<f32>(time, time));

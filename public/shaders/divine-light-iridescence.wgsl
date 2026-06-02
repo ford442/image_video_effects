@@ -129,7 +129,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let finalDivine = divineColor * rayAccum * rayIntensity;
 
     let finalColor = baseSample.rgb + finalDivine;
-    let alpha = luminanceKeyAlpha(finalDivine, rayAccum * rayIntensity, u.zoom_params);
+    let alpha = luminanceKeyAlpha(finalDivine, rayAccum * rayIntensity, u.zoom_params.x);
 
     textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, max(baseSample.a, alpha)));
 

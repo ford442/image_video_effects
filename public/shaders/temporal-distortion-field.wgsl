@@ -35,7 +35,8 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
-fn fbmWarp(p: vec2<f32>, time: f32) -> vec2<f32> {
+fn fbmWarp(p_in: vec2<f32>, time: f32) -> vec2<f32> {
+    var p = p_in;
     var v = vec2<f32>(0.0);
     var amp = 0.5;
     var freq = 1.0;

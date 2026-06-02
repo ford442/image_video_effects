@@ -246,7 +246,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, color * vec3<f32>(1.02, 0.98, 0.96), glaze);
 
     // Treble adds fine surface texture / broken color (classic oil technique)
-    let brokenColor = (hash12(coord + time * 3.0) - 0.5) * treble * 0.06 * paintWetness;
+    let brokenColor = (hash12(vec2<f32>(coord) + time * 3.0) - 0.5) * treble * 0.06 * paintWetness;
     color += brokenColor;
 
     // Specular highlight contributes to perceived solidity

@@ -97,7 +97,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     let prevEmber = prev.rgb * prev.a * 15000.0;
     let emberDecay = mix(0.85, 0.98, glowAmount);
-    let persistentEmber = blackbodyColor(prevEmber * emberDecay) * thermalIntensity * glowAmount;
+    let persistentEmber = blackbodyColor(dot(prevEmber, vec3<f32>(0.299, 0.587, 0.114)) * emberDecay) * thermalIntensity * glowAmount;
     thermalColor = max(thermalColor, persistentEmber);
 
     // Glow around bright regions with audio reactivity

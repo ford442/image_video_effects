@@ -33,6 +33,7 @@ struct Uniforms {
 };
 
 const PI: f32 = 3.14159265;
+const TAU: f32 = 6.28318530718;
 
 // ---- NOISE FUNCTIONS ----
 fn hash2(p: vec2<f32>) -> vec2<f32> {
@@ -172,7 +173,7 @@ fn neonFlower(uv: vec2<f32>, center: vec2<f32>, time: f32, petals: i32, scale: f
   let a = atan2(d.y, d.x);
   
   let petalShape = abs(sin(a * f32(petals) * 0.5)) * scale;
-  let flower = smoothstep(petalShape + 0.02, petalShape * 0.5, r) * step(0.0, r);
+  var flower = smoothstep(petalShape + 0.02, petalShape * 0.5, r) * step(0.0, r);
   flower = max(flower, smoothstep(0.04 * scale, 0.01, r));
   
   let flowerHue = time * 0.1 + center.x * 3.0;
@@ -216,7 +217,7 @@ fn bioWater(uv: vec2<f32>, time: f32, mouseNorm: vec2<f32>, mouseDown: f32, inte
   let nearSurface = smoothstep(0.04, 0.0, abs(uv.y - surfaceLine));
   
   // Bioluminescent sparkles
-  let sparkle = pow(noise2d(vec2<f32>(uv.x * 50.0 * scale, uv.y * 30.0 - time * 0.5)), 8.0);
+  var sparkle = pow(noise2d(vec2<f32>(uv.x * 50.0 * scale, uv.y * 30.0 - time * 0.5)), 8.0);
   sparkle += pow(noise2d(vec2<f32>(uv.x * 80.0 * scale + 100.0, uv.y * 50.0 + time * 0.3)), 10.0) * 0.5;
   
   // Mouse ripple

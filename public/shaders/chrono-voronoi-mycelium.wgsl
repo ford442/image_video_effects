@@ -78,7 +78,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Read previous temporal layers
     let prevLayer1 = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let prevLayer2 = textureSampleLevel(dataTextureA, u_sampler, uv, 0.0);
+    let prevLayer2 = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     
     // Multi-scale Voronoi growth
     let scale1 = 8.0 + seasonVolatile * 6.0;

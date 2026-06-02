@@ -96,6 +96,8 @@ fn lightningBolt(
 }
 
 // Recursive branching bolt
+// Iterative (loop-based) single-chain expansion — WGSL forbids recursion.
+// Original chained intensity as bolt_k * 0.6^k; color accumulated unweighted.
 fn branchingBolt(
     uv: vec2<f32>,
     start: vec2<f32>,
@@ -106,41 +108,51 @@ fn branchingBolt(
     depth: i32,
     color: ptr<function, vec3<f32>>
 ) -> f32 {
-    let end = start + vec2<f32>(cos(angle), sin(angle)) * len;
-    let bolt = lightningBolt(uv, start, end, seed, time);
-    
-    // Bolt color intensity
-    let flicker = hash1(seed * 7.0 + time * 20.0);
-    let branchCol = vec3<f32>(
-        0.3 + flicker * 0.7,
-        0.7 + flicker * 0.3,
-        1.0
-    );
-    
-    if (flicker > 0.3) {
-        *color += branchCol * bolt * (0.5 + 0.5 * flicker);
-    }
-    
-    var intensity = bolt;
-    
-    // Branch
-    if (depth > 0) {
-        let branchSeed = seed + 100.0;
-        let branchFlicker = hash1(branchSeed + time * 15.0);
-        
-        if (branchFlicker > 0.5) {
-            let midPoint = (start + end) * 0.5;
-            let branchAngle = angle + (hash1(branchSeed) - 0.5) * 1.2;
-            let branchLen = len * (0.4 + hash1(branchSeed * 3.0) * 0.3);
-            
-            intensity += branchingBolt(
-                uv, midPoint, branchAngle, branchLen,
-                branchSeed, time, depth - 1, color
-            ) * 0.6;
+    var curStart = start;
+    var curAngle = angle;
+    var curLen = len;
+    var curSeed = seed;
+    var curDepth = depth;
+    var weight = 1.0;
+    var totalIntensity = 0.0;
+
+    loop {
+        let end = curStart + vec2<f32>(cos(curAngle), sin(curAngle)) * curLen;
+        let bolt = lightningBolt(uv, curStart, end, curSeed, time);
+
+        // Bolt color intensity
+        let flicker = hash1(curSeed * 7.0 + time * 20.0);
+        let branchCol = vec3<f32>(
+            0.3 + flicker * 0.7,
+            0.7 + flicker * 0.3,
+            1.0
+        );
+
+        if (flicker > 0.3) {
+            *color += branchCol * bolt * (0.5 + 0.5 * flicker);
         }
+
+        totalIntensity += bolt * weight;
+
+        // Branch (single chain)
+        if (curDepth <= 0) { break; }
+        let branchSeed = curSeed + 100.0;
+        let branchFlicker = hash1(branchSeed + time * 15.0);
+        if (branchFlicker <= 0.5) { break; }
+
+        let midPoint = (curStart + end) * 0.5;
+        let branchAngle = curAngle + (hash1(branchSeed) - 0.5) * 1.2;
+        let branchLen = curLen * (0.4 + hash1(branchSeed * 3.0) * 0.3);
+
+        curStart = midPoint;
+        curAngle = branchAngle;
+        curLen = branchLen;
+        curSeed = branchSeed;
+        curDepth = curDepth - 1;
+        weight = weight * 0.6;
     }
-    
-    return intensity;
+
+    return totalIntensity;
 }
 
 // Kaleidoscope sector folding

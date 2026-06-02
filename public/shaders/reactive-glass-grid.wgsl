@@ -80,7 +80,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gColor = textureSampleLevel(readTexture, u_sampler, gUV, 0.0);
     let edge = 1.0 - smoothstep(edgeSmooth, 0.5, length(localUV));
     let gridGlow = vec3<f32>(0.1 + caustic, 0.25 + treble * 0.08 + caustic * 0.5, 0.35 + caustic * 0.3) * edge * influence * glowIntensity * 1.5;
-    let finalColor = vec3<f32>(
+    var finalColor = vec3<f32>(
         textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
         gColor.g,
         textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b

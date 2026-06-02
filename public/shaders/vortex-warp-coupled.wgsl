@@ -148,7 +148,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       squareDiff.x * c - squareDiff.y * s,
       squareDiff.x * s + squareDiff.y * c
     );
-    let rotatedDiff = vec2<f32>(rotatedSquareDiff.x / aspect, rotatedDiff.y);
+    let rotatedDiff = vec2<f32>(rotatedSquareDiff.x / aspect, rotatedSquareDiff.y);
     finalUV = mousePos + rotatedDiff;
   }
 

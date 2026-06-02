@@ -179,7 +179,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let mouseUV = vec2<f32>((mousePos.x / res.x - 0.5) * aspect, mousePos.y / res.y - 0.5);
     let mouseDist = length(scaledUV - mouseUV);
-    let mouseAttraction = mouseDown > 0.5 ? exp(-mouseDist * 6.0) * 2.0 : 0.0;
+    let mouseAttraction = select(0.0, exp(-mouseDist * 6.0) * 2.0, mouseDown > 0.5);
 
     var field = metaballField(scaledUV * (0.8 + scale), t);
     field += mouseAttraction * 3.0;

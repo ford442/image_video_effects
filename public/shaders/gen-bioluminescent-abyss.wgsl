@@ -299,11 +299,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var alpha = 1.0;
     let fogColor = vec3<f32>(0.0, 0.02, 0.05);
     let lightDir = normalize(vec3<f32>(0.2, 1.0, 0.2));
-    let bass = plasmaBuffer[0].x;
 
     if (t < 100.0) {
         var p = ro + rd * t;
         let n = calcNormal(p);
+
+        // Grok upgrade: mouse as submarine spotlight (hoisted for whole hit block)
+        let mouseSpot = smoothstep(0.4, 0.05, length(p.xz - vec2<f32>(mouse.x*10.0 - 5.0, mouse.y*8.0 - 4.0))) * u.zoom_config.w;
 
         let diff = max(dot(n, lightDir), 0.0);
 
@@ -329,7 +331,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             isGlowing = true;
             
             // Grok upgrade: Audio seasons + mouse as submarine spotlight
-            let mouseSpot = smoothstep(0.4, 0.05, length(p.xz - vec2<f32>(mouse.x*10.0 - 5.0, mouse.y*8.0 - 4.0))) * u.zoom_config.w;
             let seasonGlow = seasonBloom * 0.6 + seasonVolatile * 0.9;
             glowIntensity = u.zoom_params.z * (0.7 + seasonGlow + mouseSpot * 1.8 + bass * 0.25);
             

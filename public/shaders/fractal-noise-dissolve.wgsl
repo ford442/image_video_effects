@@ -104,7 +104,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Edge glow from audio
     let edgeGlow = vec3<f32>(0.5 + bass * 0.3, 0.3, 0.8) * edge * bass * 0.5;
-    let finalColor = baseColor.rgb * mask + burn + edgeGlow;
+    var finalColor = baseColor.rgb * mask + burn + edgeGlow;
     finalColor = finalColor * depthFade;
     let alpha = clamp(baseColor.a * mask + edge * 0.42 + bass * 0.05, 0.04, 1.0);
     let depthOut = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + edge * 0.06, 0.0, 1.0);

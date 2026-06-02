@@ -67,13 +67,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let px = vec2<f32>(1.0) / resolution;
 
   // Read previous fluid state
-  let prevVel = textureSampleLevel(dataTextureC, u_sampler, uv).xy;
-  let prevDens = textureSampleLevel(dataTextureC, u_sampler, uv).a;
+  let prevVel = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).xy;
+  let prevDens = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).a;
 
   // Advect
   let backUV = uv - prevVel * px * 2.0;
-  let advectedVel = textureSampleLevel(dataTextureC, u_sampler, backUV).xy;
-  let advectedDens = textureSampleLevel(dataTextureC, u_sampler, backUV).a;
+  let advectedVel = textureSampleLevel(dataTextureC, u_sampler, backUV, 0.0).xy;
+  let advectedDens = textureSampleLevel(dataTextureC, u_sampler, backUV, 0.0).a;
 
   var vel = advectedVel * viscosity;
   var dens = advectedDens * viscosity;
@@ -81,7 +81,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Mouse force
   let toMouse = (uv - mousePos) * vec2<f32>(aspect, 1.0);
   let mDist = length(toMouse);
-  let mouseRadius = mix(0.03, 0.15, 0.5);
+  let mouseRadius = mix(0.03f, 0.15f, 0.5f);
   let influence = smoothstep(mouseRadius, 0.0, mDist);
   vel = vel + mouseVel * influence * 0.5;
 

@@ -28,6 +28,10 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn hash(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -106,7 +110,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     let prevHeight = prev.b;
     let settledHeight = mix(height, prevHeight * 0.92, 0.05 + mids * 0.02);
-    let settledColor = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
+    var settledColor = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
 
     // Audio sparkle on cube faces
     if (isFace) {
@@ -118,6 +122,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depthAlpha = mix(alpha, 1.0, depth * 0.3);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(settledColor, depthAlpha));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(settledColor, settledHeight, depthAlpha, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(settledColor, settledHeight));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

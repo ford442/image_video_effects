@@ -82,12 +82,9 @@ fn main(
     let resX = u32(u.config.z);
     let resY = u32(u.config.w);
 
-    // Guard: discard out-of-bounds threads
-    if (gid.x >= resX || gid.y >= resY) {
-        shared_tile[lid.z][lid.y][lid.x] = vec4<f32>(0.0);
-        workgroupBarrier();
-        return;
-    }
+    // Out-of-bounds threads still participate in the workgroup barrier below
+    // (barriers must be in uniform control flow); they only skip the final store.
+    let inBounds = gid.x < resX && gid.y < resY;
 
     let time        = u.config.x;
     let uv          = (vec2<f32>(gid.xy) + 0.5) / vec2<f32>(f32(resX), f32(resY));
@@ -174,7 +171,7 @@ fn main(
     workgroupBarrier();
 
     // ── Z=0 blends all four results and writes the final pixel ───────────────
-    if (lid.z == 0u) {
+    if (lid.z == 0u && inBounds) {
         let edge_out     = shared_tile[0][lid.y][lid.x];
         let bloom_out    = shared_tile[1][lid.y][lid.x];
         let hue_out      = shared_tile[2][lid.y][lid.x];

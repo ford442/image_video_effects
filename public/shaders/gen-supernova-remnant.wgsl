@@ -130,14 +130,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let chaos = mix(0.1, 0.8, u.zoom_params.z) * (1.0 + mids * 0.6);  // Mids increase turbulence
     let gasOpacity = u.zoom_params.w;
 
+    // Aspect correction
+    let aspect = resolution.x / resolution.y;
+    let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+
     // Mouse as external gravitational mass (pulls/pushes the expanding shells)
     let mousePos = (u.zoom_config.yz - 0.5) * 2.0;
     let mouseInfluence = u.zoom_config.w;
     let gravPull = (p - vec2<f32>(mousePos.x, mousePos.y)) * mouseInfluence * 0.25;
-    
-    // Aspect correction
-    let aspect = resolution.x / resolution.y;
-    let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
     
     // Apply turbulence displacement + gravitational mouse perturbation
     let turb = turbulence(p + 0.5, t, chaos);

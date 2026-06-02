@@ -177,7 +177,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Feedback blend
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
     let feedbackStrength = 0.85;
-    let finalColor = mix(foldedColor, prev, feedbackStrength);
+    var finalColor = mix(foldedColor, prev, feedbackStrength);
 
     // Psychedelic hue shift post-processing
     if (hueShiftAmt > 0.0) {

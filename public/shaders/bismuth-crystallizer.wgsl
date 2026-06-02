@@ -21,20 +21,6 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-let bass = plasmaBuffer[0].x;
-let mids = plasmaBuffer[0].y;
-let treble = plasmaBuffer[0].z;
-
-// Grok: Audio drives crystal "growth temperature" and iridescence
-let crystalTemp = 1.0 + mids * 0.5 + treble * 0.4;
-
-// Grok visual flourish: Audio drives growth speed and iridescence intensity
-// Bass = slower, heavier crystal formation with deep color
-// Treble = rapid, delicate facet growth with strong rainbow play
-
-// Apply temperature to final color for richer metallic iridescence
-col = col * mix(vec3<f32>(0.9, 0.95, 1.1), vec3<f32>(1.15, 0.95, 0.75), crystalTemp * 0.6);
-
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -161,6 +147,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let transmitted = crystal_look * (vec3<f32>(1.0) - fresnel) * oxidePurity;
     
     var final_color = mix(img_color, reflected + transmitted, mix_amt);
+
+    // Grok: Audio drives crystal "growth temperature" and iridescence
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let crystalTemp = 1.0 + mids * 0.5 + treble * 0.4;
+    final_color = final_color * mix(vec3<f32>(0.9, 0.95, 1.1), vec3<f32>(1.15, 0.95, 0.75), crystalTemp * 0.6);
 
     // ═══════════════════════════════════════════════════════════════
     // Transmission Alpha

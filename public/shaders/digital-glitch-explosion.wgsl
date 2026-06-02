@@ -145,7 +145,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Bitwise corruption per channel
   if (effectiveIntensity > 0.01) {
     let pixelSeed = hash33(vec3<f32>(uv * 1000.0, time));
-    let channels = array<f32, 3>(r, g, b);
+    var channels = array<f32, 3>(r, g, b);
     for (var ch: i32 = 0; ch < 3; ch = ch + 1) {
       var byteVal = floatToByte(channels[ch]);
       let channelSeed = hash21(uv + vec2<f32>(f32(ch) * 100.0, time));

@@ -67,7 +67,7 @@ fn smoothNoise(p: vec2<f32>) -> f32 {
 // Returns growth impulse for a species given its neighbourhood average
 // and the current "genetic" ruleset encoded in rulePhase
 fn growthKernel(selfDensity: f32, neighborAvg: f32, rulePhase: f32,
-                resource: f32, fertility: f32) -> f32 {
+                resourceLevel: f32, fertility: f32) -> f32 {
     // Evolving activation threshold (shifts with rulePhase)
     let activateThreshold = 0.15 + rulePhase * 0.3;
     let inhibitThreshold = 0.7 - rulePhase * 0.15;
@@ -76,8 +76,8 @@ fn growthKernel(selfDensity: f32, neighborAvg: f32, rulePhase: f32,
     let activation = smoothstep(activateThreshold - 0.05, activateThreshold + 0.05, neighborAvg);
     let inhibition = smoothstep(inhibitThreshold, inhibitThreshold + 0.15, neighborAvg);
 
-    let growthImpulse = activation * (1.0 - inhibition) * resource * fertility;
-    let decayRate = 0.02 + (1.0 - resource) * 0.03;
+    let growthImpulse = activation * (1.0 - inhibition) * resourceLevel * fertility;
+    let decayRate = 0.02 + (1.0 - resourceLevel) * 0.03;
 
     return growthImpulse - selfDensity * decayRate;
 }
@@ -97,7 +97,7 @@ fn sampleNeighbourhood(uv: vec2<f32>, ps: vec2<f32>, scale: f32) -> vec4<f32> {
 }
 
 // ─── Species coloring ─────────────────────────────────────────────
-fn speciesColor(s1: f32, s2: f32, s3: f32, resource: f32,
+fn speciesColor(s1: f32, s2: f32, s3: f32, resourceLevel: f32,
                 rulePhase: f32, t: f32) -> vec3<f32> {
     // Species 1: green-teal coral growth
     let c1 = vec3<f32>(0.1, 0.7, 0.5) * s1;
@@ -106,7 +106,7 @@ fn speciesColor(s1: f32, s2: f32, s3: f32, resource: f32,
     // Species 3: golden-amber crystalline lichen
     let c3 = vec3<f32>(0.8, 0.6, 0.1) * s3;
     // Resource substrate glow
-    let rCol = vec3<f32>(0.15, 0.25, 0.15) * resource * 0.5;
+    let rCol = vec3<f32>(0.15, 0.25, 0.15) * resourceLevel * 0.5;
 
     // Iridescent shift based on rule evolution
     let shift = sin(rulePhase * TAU + t * 0.3) * 0.15;
@@ -147,7 +147,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let s1 = state.r;       // Species 1 density
     let s2 = state.g;       // Species 2 density
     let s3 = state.b;       // Species 3 density
-    let resource = state.a; // Local resource level
+    let resourceLevel = state.a; // Local resourceLevel level
 
     // Evolving rule phase — slowly drifts with time and audio mutation pressure
     // This makes the CA rules themselves change over the life of the system
@@ -168,9 +168,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let avgRes = nearNeighbours.a * nearWeight + farNeighbours.a * farWeight;
 
     // Apply evolving growth kernels per species
-    let grow1 = growthKernel(s1, avgS1, rulePhase, resource, fertility);
-    let grow2 = growthKernel(s2, avgS2, rulePhase2, resource, fertility * 0.9);
-    let grow3 = growthKernel(s3, avgS3, rulePhase3, resource, fertility * 0.85) * diversity;
+    let grow1 = growthKernel(s1, avgS1, rulePhase, resourceLevel, fertility);
+    let grow2 = growthKernel(s2, avgS2, rulePhase2, resourceLevel, fertility * 0.9);
+    let grow3 = growthKernel(s3, avgS3, rulePhase3, resourceLevel, fertility * 0.85) * diversity;
 
     // Inter-species competition
     let comp12 = s1 * s2 * competition;
@@ -190,7 +190,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Resource dynamics: slowly regenerates, consumed by all species
     let totalConsumption = (newS1 + newS2 + newS3) * 0.012;
     let regeneration = 0.015 * fertility + avgRes * 0.01;
-    var newRes = resource + regeneration - totalConsumption;
+    var newRes = resourceLevel + regeneration - totalConsumption;
 
     // Mouse interaction: seeds invasive burst or creates protected zone
     if (mouseInfluence > 0.01) {

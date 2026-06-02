@@ -78,8 +78,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warpP = gridP + vec2<f32>(wind, 0.0);
 
     // Shockwave from mouse click
-    let clickRipple = 0.0;
-    let clickPhase = 0.0;
+    var clickRipple = 0.0;
+    var clickPhase = 0.0;
     if (mouseDown > 0.5) {
       let clickDist = length(p - vanish);
       clickPhase = clickDist * 20.0 - time * 15.0;
@@ -106,7 +106,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     iridescent = mix(iridescent, vec3<f32>(1.0, 0.0, 1.0), film.b * 0.5);
 
     let totalGlow = glowIntensity * (0.4 + 0.6 * mouseInfluence + bass * 0.3);
-    let latticeColor = mix(baseColor.rgb, iridescent, gridMask * totalGlow);
+    var latticeColor = mix(baseColor.rgb, iridescent, gridMask * totalGlow);
 
     // Invert interference colors inside shockwave ring
     if (mouseDown > 0.5 && abs(fract(clickPhase / 6.28318530718) - 0.5) < 0.1) {

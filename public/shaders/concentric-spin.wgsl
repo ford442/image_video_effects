@@ -71,9 +71,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gapFade = u.zoom_params.w;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let parallax = (depth - 0.5) * 0.05;
-  let target = u.zoom_config.yz * vec2<f32>(aspect, 1.0);
+  let targetPos = u.zoom_config.yz * vec2<f32>(aspect, 1.0);
   let prevLag = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rg;
-  let lag = mix(select(target, prevLag, t > 0.1), target, 0.08);
+  let lag = mix(select(targetPos, prevLag, t > 0.1), targetPos, 0.08);
   let center = lag + vec2<f32>(parallax, parallax);
   let p = uv * vec2<f32>(aspect, 1.0) - center;
   let r = length(p);
@@ -93,7 +93,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if(edge > smoothW + 0.05 && gapFade > 0.7) {
     let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(base.rgb, base.a));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(lag, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(lag, 0.0, 0.0));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
     return;
   }
@@ -129,6 +129,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = col + vec3<f32>(sheen);
   let alpha = clamp(gapMask * (1.0 - gapFade * 0.5) + bloom * 0.3 + pulse * 0.5, 0.0, 1.0);
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, alpha));
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(lag, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(lag, 0.0, 0.0));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

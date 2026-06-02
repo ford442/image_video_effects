@@ -155,6 +155,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let rms = plasmaBuffer[0].w;
+  let audio = vec3<f32>(bass, mids, treble);
 
   // Parameters
   let bandSpeed = mix(0.1, 0.8, u.zoom_params.x);

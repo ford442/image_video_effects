@@ -62,7 +62,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let viewDir = select(vec2<f32>(0.0), diff / max(lenD, 0.0001), lenD > 0.0001);
 
     let numRings = max(1.0, ringCount * bass_env(bass, mids));
-    let totalShift = vec2<f32>(0.0);
+    var totalShift = vec2<f32>(0.0);
 
     for (var i = 0.0; i < 5.0; i = i + 1.0) {
         let ringIdx = i;

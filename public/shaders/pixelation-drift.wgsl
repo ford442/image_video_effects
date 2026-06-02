@@ -76,7 +76,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pixelatedUV = floor(driftedUV * resolution / pixelSize) * pixelSize / resolution;
 
     // Chromatic pixel separation: RGB sample at different pixel offsets
-    let chromaShift = pixelSize / resolution * treble * 0.5;
+    let chromaShift = pixelSize / resolution.x * treble * 0.5;
     let rUV = pixelatedUV + vec2<f32>(chromaShift, 0.0);
     let gUV = pixelatedUV;
     let bUV = pixelatedUV - vec2<f32>(chromaShift, 0.0);

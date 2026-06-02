@@ -81,7 +81,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // === DIFFUSION (viscosity now seasonal) ===
     // bass = thicker fluid (honey), treble = thinner (water)
-    let visc = mix(0.0008, 0.0022, u.zoom_params.x) * (0.6 + bass * 0.7 - treble * 0.4);
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+    let visc = mix(0.0008f, 0.0022f, u.zoom_params.x) * (0.6 + bass * 0.7 - treble * 0.4);
     let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
     let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
     let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
