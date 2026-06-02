@@ -122,7 +122,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let composite = bg * (1.0 - pulse * 0.7) + streamColor;
 
-    let sparkle = 0.0;
+    var sparkle = 0.0;
     var sparkleCol = vec3<f32>(0.0);
     if (treble > 0.4 && bgLuma > 0.5) {
       let sparkNoise = hash21(uv * 500.0 + time * 30.0);

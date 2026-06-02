@@ -8,9 +8,6 @@
 
 @group(0) @binding(0) var u_sampler: sampler;
 
-let bass = plasmaBuffer[0].x;
-let mids = plasmaBuffer[0].y;
-let treble = plasmaBuffer[0].z;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
@@ -51,6 +48,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let pixelSize = 1.0 / resolution;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     // ═══ AUDIO REACTIVITY ═══
     let audioOverall = u.zoom_config.x;
     let audioBass = audioOverall * 1.5;

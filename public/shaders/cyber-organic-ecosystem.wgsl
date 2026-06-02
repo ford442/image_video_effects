@@ -84,11 +84,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prevState = textureLoad(dataTextureC, coord, 0);
   var s1 = prevState.r;
   var s2 = prevState.g;
-  var resource = prevState.b;
+  var resourceLevel = prevState.b;
   var toxin = prevState.a;
 
   if (time < 0.1) {
-    s1 = 0.0; s2 = 0.0; resource = 0.5; toxin = 0.0;
+    s1 = 0.0; s2 = 0.0; resourceLevel = 0.5; toxin = 0.0;
     let n1 = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
     if (n1 > 0.92) { s1 = 0.8; }
     let n2 = fract(sin(dot(uv + vec2<f32>(5.0), vec2<f32>(93.0, 17.0))) * 271.0);
@@ -97,7 +97,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   s1 = clamp(s1, 0.0, 2.0);
   s2 = clamp(s2, 0.0, 2.0);
-  resource = clamp(resource, 0.0, 2.0);
+  resourceLevel = clamp(resourceLevel, 0.0, 2.0);
   toxin = clamp(toxin, 0.0, 2.0);
 
   let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
@@ -107,21 +107,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let lapS1 = left.r + right.r + down.r + up.r - 4.0 * s1;
   let lapS2 = left.g + right.g + down.g + up.g - 4.0 * s2;
-  let lapResource = left.b + right.b + down.b + up.b - 4.0 * resource;
+  let lapResource = left.b + right.b + down.b + up.b - 4.0 * resourceLevel;
   let lapToxin = left.a + right.a + down.a + up.a - 4.0 * toxin;
 
-  let growthRate1 = mix(0.02, 0.08, 0.5);
-  let growthRate2 = mix(0.015, 0.06, 0.4);
+  let growthRate1 = mix(0.02f, 0.08f, 0.5f);
+  let growthRate2 = mix(0.015f, 0.06f, 0.4f);
   let dt = 0.5;
 
-  let food1 = s1 * resource * growthRate1;
-  let food2 = s2 * resource * growthRate2;
+  let food1 = s1 * resourceLevel * growthRate1;
+  let food2 = s2 * resourceLevel * growthRate2;
   let competition = s1 * s2 * 0.1;
   let toxinProduction1 = s1 * 0.005;
   let toxinProduction2 = s2 * 0.003;
   let toxinDamage = toxin * 0.02;
 
-  resource += 0.001 - food1 - food2 + lapResource * 0.1;
+  resourceLevel += 0.001 - food1 - food2 + lapResource * 0.1;
   s1 += food1 - competition - toxinDamage + lapS1 * 0.05;
   s2 += food2 - competition - toxinDamage + lapS2 * 0.05;
   toxin += toxinProduction1 + toxinProduction2 - toxin * 0.01 + lapToxin * 0.08;
@@ -131,14 +131,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   s1 = clamp(s1, 0.0, 2.0);
   s2 = clamp(s2, 0.0, 2.0);
-  resource = clamp(resource, 0.0, 2.0);
+  resourceLevel = clamp(resourceLevel, 0.0, 2.0);
   toxin = clamp(toxin, 0.0, 2.0);
 
   // Mouse nurtures
   let mouseDist = length(uv - mouse);
   let mouseDown = u.zoom_config.w;
   let mouseInfluence = smoothstep(0.1, 0.0, mouseDist) * mouseDown;
-  resource += mouseInfluence * 0.5;
+  resourceLevel += mouseInfluence * 0.5;
   toxin -= mouseInfluence * 0.3;
   toxin = max(toxin, 0.0);
 
@@ -158,12 +158,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   s1 = clamp(s1, 0.0, 2.0);
   s2 = clamp(s2, 0.0, 2.0);
 
-  textureStore(dataTextureA, coord, vec4<f32>(s1, s2, resource, toxin));
+  textureStore(dataTextureA, coord, vec4<f32>(s1, s2, resourceLevel, toxin));
 
   // === VISUALIZATION ===
   let colorS1 = vec3<f32>(0.0, 0.8, 1.0) * min(s1, 1.0);
   let colorS2 = vec3<f32>(1.0, 0.2, 0.6) * min(s2, 1.0);
-  let colorResource = vec3<f32>(0.2, 0.7, 0.2) * min(resource, 1.0) * 0.3;
+  let colorResource = vec3<f32>(0.2, 0.7, 0.2) * min(resourceLevel, 1.0) * 0.3;
   let colorToxin = vec3<f32>(0.3, 0.0, 0.4) * min(toxin, 1.0) * 0.5;
   var ecosystemColor = colorS1 + colorS2 + colorResource + colorToxin;
   ecosystemColor = clamp(ecosystemColor, vec3<f32>(0.0), vec3<f32>(1.0));

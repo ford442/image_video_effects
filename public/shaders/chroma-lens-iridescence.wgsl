@@ -120,6 +120,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         var thickness = filmThicknessBase * (0.7 + depth * 0.6 + noiseVal * turbulence);
         let iridescent = thinFilmColor(thickness, cosTheta, filmIOR) * intensity;
         let fresnel = pow(1.0 - cosTheta, 3.0);
+        let ndist = dist / radius;
         let lensColor = mix(color.rgb, iridescent, fresnel * 0.7 * (1.0 - ndist));
         color = vec4<f32>(lensColor, 1.0);
     }

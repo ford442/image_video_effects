@@ -80,7 +80,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let closest = origin + normalize(dir) * proj;
         let d = length(cellUV - closest);
         let branchWidth = 0.02 * (1.0 - proj / max(currentLen, 0.001));
-        let branch = smoothstep(branchWidth, 0.0, d);
+        var branch = smoothstep(branchWidth, 0.0, d);
 
         // Sub-branches
         if (proj > currentLen * 0.5) {

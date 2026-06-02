@@ -22,10 +22,6 @@
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-let bass = plasmaBuffer[0].x;
-let mids = plasmaBuffer[0].y;
-let treble = plasmaBuffer[0].z;
-
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -139,6 +135,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let uv = vec2<f32>(global_id.xy) / resolution;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   let camY = mix(0.5, 3.0, u.zoom_params.x);
   let fogDensity = mix(0.1, 2.0, u.zoom_params.y);

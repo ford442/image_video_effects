@@ -177,6 +177,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = audio.z;
 
     // Bass pulses internal light transport (like light moving through the crystal)
+    let time = u.config.x;
     let causticPulse = 1.0 + bass * 0.6 + sin(time * 6.0 + facetID) * treble * 0.3;
     
     // Mids add subtle color temperature shift inside the facets
