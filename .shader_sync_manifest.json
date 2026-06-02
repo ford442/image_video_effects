@@ -4258,5 +4258,61 @@
   "data-moshing-diffusion": {
     "hash": "7824b2ee7ed3147e9674747094fc5d5b",
     "synced_at": 1780214619.468439
+  },
+  "gen-hyper-rainbow-vortex": {
+    "hash": "4e7bf0d06a21f81ffb6857303828e965",
+    "synced_at": 1780301280.9316297
+  },
+  "crystalline-fracture": {
+    "hash": "a4de92a54108b8ce848a831047ff3613",
+    "synced_at": 1780301281.3370075
+  },
+  "plasma-jet-stream": {
+    "hash": "0613c116356cb751c4034e43b2f1b26a",
+    "synced_at": 1780301281.7390714
+  },
+  "gen-lichen-reaction-diffusion": {
+    "hash": "e1f7663d40e717ac02a7aab84b9fd138",
+    "synced_at": 1780301282.1513815
+  },
+  "gen-navier-stokes-ink": {
+    "hash": "ba35cc87b32b5a352021bc34c7560b96",
+    "synced_at": 1780301282.5524604
+  },
+  "holographic-crystal": {
+    "hash": "d84bf24a12acecbaac0a5449db225909",
+    "synced_at": 1780301282.9565678
+  },
+  "gen-cosmic-slime-mold": {
+    "hash": "95062d5a2b88803d9088a89c413c1290",
+    "synced_at": 1780301283.3615923
+  },
+  "gen-sierpinski-tetrahedron": {
+    "hash": "a739f7c4e8cf0d4d2ce800934e7cbe48",
+    "synced_at": 1780301283.763695
+  },
+  "gen-crystal-lattice-growth": {
+    "hash": "3109fd4dc106632756728fca6f4e151c",
+    "synced_at": 1780301284.177891
+  },
+  "anamorphic-caustic-flare": {
+    "hash": "4ab2f835e39f3aa2e405e0b0bcb8b9ab",
+    "synced_at": 1780301285.0388265
+  },
+  "holographic-flicker": {
+    "hash": "53e71ba2011138c9ba964fae5833fc39",
+    "synced_at": 1780301285.4513066
+  },
+  "neon-edge-glow": {
+    "hash": "77e317e6eac9fee84b3e2688c41ee826",
+    "synced_at": 1780301285.8551617
+  },
+  "quantum-ghost": {
+    "hash": "2cecedc496394458227585d79cb9afa4",
+    "synced_at": 1780301286.2712986
+  },
+  "liquid-tensor-vortex": {
+    "hash": "63ddc2c14ffea1545c06010632dade2c",
+    "synced_at": 1780301286.676921
   }
 }
