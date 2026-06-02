@@ -31,7 +31,7 @@ struct Uniforms {
 fn hash2(p: vec2<f32>) -> vec2<f32> {
   var pp = fract(p * vec2(0.1031, 0.1030));
   pp += dot(pp, pp.yx + 33.33);
-  return fract((pp.xxy + pp.yyxx) * pp.yx);
+  return fract((pp.xy + pp.yx) * pp.yx);
 }
 
 fn vnoise(p: vec2<f32>) -> f32 {

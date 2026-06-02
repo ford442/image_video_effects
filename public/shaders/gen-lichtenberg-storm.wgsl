@@ -118,7 +118,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col += vec3<f32>(0.224, 1.0, 0.078) * hot * (1.0 + bass);
   col += vec3<f32>(1.0) * energy * energy * 2.0 * glow;
   col += vec3<f32>(0.0, 1.0, 1.0) * smoothstep(0.15, 0.0, energy) * 0.3 * glow;
-  col += vec3<f32>(1.0) * h12(gid.xy + fract(t * 20.0)) * treble * hot * 4.0;
+  col += vec3<f32>(1.0) * h12(vec2<f32>(gid.xy) + fract(t * 20.0)) * treble * hot * 4.0;
   let tipBloom = hot * (1.0 + bass * 0.5 + treble * 0.8);
   col += vec3<f32>(0.8, 0.9, 1.0) * tipBloom * glow;
   let decayCol = mix(vec3<f32>(0.2, 0.0, 0.4), vec3<f32>(0.0, 0.6, 0.3), prev);

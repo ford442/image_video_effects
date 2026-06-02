@@ -35,7 +35,7 @@ fn hash13(p3: vec3<f32>) -> f32 {
 fn hash33(p3: vec3<f32>) -> vec3<f32> {
   var p = fract(p3 * vec3(0.1031, 0.1030, 0.0973));
   p += dot(p, p.yxz + 33.33);
-  return fract((p.xxy + p.yyxx) * p.zyx);
+  return fract((p.xxy + p.yxx) * p.zyx);
 }
 
 fn curlNoise(p: vec3<f32>) -> vec3<f32> {

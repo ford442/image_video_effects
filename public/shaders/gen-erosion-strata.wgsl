@@ -118,7 +118,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = mix(col, vec3<f32>(0.15, 0.12, 0.08), erAmt * 0.5);
   col += vec3<f32>(0.6, 0.55, 0.4) * vein;
   col += vec3<f32>(0.2, 0.35, 0.5) * sss;
-  col += vec3<f32>(1.0, 0.95, 0.8) * h12(gid.xy + fract(t * 10.0)) * treble * vein * 3.0;
+  col += vec3<f32>(1.0, 0.95, 0.8) * h12(vec2<f32>(gid.xy) + fract(t * 10.0)) * treble * vein * 3.0;
   col *= mix(1.0, 0.6, wet);
   col += vec3<f32>(0.05, 0.08, 0.12) * wet;
   let striation = sin(lf * freq * 18.84956 + li * 2.0) * 0.5 + 0.5;

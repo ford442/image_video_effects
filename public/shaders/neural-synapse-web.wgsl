@@ -88,7 +88,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let proj = dot(p - nodePos, dir);
       let orth = abs(dot(p - nodePos, perp));
       let onLine = proj > 0.0 && proj < len;
-      let lineGlow = exp(-orth * orth * 200.0) * onLine;
+      let lineGlow = exp(-orth * orth * 200.0) * f32(onLine);
       let sigTravel = fract((proj / len) - time * pulseSpeed * 0.3);
       let signal = smoothstep(0.85, 1.0, sigTravel) + smoothstep(0.0, 0.15, sigTravel);
       synapseField = synapseField + lineGlow;
