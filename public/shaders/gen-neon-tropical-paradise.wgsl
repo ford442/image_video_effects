@@ -33,6 +33,7 @@ struct Uniforms {
 };
 
 const PI: f32 = 3.14159265;
+const TAU: f32 = 6.28318530718;
 
 // ---- NOISE FUNCTIONS ----
 fn hash2(p: vec2<f32>) -> vec2<f32> {
@@ -172,7 +173,7 @@ fn neonFlower(uv: vec2<f32>, center: vec2<f32>, time: f32, petals: i32, scale: f
   let a = atan2(d.y, d.x);
   
   let petalShape = abs(sin(a * f32(petals) * 0.5)) * scale;
-  let flower = smoothstep(petalShape + 0.02, petalShape * 0.5, r) * step(0.0, r);
+  var flower = smoothstep(petalShape + 0.02, petalShape * 0.5, r) * step(0.0, r);
   flower = max(flower, smoothstep(0.04 * scale, 0.01, r));
   
   let flowerHue = time * 0.1 + center.x * 3.0;

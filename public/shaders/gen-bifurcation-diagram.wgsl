@@ -185,11 +185,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col = col * audioBoost;
         
         // Treble adds fine spectral detail / shimmer
-        let shimmer = sin(density * 40.0 + time * 5.0) * treble * 0.15;
+        let shimmer = sin(density * 40.0 + t * 5.0) * treble * 0.15;
         col += vec3<f32>(0.1, 0.15, 0.2) * max(shimmer, 0.0);
     } else {
         // Background with subtle audio-reactive nebula
-        let nebula = sin(uv.y * 8.0 + time * 0.3) * 0.02;
+        let nebula = sin(uv.y * 8.0 + t * 0.3) * 0.02;
         col = vec3<f32>(0.015 + nebula * bass, 0.018, 0.025 + nebula * treble * 0.5);
     }
     

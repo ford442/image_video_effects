@@ -94,6 +94,9 @@ fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
 var<private> g_time: f32;
 var<private> g_mouse: vec2<f32>;
 var<private> g_audio: f32;
+var<private> g_bloomDensity: f32;
+var<private> g_pollinator: f32;
+var<private> g_windVec: vec2<f32>;
 
 // Map function with KIFS and organic distortion
 fn map(p: vec3<f32>) -> vec2<f32> {
@@ -133,13 +136,15 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Audio-Reactive + Seasonal Blooming (deep flourish)
     // bass + season drive heavy petal flare; pollinator wind adds directional bias
-    let bloom = (g_audio * 0.5 + (bloomDensity - 1.0) * 0.3) * (1.0 + pollinator * 0.4);
+    let bloom = (g_audio * 0.5 + (g_bloomDensity - 1.0) * 0.3) * (1.0 + g_pollinator * 0.4);
     let scale = 1.0 + bloom;
     pos /= scale;
 
     // Pollinator wind gust applies subtle directional warp to petals (visceral mouse "touch")
-    pos.xy += windVec * 0.8 * (1.0 + sin(g_time * 2.3) * 0.2);
-    pos.z += windVec.y * 0.4;
+    let windGust = 0.8 * (1.0 + sin(g_time * 2.3) * 0.2);
+    pos.x += g_windVec.x * windGust;
+    pos.y += g_windVec.y * windGust;
+    pos.z += g_windVec.y * 0.4;
 
     // Refractive Petal KIFS
     // Procedurally generates endless overlapping crystalline petals
@@ -261,6 +266,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Seasonal climate: 0=harsh winter (sparse), 0.5=bloom spring, 1.0=volatile summer storm
     let season = fract(g_time * 0.03 + bass * 0.4);
     let bloomDensity = mix(0.6, 1.4, smoothstep(0.2, 0.8, season) + bass * 0.6);
+    g_bloomDensity = bloomDensity;
     let colorWarmth = mids * 0.6 + (1.0 - season) * 0.3;
     let shimmer = treble * (0.8 + 0.4 * sin(g_time * 14.0));
 
@@ -274,7 +280,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mouseDir = normalize(g_mouse - vec2<f32>(0.0));
     let mouseDist = length(g_mouse);
     let pollinator = smoothstep(0.8, 0.1, mouseDist) * (0.5 + bass * 0.5); // strong when mouse near center + bass
+    g_pollinator = pollinator;
     let windVec = mouseDir * pollinator * (0.8 + treble * 0.6); // directional gust toward/away from mouse
+    g_windVec = windVec;
 
     // Setup camera
     var ro = vec3<f32>(0.0, 0.0, -8.0 + g_time * 0.2);
@@ -347,11 +355,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let dispersion = vec3<f32>(spec_r, spec_g, spec_b);
 
             // Visual flourish: Richer prismatic dispersion + seasonal audio-reactive iridescence + shimmer
-            let dynamicIri = iridescence * (1.0 + colorWarmth * 0.5) * (1.0 + sin(time * 3.0 + dist_to_core) * shimmer * 0.6);
+            let dist_to_core = length(p);
+            let dynamicIri = iridescence * (1.0 + colorWarmth * 0.5) * (1.0 + sin(g_time * 3.0 + dist_to_core) * shimmer * 0.6);
             col = dynamicIri * fresnel + dispersion * (1.3 + bass * 0.9 + pollinator * 0.4);
 
             // Blend in some core illumination based on distance
-            let dist_to_core = length(p);
             let core_illum = vec3<f32>(1.0, 0.6, 0.2) * (1.0 / (1.0 + dist_to_core * dist_to_core)) * coreIntensity;
             col += core_illum * (0.5 + bass * 0.4 + shimmer * 0.3);
         }

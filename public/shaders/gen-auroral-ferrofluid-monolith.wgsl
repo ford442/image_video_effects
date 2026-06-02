@@ -159,6 +159,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (fragCoord.x >= res.x || fragCoord.y >= res.y) { return; }
 
     let uv = (fragCoord - 0.5 * res) / res.y;
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
 
     // Camera
     let ro = vec3<f32>(0.0, 0.0, 8.0);

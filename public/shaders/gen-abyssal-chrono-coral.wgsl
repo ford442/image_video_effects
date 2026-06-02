@@ -162,6 +162,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // === SEDIMENT DISTURBANCE (mouse click bloom events) ===
     let clickCount = u.config.y;
     let lastClickTime = u.zoom_config.x; // reuse zoom_config.x as recent click time proxy
+    let time = u.config.x;
     let sedimentDisturbance = smoothstep(0.0, 1.8, time - lastClickTime) * 0.6;
 
     var t = 0.0;
