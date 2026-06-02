@@ -90,8 +90,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // === LIVING MEMBRANE PRESSURE (new high-signal behavior) ===
   // Read previous membrane pressure from dataTextureB
-  let prevPressure = textureSampleLevel(dataTextureB, u_sampler, uv, 0.0).r;
-  let prevBass = textureSampleLevel(dataTextureB, u_sampler, vec2<f32>(0.0), 0.0).g; // stored bass history at origin
+  let prevPressure = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).r;
+  let prevBass = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(0.0), 0.0).g; // stored bass history at origin
 
   // Bass-driven surface tension (high bass = high tension = slow healing)
   let bass = plasmaBuffer[0].x;
@@ -121,7 +121,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // Mouse force (now modulated by membrane pressure)
-  let mouseRadius = mix(0.03, 0.18, 0.5);
+  let mouseRadius = mix(0.03f, 0.18f, 0.5f);
   let influence = smoothstep(mouseRadius, 0.0, dist);
   let membraneResistance = 1.0 - (pressure * 0.18); // high pressure = more resistant surface
   vel = vel + mouseVel * influence * 0.5 * membraneResistance;
@@ -162,7 +162,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // === LIVING MEMBRANE DISPLACEMENT (high-signal creative upgrade) ===
   // Read the membrane pressure we just wrote (or previous frame)
-  let membranePressure = textureSampleLevel(dataTextureB, u_sampler, uv, 0.0).r;
+  let membranePressure = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).r;
 
   let rate = 0.5;
   let waveTime = time * rate;

@@ -161,7 +161,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
     let edgeColor = holographicColor(fresnel * 2.0, time * 0.2 + colorShift);
 
-    let mouseEffect = mouseDown > 0.5 ? 1.0 : 0.0;
+    let mouseEffect = select(0.0, 1.0, mouseDown > 0.5);
     let mouseUV = vec2<f32>(mousePos.x / res.x * aspect - (aspect - 1.0) * 0.5, mousePos.y / res.y);
     let mouseDist = length(centeredUV - mouseUV);
     let mouseWave = sin(mouseDist * 25.0 - time * 6.0) * exp(-mouseDist * 8.0) * mouseEffect;
