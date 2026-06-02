@@ -175,8 +175,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Lighting
         let diff = max(dot(n, l), 0.0);
         let viewDir = normalize(ro - p);
-        let ref = reflect(-l, n);
-        let spec = pow(max(dot(viewDir, ref), 0.0), 32.0);
+        let refl = reflect(-l, n);
+        let spec = pow(max(dot(viewDir, refl), 0.0), 32.0);
 
         // Chromatic dispersion color
         let matCol = vec3<f32>(

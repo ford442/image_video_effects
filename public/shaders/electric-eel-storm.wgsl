@@ -140,7 +140,7 @@ fn lightningBolt(uv: vec2<f32>, start: vec2<f32>, time: f32, seed: f32, treble: 
 
   for (var i: i32 = 0; i < segments; i = i + 1) {
     let fi = f32(i);
-    let nextPos = pos + downward * (0.06 + hash21(vec2<f32>(fi, seed)) * 0.04);
+    var nextPos = pos + downward * (0.06 + hash21(vec2<f32>(fi, seed)) * 0.04);
     nextPos.x += sin(fi * 3.0 + seed * 5.0 + time * 10.0) * 0.03 * (1.0 + treble);
 
     let arc = lightningArc(uv, pos, nextPos, time, seed + fi);
