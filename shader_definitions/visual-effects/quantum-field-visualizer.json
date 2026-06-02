@@ -2,7 +2,8 @@
   "id": "quantum-field-visualizer",
   "name": "Quantum Field Visualizer",
   "url": "shaders/quantum-field-visualizer.wgsl",
-  "description": "Visualizes quantum fluctuations as colorful noise. The act of observation (mouse proximity) collapses the wave function, clearing the image.",
+  "category": "visual-effects",
+  "description": "Complex wavefunction visualization with real/imaginary parts mapped to hue, probability density to brightness, and phase to saturation. Features two-slit interference, Gaussian packet spreading, and mouse-driven quantum measurement collapse.",
   "params": [
     {
       "id": "observation_strength",
@@ -36,11 +37,15 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
     "vfx",
-    "particles",
-    "glow"
+    "quantum",
+    "interference",
+    "glow",
+    "hdr",
+    "abstract"
   ]
 }

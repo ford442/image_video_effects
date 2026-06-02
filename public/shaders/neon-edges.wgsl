@@ -198,7 +198,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let temperature = mix(1400.0, 11200.0, clamp(edgeStrength * 0.85 + brightBand * 0.5 + bass * 0.12, 0.0, 1.0));
   let spectral = blackbodyRGB(temperature);
-  let glow = spectral * edgeSignal * neonGain * (0.28 + 0.72 * depthReveal + 0.55 * bass);
+
+  // ═══ UNIQUE VISUAL IDEA: electric current flowing along the neon tube ═══
+  // A real neon sign has charge carriers racing along the glass tube. The finest
+  // edge scale gives us the local edge direction (scale1.grad); the tube *tangent*
+  // is perpendicular to it. We project screen position onto that tangent to get an
+  // arc-length coordinate, then run a traveling brightness wave down it — current.
+  let tubeTangent = vec2<f32>(-scale1.grad.y, scale1.grad.x);
+  let arcLen = dot(uv * vec2<f32>(aspect, 1.0), tubeTangent);
+  let flowSpeed = 9.0 + treble * 14.0;            // hi-hats accelerate the current
+  let currentWave = sin(arcLen * 130.0 - u.config.x * flowSpeed);
+  // Sharpen into discrete racing pulses rather than a smooth sine.
+  let currentPulse = pow(max(currentWave, 0.0), 3.0);
+  // Only modulate where there is an actual edge; keep a bright baseline so the tube
+  // never goes fully dark between pulses (neon gas keeps a residual glow).
+  let currentMod = mix(1.0, 0.45 + currentPulse * 1.7, edgeStrength);
+  let glow = spectral * edgeSignal * neonGain * (0.28 + 0.72 * depthReveal + 0.55 * bass) * currentMod;
   let fineDetail = spectral * scale1.magnitude * treble * 0.45;
   let halo = smoothstep(0.02, 0.45, combinedEdge) * smoothstep(0.0, 0.35, darkBand) * 0.75;
   let fogLift = spectral * depthReveal * 0.06 * (1.0 - depth);

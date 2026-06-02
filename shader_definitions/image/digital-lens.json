@@ -2,7 +2,7 @@
   "id": "digital-lens",
   "name": "Digital Lens",
   "url": "shaders/digital-lens.wgsl",
-  "description": "Barrel/pincushion lens distortion with spectral chromatic dispersion, vignette darkening, and audio-reactive distortion pulse.",
+  "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, lens breathing driven by bass, ACES tone mapping, and film grain.",
   "params": [
     {
       "id": "distortion",
@@ -36,9 +36,11 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba",
     "barrel-distortion",
-    "chromatic-dispersion"
+    "chromatic-dispersion",
+    "anamorphic"
   ],
   "tags": [
     "filter",
@@ -46,6 +48,7 @@
     "lens",
     "digital",
     "chromatic",
-    "audio-reactive"
+    "audio-reactive",
+    "anamorphic"
   ]
 }

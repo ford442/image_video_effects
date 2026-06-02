@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Breathing Kaleidoscope v2
+//  Category: visual-effects
+//  Features: audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Chunks From: breathing-kaleidoscope
+//  Upgraded: 2026-05-30
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,93 +19,119 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=time, y=cycleSpeed, z=segments, w=rotationSpeed
-  zoom_config: vec4<f32>,  // x=unused, y=centerX, z=centerY, w=unused
-  zoom_params: vec4<f32>,  // x=blendSmoothness, y=maxRotationPercent, z=unused, w=unused
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Notes:
-// - Maps `center` to `u.zoom_config.yz`
-// - `params.y` (maxRotationPercent) maps to `u.zoom_params.y`
-// - `params.x` (blendSmoothness) maps to `u.zoom_params.x`
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
-fn ping_pong(t: f32) -> f32 {
-    return 1.0 - abs(fract(t * 0.5) * 2.0 - 1.0);
+fn hash2(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+
+fn noise2(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash2(i), hash2(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+    );
+}
+
+fn fbm2(p: vec2<f32>) -> f32 {
+    var v = 0.0;
+    var a = 0.5;
+    var pp = p;
+    for (var i = 0; i < 4; i = i + 1) {
+        v = v + a * noise2(pp);
+        pp = pp * 2.03 + vec2<f32>(1.7, 9.2);
+        a = a * 0.5;
+    }
+    return v;
+}
+
+fn filmGrain(uv: vec2<f32>, t: f32) -> f32 {
+    return hash2(uv * 500.0 + t) * 0.04 - 0.02;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = vec2<f32>(u.config.z, u.config.w);
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let mouse = u.zoom_config.yz;
+    let aspect = resolution.x / resolution.y;
     let time = u.config.x;
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
-    let cycleSpeed = u.zoom_params.x;      // From JSON param[0]
-    let segments = max(1.0, u.zoom_params.y); // From JSON param[1]
-    let rotationSpeed = u.zoom_params.z;   // From JSON param[2]
-    let maxRotationPercent = clamp(u.zoom_params.w, 0.0, 1.0); // From JSON param[3]
-    let blendSmoothness = 2.0; // Fixed value
+    let cycleSpeed = max(u.zoom_params.x, 0.01);
+    let baseSegments = mix(3.0, 14.0, u.zoom_params.y);
+    let rotationSpeed = u.zoom_params.z;
+    let maxRotation = u.zoom_params.w;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
-    // Mouse-driven center and ripple distortion
-    var mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
-    var center = mousePos; // Make center follow mouse
+    let phase = time * cycleSpeed * 6.28318 + bass * 3.0;
+    let breathAmp = (sin(phase) * 0.5 + 0.5) * (1.0 + bass * 0.5);
+    let breathe = 0.65 + breathAmp * 0.35;
 
-    // Add ripple distortion
-    let rippleCount = u32(u.config.y);
-    var mouseDisplacement = vec2<f32>(0.0);
-    for (var i: u32 = 0u; i < rippleCount; i++) {
-        let ripple = u.ripples[i];
-        let timeSinceClick = time - ripple.z;
-        if (timeSinceClick > 0.0 && timeSinceClick < 2.0) {
-            let direction = uv - ripple.xy;
-            let dist = length(direction);
-            if (dist > 0.001) {
-                let wave = sin(dist * 30.0 - timeSinceClick * 5.0);
-                let falloff = exp(-timeSinceClick * 2.0) / (dist * 10.0 + 1.0);
-                mouseDisplacement += (direction / dist) * wave * falloff * 0.05;
-            }
-        }
-    }
+    let warp = (fbm2(uv * 3.5 + time * 0.15) * 2.0 - 1.0) * 0.4 * breathAmp;
+    let segments = max(2.5, baseSegments + warp);
 
-    // Strength cycles 0->1->0 (!wrap)
-    let strength = ping_pong(time * cycleSpeed * audioReactivity);
+    let center = vec2<f32>(0.5, 0.5) + (mouse - 0.5) * 0.14;
+    let p = (uv - center) * vec2<f32>(aspect, 1.0);
+    let dist = length(p);
+    let angle = atan2(p.y, p.x);
 
-    // Segment angle and limited rotation
-    let segmentAngle = 6.28318530718 / segments;
-    let maxRotation = segmentAngle * maxRotationPercent;
-    let rotation = ping_pong(time * rotationSpeed * audioReactivity) * maxRotation;
+    let rotation = time * rotationSpeed * (1.0 + treble * 0.4) + (breathe - 0.825) * maxRotation * 6.28318;
+    let sector = abs(fract((angle + rotation) / 6.28318 * segments) - 0.5) * 2.0;
+    let edgeDist = min(sector, 1.0 - sector);
 
-    // Convert to polar coords from center
-    let delta = (uv + mouseDisplacement) - center;
-    let angle = atan2(delta.y, delta.x);
-    let radius = length(delta);
+    let petalWarp = breathe * (1.0 + mids * 0.15);
+    let kaleidoAngle = sector * 3.14159265;
+    let dir = vec2<f32>(cos(kaleidoAngle), sin(kaleidoAngle));
+    let warped = center + vec2<f32>(dir.x / aspect, dir.y) * dist * petalWarp;
+    let sampleUV = clamp(warped, vec2<f32>(0.001), vec2<f32>(0.999));
 
-    // Normalize angle to segment space
-    let normalizedAngle = angle / segmentAngle;
-    // Mirror within segment
-    let mirroredAngle = abs(fract(normalizedAngle) * 2.0 - 1.0);
-    // Apply limited rotation
-    let kaleidoAngle = (mirroredAngle * segmentAngle) + rotation;
-    // Convert back to Cartesian
-    let kaleidoUV = center + vec2<f32>(cos(kaleidoAngle), sin(kaleidoAngle)) * radius;
+    let baseColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r, 0.0, 1.0);
+    let depthFade = mix(1.0, 0.5, depth * dist * 1.5);
 
-    // Smooth blending (use smoothstep with blendSmoothness)
-    let blend = smoothstep(0.0, 1.0, strength);
-    // Optionally apply a softness factor using blendSmoothness
-    let softBlend = smoothstep(0.0, 1.0, pow(blend, 1.0 / blendSmoothness));
-    let finalUV = mix(uv, kaleidoUV, softBlend);
+    let hue = fract(sector * 0.618 + time * 0.03 + bass * 0.1);
+    let jewel = vec3<f32>(
+        0.5 + 0.5 * cos(6.28318 * hue + 0.0),
+        0.5 + 0.5 * cos(6.28318 * hue + 2.094),
+        0.5 + 0.5 * cos(6.28318 * hue + 4.188)
+    ) * (0.25 + breathAmp * 0.2);
 
-    // Sample color and depth
-    let color = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let axisGlow = exp(-dist * (3.0 + mids * 2.0)) * (0.15 + breathAmp * 0.2);
+    let glowColor = vec3<f32>(0.4 + treble * 0.2, 0.6 + bass * 0.15, 0.9) * axisGlow;
 
-    textureStore(writeTexture, vec2<u32>(global_id.xy), color);
-    // Write depth as-is so downstream shaders can be depth-aware
-    textureStore(writeDepthTexture, vec2<u32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let sparkle = smoothstep(0.06, 0.0, edgeDist) * treble * 0.35;
+    let sparkColor = vec3<f32>(1.0, 0.92, 0.7) * sparkle;
+
+    var finalColor = acesToneMap(baseColor * (0.65 + breathAmp * 0.25) * depthFade + jewel + glowColor + sparkColor);
+    finalColor = finalColor + filmGrain(uv, time) * (1.0 - depth * 0.5);
+
+    let lum = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(lum * 0.4 + breathAmp * 0.25 + depth * 0.2 + sparkle * 0.15, 0.1, 0.92);
+    let outDepth = clamp(depth + axisGlow * 0.05 + sparkle * 0.03, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(breathAmp, sector, edgeDist, alpha));
 }

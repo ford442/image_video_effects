@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════
-//  Crystal Facets - Physical Light Transmission with Alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Crystal Facets
 //  Category: distortion
-//  Features: mouse-driven, refraction, fresnel, dispersion
-//  IOR: Quartz (1.54) - Diamond (2.42) configurable
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, refraction, fresnel, dispersion, internal-reflection, audio-caustics, depth-prisms, volumetric-gems
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer internal light, caustics, and prismatic depth)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -168,8 +170,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let internalScatter = mix(vec3<f32>(1.0), vec3<f32>(0.9, 0.95, 1.0), fractureDensity);
     color = color * internalScatter;
 
+    // === Visual Flourish: Audio-reactive caustics and facet sparkle ===
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
+
+    // Bass pulses internal light transport (like light moving through the crystal)
+    let time = u.config.x;
+    let causticPulse = 1.0 + bass * 0.6 + sin(time * 6.0 + facetID) * treble * 0.3;
+    
+    // Mids add subtle color temperature shift inside the facets
+    let internalTint = vec3<f32>(1.0 + mids * 0.15, 1.0 - mids * 0.08, 1.0 - mids * 0.12);
+    
+    // Treble adds high-frequency facet sparkle / micro-reflections
+    let sparkle = pow(hash11(facetID + time * 12.0), 8.0) * treble * 0.8;
+    
+    color = color * internalTint * causticPulse;
+    color += vec3<f32>(0.8, 0.9, 1.0) * sparkle * edgeFactor;
+
     // Advanced Alpha: Physical Transmittance
-    let alpha = calculateAdvancedAlpha(color, transmission, pathLength, fresnel, purity, falloff);
+    let alpha = calculateAdvancedAlpha(color, transmission, pathLength, fresnel, purity, edgeFactor);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
 

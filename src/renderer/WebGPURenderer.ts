@@ -33,7 +33,7 @@ import { resolveMultipassChain } from './multipassRegistry';
 import { createUniformBufferView, UniformBufferView, Ripple, UNIFORM_FLOATS, MAX_RIPPLES } from './UniformBuffer';
 import { reportError, getBrowserWarning } from './ErrorHandling';
 import { compileShader } from './ShaderCompilation';
-import { BLIT_WGSL, VIDEO_COPY_WGSL } from './ShaderTemplates';
+import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, VIDEO_COPY_WGSL } from './ShaderTemplates';
 import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 
@@ -152,6 +152,7 @@ export class WebGPURenderer implements Renderer {
 
   // Blit (compute output → canvas)
   private blitPipeline!: GPURenderPipeline;
+  private generativeBlitPipeline!: GPURenderPipeline;
   private blitBindGroupLayout!: GPUBindGroupLayout;
   private blitBindGroup!: GPUBindGroup;  // reads readTex
 
@@ -214,6 +215,7 @@ export class WebGPURenderer implements Renderer {
   private video: HTMLVideoElement | null = null;
   private offscreen: HTMLCanvasElement | null = null;
   private offCtx: CanvasRenderingContext2D | null = null;
+  private inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live' = 'image';
   
   // Zero-copy video optimization
   private videoExternalTexture: GPUExternalTexture | null = null;
@@ -619,12 +621,24 @@ export class WebGPURenderer implements Renderer {
     });
 
     const module = d.createShaderModule({ label: 'blitShader', code: BLIT_WGSL });
+    const generativeModule = d.createShaderModule({
+      label: 'generativeBlitShader',
+      code: GENERATIVE_BLIT_WGSL,
+    });
 
     this.blitPipeline = d.createRenderPipeline({
       label: 'blitPipeline',
       layout: d.createPipelineLayout({ bindGroupLayouts: [this.blitBindGroupLayout] }),
       vertex:   { module, entryPoint: 'vs' },
       fragment: { module, entryPoint: 'fs', targets: [{ format: this.canvasFormat }] },
+      primitive: { topology: 'triangle-list' },
+    });
+
+    this.generativeBlitPipeline = d.createRenderPipeline({
+      label: 'generativeBlitPipeline',
+      layout: d.createPipelineLayout({ bindGroupLayouts: [this.blitBindGroupLayout] }),
+      vertex:   { module: generativeModule, entryPoint: 'vs' },
+      fragment: { module: generativeModule, entryPoint: 'fs', targets: [{ format: this.canvasFormat }] },
       primitive: { topology: 'triangle-list' },
     });
 
@@ -1204,6 +1218,20 @@ export class WebGPURenderer implements Renderer {
     if (params.zoomParam4 !== undefined) this.zoomParams[3] = params.zoomParam4;
   }
 
+  /** Set the active input source (generative, image, video, webcam, or live). */
+  setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
+    this.inputSource = source;
+    
+    // For generative mode, ensure source texture is black (no input image)
+    if (source === 'generative') {
+      this.clearSourceTexture();
+    }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[WebGPU] Input source set to: ${source}`);
+    }
+  }
+
   /** render() is a no-op; actual rendering is driven by the internal RAF loop. */
   render(): void {}
 
@@ -1441,6 +1469,9 @@ export class WebGPURenderer implements Renderer {
     }
 
     const encoder = this.device.createCommandEncoder({ label: 'blit' });
+    const pipeline = this.inputSource === 'generative'
+      ? this.generativeBlitPipeline
+      : this.blitPipeline;
     const pass = encoder.beginRenderPass({
       colorAttachments: [{
         view:       this.context.getCurrentTexture().createView(),
@@ -1449,7 +1480,7 @@ export class WebGPURenderer implements Renderer {
         clearValue: { r: 0, g: 0, b: 0, a: 1 },
       }],
     });
-    pass.setPipeline(this.blitPipeline);
+    pass.setPipeline(pipeline);
     pass.setBindGroup(0, this.blitBindGroup);
     pass.draw(3);   // full-screen triangle
     pass.end();

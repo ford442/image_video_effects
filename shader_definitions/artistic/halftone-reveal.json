@@ -1,8 +1,9 @@
 {
   "id": "halftone-reveal",
   "name": "Halftone Reveal",
+  "category": "artistic",
   "url": "shaders/halftone-reveal.wgsl",
-  "description": "Renders the image as a coarse halftone pattern that resolves into a clear image near the mouse.",
+  "description": "CMYK halftone reveal with stipple patterns, per-channel rotated screening, dot-gain simulation, moiré overlap, paper texture, and depth-controlled perspective dot sizing.",
   "params": [
     {
       "name": "Dot Size",
@@ -38,10 +39,16 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "halftone",
+    "print",
+    "reveal",
+    "audio-reactive",
+    "cmyk",
+    "stipple"
   ]
 }

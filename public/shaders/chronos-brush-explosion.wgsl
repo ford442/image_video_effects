@@ -110,7 +110,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
 
-    let intensity = 1.0 + mouseDown * 1.5;
+    let intensity = 1.0 + f32(mouseDown) * 1.5;
 
     // Sample frozen canvas with chromatic displacement
     let frozenR = textureSampleLevel(dataTextureC, u_sampler, clamp(rUV + rOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;

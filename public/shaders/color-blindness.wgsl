@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Color Blindness
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Low
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -29,9 +36,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     var uv = vec2<f32>(global_id.xy) / resolution;
 
+    // Audio reactivity: bass intensifies the simulation severity, mids add shimmer
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
     // Params
     let cb_type_param = u.zoom_params.x; // 0-0.33 Protan, 0.33-0.66 Deutan, 0.66-1 Tritan
-    let severity = u.zoom_params.y;
+    let severity = clamp(u.zoom_params.y * (1.0 + bass * 0.4), 0.0, 1.0);
     let split_mode = u.zoom_params.z > 0.5; // If true, use mouse X as split line
 
     let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -120,16 +131,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mix based on severity
     simulated = mix(color, simulated, severity);
 
-    // Split screen logic
-    var final_color = simulated;
-    if (split_mode) {
-        // Mouse X controls split
-        if (uv.x < u.zoom_config.y) {
-            final_color = color;
-        }
-    } else {
-        // Just use severity
-    }
+    // Split-screen comparison: left of the mouse shows the original (branchless).
+    let showOriginal = split_mode && (uv.x < u.zoom_config.y);
+    var final_color = select(simulated, color, showOriginal);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, original.a));
+    // Mid-frequency shimmer along the split seam
+    let seamDist = abs(uv.x - u.zoom_config.y);
+    let seam = select(0.0, smoothstep(0.004, 0.0, seamDist) * mids, split_mode);
+    final_color = clamp(final_color + seam, vec3<f32>(0.0), vec3<f32>(1.0));
+
+    // Alpha encodes how much the perceived color was altered by the simulation.
+    let shift = length(final_color - color);
+    let alpha = clamp(original.a * 0.6 + shift + seam, 0.0, 1.0);
+    let out = vec4<f32>(final_color, alpha);
+
+    let coord = vec2<i32>(global_id.xy);
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, coord, out);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, out);
 }

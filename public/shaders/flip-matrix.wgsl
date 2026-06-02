@@ -128,6 +128,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             final_color = vec4<f32>(final_color.rgb * scale_y, 1.0);
         }
 
+        // ═══ UNIQUE VISUAL IDEA: split-flap display mechanics ═══
+        // (1) Center seam — real split-flap tiles are two hinged flaps meeting at the
+        //     middle. A thin dark gap runs horizontally across the tile center.
+        let seam = smoothstep(0.03, 0.0, abs(source_local_y - 0.5));
+        final_color = vec4<f32>(final_color.rgb * (1.0 - seam * 0.7), 1.0);
+
+        // (2) Mechanical specular glint — as the glossy plastic flap sweeps through
+        //     mid-rotation it catches the room light in a quick bright flash, the
+        //     signature shimmer of a flip-disc board updating.
+        let glint = pow(abs(sin_a), 6.0) * smoothstep(0.0, 0.4, angle);
+        final_color = vec4<f32>(final_color.rgb + vec3<f32>(0.7, 0.75, 0.8) * glint * 0.6, 1.0);
+
+        // (3) Beveled edge shadow — darken the flap rim so each tile reads as a raised
+        //     physical plaque rather than a flat cell.
+        let bevelX = smoothstep(bounds_min, bounds_min + 0.06, cell_local.x) *
+                     smoothstep(bounds_max, bounds_max - 0.06, cell_local.x);
+        let bevelY = smoothstep(bounds_min, bounds_min + 0.06, source_local_y) *
+                     smoothstep(bounds_max, bounds_max - 0.06, source_local_y);
+        final_color = vec4<f32>(final_color.rgb * (0.65 + 0.35 * bevelX * bevelY), 1.0);
+
     } else {
         // Background / Gap
         // Make it transparent or black

@@ -4,6 +4,16 @@
   "url": "shaders/gen-ethereal-quantum-medusa.wgsl",
   "coordinate": 857,
   "type": "shader",
+  "features": [
+    "raymarched",
+    "audio-reactive",
+    "mouse-repulsion",
+    "upgraded-rgba",
+    "chromatic-tentacles",
+    "temporal-bioluminescence",
+    "audio-sway",
+    "depth-output"
+  ],
   "params": [
     {
       "id": "swimming_speed",

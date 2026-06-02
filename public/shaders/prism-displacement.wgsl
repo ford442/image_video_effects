@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Prism Lens
-//  Category: distortion
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Prism Displacement
+//  Category: image
+//  Features: audio-reactive, chromatic-aberration, upgraded-rgba,
+//            temporal-lens-rotation, chromatic-angular-dispersion, depth-magnification
 //  Complexity: Medium
-//  Upgraded: 2026-05-10
-//  By: Phase A Upgrade Swarm
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -21,89 +22,83 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Size, y=Refraction, z=Rotation, w=EdgeShine
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+
+fn hash11(p: f32) -> f32 {
+    return fract(sin(p * 12.9898) * 43758.5453);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    let coord = vec2<i32>(global_id.xy);
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    var mousePos = u.zoom_config.yz;
-
-    // Audio reactivity
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Parameters
-    let size = max(u.zoom_params.x * 0.5, 0.05);
-    let refraction = u.zoom_params.y * 0.3 * (1.0 + bass * 0.25);
-    let rotation = u.zoom_params.z;
-    let edgeShine = u.zoom_params.w;
+    let zoomAmount = u.zoom_params.x;
+    let chromaticAmount = u.zoom_params.y;
+    let rotationSpeed = u.zoom_params.z;
+    let depthWeight = u.zoom_params.w;
 
-    // Distance from mouse (aspect corrected)
-    let aspect = resolution.x / max(resolution.y, 1.0);
-    let dVec = uv - mousePos;
-    let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
-
-    // Create lens shape
-    let lensMask = 1.0 - smoothstep(size * 0.8, size, dist);
-
-    // Rotate coordinates for the prism effect
-    let angle = rotation + time * 0.2;
-    let cosA = cos(angle);
-    let sinA = sin(angle);
-    let rotatedUV = vec2<f32>(
-        dVec.x * cosA - dVec.y * sinA,
-        dVec.x * sinA + dVec.y * cosA
-    );
-
-    // Prism displacement (RGB separation)
-    let prismOffset = vec2<f32>(
-        sin(rotatedUV.y * 10.0) * refraction * 0.1,
-        cos(rotatedUV.x * 10.0) * refraction * 0.1
-    );
-
-    // Chromatic aberration - different offsets for each channel
-    let rUV = clamp(uv + (prismOffset + vec2<f32>(refraction * 0.02, 0.0)) * lensMask, vec2<f32>(0.0), vec2<f32>(1.0));
-    let gUV = clamp(uv + prismOffset * lensMask, vec2<f32>(0.0), vec2<f32>(1.0));
-    let bUV = clamp(uv + (prismOffset - vec2<f32>(refraction * 0.02, 0.0)) * lensMask, vec2<f32>(0.0), vec2<f32>(1.0));
-
-    let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
-
-    var color = vec3<f32>(r, g, b);
-
-    // Add edge shine
-    let edge = smoothstep(size * 0.9, size, dist) - smoothstep(size, size * 1.1, dist);
-    color += vec3<f32>(1.0, 0.9, 0.7) * edge * edgeShine;
-
-    // Slight magnification inside lens
-    let magnifyUV = clamp(mousePos + dVec * (1.0 - lensMask * 0.2), vec2<f32>(0.0), vec2<f32>(1.0));
-    let bgColor = textureSampleLevel(readTexture, u_sampler, magnifyUV, 0.0).rgb;
-
-    // Blend lens effect with background
-    let finalColor = mix(bgColor, color, lensMask * 0.8 + 0.2);
-
-    // Alpha: lens mask + edge shine drive prism compositing weight
-    let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(lensMask * 0.6 + edge * edgeShine * 0.3 + luma * 0.15, 0.0, 1.0);
-
-    let outColor = vec4<f32>(finalColor, alpha);
-
-    // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, coord, outColor);
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, outColor);
+    let mouse = u.zoom_config.yz;
+    let aspect = resolution.x / resolution.y;
+
+    var p = uv - mouse;
+    p.x *= aspect;
+
+    let len = length(p);
+    let angle = atan2(p.y, p.x);
+
+    // Temporal lens rotation memory: angle drifts slowly
+    let rotAngle = angle + time * rotationSpeed * 0.5;
+    let cosR = cos(rotAngle);
+    let sinR = sin(rotAngle);
+    var rotated = vec2<f32>(cosR * p.x + sinR * p.y, -sinR * p.x + cosR * p.y);
+    rotated.x /= aspect;
+    var rotatedUV = rotated + mouse;
+
+    // Depth-weighted magnification: deeper = more zoom
+    let z = len * zoomAmount * (1.0 + depth * depthWeight * 0.5) * (1.0 + bass * 0.2);
+
+    let zoomedUV = mouse + (rotatedUV - mouse) * (1.0 - z);
+
+    // Chromatic angular dispersion
+    let chromaShift = chromaticAmount * 0.02 * (1.0 + treble * 0.3);
+    let dir = normalize(p + vec2<f32>(1e-4));
+    let rUV = zoomedUV + dir * chromaShift * 1.5;
+    let gUV = zoomedUV + dir * chromaShift * 0.0;
+    let bUV = zoomedUV - dir * chromaShift * 1.2;
+
+    let baseColor = textureSampleLevel(readTexture, u_sampler, clamp(zoomedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+
+    var color = vec3<f32>(0.0);
+    color.r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    color.g = textureSampleLevel(readTexture, u_sampler, clamp(gUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+    color.b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+
+    let edgeDist = len;
+    let edgeGlow = smoothstep(0.5, 0.0, edgeDist) * smoothstep(0.2, 0.5, zoomAmount);
+
+    // Edge color shift with phase
+    let phase = time + hash11(len * 100.0 + bass * 10.0) * TAU;
+    let edgeColor = 0.5 + 0.5 * cos(vec3<f32>(phase, phase + 2.094, phase + 4.188));
+    color = mix(color, edgeColor, edgeGlow * chromaticAmount * 0.5);
+
+    let finalAlpha = mix(baseColor.a, 1.0, edgeGlow * 0.5 + len * 0.1);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(color, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

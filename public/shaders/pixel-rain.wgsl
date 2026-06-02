@@ -1,4 +1,14 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Pixel Rain
+//  Category: retro-glitch
+//  Features: matrix-rain, parallax-depth, mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Created: 2026-05-10
+//  By: Claude Opus 4.8 (visual-idea pass 2026-05-31)
+//  upgraded-rgba
+//  Unique idea: multi-layer parallax depth — rain falls through 3D space with
+//  depth-of-field dimming, far layers small/slow/dim, near layer large/fast/bright.
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -20,6 +30,27 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
   ripples: array<vec4<f32>, 50>,
 };
+
+// ═══ UNIQUE VISUAL IDEA: a single parallax rain layer ═══
+// Returns RGB glow contribution for one depth plane. Far planes (small depthT)
+// have tighter columns, slower fall, and dimmer glyph heads; the near plane
+// (depthT→1) is sparse, fast and bright. Together they build genuine 3D depth.
+fn rainLayer(uv: vec2<f32>, time: f32, density: f32, speed: f32, depthT: f32, seed: f32) -> vec3<f32> {
+    let colIndex = floor(uv.x * density + seed * 31.0);
+    let colRand = fract(sin(colIndex * 12.9898 + seed * 78.233) * 43758.5453);
+    let dropSpeed = (colRand * 0.6 + 0.4) * speed;
+    // Falling phase down the column; glyph cells quantise the streak.
+    let cell = floor(uv.y * density * 1.6);
+    let phase = fract(uv.y * 1.0 + time * dropSpeed + colRand);
+    // Bright head with an exponential tail trailing behind it.
+    let head = smoothstep(0.0, 0.04, phase) * exp(-phase * 5.0);
+    // Per-cell flicker so glyphs blink like Matrix code.
+    let flick = step(0.35, fract(sin(cell * 1.7 + colIndex * 4.1 + floor(time * 6.0) * 0.13) * 9999.0));
+    // Depth shading: near layers brighter & warmer-green, far layers dim cyan-green.
+    let bright = mix(0.18, 1.0, depthT) * head * flick;
+    let tint = mix(vec3<f32>(0.0, 0.5, 0.45), vec3<f32>(0.3, 1.0, 0.4), depthT);
+    return tint * bright;
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -101,6 +132,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (rainPhase < 0.05) {
        color += vec4<f32>(0.4, 1.0, 0.4, 0.0) * glitchIntensity;
     }
+
+    // ═══ Composite three parallax depth planes (back → front) ═══
+    // Each plane falls at its own rate; nearer planes overlay brighter so the
+    // rain visibly recedes into the distance. Bass accelerates all planes together.
+    let fallBoost = 1.0 + bass * 0.6;
+    let far  = rainLayer(uv, time, density * 1.8, speed * 0.45 * fallBoost, 0.25, 1.0);
+    let mid  = rainLayer(uv, time, density * 1.1, speed * 0.8  * fallBoost, 0.55, 2.0);
+    let near = rainLayer(uv, time, density * 0.6, speed * 1.4  * fallBoost, 1.0,  3.0);
+    let parallax = far + mid + near;
+    color += vec4<f32>(parallax, 0.0);
 
     // Mouse hover highlight
     if (mouseForce > 0.0) {

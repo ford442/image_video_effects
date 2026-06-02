@@ -1,8 +1,9 @@
 {
   "id": "interactive-ripple",
   "name": "Interactive Ripple",
+  "category": "interactive-mouse",
   "url": "shaders/interactive-ripple.wgsl",
-  "description": "Classic water ripple effect following cursor.",
+  "description": "2D wave equation solver with dispersion and Huygens wavelet superposition. Chromatic dispersion on ripple crests, caustic highlights in constructive interference zones, HDR bloom, subsurface scattering, and boundary reflection damping.",
   "params": [
     {
       "id": "amplitude",
@@ -35,10 +36,18 @@
   ],
   "features": [
     "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
     "wave"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "ripple",
+    "water",
+    "metallic",
+    "wave",
+    "audio-reactive",
+    "dispersion",
+    "caustics",
+    "huygens"
   ]
 }

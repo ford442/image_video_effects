@@ -1,0 +1,41 @@
+{
+  "id": "crt-phosphor",
+  "name": "CRT Phosphor",
+  "url": "shaders/crt-phosphor.wgsl",
+  "features": ["mouse-driven"],
+  "tags": ["crt", "phosphor", "retro", "scanlines", "barrel", "vignette", "monitor"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Curvature",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Scanlines",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Phosphor Glow",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Flicker",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

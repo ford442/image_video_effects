@@ -1,12 +1,15 @@
-// ═══════════════════════════════════════════════════════════════
-//  Digital Glitch – Pass 2: Error Propagation, Decay & Compositing
-//  Category: image
-//  Features: multi-pass-2, error propagation, digital decay, chromatic aberration
-//  Inputs: dataTextureC (glitch field from Pass 1), readTexture
+// ═══════════════════════════════════════════════════════════════════
+//  Digital Glitch Pass 2
+//  Category: retro-glitch
+//  Features: multi-pass, glitch, feedback, audio-glitch, depth-tear
+//  Complexity: High
+//  Updated: 2026-05-31 — Grok (audio glitch intensity + depth tears)
+// ═══════════════════════════════════════════════════════════════════
 //  Outputs: writeTexture (final RGBA), writeDepthTexture
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
+
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;

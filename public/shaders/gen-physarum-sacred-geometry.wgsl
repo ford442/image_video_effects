@@ -60,7 +60,7 @@ fn sense(pos: vec2<f32>, angleOffset: f32, sensorDist: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coords = vec2<i32>(global_id.xy);
-    let res = vec2<i32>(u.config.z, u.config.w);
+    let res = vec2<i32>(i32(u.config.z), i32(u.config.w));
 
     if (coords.x >= res.x || coords.y >= res.y) {
         return;

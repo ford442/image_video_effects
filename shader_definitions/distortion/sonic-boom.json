@@ -5,6 +5,7 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "params": [
@@ -40,6 +41,8 @@
   "tags": [
     "warp",
     "distort",
-    "transform"
+    "shock-wave",
+    "mach-cone",
+    "supersonic"
   ]
 }

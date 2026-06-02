@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Sine Wave
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Chunks From: sine-wave
+//  Created: 2026-05-30
+//  By: 4-Agent Upgrade Swarm
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,98 +21,103 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, z=ResX, w=ResY
+  config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=Freq, y=Amp, z=Speed, w=Chromatic
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Multi-octave wave synthesis for richer distortion
-fn multi_octave_wave(pos: f32, time: f32, freq: f32, speed: f32, octaves: u32) -> f32 {
-    var value = 0.0;
-    var amplitude = 1.0;
-    var frequency = freq;
-    
-    for (var i: u32 = 0u; i < octaves; i = i + 1u) {
-        value += sin(pos * frequency + time * speed * (1.0 + f32(i) * 0.5)) * amplitude;
-        amplitude *= 0.5;
-        frequency *= 2.0;
-    }
-    
-    return value;
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = vec3<f32>(2.51, 2.51, 2.51);
+  let b = vec3<f32>(0.03, 0.03, 0.03);
+  let c = vec3<f32>(2.43, 2.43, 2.43);
+  let d = vec3<f32>(0.59, 0.59, 0.59);
+  let e = vec3<f32>(0.14, 0.14, 0.14);
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Safe texture fetch with edge clamping (textureLoad avoids filtering-sampler restrictions)
-fn sample_load(tex: texture_2d<f32>, uv: vec2<f32>) -> vec4<f32> {
-    let dims = vec2<f32>(textureDimensions(tex));
-    let coords = clamp(vec2<i32>(uv * dims), vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
-    return textureLoad(tex, coords, 0);
+fn hash21(p: vec2<f32>) -> f32 {
+  let f = fract(p * vec2<f32>(123.34, 456.21));
+  return fract(dot(f, vec2<f32>(1.0, 1.0)) * 78.233);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
+    return;
+  }
 
-    // Parameters from sliders
-    let baseFreq = mix(3.0, 30.0, u.zoom_params.x);     // Wave frequency
-    let baseAmp = u.zoom_params.y * 0.04;               // Base amplitude
-    let speed = mix(0.3, 4.0, u.zoom_params.z);         // Animation speed
-    let chromatic = u.zoom_params.w;                    // Chromatic aberration strength
+  let uv = vec2<f32>(gid.xy) / resolution;
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let aspect = resolution.x / resolution.y;
+  let audio = plasmaBuffer[0].xyz;
+  let bass = audio.x;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Aspect ratio correction for uniform waves
-    let aspect = resolution.x / resolution.y;
-    let correctedUV = uv * vec2<f32>(aspect, 1.0);
+  let intensity = u.zoom_params.x * 0.06 * (1.0 + bass * 0.6);
+  let speed = 0.15 + u.zoom_params.y * 3.5;
+  let scale = 1.5 + u.zoom_params.z * 18.0;
+  let detail = u.zoom_params.w;
 
-    // --- Multi-Octave Wave Distortion ---
-    // Primary wave (horizontal displacement)
-    let waveX = multi_octave_wave(correctedUV.y, time, baseFreq, speed, 3u) * baseAmp;
-    
-    // Secondary wave (vertical displacement, different phase)
-    let waveY = multi_octave_wave(correctedUV.x, time, baseFreq * 0.7, speed * 1.2, 2u) * baseAmp * 0.7;
-    
-    // Tertiary turbulence (high frequency detail)
-    let turbulence = sin(correctedUV.x * baseFreq * 4.0 + correctedUV.y * baseFreq * 2.0 + time * speed * 2.0) 
-                     * baseAmp * 0.1;
+  // Mouse creates wave sources
+  let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+  let mouseMask = 1.0 - smoothstep(0.0, 0.75, mouseDist);
 
-    // Combine displacements
-    let totalDisplacement = vec2<f32>(waveX + turbulence, waveY + turbulence);
-    let finalUV = uv + totalDisplacement;
+  // Multi-frequency sine wave interference with traveling wave packets
+  let phase = uv.y * scale * 6.28318 + time * speed * 2.5;
+  let phase2 = uv.x * (scale * 0.7) * 6.28318 - time * speed * 1.7;
+  let groupVel = sin(phase * 0.5 + time * speed * 0.8) * 0.5 + 0.5;
+  let waveX = sin(phase) * groupVel;
+  let waveY = cos(phase2) * (1.0 - groupVel * 0.3);
 
-    // --- Chromatic Aberration (Dispersion) ---
-    // Different wavelengths refract at slightly different angles
-    var finalColor = vec3<f32>(0.0);
-    if (chromatic > 0.01) {
-        // Red channel (least refraction)
-        let redUV = finalUV - totalDisplacement * chromatic * 0.3;
-        finalColor.r = sample_load(readTexture, redUV).r;
+  // Amplitude modulation from audio + mouse
+  let am = 1.0 + bass * 0.5 + mouseMask * 0.8;
+  let micro = sin((uv.x + uv.y) * scale * 12.0 + time * (2.0 + audio.z * 2.0)) * detail * 0.008;
 
-        // Green channel (medium refraction)
-        finalColor.g = sample_load(readTexture, finalUV).g;
+  // Depth controls wave attenuation
+  let depthAtten = mix(1.0, 0.2, depth);
 
-        // Blue channel (most refraction)
-        let blueUV = finalUV + totalDisplacement * chromatic * 0.3;
-        finalColor.b = sample_load(readTexture, blueUV).b;
-    } else {
-        // Standard sampling without chromatic aberration
-        finalColor = sample_load(readTexture, finalUV).rgb;
-    }
+  let offset = vec2<f32>(
+    (waveX + waveY * 0.45) * intensity * am + micro,
+    (waveY - waveX * 0.35) * intensity * 0.45 * (1.0 + mouseMask)
+  ) * depthAtten;
 
-    // --- Edge Darkening (vignette effect to hide clamping) ---
-    let edgeFade = 1.0 - smoothstep(0.7, 1.0, max(abs(uv.x - 0.5), abs(uv.y - 0.5)) * 2.0);
-    finalColor *= edgeFade;
+  let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+  // Chromatic dispersion on wave crests
+  let crest = clamp(abs(waveX) * 0.6 + abs(waveY) * 0.4, 0.0, 1.0);
+  let dispersion = detail * 0.01 * (0.5 + audio.z) * (1.0 + crest * 2.0);
+  let split = vec2<f32>(dispersion, 0.0);
 
-    // Depth distortion with chromatic offset
-    var depthUV = finalUV;
-    if (chromatic > 0.01) {
-        depthUV = finalUV + totalDisplacement * chromatic * 0.2;
-    }
-    let depth = sample_load(readDepthTexture, depthUV).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  var finalColor = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
+  );
+
+  // Water surface caustics from wave interference
+  let interference = abs(waveX * waveY) * 2.0;
+  let causticTint = mix(vec3<f32>(0.0, 0.55, 0.95), vec3<f32>(0.75, 0.25, 1.0), detail * 0.6 + audio.y * 0.2);
+  finalColor = finalColor + causticTint * interference * (0.04 + bass * 0.12);
+
+  // HDR specular highlights on crests
+  let specular = pow(crest, 8.0) * (0.3 + bass * 0.4);
+  finalColor = finalColor + vec3<f32>(1.0, 0.95, 0.85) * specular;
+
+  // ACES tone mapping
+  finalColor = acesToneMap(finalColor * 1.15);
+
+  // Semantic alpha: wave_amplitude * interference_intensity * depth
+  let interferenceIntensity = interference + crest * 0.5;
+  let finalAlpha = clamp(intensity * 12.0 * interferenceIntensity * depth * 2.5, 0.15, 0.95);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+  let depthOut = clamp(mix(baseDepth, 0.25 + crest * 0.60, 0.18 + intensity * 8.0), 0.0, 1.0);
+
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(offset.x, offset.y, crest, finalAlpha));
 }

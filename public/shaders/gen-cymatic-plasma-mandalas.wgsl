@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cymatic Plasma-Mandalas
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, chromatic-aberration,
+//            temporal-symmetry-memory, audio-cymatic-frequency, depth-edge-glow
 //  Complexity: High
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -74,9 +75,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let symmetryOrder = u.zoom_params.x;
+    // Audio-driven cymatic frequency modulation
+    let symmetryOrder = u.zoom_params.x * (1.0 + bass * 0.3);
     let plasmaDensity = u.zoom_params.y;
-    let cymaticFreq = u.zoom_params.z;
+    let cymaticFreq = u.zoom_params.z * (1.0 + mids * 0.5);
     let swirlChaos = u.zoom_params.w;
 
     let t = u.config.x * 0.5;
@@ -107,23 +109,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let colorBase = getPalette(radius * 0.5 - t * 0.2 + audio);
 
-    let distR = d - 0.01 * plasmaDensity;
+    let distR = d - 0.01 * plasmaDensity * (1.0 + bass * 0.3);
     let distG = d;
-    let distB = d + 0.01 * plasmaDensity;
+    let distB = d + 0.01 * plasmaDensity * (1.0 + treble * 0.3);
 
     let aberration = applyChromaticAberration(distR, distG, distB, plasmaDensity);
     var col = colorBase * aberration;
 
     col = col + vec3<f32>(1.0, 0.8, 0.9) * exp(-length(uv) * 5.0) * (0.5 + audio * 0.5 + treble * 0.2);
 
+    // Temporal symmetry memory: previous frame burns into current
+    let prev = textureSampleLevel(dataTextureC, u_sampler, (fragCoord / dims), 0.0).rgb;
+    let symMemory = mix(col, prev * 0.9, 0.06 + bass * 0.02);
+    col = mix(col, symMemory, 0.5);
+
+    // Depth-aware edge glow: read depth and modulate edge intensity
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, fragCoord / dims, 0.0).r;
+    let edgeGlow = smoothstep(0.05, 0.0, abs(d)) * (0.5 + depth * 0.5);
+    col += vec3<f32>(0.4, 0.7, 0.9) * edgeGlow * treble;
+
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(luma * 0.7 + 0.2, 0.0, 1.0);
+    let alpha = clamp(luma * 0.7 + 0.2 + bass * 0.05, 0.0, 1.0);
     let finalColor = vec4<f32>(col, alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);
 
     let depth_uv = clamp(vec2<f32>(global_id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }

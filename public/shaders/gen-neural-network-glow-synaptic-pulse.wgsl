@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neural Network Glow - Synaptic Pulse
 //  Category: generative
-//  Features: audio-reactive, mouse-driven, temporal, upgraded-rgba
+//  Features: audio-reactive, mouse-driven, temporal, upgraded-rgba,
+//            chromatic-synapse, temporal-potentiation, depth-scaled-nodes
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -98,6 +99,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
+    // Chromatic synapse separation: excitatory = warm, inhibitory = cool
+    let excite = smoothstep(0.3, 0.8, bass);
+    let inhibit = smoothstep(0.3, 0.8, treble);
+    let warm = vec3<f32>(1.0, 0.6, 0.3) * excite * intensity;
+    let cool = vec3<f32>(0.3, 0.6, 1.0) * inhibit * intensity;
+    col = col + warm + cool;
     col = col + vec3<f32>(treble * 0.1, mids * 0.05, bass * 0.05);
 
     for(var k = 0; k < 50; k = k + 1) {
@@ -109,10 +116,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col = col + select(vec3<f32>(0.0), vec3<f32>(1.0, 0.5, 0.2) * ripple_falloff * r.w * 0.5, rippleActive && in_range);
     }
 
-    let trail = max(intensity * 0.5, prev_trail * trail_decay);
-    col = mix(col, col * 1.3, trail);
+    // Temporal potentiation: previous trail strengthens with repeated activation
+    let potentiation = max(intensity * 0.5, prev_trail * trail_decay * (1.0 + bass * 0.1));
+    col = mix(col, col * 1.3, potentiation);
 
-    let alpha = clamp(trail + intensity * 0.3 + mids * 0.05 + treble * 0.05, 0.0, 1.0);
+    // Depth-scaled node density: distant nodes appear smaller
+    let depthScale = 0.5 + depth * 0.5;
+    col = col * depthScale;
+    let scaledIntensity = intensity * depthScale;
+
+    let alpha = clamp(potentiation + scaledIntensity * 0.3 + mids * 0.05 + treble * 0.05, 0.0, 1.0);
 
     let finalColor = vec4<f32>(col, alpha);
 

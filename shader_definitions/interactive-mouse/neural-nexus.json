@@ -1,6 +1,7 @@
 {
   "id": "neural-nexus",
   "name": "Neural Nexus",
+  "category": "interactive-mouse",
   "url": "shaders/neural-nexus.wgsl",
   "description": "Biological neural network simulation with pulsing electrical signals; mouse sends shockwaves through synapses.",
   "params": [
@@ -37,10 +38,14 @@
     "interactive",
     "organic",
     "network",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "neural",
+    "synapse",
+    "electric",
+    "audio-reactive"
   ]
 }

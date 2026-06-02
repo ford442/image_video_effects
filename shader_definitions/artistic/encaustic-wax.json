@@ -1,45 +1,54 @@
 {
   "id": "encaustic-wax",
   "name": "Encaustic Wax",
-  "description": "Simulates the translucent, textured look of hot wax painting. Mouse interaction melts the wax locally.",
+  "category": "artistic",
   "url": "shaders/encaustic-wax.wgsl",
+  "description": "Thermal wax flow simulation with layered strata, subsurface scattering, metallic pigment sparkle, HDR specular ridges, ACES tone mapping, and canvas grain. Bass drives heat gun intensity; mouse applies local heat; depth controls wax thickness.",
   "features": [
     "mouse-driven",
-    "blur",
-    "texture"
+    "audio-reactive",
+    "upgraded-rgba",
+    "painterly",
+    "thermal-flow"
+  ],
+  "tags": [
+    "wax",
+    "encaustic",
+    "painting",
+    "glossy",
+    "audio-reactive",
+    "strata",
+    "metallic",
+    "canvas"
   ],
   "params": [
     {
-      "id": "thickness",
-      "name": "Wax Thickness",
-      "default": 0.5,
+      "id": "brush_scale",
+      "name": "Brush Scale",
+      "default": 0.35,
       "min": 0,
       "max": 1
     },
     {
-      "id": "texture",
-      "name": "Surface Texture",
-      "default": 0.7,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "radius",
-      "name": "Melt Radius",
-      "default": 0.2,
-      "min": 0,
-      "max": 0.5
-    },
-    {
-      "id": "intensity",
+      "id": "melt_intensity",
       "name": "Melt Intensity",
-      "default": 1,
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "pigment_deposit",
+      "name": "Pigment Deposit",
+      "default": 0.55,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "relief",
+      "name": "Relief",
+      "default": 0.45,
       "min": 0,
       "max": 1
     }
-  ],
-  "tags": [
-    "filter",
-    "image-processing"
   ]
 }

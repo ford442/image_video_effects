@@ -6,7 +6,10 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal-cascade-persistence",
+    "audio-stream-modulation",
+    "depth-scaled"
   ],
   "tags": [
     "generative",

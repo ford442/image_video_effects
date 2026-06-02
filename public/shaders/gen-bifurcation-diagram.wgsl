@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Bifurcation Diagram - Logistic map visualization
+//  Bifurcation Diagram
 //  Category: generative
-//  Features: procedural, logistic map, density coloring
-//  Created: 2026-03-22
-//  By: Agent 4A
+//  Features: mathematical, chaos, visualization, audio-parameter, mouse-exploration, temporal-evolution, density-color
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish pass — richer color, motion, and interactive depth)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -162,7 +163,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Normalize density
     density = min(density / 10.0, 1.0);
     
-    // Calculate color
+    // === Visual Flourish: Richer, audio-reactive coloring ===
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
+
     var col = vec3<f32>(0.0);
     
     if (density > 0.01) {
@@ -174,11 +180,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             default: { col = colorThermal(density); }
         }
         
-        // Add brightness boost for high density
-        col = col * (0.7 + 0.6 * density);
+        // Audio-reactive color and brightness
+        let audioBoost = 0.7 + 0.6 * density + bass * 0.4 + mids * 0.25;
+        col = col * audioBoost;
+        
+        // Treble adds fine spectral detail / shimmer
+        let shimmer = sin(density * 40.0 + t * 5.0) * treble * 0.15;
+        col += vec3<f32>(0.1, 0.15, 0.2) * max(shimmer, 0.0);
     } else {
-        // Background
-        col = vec3<f32>(0.02, 0.02, 0.03);
+        // Background with subtle audio-reactive nebula
+        let nebula = sin(uv.y * 8.0 + t * 0.3) * 0.02;
+        col = vec3<f32>(0.015 + nebula * bass, 0.018, 0.025 + nebula * treble * 0.5);
     }
     
     // Highlight periodic windows

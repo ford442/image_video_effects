@@ -1,0 +1,99 @@
+{
+  "timestamp": "2026-05-30T18:34:19+02:00",
+  "total_flagged_initial": 20,
+  "total_auto_fixed": 15,
+  "total_remaining_incompatible": 5,
+  "total_deferred_to_human": 4,
+  "total_false_positive": 1,
+  "classes": {
+    "stub_insert": {
+      "count": 12,
+      "shaders": [
+        "gen-radiant-chrono-glass-nautilus",
+        "gen-radiant-quantum-crystalline-forge",
+        "gen-sentient-aether-flora-biosphere",
+        "gen-sonoluminescent-chrono-geode-matrix",
+        "gen-symbiotic-chrono-mycelium-engine",
+        "gen-abyssal-quantum-leviathan-skeleton",
+        "gen-celestial-nanite-swarm-nebula",
+        "gen-chromatic-singularity-loom",
+        "gen-eldritch-tesseract-hive-mind",
+        "gen-luminescent-chrono-fluid-astrolabe",
+        "gen-neuro-kinetic-liquid-gold-lotus",
+        "gen-quantum-entangled-ferrofluid-engine",
+        "gen-quantum-fluorescent-aether-moth-swarm"
+      ],
+      "description": "Missing canonical binding declarations (4-12). Safe to insert stubs after existing binding declarations. All validated with naga."
+    },
+    "workgroup_fix": {
+      "count": 6,
+      "shaders": [
+        "gen-radiant-chrono-glass-nautilus",
+        "gen-abyssal-quantum-leviathan-skeleton",
+        "gen-celestial-nanite-swarm-nebula",
+        "gen-cellular-automata-tapestry",
+        "gen-quantum-entangled-ferrofluid-engine",
+        "gen-quantum-fluorescent-aether-moth-swarm"
+      ],
+      "description": "Workgroup size missing z component (16,16) -> (16,16,1). No var<workgroup> dependencies, so safe."
+    },
+    "rename_only": {
+      "count": 1,
+      "shaders": [
+        "gen-superfluid-quantum-foam"
+      ],
+      "description": "Uniforms struct field rename (custom_params -> ripples). No code references to custom_params; mechanical rename."
+    },
+    "false_positive": {
+      "count": 1,
+      "shaders": [
+        "_hash_library"
+      ],
+      "description": "Library file with no @compute entry point. Intentionally not a runtime shader."
+    },
+    "layout_conflict": {
+      "count": 4,
+      "shaders": [
+        {
+          "id": "deep-workgroup-multi-effect-blend",
+          "reason": "Uses @workgroup_size(16, 16, 4) with var<workgroup> shared_tile sized to [16][16][4]. Changing workgroup size would break shared memory layout."
+        },
+        {
+          "id": "plasma",
+          "reason": "Binding 12 uses array<PlasmaBall, 50> instead of array<vec4<f32>>. Shader iterates struct fields (pos, color, info). Cannot remap without full redesign."
+        },
+        {
+          "id": "tone-histogram",
+          "reason": "Binding 10 uses array<atomic<u32>> for histogram atomics. Renderer expects array<f32>. Atomic operations are fundamental to the histogram algorithm."
+        },
+        {
+          "id": "tone-histogram-apply",
+          "reason": "Binding 10 uses array<atomic<u32>> for histogram atomics. Renderer expects array<f32>. Atomic operations are fundamental to the histogram algorithm."
+        }
+      ],
+      "description": "Type or architecture fundamentally incompatible with canonical layout. Requires human redesign or renderer accommodation."
+    },
+    "needs_human": {
+      "count": 0,
+      "shaders": [],
+      "description": "Ambiguous cases requiring manual review."
+    }
+  },
+  "fix_log": [
+    {"shader": "gen-radiant-chrono-glass-nautilus", "fixes": ["added binding 12 stub", "fixed workgroup_size (16,16) -> (16,16,1)"], "naga": "ok"},
+    {"shader": "gen-radiant-quantum-crystalline-forge", "fixes": ["added binding 12 stub"], "naga": "ok"},
+    {"shader": "gen-sentient-aether-flora-biosphere", "fixes": ["added binding 12 stub"], "naga": "ok"},
+    {"shader": "gen-sonoluminescent-chrono-geode-matrix", "fixes": ["added bindings 7-12 stubs"], "naga": "ok"},
+    {"shader": "gen-symbiotic-chrono-mycelium-engine", "fixes": ["added binding 12 stub"], "naga": "ok"},
+    {"shader": "gen-superfluid-quantum-foam", "fixes": ["renamed custom_params -> ripples in Uniforms struct"], "naga": "ok"},
+    {"shader": "gen-abyssal-quantum-leviathan-skeleton", "fixes": ["added binding 12 stub", "fixed workgroup_size (16,16) -> (16,16,1)"], "naga": "ok"},
+    {"shader": "gen-celestial-nanite-swarm-nebula", "fixes": ["added binding 12 stub", "fixed workgroup_size (16,16) -> (16,16,1)"], "naga": "ok"},
+    {"shader": "gen-cellular-automata-tapestry", "fixes": ["fixed workgroup_size (16,16) -> (16,16,1)"], "naga": "ok"},
+    {"shader": "gen-chromatic-singularity-loom", "fixes": ["added bindings 4-11 stubs"], "naga": "ok"},
+    {"shader": "gen-eldritch-tesseract-hive-mind", "fixes": ["added bindings 4-12 stubs"], "naga": "ok"},
+    {"shader": "gen-luminescent-chrono-fluid-astrolabe", "fixes": ["added bindings 4-12 stubs"], "naga": "ok"},
+    {"shader": "gen-neuro-kinetic-liquid-gold-lotus", "fixes": ["added binding 12 stub"], "naga": "ok"},
+    {"shader": "gen-quantum-entangled-ferrofluid-engine", "fixes": ["added binding 12 stub", "fixed workgroup_size (16,16) -> (16,16,1)"], "naga": "ok"},
+    {"shader": "gen-quantum-fluorescent-aether-moth-swarm", "fixes": ["added binding 12 stub", "fixed workgroup_size (16,16) -> (16,16,1)"], "naga": "ok"}
+  ]
+}

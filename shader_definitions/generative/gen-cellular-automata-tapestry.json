@@ -13,7 +13,14 @@
   ],
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "mouse-nutrient",
+    "audio-reactive",
+    "audio-driven",
+    "semantic-alpha",
+    "depth-aware",
+    "multi-pass",
+    "temporal",
+    "chromatic"
   ],
   "params": [
     {

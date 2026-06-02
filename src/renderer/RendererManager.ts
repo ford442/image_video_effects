@@ -135,10 +135,12 @@ export class RendererManager {
   }
 
   private startMetricsCollection(): void {
-    // In a real implementation, the renderers would expose getMetrics()
-    // For now, we'll use simulated/placeholder metrics
     const updateMetrics = () => {
-      // This would come from the renderer in a full implementation
+      // Pull real FPS from the active renderer when available
+      const renderer = this.currentRenderer as any;
+      if (renderer && typeof renderer.getFPS === 'function') {
+        this.metrics.fps = renderer.getFPS() || 0;
+      }
       this.onMetricsUpdate?.(this.metrics);
       requestAnimationFrame(updateMetrics);
     };
@@ -209,13 +211,40 @@ export class RendererManager {
   setSlotShader(index: number, id: string): void {
     if (this.currentRenderer instanceof WebGPURenderer) {
       this.currentRenderer.setSlotShader(index, id);
+    } else if (this.currentRenderer instanceof WASMRenderer) {
+      this.currentRenderer.setSlotShader(index, id);
     }
   }
 
-  /** Update all zoom params from SlotParams (called when UI sliders change). */
-  updateSlotParams(params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number }): void {
+  /** Update zoom params for a slot (called when UI sliders change). */
+  updateSlotParams(
+    params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number },
+    slotIndex?: number
+  ): void {
     if (this.currentRenderer instanceof WebGPURenderer) {
       this.currentRenderer.updateSlotParams(params);
+    } else if (this.currentRenderer instanceof WASMRenderer) {
+      this.currentRenderer.updateSlotParams(params, slotIndex);
+    }
+  }
+
+  /** Set slot execution mode ('chained' | 'parallel'). */
+  setSlotMode(index: number, mode: 'chained' | 'parallel'): void {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      this.currentRenderer.setSlotMode(index, mode);
+    } else if (this.currentRenderer instanceof WASMRenderer) {
+      this.currentRenderer.setSlotMode(index, mode);
+    }
+  }
+
+  /** Set the active input source (generative, image, video, webcam, or live). */
+  setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      this.currentRenderer.setInputSource(source);
+    } else if (this.currentRenderer instanceof WASMRenderer) {
+      this.currentRenderer.setInputSource(source);
+    } else if (this.currentRenderer instanceof JSRenderer) {
+      this.currentRenderer.setInputSource(source);
     }
   }
 
@@ -261,6 +290,20 @@ export class RendererManager {
       return (this.currentRenderer as any).getAvailableModes();
     }
     return [];
+  }
+
+  /** Forward a list of image URLs to the active renderer (e.g. for slideshow mode). */
+  setImageList(urls: string[]): void {
+    if (this.currentRenderer?.setImageList) {
+      this.currentRenderer.setImageList(urls);
+    }
+  }
+
+  /** Forward a depth map to the active renderer. */
+  updateDepthMap(data: Float32Array, width: number, height: number): void {
+    if (this.currentRenderer?.updateDepthMap) {
+      this.currentRenderer.updateDepthMap(data, width, height);
+    }
   }
 
   /** Forwards deep-workgroup capability query to the active renderer. */
@@ -332,6 +375,11 @@ export class RendererManager {
   destroy(): void {
     this.currentRenderer?.destroy();
     this.currentRenderer = null;
+  }
+
+  /** Get latest FPS from the active renderer (real measured value). */
+  getCurrentFPS(): number {
+    return this.metrics.fps || 0;
   }
 }
 

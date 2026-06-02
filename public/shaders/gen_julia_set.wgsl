@@ -1,14 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Julia Set / Newton Fractal — Smooth Iteration + Orbit Trap Coloring
 //  Category: generative
-//  Features: procedural, animated, audio-reactive
+//  Features: procedural, animated, audio-reactive, temporal, chromatic, depth-aware
 //  Complexity: High
 //  Scientific: Generalized Julia iteration z_{n+1} = z^n + c for n=2..6,
 //              smooth (continuous) iteration μ = i − log₂(log₂|z|),
 //              multi-trap orbit coloring: circle trap, line trap, cross trap,
 //              animated Julia parameter c orbiting a cardioid,
 //              audio-driven trap scale and mode selection
-//  Upgraded: Phase B
+//  Upgraded: Phase B, 2026-05-31
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0)  var u_sampler: sampler;
@@ -149,7 +149,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Blend with input texture
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let finalColor = mix(inputColor.rgb, color, 0.9);
+    var finalColor = mix(inputColor.rgb, color, 0.9);
+
+    // ─── Chromatic dispersion ───
+    let chrStrength = 0.004 + bass * 0.008;
+    let chrR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(chrStrength * (1.0 + mids * 0.5), 0.0), 0.0).r;
+    let chrG = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, chrStrength * (1.0 + treble * 0.3)), 0.0).g;
+    let chrB = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-chrStrength * 0.7 * (1.0 + bass * 0.4), chrStrength * 0.3), 0.0).b;
+    let chrColor = vec3<f32>(chrR, chrG, chrB);
+    finalColor = mix(finalColor, chrColor, 0.2 + bass * 0.15);
+
+    // ─── Temporal feedback ───
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    finalColor = mix(finalColor, prev.rgb * 0.9, 0.03 + bass * 0.01);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(smoothed / f32(maxIter), trapDist, f32(i) / f32(maxIter), 1.0));

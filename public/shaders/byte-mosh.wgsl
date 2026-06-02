@@ -106,7 +106,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prevAge = prevState.b * 63.0;
   let prevMode = round(prevState.a * 3.0);
 
-  let blockSeed = (blockOriginU.x + 1u) * 257u ^ (blockOriginU.y + 1u) * 263u ^ u32(time * 60.0 + 1.0);
+  let blockSeed = ((blockOriginU.x + 1u) * 257u) ^ ((blockOriginU.y + 1u) * 263u) ^ u32(time * 60.0 + 1.0);
   lfsr = lfsr_advance(lfsr ^ blockSeed, 3u);
   let rand0 = f32(lfsr & 0xffffu) / 65535.0;
   lfsr = lfsr_step(lfsr);

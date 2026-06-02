@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
-import { type Renderer } from '../renderer/Renderer';
 import { RendererManager } from '../renderer/RendererManager';
 import { RenderMode, InputSource, SlotParams } from '../renderer/types';
 import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
@@ -8,7 +7,7 @@ import { LiveStreamBridge } from './LiveStreamBridge';
 interface WebGPUCanvasProps {
     modes: RenderMode[];
     slotParams: SlotParams[];
-    rendererRef: React.MutableRefObject<Renderer | null>;
+    rendererRef: React.MutableRefObject<RendererManager | null>;
     farthestPoint: { x: number; y: number };
     mousePosition: { x: number; y: number };
     setMousePosition: React.Dispatch<React.SetStateAction<{ x: number, y: number }>>;
@@ -226,9 +225,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // Sync inputSource to renderer
     useEffect(() => {
         if (rendererRef.current) {
-            if ('setInputSource' in rendererRef.current) {
-                (rendererRef.current as any).setInputSource(inputSource);
-            }
+            rendererRef.current.setInputSource(inputSource);
         }
     }, [inputSource, rendererRef]);
 
@@ -428,7 +425,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 zoomParam2: params.zoomParam2,
                 zoomParam3: params.zoomParam3,
                 zoomParam4: params.zoomParam4,
-            });
+            }, activeSlot);
         }
     }, [slotParams, activeSlot, rendererRef]);
 

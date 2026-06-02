@@ -2,10 +2,11 @@
   "id": "liquid-lens",
   "name": "Liquid Lens",
   "url": "shaders/liquid-lens.wgsl",
-  "description": "Simulates a magnifying liquid lens at the mouse position with chromatic aberration.",
+  "category": "interactive-mouse",
+  "description": "Spherical aberration simulation with Snell's law refraction at curved interfaces, 7-sample chromatic dispersion, caustic highlights, Fresnel reflections, and ACES tone mapping.",
   "params": [
     {
-      "id": "strength",
+      "id": "refraction",
       "name": "Refraction",
       "default": 0.5,
       "min": 0,
@@ -19,15 +20,15 @@
       "max": 1
     },
     {
-      "id": "abberation",
-      "name": "Aberration",
+      "id": "dispersion",
+      "name": "Dispersion",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "edge",
-      "name": "Edge Shade",
+      "id": "surface-wave",
+      "name": "Surface Wave",
       "default": 0.3,
       "min": 0,
       "max": 1
@@ -35,12 +36,15 @@
   ],
   "features": [
     "mouse-driven",
-    "distortion",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "lens",
+    "refraction",
+    "chromatic",
+    "caustics",
+    "liquid"
   ]
 }

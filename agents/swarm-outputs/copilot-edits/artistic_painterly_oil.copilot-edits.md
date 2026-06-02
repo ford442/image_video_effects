@@ -1,0 +1,4 @@
+- Applied a Standard Hybrid Header and left the existing binding/depth-write structure unchanged.
+- JSON changes: added explicit `category`.
+- Confidence: High.
+- Suspicious but left alone: it writes paint-thickness data to `writeDepthTexture` without sampling scene depth, which may be intentional pipeline state.

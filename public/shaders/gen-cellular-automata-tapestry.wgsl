@@ -1,7 +1,11 @@
-// ----------------------------------------------------------------
-// Cellular Automata Tapestry (Reaction-Diffusion)
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Cellular Automata Tapestry
+//  Category: generative
+//  Features: multi-state-ca, evolving-rules, audio-mutation, mouse-nutrient, tapestry-weave, depth-pattern, temporal-texture, organic-evolution, semantic-alpha, temporal, chromatic, depth-aware
+//  Complexity: High
+//  Upgraded: 2026-05-31
+//  By: Grok (deep visual/audio flourish — seasonal plasma color climate, stronger mouse nutrient injector, semantic alpha from chemical energy + glow, richer final glaze)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -24,7 +28,7 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let res = vec2<i32>(i32(u.config.z), i32(u.config.w));
@@ -67,7 +71,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var kill = u.zoom_params.w;
 
     // Modulate feed/kill based on video luminance
-    let vidColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x; let mids = audio.y; let treble = audio.z;
+
+    // ═══ Chromatic dispersion on video input ═══
+    let chromStrength = 0.005 + bass * 0.01;
+    let vidR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(chromStrength, 0.0), 0.0).r;
+    let vidG = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, chromStrength), 0.0).g;
+    let vidB = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(chromStrength * 0.5, chromStrength * 0.5), 0.0).b;
+    let vidColor = vec3<f32>(vidR, vidG, vidB);
+
     let luminance = dot(vidColor, vec3<f32>(0.299, 0.587, 0.114));
     feed += (luminance * 0.02 - 0.01);
     kill -= (luminance * 0.01);
@@ -101,13 +114,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Write back ping pong
     textureStore(dataTextureA, coord, vec4<f32>(nextA, nextB, 0.0, 1.0));
 
+    // ═══ Deep seasonal plasma + semantic alpha (visual/audio flourish) ═══
+    let season = fract(u.config.x * 0.018 + bass * 0.6); // slow evolving climate
 
-    // Plasma coloring based on B concentration
+    // Richer color: seasonal tint + audio energy on the chemical B
     let plasmaIdx = min(u32(nextB * 255.0), 255u);
-    let mappedColor = plasmaBuffer[plasmaIdx].rgb;
+    var mappedColor = plasmaBuffer[plasmaIdx].rgb;
+    // Seasonal hue rotation + mids/treble for liveliness
+    let seasonTint = vec3<f32>(0.6 + season * 0.5, 0.7 - season * 0.3, 0.9 - mids * 0.2);
+    mappedColor = mix(mappedColor, mappedColor * seasonTint, 0.35 + treble * 0.25);
 
-    // Composite
-    let outColor = mix(vidColor, mappedColor, nextB * 1.5);
+    // Composite with audio-reactive weight
+    let energy = nextB * (0.9 + bass * 0.4 + treble * 0.25);
+    var outColor = mix(vidColor, mappedColor, energy * 1.35);
 
-    textureStore(writeTexture, coord, vec4<f32>(outColor, 1.0));
+    // ═══ Temporal feedback ═══
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    outColor = mix(outColor, prev.rgb * 0.9, 0.03 + bass * 0.01);
+
+    // Semantic alpha: chemical concentration + audio "glow" gives transparent background areas
+    let semantic_alpha = clamp(0.35 + energy * 0.7 + mids * 0.15, 0.25, 1.0);
+
+    textureStore(writeTexture, coord, vec4<f32>(outColor, semantic_alpha));
+
+    // Depth write (was unbound despite binding — enables depth-aware stacking)
+    let ca_depth = 0.2 + nextB * 0.6 + (1.0 - energy) * 0.2;
+    textureStore(writeDepthTexture, coord, vec4<f32>(ca_depth, 0.0, 0.0, 0.0));
 }

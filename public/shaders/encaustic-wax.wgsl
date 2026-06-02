@@ -1,8 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Encaustic Wax - Physical Media Simulation with Alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Encaustic Wax v2
 //  Category: artistic
-//  Features: wax thickness → alpha, translucency, surface pooling
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, painterly, thermal-flow
+//  Complexity: High
+//  Chunks From: encaustic-wax
+//  Created: 2026-05-31
+//  By: 4-Agent Swarm
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -19,143 +23,143 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-fn hash(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
-fn noise(p: vec2<f32>) -> f32 {
-    var i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash(i + vec2<f32>(0.0, 0.0)), hash(i + vec2<f32>(1.0, 0.0)), u.x),
-               mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+fn hash13(p: vec3<f32>) -> f32 {
+  return fract(sin(dot(p, vec3<f32>(127.1, 311.7, 74.7))) * 43758.5453);
+}
+
+fn noise2(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  let a = hash12(i);
+  let b = hash12(i + vec2<f32>(1.0, 0.0));
+  let c = hash12(i + vec2<f32>(0.0, 1.0));
+  let d = hash12(i + vec2<f32>(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
 fn fbm(p: vec2<f32>) -> f32 {
-    var v = 0.0;
-    var a = 0.5;
-    var shift = vec2<f32>(100.0);
-    let rot = mat2x2<f32>(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
-    var pp = p;
-    for (var i = 0; i < 5; i++) {
-        v += a * noise(pp);
-        pp = rot * pp * 2.0 + shift;
-        a *= 0.5;
-    }
-    return v;
+  var v = 0.0;
+  var a = 0.5;
+  var pp = p;
+  for (var i: i32 = 0; i < 4; i = i + 1) {
+    v = v + a * noise2(pp);
+    pp = pp * 2.1;
+    a = a * 0.5;
+  }
+  return v;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 0.15 + 0.05) + 0.004;
+  let b = x * (x * 0.15 + 0.50) + 0.06;
+  let c = x * 0.85 + 0.30;
+  return clamp((a / b) * c, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    var mouse = u.zoom_config.yz;
+  let uv = vec2<f32>(gid.xy) / dims;
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let aspect = dims.x / dims.y;
+  let audio = plasmaBuffer[0].xyz;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Parameters
-    let waxThickness = u.zoom_params.x * 10.0;
-    let textureStrength = u.zoom_params.y;
-    let meltRadius = u.zoom_params.z;
-    let meltIntensity = u.zoom_params.w;
+  // Param mapping: x=BrushScale, y=MeltIntensity, z=PigmentDeposit, w=Relief
+  let brushScale = mix(2.0, 24.0, u.zoom_params.x);
+  let meltIntensity = mix(0.0, 0.14, u.zoom_params.y) * (1.0 + audio.x * 0.6);
+  let pigmentDeposit = mix(0.1, 0.95, u.zoom_params.z);
+  let relief = mix(0.04, 0.60, u.zoom_params.w);
 
-    // Calculate Melting from Mouse
-    let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
-    let meltFactor = smoothstep(meltRadius + 0.1, meltRadius, dist) * meltIntensity;
+  // Thermal field: bass heat gun + local mouse heat
+  let heatGlobal = audio.x * 0.5;
+  let mouseDist = length((mouse - uv) * vec2<f32>(aspect, 1.0));
+  let heatMouse = 1.0 - smoothstep(0.0, 0.45, mouseDist);
+  let heat = heatGlobal + heatMouse * (0.5 + audio.x * 0.5);
+  let viscosity = 1.0 / (1.0 + heat * 3.0);
 
-    // Adjust blur and texture based on melt
-    let currentBlur = waxThickness + meltFactor * 10.0;
-    let currentTexture = textureStrength * (1.0 - meltFactor * 0.5);
+  // Depth-driven wax thickness: nearer = thicker pigment build-up
+  let thickness = mix(0.6, 1.4, depth);
 
-    // Generate Wax Texture (Height map for thickness variation)
-    let waxHeight = fbm(uv * 10.0);
-    let waxDetail = fbm(uv * 25.0 + 100.0) * 0.5;
-    let totalWaxHeight = waxHeight + waxDetail * 0.3;
+  // Layered wax strata with density-driven pigment separation
+  var waxColor = vec3<f32>(0.0);
+  var strataMask = 0.0;
+  for (var layer: i32 = 0; layer < 3; layer = layer + 1) {
+    let lf = f32(layer);
+    let freq = brushScale * (1.0 + lf * 0.7);
+    let n = fbm(uv * freq * 0.4 + vec2<f32>(time * 0.08 * viscosity, -time * 0.06 * viscosity) + lf * 4.3);
+    let density = smoothstep(0.25 + lf * 0.18, 0.65 + lf * 0.12, n);
+    let layerThick = density * relief * thickness * (1.0 - lf * 0.28);
+    let pigment = mix(vec3<f32>(0.92, 0.72, 0.32),
+                      mix(vec3<f32>(0.95, 0.38, 0.18), vec3<f32>(0.75, 0.20, 0.10), lf / 2.0),
+                      n * 0.6 + audio.y * 0.15);
+    waxColor = mix(waxColor, pigment, layerThick * pigmentDeposit);
+    strataMask = strataMask + layerThick;
+  }
 
-    // Distort UV slightly based on height (Refraction)
-    let distortUV = uv + vec2<f32>(waxHeight - 0.5) * 0.01 * currentTexture;
+  // Viscous flow displacement
+  let flow = vec2<f32>(
+    noise2(uv * brushScale + vec2<f32>(time * 0.2, -time * 0.15)) - 0.5,
+    noise2(uv * brushScale * 1.3 + vec2<f32>(-time * 0.1, time * 0.25)) - 0.5
+  ) * meltIntensity * viscosity;
+  let displacedUV = clamp(uv + flow / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Blur Loop (Box Blur approximation)
-    var colorSum = vec3<f32>(0.0);
-    var totalWeight = 0.0;
-    let texel = 1.0 / resolution;
+  let base = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 
-    let samples = 5.0;
-    for (var x = -2.0; x <= 2.0; x += 1.0) {
-        for (var y = -2.0; y <= 2.0; y += 1.0) {
-            let offset = vec2<f32>(x, y) * currentBlur * texel;
-            let weight = 1.0 / (1.0 + length(vec2<f32>(x, y)));
-            colorSum += textureSampleLevel(readTexture, u_sampler, distortUV + offset, 0.0).rgb * weight;
-            totalWeight += weight;
-        }
-    }
+  // Impasto ridge from top strata
+  let ridge = smoothstep(0.30, 0.80, strataMask) * relief;
+  let normal = vec3<f32>(flow * 10.0, 1.0 - length(flow) * 5.0);
+  let lightDir = normalize(vec3<f32>(0.3, 0.5, 1.0));
+  let ndotl = max(dot(normalize(normal), lightDir), 0.0);
 
-    var finalColor = colorSum / totalWeight;
+  // Subsurface scattering approximation
+  let sss = smoothstep(0.15, 0.55, strataMask) * vec3<f32>(1.0, 0.45, 0.15) * 0.18 * depth;
 
-    // Add specular highlights for wax surface
-    let h1 = fbm((uv + vec2<f32>(texel.x, 0.0)) * 10.0);
-    let h2 = fbm((uv + vec2<f32>(0.0, texel.y)) * 10.0);
-    let normal = normalize(vec3<f32>(h1 - waxHeight, h2 - waxHeight, 0.1));
-    let lightDir = normalize(vec3<f32>(mouse.x - uv.x, mouse.y - uv.y, 0.5));
+  // Metallic pigment sparkle
+  let sparkle = pow(max(hash13(vec3<f32>(uv * 90.0, time * 0.5)), 0.0), 20.0) * audio.z * relief * 2.5;
 
-    let spec = pow(max(dot(normal, lightDir), 0.0), 10.0) * currentTexture * 0.5;
-    finalColor += spec;
+  // HDR specular on raised ridges
+  let spec = pow(ndotl, 5.0) * ridge * ridge * (0.30 + audio.z * 0.6);
 
-    // Warm tint for melt
-    if (meltFactor > 0.0) {
-        finalColor = mix(finalColor, finalColor * vec3<f32>(1.1, 1.05, 0.9), meltFactor);
-    }
+  // Canvas grain texture
+  let canvasLarge = noise2(uv * 40.0) * 0.06;
+  let canvasFine = noise2(uv * 200.0) * 0.03;
+  let canvasMicro = noise2(uv * 500.0) * 0.015;
+  let canvas = canvasLarge + canvasFine + canvasMicro;
 
-    // ENCAUSTIC WAX ALPHA CALCULATION
-    // Wax has unique transparency properties:
-    // - Thick areas: more opaque (0.7-0.95 alpha)
-    // - Thin areas: semi-translucent (0.3-0.6 alpha)
-    // - Melted/pooled areas: higher opacity due to accumulation
-    // - Encaustic medium allows light to pass through thin layers
-    
-    // Base wax thickness from height map
-    let base_thickness = 0.3 + totalWaxHeight * 0.7;
-    
-    // Melted wax pools and becomes thicker
-    let melt_thickness = base_thickness + meltFactor * 0.4;
-    
-    // WAX THICKNESS → ALPHA MAPPING
-    // Thin wax glaze = more transparent
-    // Thick impasto = more opaque
-    var wax_alpha = mix(0.35, 0.92, melt_thickness * (0.5 + textureStrength * 0.5));
-    
-    // Surface texture creates variation in perceived thickness
-    // Raised areas catch light and appear more solid
-    let surface_relief = smoothstep(0.3, 0.7, waxHeight);
-    wax_alpha *= mix(0.9, 1.0, surface_relief);
-    
-    // Translucency effect: thin areas allow underlying image to show through
-    // Thinner in valleys, thicker on peaks
-    let valley_depth = 1.0 - waxDetail;
-    let translucency = mix(0.6, 1.0, valley_depth);
-    wax_alpha *= translucency;
-    
-    // Edge feathering for wax drips/flow
-    let edge_mask = smoothstep(0.0, 0.15, melt_thickness);
-    wax_alpha *= edge_mask;
-    
-    // Add warm color shift for wax medium
-    let wax_tint = vec3<f32>(1.02, 0.98, 0.92); // Warm amber tint
-    finalColor *= mix(vec3<f32>(1.0), wax_tint, melt_thickness * 0.5);
-    
-    // Deepen color in thick areas (more pigment/pigment density)
-    let depth_darken = mix(1.0, 0.85, melt_thickness * textureStrength);
-    finalColor *= depth_darken;
+  // Luminance-based bloom
+  let lum = dot(base.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let bloom = smoothstep(0.55, 0.9, lum) * 0.12;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, wax_alpha));
+  // Vignette
+  let vignette = 1.0 - smoothstep(0.3, 0.8, length((uv - 0.5) * vec2<f32>(aspect, 1.0))) * 0.2;
 
-    // Store wax thickness in depth
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(melt_thickness, 0.0, 0.0, wax_alpha));
+  var finalColor = base.rgb;
+  finalColor = mix(finalColor, finalColor * 0.6 + waxColor * 0.65, pigmentDeposit * (0.35 + ridge));
+  finalColor = finalColor + vec3<f32>(1.0, 0.96, 0.88) * spec + sss + sparkle;
+  finalColor = finalColor * (1.0 + canvas) + vec3<f32>(bloom);
+  finalColor = finalColor * vignette;
+  finalColor = acesToneMap(finalColor);
+
+  let waxOpacity = clamp(base.a * 0.7 + strataMask * 0.35, 0.1, 0.95);
+  let finalAlpha = clamp(waxOpacity * pigmentDeposit * depth, 0.08, 0.98);
+  let outDepth = clamp(mix(depth, 0.25 + ridge * 0.75, 0.25), 0.0, 1.0);
+
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(ridge, pigmentDeposit, heatMouse, finalAlpha));
 }

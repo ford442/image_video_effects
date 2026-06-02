@@ -43,13 +43,7 @@ fn fs_main(in: VSOut) -> @location(0) vec4f {
 }
 `;
 
-/**
- * Full-screen blit shader
- * Renders the final rgba32float compute output to the canvas.
- * Uses textureLoad (no sampler) to avoid float32-filterable requirement at blit.
- * Applies simple gamma correction (linear → sRGB).
- */
-export const BLIT_WGSL = /* wgsl */ `
+const makeBlitWGSL = (flipY: boolean) => /* wgsl */ `
 struct VSOut {
   @builtin(position) pos : vec4f,
   @location(0)       uv  : vec2f,
@@ -65,8 +59,7 @@ fn vs(@builtin(vertex_index) idx: u32) -> VSOut {
   );
   var out: VSOut;
   out.pos = vec4f(p[idx], 0.0, 1.0);
-  // NDC → UV:  x [-1,1]→[0,1],  y [-1,1]→[1,0]  (flip Y for texture convention)
-  out.uv  = p[idx] * vec2f(0.5, -0.5) + vec2f(0.5);
+  out.uv  = p[idx] * vec2f(0.5, ${flipY ? '-0.5' : '0.5'}) + vec2f(0.5);
   return out;
 }
 
@@ -82,3 +75,15 @@ fn fs(in: VSOut) -> @location(0) vec4f {
   return vec4f(rgb, 1.0);
 }
 `;
+
+/**
+ * Full-screen blit shader for sampled media and shader outputs that already
+ * match texture-space Y-down coordinates.
+ */
+export const BLIT_WGSL = makeBlitWGSL(true);
+
+/**
+ * Full-screen blit shader for procedural/generative output that is authored in
+ * screen-space Y-up coordinates and should not be vertically flipped at present.
+ */
+export const GENERATIVE_BLIT_WGSL = makeBlitWGSL(false);

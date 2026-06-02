@@ -1,6 +1,9 @@
 // ----------------------------------------------------------------
 // Chronodynamic Aether-Weaver Automata
 // Category: generative
+// Features: temporal, chromatic, depth-aware, audio-reactive, mouse-driven
+// Complexity: High
+// Upgraded: 2026-05-31
 // ----------------------------------------------------------------
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -134,6 +137,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         thread_glow += plasma_color * intensity * aether_bloom * 0.5;
     }
 
+    // Audio analysis
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Temporal Echo Trails (Feedback loop for time dilation trails)
     var back_uv = uv - vec2<f32>(0.5);
     back_uv *= 0.99; // Slight zoom in
@@ -155,5 +163,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mix with temporal decay
     final_color = mix(final_color, max(final_color, prev_color * 0.95), temporal_decay);
 
+    // ─── Chromatic dispersion ───
+    let chrStrength = 0.004 + bass * 0.008;
+    let chrR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(chrStrength * (1.0 + mids * 0.5), 0.0), 0.0).r;
+    let chrG = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, chrStrength * (1.0 + treble * 0.3)), 0.0).g;
+    let chrB = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-chrStrength * 0.7 * (1.0 + bass * 0.4), chrStrength * 0.3), 0.0).b;
+    let chrColor = vec3<f32>(chrR, chrG, chrB);
+    final_color = mix(final_color, chrColor, 0.2 + bass * 0.15);
+
+    // ─── Temporal feedback via dataTextureC ───
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    final_color = mix(final_color, prev.rgb * 0.9, 0.03 + bass * 0.01);
+
+    let depthVal = length(thread_glow) * 0.5 + gear_glow.b * 0.3;
     textureStore(writeTexture, coords, vec4<f32>(final_color, 1.0));
+    textureStore(writeDepthTexture, coords, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, vec4<f32>(thread_glow.r, thread_glow.g, gear_glow.b, 1.0));
 }

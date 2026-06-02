@@ -1,8 +1,9 @@
 {
   "id": "holographic-projection-failure",
-  "name": "Holo-Projection Failure",
+  "name": "Holo-Projection Failure v2",
+  "category": "retro-glitch",
   "url": "shaders/holographic-projection-failure.wgsl",
-  "description": "A failing holographic transmission. Glitches stabilize when the mouse 'tunes' the signal locally.",
+  "description": "Holographic projection failure simulation with phase wrapping errors, bit-depth truncation, scanline desync, and block corruption. Bass triggers cascading failure modes; mouse repairs the signal locally. Depth controls projection plane distance.",
   "params": [
     {
       "id": "instability",
@@ -37,6 +38,7 @@
     "mouse-driven",
     "audio-reactive",
     "audio-driven",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
@@ -44,6 +46,11 @@
     "retro",
     "vintage",
     "audio",
-    "music"
+    "music",
+    "holographic",
+    "failure",
+    "corruption",
+    "scanline",
+    "depth-aware"
   ]
 }

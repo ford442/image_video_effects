@@ -2,48 +2,58 @@
   "id": "generative-turing-veins",
   "name": "Turing Veins Generative",
   "url": "shaders/generative-turing-veins.wgsl",
-  "description": "Generative multiscale reaction-diffusion Turing patterns forming organic vein networks.",
+  "description": "Multiscale reaction-diffusion Turing patterns generating organic vein/network structures with bioluminescent glow, chromatic activator/inhibitor separation, temporal colony evolution via dataTextureC, and audio-driven feed rate modulation.",
   "features": [
     "mouse-driven",
     "generative",
+    "audio-reactive",
+    "temporal",
+    "semantic-alpha",
     "reaction-diffusion",
     "biological"
   ],
   "tags": [
     "procedural",
-    "generative"
+    "generative",
+    "turing",
+    "veins",
+    "organic",
+    "chromatic",
+    "audio-reactive",
+    "temporal",
+    "bioluminescence"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
+      "id": "scale1",
+      "name": "Primary Scale",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "param2",
-      "name": "Speed",
+      "id": "scale2",
+      "name": "Secondary Scale",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "param3",
-      "name": "Scale",
+      "id": "feedRate",
+      "name": "Feed Rate",
       "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "min": 0.0,
+      "max": 1.0,
       "step": 0.01
     },
     {
-      "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
+      "id": "veinGlow",
+      "name": "Vein Glow",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.5,
       "step": 0.01
     }
   ]

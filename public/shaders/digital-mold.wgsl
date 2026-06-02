@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Digital Mold
 //  Category: image
-//  Features: mouse-driven, audio-reactive, audio-driven, upgraded-rgba
-//  Complexity: Medium
+//  Features: animated, reaction-diffusion, spore-noise, depth-humidity, upgraded-rgba
+//  Complexity: High
+//  Chunks From: digital-mold, reaction-diffusion, fbm, bass_env
 //  Created: 2024-01-01
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,21 +29,39 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn hash(p: vec2<f32>) -> f32 {
-    var p3  = fract(vec3<f32>(p.xyx) * .1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
+fn hash21(p: vec2<f32>) -> f32 {
+  let h = dot(p, vec2<f32>(127.1, 311.7));
+  return fract(sin(h) * 43758.5453123);
 }
 
-fn noise(p: vec2<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash(i + vec2<f32>(0.0, 0.0)), hash(i + vec2<f32>(1.0, 0.0)), u.x),
-               mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  let a = hash21(i);
+  let b = hash21(i + vec2<f32>(1.0, 0.0));
+  let c = hash21(i + vec2<f32>(0.0, 1.0));
+  let d = hash21(i + vec2<f32>(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-@compute @workgroup_size(8, 8, 1)
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+  var sum = 0.0;
+  var amp = 0.5;
+  var freq = 1.0;
+  for (var i = 0; i < octaves; i = i + 1) {
+    sum = sum + amp * valueNoise(p * freq);
+    freq = freq * 2.0;
+    amp = amp * 0.5;
+  }
+  return sum;
+}
+
+fn bass_env(bass: f32, mids: f32) -> f32 {
+  return 1.0 + bass * 0.3 + mids * 0.1;
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
@@ -55,32 +74,53 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let mouse = u.zoom_config.yz;
 
-    let decayRate = u.zoom_params.x;
-    let noiseScale = u.zoom_params.y * 50.0 + 10.0;
-    let spread = u.zoom_params.z;
-    let colorShift = u.zoom_params.w;
-
-    let aspect = resolution.x / resolution.y;
-    let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
-
-    let n = noise(uv * noiseScale + time * (0.1 + bass * 0.2));
-    let mask = smoothstep(spread, max(0.0, spread - 0.2), dist + (n * 0.1 - 0.05));
-
-    var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-    let moldTint = vec3<f32>(0.2, 0.8, 0.3);
-    let pixelSize = 10.0 / noiseScale;
-    let pixelUV = clamp(floor(uv / pixelSize) * pixelSize, vec2<f32>(0.0), vec2<f32>(1.0));
-    let pixelColor = textureSampleLevel(readTexture, u_sampler, pixelUV, 0.0);
-
-    let decayed = vec4<f32>(mix(pixelColor.rgb, moldTint, colorShift), pixelColor.a);
-    let blendFactor = mask * decayRate * color.a;
-    color = mix(color, decayed, blendFactor);
-
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
+    let feedRate = mix(0.01, 0.09, u.zoom_params.x) * bass_env(bass, mids);
+    let killRate = mix(0.01, 0.07, u.zoom_params.y);
+    let diffusionA = mix(0.5, 1.5, u.zoom_params.z);
+    let diffusionB = u.zoom_params.w;
+
+    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+    var a = prev.r;
+    var b = prev.g;
+
+    let e = 1.0 / resolution.x;
+    let right = textureSampleLevel(dataTextureC, non_filtering_sampler, clamp(uv + vec2<f32>(e, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let left = textureSampleLevel(dataTextureC, non_filtering_sampler, clamp(uv - vec2<f32>(e, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let top = textureSampleLevel(dataTextureC, non_filtering_sampler, clamp(uv + vec2<f32>(0.0, e), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let bottom = textureSampleLevel(dataTextureC, non_filtering_sampler, clamp(uv - vec2<f32>(0.0, e), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+
+    let lapA = right.r + left.r + top.r + bottom.r - 4.0 * a;
+    let lapB = right.g + left.g + top.g + bottom.g - 4.0 * b;
+
+    let reaction = a * b * b;
+    a = a + diffusionA * lapA - reaction + feedRate * (1.0 - a);
+    b = b + diffusionB * lapB + reaction - (killRate + feedRate) * b;
+    a = clamp(a, 0.0, 1.0);
+    b = clamp(b, 0.0, 1.0);
+
+    // Depth humidity: foreground grows faster
+    let humidity = mix(0.7, 1.3, depth);
+    b = b * humidity;
+
+    // Mouse spore injection
+    let mouseDist = distance(uv, mouse);
+    let spore = smoothstep(0.05, 0.0, mouseDist) * bass_env(bass, mids);
+    b = b + spore * 0.1;
+    b = clamp(b, 0.0, 1.0);
+
+    let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+
+    // Mold palette: deep green to blue-black with spore highlights
+    let moldColor = mix(vec3<f32>(0.05, 0.15, 0.05), vec3<f32>(0.0, 0.4, 0.2), a);
+    let sporeColor = vec3<f32>(0.6, 0.9, 0.3) * b * (1.0 + treble * 0.5);
+    let combined = moldColor + sporeColor;
+
+    let finalRGB = mix(source.rgb, combined, b * 0.7);
+    let alpha = clamp(source.a * 0.5 + b * 0.4 + a * 0.2, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(a, b, 0.0, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

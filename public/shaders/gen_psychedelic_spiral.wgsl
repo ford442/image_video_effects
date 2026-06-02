@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Superformula Spirograph Spiral
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal, spirograph,
+//  Features: mouse-driven, audio-reactive, temporal, chromatic, depth-aware, spirograph,
 //            superformula, feedback-warp
-//  Upgraded: 2026-05-23
+//  Complexity: High
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -112,9 +113,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     historyUV.x = historyUV.x / aspect;
     historyUV = historyUV + 0.5 + mouseOffset * 0.15;
 
-    let prev = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0).rgb;
+    // Chromatic temporal feedback: per-channel offset sampling
+    let prevR = textureSampleLevel(dataTextureC, u_sampler, historyUV + vec2<f32>(bass * 0.008, 0.0), 0.0).r;
+    let prevG = textureSampleLevel(dataTextureC, u_sampler, historyUV + vec2<f32>(0.0, mids * 0.006), 0.0).g;
+    let prevB = textureSampleLevel(dataTextureC, u_sampler, historyUV - vec2<f32>(treble * 0.005, 0.0), 0.0).b;
+    let chromaticPrev = vec3<f32>(prevR, prevG, prevB);
     let feedbackMix = mix(0.12, 0.78, feedback);
-    color = mix(color, prev, feedbackMix * (0.42 + band * 0.28));
+    color = mix(color, chromaticPrev, feedbackMix * (0.42 + band * 0.28));
+
+    // Standard temporal feedback blend
+    let prevStandard = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    color = mix(color, prevStandard.rgb * 0.9, 0.03 + bass * 0.01);
+
+    // Chromatic dispersion: per-channel audio boosts
+    color.r *= 1.0 + bass * 0.1;
+    color.g *= 1.0 + mids * 0.08;
+    color.b *= 1.0 + treble * 0.1;
 
     let edgeFade = 1.0 - smoothstep(0.35, 0.82, length(p));
     let presence = clamp(pattern * edgeFade, 0.0, 1.0);

@@ -21,24 +21,25 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Retro GB Palette
-// 0: Darkest (0x0F, 0x38, 0x0F) -> (15, 56, 15)
-// 1: Dark    (0x30, 0x62, 0x30) -> (48, 98, 48)
-// 2: Light   (0x8B, 0xAC, 0x0F) -> (139, 172, 15)
-// 3: Lightest(0x9B, 0xBC, 0x0F) -> (155, 188, 15)
-fn get_palette(intensity: f32) -> vec3<f32> {
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn get_palette(intensity: f32, shift: f32) -> vec3<f32> {
     let col0 = vec3<f32>(15.0, 56.0, 15.0) / 255.0;
     let col1 = vec3<f32>(48.0, 98.0, 48.0) / 255.0;
     let col2 = vec3<f32>(139.0, 172.0, 15.0) / 255.0;
     let col3 = vec3<f32>(155.0, 188.0, 15.0) / 255.0;
 
-    // Quantize intensity to 4 levels
-    let val = clamp(intensity, 0.0, 1.0) * 3.0;
+    let val = clamp(intensity + shift, 0.0, 1.0) * 3.0;
     let idx = floor(val);
     let frac = fract(val);
 
-    // Hard steps usually look more "retro", but let's allow slight mix for smoothness if desired?
-    // The prompt asks for "retro game boy", so hard quantization is better.
     if (idx < 0.5) { return col0; }
     if (idx < 1.5) { return col1; }
     if (idx < 2.5) { return col2; }
@@ -50,78 +51,87 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    var mouse = u.zoom_config.yz; // 0..1
+    let mouse = u.zoom_config.yz;
+    let pixel = vec2<i32>(global_id.xy);
 
-    // Parameters
-    // Pixel Size: 1.0 (coarse) to 0.0 (native resolution)
-    // We map 0..1 to a divider.
     let pSizeParam = u.zoom_params.x;
-    let pixelDiv = mix(1.0, 16.0, pSizeParam); // 1.0 = native, 16.0 = very blocky
-    // Actually, "Pixel Size" implies blockiness.
-    // If pSizeParam is 0, we want high res (divider 1).
-    // If pSizeParam is 1, we want low res (divider large).
-    // BUT typically pixel shaders work better if we define "pixels per screen" or "size of pixel".
-    // Let's use pixel block size in screen pixels.
-    let blockSize = max(1.0, floor(pSizeParam * 10.0 + 1.0));
-
-    // Quantize UVs
-    let quantizedPos = floor(vec2<f32>(global_id.xy) / blockSize) * blockSize;
-    let quantizedUV = quantizedPos / resolution;
-
-    // Parameters continued
-    let contrast = u.zoom_params.y; // Base contrast
+    let contrast = u.zoom_params.y;
     let gridStrength = u.zoom_params.z;
     let shadowOffset = u.zoom_params.w;
 
-    // Mouse Interaction
-    // Mouse X adds to Contrast (centered at 0.5)
-    // Mouse Y adds to Brightness
-    let mContrast = (mouse.x - 0.5) * 2.0; // -1 to 1
-    let mBright = (mouse.y - 0.5) * 1.0;   // -0.5 to 0.5
+    // Depth awareness: nearer objects get finer pixel blocks
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let baseBlock = max(1.0, floor(pSizeParam * 10.0 + 1.0));
+    let blockSize = max(1.0, baseBlock * (1.0 - depth * 0.5));
 
+    let quantizedPos = floor(vec2<f32>(global_id.xy) / blockSize) * blockSize;
+    let quantizedUV = quantizedPos / resolution;
+
+    // Audio reactivity: bass drives palette shift, mids add scanline pulse
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let paletteShift = bass * 0.15;
+    let scanPulse = 1.0 + mids * 0.3;
+
+    // Mouse interaction
+    let mContrast = (mouse.x - 0.5) * 2.0;
+    let mBright = (mouse.y - 0.5) * 1.0;
     let finalContrast = clamp(contrast + mContrast * 0.5, 0.0, 2.0);
     let finalBright = mBright;
 
-    // Sample Image
-    let rawColor = textureSampleLevel(readTexture, u_sampler, quantizedUV, 0.0).rgb;
+    // Chromatic aberration on pixel edges
+    let pixelPos = vec2<f32>(global_id.xy) % blockSize;
+    let edgeDist = min(min(pixelPos.x, pixelPos.y), min(blockSize - pixelPos.x, blockSize - pixelPos.y));
+    let edgeFactor = smoothstep(0.0, 1.5, edgeDist);
+    let caOffset = (1.0 - edgeFactor) * 0.008 * (1.0 + depth);
+
+    let rUV = clamp(quantizedUV + vec2<f32>(caOffset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let gUV = quantizedUV;
+    let bUV = clamp(quantizedUV - vec2<f32>(caOffset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+
+    let rRaw = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
+    let gRaw = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
+    let bRaw = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
+    var rawColor = vec3<f32>(rRaw, gRaw, bRaw);
 
     // Ghosting / Shadow
-    // We sample a second time with a slight offset to simulate LCD lag/ghosting
-    let offsetUV = quantizedUV - vec2<f32>(shadowOffset * 0.01, 0.0);
+    let offsetUV = clamp(quantizedUV - vec2<f32>(shadowOffset * 0.01, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
     let shadowColor = textureSampleLevel(readTexture, u_sampler, offsetUV, 0.0).rgb;
 
-    // Convert to Grayscale (Luminance)
     let lumRaw = dot(rawColor, vec3<f32>(0.299, 0.587, 0.114));
     let lumShadow = dot(shadowColor, vec3<f32>(0.299, 0.587, 0.114));
 
-    // Apply Contrast & Brightness
     let cLumRaw = (lumRaw - 0.5) * finalContrast + 0.5 + finalBright;
     let cLumShadow = (lumShadow - 0.5) * finalContrast + 0.5 + finalBright;
-
-    // Mix Shadow (LCD Response Time simulation)
-    // Darker pixels linger. We use a simple mix.
     let finalLum = mix(cLumRaw, cLumShadow, 0.3 * shadowOffset);
 
-    // Map to Palette
-    let paletteColor = get_palette(finalLum);
+    // Map to palette
+    let paletteColor = get_palette(finalLum, paletteShift);
 
-    // Apply Pixel Grid
-    // Darken the edges of the blocks
+    // Pixel grid
     var grid = 1.0;
     if (blockSize > 1.5 && gridStrength > 0.0) {
-        let pixelPos = vec2<f32>(global_id.xy) % blockSize;
-        // Simple 1px line at bottom and right
         let border = step(blockSize - 1.0, pixelPos.x) + step(blockSize - 1.0, pixelPos.y);
         grid = 1.0 - clamp(border, 0.0, 1.0) * gridStrength * 0.5;
     }
 
-    var finalColor = paletteColor * grid;
+    // Scanline modulation from audio mids
+    let scanLine = sin(f32(global_id.y) * 3.14159 / blockSize) * 0.5 + 0.5;
+    var finalColor = paletteColor * grid * mix(1.0, scanLine, mids * 0.4) * scanPulse;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    // Temporal feedback: scanline persistence
+    let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+    let persistence = 0.75;
+    finalColor = mix(finalColor, prev, persistence * (1.0 - grid * 0.3));
 
-    // Pass depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, quantizedUV, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // ACES tone mapping
+    finalColor = acesToneMap(finalColor);
+
+    // Semantic alpha: foreground pixels more opaque, grid lines slightly transparent
+    let alpha = mix(0.55, 1.0, depth) * grid;
+
+    textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

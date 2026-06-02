@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Voronoi Shatter
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: voronoi-shatter
+//  Created: 2026-05-30
+//  By: Copilot CLI
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,8 +20,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -36,11 +42,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
     // Params
-    let density = u.zoom_params.x * 50.0 + 5.0; // 5 to 55
-    let shatterForce = u.zoom_params.y; // 0 to 1
-    let rotationStr = u.zoom_params.z; // 0 to 1
+    let density = (u.zoom_params.x * 50.0 + 5.0) * (1.0 + bass * 0.15);
+    let shatterForce = u.zoom_params.y * (1.0 + bass * 0.25);
+    let rotationStr = clamp(u.zoom_params.z + mids * 0.15, 0.0, 1.0);
     let gapSize = u.zoom_params.w * 0.2; // 0 to 0.2
 
     var mouse = u.zoom_config.yz;
@@ -85,10 +95,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let influence = smoothstep(interactionRadius, 0.0, distMouse) * shatterForce; // 1 at mouse, 0 far away
 
     // Displacement: Move shard AWAY from mouse
-    let displace = normalize(vecToMouse) * influence * 0.2;
-    if (length(vecToMouse) < 0.001) {
-       // Avoid NaN if mouse is exactly on center (unlikely but safe)
-    }
+    let vecLen = max(length(vecToMouse), 0.0001);
+    let displace = (vecToMouse / vecLen) * influence * (0.2 + treble * 0.05);
 
     // Rotation
     let rotAngle = influence * rotationStr * 3.14; // Rotate up to 180 deg
@@ -109,15 +117,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let samplePosAspect = centerPosAspect + rotatedLocal - vec2<f32>(displace.x * aspect, displace.y);
 
     // Back to UV
-    let sampleUV = vec2<f32>(samplePosAspect.x / aspect, samplePosAspect.y);
+    let sampleUV = clamp(
+        vec2<f32>(samplePosAspect.x / aspect, samplePosAspect.y),
+        vec2<f32>(0.001, 0.001),
+        vec2<f32>(0.999, 0.999)
+    );
 
-    var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let baseColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
     // Add shading for 3D effect based on m_dist (distance to center)
-    // Make edges darker?
-    let edge = smoothstep(0.0, 0.5, m_dist); // 0 at center, 1 at edge
-    // Highlight center
-    color = color * (1.0 + (1.0 - edge) * 0.2);
+    let edge = smoothstep(0.18 + gapSize * 0.25, 0.55, m_dist);
+    let shardLight = (1.0 - edge) * (0.2 + bass * 0.1);
+    let seamGlow = smoothstep(0.3 - gapSize, 0.55, m_dist) * (0.08 + treble * 0.12);
+    let finalColor = baseColor.rgb * (1.0 + shardLight) + vec3<f32>(0.05, 0.09, 0.16) * seamGlow;
+    let finalAlpha = clamp(0.26 + (1.0 - edge) * 0.28 + influence * 0.35 + bass * 0.08, 0.18, 0.95);
+    let depth = clamp(
+        textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r + influence * 0.06,
+        0.0,
+        1.0
+    );
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(m_dist, influence, rotAngle / 3.14, finalAlpha));
 }

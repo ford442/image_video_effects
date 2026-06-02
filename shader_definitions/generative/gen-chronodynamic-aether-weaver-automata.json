@@ -9,6 +9,13 @@
     "automata",
     "audio-reactive"
   ],
+  "features": [
+    "temporal",
+    "chromatic",
+    "depth-aware",
+    "audio-reactive",
+    "mouse-driven"
+  ],
   "parameters": [
     {
       "name": "Thread Count",

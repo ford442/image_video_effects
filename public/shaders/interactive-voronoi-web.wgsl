@@ -116,13 +116,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Sample original image
     var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
+    // ═══ UNIQUE VISUAL IDEA: living neural web — pulses race the strands ═══
+    // Treat each Voronoi edge as an axon. A charge pulse travels outward along the
+    // strand (parameterised by distance from the owning cell point), with a random
+    // phase per cell so strands fire independently — a flickering neural network.
+    let cellPhase = hash2(m_point).x * 6.2831;
+    let pulseWave = sin(m_dist * 14.0 - time * (2.0 + pulseSpeed * 6.0) + cellPhase);
+    let pulse = pow(max(pulseWave, 0.0), 4.0);          // sharp racing blips
+    let webPulse = web * (0.4 + pulse * 2.2);            // bright where charge is
+
+    // Synapse nodes — the animated cell points themselves glow as firing hubs.
+    let animPt = 0.5 + 0.5 * sin(time * pulseSpeed + 6.2831 * m_point);
+    let nodeDist = length(animPt - f_st);
+    let nodeFire = 0.6 + 0.4 * sin(time * 3.0 + cellPhase);
+    let node = smoothstep(0.16, 0.0, nodeDist) * nodeFire;
+
     // Mix web
     let webColor = vec3<f32>(0.0, 0.8, 1.0) + vec3<f32>(0.5 * sin(time), 0.0, 0.5 * cos(time));
+    let nodeColor = vec3<f32>(0.7, 0.95, 1.0); // hotter white-cyan at the synapses
 
-    // Final composite
-    let finalGlow = web * (glow + mouseInfluence * 2.0);
-    color = mix(color, vec4<f32>(webColor, 1.0), finalGlow * 0.5);
+    // Final composite — strands carry traveling pulses, nodes flare.
+    let finalGlow = webPulse * (glow + mouseInfluence * 2.0);
+    color = mix(color, vec4<f32>(webColor, 1.0), clamp(finalGlow * 0.5, 0.0, 1.0));
     color = color + vec4<f32>(webColor * finalGlow, 0.0);
+    color = color + vec4<f32>(nodeColor * node * (glow + 0.5 + mouseInfluence * 2.0), 0.0);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
 

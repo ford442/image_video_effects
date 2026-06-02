@@ -14,6 +14,7 @@
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
@@ -159,7 +160,7 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let tex_size = vec2<f32>(u.config.z, u.config.w);
     if (f32(id.x) >= tex_size.x || f32(id.y) >= tex_size.y) {

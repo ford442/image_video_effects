@@ -1,0 +1,54 @@
+{
+  "id": "coral-growth",
+  "name": "Coral Growth",
+  "category": "generative",
+  "url": "shaders/coral-growth.wgsl",
+  "description": "Procedural coral and lichen branching structures that grow organically across cells. Audio accelerates growth and adds color vibrancy.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "branching-structures",
+    "upgraded-rgba",
+    "organic-patterns"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Cell Density",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "complexity",
+      "name": "Branch Complexity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "growth",
+      "name": "Growth Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "color",
+      "name": "Color Shift",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "generative",
+    "coral",
+    "lichen",
+    "organic",
+    "branching",
+    "growth",
+    "audio-reactive",
+    "nature"
+  ]
+}

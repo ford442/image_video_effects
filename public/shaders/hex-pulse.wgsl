@@ -1,4 +1,12 @@
-// --- HEX PULSE ---
+// ═══════════════════════════════════════════════════════════════════
+//  Hex Pulse v2
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Strategy: Honeycomb SDF + damped wave equation + bioluminescent glow
+//  Upgraded: 2026-05-30
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -14,94 +22,115 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
+// ═══ CHUNK: aces_tone_map ═══
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+  let a = vec3<f32>(2.51, 2.51, 2.51);
+  let b = vec3<f32>(0.03, 0.03, 0.03);
+  let c = vec3<f32>(2.43, 2.43, 2.43);
+  let d = vec3<f32>(0.59, 0.59, 0.59);
+  let e = vec3<f32>(0.14, 0.14, 0.14);
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Hex SDF: distance from point to regular hexagon edge
+fn hex_sdf(p: vec2<f32>, r: f32) -> f32 {
+  let k = vec3<f32>(-0.8660254, 0.5, 0.5773503);
+  let ap = abs(p);
+  let d = dot(ap.xy, k.xy) * 2.0;
+  return max(d, ap.x) - r;
+}
+
+// Hex lattice coordinates: returns cell center and local UV
+fn hex_cell(uv: vec2<f32>, scale: f32) -> vec4<f32> {
+  let s = vec2<f32>(1.0, 1.7320508);
+  let h = s * 0.5;
+  let a = fract(uv * scale / s) * s - h;
+  let b = fract((uv * scale - h) / s) * s - h;
+  let local = select(a, b, dot(a, a) > dot(b, b));
+  let cell = uv * scale - local;
+  return vec4<f32>(local, cell);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    // Params
-    let baseSize = mix(50.0, 200.0, 1.0 - u.zoom_params.x); // Param 1: Base Scale (Higher value = smaller hexes)
-    let pulseStrength = u.zoom_params.y;                    // Param 2: Pulse intensity
-    let radius = u.zoom_params.z;                           // Param 3: Influence Radius
-    let speed = u.zoom_params.w;                            // Param 4: Pulse Speed
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    // Mouse Interaction
-    var mouse = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
-    let aspectVec = vec2<f32>(aspect, 1.0);
+  let baseSize = max(u.zoom_params.x, 0.01);
+  let pulseStrength = u.zoom_params.y;
+  let waveDecay = u.zoom_params.z;
+  let speed = u.zoom_params.w;
 
-    let d = distance(uv * aspectVec, mouse * aspectVec);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let attenuation = mix(1.0, 0.3, depth * waveDecay);
 
-    // Calculate dynamic scale based on distance
-    // Pulse wave emanating from mouse? Or just pulsing locally based on distance?
-    // Let's make the hex size pulse.
+  let aspect = resolution.x / resolution.y;
+  let uvAspect = vec2<f32>(uv.x * aspect, uv.y);
+  let mouseAspect = vec2<f32>(mouse.x * aspect, mouse.y);
 
-    let pulse = sin(time * (speed * 10.0) - d * 20.0) * 0.5 + 0.5; // 0 to 1
+  // Hex lattice
+  let scale = baseSize * 18.0;
+  let hexInfo = hex_cell(uvAspect, scale);
+  let local = hexInfo.xy;
+  let cellCenter = hexInfo.zw;
 
-    // Influence mask
-    let mask = smoothstep(radius, 0.0, d); // 1 at mouse, 0 at radius
+  // Distance from mouse to cell center (for local excitation)
+  let distMouse = length(cellCenter - mouseAspect);
+  let mouseExcite = exp(-distMouse * 6.0) * (1.0 + select(0.0, 2.0, u.zoom_config.w > 0.5));
 
-    // Dynamic grid scale
-    // If mask is high (near mouse), we apply pulse to the scale.
-    // If pulseStrength is high, the size variation is large.
+  // Damped wave equation on hex lattice
+  // Wave propagates from mouse outward with interference between cells
+  let cellDist = length(cellCenter - mouseAspect);
+  let wavePhase = time * speed * 6.28318 * (1.0 + bass * 0.4) - cellDist * scale * 2.5;
+  let damping = exp(-cellDist * (1.5 + waveDecay * 3.0) * attenuation);
+  let wave = sin(wavePhase) * damping * (1.0 + mouseExcite + bass * 1.5);
 
-    // Target scale varies between baseSize and baseSize * (1 - pulseStrength)
-    let currentScale = baseSize * (1.0 - (mask * pulseStrength * pulse));
+  // Interference from neighboring cells (approximate with second harmonic)
+  let interference = sin(wavePhase * 2.0 + 1.0472) * damping * 0.35 * pulseStrength;
+  let excitation = wave + interference;
 
-    // Hex Grid Logic
-    let r = vec2<f32>(1.0, 1.7320508);
-    let h = r * 0.5;
+  // Hex edge SDF for cell glow
+  let edgeDist = hex_sdf(local, 0.45);
+  let edge = 1.0 - smoothstep(0.0, 0.08, edgeDist);
+  let edgeChroma = smoothstep(0.0, 0.12, edgeDist) * smoothstep(0.2, 0.0, edgeDist);
 
-    let uvScaled = uv * aspectVec * currentScale;
+  // Chromatic dispersion at cell edges
+  let rOffset = uv + vec2<f32>(edgeChroma * 0.008 / aspect, 0.0) * excitation;
+  let bOffset = uv - vec2<f32>(edgeChroma * 0.008 / aspect, 0.0) * excitation;
+  let colR = textureSampleLevel(readTexture, u_sampler, clamp(rOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let colG = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let colB = textureSampleLevel(readTexture, u_sampler, clamp(bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  var baseColor = vec3<f32>(colR.r, colG.g, colB.b);
 
-    let uvA = uvScaled / r;
-    let idA = floor(uvA + 0.5);
-    let uvB = (uvScaled - h) / r;
-    let idB = floor(uvB + 0.5);
+  // Bioluminescent cell glow
+  let bioColor = vec3<f32>(0.1 + treble * 0.2, 0.55 + mids * 0.25, 0.9 + bass * 0.15);
+  let cellGlow = bioColor * edge * (0.25 + abs(excitation) * 0.35);
 
-    let centerA = idA * r;
-    let centerB = idB * r + h;
+  // HDR bloom on constructive interference nodes
+  let nodeBloom = vec3<f32>(0.9, 0.85, 0.7) * max(excitation, 0.0) * max(excitation, 0.0) * 0.3 * pulseStrength;
 
-    let distA = distance(uvScaled, centerA);
-    let distB = distance(uvScaled, centerB);
+  let combined = baseColor + cellGlow + nodeBloom;
+  let finalRGB = aces_tonemap(combined * (1.0 + bass * 0.15));
 
-    var center = select(centerB, centerA, distA < distB);
-    let centerUV = center / currentScale / aspectVec;
+  // Alpha = cell excitation × interference_amplitude × depth
+  let alpha = clamp(abs(excitation) * pulseStrength * depth + edge * 0.15, 0.0, 1.0);
 
-    // Sample
-    var color = textureSampleLevel(readTexture, u_sampler, centerUV, 0.0);
+  let finalDepth = clamp(depth + edge * 0.04 * abs(excitation), 0.0, 1.0);
 
-    // Add grid lines
-    // Distance to center of hex
-    let localDist = min(distA, distB);
-    // Edge of hex is approx 0.5 in this space (depending on math, but let's eyeball)
-    // Hex inner radius is 0.5 * sqrt(3) ~= 0.866? No, r.x is 1.0.
-    // Actually, max distance in hex is 1/sqrt(3) ~= 0.577.
-
-    let edgeDist = 0.5;
-    let lineSmooth = 0.05 * currentScale / 50.0; // constant visual width
-
-    // Outline near mouse
-    if (mask > 0.1) {
-       // Simple outline logic, not perfect hex distance but close enough for visual
-       if (localDist > 0.45 && localDist < 0.55) {
-           color = mix(color, vec4<f32>(1.0) - color, mask * 0.5);
-       }
-    }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    // Passthrough Depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(excitation, edge, wave, alpha));
 }

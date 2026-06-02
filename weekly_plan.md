@@ -1,8 +1,9 @@
 # image_video_effects — Weekly Plan
 
 ## Today's focus
-**2026-05-23 — Per-shader param presets + AI VJ randomizer.**
-kimi-cli builds a preset system (keyed off `shaderCatalog`) and a live-randomizer operator for the AI VJ stack. Specifically: create `src/services/vjPresets.ts` (VJPreset interface, localStorage save/load/delete, `randomizeParams(shaderIds, catalog)` that samples each param uniformly within [min, max] snapped to step); add a `randomizeActiveParams()` public method to `src/AutoDJ.ts`; wire a "Randomize Params" button and collapsible "Presets" panel (save current stack as named preset, restore/delete) into `src/components/Controls.tsx`. Do not touch `src/renderer/`, `reports/`, or `public/shaders/`.
+<!-- Routine writes here each run. You can delete after day ends, or keep as history. -->
+**2026-05-30 — Bind-group compatibility triage + auto-repair pass (New Idea).**
+Parse `reports/bindgroup_compatibility_report.json` (22k lines, many shaders flagged for mismatched bind-group layouts), categorize the mismatch classes, and auto-apply canonical binding renames (the pattern proven in the 49-shader naga fix pass) to clear flagged shaders — with naga validation gating every fix. This is the largest open backlog risk and directly de-risks multi-slot shader stacking (mismatched layouts break stacking). kimi-cli swarm drives it. Allowed to touch shader source dirs (`shader_definitions/`, `public/shaders/`), `reports/` (read + write the triage output), and a new `scripts/` triage helper. **Must NOT touch `src/renderer/` (immutable engine) or `src/`.**
 
 ## Ideas
 <!--
@@ -20,8 +21,13 @@ Routine will mark picked items as "[in progress — YYYY-MM-DD]".
 - [x] AI VJ stack persistence + history panel
   Add localStorage save/load of generated stacks, a "VJ history" panel showing last N stacks with their vibe prompts, and a one-click "regenerate variation" button. Surface live shader IDs in the UI. Half-day.
   → Completed 2026-05-23 (vjHistory.ts service, saveVJStack in AutoDJ.ts, collapsible VJ History panel with Restore + Regen buttons in Controls.tsx)
-- [in progress — 2026-05-23] Per-shader param presets + AI VJ randomizer
+- [x] Per-shader param presets + AI VJ randomizer
   Build a preset system for param combos (keyed off shaderCatalog), add a "randomize params" operator that samples within min/max/step ranges for each shader in the active AI VJ stack. Enables live-performance use. Full-day.
+  → Completed 2026-05-23 (vjPresets.ts: VJPreset + save/load/delete + randomizeParams with step-snap & [min,max] clamp; randomizeActiveParams() on Alucinate in AutoDJ.ts; Randomize Params / Randomize Slot / Randomize All Slots buttons + collapsible Presets panel save/restore/delete in Controls.tsx; tsc PASS). Verified in repo audit 2026-05-30.
+- [ ] AI VJ "auto-transition" / beat-aware sequencer
+  Extend the AI VJ stack to auto-transition between generated stacks on a timer or audio-beat trigger, cross-fading params via the existing randomizeParams/preset infra. Turns one-shot generation into a continuous live set. Full-day. (Generated 2026-05-30 — runner-up new idea; now the GitHub-issue / Copilot track.)
+- [ ] Multi-slot layer-chain preset packs + shareable URLs
+  Serialize the full 3-slot chain (shaders + params + blend) into a compact shareable URL/JSON, with a curated "preset pack" gallery. Makes presets shareable beyond localStorage, unlocking the public audience. Half-to-full-day. (Generated 2026-05-30 — runner-up new idea.)
 
 ## Backlog
 <!--
@@ -30,16 +36,20 @@ Routine maintains this automatically — you can add items too.
 -->
 - [ ] Storage Manager: verify `/api/images` and `/api/videos` streaming endpoints under load (thread-pool saturation, GCS token refresh edge cases)
 - [ ] Confirm CORS allowlist (`https://test1.1ink.us`) shipped to the VPS
-- [ ] `sync-images` / `sync-videos` admin endpoints need a dry-run mode before first prod run
-- [ ] Bind-group compatibility report (`reports/bindgroup_compatibility_report.json`, 22k-line JSON) needs triage pass — many shaders flagged for mismatched layouts
-- [ ] Test runner broken: `typescript` missing from `node_modules`; run `npm install` in project root before `npm test` / Jest will fail with MODULE_NOT_FOUND. `npm run build` is unaffected.
-- [ ] `layerChain.spec.ts` (292-line multi-slot regression harness) passes structurally but cannot run until the `typescript` dep is restored — add a CI step to enforce `npm ci` before test.
+- [ ] `sync-images` / `sync-videos` admin endpoints need a dry-run mode before first prod run (note: `npm run sync:shaders:dry` exists for shader sync)
+- [ ] Bind-group compatibility report (`reports/bindgroup_compatibility_report.json`, 22k-line JSON) needs triage pass — many shaders flagged for mismatched layouts → **TODAY'S FOCUS**
+- [ ] **37 shader definitions reference missing local WGSL files** (surfaced by sync dry-run 2026-05-30) — triage whether these are intentional storage-only entries or broken refs.
+- [ ] ~~Test runner broken: `typescript` missing from `node_modules`~~ → **CLOSED 2026-05-30**: `npm ci` restores it; CI already enforces `npm ci` before test via `ci.yml`.
+- [ ] ~~`layerChain.spec.ts` — add a CI step to enforce `npm ci` before test~~ → **CLOSED 2026-05-30**: `ci.yml` already has `npm ci` + explicit TypeScript resolution gate before `npm test`.
 
 ## Done
 <!--
 Completed items, routine archives here with date.
 Prune occasionally when this gets long.
 -->
+- 2026-05-30: Hardcoded SFTP password removed from `scripts/deploy.py` (line 251) and `scripts/deploy_app_only.py` (line 38). Both now read `DEPLOY_PASS` env var; `deploy.py` falls back to `getpass.getpass()` interactive prompt; `deploy_app_only.py` already had that fallback. **Rotate the DreamHost credential** — it was committed in plaintext to a public repo.
+- 2026-05-30: Pipeline hygiene pass (Claude Code E task) — all 6 stages green: `npm ci` restored typescript@4.9.5; `npm run build` clean (963 shaders, Compiled successfully); `layerChain.spec.ts` 25/25 PASS; sync dry-run (34 to upload, no writes); deploy scripts verified correct; storage manager AST-clean. Closed two stale backlog items (test runner / CI enforcement — both already solved in ci.yml).
+- 2026-05-23: Per-shader param presets + AI VJ randomizer — `vjPresets.ts` (VJPreset interface; savePreset/loadPresets/deletePreset, localStorage, max 50; `randomizeParams(shaderIds, catalog)` samples uniform [min,max], snaps to step, clamps overshoot), `randomizeActiveParams()` public method on `Alucinate` (`src/AutoDJ.ts`), and Controls.tsx UI: Randomize Params + Randomize Slot + Randomize All Slots buttons and collapsible Presets panel (save named / restore / delete). tsc PASS. Confirmed via repo audit 2026-05-30 (commits 1969be8, be1ccfa).
 - 2026-05-23: AI VJ stack persistence + history panel — vjHistory.ts service (save/load/clear/removeEntry, max 20 entries, localStorage), saveVJStack wired into AutoDJ.generateFromVibe, collapsible "VJ History" panel in Controls.tsx with per-entry Restore (exact stack+params) and Regen (re-fires generateFromVibe with same vibe string) buttons, Clear History button.
 - 2026-05-16: WGSL runtime-error fix pass — all 49 critical shaders in `reports/runtime_errors_report.json` fixed and validated via naga. Patterns: bulk canonical binding renames (videoSampler→u_sampler, outTex→writeTexture, etc.) resolved the majority; false-positive invalid_binding flags cleared for 8 multi-pass shaders; array_bounds ripple clamps added where needed. 49/49 naga OK per `.swarm-state.md`.
 - 2026-05-09: Shader metadata normalization — `shaderCatalog.ts` service built (merges 15 category JSONs + shader_params_extracted.json, in-memory full-text index, module-level cache), wired into `ShaderBrowserWithRatings` (search) and `AutoDJ.buildShaderManifest()` (AI VJ path). Single source of truth confirmed in code audit.
@@ -53,7 +63,7 @@ Prune occasionally when this gets long.
 
 ## Last run
 <!-- Routine writes summary here each run. Overwrites previous. -->
-Date: 2026-05-23
-Mode: User Idea
-Focus: Per-shader param presets + AI VJ randomizer (vjPresets.ts service, randomizeActiveParams() on Alucinate, Randomize Params button + Presets panel in Controls.tsx)
-Outcome: pending
+Date: 2026-05-30
+Mode: New Idea (Ideas list exhausted — all 4 prior ideas completed)
+Focus: Bind-group compatibility triage + auto-repair pass (kimi-cli swarm over reports/bindgroup_compatibility_report.json → categorize mismatches → canonical-rename auto-repair gated by naga).
+Outcome: pending. (Prior in-progress item "Per-shader param presets + AI VJ randomizer" verified COMPLETE this run and archived to Done. Test runner still broken — typescript missing from node_modules; folded into Claude Code hygiene + Jules wrap-up. Note: recent_chats/conversation_search tools were unavailable this run — no Claude.ai chat history; context drawn from repo + weekly_plan.md only.)

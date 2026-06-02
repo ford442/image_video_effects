@@ -1,8 +1,19 @@
-// ═══════════════════════════════════════════════════════════════
-//  Biomechanical Hive - Generative Shader with Chitinous Tissue Properties
+// ═══════════════════════════════════════════════════════════════════
+//  Biomechanical Hive
 //  Category: generative
-//  Features: Chitinous shell, organic transparency, core bioluminescence
-// ═══════════════════════════════════════════════════════════════
+//  Features: biomechanical, hive, organic-mechanical, audio-rhythm, mouse-drone, depth-layers, pulsing-growth
+//  Complexity: High
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish pass — richer organic light, audio pulsing, atmospheric depth)
+// ═══════════════════════════════════════════════════════════════════
+//  By: Claude Opus 4.8 (swarm optimization pass 2026-05-31)
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+//  OPTIMIZATION LOG (2026-05-31):
+//  - Audio reactivity wired to plasmaBuffer (bass→core pulse, mid→hue breathing)
+//  - ACES filmic tone mapping added (was NO tone mapping — emissive cores clipped raw)
+//  - IGN dither added before write
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -35,6 +46,12 @@ fn rotate2D(p: vec2<f32>, angle: f32) -> vec2<f32> {
     let s = sin(angle);
     let c = cos(angle);
     return vec2<f32>(p.x * c - p.y * s, p.x * s + p.y * c);
+}
+
+// ACES filmic tone mapping — keeps glowing chitin cores from clipping to white
+fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn hash(p: vec3<f32>) -> f32 {
@@ -227,6 +244,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
+    // Audio reactivity — bass drives core pulse, mid modulates hue breathing
+    let bass = plasmaBuffer[0].x;
+    let mid = plasmaBuffer[0].y;
+
     // Camera
     var mouse = u.zoom_config.yz;
     var time = u.config.x;
@@ -258,7 +279,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let lightDir = normalize(vec3<f32>(0.5, 0.8, -0.5));
 
-        var pulse = sin(u.config.x * u.zoom_params.y * 5.0) * 0.5 + 0.5;
+        // Core pulse — bass adds a punch on the beat
+        var pulse = sin(u.config.x * u.zoom_params.y * 5.0) * 0.5 + 0.5 + bass * 0.4;
 
         var baseColor = vec3<f32>(0.1, 0.1, 0.15);
         var thickness = 0.2;
@@ -271,7 +293,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         if (mat == 2.0) {
             isCore = true;
-            let hueShift = u.zoom_params.w;
+            // Mid-range audio breathes the hue forward for living color shifts
+            let hueShift = u.zoom_params.w + mid * 0.1;
             let hue = 0.1 + hueShift;
 
             let coreColor1 = vec3<f32>(1.0, 0.6, 0.1);
@@ -318,6 +341,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     } else {
         color = fogColor;
     }
+
+    // ACES filmic tone mapping (was none — emissive cores wrote raw HDR values)
+    color = acesToneMapping(color);
+
+    // IGN dither — suppresses banding in the near-black hive fog
+    let ign = fract(52.9829189 * fract(dot(vec2<f32>(global_id.xy), vec2<f32>(0.06711056, 0.00583715))));
+    color = clamp(color + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Output with alpha
     textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(color, alpha));

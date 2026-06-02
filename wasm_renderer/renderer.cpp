@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
+#include <emscripten/em_js.h>
 #include <cstdio>
 #include <cstring>
 #include <cmath>
@@ -35,6 +36,50 @@
 
 namespace pixelocity {
 
+// ─── JavaScript bridge: create a WebGPU surface from a canvas selector ────────
+//
+// Runs inside the WASM module's JS scope, so it has access to the internal
+// WebGPU object (which manages JS↔WASM handle mapping).
+//
+// Returns the WASM surface handle (pointer-sized integer) on success, 0 on failure.
+// The caller must cast the return value to WGPUSurface.
+EM_JS(uint32_t, JS_CreateSurfaceFromCanvas, (const char* selectorPtr, WGPUDevice deviceHandle), {
+    var selector = UTF8ToString(selectorPtr);
+    var canvasEl = document.querySelector(selector);
+    if (!canvasEl) {
+        console.error('[WASM] Canvas not found for selector:', selector);
+        return 0;
+    }
+    var ctx = canvasEl.getContext('webgpu');
+    if (!ctx) {
+        console.error('[WASM] Failed to get WebGPU canvas context');
+        return 0;
+    }
+    var preferredFormat = (typeof navigator !== 'undefined' && navigator.gpu &&
+                           typeof navigator.gpu.getPreferredCanvasFormat === 'function')
+        ? navigator.gpu.getPreferredCanvasFormat()
+        : 'bgra8unorm';
+    var jsDevice = WebGPU.Internals.jsObjects[deviceHandle >>> 0];
+    if (!jsDevice) {
+        console.error('[WASM] Device JS object not found at handle', deviceHandle);
+        return 0;
+    }
+    try {
+        ctx.configure({
+            device: jsDevice,
+            format: preferredFormat,
+            alphaMode: 'opaque',
+            usage: GPUTextureUsage.RENDER_ATTACHMENT
+        });
+    } catch (err) {
+        console.error('[WASM] Canvas context configure failed:', err);
+        return 0;
+    }
+    var surfacePtr = WebGPU.importJsSurface(ctx);
+    console.log('[WASM] \u2705 Canvas surface created, handle=', surfacePtr, ', format=', preferredFormat);
+    return surfacePtr;
+});
+
 // Helper for WGPUStringView (emdawnwebgpu uses this instead of const char*)
 static WGPUStringView MakeStringView(const char* str) {
     WGPUStringView view;
@@ -42,6 +87,12 @@ static WGPUStringView MakeStringView(const char* str) {
     view.length = str ? strlen(str) : 0;
     return view;
 }
+
+// WGPU_DEPTH_SLICE_UNDEFINED was added in the 2024 WebGPU spec update; provide
+// a fallback if the installed header predates the addition.
+#ifndef WGPU_DEPTH_SLICE_UNDEFINED
+static constexpr uint32_t WGPU_DEPTH_SLICE_UNDEFINED = 0xFFFFFFFFu;
+#endif
 
 // Round `value` up to the nearest multiple of `align` (must be a power-of-2).
 static inline uint32_t AlignUp(uint32_t value, uint32_t align) {
@@ -102,11 +153,15 @@ WebGPURenderer::~WebGPURenderer() {
     Shutdown();
 }
 
-bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight) {
+bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
+                                const char* canvasSelector) {
     if (initialized_) return true;
     
     canvasWidth_ = canvasWidth;
     canvasHeight_ = canvasHeight;
+    if (canvasSelector && *canvasSelector) {
+        canvasSelector_ = canvasSelector;
+    }
     
     // ARCH: [Low] Using printf for logging. Consider abstracting behind
     // a Logger interface to allow different output targets (console, file, etc.)
@@ -195,41 +250,87 @@ bool WebGPURenderer::CreateDevice() {
         return false;
     }
 
-    // Request adapter using callback-based API
-    WGPURequestAdapterOptions adapterOpts = {};
-    adapterOpts.nextInChain = nullptr;
-    adapterOpts.compatibleSurface = nullptr;
-    // Prefer the high-performance GPU (discrete GPU) to match the TypeScript renderer.
-    adapterOpts.powerPreference = WGPUPowerPreference_HighPerformance;
+    // Request adapter using callback-based API.
+    // On Windows + Chrome/Edge, crbug.com/369219127 reports powerPreference is ignored
+    // for requestAdapter() and emdawnwebgpu can return Unavailable despite JS WebGPU
+    // succeeding. We therefore try a broader fallback ladder:
+    //   1) HighPerformance (preferred)
+    //   2) Undefined       (browser default)
+    //   3) LowPower        (alternate hardware path)
+    //   4) Undefined + forceFallbackAdapter=true (software adapter last resort)
+    struct AdapterAttempt {
+        WGPUPowerPreference powerPreference;
+        bool forceFallbackAdapter;
+    };
+    const AdapterAttempt adapterAttempts[] = {
+        { WGPUPowerPreference_HighPerformance, false },
+        { WGPUPowerPreference_Undefined,       false },
+        { WGPUPowerPreference_LowPower,        false },
+        { WGPUPowerPreference_Undefined,       true  }
+    };
+    constexpr size_t kAdapterAttemptCount = sizeof(adapterAttempts) / sizeof(adapterAttempts[0]);
 
     WGPUAdapter rawAdapter = nullptr;
-    auto adapterCallback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
-                               WGPUStringView message, void* userdata1, void* /*userdata2*/) {
-        if (status == WGPURequestAdapterStatus_Success) {
-            *static_cast<WGPUAdapter*>(userdata1) = adapter;
-        } else {
-            printf("❌ Adapter request failed! Status: %d\n", status);
-            if (message.data && message.length > 0) {
-                printf("   Message: %.*s\n", (int)message.length, message.data);
+
+    for (size_t attempt = 0; attempt < kAdapterAttemptCount && rawAdapter == nullptr; ++attempt) {
+        WGPUPowerPreference pref = adapterAttempts[attempt].powerPreference;
+        bool useFallbackAdapter = adapterAttempts[attempt].forceFallbackAdapter;
+        const char* prefName = (pref == WGPUPowerPreference_HighPerformance) ? "HighPerformance" :
+                               (pref == WGPUPowerPreference_Undefined)       ? "Undefined"       :
+                               "LowPower";
+
+        printf("[WASM] Requesting WebGPU adapter (attempt %zu/%zu, powerPreference=%s, fallbackAdapter=%s)...\n",
+               attempt + 1,
+               kAdapterAttemptCount,
+               prefName,
+               useFallbackAdapter ? "true" : "false");
+
+        WGPURequestAdapterOptions adapterOpts = {};
+        adapterOpts.nextInChain = nullptr;
+        adapterOpts.compatibleSurface = nullptr;
+        adapterOpts.powerPreference = pref;
+        adapterOpts.forceFallbackAdapter = useFallbackAdapter;
+
+        WGPUAdapter adapterFromCallback = nullptr;
+
+        auto adapterCallback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
+                                   WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+            auto* outAdapter = static_cast<WGPUAdapter*>(userdata1);
+            if (status == WGPURequestAdapterStatus_Success && adapter) {
+                *outAdapter = adapter;
+            } else {
+                printf("❌ Adapter request failed (status=%d)\n", (int)status);
+                if (message.data && message.length > 0) {
+                    printf("   Message: %.*s\n", (int)message.length, message.data);
+                }
             }
+        };
+
+        // WGPUCallbackMode_WaitAnyOnly + ASYNCIFY is required for wgpuInstanceWaitAny.
+        WGPUFuture adapterFuture = wgpuInstanceRequestAdapter(instance_.get(), &adapterOpts,
+            WGPURequestAdapterCallbackInfo{
+                nullptr, WGPUCallbackMode_WaitAnyOnly, adapterCallback, &adapterFromCallback, nullptr
+            });
+
+        WGPUFutureWaitInfo adapterWait = {};
+        adapterWait.future = adapterFuture;
+        wgpuInstanceWaitAny(instance_.get(), 1, &adapterWait, UINT64_MAX);
+
+        if (adapterFromCallback) {
+            rawAdapter = adapterFromCallback;
+            printf("[WASM] Successfully obtained adapter on attempt %zu (powerPref=%s, fallbackAdapter=%s)\n",
+                   attempt + 1, prefName, useFallbackAdapter ? "true" : "false");
+        } else {
+            printf("[WASM] Adapter attempt %zu failed.\n", attempt + 1);
         }
-    };
-
-    // WGPUCallbackMode_WaitAnyOnly is required for wgpuInstanceWaitAny.
-    // Build must include -sASYNCIFY so that wgpuInstanceWaitAny can yield.
-    WGPUFuture adapterFuture = wgpuInstanceRequestAdapter(instance_.get(), &adapterOpts,
-        WGPURequestAdapterCallbackInfo{
-            nullptr, WGPUCallbackMode_WaitAnyOnly, adapterCallback, &rawAdapter, nullptr
-        });
-
-    WGPUFutureWaitInfo adapterWait = {};
-    adapterWait.future = adapterFuture;
-    wgpuInstanceWaitAny(instance_.get(), 1, &adapterWait, UINT64_MAX);
+    }
 
     adapter_.reset(rawAdapter);
 
     if (!adapter_) {
-        printf("❌ Failed to get WebGPU adapter\n");
+        printf("❌ Failed to get WebGPU adapter after all fallback attempts.\n");
+        printf("   This commonly happens on Windows with Chrome/Edge when using emdawnwebgpu.\n");
+        printf("   The JS WebGPU renderer is unaffected. Consider using ?renderer=webgpu or the UI toggle.\n");
         return false;
     }
 
@@ -312,11 +413,27 @@ bool WebGPURenderer::CreateDevice() {
     device_.reset(rawDevice);
 
     if (!device_) {
-        printf("❌ Failed to get WebGPU device\n");
+        printf("❌ Failed to get WebGPU device after adapter was obtained.\n");
         return false;
     }
 
+    printf("[WASM] Successfully created WebGPU device and queue.\n");
+
     queue_.reset(wgpuDeviceGetQueue(device_.get()));
+
+    // Create the WebGPU surface from the canvas, if a selector was provided.
+    if (!canvasSelector_.empty()) {
+        uint32_t surfHandle = JS_CreateSurfaceFromCanvas(
+            canvasSelector_.c_str(), device_.get());
+        if (surfHandle) {
+            surface_.reset(reinterpret_cast<WGPUSurface>(surfHandle));
+            surfaceFormat_ = WGPUTextureFormat_BGRA8Unorm;
+            ConfigureSurface();
+        } else {
+            printf("⚠️  Failed to create WebGPU surface from canvas '%s'\n",
+                   canvasSelector_.c_str());
+        }
+    }
 
     return true;
 }
@@ -569,15 +686,17 @@ void WebGPURenderer::CreateRenderPipeline() {
         }
     )";
 
-    // Fragment shader to sample the write texture
+    // Fragment shader to blit the write texture to the swapchain.
+    // Uses textureLoad (integer coordinates) instead of textureSample so that
+    // we avoid the 'float32-filterable' device feature requirement — RGBA32Float
+    // textures are storage-only by default in WebGPU.
     const char* fragmentShaderCode = R"(
-        @group(0) @binding(0) var u_sampler: sampler;
-        @group(0) @binding(1) var u_texture: texture_2d<f32>;
+        @group(0) @binding(0) var u_texture: texture_2d<f32>;
 
         @fragment
         fn fs_main(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4<f32> {
-            let uv = fragCoord.xy / vec2<f32>(textureDimensions(u_texture));
-            return textureSample(u_texture, u_sampler, uv);
+            let coord = vec2<i32>(fragCoord.xy);
+            return textureLoad(u_texture, coord, 0);
         }
     )";
 
@@ -728,6 +847,142 @@ void WebGPURenderer::CreateBindGroups() {
             wgpuTextureViewRelease(entries[i].textureView);
         }
     }
+
+    // Create the render bind group used for surface presentation.
+    CreateRenderBindGroup();
+}
+
+// ─── Render bind group for surface presentation ───────────────────────────────
+//
+// The render pipeline's fragment shader only binds one texture (writeTexture_)
+// at group 0, binding 0.  We derive the layout automatically from the pipeline
+// so we never need to maintain a separate WGPUBindGroupLayout for it.
+
+void WebGPURenderer::CreateRenderBindGroup() {
+    if (!renderPipeline_.get() || !writeTexture_.get()) return;
+
+    // Derive the auto-layout from the pipeline's group 0.
+    WGPUBindGroupLayout layout =
+        wgpuRenderPipelineGetBindGroupLayout(renderPipeline_.get(), 0);
+    if (!layout) return;
+
+    WGPUTextureViewDescriptor viewDesc = {};
+    viewDesc.format          = WGPUTextureFormat_RGBA32Float;
+    viewDesc.dimension       = WGPUTextureViewDimension_2D;
+    viewDesc.baseMipLevel    = 0;
+    viewDesc.mipLevelCount   = 1;
+    viewDesc.baseArrayLayer  = 0;
+    viewDesc.arrayLayerCount = 1;
+    viewDesc.aspect          = WGPUTextureAspect_All;
+
+    WGPUTextureView texView =
+        wgpuTextureCreateView(writeTexture_.get(), &viewDesc);
+
+    WGPUBindGroupEntry entry = {};
+    entry.binding     = 0;
+    entry.textureView = texView;
+
+    WGPUBindGroupDescriptor bgDesc = {};
+    bgDesc.label      = MakeStringView("Render Bind Group");
+    bgDesc.layout     = layout;
+    bgDesc.entryCount = 1;
+    bgDesc.entries    = &entry;
+
+    renderBindGroup_.reset(wgpuDeviceCreateBindGroup(device_.get(), &bgDesc));
+
+    wgpuTextureViewRelease(texView);
+    wgpuBindGroupLayoutRelease(layout);
+}
+
+// ─── Surface configuration ────────────────────────────────────────────────────
+//
+// (Re-)configures the WebGPU swap chain with the current canvas dimensions.
+// Called once during initialisation and again whenever the canvas is resized.
+
+void WebGPURenderer::ConfigureSurface() {
+    if (!surface_.get() || !device_.get()) return;
+
+    WGPUSurfaceConfiguration config = {};
+    config.device      = device_.get();
+    config.format      = surfaceFormat_;          // BGRA8Unorm
+    config.usage       = WGPUTextureUsage_RenderAttachment;
+    config.alphaMode   = WGPUCompositeAlphaMode_Opaque;
+    config.width       = static_cast<uint32_t>(canvasWidth_);
+    config.height      = static_cast<uint32_t>(canvasHeight_);
+    config.presentMode = WGPUPresentMode_Fifo;
+
+    wgpuSurfaceConfigure(surface_.get(), &config);
+    printf("✅ WebGPU surface configured (%dx%d)\n", canvasWidth_, canvasHeight_);
+}
+
+// ─── Present to canvas ────────────────────────────────────────────────────────
+//
+// Issues a full-screen render pass that blits writeTexture_ (RGBA32Float) to
+// the current swap-chain texture (BGRA8Unorm), then presents it.
+// The GPU automatically tone-maps float→unorm8 (values clamped to [0,1]).
+
+void WebGPURenderer::PresentToSurface() {
+    if (!surface_.get() || !renderPipeline_.get() || !renderBindGroup_.get()) return;
+
+    // Acquire the current swap-chain texture.
+    WGPUSurfaceTexture surfaceTex = {};
+    wgpuSurfaceGetCurrentTexture(surface_.get(), &surfaceTex);
+
+    // Accept both SuccessOptimal (emdawnwebgpu ≥ 2024) and SuccessSuboptimal.
+    // Older emdawnwebgpu headers use the single WGPUSurfaceGetCurrentTextureStatus_Success
+    // enum value (= 0) instead; the #else branch handles that case by name so the code
+    // compiles correctly with either header generation.
+#if defined(WGPU_SURFACE_TEXTURE_INIT)
+    const bool ok = (surfaceTex.status == WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal ||
+                     surfaceTex.status == WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal);
+#else
+    const bool ok = (surfaceTex.status == WGPUSurfaceGetCurrentTextureStatus_Success);
+#endif
+    if (!ok) {
+        if (surfaceTex.texture) wgpuTextureRelease(surfaceTex.texture);
+        return;
+    }
+
+    // Create a view of the swap-chain texture to use as the render attachment.
+    WGPUTextureView surfaceView = wgpuTextureCreateView(surfaceTex.texture, nullptr);
+
+    WGPURenderPassColorAttachment colorAttach = {};
+    colorAttach.view       = surfaceView;
+    colorAttach.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;  // required for 2-D attachments
+    colorAttach.loadOp     = WGPULoadOp_Clear;
+    colorAttach.storeOp    = WGPUStoreOp_Store;
+    colorAttach.clearValue = {0.0, 0.0, 0.0, 1.0};
+
+    WGPURenderPassDescriptor rpDesc = {};
+    rpDesc.label                  = MakeStringView("Present Pass");
+    rpDesc.colorAttachmentCount   = 1;
+    rpDesc.colorAttachments       = &colorAttach;
+    rpDesc.depthStencilAttachment = nullptr;
+
+    WGPUCommandEncoderDescriptor encDesc = {};
+    encDesc.label = MakeStringView("Present Encoder");
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
+
+    WGPURenderPassEncoder rp = wgpuCommandEncoderBeginRenderPass(enc, &rpDesc);
+    wgpuRenderPassEncoderSetPipeline(rp, renderPipeline_.get());
+    wgpuRenderPassEncoderSetBindGroup(rp, 0, renderBindGroup_.get(), 0, nullptr);
+    wgpuRenderPassEncoderDraw(rp, 4, 1, 0, 0);  // 4 verts for TriangleStrip quad
+    wgpuRenderPassEncoderEnd(rp);
+    wgpuRenderPassEncoderRelease(rp);
+
+    WGPUCommandBufferDescriptor cbDesc = {};
+    cbDesc.label = MakeStringView("Present CmdBuf");
+    WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
+    wgpuQueueSubmit(queue_.get(), 1, &cb);
+    wgpuCommandBufferRelease(cb);
+    wgpuCommandEncoderRelease(enc);
+
+    wgpuTextureViewRelease(surfaceView);
+    wgpuTextureRelease(surfaceTex.texture);
+
+    // In browser WebGPU, wgpuSurfacePresent is typically a no-op — the browser
+    // presents automatically at the end of the animation frame.
+    wgpuSurfacePresent(surface_.get());
 }
 
 bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
@@ -1171,8 +1426,14 @@ void WebGPURenderer::RecreateTextures() {
     wgpuQueueWriteTexture(queue_.get(), &dest, videoStagingBuffer_.data(),
                           floatCount * sizeof(float), &layout, &extent);
 
-    // Rebuild the bind group with the new texture views.
+    // Rebuild the bind groups with the new texture views.
+    // CreateBindGroups() already calls CreateRenderBindGroup() internally.
     CreateBindGroups();
+
+    // Reconfigure the surface swap-chain for the new canvas dimensions.
+    if (surface_.get()) {
+        ConfigureSurface();
+    }
 }
 
 void WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
@@ -1459,6 +1720,9 @@ void WebGPURenderer::Render() {
             wgpuCommandEncoderRelease(enc);
         }
     }
+
+    // Present the final composed frame to the canvas (if surface is configured).
+    PresentToSurface();
 
     // Update FPS counter
     frameCount_++;

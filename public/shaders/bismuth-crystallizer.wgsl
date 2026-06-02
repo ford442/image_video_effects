@@ -1,9 +1,11 @@
-// ═══════════════════════════════════════════════════════════════
-//  Bismuth Crystallizer - Physical Light Transmission with Alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Bismuth Crystallizer
 //  Category: image
-//  Features: hopper crystals, iridescence, metallic transmission
-//  Simulates bismuth crystals with thin-film interference
-// ═══════════════════════════════════════════════════════════════
+//  Features: crystal, growth, bismuth, audio-iridescence, step-growth, depth-facets, metallic-shimmer
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer iridescence, audio-driven growth, metallic depth)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -145,6 +147,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let transmitted = crystal_look * (vec3<f32>(1.0) - fresnel) * oxidePurity;
     
     var final_color = mix(img_color, reflected + transmitted, mix_amt);
+
+    // Grok: Audio drives crystal "growth temperature" and iridescence
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let crystalTemp = 1.0 + mids * 0.5 + treble * 0.4;
+    final_color = final_color * mix(vec3<f32>(0.9, 0.95, 1.1), vec3<f32>(1.15, 0.95, 0.75), crystalTemp * 0.6);
 
     // ═══════════════════════════════════════════════════════════════
     // Transmission Alpha

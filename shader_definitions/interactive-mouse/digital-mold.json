@@ -2,33 +2,33 @@
   "id": "digital-mold",
   "name": "Digital Mold",
   "url": "shaders/digital-mold.wgsl",
-  "description": "A digital decay effect that grows from the mouse cursor, eating away the image.",
+  "description": "Reaction-diffusion growth with spore noise and depth humidity. Gray-Scott simulation grows mold patterns from the mouse cursor; depth modulates growth speed. Bass injects spores, treble adds bright sporulation highlights.",
   "params": [
     {
-      "id": "decay",
-      "name": "Decay Rate",
+      "id": "feedRate",
+      "name": "Feed Rate",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "scale",
-      "name": "Noise Scale",
+      "id": "killRate",
+      "name": "Kill Rate",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "spread",
-      "name": "Spread Radius",
+      "id": "diffusionA",
+      "name": "Diffusion A",
       "default": 0.5,
       "min": 0,
       "max": 1
     },
     {
-      "id": "shift",
-      "name": "Color Shift",
-      "default": 0.2,
+      "id": "diffusionB",
+      "name": "Diffusion B",
+      "default": 0.5,
       "min": 0,
       "max": 1
     }
@@ -36,7 +36,9 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven",
+    "reaction-diffusion",
+    "spore-noise",
+    "depth-humidity",
     "upgraded-rgba"
   ],
   "tags": [
@@ -44,6 +46,9 @@
     "image-processing",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "mold",
+    "reaction-diffusion",
+    "organic"
   ]
 }

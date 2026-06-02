@@ -1,15 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alien Flora Ecosystem
-//  Category: advanced-hybrid
-//  Features: raymarching, ecosystem-simulation, subsurface-scattering, temporal
+//  Category: generative
+//  Features: multi-species-flora, audio-seasons, mouse-pollinator, depth-canopy, symbiotic
 //  Complexity: Very High
 //  Chunks From: gen-alien-flora.wgsl, alpha-multi-state-ecosystem.wgsl
 //  Created: 2026-04-18
-//  By: Agent CB-20 — Generative Nature Enhancer
+//  Updated: 2026-05-31
+//  By: Grok (audio-driven symbiosis + mouse as pollinator/disturber)
 // ═══════════════════════════════════════════════════════════════════
 //  Procedural alien flora terrain where each plant cell hosts a
-//  multi-species ecosystem. Species densities modulate plant color,
-//  bioluminescence, and terrain tint. Mouse nurtures local patches.
+//  multi-species ecosystem. Bass = harsh season (dormancy), mids = bloom,
+//  treble = volatile pollination. Mouse acts as pollinator or disturbance.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -69,21 +70,21 @@ fn rotate2D(p: vec2<f32>, angle: f32) -> vec2<f32> {
 
 // ═══ CHUNK: ecosystem state per cell (from alpha-multi-state-ecosystem.wgsl) ═══
 fn ecosystemState(cellId: vec2<f32>, time: f32, growthRate1: f32, growthRate2: f32) -> vec4<f32> {
-    // Procedural ecosystem: R=s1, G=s2, B=resource, A=toxin
+    // Procedural ecosystem: R=s1, G=s2, B=resourceLevel, A=toxin
     let n1 = hash(cellId + vec2<f32>(1.0, 2.0));
     let n2 = hash(cellId + vec2<f32>(3.0, 4.0));
     let n3 = hash(cellId + vec2<f32>(5.0, 6.0));
     
     var s1 = n1 * 0.6 + 0.1 * sin(time * growthRate1 * 2.0 + cellId.x);
     var s2 = n2 * 0.5 + 0.1 * cos(time * growthRate2 * 2.0 + cellId.y);
-    var resource = 0.4 + 0.3 * n3;
+    var resourceLevel = 0.4 + 0.3 * n3;
     var toxin = 0.05 * (s1 + s2);
     
     // Competition damping
     s1 = clamp(s1 * (1.0 - s2 * 0.3), 0.0, 1.0);
     s2 = clamp(s2 * (1.0 - s1 * 0.3), 0.0, 1.0);
     
-    return vec4<f32>(s1, s2, resource, toxin);
+    return vec4<f32>(s1, s2, resourceLevel, toxin);
 }
 
 fn calculateThickness(d: f32, normal: vec3<f32>, p: vec3<f32>) -> f32 {
@@ -212,6 +213,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = vec3<f32>(0.0);
     var alpha = 1.0;
+    var lifeForceOut = 0.0;
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
     let lightDir = normalize(vec3<f32>(0.5, 0.8, -0.5));
 
@@ -230,15 +232,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let cellId = floor(p.xz / density);
         let eco = ecosystemState(cellId, u.config.x, growthRate1, growthRate2);
 
-        // Mouse nurturing: add resource near mouse world position
+        // Mouse nurturing: add resourceLevel near mouse world position
         let mouseWorldX = (u.zoom_config.y - 0.5) * 40.0;
         let mouseWorldZ = (u.zoom_config.z - 0.5) * 40.0 + time * 10.0;
         let mouseWorld = vec2<f32>(mouseWorldX, mouseWorldZ);
         let mouseDist = length(p.xz - mouseWorld);
         let mouseNurture = exp(-mouseDist * 0.3) * select(0.0, 1.0, u.zoom_config.w > 0.5);
+
+        // Grok upgrade: Audio seasons
+        let bass = plasmaBuffer[0].x;
+        let mids = plasmaBuffer[0].y;
+        let treble = plasmaBuffer[0].z;
+        let seasonBloom = mids * 0.8;           // Mids = explosive growth
+        let seasonHarsh = bass * 0.6;           // Bass = dormancy / stress
+        let seasonVolatile = treble * 0.9;      // Treble = chaotic pollination / mutation
+
         var s1 = eco.r + mouseNurture * 0.3;
         var s2 = eco.g + mouseNurture * 0.2;
-        var resource = eco.b + mouseNurture * 0.2;
+        var resourceLevel = eco.b + mouseNurture * 0.2;
+
+        // Seasonal modulation
+        s1 *= (1.0 - seasonHarsh * 0.3);
+        s2 *= (1.0 - seasonHarsh * 0.25);
+        resourceLevel += seasonBloom * 0.4;
+        s1 += seasonVolatile * 0.15;  // Treble causes more chaotic species mixing
+
         s1 = clamp(s1, 0.0, 1.0);
         s2 = clamp(s2, 0.0, 1.0);
 
@@ -258,8 +276,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let glow = u.zoom_params.z;
             baseColor = baseColor * glow;
         } else if (mat == 1.0) {
-            // Terrain tinted by resource level
-            baseColor = mix(vec3<f32>(0.08, 0.15, 0.08), vec3<f32>(0.15, 0.35, 0.15), resource);
+            // Terrain tinted by resourceLevel level
+            baseColor = mix(vec3<f32>(0.08, 0.15, 0.08), vec3<f32>(0.15, 0.35, 0.15), resourceLevel);
             // Toxin purple tint
             baseColor = mix(baseColor, vec3<f32>(0.3, 0.0, 0.4), eco.a * 0.3);
         }
@@ -276,6 +294,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let fogAmount = 1.0 - exp(-t * 0.05);
         color = mix(color, fogColor, fogAmount);
         alpha = calculateOrganicAlpha(mat, thickness, n, lightDir);
+        lifeForceOut = (s1 + s2) * 0.4 + seasonBloom * 0.3;
         if (mat == 2.0 && u.zoom_params.z > 0.7) {
             alpha = mix(alpha, 0.75, 0.3);
         }
@@ -284,6 +303,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = mix(fogColor, vec3<f32>(0.0, 0.0, 0.05), rd.y * 0.5 + 0.5);
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    // Grok upgrade: Better alpha for compositing + seasonal life force
+    let lifeForce = lifeForceOut;
+    let finalAlpha = clamp(alpha * (0.8 + lifeForce), 0.0, 1.1);
+    let a = clamp(finalAlpha, 0.0, 1.0);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color * a, a));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
 }

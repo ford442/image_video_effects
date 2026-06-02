@@ -2,45 +2,57 @@
   "id": "temporal-distortion-field",
   "name": "Temporal Distortion Field",
   "url": "shaders/temporal-distortion-field.wgsl",
-  "description": "Creates a localized time-dilation field. Areas near the mouse update instantly, while distant areas lag behind in time.",
+  "description": "Creates a localized time-dilation field with chromatic time-lag splitting (R past / G present / B future), temporal freeze memory refinement, depth-aware field radius modulation, and fbm warp.",
   "params": [
     {
-      "id": "field_radius",
-      "name": "Field Radius",
+      "id": "freezeAmount",
+      "name": "Freeze Amount",
       "default": 0.5,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "time_lag",
-      "name": "Time Lag",
+      "id": "warpStrength",
+      "name": "Warp Strength",
       "default": 0.5,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "ghosting",
-      "name": "Ghosting",
+      "id": "ghostCount",
+      "name": "Ghost Count",
       "default": 0.3,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "distortion",
-      "name": "Warp",
-      "default": 0,
-      "min": 0,
-      "max": 1
+      "id": "depthWeight",
+      "name": "Depth Weight",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "tags": [
     "warp",
     "distort",
-    "transform"
+    "transform",
+    "temporal",
+    "chromatic",
+    "audio-reactive",
+    "depth-aware",
+    "freeze"
   ]
 }

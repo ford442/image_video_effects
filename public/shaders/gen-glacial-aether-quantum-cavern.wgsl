@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Glacial-Aether Quantum-Cavern
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, chromatic-depth,
+//            temporal-ice-formation, audio-fracture, bass-fog
 //  Complexity: High
-//  Upgraded: 2026-05-23
+//  Created: 2026-05-23
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -57,14 +59,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let coord = vec2<i32>(id.xy);
     let uv = vec2<f32>(id.xy) / res;
 
-    // Audio reactivity
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
     var col = vec3<f32>(0.0);
 
-    // Mouse-driven camera with audio pulse
     let camPulse = 1.0 + bass * 0.4;
     var ro = vec3<f32>(0.0, 0.0, -5.0 + u.config.x) * camPulse;
     var rd = normalize(vec3<f32>(uv * 2.0 - 1.0, 1.0));
@@ -72,7 +72,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let yz = rd.yz * rotate((u.zoom_config.z - 0.5) * 3.14);
     rd = vec3<f32>(rd.x, yz.x, yz.y);
 
-    // Raymarching
+    // Chromatic depth separation: R and B march at slightly different offsets
+    let rdR = normalize(rd + vec3<f32>(0.002 * bass, 0.0, 0.0));
+    let rdB = normalize(rd - vec3<f32>(0.002 * treble, 0.0, 0.0));
+
     var t = 0.0;
     let max_dist = 20.0;
     var hit = false;
@@ -100,7 +103,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = select(missColor, hitColor, hit);
     col += vec3<f32>(0.2, 0.5, 0.6) * (u.config.y + bass * 0.5) * 0.1;
 
-    // Meaningful alpha: encode hit + glow strength + audio
+    // Temporal ice formation: previous frame crystallizes
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let iceForm = mix(col, prev * 0.92, 0.06 + bass * 0.02);
+    col = mix(col, iceForm, 0.5);
+
+    // Audio-reactive fracture overlay
+    let fractureOverlay = vec3<f32>(0.3, 0.6, 0.9) * step(0.97, fract(length(p) * 10.0 + bass * 5.0)) * treble;
+    col += fractureOverlay;
+
     let hitMask = select(0.0, 1.0, hit);
     let alpha = clamp(0.25 + hitMask * 0.4 + depth_fade * 0.3 + bass * 0.15, 0.0, 1.0);
 

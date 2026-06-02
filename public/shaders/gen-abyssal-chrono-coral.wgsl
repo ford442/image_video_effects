@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Abyssal Chrono-Coral
 //  Category: generative
-//  Features: raymarched, mouse-driven, audio-reactive, bioluminescence
-//  Complexity: High
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
+//  Features: raymarched, gravitational-lensing, audio-seasonal-pulses, keystone-sediment, time-dilated-rings, bioluminescent-ecosystem
+//  Complexity: Very High
+//  Chunks From: previous raymarch coral work + gravitational lensing patterns
+//  Created: 2026-05-23
+//  Updated: 2026-05-31
+//  By: Grok (slow geological time + sediment bloom events upgrade)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -58,6 +60,19 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
+// ═══ Slow gravitational lensing around dense coral mass ═══
+fn gravitationalLensing(p: vec3<f32>, coralDist: f32, strength: f32) -> vec3<f32> {
+    let lens = strength / (0.8 + coralDist * 2.0);
+    return vec3<f32>(lens * 0.04, lens * 0.03, 0.0);
+}
+
+// ═══ Time-dilated growth rings (slow geological time) ═══
+fn growthRings(p: vec3<f32>, t: f32, audioPulse: f32) -> f32 {
+    let r = length(p);
+    let ring = sin(r * 8.0 - t * 0.3 + audioPulse * 4.0) * 0.5 + 0.5;
+    return ring * (0.3 + audioPulse * 0.4);
+}
+
 fn map(pos_in: vec3<f32>, time: f32) -> vec2<f32> {
     var p = pos_in;
 
@@ -74,6 +89,11 @@ fn map(pos_in: vec3<f32>, time: f32) -> vec2<f32> {
     var d = 1000.0;
     var s = 1.0;
 
+    // Audio seasonal pulse (mids + treble for biolum rhythm)
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audioPulse = mids * 0.6 + treble * 0.9;
+
     for(var i = 0; i < iterations; i++) {
         p = abs(p) - vec3<f32>(0.5, 1.5, 0.5);
         let rot_xy = rotate2D(0.5 + sin(time * 0.1) * 0.2) * p.xy;
@@ -85,13 +105,14 @@ fn map(pos_in: vec3<f32>, time: f32) -> vec2<f32> {
         s *= 1.2;
         p *= 1.2;
 
-        // Base coral branch
-        let branch = (length(p.xz) - u.zoom_params.x * (1.0 + plasmaBuffer[0].x * 0.5)) / s;
+        // Base coral branch with slow time-dilated growth rings
+        let ringMod = growthRings(p, time, audioPulse);
+        let branch = (length(p.xz) - u.zoom_params.x * (1.0 + plasmaBuffer[0].x * 0.4 + ringMod * 0.3)) / s;
         d = smin(d, branch, 0.2);
     }
 
-    // Bioluminescent nodes at tips
-    let node_d = length(p) / s - (0.2 + plasmaBuffer[0].x * 0.1);
+    // Bioluminescent nodes at tips — now strongly reactive to mids/treble
+    let node_d = length(p) / s - (0.18 + audioPulse * 0.22);
 
     if (node_d < d) {
         return vec2<f32>(node_d, 2.0); // Material 2: nodes
@@ -138,6 +159,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rd.x = rd_xz.x;
     rd.z = rd_xz.y;
 
+    // === SEDIMENT DISTURBANCE (mouse click bloom events) ===
+    let clickCount = u.config.y;
+    let lastClickTime = u.zoom_config.x; // reuse zoom_config.x as recent click time proxy
+    let time = u.config.x;
+    let sedimentDisturbance = smoothstep(0.0, 1.8, time - lastClickTime) * 0.6;
+
     var t = 0.0;
     var d = 0.0;
     var mat = 0.0;
@@ -149,18 +176,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         d = res.x;
         mat = res.y;
 
+        // Apply slow gravitational lensing near coral mass
+        let lens = gravitationalLensing(p, d, u.zoom_params.x * 0.8 + sedimentDisturbance * 1.2);
+        let p_lensed = p + lens;
+
         if (d < 0.001) { break; }
-        t += d * 0.5;
+        t += d * 0.48;
 
         if (mat == 2.0) {
-            acc_glow += 0.01 / (0.01 + d * d) * u.zoom_params.z;
+            // Stronger biolum pulses on mids/treble + sediment disturbance
+            let pulse = plasmaBuffer[0].y * 0.7 + plasmaBuffer[0].z * 1.1 + sedimentDisturbance * 0.9;
+            acc_glow += (0.012 + pulse * 0.008) / (0.01 + d * d) * u.zoom_params.z;
         }
-        if (t > 20.0) { break; }
+        if (t > 22.0) { break; }
     }
 
     var col = vec3<f32>(0.0);
 
-    if (t < 20.0) {
+    if (t < 22.0) {
         let p = ro + rd * t;
         let n = calcNormal(p, local_time);
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
@@ -169,32 +202,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
 
         if (mat == 1.0) {
-            // Subsurface scattering proxy + deep abyssal color
+            // Subsurface scattering proxy + deep abyssal color with slow growth ring influence
+            let ring = growthRings(p, local_time, plasmaBuffer[0].y * 0.6);
             let sss = smoothstep(0.0, 1.0, map(p + l * 0.1, local_time).x);
-            col = vec3<f32>(0.0, 0.2, 0.4) * diff + vec3<f32>(0.0, 0.5, 0.8) * sss + fresnel * vec3<f32>(0.5, 0.8, 1.0);
+            col = vec3<f32>(0.0, 0.18, 0.38) * diff 
+                + vec3<f32>(0.0, 0.48, 0.75) * sss 
+                + fresnel * vec3<f32>(0.45, 0.75, 0.95)
+                + ring * vec3<f32>(0.0, 0.3, 0.4) * 0.6;
         } else {
-            // Bioluminescent nodes
-            col = vec3<f32>(0.0, 1.0, 0.8) * 2.0 + vec3<f32>(1.0, 0.0, 0.5) * fresnel;
+            // Bioluminescent nodes — now pulse dramatically with mids/treble + sediment events
+            let bloom = 1.6 + (plasmaBuffer[0].y + plasmaBuffer[0].z) * 1.4 + sedimentDisturbance * 2.0;
+            col = vec3<f32>(0.0, 0.95, 0.75) * bloom + vec3<f32>(0.9, 0.2, 0.6) * fresnel * 0.8;
         }
     } else {
-        // Starlight background
-        let stars = pow(hash3(rd * 100.0).x, 50.0);
-        col += stars * vec3<f32>(1.0);
+        // Starlight background with faint gravitational distortion
+        let stars = pow(hash3(rd * 110.0).x, 48.0);
+        col += stars * vec3<f32>(0.9, 0.95, 1.0);
     }
 
-    // Add volumetric fog/glow
-    col += acc_glow * vec3<f32>(0.0, 0.5, 1.0);
+    // Add volumetric fog/glow — stronger during bloom events
+    col += acc_glow * vec3<f32>(0.0, 0.55, 0.95) * (1.0 + sedimentDisturbance);
 
-    // Ambient fog
-    col = mix(col, vec3<f32>(0.0, 0.05, 0.1), 1.0 - exp(-0.02 * t));
+    // Ambient abyssal fog
+    col = mix(col, vec3<f32>(0.0, 0.04, 0.09), 1.0 - exp(-0.018 * t));
 
-    // Audio reactivity to overall brightness
-    col *= 1.0 + plasmaBuffer[0].x * 0.2;
+    // Final audio brightness + sediment bloom boost
+    col *= 1.0 + plasmaBuffer[0].x * 0.18 + sedimentDisturbance * 0.7;
 
-        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, coord, vec4<f32>(col, _alpha));
-    let _depth_uv = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
-    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, coord, vec4<f32>(_depth, 0.0, 0.0, 1.0));
+    // Meaningful alpha: biolum intensity + life force (great for compositing)
+    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let bioIntensity = acc_glow * 0.8 + (plasmaBuffer[0].y + plasmaBuffer[0].z) * 0.3;
+    let alpha = clamp(luma * 0.55 + bioIntensity * 0.9 + 0.15, 0.0, 1.15);
+
+    // Premultiplied write
+    let a = clamp(alpha, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(col * a, a));
+
+    // Depth with slight gravitational distortion near coral
+    let depth_uv = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
+    let rawDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, depth_uv, 0.0).r;
+    let depth = mix(rawDepth, rawDepth * 0.92 + t * 0.004, 0.35);
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

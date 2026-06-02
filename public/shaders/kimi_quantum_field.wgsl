@@ -1,3 +1,11 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Kimi Quantum Field
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -43,9 +51,16 @@ fn psi(x: f32, y: f32, t: f32, k: f32, w: f32, sx: f32, sy: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    let coord = vec2<i32>(global_id.xy);
+    if (coord.x >= i32(resolution.x) || coord.y >= i32(resolution.y)) { return; }
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    
+
+    // Audio reactivity: bass energizes wave packets, mids shift hue, treble lights nodes
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Mouse position
     var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
@@ -62,8 +77,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Parameters
     let waveCount = i32(u.zoom_params.x * 8.0) + 3;
     let coherence = u.zoom_params.y;
-    let uncertainty = u.zoom_params.z * 0.5;
-    let decayRate = u.zoom_params.w * 2.0 + 0.5;
+    let uncertainty = u.zoom_params.z * 0.5 * (1.0 + bass * 0.4);
+    let decayRate = (u.zoom_params.w * 2.0 + 0.5) * (1.0 + bass * 0.3);
     
     // Multi-source interference
     var amplitude = 0.0;
@@ -123,16 +138,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = mix(lowEnergy, midEnergy, smoothstep(0.0, 0.5, probability));
     col = mix(col, highEnergy, smoothstep(0.5, 1.0, probability));
     
-    // Add phase-based hue shift
-    col += vec3<f32>(0.3, 0.0, -0.3) * phaseColor * 0.5;
+    // Add phase-based hue shift (mids widen the chromatic swing)
+    col += vec3<f32>(0.3, 0.0, -0.3) * phaseColor * (0.5 + mids * 0.5);
     
     // Uncertainty visualization (blur at edges)
     let edgeDist = 1.0 - length(p);
     let uncertaintyGlow = smoothstep(0.0, 0.3, edgeDist) * uncertainty;
     col += vec3<f32>(1.0, 0.3, 0.6) * uncertaintyGlow * 0.3;
     
-    // Constructive interference nodes
-    let nodes = pow(probability, 3.0) * 2.0;
+    // Constructive interference nodes (treble brightens the antinodes)
+    let nodes = pow(probability, 3.0) * 2.0 * (1.0 + treble * 1.2);
     col += vec3<f32>(0.8, 1.0, 0.9) * nodes;
     
     // Particle measurement (collapse visualization)
@@ -147,6 +162,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Tone mapping
     col = col / (1.0 + col);
     col = pow(col, vec3<f32>(0.95));
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+
+    // Alpha encodes probability density (|ψ|²) + collapse flashes, never flat 1.0
+    let alpha = clamp(probability + nodes * 0.3 + collapsed * mouseDown, 0.0, 1.0);
+    let out = vec4<f32>(col, alpha);
+
+    // Depth: denser probability regions read as nearer
+    let depth = clamp(probability * 1.5, 0.0, 1.0);
+    textureStore(writeTexture, coord, out);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, out);
 }

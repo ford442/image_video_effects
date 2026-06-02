@@ -1,0 +1,4 @@
+- Applied a Standard Hybrid Header and documented the alpha-channel intent near the HDR store path.
+- JSON changes: added explicit `category`.
+- Confidence: High.
+- Suspicious but left alone: alpha here is exposure metadata rather than premultiplied coverage, so I clarified it instead of changing behavior.

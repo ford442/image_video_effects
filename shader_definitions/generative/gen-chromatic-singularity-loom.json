@@ -10,6 +10,16 @@
     "distortion"
   ],
   "description": "A majestic, gravity-warped cosmic loom weaving fractal strings of pure light around a central singularity.",
+  "features": [
+    "raymarched",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal-accretion",
+    "chromatic-lensing",
+    "audio-thread-chaos",
+    "bass-mass-pulse"
+  ],
   "parameters": [
     {
       "id": "gravity_mass",

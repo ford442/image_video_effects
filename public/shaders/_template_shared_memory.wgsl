@@ -168,12 +168,12 @@ fn main(
 ) {
   let resolution = u.config.zw;
   let uv = vec2<f32>(gid.xy) / resolution;
-  
-  // Bounds check
-  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
-    return;
-  }
-  
+
+  // Bounds check — out-of-bounds threads must still participate in the
+  // workgroupBarrier inside loadTileToSharedMemory (barriers require uniform
+  // control flow), so we only skip the final store for them.
+  let inBounds = gid.x < u32(resolution.x) && gid.y < u32(resolution.y);
+
   // ═══════════════════════════════════════════════════════════════════════════════
   // STEP 1: Load data into shared memory
   // ═══════════════════════════════════════════════════════════════════════════════
@@ -194,5 +194,7 @@ fn main(
   // STEP 3: Write output
   // ═══════════════════════════════════════════════════════════════════════════════
   let color = vec3<f32>(newHeight * 0.5 + 0.5);
-  textureStore(writeTexture, gid.xy, vec4<f32>(color, 1.0));
+  if (inBounds) {
+    textureStore(writeTexture, gid.xy, vec4<f32>(color, 1.0));
+  }
 }

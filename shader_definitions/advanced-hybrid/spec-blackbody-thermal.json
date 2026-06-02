@@ -2,20 +2,28 @@
   "id": "spec-blackbody-thermal",
   "name": "Blackbody Thermal",
   "url": "shaders/spec-blackbody-thermal.wgsl",
-  "description": "Maps image luminance to physically-correct blackbody radiation colors using Planck's law. Dark regions glow like embers, medium = white heat, bright = blue plasma.",
+  "description": "Maps image luminance to physically-correct blackbody radiation colors with audio-driven temperature modulation, chromatic temperature gradient, temporal ember persistence via dataTextureC, and HDR glow.",
   "tags": [
     "blackbody",
     "thermal",
     "radiation",
     "physics",
     "HDR",
-    "temperature"
+    "temperature",
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "features": [
     "blackbody-radiation",
     "HDR",
     "physical-color",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "upgraded-rgba"
   ],
   "params": [
     {

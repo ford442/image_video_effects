@@ -1,8 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Lenia - Advanced Alpha with Accumulative
-//  Category: feedback/temporal
-//  Alpha Mode: Accumulative Alpha + Luminance Key
-//  Features: advanced-alpha, cellular-automata, continuous-life
+//  Lenia Cellular Automata
+//  Category: simulation
+//  Features: audio-reactive, temporal, chromatic-species, mouse-interactive,
+//            continuous-life, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -26,32 +28,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ ADVANCED ALPHA FUNCTIONS ═══
-
-// Mode 3: Accumulative Alpha
-fn accumulativeAlpha(
-    newColor: vec3<f32>,
-    newAlpha: f32,
-    prevColor: vec3<f32>,
-    prevAlpha: f32,
-    accumulationRate: f32
-) -> vec4<f32> {
-    let accumulatedAlpha = prevAlpha * (1.0 - accumulationRate * 0.05) + newAlpha * accumulationRate;
-    let totalAlpha = min(accumulatedAlpha, 1.0);
-    
-    let blendFactor = select(newAlpha * accumulationRate / totalAlpha, 0.0, totalAlpha < 0.001);
-    let color = mix(prevColor, newColor, blendFactor);
-    
-    return vec4<f32>(color, totalAlpha);
-}
-
-// Mode 6: Luminance Key Alpha
-fn luminanceKeyAlpha(color: vec3<f32>, threshold: f32, softness: f32) -> f32 {
-    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    return smoothstep(threshold - softness, threshold + softness, luma);
-}
-
-// Kernel growth function (Bell curve)
 fn growthKernel(x: f32) -> f32 {
     return exp(-pow((x - 0.5) / 0.15, 2.0) * 0.5);
 }
@@ -60,20 +36,25 @@ fn growthKernel(x: f32) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
     let uv = vec2<f32>(global_id.xy) / u.config.zw;
-    
-    // Parameters
-    let radius = u.zoom_params.x * 10.0 + 3.0;
-    let growthRate = u.zoom_params.y * 0.1;
+    let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // Audio-driven parameters
+    let radius = (u.zoom_params.x * 10.0 + 3.0) * (1.0 + mids * 0.2);
+    let growthRate = u.zoom_params.y * 0.1 * (1.0 + bass * 0.3);
     let accumulationRate = u.zoom_params.z;
-    let threshold = u.zoom_params.w;
-    
-    // Sample neighborhood
+    let threshold = u.zoom_params.w * (1.0 - treble * 0.1);
+
     let pixelSize = 1.0 / u.config.zw;
     var neighborSum = 0.0;
     var weightSum = 0.0;
-    
-    for (var y: i32 = -2; y <= 2; y++) {
-        for (var x: i32 = -2; x <= 2; x++) {
+
+    // Larger neighborhood for more organic growth
+    let neighRadius = i32(radius * 0.5 + 1.0);
+    for (var y: i32 = -neighRadius; y <= neighRadius; y++) {
+        for (var x: i32 = -neighRadius; x <= neighRadius; x++) {
             if (x == 0 && y == 0) { continue; }
             let offset = vec2<f32>(f32(x), f32(y)) * pixelSize;
             let dist = length(vec2<f32>(f32(x), f32(y)));
@@ -83,41 +64,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             weightSum += weight;
         }
     }
-    
-    let avgNeighbor = neighborSum / weightSum;
+
+    let avgNeighbor = neighborSum / max(weightSum, 0.001);
     let center = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).r;
-    
-    // Lenia update rule
+
+    // Lenia update rule with audio modulation
     let growth = growthKernel(avgNeighbor) * 2.0 - 1.0;
     let newValue = center + growthRate * growth;
-    
-    // Clamp and threshold
     let clamped = clamp(newValue, 0.0, 1.0);
     let finalValue = smoothstep(threshold * 0.5, threshold, clamped);
-    
-    // Color based on value
+
+    // Chromatic species: R, G, B channels evolve with different thresholds
+    let rValue = smoothstep(threshold * 0.5 * 0.9, threshold * 0.9, clamped);
+    let gValue = smoothstep(threshold * 0.5, threshold, clamped);
+    let bValue = smoothstep(threshold * 0.5 * 1.1, threshold * 1.1, clamped);
+
+    // Audio-driven color saturation
     let color = vec3<f32>(
-        finalValue * 0.8,
-        finalValue * (0.5 + 0.5 * sin(finalValue * 3.14)),
-        finalValue * 0.9
+        rValue * (0.7 + 0.3 * sin(finalValue * 3.14 + bass * 2.0)),
+        gValue * (0.5 + 0.5 * sin(finalValue * 3.14 + 2.094 + mids * 2.0)),
+        bValue * (0.8 + 0.2 * sin(finalValue * 3.14 + 4.188 + treble * 2.0))
     );
-    
-    // ═══ ADVANCED ALPHA CALCULATION ═══
+
+    // Temporal accumulation with advanced alpha
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let newAlpha = luminanceKeyAlpha(color, 0.1, 0.05) * finalValue;
-    
-    let accumulated = accumulativeAlpha(
-        color,
-        newAlpha,
-        prev.rgb,
-        prev.a,
-        accumulationRate
-    );
-    
-    textureStore(dataTextureA, coord, vec4<f32>(finalValue, finalValue, finalValue, accumulated.a));
-    textureStore(writeTexture, global_id.xy, accumulated);
-    
-    // Pass through depth
+    let newAlpha = finalValue * (0.5 + bass * 0.1);
+    let accumulatedAlpha = prev.a * (1.0 - accumulationRate * 0.05) + newAlpha * accumulationRate;
+    let totalAlpha = min(accumulatedAlpha, 1.0);
+    let blendFactor = select(newAlpha * accumulationRate / totalAlpha, 0.0, totalAlpha < 0.001);
+    let finalColor = mix(prev.rgb, color, blendFactor);
+
+    // Mouse interaction: inject life near cursor
+    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
+    let mDist = length(uv - mouse);
+    let mouseInfluence = smoothstep(0.1, 0.0, mDist) * mouseDown * 0.5;
+    let influencedColor = mix(finalColor, vec3<f32>(1.0, 0.9, 0.7), mouseInfluence);
+    let influencedAlpha = clamp(totalAlpha + mouseInfluence, 0.0, 1.0);
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    textureStore(dataTextureA, coord, vec4<f32>(finalValue, finalValue, finalValue, influencedAlpha));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(influencedColor, influencedAlpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

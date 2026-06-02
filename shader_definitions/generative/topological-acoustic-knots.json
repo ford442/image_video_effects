@@ -1,0 +1,68 @@
+{
+  "id": "topological-acoustic-knots",
+  "name": "Topological Acoustic Knots",
+  "url": "shaders/topological-acoustic-knots.wgsl",
+  "category": "generative",
+  "description": "Nematic Q-tensor evolution with topological charge computation and trefoil-knot SDF constraint. Schlieren texture with defect-core coloring and HDR bloom on +1 defects. Bass creates defect pairs via Kibble-Zurek quench, mids drive annihilation dynamics, treble adds acoustic phonon waves. Mouse pins director with homeotropic anchoring. Ripples spawn defect loops.",
+  "features": [
+    "nematic-Q-tensor",
+    "topological-charge",
+    "trefoil-sdf",
+    "schlieren-texture",
+    "audio-driven",
+    "mouse-anchoring",
+    "temporal"
+  ],
+  "tags": [
+    "topological",
+    "liquid-crystal",
+    "defects",
+    "audio-reactive",
+    "scientific",
+    "abstract",
+    "knots",
+    "schlieren"
+  ],
+  "params": [
+    {
+      "id": "defectDensity",
+      "name": "Defect Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "How many defects are created by audio"
+    },
+    {
+      "id": "mobility",
+      "name": "Defect Mobility",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "How fast defects move and interact"
+    },
+    {
+      "id": "pairing",
+      "name": "Defect Pairing",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Tendency for defects to annihilate in pairs"
+    },
+    {
+      "id": "mousePower",
+      "name": "Mouse Pinning Strength",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How strongly the mouse can pin or create defects"
+    }
+  ]
+}

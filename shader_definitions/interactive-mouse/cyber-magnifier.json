@@ -1,10 +1,13 @@
 {
   "id": "cyber-magnifier",
   "name": "Cyber Magnifier",
+  "category": "interactive-mouse",
   "url": "shaders/cyber-magnifier.wgsl",
   "description": "High-tech magnifying lens with chromatic aberration and HUD overlay.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -42,6 +45,9 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "magnifier",
+    "cyber",
+    "hud"
   ]
 }

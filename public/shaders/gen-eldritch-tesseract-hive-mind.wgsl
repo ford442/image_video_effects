@@ -7,6 +7,15 @@
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4)  var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5)  var non_filtering_sampler: sampler;
+@group(0) @binding(6)  var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7)  var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8)  var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9)  var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
   config: vec4<f32>, // x: resolution.x, y: resolution.y, z: time, w: aspect
@@ -181,7 +190,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     // Algorithmic Sentinel Swarms (Particles overlaid using fBm flow field visualization)
-    let flow_p = p + vec3<f32>(time * 0.2);
     let noise_val = vnoise3(vec3<f32>(uv * 10.0, time * 0.5));
     // High frequency thresholding for particle look
     var swarm_val = step(0.95 - (swarm_density * 0.05), noise_val);

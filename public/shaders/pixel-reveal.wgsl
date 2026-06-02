@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Pixel Reveal v2
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Chunks From: pixel-reveal
+//  Created: 2026-05-10
+//  Upgraded: 2026-05-30
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,82 +21,118 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=PixelSize, y=Radius, z=Softness, w=Invert
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
+fn hash3(p: vec3<f32>) -> vec3<f32> {
+  var p3 = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
+  p3 += dot(p3, p3.yxz + 33.33);
+  return fract((p3.xxy + p3.yzz) * p3.zyx);
+}
+
+fn aces_tone_map(color: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
+  var uv = vec2<f32>(coord) / resolution;
 
-    var mousePos = u.zoom_config.yz;
+  let time = u.config.x;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let mousePos = u.zoom_config.yz;
+  let mouseDown = u.zoom_config.w > 0.5;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    let pixelSizeParam = max(0.001, u.zoom_params.x * 0.1); // 0.001 to 0.1 (screen relative)
-    let radius = u.zoom_params.y * 0.5; // 0.0 to 0.5
-    let softness = u.zoom_params.z * 0.2; // 0.0 to 0.2
-    let invert = u.zoom_params.w > 0.5;
+  let pixelSizeParam = u.zoom_params.x;
+  let radius = u.zoom_params.y * 0.5;
+  let softness = max(u.zoom_params.z * 0.2, 0.001);
+  let decayRate = u.zoom_params.w;
 
-    // Calculate Pixelated UV
-    // Snap UV to grid
-    let grid = vec2<f32>(pixelSizeParam, pixelSizeParam * (resolution.x / resolution.y));
-    // Or just use square pixels
-    // Let's use square pixels based on width
-    let px = pixelSizeParam;
-    let py = pixelSizeParam * (resolution.x / resolution.y);
-    // Wait, if resolution.y < resolution.x, py should be larger to maintain squareness?
-    // pixelSizeParam is fraction of width.
-    // X steps: 1/px. Y steps: 1/py.
-    // To make square: stepX_pixels = stepY_pixels.
-    // stepX_uv * ResX = stepY_uv * ResY
-    // stepY_uv = stepX_uv * (ResX / ResY)
+  // Depth-driven pixel size perspective
+  let depthBlock = mix(0.5, 1.5, depth);
+  let stepBase = max(0.002, pixelSizeParam * 0.08 * depthBlock);
+  let stepX = stepBase;
+  let stepY = stepBase * (resolution.x / resolution.y);
 
-    let stepX = pixelSizeParam;
-    let stepY = pixelSizeParam * (resolution.x / resolution.y);
+  // Bass-driven threshold oscillation
+  let threshold = 0.3 + bass * 0.25 + sin(time * 3.0) * 0.1;
 
-    let pixelatedUV = vec2<f32>(
-        floor(uv.x / stepX) * stepX + stepX * 0.5,
-        floor(uv.y / stepY) * stepY + stepY * 0.5
-    );
+  // Pixelate UV with glitch jitter
+  let jitter = vec2<f32>(
+    (treble * 0.015) * sin(uv.y * 60.0 + time * 12.0),
+    (treble * 0.015) * cos(uv.x * 60.0 + time * 12.0)
+  );
+  let pixelatedUV = clamp(vec2<f32>(
+    floor(uv.x / stepX) * stepX + stepX * 0.5 + jitter.x,
+    floor(uv.y / stepY) * stepY + stepY * 0.5 + jitter.y
+  ), vec2<f32>(0.001), vec2<f32>(0.999));
 
-    // Distance to mouse
-    let aspect = resolution.x / resolution.y;
-    let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
-    let dist = length(distVec);
+  // Mouse reveal mask (painted radius)
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let dist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
+  let revealMask = smoothstep(radius, radius + softness, dist);
+  let paintedMask = select(revealMask, 1.0 - revealMask, mouseDown);
 
-    // Mask
-    // smoothstep(edge0, edge1, x) returns 0 if x < edge0, 1 if x > edge1
-    // We want mask=1 for "Pixelated", mask=0 for "Clear"
-    // If Invert (Obscure mode): Pixelated near mouse.
-    //    Dist < Radius -> Pixelated.
-    //    mask = 1.0 - smoothstep(Radius, Radius + Softness, Dist)
-    // If !Invert (Reveal mode): Clear near mouse.
-    //    Dist < Radius -> Clear.
-    //    mask = smoothstep(Radius, Radius + Softness, Dist)
+  // Temporal noise accumulation for decay
+  let noise = hash3(vec3<f32>(uv * 30.0, fract(time * 0.5))).x;
+  let temporalDecay = fract(noise + time * decayRate * 0.5) * (1.0 - paintedMask);
 
-    var mask = 0.0;
-    if (invert) {
-        mask = 1.0 - smoothstep(radius, radius + softness + 0.001, dist);
-    } else {
-        mask = smoothstep(radius, radius + softness + 0.001, dist);
-    }
+  // Pixel sorting threshold: only reveal pixels above luminance threshold
+  let pxColor = textureSampleLevel(readTexture, u_sampler, pixelatedUV, 0.0);
+  let pxLuma = dot(pxColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let sortReveal = smoothstep(threshold - 0.1, threshold + 0.1, pxLuma);
 
-    // Mix UVs
-    // Ideally we don't mix UVs because that interpolates between blocky and smooth, looking weird.
-    // We should mix the COLORS.
+  // Combined reveal: mouse-painted area OR sorted bright pixels, minus decay
+  let combinedReveal = clamp((1.0 - paintedMask) + sortReveal * 0.6 - temporalDecay * 0.5, 0.0, 1.0);
 
-    let colorClear = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let colorPixel = textureSampleLevel(readTexture, non_filtering_sampler, pixelatedUV, 0.0); // Use non_filtering for crisp blocks
+  // Chromatic separation on reveal edges
+  let edgeWidth = 0.02 + softness * 0.5;
+  let edgeGradient = abs(combinedReveal - 0.5) * 2.0;
+  let edgeMask = 1.0 - smoothstep(0.0, edgeWidth, abs(edgeGradient - 1.0));
+  let chromaShift = 0.004 * (1.0 + mids * 0.8) * edgeMask;
 
-    let finalColor = mix(colorClear, colorPixel, mask);
+  let r = textureSampleLevel(readTexture, non_filtering_sampler, pixelatedUV + vec2<f32>(chromaShift, 0.0), 0.0).r;
+  let g = textureSampleLevel(readTexture, non_filtering_sampler, pixelatedUV, 0.0).g;
+  let b = textureSampleLevel(readTexture, non_filtering_sampler, pixelatedUV - vec2<f32>(chromaShift, 0.0), 0.0).b;
+  let chromaColor = vec3<f32>(r, g, b);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+  let clearColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // Scanline bands on hidden regions
+  let scanline = sin(uv.y * resolution.y * 0.7) * 0.5 + 0.5;
+  let scanDark = mix(vec3<f32>(0.02, 0.02, 0.03), vec3<f32>(0.08, 0.08, 0.10), scanline);
+  let hiddenColor = mix(scanDark, chromaColor * 0.3, temporalDecay * 0.4);
+
+  var finalColor = mix(hiddenColor, chromaColor, combinedReveal);
+  finalColor = mix(finalColor, clearColor, (1.0 - paintedMask) * 0.3);
+
+  // Film grain
+  let grain = hash3(vec3<f32>(uv * 500.0, time)).x;
+  finalColor += (grain - 0.5) * 0.03;
+
+  // ACES tone mapping
+  finalColor = aces_tone_map(finalColor);
+
+  // Alpha: Reveal_mask * (1.0 - temporal_decay) * depth
+  let alpha = clamp((1.0 - paintedMask) * (1.0 - temporalDecay * 0.7) * depth + combinedReveal * 0.2, 0.05, 1.0);
+
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
 }

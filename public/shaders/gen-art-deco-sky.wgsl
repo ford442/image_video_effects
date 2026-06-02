@@ -1,8 +1,19 @@
-// ═══════════════════════════════════════════════════════════════
-//  Art Deco Skyscraper - Generative Shader
-//  Category: Generative
-//  Description: Infinite vertical ascent up a monumental Art Deco tower with gold fluting and geometric patterns.
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Art Deco Skyscraper
+//  Category: generative
+//  Features: raymarching, architectural, generative-city, audio-lights, mouse-wind, gold-metallic, atmospheric-fog
+//  Complexity: High
+//  Chunks From: previous art deco work + richer lighting and atmosphere
+//  Created: 2026-05-10
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish pass — richer metallic light, audio city glow, depth)
+// ═══════════════════════════════════════════════════════════════════
+//  OPTIMIZATION LOG (2026-05-31):
+//  - Audio reactivity wired to plasmaBuffer (bass→gold glow + window flicker)
+//  - Raymarch 150→110 steps with adaptive relaxation
+//  - Reinhard → ACES filmic tone mapping
+//  - IGN dither added before write
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -62,6 +73,12 @@ fn rotateY(p: vec3<f32>, a: f32) -> vec3<f32> {
 // Noise / Hash
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+// ACES filmic tone mapping (replaces Reinhard — hue-neutral highlights for gold accents)
+fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // --- Scene Mapping ---
@@ -194,13 +211,15 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var t = 0.0;
     var mat = 0.0;
-    for(var i=0; i<150; i++) {
+    for(var i=0; i<110; i++) { // was 150 — adaptive relaxation keeps silhouette crisp
         var p = ro + rd * t;
         var res = map(p);
         var d = res.x;
         mat = res.y;
         if(d < 0.002 || t > 200.0) { break; }
-        t += d * 0.8; // Step size slightly reduced for safety
+        // Adaptive: 0.8 near surfaces for safety, 0.95 in open air to cover distance faster
+        let stepScale = select(0.95, 0.8, d < 1.0);
+        t += d * stepScale;
     }
     return vec2<f32>(t, mat);
 }
@@ -226,8 +245,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
+    // Audio reactivity — bass amplifies gold glow and window flicker
+    let bass = plasmaBuffer[0].x;
+    let mid = plasmaBuffer[0].y;
+
     // Parameters
-    let goldGlow = u.zoom_params.z; // 0..2
+    let goldGlow = u.zoom_params.z * (1.0 + bass * 0.5); // 0..2, bass-boosted
     let fogDensity = u.zoom_params.w; // 0..1
     var time = u.config.x;
     var mouse = u.zoom_config.yz; // 0..1
@@ -303,8 +326,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (h > 0.6) {
                 // Lit window
                 emission = vec3<f32>(1.0, 0.8, 0.4) * goldGlow * 1.5;
-                // Add some flickering
-                emission *= 0.8 + 0.2 * sin(time * 5.0 + h * 100.0);
+                // Flicker — mid-range audio modulates window twinkle
+                emission *= 0.8 + 0.2 * sin(time * 5.0 + h * 100.0) + mid * 0.25;
             }
         }
 
@@ -366,9 +389,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vign = 1.0 - length(uv) * 0.5;
     color = color * vign;
 
-    // Tone mapping (simple exposure/ACES fit approx)
-    color = color / (color + vec3<f32>(1.0));
+    // ACES filmic tone mapping (replaces Reinhard — gold accents keep their warmth)
+    color = acesToneMapping(color);
     color = pow(color, vec3<f32>(1.0 / 2.2)); // Gamma correction
+
+    // IGN dither — suppresses banding in the dark night-sky gradient
+    let ign = fract(52.9829189 * fract(dot(vec2<f32>(global_id.xy), vec2<f32>(0.06711056, 0.00583715))));
+    color = clamp(color + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
     textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 200.0, 0.0, 0.0, 0.0));

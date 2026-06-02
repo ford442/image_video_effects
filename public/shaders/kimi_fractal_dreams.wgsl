@@ -1,3 +1,11 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Kimi Fractal Dreams
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -38,9 +46,16 @@ fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    let coord = vec2<i32>(global_id.xy);
+    if (coord.x >= i32(resolution.x) || coord.y >= i32(resolution.y)) { return; }
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x * 0.1;
-    
+
+    // Audio reactivity: bass pulses the zoom, mids cycle color, treble glows orbit traps
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Mouse interaction
     var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
@@ -56,9 +71,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let c = mix(vec2<f32>(-0.8, 0.156), mousePos, 0.5);
     
     // Parameters
-    let zoom = u.zoom_params.x * 3.0 + 0.5;
+    let zoom = (u.zoom_params.x * 3.0 + 0.5) * (1.0 + bass * 0.2);
     let iterations = i32(u.zoom_params.y * 100.0) + 50;
-    let colorCycles = u.zoom_params.z * 5.0 + 1.0;
+    let colorCycles = (u.zoom_params.z * 5.0 + 1.0) * (1.0 + mids * 0.5);
     let complexity = u.zoom_params.w * 2.0 + 0.5;
     
     // Zoom towards mouse
@@ -117,8 +132,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 else { layerCol = vec3<f32>(c1, 0.0, x); }
                 layerCol += vec3<f32>(m);
                 
-                // Glow from orbit trap
-                layerCol += vec3<f32>(1.0, 0.8, 0.6) * orbitTrap * 2.0;
+                // Glow from orbit trap (treble intensifies the filament glow)
+                layerCol += vec3<f32>(1.0, 0.8, 0.6) * orbitTrap * 2.0 * (1.0 + treble * 1.5);
                 
                 let weight = 1.0 / (1.0 + fi);
                 col += layerCol * weight;
@@ -148,6 +163,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Post-processing
     col = pow(col, vec3<f32>(0.9));
     col *= 1.2;
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+
+    // Alpha: fractal escape coverage + glow luminance, never flat 1.0
+    let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(smoothstep(0.0, 1.0, totalWeight) * 0.5 + lum * 0.6, 0.0, 1.0);
+    let out = vec4<f32>(col, alpha);
+
+    // Depth: brighter escaped filaments read as nearer
+    let depth = clamp(lum, 0.0, 1.0);
+    textureStore(writeTexture, coord, out);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, out);
 }

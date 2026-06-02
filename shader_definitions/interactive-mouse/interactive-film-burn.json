@@ -1,6 +1,7 @@
 {
   "id": "interactive-film-burn",
   "name": "Film Burn",
+  "category": "interactive-mouse",
   "url": "shaders/interactive-film-burn.wgsl",
   "description": "Simulates burning film reel with organic edges and grain, centered on the cursor.",
   "params": [
@@ -36,10 +37,14 @@
   "features": [
     "mouse-driven",
     "noise",
-    "texture"
+    "texture",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "film",
+    "burn",
+    "embers",
+    "analog"
   ]
 }

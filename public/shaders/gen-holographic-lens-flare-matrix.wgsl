@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Holographic Lens-Flare Matrix
 //  Category: generative
-//  Features: anamorphic-flare, mouse-spin, audio-reactive, palette-tinted
+//  Features: anamorphic-flare, mouse-spin, audio-reactive, palette-tinted,
+//            chromatic-dispersion, temporal-flare-persistence, depth-aware
 //  Complexity: Medium
 //  Phase B / Optimizer
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -21,9 +23,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=GridSize, y=FlareSpread, z=AngleOffset, w=Brightness
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -49,11 +51,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     let mouse_p = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
 
-    // Mouse-driven grid offset (cap to first 6 ripples for cost)
     var mouseOffset = vec2<f32>(0.0);
     for (var i = 0; i < 6; i++) {
         let ripple = u.ripples[i];
@@ -65,53 +68,61 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         mouseOffset = mouseOffset + (toR / max(d, 1e-4)) * push;
     }
 
-    // Bass amplifies grid density and flare size
     let gridSize = 10.0 + u.zoom_params.x * 5.0 + bass * 2.0;
     let flareSpread = u.zoom_params.y;
 
     let gUv = (p + mouseOffset * 0.1) * gridSize;
-    let id = floor(gUv);
+    let idc = floor(gUv);
     let fUv = fract(gUv) - vec2<f32>(0.5);
 
-    // Per-cell pseudo-random offset
-    let r = hash22(id);
+    let r = hash22(idc);
     let offset = (r - vec2<f32>(0.5)) * flareSpread * 2.0;
     let flarePos = fUv - offset;
     let dist = length(flarePos);
 
-    // Anamorphic horizontal streak (signature lens-flare look)
     let streak = exp(-flarePos.y * flarePos.y * 80.0) * exp(-abs(flarePos.x) * 4.0);
 
-    // Bass drives flare size and spin — tied to canonical bass, not config.x
     let size = 0.08 + bass * 0.25 + mouseDown * 0.05;
     let spinSpeed = time * (1.0 + bass * 2.0);
     let angle = atan2(flarePos.y, flarePos.x) + spinSpeed + u.zoom_params.z * TAU;
 
-    // Star-shape density: Gaussian core × angular sine modulation
     let core = exp(-dist * dist / max(size * size, 1e-6));
     let starMod = 0.5 + 0.5 * sin(angle * 4.0 + time * 5.0);
     let density = core * starMod + streak * 0.4;
 
-    // Plasma-tinted color (per-cell hash → palette index, golden-ratio walk)
+    // Chromatic dispersion per flare: RGB stars at different angular offsets
+    let chromaOff = u.zoom_params.w * 0.3 + treble * 0.2;
+    let angleR = angle + chromaOff;
+    let angleB = angle - chromaOff;
+    let starR = 0.5 + 0.5 * sin(angleR * 4.0 + time * 5.0);
+    let starB = 0.5 + 0.5 * sin(angleB * 4.0 + time * 5.0);
+    let densityR = core * starR + streak * 0.4;
+    let densityG = density;
+    let densityB = core * starB + streak * 0.4;
+
     let plasmaIdx = u32(abs(fract(r.x + time * 0.1)) * 256.0);
     let pColor = plasmaBuffer[plasmaIdx % 256u].rgb;
     let brightness = 1.0 + u.zoom_params.w + bass * 0.5;
-    var col = pColor * density * brightness;
+    var col = vec3<f32>(pColor.r * densityR, pColor.g * densityG, pColor.b * densityB) * brightness;
 
-    // Composite over background photo (preserve user's image)
     let motion = textureLoad(readTexture, coords, 0).rgb;
     col = motion * (1.0 - density * 0.6) + col;
 
-    // Persist density for downstream bloom passes
-    textureStore(dataTextureA, coords, vec4<f32>(density, streak, dist, 1.0));
+    // Temporal flare persistence: previous frame density burns in
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let prevDensity = prev.r;
+    let persistent = mix(density, prevDensity, 0.08 + bass * 0.03);
+    textureStore(dataTextureA, coords, vec4<f32>(persistent, streak, dist, 1.0));
 
-    // Alpha: flare emission energy + bass drives bloom-style compositing weight
+    // Depth-aware compositing: flares behind depth are dimmer
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthDim = 0.6 + depth * 0.4;
+    col = col * depthDim;
+
     let lumaOut = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let bloom = max(0.0, lumaOut - 0.7) * 3.0;
     let alpha = clamp(0.4 + density * 0.4 + bloom * 0.3 + bass * 0.1, 0.0, 1.0);
 
     textureStore(writeTexture, coords, vec4<f32>(col, alpha));
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1,0 +1,52 @@
+{
+  "id": "gen-quantum-fluorescent-aether-moth-swarm",
+  "name": "Quantum-Fluorescent Aether-Moth Swarm",
+  "tags": [
+    "swarm",
+    "fluorescent",
+    "quantum",
+    "moth",
+    "audio-reactive",
+    "interactive"
+  ],
+  "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies.",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Swarm Density",
+      "type": "slider",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "id": "param2",
+      "name": "Curl Intensity",
+      "type": "slider",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05
+    },
+    {
+      "id": "param3",
+      "name": "Glow Strength",
+      "type": "slider",
+      "default": 2.0,
+      "min": 0.5,
+      "max": 10.0,
+      "step": 0.1
+    },
+    {
+      "id": "param4",
+      "name": "Audio Sensitivity",
+      "type": "slider",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    }
+  ],
+  "url": "shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl"
+}

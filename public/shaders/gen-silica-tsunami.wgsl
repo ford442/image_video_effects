@@ -1,8 +1,11 @@
-// ----------------------------------------------------------------
-// Silica Tsunami
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Silica Tsunami
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -47,7 +50,7 @@ fn map(pos: vec3<f32>, time: f32) -> f32 {
     let waveHeight = u.zoom_params.x; // default 2.0
     let particleDensity = u.zoom_params.z; // default 1.0
     let audioReactivity = u.zoom_params.w; // default 1.5
-    let audio = u.config.y * audioReactivity;
+    let audio = plasmaBuffer[0].x * audioReactivity; // bass swells the wave crests
 
     var p = pos;
     let spacing = particleDensity;
@@ -99,6 +102,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var uv = (pixel - 0.5 * dims) / dims.y;
     let time = u.config.x;
 
+    // Audio reactivity: mids boost fresnel caustics, treble adds spec sparkle
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     var ro = vec3<f32>(0.0, 5.0, -time * 5.0);
     var rd = normalize(vec3<f32>(uv.x, uv.y - 0.5, -1.0)); // look slightly down
     let rot_xz = rot(0.2) * rd.xz;
@@ -120,7 +127,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         t += d * 0.8;
     }
 
-    if (t < max_dist) {
+    let hit = t < max_dist;
+    var surfFresnel = 0.0;
+    if (hit) {
         let n = calcNormal(p, time);
         let l = normalize(vec3<f32>(-1.0, 2.0, -1.0));
         let diff = max(dot(n, l), 0.0);
@@ -128,10 +137,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         let glassRefraction = u.zoom_params.y; // default 0.8
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 5.0);
+        surfFresnel = fresnel;
 
         col = vec3<f32>(0.1, 0.4, 0.8) * diff; // base water color
-        col += vec3<f32>(0.8, 0.9, 1.0) * fresnel * glassRefraction; // reflection/caustics
-        col += pow(max(dot(r, l), 0.0), 32.0) * vec3<f32>(1.0); // spec
+        col += vec3<f32>(0.8, 0.9, 1.0) * fresnel * glassRefraction * (1.0 + mids * 0.6); // caustics
+        col += pow(max(dot(r, l), 0.0), 32.0) * vec3<f32>(1.0) * (1.0 + treble * 1.5); // spec
 
         // Fog
         col = mix(col, vec3<f32>(0.05, 0.1, 0.2), 1.0 - exp(-0.02 * t * t));
@@ -142,5 +152,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = col / (1.0 + col);
     col = pow(col, vec3<f32>(0.4545));
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Alpha: water surface coverage from fresnel + diffuse body, never flat 1.0
+    let alpha = clamp(select(0.0, 0.45, hit) + surfFresnel * 0.5, 0.0, 1.0);
+    let out = vec4<f32>(col, alpha);
+
+    // Depth: wave hit distance (near = closer)
+    let depth = select(0.0, clamp(1.0 - t / max_dist, 0.0, 1.0), hit);
+    let coord = vec2<i32>(id.xy);
+    textureStore(writeTexture, coord, out);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, out);
 }

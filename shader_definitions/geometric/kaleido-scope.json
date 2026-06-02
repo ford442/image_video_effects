@@ -1,9 +1,13 @@
 {
   "id": "kaleido-scope",
   "name": "Kaleido-Scope",
+  "category": "geometric",
   "url": "shaders/kaleido-scope.wgsl",
+  "description": "Hyperbolic Poincaré-disk tessellation kaleidoscope with animated morphing between symmetry types, iridescent metallic boundaries, HDR specular vertices, and depth-driven stereoscopic chromatic aberration.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -37,6 +41,10 @@
   ],
   "tags": [
     "geometric",
-    "pattern"
+    "pattern",
+    "kaleidoscope",
+    "prismatic",
+    "hyperbolic",
+    "tessellation"
   ]
 }

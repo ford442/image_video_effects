@@ -1,8 +1,9 @@
 {
   "id": "vhs-chroma-bleed",
   "name": "VHS Chroma Bleed",
-  "url": "/shaders/vhs-chroma-bleed.wgsl",
-  "description": "VHS tape aesthetic with horizontal chroma separation, luma noise, tracking jitter, and color burst errors.",
+  "category": "image",
+  "url": "shaders/vhs-chroma-bleed.wgsl",
+  "description": "VHS tape aesthetic with audio-reactive jitter: bass drives line dropouts, treble adds micro-glitch. Chromatic bleed with depth-scatter. RGB channels shift independently for analog decay.",
   "tags": [
     "vhs",
     "retro",
@@ -11,12 +12,18 @@
     "noise",
     "jitter",
     "tape",
-    "analog"
+    "analog",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic"
   ],
   "features": [
     "upgraded-rgba",
     "temporal",
-    "glitch"
+    "glitch",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic-bleed"
   ],
   "params": [
     {

@@ -46,5 +46,10 @@
       "step": 0.1,
       "default": 1.2
     }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ]
 }

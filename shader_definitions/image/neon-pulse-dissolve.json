@@ -1,0 +1,43 @@
+{
+  "id": "neon-pulse-dissolve",
+  "name": "Neon Pulse Dissolve",
+  "url": "shaders/neon-pulse-dissolve.wgsl",
+  "category": "image",
+  "description": "Audio-reactive neon edge detection that pulses with bass and dissolves the image interior into luminous colour noise driven by mid and treble frequencies.",
+  "tags": ["neon", "glow", "edge", "dissolve", "audio-reactive", "cinematic"],
+  "features": ["audio-reactive", "upgraded-rgba", "semantic-alpha"],
+  "params": [
+    {
+      "id": "glow_radius",
+      "name": "Glow Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "dissolve_amount",
+      "name": "Dissolve Amount",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "neon_saturation",
+      "name": "Neon Saturation",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "edge_sharpness",
+      "name": "Edge Sharpness",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

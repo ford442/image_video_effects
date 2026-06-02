@@ -14,7 +14,10 @@
   "features": [
     "mouse-driven",
     "audio-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "params": [
     {

@@ -1,8 +1,9 @@
 {
   "id": "luminance-wind",
   "name": "Luminance Wind",
+  "category": "artistic",
   "url": "shaders/luminance-wind.wgsl",
-  "description": "Pixels are blown by a digital wind. Lighter pixels are lighter weight and travel further. Mouse controls wind direction.",
+  "description": "Pixels are blown by a curl-noise wind field. Lighter pixels travel further. Chromatic drift separates R/B channels. Audio gusts boost wind strength; depth creates parallax layering.",
   "params": [
     {
       "name": "Wind Speed",
@@ -38,10 +39,21 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "curl-noise",
+    "chromatic-drift"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "wind",
+    "curl-noise",
+    "audio-reactive",
+    "depth-aware",
+    "temporal",
+    "chromatic"
   ]
 }

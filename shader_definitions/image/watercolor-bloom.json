@@ -1,0 +1,43 @@
+{
+  "id": "watercolor-bloom",
+  "name": "Watercolor Bloom",
+  "url": "shaders/watercolor-bloom.wgsl",
+  "category": "image",
+  "description": "Soft feathered watercolor bloom with paper fibre texture, wet-edge darkening, and audio-reactive radius expansion. Temporal feedback lets wet paint slowly dry.",
+  "tags": ["watercolor", "bloom", "paint", "soft", "audio-reactive", "temporal", "artistic"],
+  "features": ["audio-reactive", "temporal", "upgraded-rgba", "semantic-alpha"],
+  "params": [
+    {
+      "id": "bloom_radius",
+      "name": "Bloom Radius",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "wet_edge",
+      "name": "Wet Edge",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "paper_texture",
+      "name": "Paper Texture",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "dry_speed",
+      "name": "Dry Speed",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

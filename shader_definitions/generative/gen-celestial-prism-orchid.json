@@ -9,12 +9,17 @@
     "refractive",
     "audio-reactive",
     "raymarching",
-    "fractal"
+    "fractal",
+    "iridescent",
+    "atmospheric"
   ],
   "features": [
     "mouse-driven",
+    "mouse-pollinator",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "semantic-alpha",
+    "depth-aware"
   ],
   "params": [
     {

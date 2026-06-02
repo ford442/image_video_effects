@@ -2,6 +2,11 @@ import { pipeline, env } from '@xenova/transformers';
 import * as webllm from "@mlc-ai/web-llm";
 import { buildCatalog, CatalogShader } from './services/shaderCatalog';
 import { saveVJStack } from './services/vjHistory';
+import { loadPresets, randomizeParams } from './services/vjPresets';
+import { connectSource, disposeAudioGraph } from './services/audioGraph';
+import { BeatDetector } from './services/beatDetector';
+import { TransitionOrchestrator, TransitionSchemaSlot } from './services/transitionOrchestrator';
+import { ParamMap, snapToStep } from './utils/transitionMath';
 
 // --- Configuration ---
 env.allowLocalModels = false;
@@ -25,6 +30,19 @@ export interface ShaderRecord {
 }
 
 export type AIStatus = 'idle' | 'loading-models' | 'ready' | 'generating' | 'error';
+
+export interface AutoTransitionConfig {
+  source: 'timer' | 'beat';
+  intervalMs?: number;
+  durationMs: number;
+  mode?: 'randomize' | 'cyclePresets';
+  beatInput?: 'mic' | 'element';
+  mediaElement?: HTMLMediaElement;
+}
+
+interface AutoDJOptions {
+  applyParamsDirect?: (params: Record<string, number>[]) => void;
+}
 
 // --- The AI VJ Director Class ---
 export class Alucinate {
@@ -51,17 +69,28 @@ export class Alucinate {
   // UPDATED: Now accepts an array of strings for the stack
   private onUpdateStack: (ids: string[]) => void;
   public onUpdateParams?: (params: Record<string, number>[]) => void;
+  public onApplyParamsDirect?: (params: Record<string, number>[]) => void;
   public getCurrentState: () => { currentImage: ImageRecord | null, currentShader: ShaderRecord | null };
+  private currentParams: Record<string, number>[] = [];
+  private currentParamsSignature = '';
+  private catalogCache: CatalogShader[] | null = null;
+  private transitionOrchestrator: TransitionOrchestrator | null = null;
+  private transitionRafId: number | null = null;
+  private autoTransitionConfig: AutoTransitionConfig | null = null;
+  private beatDetector: BeatDetector | null = null;
+  private presetCursor = 0;
 
   constructor(
     onNextImage: (url: string) => void,
     // UPDATED Constructor signature
     onUpdateStack: (ids: string[]) => void,
-    getCurrentState: () => { currentImage: ImageRecord | null, currentShader: ShaderRecord | null }
+    getCurrentState: () => { currentImage: ImageRecord | null, currentShader: ShaderRecord | null },
+    options?: AutoDJOptions
   ) {
     this.onNextImage = onNextImage;
     this.onUpdateStack = onUpdateStack;
     this.getCurrentState = getCurrentState;
+    this.onApplyParamsDirect = options?.applyParamsDirect;
   }
 
   private setStatus(status: AIStatus, message: string) {
@@ -174,6 +203,7 @@ export class Alucinate {
   public stop() {
     if (!this.isRunning || this.loopInterval === null) return;
     console.log('Stopping Alucinate loop.');
+    this.stopAutoTransition();
     this.isRunning = false;
     clearInterval(this.loopInterval);
     this.loopInterval = null;
@@ -185,6 +215,7 @@ export class Alucinate {
   public async generateFromVibe(vibeText: string): Promise<boolean> {
     if (!this.llm || this.status === 'loading-models') return false;
     try {
+        this.stopAutoTransition();
         this.lastVibeText = vibeText;
         this.setStatus('generating', `Vibe: "${vibeText}"`);
         const result = await this.selectShadersFromLLM(vibeText, vibeText);
@@ -198,6 +229,8 @@ export class Alucinate {
             this.setStatus('generating', `Mixing stack: ${readableStack}`);
             this.activeShaderIds = ids;
             this.onUpdateStack(ids);
+            this.currentParams = params.map(p => ({ ...p }));
+            this.currentParamsSignature = this.shaderSignature(ids);
             if (this.onUpdateParams) {
                 this.onUpdateParams(params);
             }
@@ -248,8 +281,11 @@ export class Alucinate {
             }).join(' + ');
             
             this.setStatus('generating', `Mixing stack: ${readableStack}`);
+            this.stopAutoTransition();
             this.activeShaderIds = ids;
             this.onUpdateStack(ids);
+            this.currentParams = params.map(p => ({ ...p }));
+            this.currentParamsSignature = this.shaderSignature(ids);
             if (this.onUpdateParams) {
                 this.onUpdateParams(params);
             }
@@ -416,11 +452,223 @@ Your Selection:
 
   public async randomizeActiveParams(): Promise<void> {
     if (!this.shaderManifest || this.activeShaderIds.length === 0) return;
-    const { randomizeParams } = await import('./services/vjPresets');
-    const { buildCatalog } = await import('./services/shaderCatalog');
-    const catalog = await buildCatalog();
+    const catalog = await this.getCatalog();
     const params = randomizeParams(this.activeShaderIds, catalog);
+    this.currentParams = params.map((p) => ({ ...p }));
+    this.currentParamsSignature = this.shaderSignature(this.activeShaderIds);
     if (this.onUpdateParams) this.onUpdateParams(params);
+  }
+
+  public getActiveShaderIds(): string[] {
+    return [...this.activeShaderIds];
+  }
+
+  public getCurrentParams(): Record<string, number>[] {
+    return this.currentParams.map((p) => ({ ...p }));
+  }
+
+  public async startAutoTransition(config: AutoTransitionConfig): Promise<boolean> {
+    if (this.activeShaderIds.length === 0) return false;
+    this.stopAutoTransition();
+
+    const catalog = await this.getCatalog();
+    const schema = this.buildTransitionSchema(this.activeShaderIds, catalog);
+    if (schema.length === 0) return false;
+    const activeSignature = this.shaderSignature(this.activeShaderIds);
+
+    const baselineSource = this.currentParams.length > 0 && this.currentParamsSignature === activeSignature
+      ? this.currentParams
+      : this.buildDefaultsFromSchema(schema);
+    const baseline = this.sanitizeParamsToSchema(baselineSource, schema);
+
+    this.autoTransitionConfig = {
+      mode: 'randomize',
+      beatInput: 'mic',
+      ...config,
+    };
+
+    this.transitionOrchestrator = new TransitionOrchestrator({
+      source: this.autoTransitionConfig.source,
+      intervalMs: this.autoTransitionConfig.intervalMs,
+      durationMs: this.autoTransitionConfig.durationMs,
+    });
+
+    this.transitionOrchestrator.setTargetFactory(async () => this.buildTransitionTarget(this.autoTransitionConfig!));
+    this.transitionOrchestrator.start({
+      params: baseline,
+      schema,
+      shaderSignature: activeSignature,
+    });
+
+    if (this.autoTransitionConfig.source === 'beat') {
+      const analyser = await connectSource(this.autoTransitionConfig.beatInput || 'mic', this.autoTransitionConfig.mediaElement);
+      this.beatDetector = new BeatDetector(analyser, (timestamp) => {
+        this.transitionOrchestrator?.enqueueBeat(timestamp);
+      });
+      this.beatDetector.start();
+    }
+
+    this.transitionRafId = requestAnimationFrame((ts) => {
+      void this.transitionLoop(ts);
+    });
+    return true;
+  }
+
+  public stopAutoTransition() {
+    if (this.transitionOrchestrator?.getState() === 'TRANSITIONING') {
+      this.currentParams = this.transitionOrchestrator.getCurrentParams();
+      this.currentParamsSignature = this.transitionOrchestrator.getShaderSignature();
+    }
+    if (this.transitionRafId !== null) {
+      cancelAnimationFrame(this.transitionRafId);
+      this.transitionRafId = null;
+    }
+    this.beatDetector?.stop();
+    this.beatDetector = null;
+    this.transitionOrchestrator?.stop();
+    this.transitionOrchestrator = null;
+    this.autoTransitionConfig = null;
+    if (this.currentParams.length > 0) {
+      this.onUpdateParams?.(this.currentParams.map((p) => ({ ...p })));
+    }
+    void disposeAudioGraph();
+  }
+
+  public async triggerNextTransition(): Promise<boolean> {
+    if (!this.transitionOrchestrator || !this.autoTransitionConfig) return false;
+    const target = await this.buildTransitionTarget(this.autoTransitionConfig);
+    if (!target) return false;
+    return this.transitionOrchestrator.trigger(target);
+  }
+
+  private async transitionLoop(now: number) {
+    if (!this.transitionOrchestrator) return;
+    const result = await this.transitionOrchestrator.update(now);
+    if (result?.params) {
+      this.currentParams = result.params.map((p) => ({ ...p }));
+      this.currentParamsSignature = this.transitionOrchestrator.getShaderSignature();
+      if (this.onApplyParamsDirect) {
+        this.onApplyParamsDirect(result.params);
+      }
+      if (result.settled && this.onUpdateParams) {
+        this.onUpdateParams(result.params);
+      }
+    }
+    if (!this.transitionOrchestrator) return;
+    this.transitionRafId = requestAnimationFrame((ts) => {
+      void this.transitionLoop(ts);
+    });
+  }
+
+  private async getCatalog(): Promise<CatalogShader[]> {
+    if (this.catalogCache) return this.catalogCache;
+    this.catalogCache = await buildCatalog();
+    return this.catalogCache;
+  }
+
+  private shaderSignature(shaderIds: string[]): string {
+    return shaderIds.join('|');
+  }
+
+  private buildTransitionSchema(shaderIds: string[], catalog: CatalogShader[]): TransitionSchemaSlot[] {
+    return shaderIds.map((id) => {
+      const shader = catalog.find((entry) => entry.id === id);
+      const params = (shader?.params || []).slice(0, 4);
+      return {
+        params: params.reduce((acc, param) => {
+          acc[param.id] = {
+            min: param.min,
+            max: param.max,
+            step: param.step,
+          };
+          return acc;
+        }, {} as TransitionSchemaSlot['params']),
+      };
+    });
+  }
+
+  private sanitizeParamsToSchema(params: ParamMap[], schema: TransitionSchemaSlot[]): ParamMap[] {
+    return schema.map((slotSchema, index) => {
+      const source = params[index] || {};
+      const out: ParamMap = {};
+      for (const [key, rule] of Object.entries(slotSchema.params)) {
+        const raw = typeof source[key] === 'number' ? source[key] : (rule.min + rule.max) / 2;
+        out[key] = Math.max(rule.min, Math.min(rule.max, raw));
+      }
+      return out;
+    });
+  }
+
+  private buildDefaultsFromSchema(schema: TransitionSchemaSlot[]): ParamMap[] {
+    return schema.map((slotSchema) => {
+      const out: ParamMap = {};
+      for (const [key, rule] of Object.entries(slotSchema.params)) {
+        out[key] = (rule.min + rule.max) / 2;
+      }
+      return out;
+    });
+  }
+
+  private snapTargetToSchema(params: ParamMap[], schema: TransitionSchemaSlot[]): ParamMap[] {
+    return params.map((map, index) => {
+      const rules = schema[index]?.params || {};
+      const out: ParamMap = {};
+      for (const [key, value] of Object.entries(map)) {
+        const rule = rules[key];
+        if (!rule) continue;
+        out[key] = snapToStep(value, rule.min, rule.max, rule.step);
+      }
+      return out;
+    });
+  }
+
+  private async buildTransitionTarget(config: AutoTransitionConfig) {
+    const catalog = await this.getCatalog();
+    const signature = this.shaderSignature(this.activeShaderIds);
+    const schema = this.buildTransitionSchema(this.activeShaderIds, catalog);
+
+    if (config.mode === 'cyclePresets') {
+      const presets = loadPresets();
+      if (presets.length > 0) {
+        for (let i = 0; i < presets.length; i++) {
+          const index = (this.presetCursor + i) % presets.length;
+          const preset = presets[index];
+          if (this.shaderSignature(preset.shaderIds) === signature) {
+            this.presetCursor = index + 1;
+            return {
+              params: this.snapTargetToSchema(this.sanitizeParamsToSchema(preset.params, schema), schema),
+              schema,
+              shaderSignature: signature,
+            };
+          }
+        }
+
+        const hardPreset = presets[this.presetCursor % presets.length];
+        this.presetCursor += 1;
+        this.activeShaderIds = [...hardPreset.shaderIds];
+        this.currentParams = hardPreset.params.map((p) => ({ ...p }));
+        const nextSignature = this.shaderSignature(hardPreset.shaderIds);
+        this.currentParamsSignature = nextSignature;
+        this.onUpdateStack(hardPreset.shaderIds);
+        this.onApplyParamsDirect?.(hardPreset.params);
+        this.onUpdateParams?.(hardPreset.params);
+        const hardSchema = this.buildTransitionSchema(hardPreset.shaderIds, catalog);
+        this.transitionOrchestrator?.setBaseline({
+          params: this.sanitizeParamsToSchema(hardPreset.params, hardSchema),
+          schema: hardSchema,
+          shaderSignature: nextSignature,
+        });
+        return null;
+      }
+    }
+
+    const randomized = randomizeParams(this.activeShaderIds, catalog);
+    const filtered = this.sanitizeParamsToSchema(randomized, schema);
+    return {
+      params: this.snapTargetToSchema(filtered, schema),
+      schema,
+      shaderSignature: signature,
+    };
   }
 
   private async getNextImageThemeFromLLM(currentCaption: string, currentShader: string): Promise<string | null> {

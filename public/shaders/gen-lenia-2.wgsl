@@ -3,9 +3,11 @@
 //  Category: generative
 //  Description: Advanced 4-species Lenia with DNA-encoded traits,
 //               8-sample radial kernels, and predator-prey dynamics.
-//  Features: 4-species, dna-encoding, predator-prey, caustics
+//  Features: 4-species, dna-encoding, predator-prey, caustics, temporal, chromatic, depth-aware
 //  Tags: lenia, multi-species, dna, organic, creature, advanced
 //  Author: ford442
+//  Complexity: High
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -146,7 +148,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   newState = clamp(newState, vec4<f32>(0.0), vec4<f32>(1.0));
   // DNA-based color remapping
   let dnaColor = species_to_color(newState);
-  let finalColor = mix(newState.rgb, dnaColor, 0.35);
+  var finalColor = mix(newState.rgb, dnaColor, 0.35);
+
+  // ─── Chromatic dispersion ───
+  let chrStrength = 0.004 + audioBass * 0.008;
+  let chrR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(chrStrength * (1.0 + audioMid * 0.5), 0.0), 0.0).r;
+  let chrG = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, chrStrength * (1.0 + audioHigh * 0.3)), 0.0).g;
+  let chrB = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-chrStrength * 0.7 * (1.0 + audioBass * 0.4), chrStrength * 0.3), 0.0).b;
+  let chrColor = vec3<f32>(chrR, chrG, chrB);
+  finalColor = mix(finalColor, chrColor, 0.2 + audioBass * 0.15);
+
+  // ─── Temporal feedback ───
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  finalColor = mix(finalColor, prev.rgb * 0.9, 0.03 + audioBass * 0.01);
+
   textureStore(writeTexture, id.xy, vec4<f32>(finalColor, newState.a));
   textureStore(writeDepthTexture, id.xy, vec4<f32>(newState.r * 0.25 + newState.g * 0.25 + newState.b * 0.25 + newState.a * 0.25, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, id.xy, vec4<f32>(growth.rg, interactions.rg));
 }

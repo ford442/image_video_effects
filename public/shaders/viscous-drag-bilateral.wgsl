@@ -137,8 +137,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let center = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
   var accumColor = vec3<f32>(0.0);
   var accumWeight = 0.0;
-  let radius = i32(ceil(finalSigma * 2.5));
-  let maxRadius = min(radius, 7);
+  let kernelRadius = i32(ceil(finalSigma * 2.5));
+  let maxRadius = min(kernelRadius, 7);
 
   for (var dy = -maxRadius; dy <= maxRadius; dy++) {
     for (var dx = -maxRadius; dx <= maxRadius; dx++) {

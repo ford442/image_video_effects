@@ -1,9 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Acid Lissajous
 //  Category: generative
-//  Features: audio-reactive, temporal, psychedelic, procedural
+//  Features: lissajous-curves, audio-frequency, mouse-phase, neon-trails, depth-motion,
+//            hypnotic-pattern, mouse-orbit, chromatic-strands, bass-strand-count, upgraded-rgba
 //  Complexity: Medium
-//  Created: 2026-05-23
+//  Updated: 2026-05-31
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════
 //  Lissajous figures drawn as glowing neon tubes with acid-trip
 //  color cycling. Multiple harmonic pairs trace sinusoidal paths
@@ -42,7 +45,6 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
   return c.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
-// Soft glow falloff for a strand
 fn strandGlow(d: f32, radius: f32) -> f32 {
   let core  = smoothstep(radius, 0.0, d);
   let bloom = smoothstep(radius * 4.0, 0.0, d) * 0.35;
@@ -61,27 +63,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass   = plasmaBuffer[0].x;
   let mids   = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
+  let mouse  = u.zoom_config.yz;
 
-  // Parameters
   let speed      = mix(0.3, 2.5,  u.zoom_params.x);
   let complexity = mix(2.0, 9.0,  u.zoom_params.y);
   let glowWidth  = mix(0.012, 0.003, u.zoom_params.z);
   let feedback   = u.zoom_params.w;
 
-  // Centered, aspect-corrected space  [-1, 1]
-  var p = (uv - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
+  // Mouse orbit: strands rotate around mouse position
+  let mouseOffset = (mouse - 0.5) * vec2<f32>(aspect, 1.0) * 0.5 * bass;
+  var p = (uv - 0.5) * vec2<f32>(aspect, 1.0) * 2.0 - mouseOffset;
 
   var totalColor = vec3<f32>(0.0);
   var totalWeight = 0.0;
 
-  for (var si: i32 = 0; si < STRANDS; si = si + 1) {
+  // Bass drives strand count up to 9 total
+  let activeStrands = STRANDS + i32(bass * 2.0);
+
+  for (var si: i32 = 0; si < activeStrands; si = si + 1) {
     let sf    = f32(si);
     let freqX = floor(mix(1.0, complexity, sf / max(f32(STRANDS) - 1.0, 1.0)));
     let freqY = floor(freqX + select(1.0, 0.0, si % 2 == 0));
     let phase = sf * 0.63 + time * speed * (0.7 + sf * 0.11) * (1.0 + bass * 0.3);
-    let hueBase = fract(sf / f32(STRANDS) + time * 0.07 * speed + mids * 0.15);
+    let hueBase = fract(sf / f32(activeStrands) + time * 0.07 * speed + mids * 0.15);
 
-    // Find minimum distance from this pixel to the strand curve
     var minDist = 1e9;
     for (var ti: i32 = 0; ti <= SAMPLES; ti = ti + 1) {
       let t   = f32(ti) / f32(SAMPLES) * TAU;
@@ -99,7 +104,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     totalWeight = totalWeight + glow;
   }
 
-  // Temporal feedback from dataTextureC
   var histUV = uv;
   histUV.x = histUV.x + sin(time * 0.3) * 0.001;
   histUV.y = histUV.y + cos(time * 0.2) * 0.001;
@@ -107,12 +111,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fbMix = mix(0.05, 0.65, feedback);
   totalColor = mix(totalColor, prev * 0.92, fbMix);
 
-  // Vignette
   let vign = 1.0 - smoothstep(0.65, 1.3, length(p));
   totalColor = totalColor * vign;
 
+  // Chromatic strand separation: R leads, B lags
+  let chromaR = totalColor * vec3<f32>(1.1, 0.95, 0.85);
+  let chromaB = totalColor * vec3<f32>(0.85, 0.95, 1.1);
+  totalColor = mix(chromaR, chromaB, smoothstep(0.3, 0.7, treble));
+
   let depth = clamp(totalWeight * 0.4, 0.0, 1.0);
-  let alpha = clamp(length(totalColor), 0.0, 1.0);
+  let alpha = clamp(length(totalColor) + bass * 0.05, 0.0, 1.0);
 
   textureStore(writeTexture,      coord, vec4<f32>(totalColor, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

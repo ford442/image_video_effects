@@ -2,12 +2,14 @@
   "id": "gen-alpha-aurora",
   "name": "Alpha Aurora",
   "url": "shaders/gen-alpha-aurora.wgsl",
-  "description": "Procedural aurora borealis with spectral band blending and density-based alpha translucency. Curl noise drives organic flow across multiple spectral bands with audio-reactive brightness and atmospheric glow.",
+  "description": "Procedural aurora borealis with rich spectral band blending, dynamic audio-reactive pulsing, and atmospheric depth. Enhanced color and motion for greater visual impact.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "atmospheric-depth",
+    "spectral-color"
   ],
   "tags": [
     "aurora",

@@ -172,10 +172,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseDist = length(uv - mousePos);
     if (mouseDist < 0.03) {
         let drop = 1.0 - mouseDist / 0.03;
-        let type = hash12(vec2<f32>(time * 0.5, 0.0));
-        if (type < 0.25) { newFine += drop; }
-        else if (type < 0.5) { newCoarse += drop; }
-        else if (type < 0.75) { newMoist += drop; }
+        let grainType = hash12(vec2<f32>(time * 0.5, 0.0));
+        if (grainType < 0.25) { newFine += drop; }
+        else if (grainType < 0.5) { newCoarse += drop; }
+        else if (grainType < 0.75) { newMoist += drop; }
         else { newDust += drop * 0.5; }
     }
 

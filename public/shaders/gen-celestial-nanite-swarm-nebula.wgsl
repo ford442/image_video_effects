@@ -1,7 +1,11 @@
-// ----------------------------------------------------------------
-// Celestial Nanite-Swarm Nebula
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Celestial Nanite-Swarm Nebula
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -14,6 +18,7 @@
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
@@ -91,10 +96,8 @@ fn map_density(p: vec3<f32>) -> f32 {
     let box_d = length(max(abs(q) - vec3<f32>(0.5), vec3<f32>(0.0))) - 0.1;
     let shape_density = smoothstep(0.5, 0.0, box_d);
 
-    var audio_react = 0.0;
-    if (u.ripples[0].w > 0.0) {
-        audio_react = u.ripples[0].x * 0.5;
-    }
+    // Bass swells the constellation links (correct audio source)
+    let audio_react = plasmaBuffer[0].x * 0.5;
 
     density = mix(density, density * shape_density * 2.0, order_param);
     density += audio_react * link_density;
@@ -102,7 +105,7 @@ fn map_density(p: vec3<f32>) -> f32 {
     return max(0.0, density - 0.3);
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
     if (f32(global_id.x) >= res.x || f32(global_id.y) >= res.y) {
@@ -111,12 +114,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(f32(global_id.x) / res.x, f32(global_id.y) / res.y);
     let p = (uv - 0.5) * 2.0 * vec2<f32>(res.x / res.y, 1.0);
 
+    // Audio reactivity: treble sparkles the nanite glow
+    let treble = plasmaBuffer[0].z;
+
     let ro = vec3<f32>(0.0, 0.0, -5.0);
     let rd = normalize(vec3<f32>(p, 1.0));
 
     var col = vec3<f32>(0.0);
     var t = 0.0;
     var density_sum = 0.0;
+    var firstHitT = -1.0;
 
     for (var i = 0; i < 60; i = i + 1) {
         let pos = ro + rd * t;
@@ -127,11 +134,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let plasma = vec3<f32>(1.0, 0.0, 0.8) * d * u.zoom_params.y;
             let gold = vec3<f32>(1.0, 0.8, 0.0) * d * u.zoom_params.w;
 
-            let local_col = biolum + plasma + gold;
+            let local_col = (biolum + plasma + gold) * (1.0 + treble * 0.8);
 
             let atten = exp(-t * 0.2);
             col += local_col * atten * 0.1;
             density_sum += d * 0.1;
+            firstHitT = select(firstHitT, t, firstHitT < 0.0);
         }
 
         if (density_sum > 0.95) {
@@ -141,10 +149,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         t += max(0.05, 0.1 - d*0.05);
     }
 
+    let coverage = min(density_sum, 1.0);
     let bg = vec3<f32>(0.01, 0.02, 0.05) * (1.0 - length(p)*0.5);
-    col = col + bg * (1.0 - min(density_sum, 1.0));
+    col = col + bg * (1.0 - coverage);
 
     col = pow(col, vec3<f32>(0.8));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    // Alpha: accumulated nebula opacity over the cosmic void, never flat 1.0
+    let alpha = clamp(coverage + length(bg), 0.0, 1.0);
+    let out = vec4<f32>(col, alpha);
+
+    // Depth: distance to first dense nanite cloud (near = closer)
+    let hitDepth = select(0.0, clamp(1.0 - firstHitT / 10.0, 0.0, 1.0), firstHitT >= 0.0);
+    let coord = vec2<i32>(global_id.xy);
+    textureStore(writeTexture, coord, out);
+    textureStore(writeDepthTexture, coord, vec4<f32>(hitDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, out);
 }

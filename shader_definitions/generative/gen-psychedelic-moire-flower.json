@@ -1,0 +1,15 @@
+{
+  "id": "gen-psychedelic-moire-flower",
+  "name": "Psychedelic Moire Flower",
+    "category": "generative",
+  "url": "shaders/gen-psychedelic-moire-flower.wgsl",
+  "description": "Hypnotic overlapping concentric patterns creating psychedelic moire interference. Multiple rotating line sets at different speeds produce mesmerizing flower-like shapes with neon hot pink, electric orange, lime, and cyan colors.",
+  "features": ["interactive", "mouse-reactive", "temporal", "procedural"],
+  "tags": ["psychedelic", "neon", "moire", "flower", "hypnotic", "interference", "concentric"],
+  "params": [
+    {"id": "intensity", "name": "Intensity", "default": 0.7, "min": 0, "max": 1, "step": 0.01},
+    {"id": "speed", "name": "Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01},
+    {"id": "scale", "name": "Pattern Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01},
+    {"id": "colorshift", "name": "Color Shift", "default": 0.0, "min": 0, "max": 1, "step": 0.01}
+  ]
+}

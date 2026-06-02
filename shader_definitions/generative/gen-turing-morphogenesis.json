@@ -1,0 +1,60 @@
+{
+  "id": "gen-turing-morphogenesis",
+  "name": "Turing Morphogenesis",
+  "category": "generative",
+  "url": "shaders/gen-turing-morphogenesis.wgsl",
+  "description": "Alan Turing's reaction-diffusion morphogenesis simulated via deterministic activator-inhibitor fields. Evolves organic spot, stripe, and labyrinth patterns reminiscent of animal coats and coral growth. Bass modulates feed/kill parameters causing pattern morphing, mouse deposits new activator seeds, and depth controls pattern scale.",
+  "features": [
+    "audio-reactive",
+    "mouse-interactive",
+    "depth-aware",
+    "temporal-feedback",
+    "procedural",
+    "organic"
+  ],
+  "tags": [
+    "turing",
+    "reaction-diffusion",
+    "morphogenesis",
+    "organic",
+    "biological",
+    "patterns",
+    "generative",
+    "spots",
+    "stripes"
+  ],
+  "params": [
+    {
+      "id": "feed",
+      "name": "Feed Rate",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Evolution Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "scale",
+      "name": "Pattern Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

@@ -16,11 +16,11 @@ extern "C" {
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
 EMSCRIPTEN_KEEPALIVE
-int initWasmRenderer(int width, int height) {
+int initWasmRenderer(int width, int height, const char* canvasSelector) {
     if (!g_renderer) {
         g_renderer = new WebGPURenderer();
     }
-    bool ok = g_renderer->Initialize(width, height);
+    bool ok = g_renderer->Initialize(width, height, canvasSelector);
     return ok ? 1 : 0;
 }
 

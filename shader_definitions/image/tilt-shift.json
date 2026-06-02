@@ -2,7 +2,7 @@
   "id": "tilt-shift",
   "name": "Tilt Shift Miniature",
   "url": "shaders/tilt-shift.wgsl",
-  "description": "Simulates a tilt-shift lens effect, blurring top and bottom to make the scene look like a miniature model.",
+  "description": "Scheimpflug principle tilt-shift with angular blur kernel and depth-aware circle-of-confusion. Bass drives tilt angle oscillation, mouse positions the focal plane, depth controls local blur radius. Features boosted saturation, vignette on blurred regions, ACES tone mapping, and chromatic aberration in out-of-focus areas.",
   "params": [
     {
       "id": "strength",
@@ -27,7 +27,7 @@
     },
     {
       "id": "contrast",
-      "name": "Contrast",
+      "name": "Tilt Angle",
       "default": 0.6,
       "min": 0,
       "max": 1
@@ -36,10 +36,14 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "tilt-shift",
+    "miniature",
+    "depth-of-field"
   ]
 }

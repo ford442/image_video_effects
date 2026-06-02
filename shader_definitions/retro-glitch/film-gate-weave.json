@@ -1,0 +1,65 @@
+{
+  "id": "film-gate-weave",
+  "name": "Film Gate Weave",
+  "category": "retro-glitch",
+  "url": "shaders/film-gate-weave.wgsl",
+  "description": "Accurate 35mm film gate weave simulation with perforation hole registration jitter, gate flutter from intermittent motion, and film scratch generation with temporal persistence. Film grain with dye cloud structure, gate hair accumulation, splice tape artifacts, ACES tone mapping, and chromatic aberration from lens breathing.",
+  "features": [
+    "temporal-frame-jitter",
+    "upgraded-rgba",
+    "audio-reactive-jitter",
+    "retro",
+    "gate-flutter",
+    "registration-jitter",
+    "scratch-persistence",
+    "splice-tape",
+    "chromatic-aberration"
+  ],
+  "params": [
+    {
+      "id": "weave",
+      "name": "Gate Weave",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "dust",
+      "name": "Dust Amount",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "scratches",
+      "name": "Scratches",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "flicker",
+      "name": "Color Flicker",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "film",
+    "analog",
+    "35mm",
+    "gate-weave",
+    "dust",
+    "scratches",
+    "flicker",
+    "retro",
+    "vintage",
+    "audio-reactive",
+    "gate-flutter",
+    "registration-jitter",
+    "splice-tape",
+    "chromatic-aberration",
+    "aces-tone-mapping"
+  ]
+}

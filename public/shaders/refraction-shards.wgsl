@@ -1,4 +1,13 @@
-// --- REFRACTION SHARDS ---
+// ================================================================
+//  Refraction Shards
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: refraction-shards
+//  Created: 2026-05-30
+//  By: Copilot
+// ================================================================
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,110 +25,81 @@
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  zoom_params: vec4<f32>,  // x=ShardSize, y=Refraction, z=Roughness, w=PrismEffect
   ripples: array<vec4<f32>, 50>,
 };
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
-    let p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(.1031, .1030, .0973));
-    let dotP3 = dot(p3, p3.yzx + 33.33);
-    return fract((p3.xx + p3.yz) * p3.zy);
+  let q = vec2<f32>(
+    sin(dot(p, vec2<f32>(127.1, 311.7))),
+    sin(dot(p, vec2<f32>(269.5, 183.3)))
+  ) * 43758.5453;
+  return fract(q);
+}
+
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+  let lenSq = max(dot(v, v), 1e-6);
+  return v * inverseSqrt(lenSq);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
+
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
+  let aspect = dims.x / dims.y;
+  let time = u.config.x;
+  let audio = plasmaBuffer[0].xyz;
+
+  let shardScale = mix(4.0, 24.0, u.zoom_params.x);
+  let refraction = u.zoom_params.y * 0.06;
+  let roughness = u.zoom_params.z * 0.04;
+  let prism = u.zoom_params.w * 0.03;
+
+  let p = uv * shardScale;
+  let cell = floor(p);
+  let local = fract(p);
+
+  var bestDist = 10.0;
+  var bestDelta = vec2<f32>(0.0);
+  for (var j = -1; j <= 1; j = j + 1) {
+    for (var i = -1; i <= 1; i = i + 1) {
+      let neighbor = vec2<f32>(f32(i), f32(j));
+      let point = neighbor + hash22(cell + neighbor + floor(time * 0.2));
+      let delta = point - local;
+      let dist = dot(delta, delta);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestDelta = delta;
+      }
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+  }
 
-    // Params
-    let scale = mix(5.0, 20.0, u.zoom_params.x); // Shard scale
-    let refraction = u.zoom_params.y; // Refraction strength
-    let roughness = u.zoom_params.z;  // Noise/Roughness
-    let chromatic = u.zoom_params.w;  // Chromatic aberration
+  let dir = safeNormalize(bestDelta + (uv - mouse) * vec2<f32>(aspect, 1.0) * 0.25);
+  let mouseMask = 1.0 - smoothstep(0.0, 0.55, length((uv - mouse) * vec2<f32>(aspect, 1.0)));
+  let wobble = hash22(cell + vec2<f32>(time, -time)) - 0.5;
+  let offset = (dir * refraction + wobble * roughness) * (1.0 + audio.x * 0.7 + mouseMask * 0.4);
+  let centerUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Mouse Interaction
-    var mouse = u.zoom_config.yz;
-    let mouseVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(mouseVec);
+  var finalColor = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, clamp(centerUV + dir * prism, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, centerUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, clamp(centerUV - dir * prism, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
+  );
 
-    // Create Shards (Voronoi-ish)
-    // We'll use a simple grid based voronoi for performance
-    let uvScaled = uv * vec2<f32>(aspect, 1.0) * scale;
-    let i_st = floor(uvScaled);
-    let f_st = fract(uvScaled);
+  let shardEdge = 1.0 - smoothstep(0.10, 0.22, sqrt(bestDist));
+  let crystalTint = mix(vec3<f32>(0.15, 0.9, 1.0), vec3<f32>(1.0, 0.55, 0.9), 0.5 + 0.5 * dir.x);
+  finalColor = finalColor + crystalTint * shardEdge * (0.08 + 0.20 * audio.z);
 
-    var m_dist = 1.0;
-    var m_point = vec2<f32>(0.0);
-    var cell_id = vec2<f32>(0.0);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, centerUV, 0.0).r;
+  let finalAlpha = clamp(0.60 + shardEdge * 0.22 + mouseMask * 0.10, 0.32, 0.97);
+  let depthOut = clamp(mix(baseDepth, 0.22 + shardEdge * 0.70, 0.32), 0.0, 1.0);
 
-    for (var y = -1; y <= 1; y++) {
-        for (var x = -1; x <= 1; x++) {
-            let neighbor = vec2<f32>(f32(x), f32(y));
-            let point = hash22(i_st + neighbor);
-            // Animate points?
-            // point = 0.5 + 0.5 * sin(u.config.x + 6.2831 * point);
-
-            let diff = neighbor + point - f_st;
-            let d = length(diff);
-
-            if (d < m_dist) {
-                m_dist = d;
-                m_point = point;
-                cell_id = i_st + neighbor;
-            }
-        }
-    }
-
-    // Determine shard normal/tilt based on mouse position relative to cell center
-    // Cell center in UV space
-    let cellCenterUV = (cell_id + m_point) / scale / vec2<f32>(aspect, 1.0);
-
-    // Vector from mouse to cell
-    let dirToCell = normalize(cellCenterUV - mouse);
-    // Mouse distance to cell center
-    let distToCell = distance(cellCenterUV * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
-
-    // Tilt amount based on distance (closer = more tilt)
-    let tilt = smoothstep(0.5, 0.0, distToCell) * refraction;
-
-    // Calculate refraction offset
-    // Shift UV based on tilt direction
-    // Randomize slightly per shard using cell_id
-    let rand = hash22(cell_id);
-    let randomTilt = (rand - 0.5) * roughness * 0.1;
-
-    let offset = (dirToCell * tilt) + randomTilt;
-
-    // Chromatic Aberration
-    let offsetR = offset * (1.0 + chromatic);
-    let offsetG = offset;
-    let offsetB = offset * (1.0 - chromatic);
-
-    let colR = textureSampleLevel(readTexture, u_sampler, uv + offsetR, 0.0).r;
-    let colG = textureSampleLevel(readTexture, u_sampler, uv + offsetG, 0.0).g;
-    let colB = textureSampleLevel(readTexture, u_sampler, uv + offsetB, 0.0).b;
-
-    var color = vec4<f32>(colR, colG, colB, 1.0);
-
-    // Add shard edges/specular highlight
-    // Distance from center of Voronoi cell (m_dist)
-    // Edges are where m_dist is high? Voronoi distance metric is distance to feature point.
-    // Actually borders are where distances to two closest points are equal.
-    // But we only found closest.
-    // Let's use m_dist (center) to darken/lighten.
-    // Center of shard (m_dist small) -> brighter/specular?
-
-    // Specular glint if facing mouse
-    let glint = smoothstep(0.1, 0.0, m_dist) * tilt * 5.0; // Only glint if highly tilted
-    color += vec4<f32>(glint);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    // Passthrough Depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(shardEdge, mouseMask, abs(offset.x) + abs(offset.y), finalAlpha));
 }

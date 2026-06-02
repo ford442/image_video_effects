@@ -1,43 +1,50 @@
 {
   "id": "chromatic-focus",
   "name": "Chromatic Focus",
+  "category": "artistic",
   "url": "shaders/chromatic-focus.wgsl",
+  "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into colorful chromatic bokeh.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "chromatic-aberration"
   ],
-  "description": "Chromatic aberration that intensifies away from the mouse cursor (focus point).",
+  "tags": [
+    "focus",
+    "bokeh",
+    "spectral",
+    "chromatic",
+    "audio-reactive"
+  ],
   "params": [
     {
-      "id": "aberStrength",
-      "name": "Aberration",
-      "default": 0.5,
+      "id": "aperture_size",
+      "name": "Aperture Size",
+      "default": 0.4,
       "min": 0,
       "max": 1
     },
     {
-      "id": "focusRadius",
+      "id": "focus_radius",
       "name": "Focus Radius",
-      "default": 0.3,
+      "default": 0.45,
       "min": 0,
       "max": 1
     },
     {
-      "id": "blurStrength",
-      "name": "Intensity",
-      "default": 0.5,
+      "id": "spectral_spread",
+      "name": "Spectral Spread",
+      "default": 0.35,
       "min": 0,
       "max": 1
     },
     {
-      "id": "angleOffset",
-      "name": "Angle Offset",
-      "default": 0,
+      "id": "animation_speed",
+      "name": "Animation Speed",
+      "default": 0.35,
       "min": 0,
       "max": 1
     }
-  ],
-  "tags": [
-    "stylized",
-    "artistic"
   ]
 }

@@ -7,6 +7,18 @@
 
 ---
 
+## What "Upgrade" Means Here
+
+> **An upgrade adds to the visual output — it is not a refactor.** The goal of
+> upgrading a shader is to introduce *new* visual effects, richer detail, or
+> creative alterations of the image that were not there before (new lighting,
+> color, motion, depth, texture, generative structure, interactivity, etc.).
+> Fixing bindings, adding the workgroup barrier, clamping UVs, or passing
+> `naga` validation are **prerequisites**, not the upgrade itself. A shader
+> that compiles cleanly but looks the same as before has **not** been upgraded.
+> The size tiers below only decide *order of work*; every shader touched should
+> come out visibly more interesting than it went in.
+
 ## Executive Summary
 
 This document catalogs all WGSL shaders by file size to prioritize upgrade efforts. **Smaller shaders are recommended for first priority** as they represent simpler codebases that can be updated more quickly and with lower risk.

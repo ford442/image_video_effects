@@ -1,11 +1,9 @@
 {
   "id": "plastic-bricks",
   "name": "Plastic Bricks",
+  "category": "image",
   "url": "shaders/plastic-bricks.wgsl",
-  "features": [
-    "mouse-driven"
-  ],
-  "description": "Simulates a plastic brick surface (like LEGO) with 3D studs. Mouse influences scale.",
+  "description": "LEGO-style plastic bricks with microfacet BRDF, ambient occlusion in stud cavities, fingerprint smudges, and subsurface scattering. Bass drives assembly animation, mouse deconstructs bricks, depth controls stud perspective.",
   "params": [
     {
       "id": "param1",
@@ -36,8 +34,20 @@
       "max": 1
     }
   ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
   "tags": [
-    "filter",
-    "image-processing"
+    "plastic",
+    "bricks",
+    "toy",
+    "relief",
+    "brdf",
+    "ambient-occlusion",
+    "audio-reactive",
+    "depth-aware"
   ]
 }

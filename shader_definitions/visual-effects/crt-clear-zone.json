@@ -2,7 +2,7 @@
   "id": "crt-clear-zone",
   "name": "CRT Clear Zone",
   "url": "shaders/crt-clear-zone.wgsl",
-  "description": "Heavy CRT distortion with chromatic aberration, scanlines, and vignette. A clean, high-resolution zone follows the mouse cursor with an audio-reactive scanline intensity.",
+  "description": "Accurate CRT electron beam simulation with Gaussian spot spread, inline shadow mask, phosphor decay via temporal feedback, barrel distortion with corner darkening, per-RGB chromatic aberration, and ACES tone mapping.",
   "params": [
     {
       "name": "Distortion",
@@ -44,13 +44,15 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal"
   ],
   "tags": [
     "crt",
     "retro",
-    "glitch",
-    "filter",
+    "electron-beam",
+    "shadow-mask",
+    "temporal",
     "image-processing"
   ]
 }

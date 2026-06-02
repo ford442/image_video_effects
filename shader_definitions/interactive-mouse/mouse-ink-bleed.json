@@ -1,0 +1,51 @@
+{
+  "id": "mouse-ink-bleed",
+  "name": "Mouse Ink Bleed",
+  "url": "shaders/mouse-ink-bleed.wgsl",
+  "category": "interactive-mouse",
+  "description": "Organic ink that bleeds and diffuses outward from the mouse position with turbulent, painterly motion. Audio adds life to the spread and color.",
+  "tags": ["ink", "bleed", "paint", "organic", "diffusion", "artistic", "mouse-driven", "audio-reactive"],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "semantic-alpha"
+  ],
+  "params": [
+    {
+      "id": "spread",
+      "name": "Spread Radius",
+      "default": 0.55,
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.x"
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.4,
+      "step": 0.01,
+      "param": "zoom_params.y"
+    },
+    {
+      "id": "decay",
+      "name": "Edge Softness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.z"
+    },
+    {
+      "id": "colorIntensity",
+      "name": "Color Intensity",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.01,
+      "param": "zoom_params.w"
+    }
+  ]
+}

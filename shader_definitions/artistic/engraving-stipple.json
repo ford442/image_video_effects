@@ -1,55 +1,53 @@
 {
   "id": "engraving-stipple",
   "name": "Engraving Stipple",
+  "category": "artistic",
   "url": "shaders/engraving-stipple.wgsl",
-  "description": "Transforms the image into a stippled engraving style. Mouse acts as a light source to reveal details.",
+  "description": "Upgraded copperplate engraving with gradient-aware contour hatching, burr effects at crossings, ink pooling, paper texture, and chromatic edge darkening. Bass drives tool pressure, mouse acts as burin, depth controls line width.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "line-art",
+    "depth-aware"
+  ],
+  "tags": [
+    "engraving",
+    "stipple",
+    "etching",
+    "line-art",
+    "audio-reactive",
+    "cross-hatch",
+    "copperplate"
   ],
   "params": [
     {
-      "id": "density",
-      "name": "Stipple Density",
-      "default": 0.5,
+      "id": "line_density",
+      "name": "Line Density",
+      "default": 0.45,
       "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Density of stipple dots"
+      "max": 1
     },
     {
-      "id": "bias",
-      "name": "Ink Threshold",
-      "default": 0.5,
+      "id": "stipple_scale",
+      "name": "Stipple Scale",
+      "default": 0.4,
       "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Threshold for ink vs paper"
+      "max": 1
     },
     {
-      "id": "light",
-      "name": "Mouse Light",
-      "default": 0.7,
-      "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Strength of mouse light source"
-    },
-    {
-      "id": "burr_texture",
-      "name": "Burr Texture",
+      "id": "contrast",
+      "name": "Contrast",
       "default": 0.5,
       "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Engraving burr and texture amount"
+      "max": 1
+    },
+    {
+      "id": "light_rotation",
+      "name": "Light Rotation",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
     }
-  ],
-  "tags": [
-    "stylized",
-    "artistic"
   ]
 }

@@ -1,0 +1,53 @@
+{
+  "id": "contour-flow",
+  "name": "Contour Flow",
+  "url": "shaders/contour-flow.wgsl",
+  "description": "Per-pixel curl flow with depth advection and bass turbulence. Sobel edge detection drives flow direction, curl noise adds organic swirl, and depth controls sharpness vs advection mix. Treble sparks on edge intersections.",
+  "params": [
+    {
+      "name": "Flow Speed",
+      "id": "flowSpeed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Curl Strength",
+      "id": "curlStrength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Flow Size",
+      "id": "flowSize",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Direction",
+      "id": "direction",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "curl-flow",
+    "depth-advection",
+    "edge-aligned",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "image",
+    "contour",
+    "flow",
+    "edge-detection",
+    "advection",
+    "curl",
+    "turbulence"
+  ]
+}

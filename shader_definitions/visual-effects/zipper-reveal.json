@@ -1,8 +1,9 @@
 {
   "id": "zipper-reveal",
   "name": "Zipper Reveal",
+  "category": "visual-effects",
   "url": "shaders/zipper-reveal.wgsl",
-  "description": "Unzips the image to reveal darkness, controlled by the mouse position.",
+  "description": "Mechanical zipper with interlocking tooth simulation, fabric physics, metallic specular highlights, and chromatic aberration on fast-moving teeth. Bass drives zipper speed and mouse controls pull position.",
   "params": [
     {
       "id": "zipper_width",
@@ -46,10 +47,18 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "zipper",
+    "fashion",
+    "reveal",
+    "metal",
+    "fabric",
+    "chromatic",
+    "audio-reactive"
   ]
 }

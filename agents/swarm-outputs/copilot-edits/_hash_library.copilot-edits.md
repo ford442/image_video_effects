@@ -1,0 +1,4 @@
+- Applied a minimal Standard Hybrid Header and left the binding block untouched because it already matched the current 13-binding contract.
+- JSON changes: none.
+- Confidence: High.
+- Suspicious but left alone: this is a shared utility/library shader rather than a normal effect, so I avoided any structural cleanup beyond the header.

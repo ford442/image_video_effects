@@ -1,0 +1,4 @@
+- Applied a Standard Hybrid Header and confirmed the canonical binding block, including the existing `plasmaBuffer` declaration.
+- JSON changes: added explicit `category` and the obvious `depth-aware` feature flag.
+- Confidence: High.
+- Suspicious but left alone: the old header category had drifted from the current library placement, so I aligned metadata only.

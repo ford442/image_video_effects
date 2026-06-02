@@ -45,5 +45,10 @@
       "mapping": "zoom_params.w",
       "description": "Audio reactivity multiplier"
     }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ]
 }

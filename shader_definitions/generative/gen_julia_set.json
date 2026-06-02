@@ -6,7 +6,10 @@
   "features": [
     "audio-reactive",
     "procedural",
-    "animated"
+    "animated",
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "tags": [
     "procedural",

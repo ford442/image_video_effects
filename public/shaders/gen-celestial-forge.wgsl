@@ -1,4 +1,21 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Celestial Forge
+//  Category: generative
+//  Features: celestial-forge, cosmic-anvil, audio-hammer, mouse-sparks, stellar-plasma, depth-stars
+//  Complexity: High
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish pass — richer cosmic light, audio hammering, atmospheric stars)
+// ═══════════════════════════════════════════════════════════════════
+//  By: Claude Opus 4.8 (swarm optimization pass 2026-05-31)
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+//  OPTIMIZATION LOG (2026-05-31):
+//  - Standard header (was stub "COPY PASTE THIS HEADER" placeholder)
+//  - Audio reactivity wired to plasmaBuffer (bass→core pulse, treble→ring panels)
+//  - Raymarch steps 128→96 with adaptive step relaxation
+//  - Reinhard → ACES filmic tone mapping (hue-neutral highlights)
+//  - IGN dither added; depth texture now written (was missing)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -66,6 +83,12 @@ fn rotZ(a: f32) -> mat3x3<f32> {
 fn smin(a: f32, b: f32, k: f32) -> f32 {
     let h = max(k - abs(a - b), 0.0) / k;
     return min(a, b) - h * h * k * (1.0 / 4.0);
+}
+
+// ACES filmic tone mapping (replaces component-wise Reinhard — hue-neutral highlights)
+fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // --- SDFs ---
@@ -259,7 +282,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
     
     var uv = (fragCoord * 2.0 - dims) / dims.y;
-    
+
+    // Audio reactivity — bass drives core/emission, treble accents ring panels
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+
     // Camera setup
     var time = u.config.x;
     var ro = vec3<f32>(0.0, 0.0, 6.0);
@@ -289,18 +316,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var d = 0.0;
     var m = 0.0;
     var accumEmission = 0.0;
-    let maxSteps = 128;
+    let maxSteps = 96; // was 128 — adaptive relaxation recovers the detail
     let maxDist = 30.0;
-    
+
     for (var i = 0; i < maxSteps; i++) {
         var p = ro + rd * t;
         let res = map(p);
         d = res.x;
         m = res.y;
         accumEmission += res.z;
-        
+
         if (d < 0.001 || t > maxDist) { break; }
-        t += d * 0.6; // Smaller steps for detailed structure
+        // Adaptive step: tight 0.6 near surfaces for detail, relaxed 0.85 in open space
+        let stepScale = select(0.85, 0.6, d < 0.3);
+        t += d * stepScale;
     }
     
     // Space background with subtle nebula
@@ -323,7 +352,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         
         // Distance to core for lighting falloff
         let distToCore = length(p);
-        let coreIntensity = u.zoom_params.w;
+        // Bass swells the forge's core luminosity on the beat
+        let coreIntensity = u.zoom_params.w * (1.0 + bass * 0.6);
         
         // Material-specific shading
         if (m == 1.0) {
@@ -353,8 +383,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             col += warmRim;
             
             if (m == 3.0) {
-                // Glowing panels
-                col += vec3<f32>(0.3, 0.8, 1.0) * 0.5 * coreIntensity;
+                // Glowing panels — treble makes the ring panels flicker brighter
+                col += vec3<f32>(0.3, 0.8, 1.0) * (0.5 + treble * 0.4) * coreIntensity;
             }
             
         } else if (m == 4.0) {
@@ -371,12 +401,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     
     // Vignette
     col *= 1.0 - 0.4 * length(uv);
-    
-    // Tone mapping
-    col = col / (col + vec3<f32>(1.0));
-    
+
+    // ACES filmic tone mapping (replaces Reinhard — preserves hue in the molten core)
+    col = acesToneMapping(col);
+
     // Gamma correction
     col = pow(col, vec3<f32>(0.4545));
-    
+
+    // IGN dither — suppresses banding in the dark-space nebula gradient
+    let ign = fract(52.9829189 * fract(dot(vec2<f32>(id.xy), vec2<f32>(0.06711056, 0.00583715))));
+    col = clamp(col + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
+
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Depth write was missing — pack normalized ray distance for downstream depth-aware effects
+    let sceneDepth = select(1.0, t / maxDist, t < maxDist);
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(sceneDepth, 0.0, 0.0, 0.0));
 }

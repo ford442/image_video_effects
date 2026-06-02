@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Zipper Reveal v2
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Chunks From: zipper-reveal
+//  Created: 2026-05-30
+//  Upgraded: 2026-05-30
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,168 +21,116 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
+fn rotate(v: vec2<f32>, a: f32) -> vec2<f32> {
+  let s = sin(a);
+  let c = cos(a);
+  return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
+fn aces_tone_map(color: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn fabric_weave(uv: vec2<f32>, scale: f32) -> f32 {
+  let weave = sin(uv.x * scale) * sin(uv.y * scale * 1.3);
+  return 0.5 + weave * 0.5;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
+  var uv = vec2<f32>(coord) / resolution;
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    var mouse = u.zoom_config.yz;
+  let time = u.config.x;
+  let bass = plasmaBuffer[0].x;
+  let mouse = u.zoom_config.yz;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Params
-    let spread = u.zoom_params.x;     // Width of the V-shape
-    let tooth_size = u.zoom_params.y; // Size of zipper teeth
-    let angle = u.zoom_params.z;      // Rotation angle
+  let spread = u.zoom_params.x * 0.5;
+  let toothSize = 0.003 + u.zoom_params.y * 0.06;
+  let angle = u.zoom_params.z * 3.14159;
+  let toothAmp = u.zoom_params.w * 0.06;
 
-    // Center logic around mouse
-    // Translate UV to be relative to mouse
-    let rel_uv = uv - mouse;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let local = rotate((uv - mouse) * vec2<f32>(aspect, 1.0), -angle);
 
-    // Rotate UV
-    let cos_a = cos(angle);
-    let sin_a = sin(angle);
-    let rot_uv = vec2<f32>(
-        rel_uv.x * cos_a - rel_uv.y * sin_a,
-        rel_uv.x * sin_a + rel_uv.y * cos_a
-    );
+  // Bass-driven zipper speed
+  let zipSpeed = 1.0 + bass * 2.0;
+  let openAmount = max(0.0, spread * (0.55 - local.y)) * zipSpeed;
+  let halfGap = openAmount * 0.5;
 
-    // Now work in rotated space.
-    // x is perpendicular to zipper line, y is along the zipper line.
-    // Let's assume the zipper opens "upwards" relative to rotation (negative Y in rotated space).
-    // Or let's make it intuitive: Dragging down (increasing Y) unzips it.
-    // So if rot_uv.y < 0 (above mouse), it's open.
+  // Parallax from depth: fabric layers shift with depth
+  let parallax = (depth - 0.5) * 0.04;
+  let pushDir = select(-1.0, 1.0, local.x >= 0.0);
+  let displacedLocal = vec2<f32>(local.x + pushDir * (halfGap + parallax), local.y);
+  let sampleUV = clamp(rotate(displacedLocal, angle) / vec2<f32>(aspect, 1.0) + mouse, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    var gap = 0.0;
+  // Chromatic aberration on fast-moving teeth
+  let chroma = toothAmp * 0.5 * bass;
+  let rSample = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(chroma, 0.0), 0.0).r;
+  let gSample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
+  let bSample = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(chroma, 0.0), 0.0).b;
+  var sampleColor = vec3<f32>(rSample, gSample, bSample);
 
-    // The zipper opens as we go further negative in Y (upwards from mouse)
-    if (rot_uv.y < 0.0) {
-        gap = abs(rot_uv.y) * spread;
-    }
+  // Fabric texture
+  let weave = fabric_weave(displacedLocal * 80.0, 200.0);
+  sampleColor *= 0.9 + weave * 0.2;
 
-    // Sawtooth pattern for teeth
-    // Dependent on Y position along the zipper
-    let tooth_wave = abs((fract(rot_uv.y / tooth_size) - 0.5) * 2.0);
-    // Teeth stick out.
-    // The "hole" is gap. The teeth are attached to the edge of the hole.
-    // Let's say the mechanical edge is at `gap`.
-    // The teeth oscillate around `gap`.
+  // Tooth geometry
+  let toothPitch = max(toothSize * 2.8, 0.002);
+  let toothWave = abs(fract(local.y / toothPitch) - 0.5) * 2.0;
+  let openMask = select(0.0, 1.0, halfGap > 0.001);
 
-    let tooth_amplitude = tooth_size * mix(0.1, 1.0, u.zoom_params.w);
-    // Interleave teeth: Left side has teeth where Right side has gaps?
-    // Normal zipper: teeth interlock.
-    // Left side: High when fract < 0.5
-    // Right side: High when fract > 0.5
+  // Interlocking tooth profile
+  let toothProfile = sin(local.y * 60.0 + time * 4.0 * zipSpeed) * 0.5 + 0.5;
+  let toothOffset = toothAmp * toothProfile * openMask;
+  let seamDist = abs(local.x) - toothOffset;
 
-    let y_fract = fract(rot_uv.y / tooth_size);
+  let toothLine = 1.0 - smoothstep(0.0, toothSize * 0.5, abs(seamDist - halfGap));
+  let toothRow = 1.0 - smoothstep(0.22, 0.50, toothWave);
+  let toothMask = openMask * toothLine * toothRow;
 
-    // Basic displacement boundary
-    var boundary_dist = gap;
+  // Specular highlights on metal teeth
+  let lightDir = normalize(vec2<f32>(0.3, 0.7));
+  let toothNormal = normalize(vec2<f32>(cos(local.y * 80.0), 0.5));
+  let spec = pow(max(dot(toothNormal, lightDir), 0.0), 16.0);
+  let metalBase = vec3<f32>(0.45, 0.40, 0.35);
+  let metalHighlight = vec3<f32>(1.0, 0.85, 0.55) * (0.4 + spec * 0.6 + bass * 0.2);
+  let metalColor = mix(metalBase, metalHighlight, 0.5);
 
-    // Add interlocking logic
-    // If rot_uv.y > 0.0 (closed part), we still want to show the seam.
-    // But for now let's focus on the open part.
+  // Under-fabric
+  let underPattern = 0.5 + 0.5 * sin(local.y * 100.0 + time * 5.0);
+  let underColor = mix(vec3<f32>(0.03, 0.02, 0.05), vec3<f32>(0.2, 0.04, 0.25), underPattern);
 
-    // Distance from center axis
-    let dist_x = abs(rot_uv.x);
+  // Fabric edge confidence
+  let edgeConf = smoothstep(0.0, toothSize * 2.0, abs(abs(local.x) - halfGap));
 
-    // Determine if we are in the "void"
-    var is_void = false;
-    var is_tooth = false;
+  var finalColor = sampleColor;
+  finalColor = mix(finalColor, underColor, openMask * (1.0 - toothMask) * edgeConf * 0.8);
+  finalColor = mix(finalColor, metalColor, toothMask);
 
-    // Tooth visualization logic
-    // The actual separation is `gap`.
-    // Teeth extend inwards from `gap + tooth_amplitude` to `gap - tooth_amplitude`?
-    // No, teeth are solid.
+  // ACES tone mapping
+  finalColor = aces_tone_map(finalColor);
 
-    // Let's define the solid edge at `gap + tooth_offset`.
-    // Left Side (x < 0): Tooth present if y_fract < 0.5
-    // Right Side (x > 0): Tooth present if y_fract >= 0.5
+  // Alpha: Tooth visibility * fabric_edge_confidence * depth
+  let alpha = clamp(toothMask * 0.9 + edgeConf * 0.4 * openMask + depth * 0.3, 0.1, 1.0);
 
-    var tooth_present = false;
-    if (rot_uv.x < 0.0) {
-        if (y_fract < 0.5) { tooth_present = true; }
-    } else {
-        if (y_fract >= 0.5) { tooth_present = true; }
-    }
-
-    // Adjust boundary based on tooth
-    // If tooth is present, the solid extends closer to center.
-    // Solid edge = gap.
-    // If tooth present, solid edge = gap - tooth_amplitude.
-    // Wait, if gap is 0, teeth interlock.
-    // So solid edge is `gap`.
-    // If tooth present, we add to the solid -> it reaches x = gap - tooth_size?
-    // At y=0 (gap=0): Left tooth reaches x = 0? Right tooth reaches x = 0?
-    // Let's say boundary is `gap`.
-    // If tooth present, boundary = gap - tooth_amplitude (closer to center).
-    // If no tooth, boundary = gap + tooth_amplitude (further from center).
-
-    let shape_boundary = gap + (select(tooth_amplitude, -tooth_amplitude, tooth_present));
-
-    // Visual tweak: enforce a minimum gap so we see black
-    let min_gap = 0.0;
-
-    // If we are inside the gap
-    if (dist_x < shape_boundary) {
-        // Inside void
-        is_void = true;
-    } else if (dist_x < shape_boundary + tooth_size * 0.2) {
-        // Edge highlight (metallic)
-        is_tooth = true;
-    }
-
-    if (is_void) {
-        // Draw dark void or "undershirt"
-        // Maybe a subtle grid pattern
-        let void_color = vec4<f32>(0.05, 0.05, 0.05, 1.0);
-        textureStore(writeTexture, vec2<i32>(global_id.xy), void_color);
-    } else {
-        // Draw Image
-        if (is_tooth) {
-             // Metallic look
-             textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(0.7, 0.7, 0.8, 1.0));
-        } else {
-             // Sample texture
-             // Displace texture to simulate fabric folding away
-             // We want to pull pixels from "under" the zipper area.
-             // Effectively, we push the texture coordinates outwards away from the zipper center.
-
-             // The amount of push should be related to 'gap'.
-             // We need to sample closer to the center line by 'gap' amount?
-             // No, the fabric physically moved OUT. So the pixel at 'uv' (which is far out) should show what was originally at 'uv - gap'.
-
-             let push_dir = sign(rot_uv.x);
-
-             // Calculate displacement vector in rotated space
-             let disp_x = -push_dir * gap; // Move sample coordinate TOWARDS center
-
-             // Convert displacement back to global space
-             let disp_vec_rot = vec2<f32>(disp_x, 0.0);
-             let disp_vec_global = vec2<f32>(
-                 disp_vec_rot.x * cos_a + disp_vec_rot.y * sin_a,
-                 -disp_vec_rot.x * sin_a + disp_vec_rot.y * cos_a
-             );
-
-             let sample_uv = uv + disp_vec_global;
-
-             // Bounds check
-             if (sample_uv.x < 0.0 || sample_uv.x > 1.0 || sample_uv.y < 0.0 || sample_uv.y > 1.0) {
-                 textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 1.0));
-             } else {
-                 let color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
-                 textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-             }
-        }
-    }
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth + toothMask * 0.1, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
 }

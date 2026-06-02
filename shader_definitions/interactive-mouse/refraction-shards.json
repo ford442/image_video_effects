@@ -1,8 +1,9 @@
 {
   "id": "refraction-shards",
   "name": "Refraction Shards",
+  "category": "interactive-mouse",
   "url": "shaders/refraction-shards.wgsl",
-  "description": "Splits the image into glass-like shards that refract light based on mouse position.",
+  "description": "Voronoi crystal shards refract and prism-split the source image, with extra sparkle near the cursor.",
   "params": [
     {
       "id": "scale",
@@ -34,10 +35,16 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "chromatic-aberration"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "crystal",
+    "shards",
+    "refraction",
+    "prismatic",
+    "audio-reactive"
   ]
 }

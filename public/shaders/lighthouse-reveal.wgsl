@@ -1,4 +1,13 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Lighthouse Reveal
+//  Category: lighting-effects
+//  Features: mouse-driven, reveal, beam, audio-sweep, depth-atmosphere
+//  Complexity: Medium
+//  Updated: 2026-05-31 — Grok (audio-reactive sweep + depth atmosphere)
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
+
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
@@ -58,6 +67,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let dist = distance(uv_aspect, mouse_aspect);
     let angle = atan2(uv_aspect.y - mouse_aspect.y, uv_aspect.x - mouse_aspect.x);
+
+    // Grok: Bass pulses the reveal strength (dramatic sweeps)
+    let revealPulse = 1.0 + bass * 0.6;
 
     // Rotation speed with audio reactivity
     let rotation = time * 2.0 * (1.0 + bass * 0.5);

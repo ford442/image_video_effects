@@ -1,8 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Rotoscope Ink - Physical Media Simulation with Alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Rotoscope Ink v2
 //  Category: artistic
-//  Features: ink line density → alpha, wash transparency, paper grain
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, edge-stylization
+//  Complexity: High
+//  Chunks From: rotoscope-ink
+//  Created: 2026-05-31
+//  By: 4-Agent Shader Upgrade Swarm
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -25,115 +29,103 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn getLuma(color: vec3<f32>) -> f32 {
-  return dot(color, vec3<f32>(0.299, 0.587, 0.114));
+fn luminance(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn sampleLuma(uv: vec2<f32>) -> f32 {
+  return luminance(textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn hash12(p: vec2<f32>) -> f32 {
-  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-  p3 += dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
+  return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
-  if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
     return;
   }
 
-  var uv = vec2<f32>(global_id.xy) / dims;
-  let texel = 1.0 / dims;
-
-  // Parameters
-  let baseThickness = mix(0.5, 3.0, u.zoom_params.x);
-  let quantLevels = mix(2.0, 16.0, u.zoom_params.y);
-  let threshold = mix(0.01, 0.2, u.zoom_params.z);
-  let inkStrength = u.zoom_params.w;
-
-  // Mouse Interaction
-  var mouse = u.zoom_config.yz;
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
   let aspect = dims.x / dims.y;
-  let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
+  let time = u.config.x;
+  let audio = plasmaBuffer[0].xyz;
 
-  // Mouse boosts line thickness and lowers threshold
-  let influence = 1.0 - smoothstep(0.0, 0.4, dist);
-  let localThickness = baseThickness + influence * 2.0;
-  let localThreshold = max(0.001, threshold - influence * 0.1);
+  let edgeThreshold = mix(0.025, 0.32, u.zoom_params.x);
+  let levels = mix(2.0, 10.0, u.zoom_params.y);
+  let inkDensity = mix(0.25, 1.5, u.zoom_params.z);
+  let shadeMix = mix(0.06, 1.0, u.zoom_params.w);
 
-  // Sobel Edge Detection
-  let t = localThickness * texel;
+  let px = vec2<f32>(1.0 / dims.x, 1.0 / dims.y);
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-  let c  = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-  let cN = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -t.y), 0.0).rgb;
-  let cS = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, t.y), 0.0).rgb;
-  let cE = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(t.x, 0.0), 0.0).rgb;
-  let cW = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-t.x, 0.0), 0.0).rgb;
+  let l = sampleLuma(uv - px);
+  let r = sampleLuma(uv + vec2<f32>(px.x, -px.y));
+  let t = sampleLuma(uv + vec2<f32>(-px.x, px.y));
+  let b = sampleLuma(uv + px);
+  let edgeGrad = vec2<f32>(r - l, t - b);
+  let edge = length(edgeGrad);
+  let edgeDir = atan2(edgeGrad.y, edgeGrad.x);
 
-  let edgeH = getLuma(cE) - getLuma(cW);
-  let edgeV = getLuma(cS) - getLuma(cN);
-  let edgeMag = sqrt(edgeH*edgeH + edgeV*edgeV);
+  let temporalNoise = hash12(floor(uv * 80.0) + vec2<f32>(time * 8.0, time * 5.0));
+  let motionStrength = smoothstep(edgeThreshold, edgeThreshold + 0.18, edge) * (0.7 + temporalNoise * 0.3);
 
-  let isEdge = step(localThreshold, edgeMag);
+  let brushAngle = edgeDir + temporalNoise * 0.4 * (1.0 + audio.x);
+  let brushUV = vec2<f32>(
+    uv.x * cos(brushAngle) + uv.y * sin(brushAngle),
+    -uv.x * sin(brushAngle) + uv.y * cos(brushAngle)
+  );
+  let brushStroke = smoothstep(0.0, 0.5, sin(brushUV.x * 120.0)) * smoothstep(0.0, 0.15, abs(sin(brushUV.y * 60.0)));
+  let taperedLine = brushStroke * motionStrength * (0.6 + 0.4 * sin(brushUV.x * 30.0 + time * 3.0));
 
-  // Color Quantization
-  var quantColor = floor(c * quantLevels) / quantLevels;
+  let posterized = floor(src.rgb * levels) / max(levels - 1.0, 1.0);
+  let mouseMask = 1.0 - smoothstep(0.0, 0.5, length((uv - mouse) * vec2<f32>(aspect, 1.0)));
 
-  // ROTOscope INK ALPHA CALCULATION
-  // Traditional rotoscope uses ink lines with varying thickness/density
-  
-  // Paper texture for absorption variation
-  let paperGrain = hash12(uv * 300.0) * 0.1 + 0.9;
-  
-  // INK THICKNESS → ALPHA MAPPING
-  // - Strong edges (ink lines): thick, opaque ink (alpha ~0.9-0.95)
-  // - Weak edges: thinner lines, slightly translucent (alpha ~0.6-0.8)
-  // - Washes: very thin, highly translucent (alpha ~0.2-0.4)
-  // - Paper: no ink (alpha ~0.0)
-  
-  // Base ink alpha from edge detection
-  var ink_alpha = isEdge * (0.7 + inkStrength * 0.25);
-  
-  // Edge magnitude affects line density
-  let edge_density = smoothstep(0.0, 1.0, edgeMag / (localThreshold + 0.1));
-  ink_alpha *= mix(0.7, 1.0, edge_density);
-  
-  // Paper grain creates slight variations in line quality
-  // (simulating ink bleed on rough paper)
-  let grain_effect = mix(0.92, 1.0, paperGrain);
-  ink_alpha *= grain_effect;
-  
-  // Mouse focus area gets slightly denser ink
-  let focus_boost = influence * 0.1;
-  ink_alpha = min(1.0, ink_alpha + focus_boost);
-  
-  // Ink Application
-  // Slightly blue-black ink with density variation
-  let inkColor = vec3<f32>(0.05, 0.05, 0.12);
-  
-  // Blend quantized color with ink lines
-  var finalColor = mix(quantColor, inkColor, isEdge * inkStrength);
-  
-  // Add slight paper tint to highlights
-  if (getLuma(finalColor) > 0.9) {
-      let paper_tint = vec3<f32>(1.0, 0.98, 0.94);
-      finalColor = finalColor * paper_tint;
-      
-      // Very light areas have minimal ink
-      ink_alpha *= 0.3;
-  }
-  
-  // Shadow areas get more ink density
-  if (getLuma(quantColor) < 0.3) {
-      ink_alpha = mix(ink_alpha, min(1.0, ink_alpha * 1.3), inkStrength);
-  }
-  
-  // Edge feathering for brush-like quality
-  let edge_quality = smoothstep(0.0, 0.5, isEdge);
-  ink_alpha *= mix(0.8, 1.0, edge_quality);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let parallax = (depth - 0.5) * 0.008;
+  let parallaxUV = clamp(uv + vec2<f32>(parallax, parallax * 0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+  let parallaxSrc = textureSampleLevel(readTexture, u_sampler, parallaxUV, 0.0).rgb;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, ink_alpha));
-  
-  // Store ink density in depth
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(ink_alpha, 0.0, 0.0, ink_alpha));
+  let inkTint = mix(vec3<f32>(0.04, 0.04, 0.05), vec3<f32>(0.10, 0.18, 0.30), audio.z * 0.45);
+  let edgeGlow = mix(vec3<f32>(0.85, 0.45, 0.15), vec3<f32>(0.25, 0.85, 1.0), 0.5 + 0.5 * sin(time + uv.y * 14.0));
+
+  let fastEdge = smoothstep(0.12, 0.35, edge) * (0.5 + 0.5 * sin(time * 6.0 + edge * 20.0));
+  let chromaSepR = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(fastEdge * 0.003, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let chromaSepB = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(fastEdge * 0.003, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let chromaticSrc = vec3<f32>(chromaSepR, src.g, chromaSepB);
+
+  var toon = mix(chromaticSrc, posterized, shadeMix);
+  let bleedEdge = smoothstep(0.02, 0.08, edge) * (1.0 - smoothstep(0.08, 0.18, edge));
+  toon = mix(toon, toon * (1.0 - inkDensity * 0.22) + inkTint * 0.12, bleedEdge * 0.4);
+
+  let jitter = (hash12(uv * 200.0 + time * 20.0) - 0.5) * audio.x * 0.035;
+  let handDrawn = toon + inkTint * (taperedLine * inkDensity + jitter);
+  let mouseInk = mouseMask * smoothstep(0.4, 0.6, hash12(floor(uv * 70.0) + vec2<f32>(time * 4.0, 0.0))) * 0.2;
+
+  let filmGrain = (hash12(uv * 600.0 + fract(time) * 100.0) - 0.5) * 0.035;
+  var finalColor = mix(handDrawn, inkTint, taperedLine * inkDensity * 0.8) + edgeGlow * taperedLine * mouseMask * (0.06 + audio.x * 0.2) + mouseInk * inkTint;
+  finalColor = mix(finalColor, parallaxSrc * 0.5 + finalColor * 0.5, depth * 0.3);
+  finalColor = finalColor + filmGrain;
+  finalColor = acesToneMap(finalColor * 1.05);
+
+  let outlineConfidence = clamp(taperedLine + motionStrength * 0.5 + bleedEdge * 0.3, 0.0, 1.0);
+  let finalAlpha = clamp(outlineConfidence * motionStrength * depth + src.a * 0.12 + bleedEdge * 0.15, 0.07, 0.95);
+
+  let outDepth = clamp(mix(depth, 0.16 + outlineConfidence * 0.8, 0.28), 0.0, 1.0);
+
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(outlineConfidence, motionStrength, mouseMask, finalAlpha));
 }

@@ -2,40 +2,47 @@
   "id": "interactive-zoom-blur",
   "name": "Interactive Zoom Blur",
   "url": "shaders/interactive-zoom-blur.wgsl",
-  "description": "Radial zoom blur centered on the mouse cursor with audio-reactive intensity and chromatic aberration.",
+  "description": "Radial zoom blur centered on the mouse cursor with temporal blur trail persistence, chromatic radial streak separation, depth-scaled blur attenuation, dithered sampling, and audio-reactive intensity.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "params": [
     {
       "id": "strength",
       "name": "Blur Strength",
       "default": 0.5,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "samples",
+      "id": "chromatic",
+      "name": "Chromatic Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "sampleCount",
       "name": "Quality",
       "default": 0.5,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     },
     {
-      "id": "bias",
-      "name": "Center Bias",
+      "id": "depthAttenuation",
+      "name": "Depth Attenuation",
       "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "aberration",
-      "name": "Aberration",
-      "default": 0.2,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
     }
   ],
   "tags": [
@@ -44,6 +51,9 @@
     "zoom",
     "radial",
     "blur",
-    "chromatic"
+    "chromatic",
+    "temporal",
+    "audio-reactive",
+    "depth-aware"
   ]
 }

@@ -360,6 +360,32 @@ hr {
     border: 1px solid rgba(184, 134, 11, 0.3);
 }
 
+/* Prominent one-click renderer switch button in the status bar */
+.renderer-switch-btn {
+    margin-left: 8px;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(212, 175, 55, 0.08));
+    color: var(--color-primary-gold, #FFD700);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.renderer-switch-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(212, 175, 55, 0.14));
+    border-color: rgba(255, 215, 0, 0.55);
+    box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.2);
+}
+
+.renderer-switch-btn:active {
+    transform: translateY(1px);
+}
+
 /* Scrollbar for sidebar and remote content */
 .sidebar::-webkit-scrollbar, .remote-content::-webkit-scrollbar {
     width: 8px;

@@ -1,14 +1,11 @@
-// ═══════════════════════════════════════════════════════════════
-//  Chromatic Swirl - Rotational chromatic aberration with wavelength-alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatic Swirl
 //  Category: distortion
-//  Features: swirl-rotation, chromatic-dispersion, wavelength-dependent-alpha
-//
-//  SCIENTIFIC MODEL:
-//  - Swirl rotation creates dispersion that affects both position AND alpha
-//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
-//  - Red (650nm): lowest absorption, highest transmission
-//  - Blue (450nm): highest absorption, lowest transmission
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, rich-chromatic-aberration, volumetric-swirl, depth-falloff
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — deeper color, better motion, atmospheric depth)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -58,11 +55,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.zoom_config.x;
     var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
     // Params
-    let swirlStrength = 5.0 + u.zoom_params.x * 10.0;
+    let swirlStrength = (5.0 + u.zoom_params.x * 10.0) * (1.0 + bass * 0.25);
     let radius = 0.3 + u.zoom_params.y * 0.5;
-    let aberration = 0.02 + u.zoom_params.z * 0.05;
+    let aberration = 0.02 + u.zoom_params.z * 0.05 + treble * 0.02;
     let animate = u.zoom_params.w;
 
     let aspect = resolution.x / resolution.y;
@@ -97,14 +98,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rotatedX = x_corr * cosA - y_corr * sinA;
     let rotatedY = x_corr * sinA + y_corr * cosA;
 
+    // === Visual Flourish: Richer swirling with audio texture ===
+    let swirlSpeed = 1.0 + mids * 1.8;
+    let extraTwist = sin(time * swirlSpeed + dist * 18.0) * (0.3 + treble * 0.6);
+    let finalAngle = angle + extraTwist;
+
     let finalUV_center = vec2<f32>(rotatedX / aspect, rotatedY) + center;
 
     // Chromatic Aberration
-    var dir = normalize(finalUV_center - center);
+    let dirVec = finalUV_center - center;
+    let dirLen = max(length(dirVec), 0.0001);
+    let dir = dirVec / dirLen;
 
-    let uvR = finalUV_center + dir * aberration * dist;
-    let uvG = finalUV_center;
-    let uvB = finalUV_center - dir * aberration * dist;
+    let uvR = clamp(finalUV_center + dir * aberration * dist, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+    let uvG = clamp(finalUV_center, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+    let uvB = clamp(finalUV_center - dir * aberration * dist, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
 
     let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
@@ -124,11 +132,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
     let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
     
-    let finalColor = vec3<f32>(
-        r * alphaR,
-        g * alphaG,
-        b * alphaB
-    );
+    // === Visual Flourish: Rich atmospheric color + depth ===
+    let baseCol = vec3<f32>(r * alphaR, g * alphaG, b * alphaB);
+    
+    // Audio-reactive color temperature and saturation
+    let warm = bass * 0.18;
+    let cool = treble * 0.14;
+    let col = baseCol * vec3<f32>(1.0 + warm, 1.0 - warm * 0.4 + cool * 0.15, 1.0 + cool);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    // Subtle volumetric swirl glow
+    let swirlGlow = smoothstep(0.4, 2.0, abs(angle)) * 0.09;
+    let finalCol = col + vec3<f32>(0.12, 0.1, 0.22) * swirlGlow * (0.4 + mids * 0.6);
+
+    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uvG, 0.0).r + dist * 0.05, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalCol, finalAlpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(dist / max(radius, 0.0001), angle / 12.0, aberration, finalAlpha));
 }

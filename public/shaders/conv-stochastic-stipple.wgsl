@@ -1,27 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Stochastic Stipple
 //  Category: image
-//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven
+//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware
 //  Convolution Type: weighted-voronoi-stippling-convolution
 //  Complexity: High
 //  Created: 2026-04-18
-//  By: Agent 1C — RGBA Convolution Architect
-// ═══════════════════════════════════════════════════════════════════
-//
-//  RGBA32FLOAT EXPLOITATION:
-//    RGB: Stipple color (sampled from local mean)
-//    Alpha: Stipple density — continuous float representing how "full" each
-//           stipple cell is. Downstream shaders can use this to create varying
-//           dot sizes in vector-graphic style.
-//
-//  Uses blue-noise dithering + local averaging to create stipple/pointillist
-//  art from any image. Each "dot" represents a local neighborhood.
-//
-//  MOUSE INTERACTIVITY:
-//    Mouse creates a zone of higher stipple resolution (smaller cells,
-//    more dots). Far from mouse = larger, more abstract stipple regions.
-//    Ripples inject transient stipple displacement waves.
-//
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -45,7 +29,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 = p3 + dot(p3, p3.yzx + 33.33);
@@ -59,11 +42,19 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 }
 
 fn blueNoise(p: vec2<f32>) -> f32 {
-    // Approximate blue noise via layered hash
     let h1 = hash12(p * 1.0);
     let h2 = hash12(p * 2.3 + vec2<f32>(5.7, 3.1));
     let h3 = hash12(p * 4.7 + vec2<f32>(1.3, 8.9));
     return fract(h1 * 0.5 + h2 * 0.3 + h3 * 0.2);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn localMean(uv: vec2<f32>, pixelSize: vec2<f32>, radius: i32) -> vec3<f32> {
@@ -84,24 +75,33 @@ fn localMean(uv: vec2<f32>, pixelSize: vec2<f32>, radius: i32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
     if (f32(global_id.x) >= res.x || f32(global_id.y) >= res.y) { return; }
-    
+
     let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
     let pixelSize = 1.0 / res;
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
-    
-    // Parameters
+
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthFactor = 0.5 + depth * 0.5;
+
     let cellSizeBase = mix(0.02, 0.08, u.zoom_params.x);
     let threshold = mix(0.2, 0.8, u.zoom_params.y);
     let colorSaturation = mix(0.5, 2.0, u.zoom_params.z);
     let mouseInfluence = u.zoom_params.w;
-    
+
+    // Bass-driven dot density
+    let cellSizeAudio = cellSizeBase * (1.0 - bass * 0.2);
+
     // Mouse creates higher resolution stipple zone
     let mouseDist = length(uv - mousePos);
     let mouseFactor = exp(-mouseDist * mouseDist * 8.0) * mouseInfluence;
-    let cellSize = mix(cellSizeBase, cellSizeBase * 0.3, mouseFactor);
-    
+    let cellSize = mix(cellSizeAudio, cellSizeAudio * 0.3, mouseFactor);
+
     // Ripple stipple displacement
     var rippleOffset = vec2<f32>(0.0);
     let rippleCount = u32(u.config.y);
@@ -117,43 +117,61 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             rippleOffset += vec2<f32>(cos(angle), sin(angle)) * wave * (1.0 - rElapsed / 3.0) * cellSize * 2.0;
         }
     }
-    
+
     let displacedUV = uv + rippleOffset;
-    
+
     // Cell-based stippling
     let cellCoord = floor(displacedUV / cellSize);
     let cellUV = (displacedUV - cellCoord * cellSize) / cellSize;
-    
+
     // Blue-noise dithered threshold
     let noise = blueNoise(cellCoord + vec2<f32>(time * 0.01));
     let ditheredThreshold = threshold + (noise - 0.5) * 0.3;
-    
+
     // Local mean for cell color
     let meanColor = localMean(displacedUV, pixelSize, i32(cellSize * max(res.x, res.y) * 0.5));
     let meanLuma = dot(meanColor, vec3<f32>(0.299, 0.587, 0.114));
-    
+
     // Stipple density based on luminance
-    let density = smoothstep(ditheredThreshold - 0.1, ditheredThreshold + 0.1, meanLuma);
-    
-    // Vary dot size within cell based on density
+    var density = smoothstep(ditheredThreshold - 0.1, ditheredThreshold + 0.1, meanLuma);
+    // Bass-driven density boost
+    density = clamp(density * (1.0 + bass * 0.3), 0.0, 1.0);
+
+    // Depth-based stipple size
+    let dotRadius = density * 0.45 * mix(1.2, 0.7, depth);
     let cellCenter = hash22(cellCoord) * 0.6 + 0.2;
     let distToCenter = length(cellUV - cellCenter);
-    let dotRadius = density * 0.45;
     let inDot = 1.0 - smoothstep(dotRadius * 0.7, dotRadius, distToCenter);
-    
+
     // Colorize
     let saturatedColor = meanColor * colorSaturation;
-    let stippleColor = saturatedColor * inDot + meanColor * 0.1 * (1.0 - inDot);
-    
-    // Add artistic edge variation
+    var stippleColor = saturatedColor * inDot + meanColor * 0.1 * (1.0 - inDot);
+
+    // Chromatic aberration on stipple dots
+    let caStrength = 0.003 * (1.0 + bass) * cellSize;
+    let caR = localMean(displacedUV + vec2<f32>(caStrength, 0.0), pixelSize, i32(cellSize * max(res.x, res.y) * 0.5)).r;
+    let caB = localMean(displacedUV - vec2<f32>(caStrength, 0.0), pixelSize, i32(cellSize * max(res.x, res.y) * 0.5)).b;
+    stippleColor.r = mix(stippleColor.r, caR * colorSaturation * inDot + caR * 0.1 * (1.0 - inDot), 0.5 * (1.0 + treble));
+    stippleColor.b = mix(stippleColor.b, caB * colorSaturation * inDot + caB * 0.1 * (1.0 - inDot), 0.5 * (1.0 + treble));
+
+    // Artistic edge variation
     let edgeNoise = hash12(cellCoord * 3.7 + vec2<f32>(time * 0.05));
     let edgeFactor = smoothstep(0.3, 0.7, edgeNoise);
-    let finalColor = mix(stippleColor, meanColor * 1.2, edgeFactor * 0.2);
-    
-    // Store: RGB = stipple color, Alpha = stipple density
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, density));
-    
-    // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    var finalColor = mix(stippleColor, meanColor * 1.2, edgeFactor * 0.2);
+
+    // Temporal feedback: stipple morphing
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+    finalColor = mix(finalColor, prev.rgb, 0.06 * (1.0 + mids));
+
+    // ACES tone mapping
+    finalColor = acesToneMap(finalColor * 1.1);
+
+    // Depth boost
+    finalColor *= depthFactor;
+
+    // Semantic alpha: stipple density × dot coverage × depth
+    let alpha = clamp(density * inDot * depthFactor, 0.0, 1.0);
+
+    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

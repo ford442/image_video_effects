@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  ascii-glyph
+//  ASCII Glyph
 //  Category: stylize
-//  Features: upgraded-rgba, depth-aware
-//  Upgraded: 2026-03-22
+//  Features: animated, depth-luminance, bass-character-swap, upgraded-rgba
+//  Complexity: High
+//  Chunks From: ascii-glyph, bass_env
+//  Created: 2024-01-01
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -14,76 +17,85 @@
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>; // glyph atlas
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI:  f32 = 3.14159265358979323846;
-const TAU: f32 = 6.28318530717958647692;
+fn hash12(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * .1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
 
-const GLYPH_GRID: vec2<u32> = vec2<u32>(80u, 45u);
-const GLYPH_SIZE: u32 = 16u;
+fn bass_env(bass: f32, mids: f32) -> f32 {
+  return 1.0 + bass * 0.3 + mids * 0.1;
+}
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let resolution = vec2<f32>(u.config.z, u.config.w);
-  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
-  var uv = vec2<f32>(gid.xy) / resolution;
-  let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
-  
-  // Mouse-based displacement
-  let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-  let to_mouse = uv - mouse_pos;
-  let dist_to_mouse = length(to_mouse);
-  let mouse_displace = (1.0 - smoothstep(0.0, 0.3, dist_to_mouse)) * 8.0;
-  
-  // Ripple-based morphing
-  var ripple_morph = 0.0;
-  for (var i = 0; i < 50; i++) {
-    let ripple = u.ripples[i];
-    if (ripple.z > 0.0) {
-      let ripple_age = time - ripple.z;
-      if (ripple_age > 0.0 && ripple_age < 4.0) {
-        let to_ripple = uv - ripple.xy;
-        let ripple_dist = length(to_ripple);
-        ripple_morph += sin(ripple_dist * 30.0 - ripple_age * 8.0) * exp(-ripple_age) * 0.5;
-      }
-    }
-  }
-  
-  let cell_coord = vec2<u32>(gid.xy);
-  let pixel_in_cell = vec2<u32>(vec2<u32>(gid.x % GLYPH_SIZE, gid.y % GLYPH_SIZE));
-  let cell_center = vec2<f32>(f32(cell_coord.x) * f32(GLYPH_SIZE), f32(cell_coord.y) * f32(GLYPH_SIZE));
-  let src = textureLoad(readTexture, vec2<i32>(i32(cell_center.x), i32(cell_center.y)), 0);
-  let saturation = max(src.r, max(src.g, src.b)) - min(src.r, min(src.g, src.b));
-  let glyph_index = u32((saturation + ripple_morph * 0.5 + bass * 0.3) * 255.0) % 16u;
-  let atlas_uv = (vec2<f32>(f32(pixel_in_cell.x), f32(pixel_in_cell.y)) + vec2<f32>(f32(glyph_index * GLYPH_SIZE), 0.0)) / vec2<f32>(256.0, 16.0);
-  let sdf = textureSampleLevel(dataTextureC, u_sampler, atlas_uv, 0.0).r;
-  let morph_amount = saturation * 2.0 + mouse_displace * 0.1;
-  let morphed_sdf = sdf + sin(f32(pixel_in_cell.x) * 0.5) * morph_amount;
-  let hue = atan2(src.g - src.b, src.r - src.g);
-  let glyph_color = vec3<f32>(abs(hue), 1.0, 1.0);
-  let final_color = mix(vec3<f32>(0.0), glyph_color, smoothstep(0.0, 0.1, morphed_sdf));
-  
-  // Sample depth for alpha calculation
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  
-  // Calculate luminance-based alpha
-  let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = mix(0.7, 1.0, luma);
-  let finalAlpha = mix(alpha * 0.8, alpha, depth);
-  
-  textureStore(writeTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(final_color, finalAlpha));
-  
-  // Pass depth
-  textureStore(writeDepthTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(depth, 0.0, 0.0, 0.0));
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let resolution = u.config.zw;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    let glyphSize = mix(4.0, 32.0, u.zoom_params.x) * bass_env(bass, mids);
+    let brightness = u.zoom_params.y;
+    let colorAmount = u.zoom_params.z;
+    let densityBoost = u.zoom_params.w;
+
+    let pixelUV = uv * resolution;
+    let cell = floor(pixelUV / glyphSize);
+    let cellUV = fract(pixelUV / glyphSize);
+    let cellCenter = (cell + 0.5) * glyphSize / resolution;
+
+    // Sample luminance at cell center with depth weighting
+    let centerColor = textureSampleLevel(readTexture, u_sampler, cellCenter, 0.0);
+    let luma = dot(centerColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let depthLuma = mix(luma, luma * (1.0 - depth), 0.3);
+
+    // Character density: higher for bright areas, boosted by densityBoost
+    let charDensity = smoothstep(0.3, 0.9, depthLuma + densityBoost * 0.2);
+
+    // Bass character swap: swap glyph patterns on strong beats
+    let beatSwap = hash12(cell + vec2<f32>(floor(bass * 5.0), 0.0));
+    let glyphPattern = hash12(cell + vec2<f32>(beatSwap, 0.0));
+
+    let glyphThreshold = glyphPattern;
+    let isGlyph = step(glyphThreshold, charDensity);
+
+    // Glyph SDF approximation: simple cross/dot
+    let crossDist = min(abs(cellUV.x - 0.5), abs(cellUV.y - 0.5));
+    let dotDist = length(cellUV - vec2<f32>(0.5));
+    let glyphShape = select(1.0 - smoothstep(0.0, 0.15, crossDist), 1.0 - smoothstep(0.0, 0.2, dotDist), glyphPattern > 0.5);
+    let glyphAlpha = glyphShape * isGlyph;
+
+    // Depth-based color: foreground brighter, background darker
+    let glyphColor = mix(
+        vec3<f32>(0.8, 0.9, 1.0),
+        centerColor.rgb * (1.0 + treble * 0.5),
+        colorAmount
+    );
+    let depthColor = mix(vec3<f32>(0.3, 0.4, 0.5), glyphColor, depth);
+
+    let finalRGB = depthColor * glyphAlpha * brightness;
+    let alpha = clamp(glyphAlpha * brightness + bass * 0.05, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

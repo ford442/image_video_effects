@@ -1,11 +1,13 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Neon Flashlight - Advanced Alpha with Edge-Preserve
-//  Category: edge-detection
-//  Alpha Mode: Edge-Preserve Alpha + Luminance Key
-//  Features: advanced-alpha, flashlight, edge-reveal, upgraded-rgba
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Neon Flashlight
+//  Category: lighting-effects
+//  Features: mouse-driven, neon, edge-light, audio-pulse, depth-fog, edge-reveal
+//  Complexity: Medium
+//  Updated: 2026-05-31 — Grok (audio-reactive pulse + depth fog)
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
+
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
@@ -46,6 +48,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let pixelSize = 1.0 / resolution;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     // ═══ AUDIO REACTIVITY ═══
     let audioOverall = u.zoom_config.x;
     let audioBass = audioOverall * 1.5;
@@ -76,8 +81,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         0.5 + 0.5 * sin(colorShift * 6.28 + time + 4.18)
     );
     
-    let emission = neonColor * edge * beamFalloff * intensity;
-    let alpha = edgePreserveAlpha(uv, pixelSize, edgeThreshold) * beamFalloff;
+    // Grok audio upgrade: Bass pulses the light, treble shifts the neon hue
+    let pulse = 1.0 + bass * 0.8 + treble * 0.4;
+    let hueShift = treble * 1.5;
+    let audioNeon = vec3<f32>(
+        0.5 + 0.5 * sin(colorShift * 6.28 + time + hueShift),
+        0.5 + 0.5 * sin(colorShift * 6.28 + time + 2.09 + hueShift),
+        0.5 + 0.5 * sin(colorShift * 6.28 + time + 4.18)
+    );
+    
+    let emission = audioNeon * edge * beamFalloff * intensity * pulse;
+    let alpha = edgePreserveAlpha(uv, pixelSize, edgeThreshold) * beamFalloff * (0.8 + bass * 0.4);
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

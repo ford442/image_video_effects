@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Watercolor Wetness
 //  Category: artistic
-//  Features: mouse-driven, temporal, rgba-state-machine
+//  Features: mouse-driven, paint, wetness, audio-bleed, depth-paper, pigment-settle, temporal
 //  Complexity: High
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer pigment behavior, audio bleeding, atmospheric paper)
+// ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
 //    R = Pigment red concentration
 //    G = Pigment green concentration
@@ -33,6 +36,12 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+fn hash12(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -137,7 +146,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // === STORE STATE ===
     textureStore(dataTextureA, coord, vec4<f32>(pigment, water));
 
-    // === VISUALIZATION ===
+    // === VISUALIZATION - Visual Flourish ===
     // Paper texture (shows through where dry)
     let paperColor = vec3<f32>(0.96, 0.94, 0.90);
     let wetnessVis = smoothstep(0.0, 0.2, water);
@@ -148,8 +157,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let edgeDarken = smoothstep(0.02, 0.1, waterEdge) * smoothstep(0.5, 0.0, water);
     displayColor *= 1.0 - edgeDarken * 0.2;
 
-    // Bloom from wetness
-    displayColor += vec3<f32>(0.1, 0.15, 0.2) * smoothstep(0.3, 1.0, water) * 0.1;
+    // === Richer atmospheric effects ===
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
+
+    // Mids create beautiful backruns / blooms when very wet
+    let backrun = pow(smoothstep(0.6, 1.0, water), 2.0) * mids * 0.25;
+    displayColor = mix(displayColor, vec3<f32>(0.85, 0.9, 0.95), backrun);
+
+    // Treble adds granulation / pigment clumping (classic watercolor texture)
+    let granulation = hash12(uv * 80.0 + time * 0.1) * treble * 0.15 * (1.0 - water * 0.5);
+    displayColor *= (1.0 - granulation);
+
+    // Bass adds subtle atmospheric haze when the paper is soaking
+    let haze = smoothstep(0.4, 1.0, water) * bass * 0.12;
+    displayColor = mix(displayColor, vec3<f32>(0.7, 0.75, 0.8), haze);
+
+    // Bloom from wetness (enhanced)
+    displayColor += vec3<f32>(0.12, 0.18, 0.22) * smoothstep(0.3, 1.0, water) * 0.12;
 
     displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
 

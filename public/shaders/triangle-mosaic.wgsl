@@ -21,10 +21,23 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn rotate2d(angle: f32) -> mat2x2<f32> {
     var s = sin(angle);
     let c = cos(angle);
     return mat2x2<f32>(c, -s, s, c);
+}
+
+fn mod_val(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {
+    return x - y * floor(x / y);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -33,106 +46,87 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    var mouse = u.zoom_config.yz;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
+    let pixel = vec2<i32>(global_id.xy);
 
-    let scale_param = u.zoom_params.x; // Scale
-    let rotation_param = u.zoom_params.y; // Global Rotation
-    let twist_param = u.zoom_params.z; // Interactive Twist
-    let mix_param = u.zoom_params.w; // Mix
+    let scale_param = u.zoom_params.x;
+    let rotation_param = u.zoom_params.y;
+    let twist_param = u.zoom_params.z;
+    let mix_param = u.zoom_params.w;
 
-    let cells = scale_param * 50.0 + 5.0;
+    // Depth awareness: nearer objects have smaller triangles
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let cells = (scale_param * 50.0 + 5.0) / (1.0 + depth * 1.5);
 
-    // Correct aspect ratio for grid
+    // Audio reactivity: bass drives rotation speed, treble adds zoom jitter
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+    let angle = rotation_param * 6.28
+        + (1.0 - smoothstep(0.0, 0.5, distance(uv, mouse))) * twist_param * 3.14
+        + bass * 1.5;
+    let jitter = 1.0 + treble * 0.2 * sin(u.config.x * 10.0);
+
+    // Triangle grid logic
     var p = uv;
     p.x *= aspect;
 
-    // Center for rotation
-    var center = vec2<f32>(0.5 * aspect, 0.5);
-
-    // Interactive twist
-    let d = distance(p, vec2<f32>(mouse.x * aspect, mouse.y));
-    let angle = rotation_param * 6.28 + (1.0 - smoothstep(0.0, 0.5, d)) * twist_param * 3.14;
-
-    // Skew for triangular grid
-    var s = vec2<f32>(1.0, 1.732); // sqrt(3)
-
-    // Apply rotation to UVs before grid mapping? No, rotate the grid sampling.
-    // Let's rotate the point P around the mouse? Or just global rotation?
-    // Let's do local rotation of the grid coordinates.
-
-    // Triangle Grid Logic
-    let uv_scaled = p * cells;
-    let r = vec2<f32>(1.0, 1.732);
-    let h = r * 0.5;
-
-    let a = mod_val(uv_scaled, r) - h;
-    let b = mod_val(uv_scaled - h, r) - h;
-
-    let g = dot(a, a) < dot(b, b);
-    var vert_id = vec2<f32>(0.0);
-
-    if (g) {
-        vert_id = floor(uv_scaled / r) * r + h;
-    } else {
-        vert_id = floor((uv_scaled - h) / r) * r + h + h;
-    }
-
-    // vert_id is the center of the hex/triangle area?
-    // Actually this logic produces a hexagonal grid center.
-    // For triangles, we need 3 centers?
-    // Let's stick to Hexagon centers for now as "Triangle Mosaic" often implies Delaunay/Hex duals.
-    // Or just simple skewed grid.
-
-    // Let's use the skewed grid approach for actual triangles.
     let skew_mat = mat2x2<f32>(1.0, 0.0, -0.57735, 1.1547);
     let unskew_mat = mat2x2<f32>(1.0, 0.0, 0.5, 0.866025);
 
+    let uv_scaled = p * cells * jitter;
     let skewed_uv = uv_scaled * skew_mat;
     let i_uv = floor(skewed_uv);
     let f_uv = fract(skewed_uv);
 
-    // Split quad into two triangles
     var tri_offset = vec2<f32>(0.0);
     if (f_uv.x > f_uv.y) {
-        tri_offset = vec2<f32>(0.66, 0.33); // centroid approx
+        tri_offset = vec2<f32>(0.66, 0.33);
     } else {
         tri_offset = vec2<f32>(0.33, 0.66);
     }
 
     let tri_center_skewed = i_uv + tri_offset;
     var tri_center = tri_center_skewed * unskew_mat;
-
-    // Map back to UV space
-    tri_center = tri_center / cells;
+    tri_center = tri_center / (cells * jitter);
     tri_center.x /= aspect;
 
-    // Apply twist rotation to the sampling point relative to the actual pixel?
-    // No, we want to sample the image at the triangle center.
-
     var sample_uv = tri_center;
-
-    // Apply global rotation to sample_uv around 0.5
     let uv_centered = sample_uv - 0.5;
     let rot_mat = rotate2d(angle);
     sample_uv = 0.5 + uv_centered * rot_mat;
+    sample_uv = clamp(sample_uv, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    var color = textureSampleLevel(readTexture, u_sampler, clamp(sample_uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let orig = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    // Chromatic aberration on triangle boundaries
+    let boundaryDist = abs(f_uv.x - f_uv.y);
+    let caStrength = (1.0 - smoothstep(0.0, 0.15, boundaryDist)) * 0.012 * (1.0 + depth);
+    let rUV = clamp(sample_uv + vec2<f32>(caStrength, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let bUV = clamp(sample_uv - vec2<f32>(caStrength, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Edge darkening
-    // let dist_to_edge ... (complex)
+    let rSample = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
+    let gSample = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).g;
+    let bSample = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
+    var color = vec3<f32>(rSample, gSample, bSample);
+    let orig = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
     color = mix(orig, color, mix_param);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    // Edge darkening toward triangle boundaries
+    let edgeDarken = 1.0 - boundaryDist * 0.6;
+    color = color * edgeDarken;
 
-    // Pass depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
-}
+    // Temporal mosaic blending
+    let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+    let decay = 0.8;
+    color = mix(color, prev, decay * (1.0 - boundaryDist));
 
-fn mod_val(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {
-    return x - y * floor(x / y);
+    // ACES tone mapping
+    color = acesToneMap(color);
+
+    // Semantic alpha: depth-based opacity with boundary transparency
+    let alpha = mix(0.45, 1.0, depth) * mix(0.75, 1.0, 1.0 - boundaryDist * 3.0);
+
+    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

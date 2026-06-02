@@ -1,8 +1,9 @@
 {
   "id": "voxel-depth-sort",
   "name": "Voxel Depth Sort",
+  "category": "image",
   "url": "shaders/voxel-depth-sort.wgsl",
-  "description": "Converts the image into a 3D grid of floating blocks. Block height is determined by brightness, and mouse position tilts the view.",
+  "description": "Converts the image into a 3D grid of isometric floating blocks. Block height is determined by brightness and depth, with ambient occlusion, soft shadows, and mouse-rotated isometric projection.",
   "params": [
     {
       "id": "gridSize",
@@ -35,10 +36,17 @@
   ],
   "features": [
     "mouse-driven",
-    "3d-effect"
+    "3d-effect",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "voxel",
+    "depth",
+    "3d",
+    "audio-reactive",
+    "isometric",
+    "ambient-occlusion"
   ]
 }

@@ -1,0 +1,57 @@
+{
+  "id": "porcelain-fracture-glow",
+  "name": "Porcelain Fracture Glow",
+  "url": "shaders/porcelain-fracture-glow.wgsl",
+  "description": "The image is rendered on delicate porcelain that develops fine luminous cracks. The cracks follow image edges and can be drawn with the mouse. Bass makes the golden light pulse and sing through the fractures.",
+  "tags": [
+    "porcelain",
+    "crack",
+    "kintsugi",
+    "light",
+    "artistic",
+    "audio-reactive",
+    "interactive"
+  ],
+  "features": [
+    "audio-reactive",
+    "audio-driven",
+    "mouse-driven",
+    "mouse-crack",
+    "semantic-alpha",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "crack",
+      "name": "Crack Amount",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.4,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Glow Intensity",
+      "default": 0.85,
+      "min": 0.0,
+      "max": 1.6,
+      "step": 0.01
+    },
+    {
+      "id": "light",
+      "name": "Light Temperature",
+      "default": 0.35,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "age",
+      "name": "Patina Age",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

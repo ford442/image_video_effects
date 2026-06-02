@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Quantum Field Visualizer
+//  Quantum Field Visualizer v2
 //  Category: visual-effects
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Chunks From: quantum-field-visualizer
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-30
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -24,62 +25,110 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=ObsStrength, y=Speed, z=Energy, w=Uncertainty
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
-    var p3 = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
-    p3 += dot(p3, p3.yxz + 33.33);
-    return fract((p3.xxy + p3.yzz) * p3.zyx);
+  var p3 = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
+  p3 += dot(p3, p3.yxz + 33.33);
+  return fract((p3.xxy + p3.yzz) * p3.zyx);
+}
+
+fn aces_tone_map(color: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hsv_to_rgb(c: vec3<f32>) -> vec3<f32> {
+  let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  let p = abs(fract(c.xxx + k.xyz) * 6.0 - k.www);
+  return c.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    let coord = vec2<i32>(global_id.xy);
-    var uv = vec2<f32>(coord) / resolution;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
+  var uv = vec2<f32>(coord) / resolution;
 
-    let bass = plasmaBuffer[0].x;
-    let obs_strength = u.zoom_params.x;
-    let speed = u.zoom_params.y;
-    let energy = u.zoom_params.z * (1.0 + bass * 0.4);
-    let uncertainty = u.zoom_params.w;
+  let time = u.config.x;
+  let bass = plasmaBuffer[0].x;
+  let mouse = u.zoom_config.yz;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    let time = u.config.x * (0.5 + speed * 2.0);
-    var mouse = u.zoom_config.yz;
-    let aspect = u.config.z / max(u.config.w, 1.0);
+  let obsStrength = u.zoom_params.x;
+  let speed = u.zoom_params.y;
+  let energy = u.zoom_params.z;
+  let uncertainty = u.zoom_params.w * (1.0 + depth * 0.5);
 
-    let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(dist_vec);
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
 
-    let radius = mix(0.1, 0.8, obs_strength);
-    let collapse = smoothstep(radius, 0.0, dist);
+  // Gaussian wave packet parameters
+  let k0 = 8.0 + energy * 12.0;
+  let sigma = 0.08 + uncertainty * 0.25;
+  let spreadRate = 0.15 * speed;
+  let t = time * (0.5 + speed * 1.5) + bass * 0.3;
 
-    let seed = vec3<f32>(uv * 50.0, time);
-    let noise = hash3(seed);
+  // Two-slit interference with packet spreading
+  let slitA = p - vec2<f32>(-0.12, 0.0);
+  let slitB = p - vec2<f32>(0.12, 0.0);
+  let spread = 1.0 + spreadRate * t;
 
-    let base_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgba;
+  let gaussA = exp(-dot(slitA, slitA) / (sigma * sigma * spread));
+  let gaussB = exp(-dot(slitB, slitB) / (sigma * sigma * spread));
 
-    let q_color = 0.5 + 0.5 * sin(time + uv.xyx * 10.0 + vec3<f32>(0.0, 2.0, 4.0));
-    let chaotic_color = mix(noise, q_color, energy);
+  // Real and imaginary wavefunction components
+  let phaseA = k0 * slitA.x - t * 3.0;
+  let phaseB = k0 * slitB.x - t * 3.0;
+  let realPsi = gaussA * cos(phaseA) + gaussB * cos(phaseB);
+  let imagPsi = gaussA * sin(phaseA) + gaussB * sin(phaseB);
 
-    let mix_factor = (1.0 - collapse) * (0.5 + 0.5 * uncertainty);
-    var final_color = mix(base_color.rgb, chaotic_color, mix_factor);
+  // Probability density and phase
+  let probDensity = realPsi * realPsi + imagPsi * imagPsi;
+  let phase = atan2(imagPsi, realPsi) / 6.28318;
 
-    let glow = (1.0 - abs(collapse * 2.0 - 1.0)) * energy * 0.5;
-    final_color += vec3<f32>(0.2, 0.5, 1.0) * glow;
+  // Mouse measurement collapse
+  let mouseVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let mouseDist = length(mouseVec);
+  let measureRadius = mix(0.05, 0.4, obsStrength);
+  let measureCertainty = 1.0 - smoothstep(measureRadius * 0.3, measureRadius, mouseDist);
 
-    // Alpha encodes quantum state: collapsed (near mouse) = image alpha, uncollapsed = chaos energy
-    let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(collapse * base_color.a + (1.0 - collapse) * (energy * 0.5 + glow) + luma * 0.1, 0.0, 1.0);
+  // Collapse localizes probability
+  let collapseBoost = exp(-mouseDist * mouseDist / (measureRadius * measureRadius * 0.5));
+  let collapsedProb = mix(probDensity, collapseBoost * 2.0, measureCertainty);
 
-    textureStore(writeTexture, coord, vec4<f32>(final_color, alpha));
+  // Hue from phase, saturation from contrast, brightness from probability
+  let hue = fract(phase + 0.5);
+  let sat = clamp(0.4 + collapsedProb * 0.6, 0.0, 1.0);
+  let bri = clamp(pow(collapsedProb * 0.8, 0.7) * (1.0 + bass * 0.3), 0.0, 2.0);
+  var quantumColor = hsv_to_rgb(vec3<f32>(hue, sat, min(bri, 1.0)));
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(final_color, alpha));
+  // HDR bloom on high-probability regions
+  let bloom = max(bri - 1.0, 0.0) * 0.6;
+  quantumColor += vec3<f32>(0.4, 0.7, 1.0) * bloom;
+
+  // Sample base image
+  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgba;
+
+  // Mix quantum visualization with base image based on measurement
+  let mixFactor = (1.0 - measureCertainty) * (0.3 + energy * 0.5);
+  var finalColor = mix(baseColor.rgb, quantumColor, mixFactor);
+  finalColor = mix(finalColor, baseColor.rgb, measureCertainty * 0.7);
+
+  // ACES tone mapping
+  finalColor = aces_tone_map(finalColor * (0.8 + energy * 0.4));
+
+  // Alpha: Probability density * measurement certainty * depth
+  let alpha = clamp(collapsedProb * 0.5 + measureCertainty * 0.3 + depth * 0.2, 0.05, 1.0);
+
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
 }

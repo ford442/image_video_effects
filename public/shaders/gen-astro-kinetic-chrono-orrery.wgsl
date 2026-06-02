@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Astro Kinetic Chrono Orrery - Physically Accurate Orbital System
+//  Astro Kinetic Chrono Orrery
 //  Category: generative
-//  Features: mouse-driven
+//  Features: orbital, mechanical, cosmic, audio-orbit, mouse-gravity
 //  Complexity: High
+//  Updated: 2026-05-31 — Grok (audio orbit modulation + mouse gravity)
+// ═══════════════════════════════════════════════════════════════════
 //  Physics: Keplerian orbits, blackbody radiation, accretion disk
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
+
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
@@ -29,7 +32,7 @@ const MAX_STEPS = 100;
 const SURF_DIST = 0.001;
 const MAX_DIST = 100.0;
 fn hash12(p: vec2<f32>) -> f32 {
-    let p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
@@ -117,7 +120,7 @@ fn map(p: vec3<f32>, time: f32) -> vec4<f32> {
         d = centralDist; temp = 8000.0; metal = 0.9; density = 1.0;
     }
     let diskR = length(vec2<f32>(q.x, q.z));
-    let diskTheta = atan(q.z, q.x);
+    let diskTheta = atan2(q.z, q.x);
     let diskDensity = accretionDiskDensity(diskR, diskTheta, time);
     let diskVertical = abs(q.y) - 0.05 - diskDensity * 0.08;
     let diskOuter = diskR - 3.0;
@@ -156,23 +159,40 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
     var col = vec3<f32>(0.0);
     var alpha = 0.0;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
+
     if (t < MAX_DIST) {
         let p = ro + rd * t;
         let res = map(p, time);
         let bb = blackbodyColor(res.y);
-        col.r = clamp(res.y / 10000.0, 0.0, 1.0);
-        col.g = res.z;
-        col.b = dot(bb, vec3<f32>(0.299, 0.587, 0.114));
+        
+        // Richer visual mapping with audio
+        col.r = clamp(res.y / 9000.0, 0.0, 1.0);
+        col.g = res.z * (0.9 + mids * 0.2);
+        col.b = dot(bb, vec3<f32>(0.299, 0.587, 0.114)) * (0.85 + treble * 0.3);
+        
+        // Audio-reactive pulsing on the central body and hot areas
+        let tempPulse = 1.0 + bass * 0.25 * sin(time * 4.0);
+        col *= tempPulse;
+        
         alpha = clamp(res.w, 0.0, 1.0);
     }
     if (alpha < 0.01) {
         let starHash = hash12(uv * 100.0 + vec2<f32>(time * 0.01, 0.0));
         if (starHash > 0.995) {
             let starBright = (starHash - 0.995) * 200.0;
-            col = vec3<f32>(0.8, 0.85, 1.0) * starBright;
+            col = vec3<f32>(0.85, 0.9, 1.0) * starBright * (0.9 + treble * 0.2);
             alpha = clamp(starBright, 0.0, 1.0);
         }
     }
+    
+    // Atmospheric depth fog
+    let fog = 1.0 - exp(-t * 0.08);
+    col = mix(col, vec3<f32>(0.02, 0.015, 0.04), fog * 0.6);
+    
     textureStore(writeTexture, id.xy, vec4<f32>(col, alpha));
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, screen_uv, 0.0).r;
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

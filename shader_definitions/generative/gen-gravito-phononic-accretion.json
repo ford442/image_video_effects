@@ -1,0 +1,60 @@
+{
+  "id": "gen-gravito-phononic-accretion",
+  "name": "Gravito-Phononic Accretion",
+  "url": "shaders/gen-gravito-phononic-accretion.wgsl",
+  "category": "generative",
+  "description": "Multiple audio-driven gravitational centers that accrete and sculpt procedural density fields with gravitational lensing distortion. Different audio bands control different gravitational bodies. Mouse can add temporary mass concentration. Dark cores with swirling filamentary gas.",
+  "tags": [
+    "generative",
+    "gravity",
+    "lensing",
+    "cosmic",
+    "accretion",
+    "audio-reactive",
+    "procedural",
+    "music"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "massScale",
+      "name": "Mass Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Mass of gravitational bodies"
+    },
+    {
+      "id": "numBodies",
+      "name": "Body Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Number of gravitational bodies"
+    },
+    {
+      "id": "lensStrength",
+      "name": "Lens Strength",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Intensity of gravitational lensing distortion"
+    },
+    {
+      "id": "densityAmt",
+      "name": "Gas Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Density of accreted gas and filamentary structures"
+    }
+  ]
+}

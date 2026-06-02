@@ -1,8 +1,9 @@
 {
   "id": "edge-glow-mouse",
-  "name": "Edge Glow",
+  "name": "Edge Glow Mouse",
+  "category": "interactive-mouse",
   "url": "shaders/edge-glow-mouse.wgsl",
-  "description": "Detects edges in the image which glow intensely when near the mouse cursor.",
+  "description": "Unsharp-masked edges bloom into neon HDR halos with anisotropic diffusion, chromatic aberration, ACES tone mapping, and film grain. Bass drives glow radius, mouse creates local edge emphasis, depth controls falloff.",
   "params": [
     {
       "id": "threshold",
@@ -34,10 +35,19 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "edges",
+    "glow",
+    "neon",
+    "cursor",
+    "audio-reactive",
+    "bloom",
+    "chromatic",
+    "HDR"
   ]
 }

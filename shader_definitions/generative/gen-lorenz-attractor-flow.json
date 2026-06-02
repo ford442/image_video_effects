@@ -2,11 +2,13 @@
   "id": "gen-lorenz-attractor-flow",
   "name": "Lorenz Attractor Flow",
   "url": "shaders/lorenz-attractor-flow.wgsl",
-  "description": "Real-time visualization of the Lorenz strange attractor using GPU-accelerated ODE integration. Features chaotic butterfly-wing patterns, mouse perturbation, and temporal color evolution.",
+  "description": "Real-time visualization of the Lorenz strange attractor using GPU-accelerated ODE integration. Features chaotic butterfly-wing patterns, mouse perturbation, temporal feedback, chromatic dispersion, and temporal color evolution.",
   "features": [
     "generative",
     "mouse-driven",
-    "temporal"
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "tags": [
     "chaotic",

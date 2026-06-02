@@ -1,8 +1,9 @@
 {
   "id": "fractal-image-surf",
   "name": "Fractal Image Surf",
+  "category": "distortion",
   "url": "shaders/fractal-image-surf.wgsl",
-  "description": "Maps the image onto a Julia Set fractal coordinate system, controlled by the mouse.",
+  "description": "Multi-octave FBM domain warping with Jacobian-preserving displacement. Morphs between Julia, Mandelbrot, and Burning Ship fractals driven by bass.",
   "params": [
     {
       "name": "Iterations",
@@ -38,10 +39,20 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "fractal",
+    "fbm",
+    "julia",
+    "mandelbrot",
+    "burning-ship",
+    "domain-warp",
+    "distortion",
+    "audio-reactive",
+    "depth-aware"
   ]
 }

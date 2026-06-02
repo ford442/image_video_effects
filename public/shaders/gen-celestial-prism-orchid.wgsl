@@ -1,8 +1,11 @@
-// ----------------------------------------------------------------
-// Celestial Prism-Orchid
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Celestial Prism Orchid
+//  Category: generative
+//  Features: prism-orchid, celestial-floral, audio-light, mouse-pollinator, depth-petals, iridescent-bloom, semantic-alpha
+//  Complexity: High
+//  Updated: 2026-05-31
+//  By: Grok (deep visual/audio flourish — semantic alpha for petals, pollinator mouse wind, seasonal plasma bloom, depth write, richer atmospheric haze)
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -91,6 +94,9 @@ fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
 var<private> g_time: f32;
 var<private> g_mouse: vec2<f32>;
 var<private> g_audio: f32;
+var<private> g_bloomDensity: f32;
+var<private> g_pollinator: f32;
+var<private> g_windVec: vec2<f32>;
 
 // Map function with KIFS and organic distortion
 fn map(p: vec3<f32>) -> vec2<f32> {
@@ -128,11 +134,17 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     // Apply cosmic wind
     pos += fbm_warp * 0.3;
 
-    // Audio-Reactive Blooming
-    // The orchid's petals flare outward driven by audio frequencies (g_audio)
-    let bloom = g_audio * 0.5;
+    // Audio-Reactive + Seasonal Blooming (deep flourish)
+    // bass + season drive heavy petal flare; pollinator wind adds directional bias
+    let bloom = (g_audio * 0.5 + (g_bloomDensity - 1.0) * 0.3) * (1.0 + g_pollinator * 0.4);
     let scale = 1.0 + bloom;
     pos /= scale;
+
+    // Pollinator wind gust applies subtle directional warp to petals (visceral mouse "touch")
+    let windGust = 0.8 * (1.0 + sin(g_time * 2.3) * 0.2);
+    pos.x += g_windVec.x * windGust;
+    pos.y += g_windVec.y * windGust;
+    pos.z += g_windVec.y * 0.4;
 
     // Refractive Petal KIFS
     // Procedurally generates endless overlapping crystalline petals
@@ -244,11 +256,33 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var uv = (fragCoord * 2.0 - dims) / dims.y;
 
     g_time = u.config.x;
-    g_audio = u.config.y * 0.1;
+
+    // ═══ CHUNK: Seasonal plasma climate mapping (deep audio flourish) ═══
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;   // Heavy bloom density, petal opening
+    let mids = audio.y;   // Warmth / color temperature shift
+    let treble = audio.z; // Iridescence shimmer spikes, micro wind
+
+    // Seasonal climate: 0=harsh winter (sparse), 0.5=bloom spring, 1.0=volatile summer storm
+    let season = fract(g_time * 0.03 + bass * 0.4);
+    let bloomDensity = mix(0.6, 1.4, smoothstep(0.2, 0.8, season) + bass * 0.6);
+    g_bloomDensity = bloomDensity;
+    let colorWarmth = mids * 0.6 + (1.0 - season) * 0.3;
+    let shimmer = treble * (0.8 + 0.4 * sin(g_time * 14.0));
+
+    g_audio = bass * 0.8 + mids * 0.3; // legacy for existing code, now richer
 
     let mX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
     let mY = -(u.zoom_config.z / dims.y) * 2.0 + 1.0;
     g_mouse = vec2<f32>(mX, mY);
+
+    // Pollinator mouse wind — surprising visceral interaction
+    let mouseDir = normalize(g_mouse - vec2<f32>(0.0));
+    let mouseDist = length(g_mouse);
+    let pollinator = smoothstep(0.8, 0.1, mouseDist) * (0.5 + bass * 0.5); // strong when mouse near center + bass
+    g_pollinator = pollinator;
+    let windVec = mouseDir * pollinator * (0.8 + treble * 0.6); // directional gust toward/away from mouse
+    g_windVec = windVec;
 
     // Setup camera
     var ro = vec3<f32>(0.0, 0.0, -8.0 + g_time * 0.2);
@@ -320,26 +354,55 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             let dispersion = vec3<f32>(spec_r, spec_g, spec_b);
 
-            col = iridescence * fresnel + dispersion * 1.5;
+            // Visual flourish: Richer prismatic dispersion + seasonal audio-reactive iridescence + shimmer
+            let dist_to_core = length(p);
+            let dynamicIri = iridescence * (1.0 + colorWarmth * 0.5) * (1.0 + sin(g_time * 3.0 + dist_to_core) * shimmer * 0.6);
+            col = dynamicIri * fresnel + dispersion * (1.3 + bass * 0.9 + pollinator * 0.4);
 
             // Blend in some core illumination based on distance
-            let dist_to_core = length(p);
             let core_illum = vec3<f32>(1.0, 0.6, 0.2) * (1.0 / (1.0 + dist_to_core * dist_to_core)) * coreIntensity;
-            col += core_illum * 0.5;
+            col += core_illum * (0.5 + bass * 0.4 + shimmer * 0.3);
         }
     }
 
-    // Add glowing core based on audio (u.config.y)
-    col += vec3<f32>(0.9, 0.4, 0.8) * core_glow * coreIntensity * 0.05 * (1.0 + g_audio * 2.0);
+    // Add glowing core based on audio + pollinator wind
+    col += vec3<f32>(0.9, 0.4, 0.8) * core_glow * coreIntensity * 0.05 * (1.0 + g_audio * 1.8 + pollinator * 0.6);
 
-    // Outer glow for unhit rays that got close
+    // Outer glow for unhit rays that got close — enhanced with atmospheric haze
+    let haze = (0.01 / (0.001 + min_dist)) * (1.0 + g_audio + shimmer * 0.5);
     if (mat_id < 0.0) {
-        col += vec3<f32>(0.2, 0.5, 1.0) * (0.01 / (0.001 + min_dist)) * (1.0 + g_audio);
+        col += vec3<f32>(0.25, 0.55, 1.1) * haze;
     }
 
-    // Tone mapping
+    // Subtle god-ray / atmospheric veil modulated by season + treble (volumetric feel)
+    let veil = smoothstep(0.3, 1.4, length(uv)) * (0.04 + treble * 0.08) * (0.6 + season * 0.5);
+    col = mix(col, col + vec3<f32>(0.15, 0.22, 0.35) * veil, 0.3 + bass * 0.2);
+
+    // Tone mapping (filmic)
     col = col / (col + vec3<f32>(1.0));
     col = pow(col, vec3<f32>(0.4545));
 
-    textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
+    // ═══ Semantic alpha for compositing (petals bloom with transparency, core solid, haze ethereal) ═══
+    // Use view-angle proxy + audio (no out-of-scope vars)
+    let view_fall = 1.0 - clamp(abs(uv.y) * 0.6 + length(uv) * 0.3, 0.0, 0.7);
+    let bloom_proxy = g_audio * 0.6 + bass * 0.3 + pollinator * 0.25;
+    var semantic_alpha = 0.82;
+    if (mat_id > 0.5) {
+        // Petals: more transparent during heavy bloom, brighter edges
+        semantic_alpha = mix(0.48, 0.94, 0.45 + view_fall * 0.35 + (bloom_proxy - 0.15) * 0.55);
+    } else if (mat_id >= 0.0) {
+        // Core: mostly solid with shimmer breathing
+        semantic_alpha = mix(0.88, 0.72, shimmer * 0.3 + (g_audio - 0.3) * 0.2);
+    } else {
+        // Miss / haze: ethereal low alpha
+        semantic_alpha = 0.35 + haze * 0.4;
+    }
+    // Boost alpha on pollinator gust (visceral "touch lights it up")
+    semantic_alpha = clamp(semantic_alpha + pollinator * 0.18, 0.35, 1.0);
+
+    // Depth write for proper depth-aware stacking (was missing despite binding)
+    let hit_depth = select(0.99, clamp(t / 25.0, 0.0, 0.98), mat_id >= 0.0);
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(hit_depth, 0.0, 0.0, 0.0));
+
+    textureStore(writeTexture, id.xy, vec4<f32>(col, semantic_alpha));
 }

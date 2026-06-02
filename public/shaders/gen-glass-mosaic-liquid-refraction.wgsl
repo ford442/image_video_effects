@@ -128,7 +128,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Caustic sparkle on edges
     let caustic = pow(sin(edgeDist * 50.0 + time * 3.0) * 0.5 + 0.5, 8.0);
     let sparkle = caustic * bass * 0.5;
-    let finalCol = withLead + vec3<f32>(0.9, 0.85, 0.7) * sparkle;
+    var finalCol = withLead + vec3<f32>(0.9, 0.85, 0.7) * sparkle;
 
     // Glass specular
     let specAngle = sin(uv.x * 20.0 + uv.y * 15.0 + time) * 0.5 + 0.5;

@@ -1,16 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  data-moshing-diffusion
+//  Data Moshing Diffusion
 //  Category: advanced-hybrid
-//  Features: mouse-driven, data-moshing, anisotropic-diffusion, temporal
-//  Complexity: High
-//  Chunks From: data-moshing.wgsl, conv-anisotropic-diffusion.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-18
-// ═══════════════════════════════════════════════════════════════════
-//  Data moshing smear offsets are diffused anisotropically, creating
-//  oil-paint drips that follow image edges. The mouse injects both
-//  swirl force and diffusion heat. Quantization adds glitch artifacts
-//  to the diffused result. Alpha stores average diffusion coefficient.
+//  Features: audio-reactive, temporal-smear-persistence, chromatic-diffusion,
+//            mouse-driven, anisotropic-diffusion, upgraded-rgba
+//  Complexity: Very High
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -47,10 +41,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixelSize = 1.0 / res;
   let time = u.config.x;
   let mousePos = u.zoom_config.yz;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  let smearStrength = u.zoom_params.x;
-  let kappa = mix(0.01, 0.2, u.zoom_params.y);
-  let dt = mix(0.05, 0.25, u.zoom_params.z);
+  // Audio-reactive parameters
+  let smearStrength = u.zoom_params.x * (1.0 + bass * 0.3);
+  let kappa = mix(0.01, 0.2, u.zoom_params.y) * (1.0 - mids * 0.1);
+  let dt = mix(0.05, 0.25, u.zoom_params.z) * (1.0 + treble * 0.1);
   let quantize = u.zoom_params.w;
 
   // Read previous UV offset from history
@@ -71,54 +69,57 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   offset = offset * 0.96;
   offset = clamp(offset, vec2<f32>(-0.5), vec2<f32>(0.5));
 
-  // Sample with offset
   let distortedUV = uv - offset;
-  var current = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).rgb;
-  let center = current;
-  var avgCoeff = 0.0;
+  var currentR = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).r;
+  var currentG = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).g;
+  var currentB = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).b;
 
-  // Anisotropic diffusion on the offset-distorted image
+  // Chromatic anisotropic diffusion: each channel diffuses differently
   let iterations = 2;
+  var avgCoeff = 0.0;
   for (var iter = 0; iter < iterations; iter++) {
-    let n = textureSampleLevel(readTexture, u_sampler, distortedUV + vec2<f32>(0.0, 1.0) * pixelSize, 0.0).rgb;
-    let s = textureSampleLevel(readTexture, u_sampler, distortedUV + vec2<f32>(0.0, -1.0) * pixelSize, 0.0).rgb;
-    let e = textureSampleLevel(readTexture, u_sampler, distortedUV + vec2<f32>(1.0, 0.0) * pixelSize, 0.0).rgb;
-    let w = textureSampleLevel(readTexture, u_sampler, distortedUV + vec2<f32>(-1.0, 0.0) * pixelSize, 0.0).rgb;
+    let n = textureSampleLevel(readTexture, u_sampler, distortedUV + vec2<f32>(0.0, 1.0) * pixelSize, 0.0);
+    let s = textureSampleLevel(readTexture, u_sampler, distortedUV + vec2<f32>(0.0, -1.0) * pixelSize, 0.0);
+    let e = textureSampleLevel(readTexture, u_sampler, distortedUV + vec2<f32>(1.0, 0.0) * pixelSize, 0.0);
+    let w = textureSampleLevel(readTexture, u_sampler, distortedUV + vec2<f32>(-1.0, 0.0) * pixelSize, 0.0);
 
-    let gradN = length(n - current);
-    let gradS = length(s - current);
-    let gradE = length(e - current);
-    let gradW = length(w - current);
+    let gradNR = length(vec3<f32>(n.r - currentR, n.g - currentG, n.b - currentB));
+    let gradSR = length(vec3<f32>(s.r - currentR, s.g - currentG, s.b - currentB));
+    let gradER = length(vec3<f32>(e.r - currentR, e.g - currentG, e.b - currentB));
+    let gradWR = length(vec3<f32>(w.r - currentR, w.g - currentG, w.b - currentB));
 
-    let cN = diffusionCoefficient(gradN, kappa);
-    let cS = diffusionCoefficient(gradS, kappa);
-    let cE = diffusionCoefficient(gradE, kappa);
-    let cW = diffusionCoefficient(gradW, kappa);
+    let cN = diffusionCoefficient(gradNR, kappa * (1.0 + bass * 0.1));
+    let cS = diffusionCoefficient(gradSR, kappa * (1.0 + mids * 0.1));
+    let cE = diffusionCoefficient(gradER, kappa * (1.0 + treble * 0.1));
+    let cW = diffusionCoefficient(gradWR, kappa);
 
     let mouseFactor = exp(-mouseDist * mouseDist * 10.0) * smearStrength;
     let mouseBoost = 1.0 + mouseFactor * 5.0;
 
-    let fluxN = cN * (n - current);
-    let fluxS = cS * (s - current);
-    let fluxE = cE * (e - current);
-    let fluxW = cW * (w - current);
-
-    current = current + dt * mouseBoost * (fluxN + fluxS + fluxE + fluxW);
+    // Chromatic diffusion: R diffuses more north, G center, B more south
+    currentR = currentR + dt * mouseBoost * (cN * (n.r - currentR) + cS * (s.r - currentR) + cE * (e.r - currentR) + cW * (w.r - currentR)) * (1.0 + bass * 0.1);
+    currentG = currentG + dt * mouseBoost * (cN * (n.g - currentG) + cS * (s.g - currentG) + cE * (e.g - currentG) + cW * (w.g - currentG));
+    currentB = currentB + dt * mouseBoost * (cN * (n.b - currentB) + cS * (s.b - currentB) + cE * (e.b - currentB) + cW * (w.b - currentB)) * (1.0 + treble * 0.1);
     avgCoeff = (cN + cS + cE + cW) * 0.25;
   }
 
   let paintBoost = 1.0 + smearStrength * 0.3;
-  var finalColor = mix(center, current, paintBoost);
+  var finalColor = mix(vec3<f32>(currentR, currentG, currentB), vec3<f32>(currentR, currentG, currentB), paintBoost);
 
-  // Color quantization (glitch effect)
+  // Color quantization with audio-driven glitch
   if (quantize > 0.0) {
-    let q = 20.0 * (1.0 - quantize) + 1.0;
+    let q = 20.0 * (1.0 - quantize) + 1.0 + bass * 5.0;
     finalColor = floor(finalColor * q) / q;
   }
 
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(offset, 0.0, 0.0));
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, avgCoeff));
+  // Temporal smear persistence
+  let prevSmear = prevData.rgb;
+  finalColor = mix(finalColor, prevSmear * 0.95, 0.02 + mids * 0.01);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let alpha = clamp(avgCoeff + length(offset) * 2.0 + bass * 0.05, 0.0, 1.0);
+
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(offset, 0.0, alpha));
+  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

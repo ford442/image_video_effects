@@ -20,7 +20,10 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "temporal",
+    "chromatic",
+    "depth-aware"
   ],
   "author": "ford442",
   "params": [

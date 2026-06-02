@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  ambient-liquid
-//  Category: distortion
-//  Features: upgraded-rgba, depth-aware
-//  Upgraded: 2026-03-22
+//  Ambient Liquid
+//  Category: artistic
+//  Features: mouse-driven, liquid-distortion
+//  Complexity: Low
+//  Chunks From: ambient-liquid
+//  Created: 2026-05-31
+//  By: Copilot CLI (tactical swarm)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Adaptive Mosaic — Phase A Upgrade
+//  Adaptive Mosaic
 //  Category: geometric
 //  Features: mouse-driven, depth-aware, audio-reactive, temporal
 //  Complexity: Medium
+//  Chunks From: adaptive-mosaic
 //  Created: 2026-05-23
-//  By: Claude (Sonnet 4.6)
+//  By: Claude (Sonnet 4.6); standardized by Copilot CLI
 // ═══════════════════════════════════════════════════════════════════
 //
 //  Param1: tile_size        — base mosaic tile size

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Stipple Render
+//  Stipple Render v2
 //  Category: artistic
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Low
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Chunks From: stipple-render
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-30
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,67 +23,107 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-// Pseudo-random hash
-fn hash21(p: vec2<f32>) -> f32 {
-    return max(fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453), 0.001);
+// ═══ CHUNK: blue_noise21 (from stipple-render) ═══
+fn blue_noise21(p: vec2<f32>) -> f32 {
+  var n = fract(p * vec2<f32>(5.3987, 5.4421));
+  n += dot(n, n.yx + 19.19);
+  return fract(n.x * n.y);
 }
 
-@compute @workgroup_size(8, 8, 1)
+fn aces_tone_map(color: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn paper_texture(uv: vec2<f32>) -> f32 {
+  let grain = blue_noise21(uv * 400.0) * 0.5 + blue_noise21(uv * 200.0 + 13.7) * 0.5;
+  return 0.92 + grain * 0.08;
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
-    let texel = vec2<i32>(global_id.xy);
-    let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(0.001));
-    let aspect = resolution.x / max(resolution.y, 0.001);
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
+  var uv = vec2<f32>(coord) / resolution;
 
-    // Audio reactivity
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let bass = plasmaBuffer[0].x;
+  let mouse = u.zoom_config.yz;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Params
-    let dotScale    = mix(1.0, 4.0, clamp(u.zoom_params.x * (1.0 + mids * 0.2), 0.0, 1.0));
-    let contrast    = mix(0.5, 2.0, clamp(u.zoom_params.y * (1.0 + bass * 0.5), 0.0, 1.0));
-    let mouseRadius = mix(0.1, 0.5, clamp(u.zoom_params.z * (1.0 + treble * 0.15), 0.0, 1.0));
-    let detailMix   = u.zoom_params.w;
+  let dotScale = u.zoom_params.x;
+  let contrast = u.zoom_params.y;
+  let wetRadius = u.zoom_params.z;
+  let detailMix = u.zoom_params.w;
 
-    // Mouse
-    let mouse = u.zoom_config.yz;
-    let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
-    let mouseFactor = smoothstep(mouseRadius, 0.0, dist);
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+  let wetFactor = smoothstep(wetRadius, 0.0, mouseDist);
 
-    // Source Color
-    let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgba;
+  let luma = dot(baseColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let adjustedLuma = (luma - 0.5) * (contrast * 2.0) + 0.5;
 
-    // Dynamic Density: Higher density near mouse
-    let localScale = mix(max(resolution.y * 0.5, 0.001), max(resolution.y * 2.0, 0.001), mouseFactor * 0.8 + 0.2) * dotScale;
-    let noise = hash21(floor(uv * localScale));
+  // Depth-driven dot size perspective
+  let depthScale = mix(0.6, 1.6, depth);
+  let audioScale = 1.0 + bass * 0.3;
+  let cellScale = mix(20.0, 120.0, dotScale) * depthScale * audioScale;
 
-    // Adjust luma contrast
-    let adjustedLuma = (luma - 0.5) * contrast + 0.5;
-    let inkDensity = 1.0 - clamp(adjustedLuma, 0.0, 1.0);
+  // Grid cell with jitter for Voronoi approximation
+  let cellUV = uv * resolution / cellScale;
+  let cellId = floor(cellUV);
+  let cellFract = fract(cellUV);
 
-    // Stipple Logic (branchless)
-    let inkColor = vec3<f32>(0.05, 0.05, 0.1);
-    let paperColor = vec3<f32>(1.0);
-    let outColor = select(paperColor, inkColor, noise < inkDensity);
+  // Approximate Lloyd's relaxation: offset cell center by local luminance
+  let cellCenter = vec2<f32>(0.5) + (blue_noise21(cellId) - 0.5) * 0.6;
+  let lumaOffset = (1.0 - adjustedLuma) * 0.35;
+  let offsetCenter = cellCenter + vec2<f32>(lumaOffset * 0.3, lumaOffset * 0.2);
 
-    // Mix with original color based on mouse
-    let stippleAlpha = mix(0.15, 0.95, inkDensity);
-    let stippleColor = vec4<f32>(outColor, stippleAlpha);
-    let finalColor = mix(stippleColor, color, mouseFactor * detailMix);
+  // Dot size matches local luminance (darker = bigger dot)
+  let dotSize = mix(0.15, 0.55, 1.0 - adjustedLuma);
+  let distToCenter = length(cellFract - offsetCenter);
+  let dotMask = 1.0 - smoothstep(dotSize * 0.6, dotSize, distToCenter);
 
-    // Depth read and mandatory writes
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  // Wet ink: dots bleed together near mouse
+  let bleed = mix(1.0, 2.5, wetFactor);
+  let wetDot = 1.0 - smoothstep(dotSize * 0.4 * bleed, dotSize * bleed, distToCenter);
 
-    textureStore(writeTexture, texel, finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // Cross-hatching in dark regions
+  let hatchAngle = uv.x * 300.0 + uv.y * 300.0;
+  let hatch = sin(hatchAngle) * sin(hatchAngle * 0.7 + 1.0);
+  let hatchMask = smoothstep(0.3, 0.0, adjustedLuma) * smoothstep(0.0, 0.3, hatch);
+
+  // Ink and paper colors
+  let inkColor = vec3<f32>(0.04, 0.035, 0.06);
+  let hatchColor = vec3<f32>(0.08, 0.07, 0.09);
+  let paperBase = vec3<f32>(0.96, 0.94, 0.90) * paper_texture(uv);
+
+  var stippleColor = paperBase;
+  stippleColor = mix(stippleColor, hatchColor, hatchMask * 0.45);
+  stippleColor = mix(stippleColor, inkColor, dotMask * 0.9);
+  stippleColor = mix(stippleColor, inkColor, wetDot * 0.7);
+
+  // Mix with original for color reveal
+  let inkSaturation = clamp(dotMask + wetDot * 0.5 + hatchMask * 0.3, 0.0, 1.0);
+  var finalColor = mix(stippleColor, baseColor.rgb, detailMix * wetFactor * 0.6);
+
+  // ACES tone mapping for ink richness
+  finalColor = aces_tone_map(finalColor * 1.1);
+
+  // Alpha: Dot density * ink_saturation * depth
+  let alpha = clamp((dotMask + wetDot * 0.5 + hatchMask * 0.2) * inkSaturation * depth, 0.05, 1.0);
+
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
 }

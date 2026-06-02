@@ -1,11 +1,12 @@
 {
   "id": "iso-hills",
-  "name": "Iso Hills",
+  "name": "Iso Hills v2",
+  "category": "artistic",
   "url": "shaders/iso-hills.wgsl",
-  "description": "Renders the image as stepped topographic terraces. Mouse controls the lighting direction.",
+  "description": "Topographic terrain rendering with fBm-generated hills, hydraulic erosion, contour hachures, and depth-based atmospheric haze. Mouse drops carve water channels; bass triggers rainfall.",
   "params": [
     {
-      "name": "Steps",
+      "name": "Contour Steps",
       "type": "f32",
       "min": 0,
       "max": 1,
@@ -29,19 +30,28 @@
       "id": "smoothness"
     },
     {
-      "name": "Shadow Strength",
+      "name": "Haze Strength",
       "type": "f32",
       "min": 0,
       "max": 1,
-      "default": 0.8,
+      "default": 0.3,
       "id": "shadow_strength"
     }
   ],
   "features": [
-    "mouse-driven"
+    "artistic",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "stylized",
-    "artistic"
+    "terrain",
+    "contours",
+    "topographic",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware"
   ]
 }

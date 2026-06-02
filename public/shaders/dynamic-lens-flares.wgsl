@@ -1,3 +1,13 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Dynamic Lens Flares
+//  Category: lighting-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: dynamic-lens-flares
+//  Created: 2026-05-30
+//  By: Copilot CLI
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -28,16 +38,23 @@ fn hash12(p: vec2<f32>) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+      return;
+  }
   let aspect = resolution.x / resolution.y;
   var uv = vec2<f32>(global_id.xy) / resolution;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+  let bass = audio.x;
+  let mids = audio.y;
+  let treble = audio.z;
 
   // Params
-  let intensity = mix(0.1, 1.5, u.zoom_params.x);
+  let intensity = mix(0.1, 1.5, u.zoom_params.x) * (1.0 + bass * 0.5);
   let threshold = mix(0.0, 0.9, u.zoom_params.y);
-  let spread = mix(0.1, 2.0, u.zoom_params.z);
+  let spread = mix(0.1, 2.0, u.zoom_params.z) * (1.0 + mids * 0.25);
   let ghostCount = mix(2.0, 8.0, u.zoom_params.w);
 
-  var mouse = u.zoom_config.yz;
+  var mouse = clamp(u.zoom_config.yz, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
 
   // Base Image
   var finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -90,7 +107,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let scale = -1.0 + (i * 0.5); // Range -1.0 to ...
       // Let's use a non-linear distribution
       let offset = axis * (scale * spread);
-      let ghostPos = center + offset;
+      let ghostPos = clamp(center + offset, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
 
       // Distance from current pixel to ghost center
       // Correct aspect for circular shapes
@@ -100,7 +117,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let d = distance(uv_aspect, ghostPos_aspect);
 
       // Ghost shape: simple soft circle + slight ring
-      let size = 0.05 + 0.1 * sin(i * 123.4); // Randomize sizes
+      let size = 0.05 + 0.1 * sin(i * 123.4 + treble * 2.0); // Randomize sizes
       let softness = 0.02;
 
       let weight = smoothstep(size + softness, size, d);
@@ -112,7 +129,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let b = cos(hueShift + 4.0) * 0.5 + 0.5;
       let ghostColor = vec3<f32>(r, g, b) * lightColor;
 
-      flareAccum = flareAccum + ghostColor * weight * 0.3; // 0.3 opacity
+      flareAccum = flareAccum + ghostColor * weight * (0.3 + bass * 0.1);
   }
 
   // Add a "Halo" / Ring
@@ -128,12 +145,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   flareAccum = flareAccum + lightColor * ring * 0.2;
 
   // Starburst / Rays
-  let dirToMouse = normalize(uv - mouse);
+  let toMouse = uv - mouse;
+  let safeMouseLen = max(length(toMouse), 0.0001);
+  let dirToMouse = toMouse / safeMouseLen;
   let angle = atan2(dirToMouse.y, dirToMouse.x);
-  let ray = max(0.0, sin(angle * 12.0 + u.config.x) * sin(angle * 5.0 - u.config.x * 0.5));
+  let ray = max(0.0, sin(angle * 12.0 + u.config.x * (1.0 + treble * 0.5)) * sin(angle * 5.0 - u.config.x * 0.5));
   let rayFalloff = 1.0 / (distToMouse * 10.0 + 0.1);
   flareAccum = flareAccum + lightColor * ray * rayFalloff * 0.2;
 
+  let composed = finalColor + flareAccum;
+  let flareEnergy = max(flareAccum.r, max(flareAccum.g, flareAccum.b));
+  let finalAlpha = clamp(0.18 + flareEnergy * 0.45 + ring * 0.12 + ray * 0.08, 0.08, 1.0);
+  let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + flareEnergy * 0.04, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor + flareAccum, 1.0));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(composed, finalAlpha));
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(maxRGB, ring, ray, finalAlpha));
 }

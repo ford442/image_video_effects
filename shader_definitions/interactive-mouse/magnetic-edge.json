@@ -5,6 +5,7 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "params": [
@@ -39,7 +40,10 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "neon",
+    "edge-detection",
+    "chromatic-aberration"
   ],
   "name": "Magnetic Edge"
 }

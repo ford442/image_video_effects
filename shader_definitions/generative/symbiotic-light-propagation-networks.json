@@ -1,0 +1,67 @@
+{
+  "id": "symbiotic-light-propagation-networks",
+  "name": "Symbiotic Light Propagation Networks",
+  "url": "shaders/symbiotic-light-propagation-networks.wgsl",
+  "category": "generative",
+  "description": "Two organic species grow while transporting and transforming light through their network. They support each other symbiotically while competing for resources. Mouse seeds new growth while audio controls light color and transmission.",
+  "features": [
+    "light-transport",
+    "organic-networks",
+    "symbiotic-growth",
+    "audio-color",
+    "mouse-seeding",
+    "upgraded-rgba",
+    "chromatic-dispersion",
+    "temporal-accumulation"
+  ],
+  "tags": [
+    "symbiotic",
+    "light",
+    "organic",
+    "network",
+    "bioluminescent",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "growthRate",
+      "name": "Network Growth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "How fast the light-carrying network expands"
+    },
+    {
+      "id": "lightTransmission",
+      "name": "Light Transmission",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "How efficiently light travels through the network"
+    },
+    {
+      "id": "symbiosis",
+      "name": "Symbiotic Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How much the two species help each other"
+    },
+    {
+      "id": "mouseSeeding",
+      "name": "Mouse Seeding Power",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How strongly the mouse can plant new network nodes"
+    }
+  ]
+}

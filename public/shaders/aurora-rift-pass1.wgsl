@@ -1,8 +1,16 @@
-// ===============================================================
-// Aurora Rift – Pass 1: Volumetric Raymarch
-// Raymarches volumetric aurora with curl-driven flow
-// Outputs: dataTextureA (RGBA: color + density)
-// ===============================================================
+// ═══════════════════════════════════════════════════════════════════
+//  Aurora Rift – Pass 1: Volumetric Raymarch
+//  Category: lighting-effects (multi-pass)
+//  Features: multi-pass-1, volumetric, curl-flow, audio-reactive, depth-aware
+//  Complexity: High
+//  Chunks From: aurora-rift.wgsl (curl/hash primitives)
+//  Created: 2026-05-31
+//  By: Claude Sonnet 4.6 (swarm optimization pass)
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+//  CHUNK: IGN dither (Interleaved Gradient Noise)
+//  Outputs: dataTextureA (RGBA: color.rgb + density)
+//  Pass handoff: density packed in .a for Pass 2 compositor
 @group(0) @binding(0) var videoSampler: sampler;
 @group(0) @binding(1) var videoTex:    texture_2d<f32>;
 @group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
@@ -90,7 +98,7 @@ fn fbm(p: vec2<f32>, time: f32, octaves: i32) -> f32 {
 //  Curl noise (divergence-free)
 // ═══════════════════════════════════════════════════════════════════════════
 fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
-    let eps = 0.001;
+    let eps = 0.01; // 0.001 was too tight — finite-difference amplification caused near-zero curl magnitude
     let n1 = fbm(p + vec2<f32>(eps, 0.0), time, 4);
     let n2 = fbm(p + vec2<f32>(0.0, eps), time, 4);
     let n3 = fbm(p - vec2<f32>(eps, 0.0), time, 4);
@@ -150,10 +158,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthParallax = u.zoom_config.y * 0.8;
     let emitThresh = u.zoom_config.z * 0.25 + 0.05;
     
+    // Audio reactivity — bass drives aurora intensity and hue drift
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+
     // Sample source color & depth
     let srcCol = textureSampleLevel(videoTex, videoSampler, uv, 0.0).rgb;
     let depth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
-    
+
     // Distance-based LOD
     let dist = length(uv - 0.5);
     let lodOctaves = i32(mix(f32(fbmOctaves), 2.0, smoothstep(0.3, 0.6, dist)));
@@ -204,23 +216,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pattern = (foamPattern * 0.4 + hyperMod * 0.3 + interference * 0.3) *
                   (1.0 + (1.0 - depth) * 1.5);
     
-    // Emissive plasma on cell borders
+    // Emissive plasma on cell borders — bass shifts hue, treble brightens edges
     let border = smoothstep(emitThresh, 1.0, smoothstep(0.08, 0.12, cellDist) * pattern * length(curl));
-    let plasma = hsv2rgb(fract(time * 0.07 + pattern + hyper), 0.9, 1.0);
+    let plasma = hsv2rgb(fract(time * 0.07 + pattern + hyper + bass * 0.15), 0.9, 1.0 + treble * 0.2);
+
+    // Base aurora color (greens and purples), bass-driven hue drift
+    let auroraBase = hsv2rgb(fract(0.3 + pattern * 0.2 + bass * 0.08), 0.8, 0.9);
+    let auroraColor = clamp(mix(auroraBase, plasma, border * 0.55), vec3<f32>(0.0), vec3<f32>(1.0));
+
+    // Calculate density — bass inflates presence in quiet-background regions
+    let density = pattern * (1.0 + border * 2.0) * (1.0 + bass * 0.6);
     
-    // Base aurora color (greens and purples)
-    let auroraBase = hsv2rgb(fract(0.3 + pattern * 0.2), 0.8, 0.9);
-    let auroraColor = mix(auroraBase, plasma, border * 0.55);
-    
-    // Calculate density for volumetric compositing
-    let density = pattern * (1.0 + border * 2.0);
-    
-    // Pack volumetric data: RGB = color, A = density
-    let volumetric = vec4<f32>(auroraColor, density);
-    
+    // IGN dither before packing to reduce float16 banding on low-density gradients
+    let ign = fract(52.9829189 * fract(dot(vec2<f32>(gid.xy), vec2<f32>(0.06711056, 0.00583715))));
+    let ditheredColor = auroraColor + (ign - 0.5) * (1.0 / 255.0);
+
+    // Pack volumetric data: RGB = dithered color, A = density
+    let volumetric = vec4<f32>(ditheredColor, density);
+
     // Store for Pass 2
     textureStore(dataTextureA, gid.xy, volumetric);
-    
+
     // Pass-through input to maintain chain (Pass 2 will do final compositing)
     let inputColor = textureSampleLevel(videoTex, videoSampler, uv, 0.0);
     textureStore(writeTexture, gid.xy, inputColor);

@@ -1,47 +1,50 @@
 {
   "id": "neural-resonance",
   "name": "Neural Resonance",
+  "category": "artistic",
   "url": "shaders/neural-resonance.wgsl",
-  "description": "Runaway neural feedback loop with hallucinogenic pareidolic effects and breathing fractals.",
+  "description": "A temporal synaptic feedback field bends the source image into chromatic neural currents around the cursor.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "neural",
+    "feedback",
+    "chromatic",
+    "synapse",
+    "audio-reactive"
   ],
   "params": [
     {
-      "id": "param1",
-      "name": "Intensity",
-      "default": 0.5,
+      "id": "amplification",
+      "name": "Amplification",
+      "default": 0.45,
       "min": 0,
-      "max": 1,
-      "step": 0.01
+      "max": 1
     },
     {
-      "id": "param2",
-      "name": "Speed",
-      "default": 0.5,
+      "id": "curl_strength",
+      "name": "Curl Strength",
+      "default": 0.45,
       "min": 0,
-      "max": 1,
-      "step": 0.01
+      "max": 1
     },
     {
-      "id": "param3",
-      "name": "Scale",
-      "default": 0.5,
+      "id": "feedback_mix",
+      "name": "Feedback Mix",
+      "default": 0.55,
       "min": 0,
-      "max": 1,
-      "step": 0.01
+      "max": 1
     },
     {
-      "id": "param4",
-      "name": "Detail",
-      "default": 0.5,
+      "id": "chromatic_drift",
+      "name": "Chromatic Drift",
+      "default": 0.35,
       "min": 0,
-      "max": 1,
-      "step": 0.01
+      "max": 1
     }
   ]
 }

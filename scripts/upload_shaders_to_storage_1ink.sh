@@ -9,7 +9,7 @@
 # https://storage.1ink.us/models/ and https://storage.1ink.us/mods/
 #
 # Target public URL after upload:
-#   https://storage.1ink.us/files/image-effects/shaders/*.wgsl
+#   https://storage.1ink.us/image-effects/shaders/*.wgsl
 #
 # Usage:
 #   1. Get the correct SFTP credentials for storage.1ink.us (user usually storage_manager)
@@ -20,8 +20,7 @@
 #     SFTP_USER=storage_manager
 #     SFTP_HOST=storage.1ink.us
 #     SFTP_PORT=22
-#     REMOTE_DIR=files/image-effects/shaders     # <-- this produces the /files/ URL
-#     # Alternative that has worked for models:  REMOTE_DIR=storage.1ink.us/files/image-effects/shaders
+#     REMOTE_DIR=storage.1ink.us/image-effects/shaders
 #
 # After success, run the verification curls printed at the end.
 # =============================================================================
@@ -33,8 +32,8 @@ SFTP_USER="${SFTP_USER:-storage_manager}"
 SFTP_HOST="${SFTP_HOST:-storage.1ink.us}"
 SFTP_PORT="${SFTP_PORT:-22}"
 
-# This remote dir + the web server config on storage.1ink.us => public /files/image-effects/shaders/
-REMOTE_DIR="${REMOTE_DIR:-files/image-effects/shaders}"
+# This remote dir + the web server config on storage.1ink.us => public /image-effects/shaders/
+REMOTE_DIR="${REMOTE_DIR:-storage.1ink.us/image-effects/shaders}"
 
 # Local source of truth (the 1000+ .wgsl files)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -86,14 +85,7 @@ echo "Force    : $([[ "$FORCE" == "1" ]] && echo "YES (re-upload everything)" ||
 echo "=============================================================="
 echo ""
 
-# Build the lftp command
-lftp_cmd=(
-  lftp
-  -u "$SFTP_USER,$SFTP_PASS"
-  "sftp://$SFTP_HOST:$SFTP_PORT"
-)
-
-# The here-document commands for lftp
+# Build the lftp script (piped to lftp because -c conflicts with -u in lftp 4.9.x)
 lftp_script=$(cat <<LFTPEOF
 set sftp:auto-confirm yes
 set net:timeout 45
@@ -101,6 +93,8 @@ set net:max-retries 6
 set net:reconnect-interval-base 5
 set cmd:parallel 4
 set mirror:parallel-directories 1
+
+open -u "$SFTP_USER,$SFTP_PASS" "sftp://$SFTP_HOST:$SFTP_PORT"
 
 echo "Connected. Creating remote directory if needed..."
 mkdir -p "$REMOTE_DIR"
@@ -110,18 +104,19 @@ LFTPEOF
 )
 
 if [[ "$FORCE" == "1" ]]; then
-  lftp_script+=$'\n'"mirror --reverse --verbose --delete-first \"$LOCAL_DIR/\" \"$REMOTE_DIR/\""
+  lftp_script+=$'\n'"mirror --reverse --verbose --delete-first $LOCAL_DIR/ $REMOTE_DIR/"
 else
-  lftp_script+=$'\n'"mirror --reverse --only-newer --verbose \"$LOCAL_DIR/\" \"$REMOTE_DIR/\""
+  lftp_script+=$'\n'"mirror --reverse --only-newer --verbose $LOCAL_DIR/ $REMOTE_DIR/"
 fi
 
-lftp_script+=$'\n'"echo \"Upload complete.\"\nquit"
+lftp_script+=$'\n'"echo Upload complete."
+lftp_script+=$'\n'"quit"
 
 echo "=== Running lftp mirror ==="
 echo ""
 
-# Execute
-"${lftp_cmd[@]}" -c "$lftp_script" 2>&1
+# Execute via pipe (avoids -c / -u conflict in lftp 4.9.x)
+echo "$lftp_script" | lftp 2>&1
 
 echo ""
 echo "=============================================================="
@@ -129,9 +124,9 @@ echo "✅  Done"
 echo "=============================================================="
 echo ""
 echo "Verify the files are now publicly reachable:"
-echo "  curl -I https://storage.1ink.us/files/image-effects/shaders/liquid.wgsl"
-echo "  curl -I https://storage.1ink.us/files/image-effects/shaders/neon-pulse.wgsl"
-echo "  curl -I https://storage.1ink.us/files/image-effects/shaders/_hash_library.wgsl"
+echo "  curl -I https://storage.1ink.us/image-effects/shaders/liquid.wgsl"
+echo "  curl -I https://storage.1ink.us/image-effects/shaders/neon-pulse.wgsl"
+echo "  curl -I https://storage.1ink.us/image-effects/shaders/_hash_library.wgsl"
 echo ""
 echo "If you used a different REMOTE_DIR, adjust the verification URLs above."
 echo "=============================================================="

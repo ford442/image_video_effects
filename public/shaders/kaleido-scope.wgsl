@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Kaleido Scope v2
+//  Category: geometric
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Chunks From: kaleido-scope
+//  Upgraded: 2026-05-30
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +19,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -21,87 +27,106 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+    let n = sin(dot(p, vec2<f32>(127.1, 311.7)));
+    return fract(vec2<f32>(n) * vec2<f32>(43758.5453, 22578.1459));
+}
+
+fn lensDistort(p: vec2<f32>, strength: f32) -> vec2<f32> {
+    let r2 = dot(p, p);
+    return p * (1.0 + strength * r2 + strength * r2 * r2 * 0.5);
+}
+
+fn poincareMap(p: vec2<f32>, segments: f32, rot: f32) -> vec3<f32> {
+    let r = length(p);
+    let theta = atan2(p.y, p.x) + rot;
+    let hypR = r / (1.0 - min(r * 0.94, 0.99) + 0.001);
+    let sector = abs(fract(theta / 6.28318 * segments) - 0.5) * 2.0;
+    let edgeDist = min(sector, 1.0 - sector);
+    let mirrorAngle = sector * 3.14159265;
+    return vec3<f32>(mirrorAngle, hypR, edgeDist);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let mouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
+    let time = u.config.x;
+    let morphSpeed = max(u.zoom_params.y, 0.01);
+    let zoom = max(u.zoom_params.z, 0.15);
+    let ringOffset = u.zoom_params.w;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
 
-    // Params
-    // x: Segments (3 to 20?)
-    // y: Rotation Speed
-    // z: Zoom
-    // w: Offset
+    let warpStrength = length(mouse - 0.5) * 0.2;
+    let warpDir = normalize((mouse - 0.5) + vec2<f32>(0.001, 0.001));
+    let center = vec2<f32>(0.5, 0.5) + (mouse - 0.5) * 0.12 + warpDir * warpStrength * 0.06;
 
-    let segments_param = u.zoom_params.x; // 0.0-1.0
-    let rot_speed = u.zoom_params.y;
-    let zoom = u.zoom_params.z;
-    let offset_param = u.zoom_params.w;
+    var p = (uv - center) * vec2<f32>(aspect, 1.0);
+    p = lensDistort(p, warpStrength * 0.3);
 
-    let num_segments = 3.0 + floor(segments_param * 12.0); // 3 to 15
+    let r = length(p);
+    let morph = sin(time * morphSpeed * (1.0 + bass * 0.6)) * 0.5 + 0.5;
+    let tessA = mix(4.0, 7.0, u.zoom_params.x);
+    let tessB = mix(6.0, 11.0, u.zoom_params.x);
+    let segments = mix(tessA, tessB, morph);
+    let rotation = time * morphSpeed * 0.25 * (1.0 + treble * 0.4);
 
-    // Mouse Interaction: Center of Kaleidoscope
-    var mouse = u.zoom_config.yz;
+    let pm = poincareMap(p / zoom, segments, rotation);
+    let mirrorAngle = pm.x;
+    let hypR = pm.y;
+    let edgeDist = pm.z;
+    let sector = fract(mirrorAngle / 3.14159265);
 
-    // Coords relative to mouse, aspect corrected
-    let rel_uv = uv - mouse;
-    let aspect_uv = vec2<f32>(rel_uv.x * aspect, rel_uv.y);
+    let mirrored = vec2<f32>(cos(mirrorAngle), sin(mirrorAngle)) * hypR;
+    let sampleUV = clamp(center + vec2<f32>(mirrored.x / aspect, mirrored.y), vec2<f32>(0.001), vec2<f32>(0.999));
 
-    // Polar coordinates
-    let dist = length(aspect_uv);
-    var angle = atan2(aspect_uv.y, aspect_uv.x);
+    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r, 0.0, 1.0);
+    let sep = (0.004 + depth * 0.014) * (1.0 + mids * 0.5);
+    let caR = clamp(center + vec2<f32>((mirrored.x + sep) / aspect, mirrored.y + sep * 0.3), vec2<f32>(0.001), vec2<f32>(0.999));
+    let caB = clamp(center + vec2<f32>((mirrored.x - sep) / aspect, mirrored.y - sep * 0.3), vec2<f32>(0.001), vec2<f32>(0.999));
 
-    // Kaleidoscope Logic
-    let segment_angle = 6.28318 / num_segments;
+    let baseR = textureSampleLevel(readTexture, u_sampler, caR, 0.0).r;
+    let baseG = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
+    let baseB = textureSampleLevel(readTexture, u_sampler, caB, 0.0).b;
+    var baseColor = vec3<f32>(baseR, baseG, baseB);
 
-    // Rotate over time
-    let time = u.config.x * (rot_speed - 0.5) * 2.0; // -1 to 1 speed
-    angle = angle + time;
+    let boundary = smoothstep(0.05 / segments, 0.0, edgeDist);
+    let hue = fract(sector * 1.618 + morph * 0.3 + depth * 0.2 + time * 0.05);
+    let irid = vec3<f32>(
+        0.5 + 0.5 * cos(6.28318 * hue + 0.0),
+        0.5 + 0.5 * cos(6.28318 * hue + 2.094),
+        0.5 + 0.5 * cos(6.28318 * hue + 4.188)
+    );
+    let metal = mix(irid * 0.6, vec3<f32>(1.0, 0.92, 0.78), 0.4) * boundary * (0.4 + treble * 0.35);
 
-    // Mirroring
-    // Map angle to 0..segment_angle
-    // Modulo logic in WGSL: a - b * floor(a/b)
-    angle = angle - segment_angle * floor(angle / segment_angle);
-    // Mirror if > half segment
-    if (angle > segment_angle * 0.5) {
-        angle = segment_angle - angle;
-    }
+    let ringPos = abs(hypR - (0.22 + ringOffset * 0.38 + bass * 0.1));
+    let vertex = smoothstep(0.1, 0.0, ringPos) * boundary;
+    let spec = vec3<f32>(1.0, 0.95, 0.85) * vertex * (0.6 + mids * 0.6);
 
-    // Reconstruct vector
-    // Zoom/Scale
-    let scale = 0.5 + (1.0 - zoom) * 2.0; // Zoom in means smaller scale value? No, small scale means we see less.
-    // If zoom is 1.0 -> scale should be small (zoom in).
-    // Let's say param z=1.0 is "Zoom In" -> scale=0.2
-    // z=0.0 is "Zoom Out" -> scale=2.0
-    let final_scale = 2.0 - zoom * 1.8;
+    let caStrength = smoothstep(0.035, 0.0, edgeDist) * (0.12 + depth * 0.18);
+    baseColor = mix(baseColor, baseColor * vec3<f32>(1.12, 0.96, 0.88), caStrength);
 
-    let radius = dist * final_scale;
+    let finalColor = acesToneMap(baseColor * (0.7 + sector * 0.14) + metal + spec);
+    let alpha = clamp(boundary * 0.5 + depth * 0.25 + vertex * 0.18 + bass * 0.06, 0.1, 0.92);
+    let outDepth = clamp(depth + boundary * 0.06 + vertex * 0.04, 0.0, 1.0);
 
-    // Offset (Ring effect)
-    let ring_offset = offset_param * 0.5;
-    let final_radius = radius + ring_offset;
-
-    let new_vec = vec2<f32>(cos(angle), sin(angle)) * final_radius;
-
-    // Rotate back? Or just use as is relative to something?
-    // We need to map back to UV space.
-    // Let's add the mouse pos back to center it there?
-    // Or center it at 0.5, 0.5?
-    // Usually Kaleidoscope looks into the image.
-    // Let's center sample at 0.5, 0.5.
-
-    let sample_uv = vec2<f32>(0.5, 0.5) + vec2<f32>(new_vec.x / aspect, new_vec.y);
-
-    var color = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0).rgb;
-
-    // Bounds check or mirror repeat?
-    // Sampler defaults to repeat usually.
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(boundary, hypR, sector, alpha));
 }

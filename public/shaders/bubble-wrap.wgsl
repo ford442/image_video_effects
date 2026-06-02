@@ -30,8 +30,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
 
-    // Read previous state (Channel R = Popped state 0.0 to 1.0)
-    let oldState = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+    // Read previous state (R = popped flag, G = time the pop happened)
+    let oldData = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rg;
+    let oldState = oldData.r;
+    let oldPopTime = oldData.g;
+    let time = u.config.x;
 
     // Params
     let bubblesScale = max(0.01, u.zoom_params.x * 0.1); // Scale
@@ -56,13 +59,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Let's use a fixed interactive radius or proportional to scale
     let interactRadius = bubblesScale * 0.8;
 
+    // ═══ UNIQUE VISUAL IDEA: record the pop moment for an animated burst ═══
     var newState = oldState;
-    if (mouseDown && dCenter < interactRadius) {
+    var popTime = oldPopTime;
+    if (mouseDown && dCenter < interactRadius && oldState < 0.5) {
         newState = 1.0;
+        popTime = time; // stamp the instant of the pop so we can animate it
     }
 
-    // Store State
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(newState, 0.0, 0.0, 1.0));
+    // Store State (R = popped, G = pop timestamp)
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(newState, popTime, 0.0, 1.0));
+
+    // Age since this bubble popped (only meaningful once popped).
+    let agePop = time - popTime;
 
     // Rendering
     // SDF for circle
@@ -72,23 +81,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Sphere profile: z = sqrt(1 - d^2)
     var z = sqrt(max(0.0, 1.0 - d*d));
 
-    // Apply Pop State
-    // If popped, we flatten the bubble significantly
-    let flattening = mix(1.0, 0.1, newState * popStrength);
+    // Apply Pop State — animated elastic collapse instead of an instant flatten.
+    // The membrane deflates over ~0.18s with a damped jiggle (rubbery snap-back).
+    let collapseT = smoothstep(0.0, 0.18, agePop);
+    let jiggle = sin(agePop * 42.0) * exp(-agePop * 9.0) * 0.18;
+    let poppedFlatten = clamp(mix(1.0, 0.12, collapseT) + jiggle, 0.05, 1.0);
+    let flattening = select(1.0, mix(1.0, poppedFlatten, popStrength), newState > 0.5);
     z = z * flattening;
 
+    // Wrinkled deflated film: a popped bubble is a crinkled collapsed membrane, not
+    // a smooth dome. Add high-frequency creases to its surface once collapsed.
+    if (newState > 0.5) {
+        let wr = sin(localUV.x * 60.0 + gridID.x) * sin(localUV.y * 60.0 + gridID.y);
+        z = z + wr * 0.04 * collapseT;
+    }
+
     // Calculate Normal
-    // Gradient of sphere height
-    // n.xy ~ -gradient of z
     let normal = normalize(vec3<f32>((localUV - 0.5) * flattening, z));
 
     // Refraction
-    // Sample texture with offset
     let refractUV = uv - normal.xy * refraction * z;
 
     var imgColor = textureSampleLevel(readTexture, u_sampler, refractUV, 0.0).rgb;
 
-    // If popped, maybe darken or desaturate slightly to show it's "used"
+    // If popped, darken slightly to show it's "used"
     if (newState > 0.5) {
         imgColor = imgColor * 0.9;
     }
@@ -103,6 +119,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var finalColor = imgColor + spec;
     finalColor = mix(finalColor, vec3<f32>(0.05, 0.05, 0.05), edge); // Dark borders
+
+    // Pop burst: a bright air-ring races outward from the bubble center in the
+    // first moments after popping, then fades — the satisfying visual "snap".
+    if (newState > 0.5 && agePop < 0.5) {
+        let ringR = agePop * 5.0;            // expanding radius (in local 0..1 units)
+        let ring = exp(-pow((d - ringR) * 5.0, 2.0)) * exp(-agePop * 7.0);
+        finalColor = finalColor + vec3<f32>(0.9, 0.95, 1.0) * ring * 1.2;
+    }
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 

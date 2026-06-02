@@ -38,5 +38,10 @@
       "step": 0.05
     }
   ],
-  "url": "shaders/gen-radiant-quantum-crystalline-forge.wgsl"
+  "url": "shaders/gen-radiant-quantum-crystalline-forge.wgsl",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
 }

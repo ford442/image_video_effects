@@ -1,7 +1,8 @@
 {
   "id": "directional-blur-wipe",
   "name": "Directional Blur Wipe",
-  "description": "Splits the screen with a directional blur. Mouse controls split position and angle.",
+  "category": "image",
+  "description": "Splits the screen with an audio-reactive directional blur. Mouse controls split position; chromatic offset scatters RGB per treble. Depth-scatter increases blur radius on distant objects.",
   "url": "shaders/directional-blur-wipe.wgsl",
   "params": [
     {
@@ -38,10 +39,18 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "chromatic-offset"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "blur",
+    "wipe",
+    "directional",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic"
   ]
 }

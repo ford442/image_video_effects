@@ -1,10 +1,14 @@
 {
   "id": "block-distort-interactive",
+  "name": "Block Distort",
+  "category": "interactive-mouse",
   "url": "shaders/block-distort-interactive.wgsl",
   "icon": "grid",
-  "description": "Image is divided into blocks that are pushed away by the mouse, creating a pixelated distortion field.",
+  "description": "Cursor pressure shoves image blocks into a prismatic distortion field with beat-reactive grid highlights.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -38,7 +42,9 @@
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
-  ],
-  "name": "Block Distort"
+    "interactive",
+    "grid",
+    "glitch",
+    "audio-reactive"
+  ]
 }

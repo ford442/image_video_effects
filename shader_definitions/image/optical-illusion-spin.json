@@ -1,8 +1,9 @@
 {
   "id": "optical-illusion-spin",
   "name": "Optical Illusion Spin",
-  "description": "Slices the image into rotating concentric rings. Mouse adds a twisting force.",
+  "category": "image",
   "url": "shaders/optical-illusion-spin.wgsl",
+  "description": "Op-art illusion generator with Rotating Snakes, Fraser spiral, and moiré interference between counter-rotating patterns. Chromatic afterimage, HDR edges, ACES tone mapping, and dithering. Bass drives rotation, mouse distorts locally, depth controls scale perspective.",
   "params": [
     {
       "name": "Ring Count",
@@ -38,10 +39,16 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "hypnotic",
+    "rings",
+    "spin",
+    "audio-reactive",
+    "illusion"
   ]
 }

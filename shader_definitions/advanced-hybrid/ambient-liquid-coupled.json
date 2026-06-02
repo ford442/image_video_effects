@@ -1,0 +1,64 @@
+{
+  "id": "ambient-liquid-coupled",
+  "name": "Ambient Liquid Coupled",
+  "url": "shaders/ambient-liquid-coupled.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Two viscous liquid layers coupled through a living membrane. Mouse presses like a finger into the surface, creating tears that slowly heal. Bass increases surface tension, making deformations more dramatic and persistent.",
+  "features": [
+    "mouse-pressure",
+    "liquid-membrane",
+    "audio-reactive",
+    "depth-aware",
+    "temporal-feedback"
+  ],
+  "tags": [
+    "liquid",
+    "membrane",
+    "viscous",
+    "organic",
+    "audio-reactive",
+    "hybrid"
+  ],
+  "params": [
+    {
+      "id": "wave_strength",
+      "name": "Wave Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Amplitude of ambient surface waves"
+    },
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "How thick and resistant the coupled liquids feel"
+    },
+    {
+      "id": "vortex_strength",
+      "name": "Vortex Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How strongly the mouse twists the membrane"
+    },
+    {
+      "id": "layer_separation",
+      "name": "Layer Separation",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How much the subsurface layer shows through when the membrane is torn"
+    }
+  ]
+}

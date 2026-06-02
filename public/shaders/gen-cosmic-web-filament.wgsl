@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
 //  Cosmic Web Filament - Evolving Large-Scale Structure
 //  Category: generative
-//  Features: mouse-driven
+//  Features: mouse-driven, audio-reactive, audio-driven, temporal, chromatic, depth-aware
+//  Complexity: High
 //  Physics: Multi-fractal cascade, Zel'dovich approximation,
 //           stellar population synthesis, Voronoi filaments
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -85,7 +87,7 @@ fn ridgedVoronoi(p: vec3<f32>, octaves: i32) -> f32 {
 }
 fn spiralWarp(p: vec3<f32>, arms: f32, pitch: f32, strength: f32) -> vec3<f32> {
   let r = length(p.xy);
-  let angle = atan(p.y, p.x);
+  let angle = atan2(p.y, p.x);
   let twist = r * pitch;
   let armPhase = fract(angle * arms / (2.0 * PI) + twist);
   let warp = sin(armPhase * 2.0 * PI) * strength;
@@ -118,9 +120,12 @@ fn zeldovichDisplacement(q: vec3<f32>, t: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var res = u.config.zw;
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
+  let uv01 = vec2<f32>(id.xy) / res;
   var uv = (vec2<f32>(id.xy) / res - 0.5) * vec2<f32>(res.x / res.y, 1.0) * u.zoom_config.z;
   var mouse = u.zoom_config.yz;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let warpStrength = u.zoom_params.x * 3.0 + bass * 0.5;
   let densityParam = u.zoom_params.y * 3.5 + 0.5;
   let speed = u.zoom_params.z * 2.0;
@@ -148,7 +153,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   col.r = structDensity * (0.8 + evolution * 0.4);
   col.g = tempGrad;
   col.b = dot(starCol, vec3<f32>(0.3, 0.5, 0.2));
+  // Temporal feedback
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+  col = mix(col, prev.rgb * 0.9, 0.03 + bass * 0.01);
+
+  // Chromatic dispersion: channel offsets modulated by audio
+  let cStr = 0.003 + bass * 0.005;
+  let cDir = normalize(uv01 - vec2<f32>(0.5) + 0.001);
+  let prevR = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cStr * (1.0 + mids), 0.0).r;
+  let prevG = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cStr * (0.5 + treble), 0.0).g;
+  let prevB = textureSampleLevel(dataTextureC, u_sampler, uv01 - cDir * cStr * (0.8 + bass * 0.5), 0.0).b;
+  col.r = mix(col.r, prevR * 0.9, 0.02 + treble * 0.01);
+  col.g = mix(col.g, prevG * 0.9, 0.02 + bass * 0.01);
+  col.b = mix(col.b, prevB * 0.9, 0.02 + mids * 0.01);
+
   let alpha = clamp(structDensity + glow * 0.2, 0.0, 1.0);
   textureStore(writeTexture, id.xy, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, id.xy, vec4<f32>(structDensity * 0.5, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, id.xy, vec4<f32>(col, alpha));
 }

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Luma Echo Warp
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
+//  Features: mouse-driven, audio-reactive, temporal-echo, depth-attenuation, upgraded-rgba
+//  Complexity: High
+//  Chunks From: luma-echo-warp, bass_env, temporal-feedback
 //  Created: 2024-01-01
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,7 +29,11 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(8, 8, 1)
+fn bass_env(bass: f32, mids: f32) -> f32 {
+  return 1.0 + bass * 0.5 + mids * 0.2;
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
@@ -42,8 +47,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mousePos = u.zoom_config.yz;
     let isMouseDown = u.zoom_config.w;
 
-    let audioMod = 1.0 + bass * 0.3;
-    let strength = u.zoom_params.x * 2.0 * audioMod;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthAtten = mix(1.0, 0.6, depth);
+
+    let audioMod = bass_env(bass, mids);
+    let strength = u.zoom_params.x * 2.0 * audioMod * depthAtten;
     let decay = 0.9 + u.zoom_params.y * 0.09;
     let radius = 0.1 + u.zoom_params.z * 0.4;
     let lumaWeight = u.zoom_params.w;
@@ -63,13 +71,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distortedUV = clamp(uv - warp, vec2<f32>(0.0), vec2<f32>(1.0));
     let warpedColor = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
 
+    // Temporal echo with chromatic trail
     let history = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-    let mixed = mix(warpedColor, history, decay);
+    let echoDecay = decay * (1.0 - bass * 0.05);
+    let mixed = mix(warpedColor, history, echoDecay);
     let outputColor = mix(mixed, warpedColor, isMouseDown * 0.5);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    // Treble adds sparkle to high-luma regions
+    let sparkle = treble * 0.15 * luma * influence;
+    let finalRGB = outputColor.rgb + vec3<f32>(sparkle);
+    let alpha = clamp(outputColor.a * 0.7 + influence * 0.2 + bass * 0.08, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), outputColor);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), outputColor);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1,11 +1,14 @@
 {
   "id": "bayer-dither-interactive",
   "name": "Bayer Dither Interactive",
+  "category": "retro-glitch",
   "url": "shaders/bayer-dither-interactive.wgsl",
-  "description": "Applies an ordered 8x8 Bayer dithering effect with adjustable bit depth and pixelation scale.",
+  "description": "Ordered 8x8 Bayer dither with blue-noise modulation, gather-style error diffusion, retro 1-bit/4-bit/8-bit palette switching, CRT phosphor dot pitch, and chromatic aberration on dither edges.",
   "features": [
     "mouse-driven",
-    "retro-style"
+    "retro-style",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -52,6 +55,9 @@
   "tags": [
     "glitch",
     "retro",
-    "vintage"
+    "vintage",
+    "dither",
+    "bayer",
+    "crt"
   ]
 }

@@ -1,7 +1,11 @@
-// ----------------------------------------------------------------
-// Celestial Yggdrasil-Matrix
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Celestial Yggdrasil-Matrix
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -95,8 +99,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
 
+    // Audio reactivity: bass pulses plasma cores, treble animates the leaf swarm
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+
     var ro = vec3<f32>(0.0, 0.0, -5.0);
-    let rd = normalize(vec3<f32>(uv, 1.0));
+    var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Camera rotation
     let r_cam = rot(u.config.x * 0.1);
@@ -106,17 +114,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let d = raymarch(ro, rd);
 
     var col = vec3<f32>(0.0);
+    let hit = d < 100.0;
+    var bodyLum = 0.0;
 
     // Plasma & Glow
-    if(d < 100.0) {
+    if(hit) {
         let p = ro + rd * d;
         let dist = length(p);
 
         // Volumetric plasma flow
         let flow = sin(p.y * 5.0 - u.config.x * u.zoom_params.y * 2.0) * 0.5 + 0.5;
 
-        // Audio reactive pulse
-        let audioPulse = u.config.y * 5.0 * exp(-dist * 0.5);
+        // Audio reactive pulse (bass drives the plasma core glow)
+        let audioPulse = bass * 5.0 * exp(-dist * 0.5);
 
         // Chromatic dispersion pseudo-effect & Glow
         let baseColor = vec3<f32>(0.2, 0.5, 1.0) * flow;
@@ -125,23 +135,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Simple ambient occlusion / depth darkening
         col *= exp(-d * 0.2);
+        bodyLum = clamp(flow * 0.6 + audioPulse, 0.0, 1.0);
     } else {
         // Deep cosmic void background
         let bg = vec3<f32>(0.01, 0.0, 0.05) + vec3<f32>(0.1, 0.0, 0.2) * (uv.y * 0.5 + 0.5);
         col = bg;
     }
 
-    // Orbiting particle leaves swarming with mouse
+    // Orbiting particle leaves swarming with mouse (treble animates the swarm)
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let m_dist = length(uv - mouse);
-    let swarm = smoothstep(0.5, 0.0, m_dist) * u.config.y;
+    let swarm = smoothstep(0.5, 0.0, m_dist) * treble;
 
-    // Add some noise based stars
+    // Add some noise based stars (branchless)
     let hash = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-    if(hash > 0.99) {
-        col += vec3<f32>(1.0) * swarm * 2.0;
-    }
+    let starHit = step(0.99, hash);
+    col += vec3<f32>(1.0) * swarm * 2.0 * starHit;
 
+    // Alpha: tree body luminance + swarming leaves over the void, never flat 1.0
+    let alpha = clamp(select(0.0, 0.3, hit) + bodyLum * 0.6 + swarm * starHit, 0.0, 1.0);
+    let out = vec4<f32>(col, alpha);
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    // Depth: raymarch hit distance (near = closer)
+    let depth = select(0.0, clamp(1.0 - d / 100.0, 0.0, 1.0), hit);
+    textureStore(writeTexture, coords, out);
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, out);
 }

@@ -1,8 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  artistic_painterly_oil
+//  Artistic Painterly Oil
 //  Category: artistic
-//  Features: upgraded-rgba, depth-aware, physical-media-alpha
-//  Upgraded: 2026-03-22
+//  Features: mouse-driven, paint, oil, audio-viscosity, impasto, depth-brush, pigment-mix
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer impasto, audio viscosity, atmospheric depth)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -229,6 +231,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warm_tint = vec3<f32>(1.02, 1.0, 0.95);
     color = mix(color, color * warm_tint, paint_thickness * 0.3);
     
+    // === Visual Flourish: Richer wet oil behavior ===
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let bass = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
+
+    // Bass makes thick paint feel heavier and more reflective
+    let heavyPaint = smoothstep(0.4, 1.0, paint_thickness) * bass * 0.15;
+    color = mix(color, color * vec3<f32>(0.95, 0.97, 1.0), heavyPaint);
+
+    // Mids add subtle color bleeding / glazing when paint is still wet
+    let glaze = paintWetness * mids * 0.08;
+    color = mix(color, color * vec3<f32>(1.02, 0.98, 0.96), glaze);
+
+    // Treble adds fine surface texture / broken color (classic oil technique)
+    let brokenColor = (hash12(vec2<f32>(coord) + time * 3.0) - 0.5) * treble * 0.06 * paintWetness;
+    color += brokenColor;
+
     // Specular highlight contributes to perceived solidity
     let spec_alpha = luminance(specular) * paintWetness * 0.5;
     paint_alpha = min(1.0, paint_alpha + spec_alpha);

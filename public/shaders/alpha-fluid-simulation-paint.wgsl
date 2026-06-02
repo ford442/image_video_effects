@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Fluid Simulation Paint
 //  Category: simulation
-//  Features: mouse-driven, temporal, rgba-state-machine
+//  Features: mouse-as-brush, audio-viscosity, depth-paint-thickness, pressure-dynamics, temporal
 //  Complexity: High
 //  RGBA Channels:
 //    R = velocity.x (signed f32, left/right flow)
@@ -11,6 +11,7 @@
 //  Why f32: velocity and pressure require negative values and
 //  sub-pixel precision; 8-bit would collapse to [0,1] and break
 //  incompressibility.
+//  Updated: 2026-05-31 — Grok (audio viscosity seasons + depth-as-paint-thickness)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -78,13 +79,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     vel = advected.rg;
     density = advected.a;
 
-    // === DIFFUSION (viscosity) ===
-    let viscosity = u.zoom_params.x * 0.001 + 0.0001;
+    // === DIFFUSION (viscosity now seasonal) ===
+    // bass = thicker fluid (honey), treble = thinner (water)
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+    let visc = mix(0.0008f, 0.0022f, u.zoom_params.x) * (0.6 + bass * 0.7 - treble * 0.4);
     let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
     let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
     let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
     let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    vel += viscosity * (left.rg + right.rg + down.rg + up.rg - 4.0 * vel);
+    vel += visc * (left.rg + right.rg + down.rg + up.rg - 4.0 * vel);
 
     // === PRESSURE PROJECTION (single Jacobi step) ===
     let pL = left.b;

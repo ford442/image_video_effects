@@ -1,49 +1,55 @@
 {
   "id": "pixel-stretch-interactive",
-  "name": "Pixel Stretch",
-  "description": "Stretches pixels from the mouse position to the screen edge, creating a spatial slit-scan effect.",
+  "name": "Pixel Stretch Interactive",
+  "category": "image",
+  "description": "Anisotropic pixel stretching guided by image structure tensor, with chromatic smear along edge directions, HDR bloom on highlights, ACES tone mapping, and film grain. Bass drives stretch magnitude, mouse controls direction, depth creates parallax layering.",
   "url": "shaders/pixel-stretch-interactive.wgsl",
   "params": [
     {
-      "name": "Direction Mode",
-      "id": "mode",
+      "name": "Stretch Amount",
+      "id": "stretch_amount",
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "default": 0
+      "default": 0.3
     },
     {
-      "name": "Jitter",
-      "id": "jitter",
+      "name": "Bloom Strength",
+      "id": "bloom_strength",
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "default": 0
+      "default": 0.4
     },
     {
-      "name": "RGB Shift",
-      "id": "rgb_shift",
+      "name": "Grain Strength",
+      "id": "grain_strength",
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "default": 0
+      "default": 0.2
     },
     {
-      "name": "Unused",
-      "id": "unused",
+      "name": "Chromatic Scale",
+      "id": "chroma_scale",
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "default": 0
+      "default": 0.35
     }
   ],
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "anisotropic-stretch",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "chromatic",
+    "bloom",
+    "structure-tensor"
   ]
 }

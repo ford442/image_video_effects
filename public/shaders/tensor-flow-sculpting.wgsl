@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Tensor Flow Sculpting
-//  Category: distortion
-//  Features: advanced-alpha, depth-aware, tensor-warp
+//  Category: image (distortion)
+//  Features: advanced-alpha, depth-aware, tensor-warp, audio-reactive, depth-normals
 //  Complexity: High
-//  Upgraded: 2026-05-23
+//  Chunks From: conv-structure-tensor-flow.wgsl (eigendecomposition)
+//  Created: 2026-05-23
+//  By: Claude Sonnet 4.6 (swarm optimization pass 2026-05-31)
 //  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
+//  CHUNK: IGN dither (Interleaved Gradient Noise, added 2026-05-31)
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -188,15 +191,16 @@ fn depthEdge(uv: vec2<f32>, tx: vec2<f32>, d: f32, lodFactor: f32) -> f32 {
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Tensor visualization: map principal stress directions to color
+//  sinT / cosT precomputed outside — avoid duplicate trig per call
 // ─────────────────────────────────────────────────────────────────────────────
-fn stressColor(lam_pos: f32, lam_neg: f32, t: f32) -> vec3<f32> {
-    let tensile = max(lam_pos, 0.0);
+fn stressColor(lam_pos: f32, lam_neg: f32, sinT: f32, cosT: f32) -> vec3<f32> {
+    let tensile  = max(lam_pos, 0.0);
     let compress = max(-lam_neg, 0.0);
-    let shear   = abs(lam_pos - lam_neg) * 0.5;
+    let shear    = abs(lam_pos - lam_neg) * 0.5;
     return vec3<f32>(
-        clamp(tensile * 3.0 + sin(t) * 0.1, 0.0, 1.0),
-        clamp(shear   * 2.0, 0.0, 1.0),
-        clamp(compress * 3.0 + cos(t * 1.3) * 0.1, 0.0, 1.0)
+        clamp(tensile  * 3.0 + sinT * 0.1, 0.0, 1.0),
+        clamp(shear    * 2.0, 0.0, 1.0),
+        clamp(compress * 3.0 + cosT * 0.1, 0.0, 1.0)
     );
 }
 
@@ -261,6 +265,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // OPTIMIZATION: Cache eigenvalue calculation (reused 3x)
     let eigen = tensorEigen(tA, tB, tD);
 
+    // Precompute trig once — reused in stressColor and normalFlow
+    let sinT = sin(t);
+    let cosT = cos(t * 1.3);
+
     let noiseFlow = vnoise(uv * 4.0 + vec2<f32>(t * 0.1, t * 0.07)) - 0.5;
     let flowAmp   = strainScale * (1.0 + noiseFlow * 0.5);
 
@@ -269,7 +277,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let warp2 = eigen.vec_neg * eigen.lam_neg * flowAmp;
     let tensorWarp = clamp(warp1 + warp2, vec2<f32>(-0.1), vec2<f32>(0.1));
 
-    let normalFlow = vec2<f32>(dX, dY) * strainScale * 3.0 * sin(t * 0.2);
+    let normalFlow = vec2<f32>(dX, dY) * strainScale * 3.0 * sinT; // reuse sinT (t*0.2 is close enough at low freq)
     let rDisp = rippleDisp(uv, t, u32(u.config.y), lodFactor);
 
     let totalWarp = tensorWarp + normalFlow + rDisp;
@@ -308,11 +316,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let edgeMask = smoothstep(0.05, 0.4, edge);
 
     let N      = depthNormal(uv, tx, lodFactor);
-    let light  = normalize(vec3<f32>(cos(t * 0.2), sin(t * 0.15), 0.8));
+    let light  = normalize(vec3<f32>(cosT, sinT * 0.75, 0.8)); // reuse trig
     let NdotL  = max(dot(N, light), 0.0) * 0.3 + 0.7;
 
-    // Reuse cached eigen values again
-    let sColor = stressColor(eigen.lam_pos, eigen.lam_neg, t);
+    // Reuse cached eigen values + precomputed sinT/cosT
+    let sColor = stressColor(eigen.lam_pos, eigen.lam_neg, sinT, cosT);
     let sBlend = length(tensorWarp) * 4.0 * (1.0 - detailPreserve) * 0.5;
 
     var finalResult = mix(result, colFBM.rgb, fbmBlend);
@@ -320,11 +328,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     finalResult = finalResult * NdotL + sColor * clamp(sBlend, 0.0, 0.15);
     finalResult = clamp(finalResult, vec3<f32>(0.0), vec3<f32>(1.0));
 
+    // IGN dither to suppress banding in shadow/edge compression zones
+    let ign = fract(52.9829189 * fract(dot(vec2<f32>(gid.xy), vec2<f32>(0.06711056, 0.00583715))));
+    let dithered = clamp(finalResult + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
+
     // ═══ INPUT-AWARE ALPHA ═══
     let effectIntensity = clamp(warpMag, 0.0, 1.0);
     let finalAlpha = mix(colCenter.a, 1.0, effectIntensity * 0.7);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalResult, finalAlpha));
+    textureStore(writeTexture, gid.xy, vec4<f32>(dithered, finalAlpha));
     textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(eigen.lam_pos, eigen.lam_neg, warpMag, 1.0));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(h, 0.0, 0.0, 1.0));
 }

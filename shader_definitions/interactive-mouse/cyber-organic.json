@@ -1,8 +1,9 @@
 {
   "id": "cyber-organic",
   "name": "Cyber Organic Scanner",
+  "category": "interactive-mouse",
   "url": "shaders/cyber-organic.wgsl",
-  "description": "Scans the image to reveal a pulsating organic layer beneath.",
+  "description": "Biotech scan lines reveal pulsing synthetic veins beneath the image, concentrated around the cursor.",
   "params": [
     {
       "id": "scanSpeed",
@@ -34,10 +35,15 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "scanner",
+    "organic",
+    "biotech",
+    "pulse",
+    "audio-reactive"
   ]
 }

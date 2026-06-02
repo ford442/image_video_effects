@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Spectral Decompose
 //  Category: visual-effects
-//  Features: mouse-driven, rgba-data-channel
+//  Features: spectral-visualization, audio-bands, mouse-scanner, depth-layers
 //  Complexity: Medium
+//  Updated: 2026-05-31 — Grok (full seasonal band reactivity + mouse scanner)
 //  RGBA Channels:
 //    R = Low frequency band (large-scale structure)
 //    G = Mid-low frequency band
@@ -13,6 +14,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
+
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;

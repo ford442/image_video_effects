@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Mirror Drag
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Low
-//  Upgraded: 2026-05-17
-//  By: Shader Upgrade Swarm
+//  Features: mouse-driven, temporal-trail, chromatic-ghost, audio-shatter, upgraded-rgba
+//  Complexity: High
+//  Chunks From: mirror-drag, bass_env, temporal-feedback
+//  Created: 2024-01-01
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,62 +23,73 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
+fn bass_env(bass: f32, mids: f32) -> f32 {
+  return 1.0 + bass * 0.5 + mids * 0.2;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let time = u.config.x;
-  let mousePos = u.zoom_config.yz;
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-  let side = u.zoom_params.x;
-  let flipY = u.zoom_params.y;
-  let smoothness = u.zoom_params.z;
-  let mode = u.zoom_params.w;
+    let resolution = u.config.zw;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let mouse = u.zoom_config.yz;
+    let isMouseDown = u.zoom_config.w;
 
-  let axisX = mousePos.x + sin(time * 2.0) * bass * 0.02;
-  let axisY = mousePos.y + cos(time * 1.5) * mids * 0.02;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  let isRightSide = side > 0.5;
-  let isFlipY = flipY > 0.5;
-  let isKaleido = mode > 0.5;
+    let drag = u.zoom_params.x * bass_env(bass, mids);
+    let mirror = u.zoom_params.y;
+    let trailDecay = u.zoom_params.z;
+    let shatterAmount = u.zoom_params.w;
 
-  var finalUV = uv;
+    let mirroredUV = vec2<f32>(
+        mix(uv.x, 1.0 - uv.x, mirror),
+        uv.y
+    );
 
-  let xReflected = select(
-    select(axisX + (axisX - uv.x), uv.x, uv.x >= axisX),
-    select(axisX - (uv.x - axisX), uv.x, uv.x <= axisX),
-    isRightSide
-  );
-  finalUV.x = mix(uv.x, xReflected, smoothstep(0.0, 0.1 + smoothness * 0.4, abs(uv.x - axisX)));
+    let mouseDiff = uv - mouse;
+    let dragDistance = length(mouseDiff) * drag;
+    let dragDir = select(vec2<f32>(0.0), mouseDiff / max(length(mouseDiff), 0.0001), length(mouseDiff) > 0.0001);
 
-  let yReflected = axisY - (uv.y - axisY);
-  finalUV.y = select(finalUV.y, mix(uv.y, yReflected, smoothstep(0.0, 0.1 + smoothness * 0.4, abs(uv.y - axisY))), isFlipY);
+    let offset = dragDir * dragDistance * 0.1;
+    let trailUV = clamp(mirroredUV - offset, vec2<f32>(0.0), vec2<f32>(1.0));
+    let current = textureSampleLevel(readTexture, u_sampler, trailUV, 0.0);
 
-  let color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
+    // Temporal trail echo
+    let history = textureSampleLevel(dataTextureC, non_filtering_sampler, mirroredUV, 0.0);
+    let decay = trailDecay * 0.9 + 0.05;
+    let trail = mix(history * decay, current, isMouseDown * 0.1 + 0.05);
 
-  let distToAxisX = abs(uv.x - axisX);
-  let distToAxisY = abs(uv.y - axisY);
-  let seamGlow = (smoothstep(0.02, 0.0, distToAxisX) + smoothstep(0.02, 0.0, distToAxisY) * select(0.0, 1.0, isFlipY)) * smoothness;
-  let neon = vec3<f32>(1.0, 0.5, 0.8) * seamGlow * (1.0 + bass);
+    // Chromatic ghost: R and B trail behind at different rates
+    let rOffset = dragDir * dragDistance * 0.12;
+    let bOffset = dragDir * dragDistance * 0.08;
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(trailUV - rOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(trailUV - bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    let g = trail.g;
 
-  let mirroredAlpha = mix(color.a, 1.0, smoothstep(0.0, 0.5, abs(uv.x - axisX)) * 0.3);
-  let alpha = select(mirroredAlpha, color.a * 0.8, isKaleido);
+    let chromaColor = vec4<f32>(r, g, b, trail.a);
 
-  let finalColor = color.rgb + neon;
+    // Audio shatter: treble breaks the mirror into angular shards
+    let shardAngle = floor(atan2(mouseDiff.y, mouseDiff.x) * (4.0 + treble * 10.0)) / (4.0 + treble * 10.0);
+    let shardDist = length(mouseDiff);
+    let shardEdge = fract(shardDist * (10.0 + shatterAmount * 50.0 + bass * 20.0));
+    let shatterGlow = smoothstep(0.9, 1.0, shardEdge) * treble * shatterAmount;
 
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let finalRGB = chromaColor.rgb + vec3<f32>(shatterGlow, shatterGlow * 0.5, shatterGlow * 0.3);
+    let alpha = clamp(chromaColor.a + shatterGlow + bass * 0.05, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

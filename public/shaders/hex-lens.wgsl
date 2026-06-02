@@ -1,4 +1,13 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ================================================================
+//  Hex Lens Interactive
+//  Category: image
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, chromatic-aberration
+//  Complexity: Medium
+//  Chunks From: hex-lens
+//  Created: 2026-05-30
+//  By: Copilot
+// ================================================================
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,98 +21,93 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=GridSize, y=LensZoom, z=Rotation, w=MouseRadius
+  zoom_params: vec4<f32>,  // x=TileSize, y=LensZoom, z=Rotation, w=MouseInfluence
   ripples: array<vec4<f32>, 50>,
 };
 
+fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
+  let s = sin(angle);
+  let c = cos(angle);
+  return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    let aspectVec = vec2<f32>(aspect, 1.0);
-    var mousePos = u.zoom_config.yz;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    // Parameters
-    let gridSize = mix(10.0, 100.0, u.zoom_params.x);
-    let baseZoom = mix(0.5, 2.0, u.zoom_params.y);
-    let baseRot = (u.zoom_params.z - 0.5) * 6.28;
-    let mouseRadius = u.zoom_params.w * 0.5;
+  let uv = vec2<f32>(gid.xy) / dims;
+  let mouse = u.zoom_config.yz;
+  let time = u.config.x;
+  let aspect = dims.x / dims.y;
+  let audio = plasmaBuffer[0].xyz;
 
-    // Hex Coordinates
-    let r = vec2<f32>(1.0, 1.7320508);
-    let h = r * 0.5;
+  let scale = mix(8.0, 38.0, u.zoom_params.x);
+  let zoomAmount = mix(1.0, 4.5, u.zoom_params.y);
+  let rotation = u.zoom_params.z * 6.28318 + time * 0.25 * (0.2 + audio.y);
+  let mouseInfluence = u.zoom_params.w;
 
-    // Scale UV for grid
-    let uvScaled = uv * aspectVec * gridSize;
+  let axial = vec2<f32>(1.7320508, 1.0);
+  let uvAspect = vec2<f32>(uv.x * aspect, uv.y);
+  let scaled = uvAspect * scale;
 
-    let uvA = uvScaled / r;
-    let idA = floor(uvA + 0.5);
-    let uvB = (uvScaled - h) / r;
-    let idB = floor(uvB + 0.5);
+  let gridA = (fract(scaled / axial) - 0.5) * axial;
+  let idA = floor(scaled / axial);
+  let shifted = scaled - axial * 0.5;
+  let gridB = (fract(shifted / axial) - 0.5) * axial;
+  let idB = floor(shifted / axial);
 
-    let centerA = idA * r;
-    let centerB = idB * r + h;
+  let distA = dot(gridA, gridA);
+  let distB = dot(gridB, gridB);
+  let useB = distB < distA;
 
-    let distA = distance(uvScaled, centerA);
-    let distB = distance(uvScaled, centerB);
+  let local = select(gridA, gridB, useB);
+  let cellId = select(idA, idB + 0.5, useB);
+  let centerScaled = select((idA + 0.5) * axial, (idB + 0.5) * axial + axial * 0.5, useB);
+  let centerUV = vec2<f32>(centerScaled.x / scale / aspect, centerScaled.y / scale);
 
-    var center = select(centerB, centerA, distA < distB);
+  let mouseVec = (mouse - centerUV) * vec2<f32>(aspect, 1.0);
+  let mouseDist = length(mouseVec);
+  let influence = (1.0 - smoothstep(0.0, 0.55, mouseDist)) * mouseInfluence;
+  let hexMask = 1.0 - smoothstep(0.42, 0.52, length(local));
 
-    // Convert back to 0-1 space for distance to mouse
-    let centerUV = center / gridSize / aspectVec;
-    let centerScreen = centerUV * aspectVec;
-    let mouseScreen = mousePos * aspectVec;
+  let rotLocal = rotate(local, rotation * influence);
+  let zoom = mix(1.0, 1.0 / zoomAmount, influence);
+  let refractedScaled = centerScaled + rotLocal * zoom;
+  let refractedUV = clamp(vec2<f32>(refractedScaled.x / scale / aspect, refractedScaled.y / scale), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let distToMouse = distance(centerScreen, mouseScreen);
+  let split = rotate(vec2<f32>(0.006 + 0.010 * audio.z, 0.0), rotation) * influence;
+  let sampleR = clamp(refractedUV + split, vec2<f32>(0.0), vec2<f32>(1.0));
+  let sampleG = refractedUV;
+  let sampleB = clamp(refractedUV - split, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Mouse Interaction
-    // Influence 1 near mouse, 0 far
-    let influence = smoothstep(mouseRadius + 0.1, mouseRadius, distToMouse);
+  var finalColor = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, sampleR, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, sampleG, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, sampleB, 0.0).b
+  );
 
-    // Modulate Zoom and Rotation based on influence
-    // E.g. Near mouse, zoom increases, rotation spins
-    let currentZoom = baseZoom + influence * 1.0;
-    let currentRot = baseRot + influence * 3.14;
+  let rim = smoothstep(0.30, 0.50, length(local)) * hexMask;
+  let shimmer = hash32(cellId, time);
+  let honeyTint = mix(vec3<f32>(0.12, 0.75, 1.0), vec3<f32>(1.0, 0.45, 0.85), 0.35 + audio.x * 0.4);
+  finalColor = finalColor + honeyTint * (rim * (0.18 + 0.18 * shimmer) + influence * 0.10);
 
-    // Local UV within the hex
-    // Vector from hex center to current pixel
-    let localVec = uvScaled - center;
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, refractedUV, 0.0).r;
+  let depthOut = clamp(mix(baseDepth, baseDepth * 0.4 + influence * 0.5, 0.30), 0.0, 1.0);
+  let finalAlpha = clamp(0.70 + influence * 0.18 + rim * 0.10, 0.48, 0.98);
 
-    // Rotate localVec
-    let c = cos(currentRot);
-    let s = sin(currentRot);
-    let rotatedVec = vec2<f32>(
-        localVec.x * c - localVec.y * s,
-        localVec.x * s + localVec.y * c
-    );
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(influence, hexMask, rim, finalAlpha));
+}
 
-    // Scale localVec (Lens effect)
-    // If zoom > 1, we show smaller area (magnify). So we multiply UV delta by 1/zoom?
-    // No, if we want to magnify, we sample closer to center.
-    // sampleUV = center + localVec / zoom
-    let lensVec = rotatedVec / currentZoom;
-
-    // Map back to 0-1
-    let sampleUV = (center + lensVec) / gridSize / aspectVec;
-
-    // Mask edges of hex?
-    // Hex distance field for border?
-    // distA or distB is distance to center. Hex radius is 0.5 (in 'r' units approx).
-    // Let's just sample.
-
-    let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+fn hash32(p: vec2<f32>, time: f32) -> f32 {
+  let h = sin(dot(p, vec2<f32>(91.7, 313.1)) + time * 0.7) * 43758.5453;
+  return fract(h);
 }

@@ -3,7 +3,9 @@
 //  Category: generative
 //  Description: Photon-like particles race through the scene leaving glowing,
 //               fading trails that pulse with audio. Creates a breathing nebula.
-//  Features: audio-reactive, generative, mouse-driven
+//  Features: audio-reactive, generative, mouse-driven, temporal, chromatic, depth-aware
+//  Complexity: High
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -138,10 +140,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = col + vec3<f32>(1.0, 0.95, 0.9) * starBright * (0.5 + mids * 0.5);
     }
 
+    // Temporal feedback
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    col = mix(col, prev.rgb * 0.9, 0.03 + bass * 0.01);
+
+    // Chromatic dispersion: channel offsets modulated by audio
+    let cStr = 0.003 + bass * 0.005;
+    let cDir = normalize(uv - vec2<f32>(0.5) + 0.001);
+    let prevR = textureSampleLevel(dataTextureC, u_sampler, uv + cDir * cStr * (1.0 + mids), 0.0).r;
+    let prevG = textureSampleLevel(dataTextureC, u_sampler, uv + cDir * cStr * (0.5 + treble), 0.0).g;
+    let prevB = textureSampleLevel(dataTextureC, u_sampler, uv - cDir * cStr * (0.8 + bass * 0.5), 0.0).b;
+    col.r = mix(col.r, prevR * 0.9, 0.02 + treble * 0.01);
+    col.g = mix(col.g, prevG * 0.9, 0.02 + bass * 0.01);
+    col.b = mix(col.b, prevB * 0.9, 0.02 + mids * 0.01);
+
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(3.0));
 
     let alpha = clamp(totalGlow * 0.5 + coreGlow, 0.0, 1.0);
     let depth = 0.5 - coreDist * 0.3;
     textureStore(writeTexture, id.xy, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, id.xy, vec4<f32>(col, alpha));
 }

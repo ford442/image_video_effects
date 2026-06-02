@@ -4,10 +4,10 @@ import Controls from './components/Controls';
 import ShaderScanner from './components/ShaderScanner';
 import LiveStudioTab from './components/LiveStudioTab';
 import { StorageBrowser } from './components/StorageBrowser';
-import { Renderer } from './renderer/Renderer';
+import { RendererToggle } from './components/RendererToggle';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
-import { RendererType } from './renderer/RendererManager';
-import { Alucinate, AIStatus, ImageRecord, ShaderRecord } from './AutoDJ';
+import { RendererType, RendererManager } from './renderer/RendererManager';
+import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
 import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
@@ -20,6 +20,7 @@ import {
 } from './config/appConfig';
 import { fetchContentManifest, LoadedContent } from './services/contentLoader';
 import { VideoSegment, pickRandomSegment, hydrateDurations } from './services/videoSegmentManager';
+import { savePreset } from './services/vjPresets';
 import './style.css';
 
 // --- Webcam Fun Shaders ---
@@ -285,21 +286,55 @@ function MainApp() {
     const [supportsDeepWorkgroup, setSupportsDeepWorkgroup] = useState(false);
 
     // --- Refs ---
-    const rendererRef = useRef<Renderer | null>(null);
+    const rendererRef = useRef<RendererManager | null>(null);
+    const modesRef = useRef<RenderMode[]>(modes);
+    const availableModesRef = useRef<ShaderEntry[]>(availableModes);
 
     // --- Renderer backend state ---
     const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
+    const [jsFps, setJsFps] = useState(0);
+    const [wasmFps, setWasmFps] = useState(0);
+    const [isRendererSwitching, setIsRendererSwitching] = useState(false);
+
     const handleSwitchRenderer = useCallback(async (type: RendererType) => {
-        const manager = rendererRef.current as any;
-        if (!manager?.switchRenderer) return;
+        const manager = rendererRef.current;
+        if (!manager) return;
+
+        setIsRendererSwitching(true);
         setStatus(`Switching to ${type} renderer…`);
+
+        // Snapshot current FPS into the correct bucket before switching
+        const currentFps = manager.getCurrentFPS?.() ?? 0;
+        if (activeRendererType === 'webgpu' || activeRendererType === 'js') {
+            setJsFps(currentFps);
+        } else if (activeRendererType === 'wasm') {
+            setWasmFps(currentFps);
+        }
+
         const ok = await manager.switchRenderer(type);
+
         if (ok) {
             setActiveRendererType(type);
             setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
         } else {
             setStatus(`⚠️ Failed to switch to ${type} renderer — staying on ${activeRendererType}.`);
         }
+        setIsRendererSwitching(false);
+    }, [activeRendererType]);
+
+    // Poll real FPS from the active renderer and keep separate buckets for comparison
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const manager = rendererRef.current;
+            if (!manager) return;
+            const fps = manager.getCurrentFPS?.() ?? 0;
+            if (activeRendererType === 'wasm') {
+                setWasmFps(fps);
+            } else {
+                setJsFps(fps);
+            }
+        }, 800);
+        return () => clearInterval(interval);
     }, [activeRendererType]);
     const fileInputImageRef = useRef<HTMLInputElement>(null);
     const fileInputVideoRef = useRef<HTMLInputElement>(null);
@@ -312,6 +347,44 @@ function MainApp() {
     const webgpuCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
     // --- Helpers ---
+    useEffect(() => {
+        modesRef.current = modes;
+    }, [modes]);
+
+    useEffect(() => {
+        availableModesRef.current = availableModes;
+    }, [availableModes]);
+
+    const mapShaderParamUpdates = useCallback((slotParamsUpdates: Record<string, number>, slotIndex: number): Partial<SlotParams> => {
+        const shaderId = modesRef.current[slotIndex];
+        const shaderEntry = availableModesRef.current.find(m => m.id === shaderId);
+        if (!shaderEntry || !shaderEntry.params) return {};
+
+        const updates: Partial<SlotParams> = {};
+        for (const [key, value] of Object.entries(slotParamsUpdates)) {
+            const paramIndex = shaderEntry.params.findIndex(p => p.id === key);
+            if (paramIndex === 0) updates.zoomParam1 = value;
+            else if (paramIndex === 1) updates.zoomParam2 = value;
+            else if (paramIndex === 2) updates.zoomParam3 = value;
+            else if (paramIndex === 3) updates.zoomParam4 = value;
+        }
+        return updates;
+    }, []);
+
+    const handleApplyParamsDirect = useCallback((paramsList: Record<string, number>[]) => {
+        paramsList.forEach((slotParamsUpdates, slotIndex) => {
+            const updates = mapShaderParamUpdates(slotParamsUpdates, slotIndex);
+            if (Object.keys(updates).length > 0) {
+                rendererRef.current?.updateSlotParams({
+                    zoomParam1: updates.zoomParam1,
+                    zoomParam2: updates.zoomParam2,
+                    zoomParam3: updates.zoomParam3,
+                    zoomParam4: updates.zoomParam4,
+                }, slotIndex);
+            }
+        });
+    }, [mapShaderParamUpdates]);
+
     const setMode = useCallback(async (index: number, mode: RenderMode) => {
         // Guard: if a shader is already compiling on this slot, skip to prevent chaos-mode pile-up
         if (slotShaderStatusRef.current[index] === 'loading') return;
@@ -326,15 +399,15 @@ function MainApp() {
             slotShaderStatusRef.current[index] = 'idle';
             setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'idle'; return n; });
             // Tell the renderer to disable this slot so other slots keep running
-            if (rendererRef.current && typeof (rendererRef.current as any).setSlotShader === 'function') {
-                (rendererRef.current as any).setSlotShader(index, '');
+            if (rendererRef.current) {
+                rendererRef.current.setSlotShader(index, '');
             }
             return;
         }
 
         // Attempt to load & compile the shader, tracking status
         const shaderEntry = availableModes.find(s => s.id === mode);
-        if (shaderEntry && rendererRef.current && 'loadShader' in rendererRef.current) {
+        if (shaderEntry && rendererRef.current) {
             slotShaderStatusRef.current[index] = 'loading';
             setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'loading'; return n; });
 
@@ -344,15 +417,11 @@ function MainApp() {
                 let shaderUrl = shaderEntry.url;
                 
                 // Load the shader
-                const ok = await (rendererRef.current as any).loadShader(shaderEntry.id, shaderUrl);
+                const ok = await rendererRef.current.loadShader(shaderEntry.id, shaderUrl);
                 
                 // Activate the shader on the specified slot
                 if (ok && rendererRef.current) {
-                    if (typeof (rendererRef.current as any).setSlotShader === 'function') {
-                        (rendererRef.current as any).setSlotShader(index, shaderEntry.id);
-                    } else if (typeof (rendererRef.current as any).setActiveShader === 'function') {
-                        (rendererRef.current as any).setActiveShader(shaderEntry.id);
-                    }
+                    rendererRef.current.setSlotShader(index, shaderEntry.id);
                 }
                 
                 slotShaderStatusRef.current[index] = ok ? 'idle' : 'error';
@@ -418,22 +487,12 @@ function MainApp() {
 
     const handleUpdateParams = useCallback((paramsList: Record<string, number>[]) => {
         paramsList.forEach((slotParamsUpdates, slotIndex) => {
-            const shaderId = modes[slotIndex];
-            const shaderEntry = availableModes.find(m => m.id === shaderId);
-            if (!shaderEntry || !shaderEntry.params) return;
-            const updates: Partial<SlotParams> = {};
-            for (const [key, value] of Object.entries(slotParamsUpdates)) {
-                const paramIndex = shaderEntry.params.findIndex(p => p.id === key);
-                if (paramIndex === 0) updates.zoomParam1 = value;
-                else if (paramIndex === 1) updates.zoomParam2 = value;
-                else if (paramIndex === 2) updates.zoomParam3 = value;
-                else if (paramIndex === 3) updates.zoomParam4 = value;
-            }
+            const updates = mapShaderParamUpdates(slotParamsUpdates, slotIndex);
             if (Object.keys(updates).length > 0) {
                 updateSlotParam(slotIndex, updates);
             }
         });
-    }, [modes, availableModes, updateSlotParam]);
+    }, [mapShaderParamUpdates, updateSlotParam]);
 
     // --- EFFECT: Auto-Switch Generative Mode ---
     // This fixes the issue where generative mode wouldn't replace image/video input
@@ -748,6 +807,9 @@ function MainApp() {
                         tags: shaderEntry.tags || [],
                     } : null;
                     return { currentImage: imgRecord, currentShader: shaderRecord };
+                },
+                {
+                    applyParamsDirect: handleApplyParamsDirect,
                 }
             );
             vj.onStatusChange = (s, m) => { setAiVjStatus(s); setAiVjMessage(m); };
@@ -775,7 +837,7 @@ function MainApp() {
                 }
             }
         }
-    }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl, handleUpdateStack, handleUpdateParams]);
+    }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl, handleUpdateStack, handleUpdateParams, handleApplyParamsDirect]);
 
     const handleGenerateFromVibe = useCallback(async (vibe: string) => {
         if (!aiVj) {
@@ -783,6 +845,28 @@ function MainApp() {
             return;
         }
         await aiVj.generateFromVibe(vibe);
+    }, [aiVj]);
+
+    const handleRandomizeParams = useCallback(async () => {
+        if (!aiVj) return;
+        await aiVj.randomizeActiveParams();
+    }, [aiVj]);
+
+    const handleSavePreset = useCallback((name: string) => {
+        if (!aiVj) return;
+        const shaderIds = aiVj.getActiveShaderIds();
+        const params = aiVj.getCurrentParams();
+        if (shaderIds.length === 0 || params.length === 0) return;
+        savePreset(name, shaderIds, params);
+    }, [aiVj]);
+
+    const startAutoTransition = useCallback(async (config: AutoTransitionConfig) => {
+        if (!aiVj) return false;
+        return aiVj.startAutoTransition(config);
+    }, [aiVj]);
+
+    const stopAutoTransition = useCallback(() => {
+        aiVj?.stopAutoTransition();
     }, [aiVj]);
     
     const onInitCanvas = useCallback(() => {
@@ -805,17 +889,10 @@ function MainApp() {
             (window as any).__pixelocity__ = {
                 renderer: rendererRef.current,
                 setSlotShader: (index: number, id: string) => {
-                    const r = rendererRef.current as any;
-                    if (r && typeof r.setSlotShader === 'function') {
-                        r.setSlotShader(index, id);
-                    }
+                    rendererRef.current?.setSlotShader(index, id);
                 },
                 loadShader: async (id: string, url: string) => {
-                    const r = rendererRef.current as any;
-                    if (r && typeof r.loadShader === 'function') {
-                        return r.loadShader(id, url);
-                    }
-                    return false;
+                    return rendererRef.current?.loadShader(id, url) ?? false;
                 },
             };
         }
@@ -1466,6 +1543,10 @@ function MainApp() {
                         isAiVjMode={isAiVjMode} onToggleAiVj={toggleAiVj} aiVjStatus={aiVjStatus}
                         aiVjMessage={aiVjMessage} onGenerateFromVibe={handleGenerateFromVibe}
                         onUpdateStack={handleUpdateStack} onUpdateParams={handleUpdateParams}
+                        onRandomizeParams={handleRandomizeParams}
+                        onSavePreset={handleSavePreset}
+                        onStartAutoTransition={startAutoTransition}
+                        onStopAutoTransition={stopAutoTransition}
                         isWebcamActive={isWebcamActive}
                         onStartWebcam={startWebcam}
                         onStopWebcam={stopWebcam}
@@ -1512,9 +1593,11 @@ function MainApp() {
                     />
                     <div className="status-bar">
                         <span>{isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}</span>
+
+                        {/* Current Renderer Badge (clickable for cycling) */}
                         <span
                             className={`renderer-badge renderer-badge--${activeRendererType}`}
-                            title="Click to cycle renderer: WebGPU → C++ WASM → Canvas2D (or use Dev Tools)"
+                            title="Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)"
                             onClick={() => {
                                 const cycle: Record<RendererType, RendererType> = {
                                     webgpu: 'wasm',
@@ -1526,6 +1609,18 @@ function MainApp() {
                         >
                             {activeRendererType === 'wasm' ? '⚡ C++ WASM' : activeRendererType === 'js' ? '🎨 Canvas2D' : '🔷 WebGPU'}
                         </span>
+
+                        {/* FPS Comparison + Switch Toggle (JS WebGPU vs C++ WASM) */}
+                        <RendererToggle
+                            isWASM={activeRendererType === 'wasm'}
+                            onToggle={async (useWasm) => {
+                                const target: RendererType = useWasm ? 'wasm' : 'webgpu';
+                                await handleSwitchRenderer(target);
+                            }}
+                            isLoading={isRendererSwitching}
+                            jsFps={jsFps}
+                            wasmFps={wasmFps}
+                        />
                     </div>
                 </main>
             </div>

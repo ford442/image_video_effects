@@ -1,0 +1,43 @@
+{
+  "id": "gen-sierpinski-tetrahedron",
+  "name": "Sierpinski Tetrahedron",
+  "url": "shaders/gen-sierpinski-tetrahedron.wgsl",
+  "category": "generative",
+  "description": "3D Sierpinski tetrahedron rendered as a 2D projection with orbit trap coloring. Jewel-tone palette with metallic sheen, HDR specular highlights, and audio-reactive recursion depth.",
+  "tags": ["fractal", "sierpinski", "tetrahedron", "3d", "geometric", "jewel", "metallic"],
+  "features": ["audio-reactive", "mouse-driven", "temporal", "depth-aware"],
+  "params": [
+    {
+      "id": "recursion",
+      "name": "Recursion Depth",
+      "default": 0.45,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "rotation",
+      "name": "Rotation Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "perspective",
+      "name": "Perspective",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "chromatic",
+      "name": "Chromatic Aberration",
+      "default": 0.25,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

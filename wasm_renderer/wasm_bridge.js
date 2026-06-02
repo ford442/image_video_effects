@@ -9,6 +9,9 @@
 let wasmModule = null;
 let canvas = null;
 
+// Counter used to assign unique CSS IDs to canvas elements that lack one.
+let _canvasIdCounter = 0;
+
 // Renderer state
 const state = {
   initialized: false,
@@ -147,18 +150,27 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
     // Asyncify-suspended C++ function completes.  Without this, ccall returns 0
     // immediately when WASM suspends inside wgpuInstanceWaitAny (waiting for the
     // browser WebGPU adapter/device Promise), causing a false "init failed" error.
+
+    // Assign a stable CSS ID to the canvas so C++ can create the WebGPU surface.
+    if (!canvas.id) {
+      canvas.id = 'pixelocity-wasm-' + (++_canvasIdCounter);
+    }
+    const canvasSelector = '#' + canvas.id;
+
     const result = await wasmModule.ccall(
       'initWasmRenderer',
       'number',
-      ['number', 'number'],
-      [state.canvasWidth, state.canvasHeight],
+      ['number', 'number', 'string'],
+      [state.canvasWidth, state.canvasHeight, canvasSelector],
       { async: true }
     );
 
     state.initEndTime = performance.now();
 
     if (!result) {
-      const error = 'C++ initWasmRenderer returned 0 (device creation failed)';
+      const error = 'C++ initWasmRenderer returned 0 (likely Dawn adapter/device creation failed inside WASM). ' +
+                    'This is a known issue on some Windows + Chrome/Edge configurations with emdawnwebgpu. ' +
+                    'The JS WebGPU renderer is unaffected. Try forcing it via ?renderer=webgpu or the UI toggle.';
       console.error('[WASM]', error);
       state.lastLoadError = error;
       state.loadErrorCount++;

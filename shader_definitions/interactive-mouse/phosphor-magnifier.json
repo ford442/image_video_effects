@@ -2,11 +2,15 @@
   "id": "phosphor-magnifier",
   "label": "Phosphor Magnifier",
   "name": "Phosphor Magnifier",
+  "category": "interactive-mouse",
   "url": "shaders/phosphor-magnifier.wgsl",
   "icon": "search",
-  "description": "Simulates a CRT phosphor mask. Use mouse to magnify the screen pixels.",
+  "description": "P22 phosphor decay CRT magnifier with chromatic aberration, barrel distortion, shadow mask, scanline beats, HDR bloom, ACES tone mapping, and afterimage trails. Bass drives excitation, mouse positions lens, depth controls magnification power.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -39,7 +43,10 @@
     }
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "crt",
+    "phosphor",
+    "lens",
+    "retro",
+    "audio-reactive"
   ]
 }

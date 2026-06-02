@@ -1,8 +1,13 @@
-// ----------------------------------------------------------------
-// Crystalline Chrono-Dyson
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Crystalline Chrono-Dyson
+//  Category: generative
+//  Description: A colossal, self-assembling Dyson sphere constructed
+//               of hyper-refractive crystal panels and flowing plasma
+//               conduits orbiting an audio-reactive micro-quasar.
+//  Features: mouse-driven, audio-reactive, audio-driven, temporal, chromatic, depth-aware
+//  Complexity: High
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -86,7 +91,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
+    let uv01 = vec2<f32>(coords) / res;
     let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     var ro = vec3<f32>(0.0, 0.0, -5.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
@@ -142,10 +151,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = vec3<f32>(0.05, 0.05, 0.1) * hash3(rd).x;
     }
 
+    // Temporal feedback
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+    col = mix(col, prev.rgb * 0.9, 0.03 + bass * 0.01);
+
+    // Chromatic dispersion: channel offsets modulated by audio
+    let cStr = 0.003 + bass * 0.005;
+    let cDir = normalize(uv01 - vec2<f32>(0.5) + 0.001);
+    let prevR = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cStr * (1.0 + mids), 0.0).r;
+    let prevG = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cStr * (0.5 + treble), 0.0).g;
+    let prevB = textureSampleLevel(dataTextureC, u_sampler, uv01 - cDir * cStr * (0.8 + bass * 0.5), 0.0).b;
+    col.r = mix(col.r, prevR * 0.9, 0.02 + treble * 0.01);
+    col.g = mix(col.g, prevG * 0.9, 0.02 + bass * 0.01);
+    col.b = mix(col.b, prevB * 0.9, 0.02 + mids * 0.01);
+
     let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
     textureStore(writeTexture, coords, vec4<f32>(col, _alpha));
     let _depth_uv = clamp(vec2<f32>(coords) / res, vec2<f32>(0.0), vec2<f32>(1.0));
     let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
     textureStore(writeDepthTexture, coords, vec4<f32>(_depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, vec4<f32>(col, _alpha));
 }

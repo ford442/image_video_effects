@@ -1,0 +1,67 @@
+{
+  "id": "multi-scale-evolutionary-cellular-gardens",
+  "name": "Multi-Scale Evolutionary Cellular Gardens",
+  "url": "shaders/multi-scale-evolutionary-cellular-gardens.wgsl",
+  "category": "generative",
+  "description": "Two competing cellular species whose growth rules slowly evolve under audio pressure. The garden changes its fundamental behavior over time while remaining visually coherent.",
+  "features": [
+    "multi-state-ca",
+    "rule-evolution",
+    "audio-mutation",
+    "multi-scale",
+    "organic-growth",
+    "upgraded-rgba",
+    "chromatic-species",
+    "temporal-color-memory"
+  ],
+  "tags": [
+    "cellular-automata",
+    "evolutionary",
+    "organic",
+    "garden",
+    "audio-reactive",
+    "emergent"
+  ],
+  "params": [
+    {
+      "id": "mutationPressure",
+      "name": "Mutation Pressure",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "How quickly the growth rules evolve"
+    },
+    {
+      "id": "competition",
+      "name": "Species Competition",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "How fiercely the two species compete"
+    },
+    {
+      "id": "fertility",
+      "name": "Resource Fertility",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How much new resources appear"
+    },
+    {
+      "id": "mouseNurture",
+      "name": "Mouse Nurturing Power",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How much the mouse can locally boost growth"
+    }
+  ]
+}

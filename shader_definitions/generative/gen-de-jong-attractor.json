@@ -15,7 +15,10 @@
     "mouse-driven",
     "audio-reactive",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "chromatic-parameters",
+    "audio-morph-speed",
+    "depth-from-density"
   ],
   "params": [
     {

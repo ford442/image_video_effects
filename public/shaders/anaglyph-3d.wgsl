@@ -1,15 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Anaglyph 3D
-//  Category: visual-effects
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Low
-//  Description: Red-cyan stereoscopic anaglyph from a single camera feed.
-//    The red channel is sampled at a leftward offset and the cyan channels
-//    at a rightward offset, simulating parallax depth. Separation scales
-//    with depth proximity to the mouse cursor. Bass pulses the split width;
-//    mids tint the ghost fringing; mouse positions the focal centre.
+//  Category: image
+//  Features: depth-aware, upgraded-rgba, red-cyan, stereoscopic, audio-reactive,
+//            temporal-ghosting, chromatic-separation, mouse-focal-depth
+//  Complexity: Medium
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
-//  zoom_params: x=separation, y=depth_curve, z=ghost_strength, w=grain
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,76 +22,68 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config:      vec4<f32>,  // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>,  // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>,  // x=separation, y=depth_curve, z=ghost_strength, w=grain
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-fn hash21(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
-}
-
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let res   = u.config.zw;
-    if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
-    let coord = vec2<i32>(gid.xy);
-    let uv    = vec2<f32>(gid.xy) / res;
-    let time  = u.config.x;
-
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Base stereo separation (UV fraction) — bass expands it
-    let sepBase  = 0.004 + u.zoom_params.x * 0.024;
-    let sep      = sepBase * (1.0 + bass * 0.6);
-
-    // Depth curve: distance from mouse focal point changes per-pixel separation
-    let mouse    = u.zoom_config.yz;
-    let aspect   = res.x / res.y;
-    let toMouse  = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist     = clamp(length(toMouse), 0.0, 1.0);
-    let curve    = 0.5 + u.zoom_params.y * 2.5;  // depth falloff
-    let localSep = sep * (0.3 + pow(dist, curve) * 1.4);
-
-    // Ghost fringing strength (secondary echo at wider separation)
-    let ghostStr = u.zoom_params.z * 0.35 * (1.0 + mids * 0.5);
-
-    // Sample red channel left-shifted, cyan (GB) channels right-shifted
-    let uvL  = clamp(uv - vec2<f32>(localSep, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvR  = clamp(uv + vec2<f32>(localSep, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvL2 = clamp(uv - vec2<f32>(localSep * 1.6, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvR2 = clamp(uv + vec2<f32>(localSep * 1.6, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-
-    let sL  = textureSampleLevel(readTexture, u_sampler, uvL, 0.0);
-    let sR  = textureSampleLevel(readTexture, u_sampler, uvR, 0.0);
-    let sL2 = textureSampleLevel(readTexture, u_sampler, uvL2, 0.0);
-    let sR2 = textureSampleLevel(readTexture, u_sampler, uvR2, 0.0);
-
-    // Anaglyph combine: red eye = left, cyan eye = right
-    var r = sL.r + ghostStr * sL2.r;
-    var g = sR.g + ghostStr * sR2.g;
-    var b = sR.b + ghostStr * sR2.b;
-
-    // Mids add a warm tint to the left ghost and cool to right
-    r = clamp(r * (1.0 + mids * 0.15), 0.0, 1.0);
-    g = clamp(g, 0.0, 1.0);
-    b = clamp(b * (1.0 + treble * 0.1), 0.0, 1.0);
-
-    // Film grain
-    let grainAmt = u.zoom_params.w * 0.06;
-    let grain    = (hash21(uv * 7139.3 + vec2<f32>(fract(time), fract(time * 1.7))) - 0.5) * grainAmt;
-    let rgb      = clamp(vec3<f32>(r, g, b) + grain, vec3<f32>(0.0), vec3<f32>(1.0));
-
-    // Alpha: stronger at separation edges (the 3D "depth" regions)
-    let src   = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let luma  = dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(src.a * 0.6 + luma * 0.5 + bass * 0.1, 0.0, 1.0);
+    let separation = u.zoom_params.x * 0.04 * (1.0 + bass * 0.15);
+    let depthCurve = u.zoom_params.y;
+    let ghostAmount = u.zoom_params.z;
+    let grainAmount = u.zoom_params.w;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeTexture, coord, vec4<f32>(rgb, alpha));
-    textureStore(dataTextureA, coord, vec4<f32>(rgb, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let mouse = u.zoom_config.yz;
+    let mouseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, mouse, 0.0).r;
+
+    // Mouse focal depth curve refinement
+    let focalDepth = mix(mouseDepth, 0.5, 0.3);
+    let depthOffset = depthCurve * (depth - focalDepth) * 2.0;
+    let shift = separation * depthOffset;
+
+    let rUV = clamp(uv + vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let cUV = clamp(uv - vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+
+    var color = vec3<f32>(0.0);
+    color.r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
+    color.g = textureSampleLevel(readTexture, u_sampler, cUV, 0.0).g;
+    color.b = textureSampleLevel(readTexture, u_sampler, cUV, 0.0).b;
+
+    // Ghost fringing: R/C offset residual trails
+    let ghostShift = separation * depthOffset * 0.5;
+    let ghostR = textureSampleLevel(readTexture, u_sampler, clamp(rUV + vec2<f32>(ghostShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r * 0.5;
+    let ghostC = textureSampleLevel(readTexture, u_sampler, clamp(cUV - vec2<f32>(ghostShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g * 0.5;
+    color.r = color.r + ghostR * ghostAmount;
+    color.g = color.g + ghostC * ghostAmount;
+
+    // Chromatic separation enhancement per depth
+    let chromaBoost = smoothstep(0.0, 1.0, abs(depth - focalDepth)) * treble * 0.2;
+    color.r = color.r * (1.0 + chromaBoost);
+    color.g = color.g * (1.0 - chromaBoost * 0.3);
+    color.b = color.b * (1.0 - chromaBoost * 0.1);
+
+    let grain = fract(sin(dot(uv * time * 0.01, vec2<f32>(12.9898, 78.233))) * 43758.5453) - 0.5;
+    color = color + grain * grainAmount * 0.1;
+
+    // Temporal ghost persistence
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    color = mix(color, prev * 0.9, 0.04 + mids * 0.01);
+
+    let baseAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+    let finalAlpha = mix(baseAlpha, 1.0, separation * 0.3);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(color, finalAlpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0, 0, 1));
 }

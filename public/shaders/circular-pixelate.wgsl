@@ -34,6 +34,22 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
+// ═══ UNIQUE VISUAL IDEA: hexagonal honeycomb packing ═══
+// Square grids waste space between circular dots. A hex lattice packs circles
+// optimally (fly's-eye / honeycomb / real printing screen). getHex returns the
+// offset from the nearest hex center (.xy) and that center's cell id (.zw).
+const HEX_S: vec2<f32> = vec2<f32>(1.0, 1.7320508);
+fn getHex(p: vec2<f32>) -> vec4<f32> {
+  let centerA = round(p / HEX_S);
+  let centerB = round((p - HEX_S * 0.5) / HEX_S) + 0.5;
+  let offA = p - centerA * HEX_S;
+  let offB = p - centerB * HEX_S;
+  if (dot(offA, offA) < dot(offB, offB)) {
+    return vec4<f32>(offA, centerA);
+  }
+  return vec4<f32>(offB, centerB);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -54,12 +70,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let cell_count_x = cells;
   let cell_count_y = cells / max(aspect, 0.001);
 
+  // Hexagonal lattice instead of a square grid — honeycomb dot packing.
   let grid_uv = uv * vec2<f32>(cell_count_x, cell_count_y);
-  let cell_id = floor(grid_uv);
-  let cell_local = fract(grid_uv) - 0.5;
-  let dist = length(cell_local);
+  let hex = getHex(grid_uv);
+  let cell_id = hex.zw;
+  let cell_local = hex.xy;
+  // Hex inradius is ~0.5; scale so dot sizing matches the old square-cell feel.
+  let dist = length(cell_local) * 1.15;
 
-  let sample_uv = (cell_id + 0.5) / vec2<f32>(cell_count_x, cell_count_y);
+  let sample_uv = (cell_id * HEX_S) / vec2<f32>(cell_count_x, cell_count_y);
   let color = textureSampleLevel(readTexture, u_sampler, clamp(sample_uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
   let orig = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

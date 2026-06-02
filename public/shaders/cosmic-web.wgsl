@@ -135,6 +135,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = mix(colVoid, colFilament, density);
     color = mix(color, colCore, smoothstep(0.8, 1.0, density));
 
+    // ═══ UNIQUE VISUAL IDEA: galaxy clusters at filament nodes + galaxy field ═══
+    // (1) Cluster nodes — where filaments intersect (the web is densest AND a Voronoi
+    //     vertex, so F1 is small), gravity has pulled matter into a bright cluster.
+    //     Real clusters glow warm (old red/yellow stars) vs the cool filament gas.
+    let nodeMetric = smoothstep(0.35, 0.0, f1) * density;
+    let clusterColor = vec3<f32>(1.0, 0.85, 0.6);
+    color = color + clusterColor * pow(nodeMetric, 2.0) * 1.3;
+
+    // (2) Galaxy point field — the filaments are strung with countless galaxies.
+    //     Tile space, drop a jittered galaxy per cell, twinkle it over time, and gate
+    //     its visibility by the local web density so galaxies trace the structure.
+    let gScale = 38.0;
+    let gCell = floor(uv * gScale);
+    let gRand = hash3(vec3<f32>(gCell, 1.0));
+    let gPos = (gCell + gRand.xy) / gScale;
+    let gd = length((uv - gPos) * vec2<f32>(resolution.x / resolution.y, 1.0));
+    let twinkle = 0.6 + 0.4 * sin(time * 3.0 + gRand.z * 6.28);
+    let galaxy = smoothstep(0.006, 0.0, gd) * step(0.55, gRand.z) * twinkle * density;
+    // Galaxy tint varies from cool blue (young) to warm gold (old) per-galaxy.
+    let gTint = mix(vec3<f32>(0.7, 0.85, 1.0), vec3<f32>(1.0, 0.9, 0.7), gRand.x);
+    color = color + gTint * galaxy * 1.5;
+
     // Output
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 

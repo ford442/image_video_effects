@@ -1,13 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Warp Drive with Alpha Physics
-//  Scientific: Radial blur with relativistic motion effects and light transmission
-//  
-//  ALPHA PHYSICS:
-//  - Radial motion creates Doppler-like intensity shifts
-//  - Motion blur accumulates alpha along light path
-//  - Chromatic aberration separates channels with different opacities
-//  - Center glow adds emission-based alpha
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Warp Drive v2
+//  Category: visual-effects
+//  Features: audio-reactive, upgraded-rgba, radial-blur, mouse-driven
+//  Complexity: High
+//  Chunks From: warp_drive
+//  Created: 2026-05-31
+//  By: 4-Agent Shader Upgrade Swarm
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -24,134 +23,107 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=Ripples, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // Params
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
-// Calculate Doppler-like factor for motion
-fn calculateDopplerFactor(percent: f32, intensity: f32) -> f32 {
-    // Approaching (toward center) = blueshift = brighter
-    // Receding would be redshift, but we're doing radial blur inward
-    return 1.0 + intensity * percent * 0.5;
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = vec3<f32>(2.51);
+  let b = vec3<f32>(0.03);
+  let c = vec3<f32>(2.43);
+  let d = vec3<f32>(0.59);
+  let e = vec3<f32>(0.14);
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Calculate motion blur alpha accumulation
-fn calculateMotionAlpha(
-    sampleAlpha: f32,
-    weight: f32,
-    sampleIndex: f32,
-    totalSamples: f32,
-    decay: f32
-) -> f32 {
-    // Earlier samples (closer to original) have more weight
-    let distanceFactor = 1.0 - (sampleIndex / totalSamples);
-    
-    // Decay reduces alpha contribution along the path
-    let decayFactor = pow(decay, sampleIndex);
-    
-    // Combined alpha contribution
-    return sampleAlpha * weight * decayFactor * (0.5 + distanceFactor * 0.5);
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  let k = vec2<f32>(0.3183099, 0.3678794);
+  var h = fract(p * k);
+  h = h - floor(h);
+  return fract(h * 17.0);
 }
 
-// Chromatic aberration alpha calculation for motion
-fn calculateMotionChromaticAlpha(
-    baseAlpha: f32,
-    percent: f32,
-    aberration: f32,
-    channel: i32
-) -> f32 {
-    // Motion causes wavelength-dependent scattering
-    let wavelengthFactor = vec3<f32>(0.9, 1.0, 1.1); // R, G, B scattering
-    let scatter = percent * aberration * wavelengthFactor[channel];
-    
-    return clamp(baseAlpha - scatter * 0.3, 0.4, 1.0);
+fn vignette(uv: vec2<f32>, strength: f32) -> f32 {
+  let d = length(uv - 0.5);
+  return 1.0 - smoothstep(0.3, 0.8, d) * strength;
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let dims = u.config.zw;
+  if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) {
+    return;
+  }
 
-    // Parameters
-    // x: Warp Intensity (0.0 to 1.0)
-    // y: Aberration Strength (0.0 to 1.0)
-    // z: Center Brightness (0.0 to 1.0)
-    // w: Samples (Step count) - mapped to e.g. 10 to 50
+  let uv = vec2<f32>(gid.xy) / dims;
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    let intensity = u.zoom_params.x * 0.2;
-    let aberration = u.zoom_params.y * 0.05;
-    let brightness = u.zoom_params.z * 2.0;
-    let samples = i32(u.zoom_params.w * 30.0 + 5.0);
+  let warpFactor = mix(1.0, 10.0, u.zoom_params.x + bass * 0.4);
+  let prismSplit = mix(0.0, 0.04, u.zoom_params.y);
+  let coreGlow = mix(0.05, 1.0, u.zoom_params.z);
+  let blurQuality = i32(mix(6.0, 18.0, u.zoom_params.w));
+  let starDensity = mix(12.0, 40.0, depth);
 
-    var mouse = u.zoom_config.yz;
+  let center = mouse + vec2<f32>(sin(time * 0.3) * 0.04, cos(time * 0.25) * 0.03);
+  let dir = uv - center;
+  let dist = length(dir);
+  let dirSafe = dir / max(dist, 1e-4);
+  let angle = atan2(dirSafe.y, dirSafe.x);
 
-    // Vector from pixel to mouse
-    var dir = mouse - uv;
-    let dist = length(dir);
+  var accum = vec3<f32>(0.0);
+  var weightSum = 0.0;
+  var dopplerSum = 0.0;
 
-    var colorSum = vec3<f32>(0.0);
-    var alphaSum = 0.0;
-    var totalWeight = 0.0;
+  for (var i: i32 = 0; i < blurQuality; i = i + 1) {
+    let t = f32(i) / max(f32(blurQuality - 1), 1.0);
+    let alcubierre = select(-0.35 * warpFactor, 0.55 * warpFactor, t > 0.5);
+    let offset = dir * (0.015 + warpFactor * 0.018) * t * (1.0 + dist * 2.0 + alcubierre * dist);
+    let split = dirSafe * prismSplit * t * warpFactor;
+    let sampleUV = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Dithering to break up banding
-    let noise = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
-    let decay = 0.95;
+    let starN = hash22(vec2<f32>(f32(i) * 7.3 + time * 0.1, angle * starDensity));
+    let star = smoothstep(0.97, 0.995, starN.x) * starN.y * (0.5 + bass * 0.5);
+    let streak = star * pow(max(0.0, 1.0 - t), 2.0) * coreGlow;
 
-    for (var i = 0; i < samples; i++) {
-        let percent = (f32(i) + noise) / f32(samples);
-        let weight = 1.0 - percent;
+    let doppler = select(vec3<f32>(1.0 + warpFactor * 0.08, 1.0 - warpFactor * 0.02, 0.85 - warpFactor * 0.05),
+                         vec3<f32>(0.7 - warpFactor * 0.03, 0.9, 1.0 + warpFactor * 0.06), dirSafe.x > 0.0);
+    let w = mix(1.0, 0.12, t);
+    accum = accum + (vec3<f32>(r, g, b) + vec3<f32>(streak)) * doppler * w;
+    weightSum = weightSum + w;
+    dopplerSum = dopplerSum + length(doppler - vec3<f32>(1.0)) * w;
+  }
 
-        let samplePos = uv + dir * percent * intensity;
+  var finalColor = accum / max(weightSum, 1e-4);
+  let velocity = warpFactor * (1.0 - dist * 1.4);
+  let ca = smoothstep(2.0, 8.0, velocity);
+  let caShift = dirSafe * ca * 0.012;
+  let caR = textureSampleLevel(readTexture, u_sampler, clamp(uv + caShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let caB = textureSampleLevel(readTexture, u_sampler, clamp(uv - caShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  finalColor = vec3<f32>(mix(finalColor.r, caR, ca), finalColor.g, mix(finalColor.b, caB, ca));
 
-        // Chromatic Aberration: sample channels at slightly different offsets
-        let rPos = samplePos + dir * aberration * percent;
-        let bPos = samplePos - dir * aberration * percent;
+  let starburst = pow(max(0.0, 1.0 - dist * 2.0), 3.0) * (coreGlow * 0.4 + mids * 0.3);
+  let tint = mix(vec3<f32>(0.15, 0.55, 1.0), vec3<f32>(1.0, 0.35, 0.7), 0.5 + 0.5 * sin(time * 0.5));
+  finalColor = finalColor + tint * starburst;
+  finalColor = acesToneMap(finalColor * 1.2);
+  finalColor = finalColor * vignette(uv, 0.25);
 
-        let sampleR = textureSampleLevel(readTexture, u_sampler, rPos, 0.0);
-        let sampleG = textureSampleLevel(readTexture, u_sampler, samplePos, 0.0);
-        let sampleB = textureSampleLevel(readTexture, u_sampler, bPos, 0.0);
+  let srcAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+  let dopplerMag = dopplerSum / max(weightSum, 1e-4);
+  let warpIntensity = smoothstep(1.0, 10.0, warpFactor);
+  let finalAlpha = clamp(warpIntensity * dopplerMag * depth + srcAlpha * 0.2 + starburst * 0.3, 0.06, 0.98);
+  let outDepth = clamp(mix(depth, 0.12 + starburst * 0.75, 0.22), 0.0, 1.0);
 
-        // Doppler factor for intensity
-        let doppler = calculateDopplerFactor(percent, intensity);
-
-        // Per-channel alphas
-        let alphaR = calculateMotionChromaticAlpha(sampleR.a, percent, aberration, 0);
-        let alphaG = calculateMotionChromaticAlpha(sampleG.a, percent, aberration, 1);
-        let alphaB = calculateMotionChromaticAlpha(sampleB.a, percent, aberration, 2);
-        
-        // Accumulate color with alpha weighting
-        let sampleColor = vec3<f32>(sampleR.r, sampleG.g, sampleB.b) * doppler;
-        let sampleAlpha = (alphaR + alphaG + alphaB) / 3.0;
-        
-        // Motion blur alpha accumulation
-        let blurAlpha = calculateMotionAlpha(sampleAlpha, weight, f32(i), f32(samples), decay);
-
-        colorSum += sampleColor * weight * blurAlpha;
-        alphaSum += blurAlpha;
-        totalWeight += weight;
-    }
-
-    var finalColor = colorSum / totalWeight;
-    var finalAlpha = alphaSum / totalWeight;
-
-    // Add center brightness (bloom/engine glow)
-    let distAspect = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
-    let glow = exp(-distAspect * 5.0) * brightness;
-    
-    finalColor += vec3<f32>(glow * 0.8, glow * 0.9, glow * 1.0);
-    // Glow adds to alpha
-    finalAlpha = min(finalAlpha + glow * 0.3, 1.0);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-
-    // Passthrough depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(dist, warpFactor * 0.1, dopplerMag, finalAlpha));
 }

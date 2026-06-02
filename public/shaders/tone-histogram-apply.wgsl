@@ -51,7 +51,7 @@ fn main(
   @builtin(local_invocation_index) lidx: u32,
 ) {
   let res = u.config.zw;
-  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
+  let inBounds = gid.x < u32(res.x) && gid.y < u32(res.y);
 
   let uv = (vec2<f32>(gid.xy) + 0.5) / res;
   let coord = vec2<i32>(gid.xy);
@@ -76,8 +76,8 @@ fn main(
     }
 
     let meanLuma = clamp((weighted / totalPixels) / 255.0, 0.001, 1.0);
-    let target = mix(0.35, 0.65, clamp(u.zoom_params.x, 0.0, 1.0));
-    let exposure = clamp(target / meanLuma, 0.5, 3.5);
+    let targetLum = mix(0.35, 0.65, clamp(u.zoom_params.x, 0.0, 1.0));
+    let exposure = clamp(targetLum / meanLuma, 0.5, 3.5);
 
     let tonalSpan = max(4.0, f32(max(1u, p95 - p05)));
     let contrast = mix(0.85, 1.55, clamp(u.zoom_params.y, 0.0, 1.0)) * (255.0 / tonalSpan);
@@ -109,9 +109,11 @@ fn main(
 
   let outColor = hsv2rgb(hsv);
 
-  textureStore(writeTexture, coord, vec4<f32>(outColor, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(wgExposure / 3.5, wgMeanLuma, wgPeakBinNorm, wgSaturation));
+  if (inBounds) {
+    textureStore(writeTexture, coord, vec4<f32>(outColor, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(wgExposure / 3.5, wgMeanLuma, wgPeakBinNorm, wgSaturation));
 
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  }
 }

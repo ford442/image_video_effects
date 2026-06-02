@@ -1,9 +1,12 @@
 {
   "id": "cmyk-halftone-interactive",
   "name": "CMYK Halftone Interactive",
+  "category": "interactive-mouse",
   "url": "shaders/cmyk-halftone-interactive.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -36,7 +39,9 @@
     }
   ],
   "tags": [
-    "filter",
-    "image-processing"
+    "cmyk",
+    "halftone",
+    "print",
+    "audio-reactive"
   ]
 }

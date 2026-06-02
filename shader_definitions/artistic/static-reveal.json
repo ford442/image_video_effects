@@ -1,13 +1,17 @@
 {
   "id": "static-reveal",
   "name": "Static Reveal",
-  "url": "shaders/static-reveal.wgsl",
-  "description": "The screen is covered in static noise. Scratch with the mouse to reveal the video underneath.",
+  "url": "/shaders/static-reveal.wgsl",
+  "category": "artistic",
+  "description": "Multi-layer temporal static grain with chromatic displacement and depth-reactive decay. Fine + coarse noise layers plus per-channel chromatic shift driven by treble. Mouse scratches reveal video; bass intensifies static flicker.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven",
-    "upgraded-rgba"
+    "multi-layer-static",
+    "chromatic-displacement",
+    "upgraded-rgba",
+    "temporal",
+    "film-grain"
   ],
   "params": [
     {
@@ -44,6 +48,10 @@
     "image-processing",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "static",
+    "film-grain",
+    "reveal",
+    "chromatic"
   ]
 }

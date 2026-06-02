@@ -1,0 +1,74 @@
+{
+  "batch_name": "Batch 1 — Image/Video Effects (Easiest)",
+  "count": 10,
+  "category": "image",
+  "selection_criteria": [
+    "Standard @workgroup_size(16, 16, 1)",
+    "Already include plasmaBuffer and readDepthTexture",
+    "Missing 2+ of: ACES tone mapping, chromatic aberration, dataTextureC feedback",
+    "Hardcoded alpha = 1.0 (easy semantic-alpha fix)",
+    "Under 170 lines"
+  ],
+  "shaders": [
+    {
+      "id": "heat-haze-mirage",
+      "lines": 119,
+      "missing": ["ACES", "chromatic", "dataTextureC"],
+      "notes": "Atmospheric heat distortion — add ACES + chromatic on distortion edges + temporal heat shimmer"
+    },
+    {
+      "id": "color-channel-weave",
+      "lines": 122,
+      "missing": ["ACES", "chromatic", "dataTextureC"],
+      "notes": "RGB channel weaving — chromatic aberration is a natural fit here"
+    },
+    {
+      "id": "neon-pulse-dissolve",
+      "lines": 125,
+      "missing": ["ACES", "chromatic", "dataTextureC"],
+      "notes": "Neon dissolve with pulse — add audio-reactive pulse + temporal persistence"
+    },
+    {
+      "id": "scanline-cyberpunk",
+      "lines": 126,
+      "missing": ["ACES", "chromatic", "dataTextureC"],
+      "notes": "CRT scanlines — add ACES + chromatic on scanline gaps + temporal phosphor persistence"
+    },
+    {
+      "id": "watercolor-bloom",
+      "lines": 126,
+      "missing": ["ACES", "chromatic", "dataTextureC"],
+      "notes": "Watercolor effect — add ACES + chromatic on wet edges + temporal pigment bleed"
+    },
+    {
+      "id": "oil-slick-iridescence",
+      "lines": 131,
+      "missing": ["ACES", "chromatic", "dataTextureC"],
+      "notes": "Oil slick colors — chromatic aberration will enhance iridescence beautifully"
+    },
+    {
+      "id": "pixel-tornado",
+      "lines": 142,
+      "missing": ["ACES", "chromatic", "dataTextureC"],
+      "notes": "Pixel swirl tornado — add ACES + chromatic on spiral arms + temporal trail"
+    },
+    {
+      "id": "spec-cooperative-edge-linking",
+      "lines": 149,
+      "missing": ["ACES", "chromatic", "dataTextureC"],
+      "notes": "Edge linking filter — add ACES + chromatic on linked edges + temporal edge accumulation"
+    },
+    {
+      "id": "frost-reveal",
+      "lines": 163,
+      "missing": ["ACES", "chromatic", "dataTextureC"],
+      "notes": "Frost crystal reveal — add ACES + chromatic on crystal facets + temporal frost growth"
+    },
+    {
+      "id": "slime-drip",
+      "lines": 167,
+      "missing": ["ACES", "chromatic", "dataTextureC"],
+      "notes": "Slime drip distortion — add ACES + chromatic on drip meniscus + temporal viscosity"
+    }
+  ]
+}

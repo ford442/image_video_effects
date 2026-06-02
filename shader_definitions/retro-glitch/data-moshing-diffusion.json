@@ -1,0 +1,59 @@
+{
+  "id": "data-moshing-diffusion",
+  "name": "Data Moshing Diffusion",
+  "url": "shaders/data-moshing-diffusion.wgsl",
+  "category": "advanced-hybrid",
+  "description": "Data moshing with anisotropic diffusion, chromatic per-channel diffusion offsets, audio-reactive smear strength, temporal smear persistence, and mouse swirl injection.",
+  "tags": [
+    "glitch",
+    "data-mosh",
+    "diffusion",
+    "anisotropic",
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "smearStrength",
+      "name": "Smear Strength",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "kappa",
+      "name": "Diffusion Kappa",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "dt",
+      "name": "Time Step",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "quantize",
+      "name": "Quantize",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

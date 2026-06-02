@@ -5165,6 +5165,397 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for evaluating metallic rendering applied to chaotic fluid dynamics, massive scale, and intense internal lighting.
 
+### Suggestion: Bismuth Exoplanet Core
+- **Date:** 2026-11-07
+- **Prompt:** "A hyper-detailed, surreal depiction of an exoplanet core entirely composed of giant, geometric bismuth crystals. The subject features stepped, iridescent hopper crystal structures that form vast metallic canyons. The lighting is ethereal, glowing from internal fractures with intensely bright rainbow colors that reflect off the sharply angled metallic surfaces. The mood is otherworldly, serene, and majestic. Captured as a sweeping landscape view to emphasize the colossal scale of the crystalline formations."
+- **Negative prompt:** "organic, round, dull, earth-like, low resolution, blurry"
+- **Tags:** sci-fi, landscape, surreal, 3D, ethereal, bright
+- **Style / Reference:** 3D fractal art, hyper-realistic macro photography scaled up
+- **Composition:** wide sweeping landscape, low horizon
+- **Color palette:** iridescent pinks, blues, golds, and greens
+- **Aspect ratio:** 21:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex geometric refraction, metallic iridescence, and sharp angular shadows.
+
+### Suggestion: Aerogel Beehive
+- **Date:** 2026-11-07
+- **Prompt:** "A photorealistic macro shot of a futuristic beehive constructed entirely from ultra-lightweight, translucent blue aerogel. The subject shows glowing, robotic bees with delicate brass wings tending to glowing golden nectar stored within the hexagonal aerogel cells. The lighting is bright and whimsical, with sunlight passing through the cloudy, ghost-like aerogel to scatter soft blue light across the warm amber honey. The mood is peaceful, innovative, and warm. Captured with a specialized macro lens, highlighting the stark contrast between the milky aerogel and the sharp, precise machinery of the bees."
+- **Negative prompt:** "traditional wood, dark, gloomy, out of focus, artificial lighting"
+- **Tags:** solarpunk, macro, photorealistic, bright, whimsical
+- **Style / Reference:** photorealistic macro photography, high-tech nature concept
+- **Composition:** extreme close-up, shallow depth of field, rule of thirds
+- **Color palette:** translucent ghostly blue, warm amber, bright gold
+- **Aspect ratio:** 4:5
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Tests subsurface scattering, translucent materials, and the interaction of warm and cool lighting.
+
+### Suggestion: Mother of Pearl Orbital Ring
+- **Date:** 2026-11-07
+- **Prompt:** "A cinematic, wide-angle view of a colossal orbital ring megastructure suspended above an ocean planet, constructed entirely from iridescent, polished mother of pearl. The subject curves elegantly across the sky, reflecting the planet's vast blue oceans and white clouds in its shimmering, pearlescent surface. The lighting is bright and ethereal, illuminated by a distant white sun that catches the micro-ridges of the nacre, throwing prismatic rainbows into the void of space. The mood is majestic, peaceful, and awe-inspiring. Captured from low earth orbit to emphasize the massive architectural curve."
+- **Negative prompt:** "dark, gritty, industrial, rusty, lowres, busy"
+- **Tags:** sci-fi, architecture, cinematic, bright, ethereal
+- **Style / Reference:** grand sci-fi cinematic concept art, clean utopia
+- **Composition:** sweeping diagonal curve, immense scale
+- **Color palette:** pearlescent whites, soft pinks and greens, deep space blue
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Useful for evaluating large-scale iridescent reflections and clean, utopian lighting models.
+
+### Suggestion: Damascus Steel Tsunami
+- **Date:** 2026-11-07
+- **Prompt:** "An abstract, dark fantasy landscape where a towering tsunami wave is frozen in time, sculpted from dark, rippling Damascus steel. The subject features intricate, wavy metallic woodgrain patterns that flow seamlessly into the terrifying curl of the wave. The lighting is moody and dramatic, with a solitary, pale moonlight glinting off the polished, dark metal ridges, casting deep black shadows in the troughs. The mood is ominous, powerful, and surreal. Captured from a low angle on a desolate shoreline, emphasizing the heavy, crushing weight of the metallic ocean."
+- **Negative prompt:** "water, liquid, foam, blue, daytime, soft"
+- **Tags:** fantasy, landscape, abstract, moody, dark
+- **Style / Reference:** dark fantasy sculpture, abstract metal art
+- **Composition:** imposing foreground, low angle, dramatic silhouette
+- **Color palette:** dark metallic grays, silver highlights, pitch black
+- **Aspect ratio:** 16:9
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Challenges the generator to apply detailed metallurgical patterns to complex, organic fluid shapes.
+
+### Suggestion: Tweed Ashcan School Interior
+- **Date:** 2026-11-07
+- **Prompt:** "A painterly, Ashcan School-style depiction of a dimly lit, retro 1920s speakeasy, but the entire interior—including the walls, tables, and even the drinks—is textured like woven wool tweed. The subject reveals heavy, coarse fabric patterns intersecting with gritty urban life. The lighting is moody and low-key, with a single, hazy overhead lamp casting long, textured shadows across the herringbone floor. The mood is nostalgic, melancholic, and cozy yet gritty. Captured from a wide corner perspective, highlighting the claustrophobic and textile-heavy environment."
+- **Negative prompt:** "smooth surfaces, modern, bright, photorealistic, clean"
+- **Tags:** retro, noir, interior, painterly, moody
+- **Style / Reference:** Ashcan School painting, heavy brushstrokes, textile art
+- **Composition:** corner view, deep shadows, intimate framing
+- **Color palette:** muted browns, charcoal grays, deep olive, warm sepia
+- **Aspect ratio:** 4:3
+- **Reference images:** none
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing unconventional texture mapping and moody, painterly light diffusion over rough surfaces.
+
+### Suggestion: Neon-Soaked Solarpunk Cityscape
+- **Date:** 2026-05-18
+- **Prompt:** "A wide-angle, cinematic view of a solarpunk city at dusk. The architecture features sweeping, organic curves covered in lush, overgrown vines and glowing bio-luminescent moss. Warm, golden hour sunlight reflects off massive glass solar panels, contrasting with soft, cool blue neon lights activating in the lower streets. The mood is peaceful yet vibrant. Captured with a 24mm lens to emphasize the grand scale of the towering, eco-friendly skyscrapers against a pastel sky."
+- **Negative prompt:** "dystopian, pollution, smog, cars, grim, dark, blurry"
+- **Tags:** solarpunk, architecture, photorealistic, cinematic
+- **Style / Reference:** photorealistic, highly detailed matte painting
+- **Composition:** wide shot, grand scale, low angle
+- **Color palette:** warm golds, lush greens, soft cool blues
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_solarpunk-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing organic architecture and balanced warm/cool lighting.
+
+### Suggestion: Abandoned Gothic Library
+- **Date:** 2026-05-18
+- **Prompt:** "The interior of a massive, ruined Gothic library lit by ethereal moonlight streaming through a shattered stained-glass window. Dust motes float in the volumetric light shafts. Ancient, leather-bound books are scattered across a cracked marble floor overgrown with pale, twisting roots. The mood is dark, moody, and deeply atmospheric. Shot with a 35mm lens with a shallow depth of field, focusing on a single glowing tome on a stone pedestal in the foreground."
+- **Negative prompt:** "modern, bright, cheerful, clean, people, artificial lighting"
+- **Tags:** horror, interior, photorealistic, moody
+- **Style / Reference:** photorealistic, dark fantasy, cinematic lighting
+- **Composition:** foreground focus, rule of thirds, deep background
+- **Color palette:** desaturated grays, deep shadows, cold moonlight blue
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20260518_gothic-library.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing volumetric lighting and high-contrast shadows.
+
+### Suggestion: Cyberpunk Noir Detective
+- **Date:** 2026-05-18
+- **Prompt:** "A close-up portrait of a grizzled detective in a neon-lit, rain-slicked alleyway in a cyberpunk metropolis. The subject wears a worn trench coat with glowing fiber-optic threads. Harsh, contrasting neon lights (magenta and cyan) cast dramatic, moody shadows across their heavily augmented, cybernetic face. The camera uses an 85mm portrait lens with rich bokeh, blurring the busy, glowing city traffic in the deep background."
+- **Negative prompt:** "cartoon, 2D, sunny, happy, flat lighting, lowres"
+- **Tags:** cyberpunk, noir, portrait, photorealistic, cinematic
+- **Style / Reference:** photorealistic, neo-noir, cinematic 3D render
+- **Composition:** close-up portrait, shallow depth of field
+- **Color palette:** high contrast magenta and cyan, deep blacks
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260518_cyberpunk-detective.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use this to test neon reflections on skin and complex depth of field.
+
+### Suggestion: Whimsical Isometric Alchemist Lab
+- **Date:** 2026-05-18
+- **Prompt:** "A highly detailed, 3D isometric view of an alchemist's laboratory filled with bubbling, glowing potions. The room features a large brass cauldron, walls lined with intricate wooden shelves containing mysterious glowing jars, and scattered spell scrolls. Warm, ambient light emanates from a crackling fireplace and the luminescent liquids. The mood is whimsical and magical. Rendered with clean edges, sharp focus, and vibrant, saturated colors."
+- **Negative prompt:** "realistic, dark, scary, messy, perspective camera, lowres"
+- **Tags:** fantasy, interior, isometric, 3D, whimsical
+- **Style / Reference:** 3D isometric render, stylized, vibrant
+- **Composition:** isometric perspective, centered, cutaway view
+- **Color palette:** warm oranges, glowing greens and purples, rich browns
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260518_isometric-lab.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating sharp geometric rendering and glowing liquid materials.
+
+### Suggestion: Surreal Clockwork Macro
+- **Date:** 2026-05-18
+- **Prompt:** "An extreme macro, highly detailed shot of surreal, floating watch parts intermingled with fragile, crystalline butterfly wings. The tiny, intricate brass gears and glowing ruby jewels are suspended in a void of soft, ethereal, pearlescent fog. The lighting is soft and diffused, highlighting the microscopic scratches on the metal and the iridescence of the wings. The mood is ethereal and abstract. Shot with a dedicated 100mm macro lens."
+- **Negative prompt:** "people, large scale, outdoors, bright sunlight, harsh shadows"
+- **Tags:** steampunk, surreal, macro, abstract, ethereal
+- **Style / Reference:** surreal photography, extreme macro, highly detailed
+- **Composition:** extreme close-up, central focus, negative space
+- **Color palette:** brass, gold, pearlescent whites, soft ruby red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260518_surreal-macro.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing macro textures, soft diffusion, and abstract forms.
+
+### Suggestion: Bismuth Clockwork Owl
+- **Date:** 2026-10-15
+- **Prompt:** "A highly detailed, macro portrait of a mechanical owl constructed entirely from vibrant, stepped hopper crystals of iridescent bismuth and delicate brass clockwork. The subject is perched on a dark, rusted iron branch. The lighting is cinematic, utilizing a single warm spotlight that highlights the rainbow interference patterns of the bismuth and casts deep, sharp shadows within the gears. The mood is mysterious, intricate, and magical. Captured with a 100mm macro lens, incredibly shallow depth of field focusing strictly on its glowing, multi-faceted amber eyes."
+- **Negative prompt:** "organic feathers, real bird, daylight, soft lighting, bright background, blurry, out of focus"
+- **Tags:** macro, steampunk, animal, bismuth, photorealistic
+- **Style / Reference:** photorealistic macro product photography, steampunk aesthetic
+- **Composition:** centered portrait, close-up, shallow depth of field
+- **Color palette:** iridescent rainbow, metallic pink, gold, deep iron black, glowing amber
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261015_bismuth-clockwork-owl.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the generation of complex hopper crystal geometry combined with intricate mechanical parts and iridescence.
+
+### Suggestion: Graphene Bioluminescent Reef
+- **Date:** 2026-10-15
+- **Prompt:** "A breathtaking, ultra-wide underwater landscape showcasing a sprawling coral reef constructed entirely from light-absorbing, matte black graphene. The dark, geometric graphene structures are heavily populated by intensely glowing, bioluminescent flora in vivid neon cyan and magenta. The lighting is entirely diegetic, radiating from the luminescent plants and reflecting off tiny, silver-scaled fish, while the graphene remains pitch black. The mood is alien, beautiful, and deeply mysterious. Captured with a 14mm ultra-wide lens to emphasize the vast, sweeping scale of the dark, glowing ecosystem."
+- **Negative prompt:** "sunlight, daylight, bright surface, natural coral, sand, murky water, low resolution"
+- **Tags:** underwater, sci-fi, landscape, graphene, bioluminescent
+- **Style / Reference:** cinematic deep-sea exploration, high-contrast digital art
+- **Composition:** wide landscape, deep perspective, rule of thirds
+- **Color palette:** matte pitch black, neon cyan, vibrant magenta, bright silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261015_graphene-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to contrast intensely bright emissive materials against completely light-absorbing, matte geometric structures.
+
+### Suggestion: Mother of Pearl Spacesuit
+- **Date:** 2026-10-15
+- **Prompt:** "An elegant, surreal fashion portrait of an astronaut wearing a futuristic spacesuit forged seamlessly from shimmering, iridescent Mother of Pearl and polished silver joints. The subject stands elegantly on the desolate, dusty surface of an asteroid with a massive, vibrant blue gas giant looming in the background. The lighting is harsh, unattenuated starlight that catches the micro-ridges of the nacre, throwing prismatic pink and blue highlights across the suit's curved surfaces. The mood is majestic, fragile, and highly fashionable. Captured with an 85mm portrait lens, eye-level perspective."
+- **Negative prompt:** "fabric, cloth, plastic, dull, earth, atmosphere, soft lighting, cartoon"
+- **Tags:** sci-fi, fashion, portrait, surreal, mother of pearl
+- **Style / Reference:** high-fashion editorial photography, surreal sci-fi
+- **Composition:** waist-up portrait, off-center subject, grand cosmic background
+- **Color palette:** pearlescent whites, soft pinks and blues, polished silver, deep cosmic black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261015_nacre-spacesuit.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating thin-film iridescent interference mapped onto complex, curved, hard-surface armor plating.
+
+### Suggestion: Italian Futurism Asteroid Base
+- **Date:** 2026-10-15
+- **Prompt:** "A chaotic, high-velocity depiction of a sprawling mining base on a tumbling asteroid, rendered in the aggressive, fragmented style of Italian Futurism. The massive industrial drills and habitats are deconstructed into jagged diagonal lines and overlapping geometric planes that convey explosive mechanical energy and relentless speed. The lighting is harsh, directional, and splintered, throwing stark, jagged shadows that enhance the dynamic motion of the composition. The mood is energetic, industrial, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion."
+- **Negative prompt:** "calm, realistic space, smooth curves, organic, gentle, photorealistic, quiet"
+- **Tags:** abstract, sci-fi, italian futurism, space, dynamic
+- **Style / Reference:** Italian Futurism art movement, Giacomo Balla inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black space, blinding white light
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261015_futurism-asteroid-base.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Pushes the model to apply the aggressive, dynamic abstraction of Italian Futurism to an industrial, cosmic environment.
+
+### Suggestion: Ashcan School Cyberpunk Diner
+- **Date:** 2026-10-15
+- **Prompt:** "A bustling, gritty cyberpunk diner on a rainy night, depicted in the unidealized, painterly style of the Ashcan School. The subject features weary, working-class cyborgs huddled over steaming bowls of noodles under flickering, dim lights. The lighting is overcast and realistic, casting soft, murky shadows that highlight the dirt and texture of the urban environment, contrasted only by a dull, buzzing neon sign outside. The mood is authentic, raw, and full of everyday melancholy. Captured with an eye-level, documentary-style perspective, emphasizing the unglamorous reality of the futuristic city."
+- **Negative prompt:** "clean, modern, bright, cheerful, highly saturated, glossy, 3d render, anime"
+- **Tags:** cyberpunk, interior, ashcan school, gritty, painterly
+- **Style / Reference:** Ashcan School painting, heavy brushstrokes, Edward Hopper inspired
+- **Composition:** eye-level, crowded interior, naturalistic framing
+- **Color palette:** muted browns, dark greys, dull olive, faded neon red
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261015_ashcan-cyber-diner.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of futuristic, high-tech themes with the gritty, muted, historical painting style of the Ashcan School.
+
+
+### Suggestion: Bioluminescent Floating Jellyfish City
+- **Date:** 2026-12-05
+- **Prompt:** "A sprawling, futuristic city built upon the caps of colossal, bioluminescent jellyfish floating through a dense, starry nebula. The organic architecture features sweeping, translucent domes and delicate, glowing tendrils connecting the structures. The lighting is completely diegetic, emitting soft neon blues and pulsing magenta from the jellyfish and city lights. The mood is awe-inspiring, serene, and otherworldly. Captured with an ultra-wide 14mm lens to emphasize the majestic scale against the cosmic sky."
+- **Negative prompt:** "earth, daylight, ocean water, dark, grim, dystopian, lowres, blurry"
+- **Tags:** sci-fi, space, bioluminescent, city, surreal
+- **Style / Reference:** cinematic space art, photorealistic 3D render
+- **Composition:** wide expansive view, rule of thirds, deep perspective
+- **Color palette:** neon blue, pulsing magenta, deep cosmic black, stark white stars
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261205_jellyfish-city.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating soft emissive lighting against a dark cosmic background and transparent organic textures.
+
+### Suggestion: Clockwork Solar System Orrery
+- **Date:** 2026-12-05
+- **Prompt:** "A hyper-detailed, macro photograph of an intricate, antique brass and copper clockwork orrery depicting the solar system. The planets are represented by polished gemstones like lapis lazuli, tiger's eye, and malachite. The lighting is warm, directional studio lighting, catching the microscopic scratches on the brass gears and creating sharp, bright specular highlights on the polished gemstones. The mood is intellectual, antique, and precise. Captured with a 100mm macro lens, incredibly shallow depth of field focusing strictly on the central brass sun mechanism."
+- **Negative prompt:** "modern, plastic, flat lighting, messy, bright background, digital"
+- **Tags:** steampunk, macro, still life, mechanism, vintage
+- **Style / Reference:** photorealistic macro product photography, steampunk aesthetic
+- **Composition:** close-up, rule of thirds, shallow depth of field
+- **Color palette:** warm brass, polished copper, deep gemstone blue and green, rich dark brown
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261205_clockwork-orrery.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for pushing the model's detailing capabilities on micro-mechanical parts and highly reflective curved gemstone surfaces.
+
+### Suggestion: Obsidian Art Deco Skyscraper
+- **Date:** 2026-12-05
+- **Prompt:** "A towering, imposing skyscraper designed in a lavish Art Deco style, constructed entirely from flawless, highly reflective black obsidian and polished gold inlays. The subject stands in the center of a stormy, lightning-filled metropolis. The lighting is dramatic and high-contrast, with a sudden flash of lightning illuminating the slick, wet obsidian surface and reflecting brightly off the gold geometric patterns. The mood is powerful, dark, and luxurious. Captured with a low-angle perspective using a 24mm lens to emphasize the monolithic height and sharp geometric lines."
+- **Negative prompt:** "daylight, bright, cheerful, colorful, soft curves, ruin, rusted"
+- **Tags:** architecture, dark, art deco, obsidian, lightning
+- **Style / Reference:** dark architectural visualization, cinematic rendering
+- **Composition:** low angle looking up, symmetrical, towering scale
+- **Color palette:** pitch black obsidian, brilliant gold, cold electric blue, dark stormy grey
+- **Aspect ratio:** 9:16
+- **Reference images:** `public/images/suggestions/20261205_obsidian-skyscraper.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the interaction between highly reflective dark surfaces and sharp, sudden intense directional light like lightning.
+
+### Suggestion: Porcelain Cybernetic Samurai
+- **Date:** 2026-12-05
+- **Prompt:** "A striking, photorealistic portrait of a cybernetic samurai whose armor and faceplate are crafted from pristine white porcelain with delicate, traditional blue floral patterns. The subject is standing in a quiet, mist-filled bamboo forest. The lighting is soft, diffused overcast daylight filtering through the canopy, highlighting the smooth, glossy texture of the porcelain and the subtle glowing cyan circuitry beneath the joints. The mood is calm, elegant, and slightly melancholic. Captured with an 85mm portrait lens, shallow depth of field blurring the bamboo in the background."
+- **Negative prompt:** "metal armor, rusty, bright sunlight, violent, messy, low quality"
+- **Tags:** cyberpunk, portrait, porcelain, samurai, serene
+- **Style / Reference:** hyper-realistic portrait photography, surreal material swap
+- **Composition:** waist-up portrait, balanced framing, soft background bokeh
+- **Color palette:** pristine white, traditional porcelain blue, soft bamboo green, glowing cyan
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261205_porcelain-samurai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of clean, glossy materials with intricate surface patterns under soft, diffused natural lighting.
+
+### Suggestion: Iridescent Crystal Cavern River
+- **Date:** 2026-12-05
+- **Prompt:** "A vast subterranean landscape featuring a fast-flowing river of liquid silver winding through a cavern composed of colossal, jagged crystals that shift in iridescent shades of purple, green, and pink. The lighting is ethereal and subterranean, with the liquid silver reflecting the luminescent glow of the surrounding crystals to illuminate the dark cavern walls. The mood is magical, untouched, and serene. Captured with a wide-angle 14mm lens, deep focus to capture the endless frozen reflections and the dynamic flow of the liquid metal."
+- **Negative prompt:** "daylight, sunlight, dirt, organic plants, people, blurry, flat lighting"
+- **Tags:** fantasy, landscape, crystal, ethereal, subterranean
+- **Style / Reference:** fantasy environment design, photorealistic 3D render
+- **Composition:** wide landscape, deep perspective, river creating a leading line
+- **Color palette:** iridescent purple and green, liquid silver, deep dark cave shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261205_iridescent-cavern-river.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing liquid metal reflections combined with multi-colored iridescent crystalline light sources.
+
+### Suggestion: Ashcan School Graphene Skyscraper Construction
+- **Date:** 2026-12-10
+- **Prompt:** "A gritty, unidealized depiction of construction workers assembling a colossal skyscraper made of light-absorbing matte black graphene, rendered in the painterly, muted style of the Ashcan School. The subject features weary, muscular laborers hoisting massive, sleek geometric graphene beams against a smog-filled, overcast sky. The lighting is dull and naturalistic, casting murky, diffuse shadows that emphasize the harsh reality of urban labor, contrasted sharply by the impossibly sleek, futuristic material they are working with. The mood is melancholic, industrious, and gritty. Captured from a dynamic, low-angle perspective to emphasize the towering scale of the dark architecture."
+- **Negative prompt:** "bright, cheerful, clean, highly saturated, glossy, 3d render, anime, photorealistic"
+- **Tags:** art, historical, ashcan school, graphene, construction
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes
+- **Composition:** low angle, crowded foreground, towering background
+- **Color palette:** muted browns, charcoal grays, matte pitch black, dull slate sky
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261210_ashcan-graphene-construction.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the integration of highly advanced, futuristic materials (graphene) into a historical, gritty painting style representing everyday labor.
+
+### Suggestion: Italian Futurism Bismuth Train
+- **Date:** 2026-12-10
+- **Prompt:** "A chaotic, high-speed scene of a massive locomotive constructed entirely from iridescent, geometric bismuth crystals, depicted in the harsh, fragmented style of Italian Futurism. The crystalline subject is deconstructed into jagged diagonal lines and overlapping stepped-planes that capture immense kinetic energy and forward momentum. The lighting is dramatic, splintered, and directional, causing the metallic bismuth facets to flash with vibrant rainbow colors amidst the blurred, fractured environment. The mood is energetic, aggressive, and dazzling. Captured with a dynamic, tilted perspective to emphasize raw motion and violent speed."
+- **Negative prompt:** "calm, realistic, smooth curves, organic, gentle, photorealistic, slow, stationary"
+- **Tags:** abstract, art, italian futurism, speed, bismuth, train
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** vibrant iridescent pinks and blues, steel greys, stark black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261210_futurism-bismuth-train.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to highly structured, colorful hopper crystal geometry.
+
+### Suggestion: Damascus Steel Exoplanet Core
+- **Date:** 2026-12-10
+- **Prompt:** "A colossal, surreal visualization deep within the core of a massive exoplanet, where the crushing pressure has formed an ocean of rippling, liquid Damascus steel. The subject features immense, flowing metallic waves showcasing intricate, woodgrain-like patterns of dark and light silver. The lighting is terrifyingly intense and internal, erupting from deep, glowing fissures of molten amber and white-hot energy that cast sharp, glaring highlights across the complex metallic ridges. The mood is oppressive, alien, and awe-inspiring. Captured with an extreme wide-angle 14mm lens to encompass the vast, churning scale of the planetary core."
+- **Negative prompt:** "soft, organic, earth-like, calm, daylight, water, blurry, low resolution"
+- **Tags:** sci-fi, space, landscape, damascus steel, exoplanet
+- **Style / Reference:** cinematic sci-fi environment design, photorealistic material rendering
+- **Composition:** wide expansive view, chaotic flowing lines, deep perspective
+- **Color palette:** dark metallic grays, polished silver, blinding white-hot core, glowing amber
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261210_damascus-exoplanet-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the complex, flowing texture generation of Damascus steel mapped onto massive, churning fluid dynamics under extreme lighting.
+
+### Suggestion: Mother of Pearl Beaver Dam
+- **Date:** 2026-12-10
+- **Prompt:** "A highly detailed, surreal landscape photograph of an intricate beaver dam blocking a serene forest stream, but the entire structure is woven from massive, shimmering pieces of iridescent Mother of Pearl instead of wood. The delicate, pearlescent subject holds back a deep pool of crystal-clear water. The lighting is crisp, early morning sunlight piercing through a dense, foggy forest canopy, catching the micro-ridges of the nacre to reveal intense rainbow interference patterns and casting dappled light on the still water. The mood is peaceful, magical, and highly unusual. Captured with a 35mm lens from the edge of the water, showcasing the exquisite textures of the pearlescent dam."
+- **Negative prompt:** "wood, bark, muddy, dirty, dull, urban, modern, people"
+- **Tags:** nature, landscape, surreal, mother of pearl, ethereal
+- **Style / Reference:** photorealistic surrealism, National Geographic style nature photography
+- **Composition:** wide shot, low angle near water surface, clear reflection
+- **Color palette:** pearlescent whites, soft pinks and baby blues, lush forest greens
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261210_nacre-beaver-dam.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating iridescent material rendering and thin-film interference applied to a chaotic, organic structure normally made of wood.
+
+### Suggestion: Tweed Supernova Remnant
+- **Date:** 2026-12-10
+- **Prompt:** "An epic, surreal depiction of a cataclysmic supernova remnant expanding through deep space, where the cosmic dust and plasma are replaced by billions of woven threads of coarse, multi-colored tweed fabric. The soft, fibrous subject is tearing apart in a chaotic, expanding spherical cloud, revealing intricate herringbone and houndstooth patterns on a cosmic scale. The lighting is extremely bright and dynamic, emanating from a blindingly white dwarf star at the center, casting dramatic, harsh light that highlights the microscopic fuzzy textures of the wool against the pitch-black void. The mood is awe-inspiring, bizarre, and highly tactile. Captured as if by the James Webb Space Telescope, combining cosmic scale with macro fabric details."
+- **Negative prompt:** "smooth, plasma, gas, liquid, realistic space, blurry, low contrast"
+- **Tags:** sci-fi, surreal, space, supernova, tweed, fabric
+- **Style / Reference:** hyper-detailed material swap, astrophotography style
+- **Composition:** wide angle, expansive, centered explosion, high detail
+- **Color palette:** earthy brown and green tweed threads, blinding white core, pitch black void
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261210_tweed-supernova.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Pushes the model to generate soft, woven micro-textures (tweed) placed in an environment of extreme cosmic scale and harsh, single-point lighting.
+
+### Suggestion: Bioluminescent Silk Spiderweb
+- **Date:** 2026-12-20
+- **Prompt:** "An ultra-macro, mesmerizing photograph of an intricate spiderweb where every thread is woven from glowing, bioluminescent cyan silk. The web is perfectly suspended between two ancient, dark oak branches in a misty night forest. The lighting is exclusively from the glowing web, which casts soft, eerie cyan reflections on the wet bark and illuminates tiny, floating dust motes trapped in the surrounding fog. The mood is magical, quiet, and slightly haunting. Captured with a 100mm macro lens, razor-thin depth of field, with the dark forest blurring into smooth bokeh."
+- **Negative prompt:** "daylight, sun, bright background, artificial lights, blurry web, rough texture"
+- **Tags:** macro, nature, bioluminescent, magical, dark
+- **Style / Reference:** photorealistic macro photography, high contrast lighting
+- **Composition:** close-up, rule of thirds, shallow depth of field
+- **Color palette:** glowing neon cyan, deep forest black, dark brown bark
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261220_bioluminescent-spiderweb.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the generation of extremely fine, glowing filaments and soft macro bokeh effects in dark environments.
+
+### Suggestion: Steampunk Graphene Submarine
+- **Date:** 2026-12-20
+- **Prompt:** "An epic, underwater scene of a massive steampunk submarine exploring the deep ocean trench, constructed entirely from sleek, light-absorbing matte black graphene with ornate, polished brass portholes and glowing amber external lights. The submarine navigates past towering hydrothermal vents spewing thick black smoke. The lighting is dramatic and directional, emanating from the sub's intense amber searchlights that cut through the murky, particulate-filled water, while the graphene hull remains pitch black. The mood is oppressive, industrial, and adventurous. Captured with a wide-angle perspective to emphasize the crushing depth and scale of the vessel."
+- **Negative prompt:** "bright surface, sunlight, modern submarine, white plastic, cartoon, shallow water"
+- **Tags:** steampunk, underwater, sci-fi, dark, cinematic
+- **Style / Reference:** cinematic deep-sea exploration, photorealistic vehicle concept
+- **Composition:** wide shot, dynamic angle, leading lines from searchlights
+- **Color palette:** matte pitch black graphene, warm polished brass, glowing amber, murky deep sea green
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261220_graphene-submarine.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating the contrast between intensely bright underwater searchlights and highly light-absorbing matte materials.
+
+### Suggestion: De Stijl Neon Data Center
+- **Date:** 2026-12-20
+- **Prompt:** "A vast, futuristic server room designed strictly following the geometric abstraction of the De Stijl art movement. The towering server racks are composed of perfectly straight horizontal and vertical lines in stark black, interspersed with solid, glowing neon panels of pure primary red, blue, and yellow. The lighting is clean, bright, and completely uniform, emphasizing the flat, rigid geometry and primary colors without any natural shadows or gradients. The mood is analytical, orderly, and ultra-modern. Captured with an orthographic camera perspective to flatten the depth and accentuate the grid-like composition."
+- **Negative prompt:** "curves, organic shapes, gradients, messy, dark, moody, realistic servers"
+- **Tags:** abstract, interior, de stijl, sci-fi, geometric
+- **Style / Reference:** De Stijl art movement, Piet Mondrian inspired, minimalist 3D render
+- **Composition:** orthographic perspective, strict grid alignment, balanced primary colors
+- **Color palette:** pure primary red, pure primary blue, pure primary yellow, stark black, pristine white
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261220_de-stijl-datacenter.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the application of strict historical abstract art constraints (De Stijl) to a modern, technological interior using glowing materials.
+
+### Suggestion: Iridescent Obsidian Beetle
+- **Date:** 2026-12-20
+- **Prompt:** "An ultra-detailed macro photograph of a giant, otherworldly beetle resting on a bed of crushed, pale quartz. The beetle's carapace is formed from highly polished obsidian that exhibits a dazzling, iridescent oil-slick effect, shifting between deep purples, greens, and golds depending on the light angle. The lighting is a harsh, directional studio strobe that catches sharp specular highlights on the glossy black stone and triggers intense, rainbow interference patterns on the curved shell. The mood is scientific, alien, and luxurious. Captured with a 100mm macro lens, deep focus on the intricate joints of the insect."
+- **Negative prompt:** "soft lighting, blurry, ordinary insect, dull colors, natural dirt, outdoor"
+- **Tags:** macro, nature, insect, obsidian, iridescent
+- **Style / Reference:** photorealistic macro studio photography, high contrast
+- **Composition:** centered subject, extreme close-up, sharp focus
+- **Color palette:** glossy pitch black, iridescent purple/green/gold, pale white quartz
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261220_iridescent-obsidian-beetle.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the combination of highly reflective, dark, glossy materials (obsidian) with thin-film iridescence on complex organic curves.
+
+### Suggestion: Ethereal Bismuth Cathedral
+- **Date:** 2026-12-20
+- **Prompt:** "A breathtaking, wide-angle interior shot of a colossal fantasy cathedral constructed entirely from gigantic, naturally forming hopper crystals of iridescent bismuth. The massive, step-patterned pillars stretch up into a foggy, cavernous vault. The lighting is soft and ethereal, filtering down from an unseen opening high above, casting a celestial glow that illuminates the vibrant rainbow facets of the metallic walls in pinks, blues, and golds. The mood is majestic, sacred, and otherworldly. Captured from a low angle, emphasizing the immense, dizzying scale and the intricate geometric architecture."
+- **Negative prompt:** "wood, stone, traditional stained glass, dark, creepy, messy, low detail"
+- **Tags:** fantasy, architecture, interior, bismuth, majestic
+- **Style / Reference:** photorealistic fantasy environment design, epic scale
+- **Composition:** low angle looking up, deep symmetrical perspective
+- **Color palette:** highly iridescent rainbow (metallic pinks, blues, golds), soft white light
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261220_bismuth-cathedral.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for generating massive, step-patterned geometric structures and testing large-scale iridescent reflections in a foggy environment.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.

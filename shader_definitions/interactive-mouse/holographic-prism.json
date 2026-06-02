@@ -1,8 +1,9 @@
 {
   "id": "holographic-prism",
   "name": "Holographic Prism",
+  "category": "interactive-mouse",
   "url": "shaders/holographic-prism.wgsl",
-  "description": "Splits the image into spectral shards that rotate and shift, creating a holographic lens effect.",
+  "description": "Triangular prism dispersion with Snell's law refraction, wavelength-accurate rainbow spectrum, holographic interference fringes and speckle. Bass rotates prism, mouse controls incident angle, depth drives parallax.",
   "params": [
     {
       "id": "facets",
@@ -37,12 +38,18 @@
     "mouse-driven",
     "chromatic-aberration",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
-    "filter",
-    "image-processing",
+    "prism",
+    "holographic",
+    "dispersion",
+    "interference",
+    "speckle",
     "audio",
-    "music"
+    "chromatic",
+    "depth-aware"
   ]
 }

@@ -1,7 +1,12 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  DATA SLICER
-//  Distortion effect that slices the image horizontally based on noise and mouse.
-// ═══════════════════════════════════════════════════════════════════════════════
+// ================================================================
+//  Data Slicer
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: data-slicer
+//  Created: 2026-05-30
+//  By: Copilot
+// ================================================================
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -18,91 +23,65 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=Width, w=Height
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=SlideSpeed, y=SliceHeight, z=Chaos, w=Aberration
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=JitterSpeed, y=SliceThickness, z=ChaosAmount, w=ColorSplit
   ripples: array<vec4<f32>, 50>,
 };
 
-// --- Hash Functions ---
-fn hash21(p: vec2<f32>) -> f32 {
-    let h = dot(p, vec2<f32>(127.1, 311.7));
-    return fract(sin(h) * 43758.5453123);
+fn hash12(p: vec2<f32>) -> f32 {
+  let h = sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453;
+  return fract(h);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    let time = u.config.x;
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
+    return;
+  }
 
-    // Parameters
-    let slideSpeed = u.zoom_params.x * 10.0;
-    let sliceHeight = mix(5.0, 100.0, u.zoom_params.y); // Pixel height of slices
-    let chaos = u.zoom_params.z;
-    let aberration = u.zoom_params.w * 0.1;
+  let uv = vec2<f32>(gid.xy) / resolution;
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let aspect = resolution.x / resolution.y;
+  let audio = plasmaBuffer[0].xyz;
 
-    // Mouse Interaction
-    let mouseX = u.zoom_config.y;
-    let mouseY = u.zoom_config.z;
-    let isMouseDown = u.zoom_config.w;
+  let jitterSpeed = 0.15 + u.zoom_params.x * 3.5;
+  let sliceThickness = mix(0.006, 0.12, u.zoom_params.y);
+  let chaosAmount = u.zoom_params.z * 0.12;
+  let colorSplit = u.zoom_params.w * 0.03;
 
-    let fragCoord = vec2<f32>(global_id.xy);
-    var uv = fragCoord / resolution;
+  let sliceIndex = floor(uv.y / sliceThickness);
+  let localY = fract(uv.y / sliceThickness);
+  let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
+  let mouseMask = 1.0 - smoothstep(0.0, 0.65, mouseDist);
 
-    // Calculate Slice ID
-    let sliceId = floor(fragCoord.y / sliceHeight);
+  let jitterSeed = vec2<f32>(sliceIndex, floor(time * jitterSpeed * 6.0));
+  let jitter = (hash12(jitterSeed) - 0.5) * chaosAmount * (1.0 + audio.x * 0.8 + mouseMask * 0.5);
+  let wave = sin(sliceIndex * 0.33 + time * jitterSpeed * 5.0 + uv.x * 18.0) * chaosAmount * 0.30;
+  let sliceBend = sin(localY * 6.28318 + time * 2.0 + sliceIndex * 0.4) * chaosAmount * 0.18;
 
-    // Random offset for each slice
-    var noiseVal = hash21(vec2<f32>(sliceId, floor(time * 2.0))); // Step noise every 0.5s
+  let baseUV = clamp(uv + vec2<f32>(jitter + wave + sliceBend * mouseMask, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let splitDir = vec2<f32>(colorSplit * (0.4 + mouseMask), 0.0);
+  let sampleR = clamp(baseUV + splitDir, vec2<f32>(0.0), vec2<f32>(1.0));
+  let sampleB = clamp(baseUV - splitDir, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Animate the noise
-    let moveAmt = sin(time * slideSpeed + sliceId * 13.52) * chaos;
+  var finalColor = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, sampleR, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, baseUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, sampleB, 0.0).b
+  );
 
-    // Mouse influence: Slices near mouse Y move more intensely
-    let mouseDistY = abs(uv.y - mouseY);
-    let influence = smoothstep(0.3, 0.0, mouseDistY);
+  let scanGlow = (1.0 - smoothstep(0.15, 0.50, abs(localY - 0.5))) * (0.08 + 0.18 * audio.y);
+  let glitchTint = mix(vec3<f32>(0.05, 0.65, 1.0), vec3<f32>(1.0, 0.35, 0.85), audio.z * 0.6 + mouseMask * 0.25);
+  finalColor = finalColor + glitchTint * scanGlow;
 
-    // Only apply if mouse is somewhat active (optional, but good for control)
-    // Actually, let's make the mouse X control the OFFSET direction/magnitude too
-    let mouseOffset = (mouseX - 0.5) * 2.0 * influence;
+  let finalAlpha = clamp(0.76 + mouseMask * 0.12 + abs(jitter + wave) * 1.4, 0.45, 0.98);
+  let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, baseUV, 0.0).r;
+  let depthOut = clamp(mix(baseDepth, 0.25 + scanGlow + mouseMask * 0.25, 0.25 + chaosAmount * 2.0), 0.0, 1.0);
 
-    var xOffset = moveAmt * 0.1;
-
-    if (isMouseDown > 0.5) {
-        xOffset = xOffset + mouseOffset + (hash21(vec2<f32>(sliceId, time)) - 0.5) * 0.5 * influence;
-    } else {
-        xOffset = xOffset + mouseOffset * 0.5;
-    }
-
-    // Apply offset
-    var uvR = uv;
-    var uvG = uv;
-    var uvB = uv;
-
-    uvR.x = uvR.x + xOffset + aberration;
-    uvG.x = uvG.x + xOffset;
-    uvB.x = uvB.x + xOffset - aberration;
-
-    // Wrap UVs
-    uvR = fract(uvR);
-    uvG = fract(uvG);
-    uvB = fract(uvB);
-
-    let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
-
-    // Scanline darkness between slices
-    let pixelInSlice = fract(fragCoord.y / sliceHeight);
-    var color = vec4<f32>(r, g, b, 1.0);
-
-    if (pixelInSlice < 0.1 || pixelInSlice > 0.9) {
-        color = color * 0.8;
-    }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-    // Depth Pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(abs(jitter), scanGlow, mouseMask, finalAlpha));
 }

@@ -45,8 +45,16 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn diffusionCoefficient(gradientMag: f32, kappa: f32) -> f32 {
-    // Perona-Malik conductivity function
     return exp(-(gradientMag * gradientMag) / (kappa * kappa + 0.0001));
 }
 
@@ -60,6 +68,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
+    let pixel = vec2<i32>(global_id.xy);
     
     // Parameters
     let kappa = mix(0.01, 0.2, u.zoom_params.x);
@@ -67,36 +76,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let iterations = i32(mix(1.0, 5.0, u.zoom_params.z));
     let mouseInfluence = u.zoom_params.w;
     
+    // Depth awareness: preserve edges more in foreground
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthKappa = kappa * (1.0 - depth * 0.4);
+    
+    // Audio reactivity: bass drives diffusion strength
+    let bass = plasmaBuffer[0].x;
+    let audioDt = dt * (1.0 + bass * 0.8);
+    
     let center = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     var current = center;
     var avgCoeff = 0.0;
     
-    // Multiple diffusion steps per frame
     for (var iter = 0; iter < iterations; iter++) {
-        // 4-connected neighbors
         let n = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, 1.0) * pixelSize, 0.0).rgb;
         let s = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -1.0) * pixelSize, 0.0).rgb;
         let e = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(1.0, 0.0) * pixelSize, 0.0).rgb;
         let w = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-1.0, 0.0) * pixelSize, 0.0).rgb;
         
-        // Gradients
         let gradN = length(n - current);
         let gradS = length(s - current);
         let gradE = length(e - current);
         let gradW = length(w - current);
         
-        // Conductivity coefficients
-        let cN = diffusionCoefficient(gradN, kappa);
-        let cS = diffusionCoefficient(gradS, kappa);
-        let cE = diffusionCoefficient(gradE, kappa);
-        let cW = diffusionCoefficient(gradW, kappa);
+        let cN = diffusionCoefficient(gradN, depthKappa);
+        let cS = diffusionCoefficient(gradS, depthKappa);
+        let cE = diffusionCoefficient(gradE, depthKappa);
+        let cW = diffusionCoefficient(gradW, depthKappa);
         
-        // Mouse heat source acceleration
         let mouseDist = length(uv - mousePos);
         let mouseFactor = exp(-mouseDist * mouseDist * 10.0) * mouseInfluence;
         let mouseBoost = 1.0 + mouseFactor * 5.0;
         
-        // Ripple diffusion fronts
         var rippleFront = 0.0;
         let rippleCount = u32(u.config.y);
         for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
@@ -112,26 +123,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
         let rippleBoost = 1.0 + rippleFront * 3.0;
         
-        // Anisotropic diffusion update
         let fluxN = cN * (n - current);
         let fluxS = cS * (s - current);
         let fluxE = cE * (e - current);
         let fluxW = cW * (w - current);
         
-        let effectiveDt = dt * mouseBoost * rippleBoost;
+        let effectiveDt = audioDt * mouseBoost * rippleBoost;
         current = current + effectiveDt * (fluxN + fluxS + fluxE + fluxW);
         
         avgCoeff = (cN + cS + cE + cW) * 0.25;
     }
     
-    // Oil-paint boost: exaggerate the flat regions
     let paintBoost = 1.0 + mouseInfluence * 0.3;
-    let finalColor = mix(center, current, paintBoost);
+    var finalColor = mix(center, current, paintBoost);
     
-    // Store: RGB = diffused image, Alpha = average diffusion coefficient
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, avgCoeff));
+    // Temporal accumulation
+    let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+    finalColor = mix(finalColor, prev, 0.15);
     
-    // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // Chromatic aberration on edges
+    let edgeMag = length(center - current);
+    let caOffset = edgeMag * 0.025;
+    let rSample = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(caOffset, 0.0), 0.0).r;
+    let bSample = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(caOffset, 0.0), 0.0).b;
+    finalColor = vec3<f32>(rSample, finalColor.g, bSample);
+    
+    // ACES tone mapping
+    finalColor = acesToneMap(finalColor);
+    
+    // Semantic alpha: diffusion coefficient modulated by depth (foreground = sharper = lower alpha)
+    let alpha = clamp(avgCoeff * (1.0 - depth * 0.4), 0.0, 1.0);
+    
+    textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  spec-analytic-noise-flow
 //  Category: generative
-//  Features: analytic-derivatives, flow-field, noise
-//  Complexity: Medium
+//  Features: analytic-derivatives, flow-field, noise, temporal, chromatic, depth-aware
+//  Complexity: High
 //  Chunks From: chunk-library (hash12)
 //  Created: 2026-04-18
+//  Upgraded: 2026-05-31
 //  By: Agent 3C — Spectral Computation Pioneer
 // ═══════════════════════════════════════════════════════════════════
 //  Noise with Analytic Derivatives for Flow Fields
@@ -54,10 +55,10 @@ fn noiseWithDerivative(p: vec2<f32>) -> vec3<f32> {
     let du = 30.0 * f * f * (f * (f - 2.0) + 1.0);
 
     // Hash corners
-    let a = hash2(i + vec2<f32>(0.0, 0.0));
-    let b = hash2(i + vec2<f32>(1.0, 0.0));
-    let c = hash2(i + vec2<f32>(0.0, 1.0));
-    let d = hash2(i + vec2<f32>(1.0, 1.0));
+    let a = hash12(i + vec2<f32>(0.0, 0.0));
+    let b = hash12(i + vec2<f32>(1.0, 0.0));
+    let c = hash12(i + vec2<f32>(0.0, 1.0));
+    let d = hash12(i + vec2<f32>(1.0, 1.0));
 
     // Value interpolation
     let k0 = a;
@@ -146,10 +147,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let blendFactor = 0.6;
     var outColor = mix(warpedColor, flowColor * 0.5 + warpedColor * 0.5, blendFactor);
 
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Add streamline highlight
     let streamline = smoothstep(0.0, 0.1, abs(noise1.x - 0.5));
     outColor += vec3<f32>(0.1, 0.15, 0.2) * streamline * (1.0 - curlAmount);
 
+    // ─── Chromatic dispersion ───
+    let chrStrength = 0.004 + bass * 0.008;
+    let chrR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(chrStrength * (1.0 + mids * 0.5), 0.0), 0.0).r;
+    let chrG = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, chrStrength * (1.0 + treble * 0.3)), 0.0).g;
+    let chrB = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-chrStrength * 0.7 * (1.0 + bass * 0.4), chrStrength * 0.3), 0.0).b;
+    let chrColor = vec3<f32>(chrR, chrG, chrB);
+    outColor = mix(outColor, chrColor, 0.2 + bass * 0.15);
+
+    // ─── Temporal feedback ───
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    outColor = mix(outColor, prev.rgb * 0.9, 0.03 + bass * 0.01);
+
+    let flowDepth = length(velocity) * 0.5 + 0.25;
     textureStore(writeTexture, gid.xy, vec4<f32>(outColor, length(velocity)));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(flowDepth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, gid.xy, vec4<f32>(velocity, noise1.x, 1.0));
 }
