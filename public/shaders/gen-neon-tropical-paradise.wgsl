@@ -217,7 +217,7 @@ fn bioWater(uv: vec2<f32>, time: f32, mouseNorm: vec2<f32>, mouseDown: f32, inte
   let nearSurface = smoothstep(0.04, 0.0, abs(uv.y - surfaceLine));
   
   // Bioluminescent sparkles
-  let sparkle = pow(noise2d(vec2<f32>(uv.x * 50.0 * scale, uv.y * 30.0 - time * 0.5)), 8.0);
+  var sparkle = pow(noise2d(vec2<f32>(uv.x * 50.0 * scale, uv.y * 30.0 - time * 0.5)), 8.0);
   sparkle += pow(noise2d(vec2<f32>(uv.x * 80.0 * scale + 100.0, uv.y * 50.0 + time * 0.3)), 10.0) * 0.5;
   
   // Mouse ripple
