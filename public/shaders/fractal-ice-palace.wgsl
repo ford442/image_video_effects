@@ -76,44 +76,66 @@ fn smoothstepf32(edge0: f32, edge1: f32, x: f32) -> f32 {
 }
 
 // Recursive ice branch distance field
+struct IceBranchNode {
+  origin: vec2<f32>,
+  angle: f32,
+  len: f32,
+  width: f32,
+  depth: i32,
+};
+
+// Iterative (stack-based) binary-tree traversal — WGSL forbids recursion.
+// max() over every node is equivalent to the original recursive max().
 fn iceBranch(p: vec2<f32>, origin: vec2<f32>, angle: f32, len: f32,
-             width: f32, depth: i32, maxDepth: i32, time: f32,
+             width: f32, startDepth: i32, maxDepth: i32, time: f32,
              bass: f32, mids: f32) -> vec4<f32> {
-  if (depth >= maxDepth) {
-    return vec4<f32>(0.0);
-  }
-
-  let end = origin + vec2<f32>(cos(angle), sin(angle)) * len;
-  let d = sdSegment(p, origin, end);
-  let branchStr = smoothstepf32(width, 0.0, d);
-
-  // Shake from bass
-  let shake = sin(time * 3.0 + f32(depth) * 1.7) * bass * 0.02 * f32(depth + 1);
-
   var result = vec4<f32>(0.0);
-  if (branchStr > 0.001) {
-    // Chromatic: blue core, cyan edge, white tip
-    let core = smoothstepf32(width * 0.6, 0.0, d);
-    let edge = smoothstepf32(width, width * 0.5, d);
-    let tip = smoothstepf32(len * 0.7, len, length(p - origin));
-    let r = edge * 0.4 + tip * 0.8;
-    let g = core * 0.6 + edge * 0.9 + tip * 0.95;
-    let b = core * 1.0 + edge * 0.8 + tip * 0.9;
-    result = vec4<f32>(r, g, b, branchStr) * (0.7 + f32(maxDepth - depth) * 0.1);
-  }
+  var stack: array<IceBranchNode, 32>;
+  var sp = 0;
+  stack[0] = IceBranchNode(origin, angle, len, width, startDepth);
+  sp = 1;
 
-  // Recursive branching
-  if (depth < maxDepth - 1 && len > 0.02) {
-    let branchAngle1 = angle + 0.55 + sin(time * 0.5 + f32(depth)) * 0.1 + shake;
-    let branchAngle2 = angle - 0.55 + cos(time * 0.4 + f32(depth)) * 0.1 - shake;
-    let newLen = len * (0.62 + mids * 0.05);
-    let newWidth = width * 0.65;
-    let child1 = iceBranch(p, end, branchAngle1, newLen, newWidth,
-                           depth + 1, maxDepth, time, bass, mids);
-    let child2 = iceBranch(p, end, branchAngle2, newLen, newWidth,
-                           depth + 1, maxDepth, time, bass, mids);
-    result = max(result, child1);
-    result = max(result, child2);
+  loop {
+    if (sp <= 0) { break; }
+    sp = sp - 1;
+    let node = stack[sp];
+    let depth = node.depth;
+    if (depth >= maxDepth) { continue; }
+
+    let end = node.origin + vec2<f32>(cos(node.angle), sin(node.angle)) * node.len;
+    let d = sdSegment(p, node.origin, end);
+    let branchStr = smoothstepf32(node.width, 0.0, d);
+
+    // Shake from bass
+    let shake = sin(time * 3.0 + f32(depth) * 1.7) * bass * 0.02 * f32(depth + 1);
+
+    if (branchStr > 0.001) {
+      // Chromatic: blue core, cyan edge, white tip
+      let core = smoothstepf32(node.width * 0.6, 0.0, d);
+      let edge = smoothstepf32(node.width, node.width * 0.5, d);
+      let tip = smoothstepf32(node.len * 0.7, node.len, length(p - node.origin));
+      let r = edge * 0.4 + tip * 0.8;
+      let g = core * 0.6 + edge * 0.9 + tip * 0.95;
+      let b = core * 1.0 + edge * 0.8 + tip * 0.9;
+      let nodeColor = vec4<f32>(r, g, b, branchStr) * (0.7 + f32(maxDepth - depth) * 0.1);
+      result = max(result, nodeColor);
+    }
+
+    // Push child branches
+    if (depth < maxDepth - 1 && node.len > 0.02) {
+      let branchAngle1 = node.angle + 0.55 + sin(time * 0.5 + f32(depth)) * 0.1 + shake;
+      let branchAngle2 = node.angle - 0.55 + cos(time * 0.4 + f32(depth)) * 0.1 - shake;
+      let newLen = node.len * (0.62 + mids * 0.05);
+      let newWidth = node.width * 0.65;
+      if (sp < 31) {
+        stack[sp] = IceBranchNode(end, branchAngle1, newLen, newWidth, depth + 1);
+        sp = sp + 1;
+      }
+      if (sp < 31) {
+        stack[sp] = IceBranchNode(end, branchAngle2, newLen, newWidth, depth + 1);
+        sp = sp + 1;
+      }
+    }
   }
 
   return result;
