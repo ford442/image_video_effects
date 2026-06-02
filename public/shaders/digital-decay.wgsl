@@ -84,7 +84,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Block grid — variable size (4 / 8 / 16 px based on rawBlock)
     let blockPx   = floor(mix(4.0, 64.0, rawBlock));
     let blockUV   = vec2<i32>(i32(floor(uv.x*resolution.x/blockPx)), i32(floor(uv.y*resolution.y/blockPx)));
-    let blockId   = f32(blockUV.x*73856093 ^ blockUV.y*19349663);
+    let blockId   = f32((blockUV.x*73856093) ^ (blockUV.y*19349663));
     let blockTime = floor(time * (2.0 + bass * 3.0) * hash11(blockId+1.0));
     let blockHash = hash21(vec2<f32>(f32(blockUV.x), f32(blockUV.y)) + blockTime);
 

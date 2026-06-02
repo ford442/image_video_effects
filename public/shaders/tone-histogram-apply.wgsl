@@ -51,7 +51,7 @@ fn main(
   @builtin(local_invocation_index) lidx: u32,
 ) {
   let res = u.config.zw;
-  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
+  let inBounds = gid.x < u32(res.x) && gid.y < u32(res.y);
 
   let uv = (vec2<f32>(gid.xy) + 0.5) / res;
   let coord = vec2<i32>(gid.xy);
@@ -109,9 +109,11 @@ fn main(
 
   let outColor = hsv2rgb(hsv);
 
-  textureStore(writeTexture, coord, vec4<f32>(outColor, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(wgExposure / 3.5, wgMeanLuma, wgPeakBinNorm, wgSaturation));
+  if (inBounds) {
+    textureStore(writeTexture, coord, vec4<f32>(outColor, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(wgExposure / 3.5, wgMeanLuma, wgPeakBinNorm, wgSaturation));
 
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  }
 }
