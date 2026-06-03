@@ -605,6 +605,13 @@
       "added": "2026-06-01T15:31:20.549711",
       "status": "completed",
       "completed_at": "2026-06-02T08:00:13.316393"
+    },
+    {
+      "filename": "2026-06-02_ethereal-aurora-ghost-orchid.md",
+      "title": "Ethereal-Aurora Ghost-Orchid",
+      "added": "2026-06-02T15:23:11.925761",
+      "status": "completed",
+      "completed_at": "2026-06-03T07:52:28.041657"
     }
   ],
   "rejected": [],
@@ -864,11 +871,6 @@
       "filename": "2026-06-01_bioluminescent-aether-jellyfish-swarm.md",
       "title": "Bioluminescent Aether-Jellyfish Swarm",
       "added": "2026-06-01T15:31:20.549711"
-    },
-    {
-      "filename": "2026-06-02_ethereal-aurora-ghost-orchid.md",
-      "title": "Ethereal-Aurora Ghost-Orchid",
-      "added": "2026-06-02T15:23:11.925761"
     }
   ],
   "in_progress": null
