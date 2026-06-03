@@ -5556,6 +5556,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ideal for generating massive, step-patterned geometric structures and testing large-scale iridescent reflections in a foggy environment.
 
+### Suggestion: Aerogel Coral Reef
+- **Date:** 2026-12-30
+- **Prompt:** "A vibrant, ultra-macro underwater shot of a delicate coral reef where the coral structures are formed entirely from translucent, ghostly blue aerogel. The subject features intricate, porous geometric patterns that catch the ambient light. The lighting is ethereal and diffused, with soft sun rays piercing through the clear, shallow water above, scattering inside the low-density aerogel to create a mesmerizing internal glow. The mood is tranquil, fragile, and alien. Captured with a 100mm macro lens, utilizing a shallow depth of field to isolate the aerogel structure from the softly blurred aquatic background."
+- **Negative prompt:** "ordinary coral, rock, murky water, dark, gritty, low resolution, flat lighting"
+- **Tags:** macro, underwater, nature, aerogel, ethereal
+- **Style / Reference:** photorealistic macro nature photography, sci-fi materials
+- **Composition:** close-up, center focus, rule of thirds, beautiful bokeh
+- **Color palette:** translucent ghostly blue, pale turquoise, bright sunlit white, deep ocean blue
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261230_aerogel-coral-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests subsurface scattering on highly translucent, low-density materials in an underwater environment.
+
+### Suggestion: Damascus Steel Clockwork Heart
+- **Date:** 2026-12-30
+- **Prompt:** "A hyper-detailed, dramatic still life of a mechanical heart, meticulously assembled from interlocking cogs and valves forged from dark, rippled Damascus steel. The metallic subject features complex, flowing woodgrain-like patterns of dark and light silver. The lighting is moody, utilizing a single, warm spotlight to cast sharp specular highlights on the polished metallic edges and deep, rich shadows between the intricate gears. The mood is romantic, industrial, and melancholic. Captured with a 50mm lens, sharp focus on the central valve mechanism."
+- **Negative prompt:** "organic, flesh, blood, plastic, flat lighting, blurry, wide angle, modern"
+- **Tags:** still-life, steampunk, metal, damascus steel, anatomy
+- **Style / Reference:** photorealistic product photography, highly detailed steampunk
+- **Composition:** centered subject, close-up, dramatic chiaroscuro
+- **Color palette:** dark metallic greys, silver highlights, warm golden light, pitch black shadows
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261230_damascus-clockwork-heart.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Evaluates the generation of complex flowing textures of Damascus steel on intricate, curved mechanical parts.
+
+### Suggestion: Bismuth Brutalist Monument
+- **Date:** 2026-12-30
+- **Prompt:** "A towering, monolithic Brutalist monument located in a desolate, snowy tundra, but the massive geometric slabs are composed entirely of gigantic, iridescent bismuth crystals. The subject features stepped, hopper-like formations that reflect a dazzling array of metallic rainbow colors. The lighting is harsh, cold winter sunlight that creates stark, jagged shadows across the complex, angular architecture, contrasting with the blinding white snow below. The mood is imposing, alien, and majestic. Captured with an ultra-wide 14mm lens from a low angle to emphasize the staggering, oppressive scale."
+- **Negative prompt:** "concrete, wood, warm weather, soft curves, blurry, organic"
+- **Tags:** architecture, brutalist, bismuth, winter, sci-fi
+- **Style / Reference:** brutalist architectural visualization, hyper-detailed 3D render
+- **Composition:** low angle looking up, dramatic diagonal lines, towering presence
+- **Color palette:** iridescent pinks, blues, and golds, stark white snow, cold grey sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261230_bismuth-brutalist.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for combining stark Brutalist geometry with the complex step-patterns and iridescence of bismuth crystals.
+
+### Suggestion: Graphene Cyberpunk Motorcycle
+- **Date:** 2026-12-30
+- **Prompt:** "A sleek, futuristic cyberpunk motorcycle parked in a dark, rain-soaked alleyway, constructed from seamless, light-absorbing matte black graphene. The extremely dark subject features aggressive, angular lines and glowing neon cyan wheel trims that cast bright reflections on the wet pavement. The lighting is cinematic and high-contrast, with the ambient neon signs of the city reflecting off the wet asphalt while the graphene hull remains an absolute, pitch-black void. The mood is dangerous, fast, and high-tech. Captured with a 35mm lens from a low, dynamic angle."
+- **Negative prompt:** "daylight, bright, cheerful, rusty, vintage, colorful bodywork, soft"
+- **Tags:** cyberpunk, vehicle, graphene, dark, neon
+- **Style / Reference:** cinematic vehicle concept art, photorealistic rendering
+- **Composition:** dynamic angled profile, low angle, neon reflections in foreground
+- **Color palette:** matte pitch black graphene, glowing neon cyan, wet dark grey asphalt
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261230_graphene-motorcycle.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of highly light-absorbing materials (graphene) contrasted with intense neon emission in a dark environment.
+
+### Suggestion: Mother of Pearl Neo-Gothic Library
+- **Date:** 2026-12-30
+- **Prompt:** "A sweeping, wide-angle interior shot of a majestic Neo-Gothic library where the soaring vaulted ceilings, intricate arches, and towering bookshelves are carved entirely from shimmering, iridescent Mother of Pearl. The architectural subject is lined with ancient, leather-bound books. The lighting is ethereal and soft, emanating from tall, stained-glass windows that cast multi-colored light across the pearlescent surfaces, revealing subtle pink and blue interference patterns in the nacre. The mood is sacred, intellectual, and breathtaking. Captured with a 14mm wide-angle lens, utilizing deep focus to capture the immense scale and detail of the ribbed vaults."
+- **Negative prompt:** "stone, wood, dark, gritty, dystopian, messy, modern"
+- **Tags:** architecture, interior, fantasy, mother of pearl, ethereal
+- **Style / Reference:** grand architectural visualization, fantasy environment design
+- **Composition:** symmetrical, deep perspective down the central aisle, low angle
+- **Color palette:** pearlescent whites, soft pinks and baby blues, rich brown leather, stained glass colors
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261230_nacre-library.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for evaluating large-scale iridescent reflections and thin-film interference on complex historical architecture.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
