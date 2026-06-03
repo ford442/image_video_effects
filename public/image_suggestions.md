@@ -5621,6 +5621,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Excellent for evaluating large-scale iridescent reflections and thin-film interference on complex historical architecture.
 
+### Suggestion: Bioluminescent Deep-Sea Leviathan
+- **Date:** 2024-05-18
+- **Prompt:** "A colossal deep-sea leviathan gliding through a trench, illuminating the pitch-black abyss with glowing cyan and magenta bioluminescent stripes. The mood is eerie yet majestic. Low-key lighting with high-contrast glowing accents. Shot with a wide-angle 14mm lens perspective to emphasize the creature's immense scale."
+- **Negative prompt:** "sunlight, shallow water, murky, lowres, ugly"
+- **Tags:** underwater, monster, bioluminescent, deep-sea
+- **Style / Reference:** photorealistic, cinematic
+- **Composition:** wide shot, bottom-up angle
+- **Color palette:** deep blacks, neon cyan, glowing magenta
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240518_leviathan.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing volumetric scattering in water and bioluminescence glow effects.
+
+### Suggestion: Neon Synthwave Cyber-Dojo
+- **Date:** 2024-05-18
+- **Prompt:** "A futuristic cyber-dojo interior infused with 1980s synthwave aesthetics. Holographic training dummies flicker in the background. The mood is energetic and retro-futuristic. Illuminated by vibrant neon pink and grid-like laser lights. Shot with a 35mm lens, slight chromatic aberration."
+- **Negative prompt:** "daylight, modern, boring, traditional"
+- **Tags:** cyberpunk, synthwave, retro, dojo
+- **Style / Reference:** 80s retro-futurism, digital art
+- **Composition:** eye-level, rule of thirds
+- **Color palette:** neon pink, electric blue, dark purple
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240518_cyber_dojo.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for neon lighting and retro/glitch shader tests.
+
+### Suggestion: Ethereal Floating Zenith Monolith
+- **Date:** 2024-05-18
+- **Prompt:** "A massive, perfectly smooth obsidian monolith hovering silently above a tranquil sea of clouds at sunrise. The mood is serene and mystical. Soft, warm morning sunlight casts long, dramatic shadows. Captured with a 50mm lens, shallow depth of field focusing on the monolith."
+- **Negative prompt:** "noisy, busy, people, cities, harsh lighting"
+- **Tags:** surreal, minimalist, monolith, clouds
+- **Style / Reference:** hyper-realistic, surrealism
+- **Composition:** center-weighted, horizon at the lower third
+- **Color palette:** soft pinks, golden oranges, deep obsidian black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20240518_zenith_monolith.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing ambient occlusion, soft lighting, and reflection shaders.
+
+### Suggestion: Bioluminescent Fungal Rainforest
+- **Date:** 2024-05-18
+- **Prompt:** "A dense, ancient rainforest entirely overgrown with towering, glowing, alien mushrooms. The mood is magical and otherworldly. Dappled moonlight filters through the canopy, interacting with the intense neon greens and purples of the fungi. Shot with a macro 85mm lens, capturing fine spore particles floating in the air."
+- **Negative prompt:** "daylight, normal trees, dry, low contrast"
+- **Tags:** alien, rainforest, glowing, fantasy
+- **Style / Reference:** digital illustration, highly detailed
+- **Composition:** low angle, looking up into the canopy
+- **Color palette:** neon green, deep purple, midnight blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240518_fungal_rainforest.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing subsurface scattering on organic shapes and particle effects.
+
+### Suggestion: Quantum Singularity Observatory
+- **Date:** 2024-05-18
+- **Prompt:** "The interior of an advanced orbital observatory featuring a contained, swirling quantum singularity at its center. The mood is tense and awe-inspiring. Harsh, clinical white lights contrast against the violent, distorted light of the singularity. Shot with a fisheye lens to emphasize the gravitational warping."
+- **Negative prompt:** "messy, chaotic, earth, ground"
+- **Tags:** sci-fi, space, quantum, black-hole
+- **Style / Reference:** hard sci-fi, cinematic lighting
+- **Composition:** wide internal shot, symmetrical
+- **Color palette:** stark white, deep void black, intense ultraviolet
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240518_quantum_observatory.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for gravitational lensing, distortion, and high-energy physics shaders.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
