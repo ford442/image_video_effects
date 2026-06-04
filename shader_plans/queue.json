@@ -612,6 +612,13 @@
       "added": "2026-06-02T15:23:11.925761",
       "status": "completed",
       "completed_at": "2026-06-03T07:52:28.041657"
+    },
+    {
+      "filename": "2026-06-03_kryonic-quantum-aether-fractal-core.md",
+      "title": "Kryonic Quantum-Aether Fractal-Core",
+      "added": "2026-06-03T15:20:14.092972",
+      "status": "completed",
+      "completed_at": "2026-06-04T07:49:20.431145"
     }
   ],
   "rejected": [],
@@ -876,11 +883,6 @@
       "filename": "2026-06-02_ethereal-aurora-ghost-orchid.md",
       "title": "Ethereal-Aurora Ghost-Orchid",
       "added": "2026-06-02T15:23:11.925761"
-    },
-    {
-      "filename": "2026-06-03_kryonic-quantum-aether-fractal-core.md",
-      "title": "Kryonic Quantum-Aether Fractal-Core",
-      "added": "2026-06-03T15:20:14.092972"
     }
   ],
   "in_progress": null
