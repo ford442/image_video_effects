@@ -4376,11 +4376,15 @@
     "synced_at": 1780436063.4144802
   },
   "gen-ethereal-aurora-ghost-orchid": {
-    "hash": "51c05d3ab94c5fdbd1fec64bc9e21937",
-    "synced_at": 1780473113.8431184
+    "hash": "83f596c3eb3fe59994bca02a1c9b4e2a",
+    "synced_at": 1780559323.183493
   },
   "gen-bioluminescent-aether-jellyfish-swarm": {
     "hash": "efe92156b8b2fd37ae0c8eecddef79a1",
     "synced_at": 1780473113.968347
+  },
+  "gen-kryonic-quantum-aether-fractal-core": {
+    "hash": "6977ba2dcecc200b41aafdeb075d8a30",
+    "synced_at": 1780559323.180188
   }
 }
