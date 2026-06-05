@@ -5752,6 +5752,71 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Ideal for testing high-intensity emissive materials, extreme contrast, and glass refraction properties under intense heat.
 
 
+### Agent Suggestion: Steampunk Botanist Laboratory — @ai-agent — 2026-06-15
+- **Date:** 2026-06-15
+- **Prompt:** "A cluttered steampunk botanist laboratory lit by warm golden sunlight streaming through dirty skylights. Brass pipes, glowing glass terrariums filled with luminescent flora, and intricate clockwork mechanisms. The mood is cozy yet mysterious."
+- **Negative prompt:** "modern, clean, minimal, cold light"
+- **Tags:** steampunk, laboratory, botany, glowing
+- **Style / Reference:** highly detailed, cinematic lighting
+- **Composition:** wide shot, cluttered foreground
+- **Color palette:** warm gold, brass, vibrant green and teal
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260615_steampunk-lab.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing warm/cool color contrasts and complex textures.
+
+### Agent Suggestion: Abandoned Cyberpunk Subway — @ai-agent — 2026-06-15
+- **Date:** 2026-06-15
+- **Prompt:** "An abandoned cyberpunk subway station flooded with shallow water. Flickering neon signs reflect vividly in the dark water. Overgrown bioluminescent fungi cling to rusted pillars. Dark and atmospheric, with cinematic shadow contrasts."
+- **Negative prompt:** "people, clean, bright, daytime"
+- **Tags:** cyberpunk, ruins, neon, reflection
+- **Style / Reference:** photorealistic, moody
+- **Composition:** one-point perspective, low angle
+- **Color palette:** deep blues, neon pink, electric cyan
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260615_cyberpunk-subway.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing wet reflections, neon glow, and water rippling shaders.
+
+### Agent Suggestion: Ethereal Floating Castle — @ai-agent — 2026-06-15
+- **Date:** 2026-06-15
+- **Prompt:** "A majestic ethereal castle floating amidst sea of soft, pastel-colored clouds at sunrise. The architecture is delicate and translucent, made of magical crystal and white marble. Gentle rays of light pierce the mist."
+- **Negative prompt:** "dark, ominous, ground, modern"
+- **Tags:** fantasy, architecture, floating, ethereal
+- **Style / Reference:** dreamlike, fantasy illustration
+- **Composition:** wide establishing shot
+- **Color palette:** soft pinks, lavender, white, pale gold
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260615_ethereal-castle.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing volumetric lighting, god rays, and cloud shaders.
+
+### Agent Suggestion: Alien Bioluminescent Coral Reef — @ai-agent — 2026-06-15
+- **Date:** 2026-06-15
+- **Prompt:** "A close-up view of an alien coral reef on another planet. The water is crystal clear but dark, illuminated solely by the intense bioluminescence of exotic, fractal-shaped sea creatures and swaying flora."
+- **Negative prompt:** "earthly, dull, murky, surface"
+- **Tags:** macro, underwater, alien, bioluminescence
+- **Style / Reference:** macro photography, high contrast
+- **Composition:** close-up, shallow depth of field
+- **Color palette:** neon green, deep purple, glowing orange
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260615_alien-coral.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing refraction, caustic effects, and glowing elements.
+
+### Agent Suggestion: Neon Samurai in Rain — @ai-agent — 2026-06-15
+- **Date:** 2026-06-15
+- **Prompt:** "A futuristic samurai warrior standing in an alley during a heavy downpour. Their armor is sleek black with glowing crimson accent lines. The rain splashes off their neon-lit katana. High contrast, dramatic backlighting."
+- **Negative prompt:** "sunny, cartoon, flat, simple"
+- **Tags:** cyberpunk, samurai, rain, neon
+- **Style / Reference:** cinematic, neo-noir
+- **Composition:** low angle, rule of thirds
+- **Color palette:** crimson, deep black, cold blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260615_neon-samurai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing rain particles, wet surfaces, and dramatic lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.

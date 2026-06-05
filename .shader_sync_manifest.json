@@ -4384,7 +4384,11 @@
     "synced_at": 1780473113.968347
   },
   "gen-kryonic-quantum-aether-fractal-core": {
-    "hash": "6977ba2dcecc200b41aafdeb075d8a30",
-    "synced_at": 1780559323.180188
+    "hash": "3b6600ec146ec073a37dadafdbb493df",
+    "synced_at": 1780645528.2635643
+  },
+  "gen-celestial-quantum-glass-dragonfly": {
+    "hash": "b9cee54b244d3ad5682c71804a8dca11",
+    "synced_at": 1780645528.26635
   }
 }
