@@ -5686,6 +5686,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for gravitational lensing, distortion, and high-energy physics shaders.
 
+### Suggestion: Holographic Cyber-Plantation
+- **Date:** 2026-06-04
+- **Prompt:** "A sprawling high-tech agricultural facility where rows of bioluminescent, semi-translucent synthetic crops are cultivated under towering holographic suns. The plants emit a soft, pulsating aqua glow. The environment is sterile but vibrant, mixing metallic chromes with organic neon hues. The lighting is dominated by the intense golden light of the artificial suns casting sharp shadows, contrasted by the cool blue underglow of the flora. Captured with a 35mm lens, wide cinematic shot to emphasize the massive scale of the facility."
+- **Negative prompt:** "dirt, earth, traditional farming, daytime, sun, humans"
+- **Tags:** cyberpunk, agriculture, neon, sci-fi
+- **Style / Reference:** 3D concept art, hyper-detailed, futuristic
+- **Composition:** wide shot, symmetrical perspective down the crop rows
+- **Color palette:** aqua blue, glowing neon green, sterile chrome, vibrant golden holographic light
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260604_holographic_plantation.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing holographic emission and emissive organic materials.
+
+### Suggestion: Crystal Cavern of the Chrono-Spider
+- **Date:** 2026-06-04
+- **Prompt:** "A massive, intricate web woven from shimmering threads of liquid time, spanning a vast underground cavern filled with jagged amethyst crystals. In the center sits a colossal, mechanical spider constructed from polished brass and glowing sapphire gears. The lighting is mysterious and subterranean, with the deep purple crystals illuminated from within, casting eerie violet reflections on the brass mechanics. The mood is ancient and dangerous. Shot from a low angle with a 24mm wide lens to emphasize the imposing size of the spider."
+- **Negative prompt:** "natural spider, organic, daylight, simple, flat"
+- **Tags:** fantasy, steampunk, underground, mystical
+- **Style / Reference:** dark fantasy illustration, highly detailed, atmospheric
+- **Composition:** low angle, dramatic perspective, central focus
+- **Color palette:** deep amethyst purple, polished brass, glowing sapphire blue, pitch black shadows
+- **Aspect ratio:** 4:3
+- **Reference images:** `public/images/suggestions/20260604_chrono_spider_cavern.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests complex thin webs, crystal refraction, and metallic reflections in low light.
+
+### Suggestion: Neon-Soaked Monsoon Market
+- **Date:** 2026-06-04
+- **Prompt:** "A dense, bustling Asian street market during a torrential monsoon downpour in a cyberpunk metropolis. Glowing neon signs in multiple languages reflect brightly off the wet pavement and the colorful plastic umbrellas of the crowd. Steam rises from noodle stands, mixing with the rain. The mood is chaotic, energetic, and atmospheric. Captured with a 50mm lens at a wide aperture (f/1.4) to create a beautiful bokeh effect in the background rain and neon lights."
+- **Negative prompt:** "dry, sunny, daylight, clean, empty"
+- **Tags:** cyberpunk, urban, rain, neon, night
+- **Style / Reference:** cinematic street photography, photorealistic
+- **Composition:** eye-level, busy foreground, shallow depth of field
+- **Color palette:** neon pinks, electric blues, warm oranges, dark wet grays
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260604_monsoon_market.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing wet surface reflections, rain particle effects, and neon bloom.
+
+### Suggestion: Ethereal Void-Jellyfish Migration
+- **Date:** 2026-06-04
+- **Prompt:** "A colossal migration of gargantuan, ethereal jellyfish swimming gracefully through a cosmic void that resembles a colorful nebula. Their translucent, bell-shaped bodies pulse with internal bioluminescence, trailing miles-long glowing tentacles. The environment is zero-gravity space filled with stardust. The lighting is soft and ambient, emanating entirely from the jellyfish and distant galaxies. The mood is tranquil, awe-inspiring, and majestic. Captured with a 14mm ultra-wide lens to capture the vastness of the swarm."
+- **Negative prompt:** "ocean, water, underwater, rocks, sea"
+- **Tags:** space, cosmic, surreal, bioluminescent, majestic
+- **Style / Reference:** cosmic digital art, surrealism, hyper-detailed
+- **Composition:** wide expansive shot, diagonal movement
+- **Color palette:** cosmic purples, glowing cyan, deep space black, magenta stardust
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260604_void_jellyfish.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for evaluating large-scale translucency, soft glowing volumetrics, and particle stardust.
+
+### Suggestion: Molten Glass Foundry of the Fire Giants
+- **Date:** 2026-06-04
+- **Prompt:** "The intense, sweltering interior of a colossal foundry where towering fire giants forge massive weapons out of glowing, semi-solid molten glass instead of metal. Huge crucibles pour thick, radiant liquid glass that illuminates the dark, soot-stained stone walls. The lighting is extremely high-contrast, dominated by the blinding white-hot and deep orange glow of the molten glass against the pitch-black shadows of the cavern. The mood is epic, hostile, and intensely hot. Captured with an 85mm lens, focusing on the molten glass being hammered, with sparks flying."
+- **Negative prompt:** "cold, blue, daylight, clean, metal, modern"
+- **Tags:** fantasy, epic, industrial, fire, glowing
+- **Style / Reference:** epic fantasy concept art, dramatic chiaroscuro
+- **Composition:** close-up on action, dynamic diagonal lines, intense contrast
+- **Color palette:** blinding white, intense molten orange, deep red, soot black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260604_molten_glass_foundry.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing high-intensity emissive materials, extreme contrast, and glass refraction properties under intense heat.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
