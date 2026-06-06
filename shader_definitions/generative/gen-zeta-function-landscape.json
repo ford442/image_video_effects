@@ -28,7 +28,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Deviation from critical line (0.5)"
+      "description": "Deviation from critical line (0.5)",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "range",
@@ -37,7 +38,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Width of t-axis exploration"
+      "description": "Width of t-axis exploration",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "heightScale",
@@ -46,7 +48,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Vertical exaggeration of landscape"
+      "description": "Vertical exaggeration of landscape",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "terms",
@@ -55,7 +58,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Zeta series term count"
+      "description": "Zeta series term count",
+      "mapping": "zoom_params.w"
     }
   ]
 }

@@ -34,7 +34,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Overall size of the ice palace structures"
+      "description": "Overall size of the ice palace structures",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "recursionDepth",
@@ -43,7 +44,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Fractal recursion depth of ice branching"
+      "description": "Fractal recursion depth of ice branching",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "frostAmount",
@@ -52,7 +54,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Amount of frost glitter and ice particles"
+      "description": "Amount of frost glitter and ice particles",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "refraction",
@@ -61,7 +64,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Strength of chromatic refraction dispersion"
+      "description": "Strength of chromatic refraction dispersion",
+      "mapping": "zoom_params.w"
     }
   ]
 }

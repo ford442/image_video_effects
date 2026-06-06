@@ -19,28 +19,32 @@
       "name": "Intensity",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "spin",
       "name": "Spin Speed",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "debris",
       "name": "Debris Amount",
       "default": 0.4,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "lightning",
       "name": "Lightning",
       "default": 0.3,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.w"
     }
   ],
   "tags": [

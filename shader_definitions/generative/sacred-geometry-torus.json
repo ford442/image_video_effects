@@ -4,12 +4,60 @@
   "url": "shaders/sacred-geometry-torus.wgsl",
   "category": "generative",
   "description": "Golden ratio torus knots and sacred geometry nodes rotate in layered phi-harmonic patterns driven by bass.",
-  "tags": ["generative", "sacred-geometry", "torus", "golden-ratio", "phi", "cosmic", "audio-reactive"],
-  "features": ["procedural", "audio-reactive", "mouse-driven", "upgraded-rgba", "temporal", "chromatic", "depth-aware"],
+  "tags": [
+    "generative",
+    "sacred-geometry",
+    "torus",
+    "golden-ratio",
+    "phi",
+    "cosmic",
+    "audio-reactive"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
   "params": [
-    { "id": "knots", "name": "Knots", "default": 0.46, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "spin", "name": "Spin", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "glow", "name": "Glow", "default": 0.52, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "phiLayers", "name": "Phi Layers", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "id": "knots",
+      "name": "Knots",
+      "default": 0.46,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "spin",
+      "name": "Spin",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "glow",
+      "name": "Glow",
+      "default": 0.52,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "phiLayers",
+      "name": "Phi Layers",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }

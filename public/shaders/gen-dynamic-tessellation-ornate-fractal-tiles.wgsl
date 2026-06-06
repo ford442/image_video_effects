@@ -27,6 +27,16 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
+fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
+  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
+  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
+  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
+  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
+  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
+  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
+  return vec4<f32>(controlled, color.a);
+}
+
 
 fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
     let l = 0.4122214708*c.r + 0.5363325363*c.g + 0.0514459929*c.b;
@@ -121,7 +131,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalColor = vec4<f32>(srgb * a, a);
 
-    textureStore(writeTexture, coords, finalColor);
+    textureStore(writeTexture, coords, applyGenerativePrimaryControls(finalColor));
     textureStore(dataTextureA, global_id.xy, finalColor);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

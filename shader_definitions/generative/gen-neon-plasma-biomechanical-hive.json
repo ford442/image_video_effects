@@ -14,38 +14,42 @@
     {
       "id": "param1",
       "name": "Hive Breathing Speed",
-      "type": "slider",
-      "default": 1.0,
+      "default": 1,
       "min": 0.1,
-      "max": 5.0,
-      "step": 0.1
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.x",
+      "description": "Controls the overall strength of the generated effect."
     },
     {
       "id": "param2",
       "name": "Neon Intensity",
-      "type": "slider",
-      "default": 2.0,
-      "min": 0.0,
-      "max": 10.0,
-      "step": 0.1
+      "default": 2,
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "mapping": "zoom_params.y",
+      "description": "Controls animation and temporal evolution speed."
     },
     {
       "id": "param3",
       "name": "Spore Density",
-      "type": "slider",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.05
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "mapping": "zoom_params.z",
+      "description": "Controls spatial scale, frequency, or detail contrast."
     },
     {
       "id": "param4",
       "name": "Magnetic Pull",
-      "type": "slider",
       "default": 1.5,
-      "min": 0.0,
-      "max": 5.0,
-      "step": 0.1
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.w",
+      "description": "Controls mouse-driven or secondary variation influence."
     }
   ],
   "url": "shaders/gen-neon-plasma-biomechanical-hive.wgsl"

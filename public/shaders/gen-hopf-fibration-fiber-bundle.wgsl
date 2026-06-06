@@ -26,6 +26,16 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
+  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
+  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
+  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
+  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
+  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
+  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
+  return vec4<f32>(controlled, color.a);
+}
+
 
 const PI: f32 = 3.14159265;
 
@@ -140,7 +150,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let out = vec4<f32>(accum, alpha);
 
   // Depth: nearest fiber crossing occludes deeper bundle layers
-  textureStore(writeTexture, coord, out);
+  textureStore(writeTexture, coord, applyGenerativePrimaryControls(out));
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(maxDepth, 0.0, 1.0), 0.0, 0.0, 0.0));
   textureStore(dataTextureA, coord, out);
 }

@@ -24,7 +24,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "turbulence",
@@ -32,7 +33,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "cooling",
@@ -40,7 +42,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "diffusion",
@@ -48,7 +51,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ]
 }

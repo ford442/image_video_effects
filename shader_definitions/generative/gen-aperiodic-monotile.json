@@ -28,7 +28,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Density of tiling"
+      "description": "Density of tiling",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "rotation",
@@ -37,7 +38,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Speed of tiling rotation"
+      "description": "Speed of tiling rotation",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "edgeWidth",
@@ -46,7 +48,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Width of tile edge glow"
+      "description": "Width of tile edge glow",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "saturation",
@@ -55,7 +58,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Color saturation intensity"
+      "description": "Color saturation intensity",
+      "mapping": "zoom_params.w"
     }
   ]
 }

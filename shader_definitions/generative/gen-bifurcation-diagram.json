@@ -25,7 +25,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "zoom",
@@ -33,7 +34,8 @@
       "default": 0.1,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "iterations",
@@ -41,7 +43,8 @@
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "colorScheme",
@@ -49,7 +52,8 @@
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ]
 }

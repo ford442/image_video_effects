@@ -4,12 +4,59 @@
   "url": "shaders/neural-synapse-web.wgsl",
   "category": "generative",
   "description": "Pulsing neural network nodes connected by synaptic signal lines, with audio-triggered pulses traveling connections.",
-  "tags": ["generative", "neural", "synapse", "network", "cybernetic", "audio-reactive"],
-  "features": ["procedural", "audio-reactive", "mouse-driven", "upgraded-rgba", "temporal", "chromatic", "depth-aware"],
+  "tags": [
+    "generative",
+    "neural",
+    "synapse",
+    "network",
+    "cybernetic",
+    "audio-reactive"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
   "params": [
-    { "id": "nodeCount", "name": "Node Count", "default": 0.46, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "pulseSpeed", "name": "Pulse Speed", "default": 0.42, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "connectivity", "name": "Connectivity", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "signalGain", "name": "Signal Gain", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "id": "nodeCount",
+      "name": "Node Count",
+      "default": 0.46,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "pulseSpeed",
+      "name": "Pulse Speed",
+      "default": 0.42,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "connectivity",
+      "name": "Connectivity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "signalGain",
+      "name": "Signal Gain",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }

@@ -27,7 +27,8 @@
       "min": 0,
       "max": 1,
       "default": 0.3,
-      "step": 0.05
+      "step": 0.05,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "param2",
@@ -35,7 +36,8 @@
       "min": 0,
       "max": 3,
       "default": 1,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "param3",
@@ -43,7 +45,8 @@
       "min": 0,
       "max": 2,
       "default": 1,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "param4",
@@ -51,7 +54,8 @@
       "min": 0,
       "max": 2,
       "default": 0.5,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.w"
     }
   ]
 }

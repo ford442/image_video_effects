@@ -29,7 +29,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Number of interacting strokes in each symbolic garden cluster"
+      "description": "Number of interacting strokes in each symbolic garden cluster",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "curvature",
@@ -38,7 +39,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "How strongly strokes bend through the local rule field"
+      "description": "How strongly strokes bend through the local rule field",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "gardenScale",
@@ -47,7 +49,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Scale and spacing of emergent glyph clusters"
+      "description": "Scale and spacing of emergent glyph clusters",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "palette",
@@ -56,7 +59,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Blend from minimal ink wash to luminous neon script"
+      "description": "Blend from minimal ink wash to luminous neon script",
+      "mapping": "zoom_params.w"
     }
   ]
 }

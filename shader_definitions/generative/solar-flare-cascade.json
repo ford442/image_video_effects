@@ -32,7 +32,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Overall intensity of solar flares and prominences"
+      "description": "Overall intensity of solar flares and prominences",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "loopComplexity",
@@ -41,7 +42,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Number of magnetic loop structures around the limb"
+      "description": "Number of magnetic loop structures around the limb",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "particleDensity",
@@ -50,7 +52,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Density of coronal mass ejection particles"
+      "description": "Density of coronal mass ejection particles",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "coronaSpread",
@@ -59,7 +62,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "How far the coronal glow extends from the surface"
+      "description": "How far the coronal glow extends from the surface",
+      "mapping": "zoom_params.w"
     }
   ]
 }

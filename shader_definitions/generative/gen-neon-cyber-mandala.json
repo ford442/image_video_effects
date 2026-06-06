@@ -1,15 +1,60 @@
 {
   "id": "gen-neon-cyber-mandala",
   "name": "Neon Cyber Mandala",
-    "category": "generative",
+  "category": "generative",
   "url": "shaders/gen-neon-cyber-mandala.wgsl",
   "description": "A slowly rotating mandala made of neon geometric shapes including rings, stars, and polygons. Each ring features a different decorative pattern - dots, radiating lines, zigzags, waves, and diamonds. Bright neon rainbow gradients cycle through colors. Connecting threads pulse with energy. Floating particles orbit the design. Mouse controls rotation speed and zoom into the center. Breathing pulse effect brings the mandala to life.",
-  "features": ["interactive", "mouse-reactive", "temporal", "procedural"],
-  "tags": ["psychedelic", "neon", "mandala", "geometric", "sacred-geometry", "rainbow", "generative"],
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural"
+  ],
+  "tags": [
+    "psychedelic",
+    "neon",
+    "mandala",
+    "geometric",
+    "sacred-geometry",
+    "rainbow",
+    "generative"
+  ],
   "params": [
-    {"id": "intensity", "name": "Glow Intensity", "default": 0.7, "min": 0, "max": 1, "step": 0.01},
-    {"id": "speed", "name": "Rotation Speed", "default": 0.25, "min": 0, "max": 1, "step": 0.01},
-    {"id": "scale", "name": "Zoom Scale", "default": 0.4, "min": 0, "max": 1, "step": 0.01},
-    {"id": "colorshift", "name": "Color Shift", "default": 0.0, "min": 0, "max": 1, "step": 0.01}
+    {
+      "id": "intensity",
+      "name": "Glow Intensity",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "speed",
+      "name": "Rotation Speed",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "scale",
+      "name": "Zoom Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }

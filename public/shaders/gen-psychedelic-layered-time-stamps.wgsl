@@ -25,6 +25,16 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
+  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
+  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
+  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
+  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
+  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
+  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
+  return vec4<f32>(controlled, color.a);
+}
+
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -105,7 +115,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let luma = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(luma * 0.6 + current_delay * 0.2 + 0.15 + bass * 0.05, 0.0, 1.0);
 
-  textureStore(writeTexture, coord, vec4<f32>(final_color, alpha));
+  textureStore(writeTexture, coord, applyGenerativePrimaryControls(vec4<f32>(final_color, alpha)));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -28,7 +28,8 @@
       "default": 0.58,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "waterline",
@@ -36,7 +37,8 @@
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "terrain_scale",
@@ -44,7 +46,8 @@
       "default": 0.48,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "wind",
@@ -52,7 +55,8 @@
       "default": 0.45,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ]
 }

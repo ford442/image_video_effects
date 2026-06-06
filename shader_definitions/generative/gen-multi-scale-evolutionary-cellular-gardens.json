@@ -26,7 +26,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "How quickly the growth rules evolve over time"
+      "description": "How quickly the growth rules evolve over time",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "competition",
@@ -35,7 +36,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "How fiercely species compete for resources"
+      "description": "How fiercely species compete for resources",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "fertility",
@@ -44,7 +46,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Resource regeneration rate in the environment"
+      "description": "Resource regeneration rate in the environment",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "diversity",
@@ -53,7 +56,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Number of distinct species behaviors present"
+      "description": "Number of distinct species behaviors present",
+      "mapping": "zoom_params.w"
     }
   ]
 }

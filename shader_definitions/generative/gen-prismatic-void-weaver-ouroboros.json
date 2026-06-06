@@ -4,39 +4,50 @@
   "description": "A hyper-dimensional, endlessly twisting serpentine ring forged of chromatic plasma and fractal dark matter.",
   "type": "generative",
   "url": "shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
-  "tags": ["ouroboros", "void", "fractal", "plasma", "chromatic", "loop"],
+  "tags": [
+    "ouroboros",
+    "void",
+    "fractal",
+    "plasma",
+    "chromatic",
+    "loop"
+  ],
   "params": [
     {
       "id": "param1",
       "name": "Twist Density",
-      "default": 5.0,
-      "min": 1.0,
-      "max": 20.0,
-      "step": 0.5
+      "default": 5,
+      "min": 1,
+      "max": 20,
+      "step": 0.5,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "param2",
       "name": "Plasma Glow",
       "default": 0.8,
       "min": 0.1,
-      "max": 2.0,
-      "step": 0.1
+      "max": 2,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "param3",
       "name": "Void Gravity",
       "default": 1.5,
-      "min": 0.0,
-      "max": 5.0,
-      "step": 0.1
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "param4",
       "name": "Audio Reactivity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.05
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "mapping": "zoom_params.w"
     }
   ]
 }

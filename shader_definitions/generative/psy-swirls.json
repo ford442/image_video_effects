@@ -11,7 +11,8 @@
       "max": 2,
       "default": 1,
       "desc": "Global rotation and flow velocity",
-      "id": "swirl_speed"
+      "id": "swirl_speed",
+      "mapping": "zoom_params.x"
     },
     {
       "name": "Layer Count",
@@ -20,7 +21,8 @@
       "max": 1,
       "default": 0.5,
       "desc": "Number of nested swirl layers (2-6)",
-      "id": "layer_count"
+      "id": "layer_count",
+      "mapping": "zoom_params.y"
     },
     {
       "name": "Rainbow Speed",
@@ -29,7 +31,8 @@
       "max": 2,
       "default": 0.8,
       "desc": "Hue cycling rate",
-      "id": "rainbow_speed"
+      "id": "rainbow_speed",
+      "mapping": "zoom_params.z"
     },
     {
       "name": "Twist Intensity",
@@ -38,7 +41,8 @@
       "max": 1,
       "default": 0.6,
       "desc": "Vortex distortion strength (depth-reduced)",
-      "id": "twist_intensity"
+      "id": "twist_intensity",
+      "mapping": "zoom_params.w"
     }
   ],
   "features": [

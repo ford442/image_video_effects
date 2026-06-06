@@ -26,28 +26,40 @@
       "name": "Mode Scale",
       "default": 0.4,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Controls the overall strength of the generated effect."
     },
     {
       "id": "colorMode",
       "name": "Colour Mode",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Controls animation and temporal evolution speed."
     },
     {
       "id": "nodeSharpness",
       "name": "Node Sharpness",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Controls spatial scale, frequency, or detail contrast."
     },
     {
       "id": "modeCount",
       "name": "Mode Count",
       "default": 0.6,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Controls mouse-driven or secondary variation influence."
     }
   ]
 }

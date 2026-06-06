@@ -28,7 +28,8 @@
       "min": 1,
       "max": 6,
       "step": 1,
-      "description": "Recursion depth of hopper crystal formation"
+      "description": "Recursion depth of hopper crystal formation",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "param2",
@@ -37,7 +38,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Thin-film interference color intensity"
+      "description": "Thin-film interference color intensity",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "param3",
@@ -46,7 +48,8 @@
       "min": 0.5,
       "max": 5,
       "step": 0.1,
-      "description": "Size of crystal lattice cells"
+      "description": "Size of crystal lattice cells",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "param4",
@@ -55,7 +58,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Atmospheric fog density"
+      "description": "Atmospheric fog density",
+      "mapping": "zoom_params.w"
     }
   ]
 }

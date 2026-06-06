@@ -27,7 +27,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "IFS iteration depth"
+      "description": "IFS iteration depth",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "glowSize",
@@ -36,7 +37,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Attractor glow radius"
+      "description": "Attractor glow radius",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "ringCount",
@@ -45,7 +47,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Density of concentric rings"
+      "description": "Density of concentric rings",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "saturation",
@@ -54,7 +57,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Color saturation"
+      "description": "Color saturation",
+      "mapping": "zoom_params.w"
     }
   ]
 }

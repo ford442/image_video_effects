@@ -4,13 +4,59 @@
   "url": "shaders/gen-luminous-cauldron.wgsl",
   "category": "generative",
   "description": "A radiant alchemical cauldron of bubbling plasma, froth, and glittering treble sparks.",
-  "tags": ["generative", "cauldron", "plasma", "alchemy", "bubbles", "audio-reactive"],
-  "features": ["procedural", "audio-reactive", "mouse-driven", "upgraded-rgba", "temporal", "chromatic", "depth-aware"],
+  "tags": [
+    "generative",
+    "cauldron",
+    "plasma",
+    "alchemy",
+    "bubbles",
+    "audio-reactive"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
   "params": [
-    { "id": "boilRate", "name": "Boil Rate", "default": 0.48, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "convection", "name": "Convection", "default": 0.44, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "foam", "name": "Foam", "default": 0.35, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "radiance", "name": "Radiance", "default": 0.52, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "id": "boilRate",
+      "name": "Boil Rate",
+      "default": 0.48,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "convection",
+      "name": "Convection",
+      "default": 0.44,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "foam",
+      "name": "Foam",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "radiance",
+      "name": "Radiance",
+      "default": 0.52,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }
-

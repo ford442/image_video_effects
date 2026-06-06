@@ -29,7 +29,8 @@
       "max": 2,
       "default": 1,
       "step": 0.01,
-      "description": "Speed of the contra-rotating ring structure."
+      "description": "Speed of the contra-rotating ring structure.",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "param2",
@@ -38,7 +39,8 @@
       "max": 1,
       "default": 0.5,
       "step": 0.01,
-      "description": "Number of rings and surface detail density."
+      "description": "Number of rings and surface detail density.",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "param3",
@@ -47,7 +49,8 @@
       "max": 2,
       "default": 1,
       "step": 0.01,
-      "description": "Overall size of the ring structure."
+      "description": "Overall size of the ring structure.",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "param4",
@@ -56,7 +59,8 @@
       "max": 5,
       "default": 1,
       "step": 0.01,
-      "description": "Brightness of the central star and emitted light."
+      "description": "Brightness of the central star and emitted light.",
+      "mapping": "zoom_params.w"
     }
   ]
 }

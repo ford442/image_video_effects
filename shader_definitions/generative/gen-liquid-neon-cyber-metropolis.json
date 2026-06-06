@@ -47,5 +47,47 @@
       "max": 2,
       "step": 0.05
     }
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Controls the overall strength of the generated effect."
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Controls animation and temporal evolution speed."
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Controls spatial scale, frequency, or detail contrast."
+    },
+    {
+      "id": "mouseInfluence",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Controls mouse-driven or secondary variation influence."
+    }
   ]
 }
