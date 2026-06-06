@@ -1,0 +1,124 @@
+{
+  "batch_name": "Batch 2 \u2014 Generative Shaders (ACES + plumbing)",
+  "count": 10,
+  "category": "generative",
+  "selection_criteria": [
+    "Standard @workgroup_size(16, 16, 1) preferred",
+    "Has plasmaBuffer, readDepthTexture, dataTextureC",
+    "Missing acesToneMap",
+    "Under 160 lines",
+    "Scored by: no dataA write (+10), no chromatic (+5), hardcoded alpha (+3), metadata drift (+2)"
+  ],
+  "shaders": [
+    {
+      "id": "gen-protocell-division",
+      "lines": 137,
+      "score": 18,
+      "missing": [
+        "dataA-write",
+        "chromatic",
+        "hard-alpha"
+      ],
+      "notes": "Missing: dataA-write, chromatic, hard-alpha"
+    },
+    {
+      "id": "gen-erosion-strata",
+      "lines": 138,
+      "score": 18,
+      "missing": [
+        "dataA-write",
+        "chromatic",
+        "hard-alpha"
+      ],
+      "notes": "Missing: dataA-write, chromatic, hard-alpha"
+    },
+    {
+      "id": "atmos_volumetric_fog",
+      "lines": 140,
+      "score": 18,
+      "missing": [
+        "dataA-write",
+        "chromatic",
+        "hard-alpha"
+      ],
+      "notes": "Missing: dataA-write, chromatic, hard-alpha"
+    },
+    {
+      "id": "gen-murmuration-phantom",
+      "lines": 149,
+      "score": 18,
+      "missing": [
+        "dataA-write",
+        "chromatic",
+        "hard-alpha"
+      ],
+      "notes": "Missing: dataA-write, chromatic, hard-alpha"
+    },
+    {
+      "id": "neural-mandala",
+      "lines": 112,
+      "score": 10,
+      "missing": [
+        "chromatic",
+        "hard-alpha",
+        "metadata-drift"
+      ],
+      "notes": "Missing: chromatic, hard-alpha, metadata-drift"
+    },
+    {
+      "id": "coral-growth",
+      "lines": 116,
+      "score": 10,
+      "missing": [
+        "chromatic",
+        "hard-alpha",
+        "metadata-drift"
+      ],
+      "notes": "Missing: chromatic, hard-alpha, metadata-drift"
+    },
+    {
+      "id": "mycelium-network",
+      "lines": 124,
+      "score": 10,
+      "missing": [
+        "chromatic",
+        "hard-alpha",
+        "metadata-drift"
+      ],
+      "notes": "Missing: chromatic, hard-alpha, metadata-drift"
+    },
+    {
+      "id": "gen-mandelbox-explorer",
+      "lines": 125,
+      "score": 10,
+      "missing": [
+        "chromatic",
+        "hard-alpha",
+        "metadata-drift"
+      ],
+      "notes": "Missing: chromatic, hard-alpha, metadata-drift"
+    },
+    {
+      "id": "gen-cyclic-automaton",
+      "lines": 127,
+      "score": 10,
+      "missing": [
+        "chromatic",
+        "hard-alpha",
+        "metadata-drift"
+      ],
+      "notes": "Missing: chromatic, hard-alpha, metadata-drift"
+    },
+    {
+      "id": "gen-apollonian-gasket",
+      "lines": 129,
+      "score": 10,
+      "missing": [
+        "chromatic",
+        "hard-alpha",
+        "metadata-drift"
+      ],
+      "notes": "Missing: chromatic, hard-alpha, metadata-drift"
+    }
+  ]
+}
