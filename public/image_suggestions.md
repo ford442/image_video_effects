@@ -5817,6 +5817,72 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Perfect for testing rain particles, wet surfaces, and dramatic lighting.
 
+### Suggestion: Bioluminescent Aether-Jellyfish Swarm
+- **Date:** 2026-06-20
+- **Prompt:** "A mesmerizing, hyper-organic deep-space ocean teeming with a swarm of ethereal, semi-transparent jellyfish woven from luminous aether-plasma. The jellyfish propel themselves rhythmically in sync. The lighting is cinematic volumetric bioluminescence, with deep indigo background and glowing cyan and purple tentacles. The mood is tranquil and otherworldly. Captured with an ultra-wide 12mm lens to show the vastness of the space."
+- **Negative prompt:** "earth, water, realistic sea, murky, blurry, low contrast"
+- **Tags:** sci-fi, space, bioluminescence, glowing, ethereal
+- **Style / Reference:** 3D digital art, hyper-detailed, octane render
+- **Composition:** ultra-wide shot, vast perspective
+- **Color palette:** deep indigo, cyan, glowing purple
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260620_aether-jellyfish.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing volumetric plasma, soft glowing materials, and underwater/space blend.
+
+### Suggestion: Neon-Plasma Biomechanical Hive
+- **Date:** 2026-06-20
+- **Prompt:** "A hyper-organic, biomechanical labyrinth of pulsing neon circuitry and breathing metallic tissue that spawns luminescent plasma-spores. The lighting features intense neon pink and toxic green rim lights against a dark metallic environment. The mood is intense, alien, and cybernetic. Captured with a macro 90mm lens focusing on the intricate glowing nodes and creeping metallic tendrils."
+- **Negative prompt:** "clean, modern, minimalist, daytime, sunlight, flat"
+- **Tags:** cyberpunk, biomechanical, neon, macro, organic
+- **Style / Reference:** H.R. Giger inspired, dark sci-fi, photorealistic macro
+- **Composition:** macro close-up, shallow depth of field
+- **Color palette:** neon pink, toxic green, dark gunmetal
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260620_biomechanical-hive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex normal maps, emissive textures, and high contrast.
+
+### Suggestion: Eldritch-Quantum Fractal-Eye
+- **Date:** 2026-06-20
+- **Prompt:** "A colossal, hyper-dimensional eye constructed from infinitely folding quantum fractals and liquid plasma, constantly shifting its non-Euclidean iris geometry. The lighting is ethereal and multidirectional, emanating from the eye's core with bright golden and piercing blue hues. The mood is cosmic, terrifying, and awe-inspiring. Captured with a cinematic 35mm lens, centered symmetrically."
+- **Negative prompt:** "human eye, realistic, simple, blurry, low resolution"
+- **Tags:** cosmic, abstract, fractal, surreal, glowing
+- **Style / Reference:** surrealist digital painting, mathematical fractals
+- **Composition:** perfectly symmetrical, centered
+- **Color palette:** piercing blue, bright gold, cosmic black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20260620_fractal-eye.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Use this for testing extreme geometric distortion, mathematical fractals, and intense glow effects.
+
+### Suggestion: Celestial Nanite-Swarm Nebula
+- **Date:** 2026-06-20
+- **Prompt:** "A majestic, slowly churning nebula constructed entirely from trillions of glowing, synchronized nanites that dynamically self-assemble into intricate, shifting geometric constellations and colossal architectural megastructures in deep space. The lighting is an epic astronomical bloom with starlight refracting through the nanite clouds. The mood is epic, vast, and silent. Captured with a deep space telescope style, high magnification."
+- **Negative prompt:** "planets, ships, realistic gas clouds, mundane"
+- **Tags:** sci-fi, nebula, nanites, space, geometric
+- **Style / Reference:** astrophotography, sci-fi concept art
+- **Composition:** vast landscape, majestic scale
+- **Color palette:** deep space black, shimmering silver, glowing amber
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260620_nanite-nebula.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing particle systems and enormous scale.
+
+### Suggestion: Cyber-Organic Liquid-Neon Pulsar
+- **Date:** 2026-06-20
+- **Prompt:** "A biomechanical, pulsating celestial core composed of hyper-viscous liquid-neon and crystalline techno-organic fibers that rhythmically contract, dilate, and emit intense volumetric light bursts. The lighting is violently bright, radiating from the core with blinding magenta and cyan flares against an absolute void. The mood is energetic, dangerous, and pulsating. Captured with a 50mm lens with dramatic lens flares."
+- **Negative prompt:** "soft, calm, pastel, low contrast, natural"
+- **Tags:** cyberpunk, core, glowing, viscous, energy
+- **Style / Reference:** hyper-realistic 3D render, futuristic energy
+- **Composition:** centered subject, dynamic energy bursts
+- **Color palette:** blinding magenta, bright cyan, absolute black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260620_liquid-neon-pulsar.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for extreme volumetric lighting, flares, and liquid distortion testing.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
