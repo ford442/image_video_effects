@@ -134,13 +134,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let star = step(0.992, starSeed) * (0.6 + treble * 1.2);
     rgb += vec3<f32>(star);
 
-    let finalRGB = clamp(rgb, vec3<f32>(0.0), vec3<f32>(4.0));
+    var finalRGB = clamp(rgb, vec3<f32>(0.0), vec3<f32>(4.0));
 
     // Meaningful alpha: petal mask + bloom + ring + base
     let alpha = clamp(folded.a * 0.2 + petalSDF * 0.6 + ring * 0.3 + bloom * 0.25 + bass * 0.1, 0.0, 1.0);
 
     // Depth: petals are near, surround is far
     let depth = clamp(1.0 - petalSDF * 0.6 - bloom * 0.2, 0.0, 1.0);
+
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    finalRGB = vec3<f32>(finalRGB.r + caStr, finalRGB.g, finalRGB.b - caStr * 0.5);
 
     textureStore(writeTexture, coord, vec4<f32>(acesToneMap((finalRGB) * 1.1), alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

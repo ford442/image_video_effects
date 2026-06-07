@@ -453,7 +453,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "temporal"
     ],
     "params": [
       {
@@ -812,7 +813,8 @@
       "generative"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "temporal"
     ],
     "params": [
       {
@@ -867,7 +869,8 @@
       "generative"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "temporal"
     ],
     "params": [
       {
@@ -1466,7 +1469,8 @@
     "features": [
       "generative",
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "temporal"
     ],
     "params": [
       {
@@ -1532,7 +1536,8 @@
       "audio-seasonal-pulses",
       "gravitational-lensing",
       "time-dilated-rings",
-      "raymarched"
+      "raymarched",
+      "temporal"
     ],
     "params": [
       {
@@ -1591,7 +1596,8 @@
     ],
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal"
     ],
     "params": [
       {
@@ -1637,6 +1643,9 @@
     "name": "Abyssal Quantum-Leviathan Skeleton",
     "type": "generative",
     "url": "shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
+    "features": [
+      "temporal"
+    ],
     "params": [
       {
         "id": "param1",
@@ -1759,7 +1768,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "temporal"
     ],
     "params": [
       {
@@ -2006,7 +2016,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {

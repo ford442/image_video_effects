@@ -139,6 +139,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Dark mineral background
   col = mix(vec3<f32>(0.02, 0.02, 0.04), col, min(totalGlow * 0.8, 1.0));
 
+  // Chromatic aberration
+  let caStr = 0.003 * (1.0 + bass);
+  col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
   col = aces(col);
   let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(luma * 0.85 + totalGlow * 0.1, 0.0, 1.0);

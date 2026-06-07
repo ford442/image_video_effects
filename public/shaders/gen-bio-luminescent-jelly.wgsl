@@ -238,6 +238,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(0.4545));
 
+  let caStr = 0.003 * (1.0 + bass);
+  col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
   // ── Alpha encoding ──────────────────────────────────────────────
   // Alpha = glow intensity + tentacle density.
   // Glowing parts are translucent (lower alpha), dense body is more opaque.

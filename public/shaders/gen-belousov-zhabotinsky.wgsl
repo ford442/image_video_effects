@@ -131,7 +131,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var alpha = newA * waveFront * depth * 0.8 + newA * 0.2;
   alpha = clamp(alpha, 0.0, 0.95);
 
-  let finalColor = mix(inputColor.rgb, outCol, alpha);
+  var finalColor = mix(inputColor.rgb, outCol, alpha);
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  finalColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
   let finalAlpha = max(inputColor.a, alpha);
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));

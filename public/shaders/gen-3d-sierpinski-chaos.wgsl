@@ -59,6 +59,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
   let resolution = vec2<f32>(u.config.zw);
   let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
 
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
@@ -178,6 +179,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bg_grad = length(uv) * 0.3;
     color = vec3<f32>(0.02, 0.02, 0.03) * (1.0 - bg_grad);
   }
+
+  // Temporal feedback
+  let decay = 0.96;
+  let temporal = mix(prev.rgb * decay, color, 0.25);
+  textureStore(dataTextureA, pixel, vec4<f32>(temporal, 1.0));
 
   // Semantic alpha based on density
   let effect = clamp(count * 0.8, 0.4, 0.95);

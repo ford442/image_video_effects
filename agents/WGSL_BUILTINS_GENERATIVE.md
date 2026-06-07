@@ -322,6 +322,54 @@ fn heatColor(t: f32) -> vec3<f32> {
 }
 ```
 
+### Psychedelic Color & Motion Helpers
+
+Use these for Batch 4 color/movement upgrades. They are compute-safe and do not add bindings.
+
+```wgsl
+fn psychedelicPalette(t: f32) -> vec3<f32> {
+    let h = fract(t);
+    let a = vec3<f32>(0.55, 0.45, 0.62);
+    let b = vec3<f32>(0.45, 0.55, 0.38);
+    let c = vec3<f32>(1.0, 1.0, 1.0);
+    let d = vec3<f32>(0.00, 0.33, 0.67);
+    let rgb = a + b * cos(TAU * (c * h + d));
+    return clamp(rgb * vec3<f32>(1.25, 1.08, 1.35), vec3<f32>(0.0), vec3<f32>(1.6));
+}
+
+fn neonGlow(color: vec3<f32>, intensity: f32) -> vec3<f32> {
+    let lum = luma(color);
+    let bloomMask = smoothstep(0.35, 1.0, lum);
+    let saturated = mix(color, normalize(max(color, vec3<f32>(0.001))) * max(lum, 0.25), 0.35);
+    return color + saturated * bloomMask * intensity;
+}
+
+fn organicDrift(uv: vec2<f32>, time: f32, scale: f32) -> vec2<f32> {
+    let p = uv * scale;
+    let slow = vec2<f32>(time * 0.11, -time * 0.08);
+    let q = vec2<f32>(
+        fbm(p + slow, 3),
+        fbm(p + vec2<f32>(5.2, 1.3) - slow.yx, 3)
+    );
+    return (q * 2.0 - vec2<f32>(1.0)) / max(scale, 0.001);
+}
+
+fn pulseScale(time: f32, speed: f32) -> f32 {
+    let wave = 0.5 + 0.5 * sin(time * speed);
+    return 0.92 + smoothstep(0.0, 1.0, wave) * 0.16;
+}
+```
+
+**Batch 4 usage pattern**:
+```wgsl
+let drift = organicDrift(uv01, time, 8.0) * (0.05 + bass * 0.03);
+let p = uv + drift;
+var color = psychedelicPalette(fbm(p * 3.0, 4) + time * 0.08 + treble * 0.12);
+color = neonGlow(color, 0.4 + mids * 0.25);
+color *= pulseScale(time, 1.5 + bass);
+color = acesToneMap(color * 1.1);
+```
+
 ---
 
 ## 6. SDF Primitives (2D & 3D)

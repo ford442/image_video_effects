@@ -12,7 +12,8 @@
     "generative"
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "temporal"
   ],
   "params": [
     {

@@ -125,6 +125,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let uv = (vec2<f32>(coords) - 0.5 * vec2<f32>(dimensions)) / f32(dimensions.y);
+    let dataUV = vec2<f32>(coords) / vec2<f32>(dimensions);
+    let prev = textureSampleLevel(dataTextureC, u_sampler, dataUV, 0.0);
 
     // Camera setup
     let time = u.config.x;
@@ -200,5 +202,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = bg_color + aether_color * vol_acc;
     }
 
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, color, 0.25);
+    textureStore(dataTextureA, coords, vec4<f32>(temporal, 1.0));
     textureStore(writeTexture, coords, vec4<f32>(color, 1.0));
 }

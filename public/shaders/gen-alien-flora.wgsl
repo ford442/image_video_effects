@@ -192,6 +192,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    let uv_screen = vec2<f32>(global_id.xy) / resolution;
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv_screen, 0.0);
 
     // Camera Setup
     var mouse = u.zoom_config.yz;
@@ -283,6 +285,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = mix(fogColor, vec3<f32>(0.0, 0.0, 0.05), rd.y * 0.5 + 0.5);
     }
 
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, color, 0.25);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, 1.0));
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 100.0, 0.0, 0.0, 0.0));
 }

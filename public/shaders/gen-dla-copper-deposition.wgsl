@@ -141,6 +141,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += vec3<f32>(0.35, 0.22, 0.08) * highlight;
   color += vec3<f32>(1.0, 0.85, 0.5) * spark * treble * 2.5;
 
+  // Depth: deposited metal sits closer (higher) than depleted electrolyte
+  let depth = clamp(deposit * (1.0 - polar.x), 0.0, 1.0);
+
+  // Chromatic aberration
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
   // ACES tone mapping
   color = color * (2.51 * color + 0.03) / (color * (2.43 * color + 0.59) + 0.14);
 
@@ -148,8 +155,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(deposit * (1.0 - depletion * 0.7) + spark * 0.3, 0.0, 1.0);
   let out = vec4<f32>(color, alpha);
 
-  // Depth: deposited metal sits closer (higher) than depleted electrolyte
-  let depth = clamp(deposit * (1.0 - polar.x), 0.0, 1.0);
   textureStore(writeTexture, coord, applyGenerativePrimaryControls(out));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, coord, out);

@@ -125,6 +125,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Audio reactivity: treble sparkles the nanite glow
     let treble = plasmaBuffer[0].z;
+    let bass = plasmaBuffer[0].x;
 
     let ro = vec3<f32>(0.0, 0.0, -5.0);
     let rd = normalize(vec3<f32>(p, 1.0));
@@ -164,12 +165,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     col = pow(col, vec3<f32>(0.8));
 
+    // Chromatic aberration
+    let hitDepth = select(0.0, clamp(1.0 - firstHitT / 10.0, 0.0, 1.0), firstHitT >= 0.0);
+    let caStr = 0.003 * (1.0 + bass) + hitDepth * 0.001;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
     // Alpha: accumulated nebula opacity over the cosmic void, never flat 1.0
     let alpha = clamp(coverage + length(bg), 0.0, 1.0);
     let out = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
-    // Depth: distance to first dense nanite cloud (near = closer)
-    let hitDepth = select(0.0, clamp(1.0 - firstHitT / 10.0, 0.0, 1.0), firstHitT >= 0.0);
     let coord = vec2<i32>(global_id.xy);
     textureStore(writeTexture, coord, out);
     textureStore(writeDepthTexture, coord, vec4<f32>(hitDepth, 0.0, 0.0, 0.0));

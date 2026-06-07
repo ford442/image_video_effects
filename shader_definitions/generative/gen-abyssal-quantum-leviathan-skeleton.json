@@ -3,6 +3,9 @@
   "name": "Abyssal Quantum-Leviathan Skeleton",
   "type": "generative",
   "url": "shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
+  "features": [
+    "temporal"
+  ],
   "params": [
     {
       "id": "param1",

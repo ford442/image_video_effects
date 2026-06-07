@@ -1,50 +1,48 @@
-# Swarm Coordination — 2026-06-07 UPDATE
+# Swarm Coordination — 2026-06-06
 
-**Date:** 2026-06-07
-
-**Focus:** Multi-agent swarm to upgrade generative shaders with **psychedelic/brilliant/bright color schemes** + **more movement/dynamic effects** + **expanded WGSL functions**.
-
-**Philosophy:** Upgrade > Create new (we already have 320+ generative shaders). Make existing ones **pop harder**.
+**Date:** 2026-06-06
+**Focus:** Shift toward **upgrading & optimizing** existing generative shaders + building flagship showcase shaders.
+**Philosophy:** Upgrade > Create new (we already have 320+ generative shaders).
 
 ---
 
-## Strategic Priorities (Today)
+## Sprint Status (end of Batch 2)
 
-| Priority | Area | Goal | Owner | Status |
-|----------|------|------|-------|--------|
-| P1 | Ethereal Silk Showcase | Deliver flagship showcase shader | Kimi Claw | 🔄 In Progress |
-| P2 | Psychedelic Color Upgrade | Batch-upgrade 20+ shaders with bright/psychedelic color schemes | Multi-Agent Swarm | 📋 Ready to Start |
-| P3 | Movement & Dynamics | Add more motion, oscillation, organic flow to static shaders | Multi-Agent Swarm | 📋 Ready to Start |
-| P4 | WGSL Function Library | Expand reusable functions (noise, color, shaping) | Codex | 📋 Ready to Start |
-| P5 | Chromatic + DataTexture | Continue Batch 3 upgrades | Claude | 🔄 In Progress |
+| Phase | Shaders | Status | Report |
+|-------|--------:|:------:|--------|
+| Batch 1 — ACES only | 10 | ✅ Done | `agents/swarm-outputs/batch-1-validation.md` |
+| Metadata drift sweep | 97 | ✅ Done | `agents/swarm-outputs/metadata-drift-validation.md` |
+| Batch 2 — full plumbing | 10 | ✅ Done | `agents/swarm-outputs/batch-2-validation.md` |
+| **Total upgraded today** | **117** | ✅ | — |
+| Batch 3D — multi-pass (Claude) | 5 | ✅ Done | `agents/swarm-outputs/claude-notes/*.claude-optimization.md` |
+| Batch 3A/B/C | 24 | 🔲 Ready | `agents/swarm-tasks/batch-3-queue.json` |
+
+### Batch 2 highlights
+- 10/10 naga pass; 4 JSON files synced with full feature stack
+- Duplicate ACES caught in `gen-mandelbox-explorer`, `gen-apollonian-gasket`
+- Heaviest lift: `atmos_volumetric_fog` (ACES + audio + temporal + chromatic + dataA from near-scratch)
+- All notes: `agents/swarm-outputs/kimi-notes/` (Batch 2 set)
+
+### Remaining generative gaps (post-Batch 2 audit)
+| Gap | Count |
+|-----|------:|
+| Missing chromatic aberration | 169 |
+| Missing `dataTextureA` write | 122 |
+| Metadata drift (`upgraded-rgba` ↔ no ACES) | **0** |
 
 ---
 
-## 🎯 NEW: Psychedelic Color Swarm Plan
+## Strategic Priorities (This Week)
 
-### Objective
-Transform existing generative shaders from "subtle/ambient" to **striking, psychedelic, attention-grabbing** while maintaining quality.
+| Priority | Area | Goal | Owner |
+|---------|------|------|-------|
+| P1 | **Batch 3 Upgrades** | 3A chromatic (4) → 3B dataA (10) → 3C chromatic sweep (10) | Kimiclaw + Codex |
+| P2 | **Showcase Quality** | 1–2 flagship showcase shaders as quality references | Kimi Claw |
+| P3 | **Performance & Structure** | LOD, early-exit, duplicate-fn cleanup on upgraded shaders | Claude + Codex |
+| P4 | **Audio Reactivity** | Consistent `bass_env` + param mapping across upgraded shaders | All |
+| P5 | **Documentation** | Queue files, validation reports, showcase criteria | All |
 
-### Color Direction
-- **Neon gradients**: Electric purple → Hot pink → Cyan
-- **Heat maps**: Deep blue → Yellow → White (thermal vision)
-- **Bioluminescent**: Deep ocean blue → Teal → Bright green (glow)
-- **Sunset neon**: Magenta → Orange → Gold (high contrast)
-- **Acid trip**: Saturated complementary pairs (cyan/red, magenta/green)
-
-### Movement Direction
-- Add **oscillation** (sine/cosine time-based motion) to static patterns
-- Add **organic drift** (simplex noise displacement) to rigid geometry
-- Add **pulse/breathe** (scale + intensity modulation) to flat colors
-- Add **trails/feedback** (temporal accumulation) to sharp effects
-
-### WGSL Function Expansion
-Create reusable functions in `agents/WGSL_BUILTINS_GENERATIVE.md`:
-- `psychedelicPalette(t)` — time-rotating HSV rainbow
-- `neonGlow(color, intensity)` — bloom-style glow
-- `organicDrift(uv, time, scale)` — noise-based displacement
-- `pulseScale(time, speed)` — breathing/pulsing animation
-- `chromaticAberration(uv, amount)` — RGB split effect
+**Deferred (separate sprint):** GitHub #799 WASM context, #800 shader gallery UI
 
 | Priority | Area | Goal | Owner |
 |---------|------|------|-------|
@@ -98,14 +96,85 @@ Parallel (after Batch 3A validates, or immediately if capacity):
   Claude   → gen-chronos-labyrinth
   Codex    → gen-liquid-crystal-hive-mind
     ↓ (all three delivered)
-  Kimi     → gen-celestial-forge (synthesizes patterns from F1 siblings)
+  Kimi     → gen-celestial-forge (synthesizes F1 patterns)
     ↓
   Codex    → F1 validation report → agents/swarm-outputs/flagship-f1-validation.md
 ```
 
 ---
 
-## Multi-Agent Swarm Roles
+## Batch 3 Launch Queue
+
+Machine-readable: [`agents/swarm-tasks/batch-3-queue.json`](swarm-tasks/batch-3-queue.json)
+
+### 3A — Chromatic only (4 shaders) · Kimiclaw · **NEXT**
+
+Already have ACES + dataA + temporal. Add chromatic chunk only.
+
+| # | Shader ID |
+|---|-----------|
+| 1 | `gen-translucent-nebula` |
+| 2 | `gen-alpha-aurora` |
+| 3 | `gen-ghost-flame` |
+| 4 | `gen-prismatic-crystal-growth` |
+
+> `electric-eel-storm` excluded — chromatic added in Batch 2.
+
+### 3B — dataTextureA plumber (10 shaders) · Kimiclaw · after 3A
+
+Reads `dataTextureC` but missing `textureStore(dataTextureA, ...)`.
+
+| # | Shader ID |
+|---|-----------|
+| 1 | `gen-bioluminescent-abyss` |
+| 2 | `cosmic-jellyfish` |
+| 3 | `cosmic-web` |
+| 4 | `gen-3d-sierpinski-chaos` |
+| 5 | `gen-4d-projection-dream-weavers` |
+| 6 | `gen-abyssal-chrono-coral` |
+| 7 | `gen-abyssal-leviathan-scales` |
+| 8 | `abyssal-quantum-leviathan-skeleton` |
+| 9 | `gen-alien-flora` |
+| 10 | `gen-art-deco-sky` |
+
+### 3C — Chromatic sweep (10 shaders) · Kimiclaw · after 3B
+
+Repurposed: ACES-gap batch is empty (drift = 0). Target shaders with ACES + dataA but no chromatic.
+
+| # | Shader ID |
+|---|-----------|
+| 1 | `aurora-curtain` |
+| 2 | `bioluminescent-bloom` |
+| 3 | `gen-belousov-zhabotinsky` |
+| 4 | `gen-bio-luminescent-jelly` |
+| 5 | `gen-celestial-nanite-swarm-nebula` |
+| 6 | `gen-crystal-lattice-growth` |
+| 7 | `gen-crystalline-mandala-bloom` |
+| 8 | `gen-dla-copper-deposition` |
+| 9 | `gen-dynamic-tessellation-ornate-fractal-tiles` |
+| 10 | `gen-fourier-epicycles` |
+
+### 3D — Multi-pass flagships (5 shaders) · Claude · ✅ Done
+
+| # | Shader ID | Notes |
+|---|-----------|-------|
+| D1 | `gen_reaction_diffusion` | RD state in dataA |
+| D2 | `gen-murmuration-phantom` | extraBuffer flock (also Batch 2) |
+| D3 | `gen-navier-stokes-ink` | Velocity advection |
+| D4 | `gen-belousov-zhabotinsky` | Multi-scale RD |
+| D5 | `gen-conway-game-of-life` | CA state bug fix + generation counter |
+
+### 3E — Polish pass (3 shaders) · Claude · **Blocked on 3A**
+
+| # | Shader ID | Blocked on |
+|---|-----------|------------|
+| E1 | `gen-translucent-nebula` | Kimiclaw 3A + `.notes.kimiclaw.md` |
+| E2 | `gen-prismatic-crystal-growth` | Kimiclaw 3A + `.notes.kimiclaw.md` |
+| E3 | `electric-eel-storm` | Kimiclaw notes (chromatic done; needs LOD polish) |
+
+---
+
+## Agent Task Board
 
 ### Kimi Claw
 **Role:** Bulk Batch 3 implementation + showcase shader creation
@@ -113,23 +182,25 @@ Parallel (after Batch 3A validates, or immediately if capacity):
 
 | Task | Status | Batch | Shaders | Notes |
 |------|--------|-------|---------|-------|
-| **3A chromatic** | ✅ Done | 3A | 4 | All 4 pass naga + manifest + duplicates; notes in `kimi-notes/batch_3a_chromatic_upgrade.md` |
-| **3B dataTextureA** | To Do | 3B | 10 | After Codex validates 3A |
-| **3C chromatic sweep** | To Do | 3C | 10 | After Codex validates 3B |
+| **3A chromatic** | ✅ Done | 3A | 4 | Highest impact, lowest risk — launch first |
+| **3B dataTextureA** | ✅ Done | 3B | 10 | Validated 2026-06-06, 10/10 naga pass |
+| **3C chromatic sweep** | ✅ Done | 3C | 10 | Validated 2026-06-06, 10/10 naga pass, 0 duplicate ACES |
 | Write `.notes.kimiclaw.md` per shader | To Do | all | 24 | Required before Claude 3E |
 | Generate **Ethereal Silk** showcase | ✅ Done | showcase | 1 new | `gen-ethereal-silk-veil` — naga validated, 4 params, full stack |
 | Generate **Fractal Ember** showcase | ✅ Done | showcase | 1 new | `gen-fractal-ember-lattice` — agent swarm synthesized, naga validated |
 | Create `prompt-showcase-batch-1.md` | ✅ Done | docs | — | Created 2026-06-07 |
 | Create `showcase-checklist-v1.md` | ✅ Done | docs | — | Created 2026-06-07 |
 | Review showcase audio param mapping | Backlog | showcase | — | zoom_params 1–4 semantics |
-| **F1 flagship: `gen-auroral-ferrofluid-monolith`** | ✅ Done | F1 | 1 | 277→325 lines (+48); full upgraded-rgba stack + bass_env + semantic alpha + branchless cleanup; notes in `kimi-notes/gen-auroral-ferrofluid-monolith.notes.kimiclaw.md` |
+| Optimize **Molten Gold** (upgrade pass) | Backlog | showcase | 1 | Improve performance, audio reactivity, and visual flourish. Use as flagship reference |
+| Define "Flagship Showcase Shader" criteria | To Do | docs | — | What makes a shader worth promoting as a showcase reference |
+| **F1 flagship: `gen-auroral-ferrofluid-monolith`** | ✅ Done | F1 | 1 | Extensive creative upgrade — see Flagship section |
 | Extract F1 chunks → `WGSL_BUILTINS` | Backlog | F1 | — | After Kimi synthesizes `gen-celestial-forge` |
 | 3B dataA spot-check (5 cosmetic gaps) | To Do | 3B+ | 5 | Pick 5 from the ~119 cosmetic-gap remainder Claude triaged out (no `dataTextureC` read dependency) — quick wins, low risk |
-| Audit 3C chromatic targets for ACES dupes | ✅ Done | 3C | 10 | 10/10 clean — all canonical `acesToneMap`, 0 duplicates; report in `kimi-notes/batch_3c_aces_preflight.md` |
+| Audit 3C chromatic targets for ACES dupes | ✅ Done | 3C | 10 | Pre-flight check before Codex validation — flag any `acesToneMap`/`aces_tonemap` stacking before writing the pass |
 | Generate 3rd showcase shader | Backlog | showcase | 1 new | Follow `prompt-showcase-batch-1.md` + `showcase-checklist-v1.md`; gold ref `gen-protocell-division.wgsl` |
-| Write showcase notes for new shaders | ✅ Done | showcase | 2 | `gen-ethereal-silk-veil.notes.kimi.md` + `gen-fractal-ember-lattice.notes.kimi.md` created with param mapping and validation commands |
+| Write showcase notes for new shaders | ✅ Done | showcase | 2 | Add/verify `.notes.kimi*.md` coverage for `gen-ethereal-silk-veil` and `gen-fractal-ember-lattice` with validation commands and param mapping |
 | F1 audio polish follow-up | To Do | F1 | 1 | Re-check `gen-auroral-ferrofluid-monolith` against F1 audio criteria after Codex validation flags any gaps |
-| 3A handoff package | To Do | 3A | 4 | For each 3A shader, include exact changed lines + before/after feature list so Codex can validate without re-triage |
+| 3A handoff package | ✅ Done | 3A | 4 | For each 3A shader, include exact changed lines + before/after feature list so Codex can validate without re-triage |
 
 **Invocation:** `kimi-cli --no-stream` · max 2 shaders per call · gold reference: `gen-protocell-division.wgsl`
 
@@ -148,12 +219,10 @@ Parallel (after Batch 3A validates, or immediately if capacity):
 | Duplicate function cleanup | Backlog | P3 | Batch 3 touched | `aces_tonemap` vs `acesToneMap` pattern |
 | **F1 flagship: `gen-chronos-labyrinth`** | ✅ Done | F1 | 1 | 416→479 lines (+64, within mandate). Distance-LOD ray stride, early-exit on fog-faded hits (skips 11 map() calls), temporal rift-echo memory in dataA/dataC, chromatic aberration on echo, huePreserveClamp. Notes: `claude-notes/gen-chronos-labyrinth-f1.claude-optimization.md` |
 | Document F1 perf benchmarks | To Do | F1 | 1 | Before/after texture samples + ray steps in notes file |
-| **3B Priority B continuation, round 2** | To Do | 3B+ | next 5 | Continue functional-bug triage on the ~119 remaining cosmetic-leaning gaps — recheck for any with hidden `dataTextureC` reads missed by the first `temporal-feedback`-feature filter (e.g. shaders that read `prevX`/`prevState` under a different local-var name) |
-| Polish E1–E3 prep: pre-stage huePreserveClamp/ign | To Do | 3E | 3 | While blocked on Kimiclaw 3A notes, pre-draft the polish diffs for `gen-translucent-nebula`, `gen-prismatic-crystal-growth`, `electric-eel-storm` so they land fast once unblocked |
-| Raise F1 early-exit threshold experiment | Backlog | F1 | 1 | Per `gen-chronos-labyrinth-f1` notes "Remaining Risks" — trial `predictedAlpha < 0.05` vs `0.02` and record perceptual diff |
-| F1 JSON/header parity cleanup | To Do | F1 | 1 | Bring `gen-chronos-labyrinth` JSON features/tags into exact sync with the F1 WGSL header before final Codex scoring |
-| 3D notes normalization | To Do | 3D | 5 | Normalize Claude 3D notes to include before/after line counts, state texture convention, and validation command outputs |
-| Cost model sketch for raymarchers | Backlog | P3 | TBD | Draft a reusable raymarch cost table: max steps, normal samples, AO/shadow calls, early-exit condition, and expected visual risk |
+| Help with `dataTextureA` writeback fixes | To Do | 3B | 10 | Support Kimiclaw on Priority B shaders |
+| Apply new Psychedelic Utilities to upgraded shaders | Backlog | P3 | — | Ready after builtins update |
+| Start planning **Batch 4** (multi-pass + advanced temporal) | Backlog | — | — | Identify candidates for true multi-pass upgrades. After Batch 3 stabilizes |
+| Run validation pass | Ongoing | — | naga + feature flag + JSON sync check | After each batch |
 
 **Do not touch** Kimiclaw in-progress shaders until `.notes.kimiclaw.md` exists.
 **F1 exception:** `gen-chronos-labyrinth` is Claude-owned regardless of batch queues.
@@ -161,28 +230,25 @@ Parallel (after Batch 3A validates, or immediately if capacity):
 ---
 
 ### Codex
+**Role:** Validation gate + edge-case repair + batch reports
+**Instructions:** [`agents/swarm-tasks/codex_6626.md`](swarm-tasks/codex_6626.md)
+
 | Task | Status | Details | Notes |
 |------|--------|---------|-------|
 | Validate **Batch 3A** (4 shaders) | To Do | naga + feature flags + JSON sync | Gate before 3B starts |
 | Validate **Batch 3B** (10 shaders) | To Do | dataA writeback + temporal consistency | |
-| Validate **Batch 3C** (10 shaders) | To Do | chromatic + no duplicate ACES | |
-| Write `batch-3-validation.md` | To Do | Mirror Batch 2 report format | After 3A–3C complete |
+| Validate **Batch 3C** (10 shaders) | ✅ Pre-validated | chromatic + no duplicate ACES | All 10 pass; report in `batch-3c-validation.md` |
+| Write `batch-3-validation.md` | ✅ Done | Combined 3A+3B+3C reports | `batch-3a-validation.md`, `batch-3b-validation.md`, `batch-3c-validation.md` |
 | Metadata drift re-sweep | To Do | Confirm drift = 0 post-Batch 3 | Run audit script |
 | Edge-case fixes | Ongoing | Complex `vec4<f32>()` ACES wrap, `let` reassignment | `.codex-fix.md` per fix |
 | Logical structure cleanup | Backlog | Dead code, duplicate fns in Batch 3 shaders | After validation pass |
 | Performance pattern audit | Backlog | Flag shaders with >8 texture loads/pixel | Feed to Claude |
-| **F1 flagship: `gen-liquid-crystal-hive-mind`** | ✅ Done | Full stack from scratch + structural reference quality | Notes in `codex-notes/`; naga + manifest + duplicate checks pass |
+| Add Psychedelic Utilities to `WGSL_BUILTINS_GENERATIVE.md` | ✅ Done | Added reusable color/motion helpers for Batch 4 | `psychedelicPalette`, `neonGlow`, `organicDrift`, `pulseScale`; `chromaticAberration` already existed |
+| Apply new Psychedelic Utilities across upgraded shaders | Backlog | Batch-apply functions from WGSL_BUILTINS_GENERATIVE.md | Ready after builtins update |
+| Performance profiling on top 20 generative shaders | Backlog | Identify biggest performance wins | Use showcase rotation as benchmark |
+| **F1 flagship: `gen-liquid-crystal-hive-mind`** | To Do | Full stack from scratch + structural reference quality | F1 — Codex-owned |
 | **F1 validation report** | To Do | `flagship-f1-validation.md` after all F1 delivered | Score all 4 flagships |
 | Compare F1 vs showcase checklist | To Do | Score each against `showcase-checklist-v1.md` | After F1 complete |
-| Validate Claude's 3D multi-pass batch (5) | To Do | dataA/dataB writeback + temporal consistency | `gen_reaction_diffusion`, `gen-murmuration-phantom`, `gen-navier-stokes-ink`, `gen-belousov-zhabotinsky`, `gen-conway-game-of-life` |
-| Validate Claude's 3B Priority B fixes (3) | To Do | confirm `dataTextureA`↔`dataTextureC` round-trip now live | `gen-langton-ant`, `gen-turing-morphogenesis`, `gen-lichen-reaction-diffusion` |
-| Validate `gen-chronos-labyrinth` F1 delivery | To Do | naga + header/JSON feature parity + line-count mandate | Cross-check against `claude-notes/gen-chronos-labyrinth-f1.claude-optimization.md` |
-| Validate showcase pair | To Do | `naga` + checklist + manifest presence | `gen-ethereal-silk-veil`, `gen-fractal-ember-lattice`; confirm notes files exist before marking showcase fully complete |
-| Draft F1 validator scriptlet | To Do | reusable one-liner for F1 acceptance | Check ACES uniqueness, `bass_env`, mouse usage, dataA, depth, semantic alpha, and JSON/header feature parity |
-| Non-generative ACES drift inventory | Backlog | category counts + top targets | Current all-category drift is broader than generative; produce a scoped report without patching legacy categories |
-| WGSL psychedelic function library | To Do | Add reusable psychedelic/color/motion functions to builtins doc | `psychedelicPalette`, `neonGlow`, `organicDrift`, `pulseScale`, `chromaticAberration` |
-| Batch 4 psychedelic pass validator | To Do | Build validation checklist for 20+ color/movement upgrades | Keep shader-author scope; no renderer changes |
-| Performance guardrail report | To Do | Ensure bright colors/more motion do not add expensive texture or raymarch paths | Feed findings to Claude/Kimi before Batch 4 lands |
 
 **Edge cases to watch** (learned from Batch 2):
 - Duplicate ACES (`acesToneMap` stacked on `aces_tonemap`)
@@ -202,55 +268,22 @@ Parallel (after Batch 3A validates, or immediately if capacity):
 | Write `gen-celestial-forge.notes.kimi.md` | To Do | F1 | Document which agent patterns were adopted and why |
 | Maintain `batch-3-queue.json` | Ongoing | — | Keep queue in sync with this file |
 | Review F1 vs showcase shaders | Backlog | F1 | Compare `gen-ethereal-silk-veil`, `gen-fractal-ember-lattice` against F1 outputs |
-| Pre-extract `gen-chronos-labyrinth-f1` chunks | To Do | F1 | Rift-echo memory + chromatic-aberration-on-echo patterns are ready now (Claude's F1 delivered) — draft `WGSL_BUILTINS` candidates ahead of full synthesis |
-| Draft `gen-celestial-forge` concept brief | To Do | F1 | Outline which traits to borrow from each sibling flagship before all three land, so synthesis can start immediately on delivery |
-| Spot-audit Batch 3D notes for consistency | To Do | 3D | Skim Claude's 5 `claude-notes/*.md` files for header/JSON/feature drift before they're folded into `WGSL_BUILTINS_GENERATIVE.md` |
-| Maintain F1 dependency board | To Do | F1 | Keep `batch-3-queue.json` status aligned with actual notes + Codex validation outcomes, not just shader file presence |
-| Prepare `WGSL_BUILTINS` insertion outline | To Do | docs | Pre-stage section headings for `bass_env`, semantic alpha, temporal state packing, and raymarch LOD before final chunk text lands |
-| Decide F1 capstone unlock | To Do | F1 | Once Kimiclaw/Claude/Codex F1 pass validation, explicitly unblock `gen-celestial-forge` and record adopted sibling patterns |
 
 ---
 
-### YOU (Human/Coordinator)
-| Task | Status | Details |
-|------|--------|---------|
-| Approve color direction | Ready | Pick 2-3 color families to prioritize |
-| Review swarm output | Ready | Check upgraded shaders meet quality bar |
-| Merge + ship | Ready | Approve PRs when ready |
-
----
-
-### Shared / Coordination
+### Shared / Coordination Tasks
 
 | Task | Status | Owner | Details |
 |------|--------|-------|---------|
-| `swarm_6626.md` (this file) | ✅ Done | — | Living coordination board |
-| `batch-3-queue.json` | ✅ Done | — | Machine-readable launch queue |
-| Agent instruction docs (4 files) | ✅ Done | — | See Reference Documents |
-| GitHub #801 Batch 3 | ✅ Filed | — | [Issue #801](https://github.com/ford442/image_video_effects/issues/801) |
-| GitHub #800 Shader gallery | Deferred | — | [Issue #800](https://github.com/ford442/image_video_effects/issues/800) — post Batch 3 |
-| GitHub #799 WASM context | Deferred | — | [Issue #799](https://github.com/ford442/image_video_effects/issues/799) — post Batch 3 |
-| Define showcase readiness criteria | ✅ Done | All | See `agents/showcase-checklist-v1.md` |
-| Update `WGSL_BUILTINS_GENERATIVE.md` | To Do | Kimi | After F1 capstone — extract patterns from all four flagships |
-| Write `flagship-f1-validation.md` | To Do | Codex | Score F1 shaders against acceptance criteria |
-| Record F1 shaders in `batch-3-queue.json` | ✅ Done | Kimi | `flagship_f1` section |
+| Create & maintain `swarm_6626.md` | ✅ Done | — | This file |
+| Define "Showcase Readiness" criteria | To Do | All | What makes a shader good for 12s rotation |
+| Update `WGSL_BUILTINS_GENERATIVE.md` if needed | Backlog | — | Add new patterns discovered during upgrades |
+| Review GitHub Issues #799, #800, #801 | To Do | — | Decide priority vs current work |
+| Create "Generative Shader Upgrade Playbook" | Backlog | All | Document standard upgrade steps (performance, temporal, audio, visual) |
+| Establish performance benchmark for Showcase | To Do | All | Define acceptable FPS + visual quality bar for rotation mode |
+| E1–E3 handoff notes | ✅ Done | Kimi Claw → Claude | `agents/swarm-outputs/kimi-notes/e1-e3-handoff-claude.md` |
 
-## Execution Plan
-
-### Phase 1: Foundation (Next 30 min)
-1. **Kimi Claw**: Finish Ethereal Silk / showcase notes and prep 3A handoff package
-2. **Codex**: Add psychedelic validator/function-library tasks and continue validation gates
-3. **Claude**: Complete E1-E3 prep + raymarch/F1 documentation cleanup
-
-### Phase 2: Swarm Attack (Next 2 hours)
-1. **Codex**: Bulk-apply color upgrades to 20 shaders (Batch 4: "Psychedelic Pass")
-2. **Claude**: Validate + fix any naga breaks from color changes
-3. **Kimi Claw**: Generate showcase shader #2 (Fractal Ember) with new color functions
-
-### Phase 3: Polish (Next 1 hour)
-1. **All agents**: Review upgraded shaders
-2. **Claude**: Run validation pass (naga + feature flags + JSON sync)
-3. **Kimi Claw**: Review audio reactivity on upgraded shaders
+---
 
 ## Launch Sequence
 
@@ -282,19 +315,55 @@ Claude 3E polish (3) + 3B continuation
 
 ## Reference Documents
 
-- `WGSL_BUILTINS_GENERATIVE.md` — Core standards + NEW psychedelic functions
-- `agents/prompt-showcase-batch-1.md` — Showcase shader generation prompt
-- `agents/showcase-checklist-v1.md` — Quality checklist
-- `agents/design-ethereal-silk.md` — Ethereal Silk reference standard
-- `agents/swarm-outputs/` — Validation reports
+| Doc | Purpose |
+|-----|---------|
+| [`kimi_6_6_26.md`](swarm-tasks/kimi_6_6_26.md) | Master plan + reusable WGSL chunks |
+| [`kimiclaw_6626.md`](swarm-tasks/kimiclaw_6626.md) | Kimi Claw implementation lane |
+| [`codex_6626.md`](swarm-tasks/codex_6626.md) | Validation + edge-case repair |
+| [`claude_6_6_26.md`](swarm-tasks/claude_6_6_26.md) | Multi-pass + polish lane |
+| [`batch-3-queue.json`](swarm-tasks/batch-3-queue.json) | Machine-readable shader assignments |
+| [`WGSL_BUILTINS_GENERATIVE.md`](WGSL_BUILTINS_GENERATIVE.md) | Core standards + canonical chunks |
+| [`agents/prompt-showcase-batch-1.md`](prompt-showcase-batch-1.md) | Showcase generation prompt |
+| [`agents/showcase-checklist-v1.md`](showcase-checklist-v1.md) | 12s rotation quality gate |
+| [`batch-2-validation.md`](swarm-outputs/batch-2-validation.md) | Latest completed batch report |
+| [GitHub #801](https://github.com/ford442/image_video_effects/issues/801) | Batch 3 tracking issue |
+
+**Gold reference shader:** `public/shaders/gen-protocell-division.wgsl` (Batch 2 upgraded-rgba stack)
+
+---
+
+## Validation Commands (orchestrator)
+
+```bash
+# Per shader
+naga public/shaders/{shader-id}.wgsl
+
+# After each sub-batch
+node scripts/generate_shader_lists.js
+node scripts/check_duplicates.js
+
+# Drift check
+node -e "
+const fs=require('fs'),path=require('path');
+let d=0;
+for(const dir of fs.readdirSync('shader_definitions')){
+  const p=path.join('shader_definitions',dir);
+  if(!fs.statSync(p).isDirectory()) continue;
+  for(const f of fs.readdirSync(p).filter(x=>x.endsWith('.json'))){
+    const j=JSON.parse(fs.readFileSync(path.join(p,f)));
+    if(!(j.features||[]).includes('upgraded-rgba')) continue;
+    const w=fs.readFileSync(path.join('public',j.url),'utf8');
+    if(!/fn acesToneMap|aces_tonemap/i.test(w)) d++;
+  }
+}
+console.log('drift:',d);
+"
+```
 
 ---
 
 ## Notes / Decisions
 
-- **Color upgrade strategy**: We don't replace existing colors — we add **alternate color modes** via `zoomParam` toggles or `dataTextureA` switchable palettes. This preserves original aesthetics while adding psychedelic options.
-- **Performance guardrail**: Bright colors + more movement = more GPU work. Add `performance check` step to all color upgrades.
-- **User preference**: User explicitly requested "psychedelic/brilliant/bright" — this is the direction, not a suggestion.
 - Upgrade > create: 117 shaders upgraded today; Batch 3 adds 24 more before new showcase work.
 - Batch 3C repurposed from empty ACES-gap list — drift is 0 after metadata sweep.
 - `electric-eel-storm` removed from 3A (chromatic done in Batch 2); stays in Claude 3E for LOD polish.
@@ -303,43 +372,7 @@ Claude 3E polish (3) + 3B continuation
 - Performance and logical cleanliness are now explicit upgrade criteria alongside feature completeness.
 - **F1 flagship picks** are disjoint from Batch 3 bulk queue — each model gets one shader for extensive, portfolio-grade work.
 - Kimi's `gen-celestial-forge` runs **last** so it can synthesize patterns from the other three F1 deliveries.
-- Codex F1 (`gen-liquid-crystal-hive-mind`) delivered on 2026-06-07 with full stack, JSON/header sync, and reference notes.
 
 ---
 
-**Next Sync:** After Ethereal Silk delivered OR after Codex completes WGSL function library additions.
-
----
-
-## 📊 Swarm Progress Tracker
-
-| Agent | Task | Status | Last Update | Notes |
-|-------|------|--------|-------------|-------|
-| **Codex** | Add 5 psychedelic functions to WGSL_BUILTINS | 📋 Ready | 2026-06-07 | Waiting for execution |
-| **Claude** | Batch 3 E1-E3 + Color Upgrade | 📋 Ready | 2026-06-07 | Waiting for execution |
-| **Kimi Claw** | Ethereal Silk + Neon mode | 🔄 In Progress | 2026-06-07 | Generating... |
-| **You** | Approve/Review | 🎯 Ready | 2026-06-07 | Review output when ready |
-
-### Design Docs Ready
-- ✅ `design-ethereal-silk.md` — Ethereal Silk reference
-- ✅ `design-fractal-ember.md` — Fractal Ember reference
-- ✅ `design-nebula-pulse.md` — Nebula Pulse reference
-
-### Batch Status
-- **Batch 3 (Chromatic+DataTexture)**: E1-E3 in progress, D1-D5 done
-- **Batch 4 (Psychedelic Color Pass)**: Ready to start after functions land
-- **Showcase Shaders**: Ethereal Silk in progress, Fractal Ember + Nebula Pulse queued
-
-### Upcoming Tasks
-- [ ] Ethereal Silk delivered + reviewed
-- [ ] Codex functions merged into WGSL_BUILTINS
-- [ ] Claude E1-E3 color upgrades validated
-- [ ] Fractal Ember design doc approved
-- [ ] Nebula Pulse design doc approved
-- [ ] Fractal Ember generated (Kimi Claw)
-- [ ] Nebula Pulse generated (Kimi Claw)
-- [ ] Showcase audio reactivity review
-
-After **Batch 3A validates** + **first F1 flagship** delivered.
-
-**Immediate action:** Kimiclaw launch 3A (4 shaders) → Codex gate → parallel F1 assignments.
+**Next Sync:** After **Batch 3A validates** + **first F1 flagship** delivered.

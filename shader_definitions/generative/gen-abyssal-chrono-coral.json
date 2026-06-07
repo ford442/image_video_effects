@@ -19,7 +19,8 @@
     "audio-seasonal-pulses",
     "gravitational-lensing",
     "time-dilated-rings",
-    "raymarched"
+    "raymarched",
+    "temporal"
   ],
   "params": [
     {

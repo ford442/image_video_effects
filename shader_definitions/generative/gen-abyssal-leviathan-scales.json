@@ -12,7 +12,8 @@
   ],
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal"
   ],
   "params": [
     {

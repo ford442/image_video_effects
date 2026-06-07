@@ -141,6 +141,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // HDR bloom on curtain folds
   color = color + vec3<f32>(0.4, 0.7, 0.5) * bloom * 0.25;
 
+  // Chromatic aberration
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
   // ACES tone mapping
   color = acesToneMap(color * 1.3);
 

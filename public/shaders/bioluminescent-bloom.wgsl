@@ -187,6 +187,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bloom = pow(quorum, 2.0) * 2.5 * (1.0 + bass);
     col = col + vec3<f32>(0.4, 0.8, 1.0) * bloom;
 
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
     // ACES tone mapping
     col = aces_tone_map(col);
 

@@ -138,7 +138,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tm = aces(hdr) + vec3<f32>((ign(vec2<f32>(coords)) - 0.5) / 255.0);
     let srgb = pow(tm, vec3<f32>(1.0 / 2.2));
 
-    let finalColor = vec4<f32>(srgb * a, a);
+    var finalColor = vec4<f32>(srgb * a, a);
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    finalColor = vec4<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5, finalColor.a);
 
     textureStore(writeTexture, coords, applyGenerativePrimaryControls(finalColor));
     textureStore(dataTextureA, global_id.xy, finalColor);

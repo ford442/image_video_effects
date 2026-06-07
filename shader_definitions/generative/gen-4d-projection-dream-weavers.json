@@ -16,7 +16,8 @@
   "features": [
     "generative",
     "audio-reactive",
-    "mouse-driven"
+    "mouse-driven",
+    "temporal"
   ],
   "params": [
     {
