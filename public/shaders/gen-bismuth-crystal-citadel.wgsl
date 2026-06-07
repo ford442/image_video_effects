@@ -130,11 +130,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     
     var uv = (fragCoord * 2.0 - dims) / dims.y;
     
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    
     // Parameters
     let stepSize = u.zoom_params.x * 0.5 + 0.1;
-    let speed = u.zoom_params.y;
-    let metallic = u.zoom_params.z;
-    let iridescence = u.zoom_params.w;
+    let speed = u.zoom_params.y * (1.0 + mids * 0.5);
+    let metallic = u.zoom_params.z * (1.0 + bass * 0.4);
+    let iridescence = u.zoom_params.w * (1.0 + treble * 0.3);
     let oxidePurity = 0.7 + u.zoom_params.x * 0.3;
     
     // Camera setup

@@ -179,10 +179,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let t     = u.config.x;
     let mouse = u.zoom_config.yz;
 
-    let maxIter    = i32(u.zoom_params.x * 60.0 + 20.0);  // 20 – 80
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let maxIter    = i32((u.zoom_params.x * 60.0 + 20.0) * (1.0 + bass));  // 20 – 80
     let colorZoom  = u.zoom_params.y * 3.0 + 0.5;          // 0.5 – 3.5
     let cmapRot    = u.zoom_params.z * 2.0;                  // 0 – 2 (hue offset)
     let bailout    = u.zoom_params.w * 8.0 + 2.0;           // 2 – 10
+
+    let tColor = t * (1.0 + mids * 2.0);
 
     let aspect = res.x / res.y;
 
@@ -211,20 +217,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (!result.escaped) {
         // Interior: color by orbit trap
         let interior = result.orbit_min;
-        let hue = fract(interior * 3.0 + cmapRot + t * 0.03);
+        let hue = fract(interior * 3.0 + cmapRot + tColor * 0.03);
         col = hsv2rgb(hue, 0.7, 0.3 + interior * 0.4);
     } else {
         // Exterior: smooth iteration count coloring
         let sn = result.smooth_n / f32(maxIter);
 
         // Primary color: smooth iteration count → hue
-        let hue1 = fract(sn * 2.5 + cmapRot + t * 0.05);
+        let hue1 = fract(sn * 2.5 + cmapRot + tColor * 0.05);
         let sat1 = 0.8 + sn * 0.2;
         let val1 = 0.7 + sn * 0.3;
         let baseCol = hsv2rgb(hue1, sat1, val1);
 
         // Orbit trap color: minimum distance → secondary hue
-        let orbitHue = fract(result.orbit_min * 5.0 + cmapRot + 0.5 + t * 0.03);
+        let orbitHue = fract(result.orbit_min * 5.0 + cmapRot + 0.5 + tColor * 0.03);
         let orbitCol = hsv2rgb(orbitHue, 1.0, 1.0);
 
         // Blend based on escape speed
@@ -233,7 +239,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         // Edge-sharpening: use |final_z| for fine detail
         let fz = length(result.final_z);
-        let edgeDetail = fract(fz * 3.0) * 0.15;
+        let edgeDetail = fract(fz * 3.0) * 0.15 * (1.0 + treble * 2.0);
         col += hsv2rgb(fract(hue1 + 0.33), 1.0, 1.0) * edgeDetail;
     }
 
@@ -247,19 +253,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let d   = distance(uv, r.xy);
         ripDistort += sin(d * 25.0 - age * 5.0) * exp(-d * 6.0) * exp(-age * 1.5) * 0.3;
     }
-    col = mix(col, hsv2rgb(fract(length(c) * 0.7 + t * 0.1 + cmapRot), 1.0, 1.0),
+    col = mix(col, hsv2rgb(fract(length(c) * 0.7 + tColor * 0.1 + cmapRot), 1.0, 1.0),
               abs(ripDistort) * 0.3);
 
     // ── Dwell band overlay (alternate coloring) ────────────────────────────
     if (result.escaped) {
-        let band = dwellBand(result.smooth_n, f32(maxIter), 4.0, t);
+        let band = dwellBand(result.smooth_n, f32(maxIter), 4.0, tColor);
         col = mix(col, col * (1.0 + band * 0.4), 0.5);
     }
 
     // ── Julia probe secondary color ────────────────────────────────────────
-    let juliaC  = vec2<f32>(sin(t * 0.07) * 0.3, cos(t * 0.05) * 0.3);
+    let juliaC  = vec2<f32>(sin(tColor * 0.07) * 0.3, cos(tColor * 0.05) * 0.3);
     let juliaT  = juliaColorProbe(z0 + c * 0.1, juliaC, maxIter / 2, bailout);
-    let juliaH  = fract(juliaT * 3.0 + cmapRot + 0.25 + t * 0.04);
+    let juliaH  = fract(juliaT * 3.0 + cmapRot + 0.25 + tColor * 0.04);
     col = mix(col, hsv2rgb(juliaH, 0.9, 0.8), juliaT * 0.35);
 
     // ── Escape-time pseudo-3D shading ─────────────────────────────────────

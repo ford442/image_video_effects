@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Prismatic Crystal Growth
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba, chromatic-aberration, raymarched, distance-lod
 //  Complexity: Very High
 //  Description: SDF crystal lattice that grows over time with
 //    Fresnel reflectance for glass-like translucency. Alpha encodes
@@ -161,6 +161,15 @@ fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
   return mix(prev, bass, k);
 }
 
+// ═══ CHUNK: branchless hue-to-RGB (replaces if/else cascade) ═══
+fn hueToRGB(hue: f32) -> vec3<f32> {
+  let h6 = hue * 6.0;
+  let r = clamp(abs(h6 - 3.0) - 1.0, 0.0, 1.0);
+  let g = clamp(2.0 - abs(h6 - 2.0), 0.0, 1.0);
+  let b = clamp(2.0 - abs(h6 - 4.0), 0.0, 1.0);
+  return vec3<f32>(r, g, b);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -242,7 +251,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       break;
     }
     if (t > 30.0) { break; }
-    t = t + d * 0.7;
+    // ═══ CHUNK: distance-based ray-step LOD (perf) ═══
+    // Relax stride from 0.7x near the camera (lattice detail matters)
+    // toward 1.0x past t=20 — empty space toward the horizon resolves
+    // with fewer iterations, and any residual under-stepping is masked
+    // by the temporal blend + background gradient.
+    let stepLOD = mix(0.7, 1.0, smoothstep(0.0, 20.0, t));
+    t = t + d * stepLOD;
   }
 
   var color = vec3<f32>(0.0);
@@ -278,16 +293,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
       // Crystal color based on orientation (prismatic dispersion)
       let hue = fract(crystalRand + dot(n, vec3<f32>(1.0, 0.5, 0.3)) * 0.3 + prismIntensity * 0.2);
-      let h6 = hue * 6.0;
-      let c = 1.0;
-      let x = c * (1.0 - abs(h6 - floor(h6 / 2.0) * 2.0 - 1.0));
-      var crystalCol: vec3<f32>;
-      if (h6 < 1.0) { crystalCol = vec3<f32>(c, x, 0.3); }
-      else if (h6 < 2.0) { crystalCol = vec3<f32>(x, c, 0.3); }
-      else if (h6 < 3.0) { crystalCol = vec3<f32>(0.2, c, x); }
-      else if (h6 < 4.0) { crystalCol = vec3<f32>(0.2, x, c); }
-      else if (h6 < 5.0) { crystalCol = vec3<f32>(x, 0.2, c); }
-      else { crystalCol = vec3<f32>(c, 0.2, x); }
+      let crystalCol = max(hueToRGB(hue), vec3<f32>(0.2));
 
       // Base crystal color
       color = crystalCol * diff * 0.6;
@@ -299,9 +305,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let sss = pow(max(dot(n, -lightDir), 0.0), 2.0) * 0.3;
       color = color + crystalCol * sss * prismIntensity;
 
-      // Caustics
-      let caustic = crystalCaustics(p, n, lightDir, time);
-      color = color + vec3<f32>(0.8, 0.9, 1.0) * caustic * causticStrength;
+      // Caustics — early exit: skip the refract/sin chain on thin edges
+      // where causticStrength * thickness is below visibility threshold
+      if (causticStrength * thickness > 0.04) {
+        let caustic = crystalCaustics(p, n, lightDir, time);
+        color = color + vec3<f32>(0.8, 0.9, 1.0) * caustic * causticStrength;
+      }
 
       // Rim light
       let rim = pow(1.0 - max(dot(n, v), 0.0), 4.0);
@@ -353,7 +362,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = acesToneMap(color * 1.1);
 
   // Chromatic aberration
-  let caStr = 0.003 * (1.0 + bass) + depthVal * 0.001;
+  let caStr = 0.003 * (1.0 + smoothBass) + depthVal * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));

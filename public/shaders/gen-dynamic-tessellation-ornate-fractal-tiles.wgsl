@@ -71,10 +71,6 @@ fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
     let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
     return c * min(1.0, max_lum / max(l, 1e-4));
 }
-fn aces(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
-    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
 fn ign(p: vec2<f32>) -> f32 {
     return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
@@ -135,7 +131,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
     let bloomWeight = pow(max(0.0, luma - 0.5), 2.0) * 2.0;
     let a = clamp(bloomWeight + mids * 0.1 + treble * 0.05, 0.0, 1.0);
-    let tm = aces(hdr) + vec3<f32>((ign(vec2<f32>(coords)) - 0.5) / 255.0);
+    let tm = acesToneMap(hdr) + vec3<f32>((ign(vec2<f32>(coords)) - 0.5) / 255.0);
     let srgb = pow(tm, vec3<f32>(1.0 / 2.2));
 
     var finalColor = vec4<f32>(srgb * a, a);

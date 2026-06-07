@@ -6,6 +6,7 @@
   "features": [
     "audio-reactive",
     "audio-driven",
+    "mouse-driven",
     "temporal",
     "procedural",
     "semantic-alpha"

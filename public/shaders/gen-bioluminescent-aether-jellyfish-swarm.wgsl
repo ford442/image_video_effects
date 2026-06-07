@@ -144,7 +144,7 @@ fn mapJellyfish(p_in: vec3<f32>, cell_id: vec3<f32>, t: f32, audio_propulsion: f
 }
 
 // Global scene mapping (Swarm domain repetition)
-fn mapScene(pos: vec3<f32>, t: f32) -> vec2<f32> {
+fn mapScene(pos: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec2<f32> {
     // Determine grid size based on Swarm Density parameter
     let density = u.zoom_params.x;
     let spacing = mix(5.0, 1.5, density / 30.0); // Larger density -> smaller spacing
@@ -169,8 +169,8 @@ fn mapScene(pos: vec3<f32>, t: f32) -> vec2<f32> {
     let repulse = normalize(cell_center - mouse_pos + vec3<f32>(0.001)) * (1.0 / (1.0 + dist_to_mouse * 1.5));
 
     // Add movement and drift
-    let propulsion_speed = u.zoom_params.y;
-    let audio_val = u.config.y * 0.5 + 0.5; // Audio influences pulsing
+    let propulsion_speed = u.zoom_params.y * (1.0 + mids * 0.5);
+    let audio_val = bass * 0.5 + 0.5; // Audio influences pulsing
 
     let drift_x = sin(t * propulsion_speed + hash.x * 10.0) * 0.5;
     let drift_y = cos(t * propulsion_speed * 0.8 + hash.y * 10.0) * 0.5 + fract(t * propulsion_speed * 0.2 + hash.y) * spacing;
@@ -193,12 +193,12 @@ fn mapScene(pos: vec3<f32>, t: f32) -> vec2<f32> {
 }
 
 // Raymarching
-fn raymarch(ro: vec3<f32>, rd: vec3<f32>, t: f32) -> vec2<f32> {
+fn raymarch(ro: vec3<f32>, rd: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec2<f32> {
     var dO = 0.0;
     var mat_id = 0.0;
     for(var i=0; i<80; i++) {
         let p = ro + rd * dO;
-        let dS = mapScene(p, t);
+        let dS = mapScene(p, t, mids, bass);
         dO += dS.x;
         mat_id = dS.y;
         if(dO > 50.0 || abs(dS.x) < 0.01) { break; }
@@ -208,12 +208,12 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, t: f32) -> vec2<f32> {
 }
 
 // Normals
-fn getNormal(p: vec3<f32>, t: f32) -> vec3<f32> {
+fn getNormal(p: vec3<f32>, t: f32, mids: f32, bass: f32) -> vec3<f32> {
     let e = vec2<f32>(0.01, 0.0);
     let n = vec3<f32>(
-        mapScene(p + e.xyy, t).x - mapScene(p - e.xyy, t).x,
-        mapScene(p + e.yxy, t).x - mapScene(p - e.yxy, t).x,
-        mapScene(p + e.yyx, t).x - mapScene(p - e.yyx, t).x
+        mapScene(p + e.xyy, t, mids, bass).x - mapScene(p - e.xyy, t, mids, bass).x,
+        mapScene(p + e.yxy, t, mids, bass).x - mapScene(p - e.yxy, t, mids, bass).x,
+        mapScene(p + e.yyx, t, mids, bass).x - mapScene(p - e.yyx, t, mids, bass).x
     );
     return normalize(n);
 }
@@ -230,11 +230,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let time = u.config.x;
 
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Camera setup
     let ro = vec3<f32>(0.0, 0.0, 8.0);
     let rd = normalize(vec3<f32>(uv, -1.0));
 
-    let rm = raymarch(ro, rd, time);
+    let rm = raymarch(ro, rd, time, mids, bass);
     let dist = rm.x;
     let mat = rm.y;
 
@@ -244,7 +248,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     if (dist > 0.0) {
         let p = ro + rd * dist;
-        let n = getNormal(p, time);
+        let n = getNormal(p, time, mids, bass);
 
         let light_pos = vec3<f32>(0.0, 10.0, 10.0);
         let l = normalize(light_pos - p);
@@ -257,11 +261,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let sss = pow(1.0 - max(dot(n, view_dir), 0.0), 3.0);
 
         let bio_intensity = u.zoom_params.z;
-        let audio_pulse = u.config.y * 0.5 + 0.5;
+        let audio_pulse = bass * 0.5 + 0.5;
 
         // Dynamic bioluminescent colors
         let base_col = mix(vec3<f32>(0.0, 0.8, 1.0), vec3<f32>(0.8, 0.0, 1.0), sin(p.y + time) * 0.5 + 0.5);
-        let bio_glow = base_col * sss * bio_intensity * (0.8 + 0.4 * audio_pulse);
+        let bio_glow = base_col * sss * bio_intensity * (0.8 + 0.6 * audio_pulse);
 
         // Translucency (blend with background based on distance and rim lighting)
         final_color = mix(bg_color, bio_glow + vec3<f32>(dif * 0.1), sss * 0.8 + 0.2);
@@ -276,6 +280,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let val = snoise(p * 0.5 + time * 0.2);
             v_col += vec3<f32>(0.0, 0.5, 1.0) * max(0.0, val) * 0.01;
         }
+        v_col += vec3<f32>(treble * 0.3, treble * 0.2, treble * 0.5) * snoise(ro * 0.8 + rd * 5.0 + time * 0.5) * 0.05;
         final_color += v_col;
     }
 

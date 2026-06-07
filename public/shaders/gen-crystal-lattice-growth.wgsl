@@ -30,11 +30,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn aces(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
 // Segment SDF: distance from p to segment a→b
 fn sdSeg(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
   let pa = p - a;
@@ -143,7 +138,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let caStr = 0.003 * (1.0 + bass);
   col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-  col = aces(col);
+  col = acesToneMap(col);
   let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(luma * 0.85 + totalGlow * 0.1, 0.0, 1.0);
   let depth2 = clamp(1.0 - length(p) * 0.5, 0.0, 1.0);

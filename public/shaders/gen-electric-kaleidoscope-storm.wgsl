@@ -196,9 +196,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scale = u.zoom_params.z;
     let colorShift = u.zoom_params.w;
     
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audioIntensity = intensity * (1.0 + bass * 0.5);
+    let audioSpeed = speed * (1.0 + mids * 0.4);
+    
     // Mouse controls rotation and symmetry
     let mouseRot = atan2(mousePos.y, mousePos.x);
-    let rot = time * (0.2 + speed * 0.5) + mouseRot * 0.3;
+    let rot = time * (0.2 + audioSpeed * 0.5) + mouseRot * 0.3;
     
     // Symmetry count from mouse Y or scale param
     var sectorCount: f32 = 6.0 + floor(scale * 6.0) * 2.0;
@@ -225,7 +232,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let numBolts = 8;
     for (var i = 0; i < numBolts; i++) {
         let fi = f32(i);
-        let seed = fi * 37.0 + floor(time * (3.0 + speed * 5.0)) * 91.0;
+        let seed = fi * 37.0 + floor(time * (3.0 + audioSpeed * 5.0)) * 91.0;
         
         // Each bolt starts near center and goes outward
         let boltAngle = (fi / f32(numBolts)) * (TAU / sectorCount) + hash1(seed) * 0.1;
@@ -249,7 +256,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let flicker = hash1(seed + time * 25.0);
         let visibility = smoothstep(0.2, 0.5, flicker);
         
-        col += boltCol * bolt * visibility * intensity * 2.0;
+        col += boltCol * bolt * visibility * audioIntensity * 2.0;
         
         // Secondary smaller bolts
         if (hash1(seed * 11.0) > 0.6) {
@@ -259,20 +266,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 seed2, time, 1, &boltColor
             );
             let secCol = electricColor(fract(boltHue + 0.5));
-            col += secCol * bolt2 * visibility * 0.5 * intensity;
+            col += secCol * bolt2 * visibility * 0.5 * audioIntensity;
         }
     }
     
     // Central electric orb
     let centerDist = length(kp);
-    let orbGlow = exp(-centerDist * centerDist * 100.0) * (0.5 + 0.5 * sin(time * 6.0));
-    col += vec3<f32>(0.8, 0.9, 1.0) * orbGlow * intensity;
+    let orbGlow = exp(-centerDist * centerDist * 100.0) * (0.5 + 0.5 * sin(time * 6.0)) * (1.0 + bass * 0.3);
+    col += vec3<f32>(0.8, 0.9, 1.0) * orbGlow * audioIntensity;
     
     // Energy rings from center
     let ringFreq = 4.0 + scale * 8.0;
-    let rings = sin(centerDist * ringFreq - time * (3.0 + speed * 4.0)) * 0.5 + 0.5;
+    let rings = sin(centerDist * ringFreq - time * (3.0 + audioSpeed * 4.0)) * 0.5 + 0.5;
     let ringGlow = rings * exp(-centerDist * 3.0) * 0.2;
-    col += vec3<f32>(0.2, 0.5, 0.8) * ringGlow * intensity;
+    col += vec3<f32>(0.2, 0.5, 0.8) * ringGlow * audioIntensity;
     
     // Random electric sparks
     let sparkSeed = floor(time * 8.0);
@@ -285,7 +292,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let sparkSize = 0.005 + hash1(fs * 3.0 + sparkSeed) * 0.01;
         let spark = exp(-sparkDist * sparkDist / (sparkSize * sparkSize));
         let sparkHue = fract(fs / 5.0 + colorShift + time * 0.05);
-        col += electricColor(sparkHue) * spark * 2.0 * intensity;
+        col += electricColor(sparkHue) * spark * 2.0 * audioIntensity * (1.0 + treble * 0.8);
     }
     
     // Bloom/vignette

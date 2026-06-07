@@ -167,6 +167,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color + vec3<f32>(0.35, 0.3, 0.25) * hackleMask;
     color = color + vec3<f32>(0.3, 0.25, 0.2) * hackleMask2;
 
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
     // ACES tone mapping
     color = aces_tone_map(color);
 

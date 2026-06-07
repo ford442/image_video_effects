@@ -81,6 +81,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let resolution = vec2<f32>(u.config.zw);
     let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+    let mouse = u.zoom_config.yz;
     
     let param1 = u.zoom_params.x;
     let param2 = u.zoom_params.y;
@@ -92,8 +93,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let t_max = 20.0 + param2 * 40.0 - bass * 5.0;
     let t_range = t_max - t_min;
     
-    let t = t_min + uv.x * t_range;
-    let y_offset = (uv.y - 0.5) * 8.0 * (1.0 + param3 * 2.0);
+    let t = t_min + uv.x * t_range + (mouse.x - 0.5) * 10.0;
+    let y_offset = (uv.y - 0.5) * 8.0 * (1.0 + param3 * 2.0) + (mouse.y - 0.5) * 4.0;
     
     let terms = i32(mix(50.0, 200.0, param4 + treble * 0.3));
     let z = zetaApprox(sigma, t + y_offset * 0.1, terms);

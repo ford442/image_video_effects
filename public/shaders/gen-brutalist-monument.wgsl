@@ -189,13 +189,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fogDensity = u.zoom_params.y; // 0..1
     var time = u.config.x;
 
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     // Camera Control
     var mouse = u.zoom_config.yz; // 0..1
 
     // Orbit camera logic
     let radius = 20.0;
     let cam_h = 5.0 + mouse.y * 20.0;
-    let cam_angle = mouse.x * 6.28 + time * 0.1;
+    let cam_angle = mouse.x * 6.28 + time * (0.1 + mids * 0.5);
 
     let ro = vec3<f32>(sin(cam_angle) * radius, cam_h, cos(cam_angle) * radius);
     let ta = vec3<f32>(0.0, 2.0, 0.0); // Look at artifact
@@ -245,9 +250,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             albedo = vec3<f32>(0.8, 0.6, 0.2);
             rough = 0.2;
 
-            // Emission?
-            // let emit = 0.2;
-            // albedo += emit;
+            // Bass-driven emission pulse
+            albedo += vec3<f32>(0.3, 0.2, 0.05) * bass;
         } else {
              // Concrete Texture (Simulated by noise in map? or just here)
              let n_tex = noise(p.xz * 0.5);
@@ -257,7 +261,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Specular
         let view_dir = normalize(ro - p);
         let half_vec = normalize(sun_dir + view_dir);
-        let spec = pow(max(dot(n, half_vec), 0.0), 32.0 * (1.0 - rough));
+        let spec = pow(max(dot(n, half_vec), 0.0), 32.0 * (1.0 - rough)) * (1.0 + treble * 2.0);
 
         // Combine Light
         let light_color = vec3<f32>(1.0, 0.95, 0.9); // Warm Sun
@@ -280,6 +284,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Vignette
     let vign = 1.0 - length(uv) * 0.3;
     color = color * vign;
+
+    // Bass-driven brightness pulse
+    color = color * (1.0 + bass * 0.3);
 
     // Output
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
