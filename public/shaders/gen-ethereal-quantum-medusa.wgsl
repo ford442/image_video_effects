@@ -4,7 +4,7 @@
 //  Features: raymarched, audio-reactive, mouse-repulsion, upgraded-rgba,
 //            chromatic-tentacles, temporal-bioluminescence, audio-sway, depth-output
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -99,6 +99,15 @@ fn getNormal(p: vec3<f32>, time: f32, bass: f32, mids: f32) -> vec3<f32> {
     return normalize(n);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
@@ -145,6 +154,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let lumaOut = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(hit * (0.5 + fresnel * 0.4) + lumaOut * 0.2 + 0.05, 0.0, 1.0);
+    col = acesToneMap(col * 1.1);
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
 
     let depth = clamp(d / MAX_DIST, 0.0, 1.0);

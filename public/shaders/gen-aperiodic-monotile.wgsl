@@ -2,12 +2,12 @@
 //  Aperiodic Monotile Hat Tiling
 //  Category: generative
 //  Features: aperiodic-tiling, monotile, generative-pattern, audio-reactive, mouse-scale,
-//            edge-glow, temporal-rotation, chromatic-edge-bloom, bass-scale-pulse, upgraded-rgba
+//            edge-glow, temporal-rotation, chromatic-edge-bloom, bass-scale-pulse, upgraded-rgba, aces-tone-map
 //  Complexity: High
 //  Chunks From: aperiodic tiling + improved visual layering
 //  Created: 2026-05-23
 //  Updated: 2026-05-31
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -71,6 +71,15 @@ fn hatTileDistance(uv: vec2<f32>, scale: f32) -> f32 {
     return d * 2.0 - 0.5;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
@@ -121,7 +130,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalRGB = mix(rgb * val + edgeColor, prev * 0.94, 0.06 + bass * 0.02);
     
     let alpha = clamp(val * 0.6 + edge * 0.4 + bass * 0.05, 0.0, 1.0);
-    let finalColor = vec4<f32>(finalRGB, alpha);
+    let finalColor = vec4<f32>(acesToneMap(finalRGB * 1.1), alpha);
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);

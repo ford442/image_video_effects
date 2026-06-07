@@ -1,0 +1,79 @@
+{
+  "batch_name": "Batch 3 \u2014 Generative Shaders (Medium)",
+  "count": 7,
+  "category": "generative",
+  "selection_criteria": [
+    "Standard @workgroup_size(16, 16, 1) preferred",
+    "Has plasmaBuffer, dataTextureC, writeDepthTexture",
+    "Missing acesToneMap / toneMapACES / aces_tonemap / fn aces",
+    "Under 160 lines",
+    "Scored by: no dataA write (+10), no chromatic (+5), hardcoded alpha (+3), metadata drift (+2)",
+    "Excludes batch_1 and batch_2 shaders"
+  ],
+  "shaders": [
+    {
+      "id": "gen-topological-acoustic-knots",
+      "lines": 160,
+      "score": 15,
+      "missing": [
+        "dataA-write",
+        "chromatic"
+      ],
+      "notes": "no dataA, no chromatic"
+    },
+    {
+      "id": "gen-verlet-cloth-wind",
+      "lines": 127,
+      "score": 5,
+      "missing": [
+        "chromatic"
+      ],
+      "notes": "no chromatic"
+    },
+    {
+      "id": "gen-percolation-threshold",
+      "lines": 135,
+      "score": 5,
+      "missing": [
+        "chromatic"
+      ],
+      "notes": "no chromatic"
+    },
+    {
+      "id": "gen-feedback-echo-chamber",
+      "lines": 140,
+      "score": 5,
+      "missing": [
+        "chromatic"
+      ],
+      "notes": "no chromatic"
+    },
+    {
+      "id": "gen-kimi-nebula",
+      "lines": 148,
+      "score": 5,
+      "missing": [
+        "chromatic"
+      ],
+      "notes": "no chromatic"
+    },
+    {
+      "id": "gen-hyper-warp",
+      "lines": 149,
+      "score": 5,
+      "missing": [
+        "chromatic"
+      ],
+      "notes": "no chromatic"
+    },
+    {
+      "id": "gen-temporal-motion-smear",
+      "lines": 160,
+      "score": 5,
+      "missing": [
+        "chromatic"
+      ],
+      "notes": "no chromatic"
+    }
+  ]
+}

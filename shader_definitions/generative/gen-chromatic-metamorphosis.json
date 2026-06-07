@@ -32,7 +32,8 @@
       "max": 1,
       "default": 0.4,
       "step": 0.01,
-      "description": "Speed of shape transformation cycle."
+      "description": "Speed of shape transformation cycle.",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "param2",
@@ -41,7 +42,8 @@
       "max": 1,
       "default": 0.4,
       "step": 0.01,
-      "description": "Speed at which surface color evolves independently of geometry."
+      "description": "Speed at which surface color evolves independently of geometry.",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "param3",
@@ -50,7 +52,8 @@
       "max": 1,
       "default": 0.35,
       "step": 0.01,
-      "description": "Smooth-min radius for SDF blending between shapes."
+      "description": "Smooth-min radius for SDF blending between shapes.",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "param4",
@@ -59,7 +62,8 @@
       "max": 1,
       "default": 0.5,
       "step": 0.01,
-      "description": "Intensity of the key light illuminating the morphing form."
+      "description": "Intensity of the key light illuminating the morphing form.",
+      "mapping": "zoom_params.w"
     }
   ]
 }

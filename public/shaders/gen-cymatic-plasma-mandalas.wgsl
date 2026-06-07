@@ -5,7 +5,7 @@
 //            temporal-symmetry-memory, audio-cymatic-frequency, depth-edge-glow
 //  Complexity: High
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -61,6 +61,15 @@ fn applyChromaticAberration(distR: f32, distG: f32, distB: f32, density: f32) ->
     let plasmaG = exp(-abs(distG) * (20.0 / density));
     let plasmaB = exp(-abs(distB) * (20.0 / density));
     return vec3<f32>(plasmaR, plasmaG, plasmaB);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -130,7 +139,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(luma * 0.7 + 0.2 + bass * 0.05, 0.0, 1.0);
-    let finalColor = vec4<f32>(col, alpha);
+    let finalColor = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);

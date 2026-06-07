@@ -4,6 +4,7 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-30
+//  Upgraded: 2026-06-06
 //  An infinite tunnel of nested vortex rings coloured by
 //  spectral light — bass drives rotation, treble adds strobe arcs.
 // ═══════════════════════════════════════════════════════════════════
@@ -71,6 +72,15 @@ fn tunnelLayer(
   return col * (combined + arc) * (1.0 + warp);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -122,7 +132,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let alpha = clamp(luma + (1.0 - iris) * 0.05, 0.0, 1.0);
   let depth = clamp(1.0 - r / zoom, 0.0, 1.0);
 
-  let finalColor = vec4<f32>(col, alpha);
+  let finalColor = vec4<f32>(acesToneMap(col * 1.1), alpha);
   textureStore(writeTexture,      coord, finalColor);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA,      coord, finalColor);

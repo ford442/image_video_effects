@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -41,6 +41,15 @@ fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
 fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
     let denom = b.x * b.x + b.y * b.y;
     return vec2<f32>((a.x * b.x + a.y * b.y) / denom, (a.y * b.x - a.x * b.y) / denom);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -167,7 +176,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Alpha: fractal escape coverage + glow luminance, never flat 1.0
     let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(smoothstep(0.0, 1.0, totalWeight) * 0.5 + lum * 0.6, 0.0, 1.0);
-    let out = vec4<f32>(col, alpha);
+    let out = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     // Depth: brighter escaped filaments read as nearer
     let depth = clamp(lum, 0.0, 1.0);

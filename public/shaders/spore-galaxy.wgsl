@@ -2,9 +2,10 @@
 //  Spore Galaxy
 //  Category: generative
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
-//            upgraded-rgba, depth-aware
+//            upgraded-rgba, depth-aware, aces-tone-map
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -38,6 +39,15 @@ fn hash21(p: vec2<f32>) -> f32 {
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   return vec2<f32>(hash21(p), hash21(p + vec2<f32>(43.2, 17.8)));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -91,6 +101,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let presence = sat(armCore * 0.9 + spore * 0.7 + dust * 0.4);
   let alpha = sat(0.08 + presence * 0.92);
   let depth = sat(0.92 - armCore * 0.6 - spore * 0.25);
+
+  color = acesToneMap(color * 1.1);
 
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));

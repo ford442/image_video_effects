@@ -1,0 +1,12 @@
+{
+  "invoke_time": 1,
+  "ltm": {
+    "identity": "Developer working on WebGPU shader projects, likely associated with or owner of the github.com/ford442/image_effect_shaders repository. No name introduced in conversation.",
+    "work_method": "Iterative builder who works in focused sessions on specific technical domains (today: generative shaders). Uses AI as a collaborative coding partner — assigns tasks in sequence (\"finish A, then we roll into B\"), expects technical deliverables with precise specs. Values canonical references and pre-baked documentation to reduce agent hallucination. Appreciates when AI internalizes context and doesn't force restatement of prior plans.",
+    "communication": "Enthusiastic, momentum-driven tone with emoji use for emphasis (🎵🔥). Uses shorthand and technical jargon fluently. Gives clear approval signals when deliverables match expectations (\"pure gold,\" \"exactly the kind of thing\"). Structures collaboration as \"you do X, I'll do Y\" — treats AI as a peer with complementary role. Brief when redirecting, expansive when vision-casting.",
+    "temporal": "Active project: upgrading shader code in github.com/ford442/image_effect_shaders, specifically generative shaders. Immediate goals: (1) finish plumbing for ShaderGalaxyCanvas with WGSL + JSON snippet, (2) connect generative shader slider params to audio reactivity. Broader system: building a swarm agent workflow using WGSL_BUILTINS_GENERATIVE.md as required preamble to reduce naga failures.",
+    "taste": "Values systems that are self-evident and reduce cognitive load — canonical headers, anti-pattern tables, pre-baked recipes. Aesthetic sensibility toward interactive/generative visuals with audio reactivity. Preference for clean, ship-ready technical output over \"mostly works.\" Interest in attention-capture mechanics (auto-rotating shaders until user engages). Mobile-aware design (CSS grid fallbacks)."
+  },
+  "generated_at": "2026-06-07T03:57:42.213141",
+  "stm_hash": "c02deae4ab7eb0daf02abf83d2a9843a"
+}

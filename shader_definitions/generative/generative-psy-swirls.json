@@ -29,33 +29,37 @@
       "id": "twist",
       "name": "Twist Amount",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "layers",
       "name": "Layer Count",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "frequency",
       "name": "Frequency",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "depthReduction",
       "name": "Depth Reduction",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ]
 }

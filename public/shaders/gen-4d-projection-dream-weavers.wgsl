@@ -132,6 +132,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
 
     let uv = vec2<f32>(global_id.xy) / res;
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     let aspect = res.x / res.y;
     let uvA = vec2<f32>((uv.x - 0.5) * aspect, uv.y - 0.5);
 
@@ -211,6 +212,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Edge sharpening: bright boundary between inside/outside
     let boundarySharp = smoothstep(f32(maxIter) - 1.5, f32(maxIter) - 0.5, juliaIter);
     color += vec3<f32>(1.0, 0.95, 0.8) * boundarySharp * 0.5;
+
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, color, 0.25);
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(temporal, 1.0));
 
     textureStore(writeTexture, global_id.xy, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));

@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -105,6 +105,15 @@ fn map_density(p: vec3<f32>) -> f32 {
     return max(0.0, density - 0.3);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
@@ -116,6 +125,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Audio reactivity: treble sparkles the nanite glow
     let treble = plasmaBuffer[0].z;
+    let bass = plasmaBuffer[0].x;
 
     let ro = vec3<f32>(0.0, 0.0, -5.0);
     let rd = normalize(vec3<f32>(p, 1.0));
@@ -155,12 +165,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     col = pow(col, vec3<f32>(0.8));
 
+    // Chromatic aberration
+    let hitDepth = select(0.0, clamp(1.0 - firstHitT / 10.0, 0.0, 1.0), firstHitT >= 0.0);
+    let caStr = 0.003 * (1.0 + bass) + hitDepth * 0.001;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
     // Alpha: accumulated nebula opacity over the cosmic void, never flat 1.0
     let alpha = clamp(coverage + length(bg), 0.0, 1.0);
-    let out = vec4<f32>(col, alpha);
+    let out = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
-    // Depth: distance to first dense nanite cloud (near = closer)
-    let hitDepth = select(0.0, clamp(1.0 - firstHitT / 10.0, 0.0, 1.0), firstHitT >= 0.0);
     let coord = vec2<i32>(global_id.xy);
     textureStore(writeTexture, coord, out);
     textureStore(writeDepthTexture, coord, vec4<f32>(hitDepth, 0.0, 0.0, 0.0));

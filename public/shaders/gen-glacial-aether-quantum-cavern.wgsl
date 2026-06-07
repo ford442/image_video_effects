@@ -5,7 +5,7 @@
 //            temporal-ice-formation, audio-fracture, bass-fog
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -49,6 +49,15 @@ fn mapSDF(p: vec3<f32>, bass: f32) -> f32 {
         scale = scale * 1.4;
     }
     return (length(q) - max(u.zoom_params.x * 2.0, 0.001)) / max(scale, 0.001);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -117,6 +126,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let depthOut = clamp(t / max_dist, 0.0, 1.0);
 
+    col = acesToneMap(col * 1.1);
     textureStore(writeTexture, coord, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, vec4<f32>(col, alpha));

@@ -22,6 +22,16 @@ struct Uniforms {
     zoom_params: vec4<f32>,  // x=Shatter Threshold, y=Chime Density, z=Refraction Index, w=Transmission
     ripples: array<vec4<f32>, 50>,
 };
+fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
+  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
+  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
+  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
+  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
+  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
+  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
+  return vec4<f32>(controlled, color.a);
+}
+
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
     var q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -196,5 +206,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     col = col / (1.0 + col); // Tone mapping
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), applyGenerativePrimaryControls(vec4<f32>(col, 1.0)));
 }

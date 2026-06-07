@@ -31,7 +31,8 @@
       "max": 1,
       "default": 0.4,
       "step": 0.01,
-      "description": "Number of quantum particles (maps to 1–8)."
+      "description": "Number of quantum particles (maps to 1–8).",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "param2",
@@ -40,7 +41,8 @@
       "max": 1,
       "default": 0.3,
       "step": 0.01,
-      "description": "Wave-function spread (decoherence / Gaussian sigma)."
+      "description": "Wave-function spread (decoherence / Gaussian sigma).",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "param3",
@@ -49,7 +51,8 @@
       "max": 1,
       "default": 0.35,
       "step": 0.01,
-      "description": "Oscillation frequency of the quantum wave functions."
+      "description": "Oscillation frequency of the quantum wave functions.",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "param4",
@@ -58,7 +61,8 @@
       "max": 1,
       "default": 0.5,
       "step": 0.01,
-      "description": "Probability cloud opacity scale."
+      "description": "Probability cloud opacity scale.",
+      "mapping": "zoom_params.w"
     }
   ]
 }

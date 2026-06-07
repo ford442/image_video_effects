@@ -33,7 +33,8 @@
       "max": 1,
       "default": 0.5,
       "step": 0.01,
-      "description": "Size of stepped terraces characteristic of bismuth crystals"
+      "description": "Size of stepped terraces characteristic of bismuth crystals",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "param2",
@@ -42,7 +43,8 @@
       "max": 2,
       "default": 0.5,
       "step": 0.01,
-      "description": "Camera movement speed through the crystal citadel"
+      "description": "Camera movement speed through the crystal citadel",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "param3",
@@ -51,7 +53,8 @@
       "max": 2,
       "default": 0.8,
       "step": 0.01,
-      "description": "Specular highlight intensity on metallic surfaces"
+      "description": "Specular highlight intensity on metallic surfaces",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "param4",
@@ -60,7 +63,8 @@
       "max": 5,
       "default": 1,
       "step": 0.1,
-      "description": "Thin-film interference color shift on crystal surfaces"
+      "description": "Thin-film interference color shift on crystal surfaces",
+      "mapping": "zoom_params.w"
     }
   ]
 }

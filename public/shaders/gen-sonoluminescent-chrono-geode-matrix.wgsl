@@ -23,6 +23,16 @@ struct Uniforms {
   zoom_params: vec4<f32>, // param1: Fracture Intensity, param2: Core Glow, param3: Geode Rotation, param4: Temporal Shift
   ripples: array<vec4<f32>, 50>
 };
+fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
+  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
+  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
+  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
+  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
+  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
+  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
+  return vec4<f32>(controlled, color.a);
+}
+
 
 const MAX_STEPS: i32 = 100;
 const MAX_DIST: f32 = 50.0;
@@ -194,5 +204,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = mix(vec3<f32>(0.01, 0.02, 0.05), col, min(1.0, plasma_acc + select(0.0, 1.0, mat_id == 1.0)));
 
     col = pow(col, vec3<f32>(0.4545)); // gamma correction
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    textureStore(writeTexture, vec2<i32>(id.xy), applyGenerativePrimaryControls(vec4<f32>(col, 1.0)));
 }

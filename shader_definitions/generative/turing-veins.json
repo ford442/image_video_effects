@@ -11,7 +11,8 @@
       "max": 2,
       "default": 1,
       "desc": "Primary Turing pattern scale (depth-modulated)",
-      "id": "scale_1"
+      "id": "scale_1",
+      "mapping": "zoom_params.x"
     },
     {
       "name": "Scale 2",
@@ -20,7 +21,8 @@
       "max": 1,
       "default": 0.6,
       "desc": "Secondary finer scale",
-      "id": "scale_2"
+      "id": "scale_2",
+      "mapping": "zoom_params.y"
     },
     {
       "name": "Feed Rate",
@@ -29,7 +31,8 @@
       "max": 1,
       "default": 0.5,
       "desc": "Reaction-diffusion activator/inhibitor balance",
-      "id": "feed_rate"
+      "id": "feed_rate",
+      "mapping": "zoom_params.z"
     },
     {
       "name": "Vein Glow",
@@ -38,7 +41,8 @@
       "max": 1,
       "default": 0.5,
       "desc": "Bioluminescent emission intensity",
-      "id": "vein_glow"
+      "id": "vein_glow",
+      "mapping": "zoom_params.w"
     }
   ],
   "features": [

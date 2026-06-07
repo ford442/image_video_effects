@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Protocell Division
 //  Category: generative
-//  Features: protocell-biology, oil-iridescence, division-animation, smin-blobs, audio-reactive
+//  Features: protocell-biology, oil-iridescence, division-animation, smin-blobs, audio-reactive,
+//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-06-06
 //  By: Kimi Code CLI
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -55,8 +57,8 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
   return min(a, b) - h * h * k * 0.25;
 }
 
-fn aces(c: vec3<f32>) -> vec3<f32> {
-  return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn cellSDF(uv: vec2<f32>, fi: f32, t: f32, bass: f32, mids: f32, treble: f32, tension: f32, divRate: f32, mouse: vec2<f32>) -> vec2<f32> {
@@ -128,9 +130,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col += vec3<f32>(0.9, 0.95, 0.8) * fresnel * 0.8;
   col += vec3<f32>(0.2, 0.6, 0.4) * coreGlow;
   col += (h2(uv * 43758.5453 + t) - 0.5) * 0.03;
-  col = aces(col * 1.5);
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  col = mix(col, prev.rgb * 0.92, 0.05 + bass * 0.01);
+
+  let caStr = 0.003 * (1.0 + bass) + thickness * 0.001;
+  col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+  col = acesToneMap(col * 1.5);
   let alpha = clamp(thickness * fresnel * 2.0 + coreGlow * 0.5, 0.0, 1.0);
   let a = clamp(alpha, 0.0, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(col * a, a));
   textureStore(writeDepthTexture, coord, vec4<f32>(thickness * 0.5, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(col, a));
 }

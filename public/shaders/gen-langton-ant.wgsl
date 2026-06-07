@@ -5,6 +5,7 @@
 //    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-06-07
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,6 +28,16 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
+  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
+  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
+  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
+  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
+  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
+  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
+  return vec4<f32>(controlled, color.a);
+}
+
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -83,6 +94,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var heat = prev.g;
   let flipBoost = 1.0 + bass * 2.0 + p1;
   var isAntHere = 0.0;
+  // ═══ CHUNK: multi-pass state packing — ant position/direction lives in dataTextureA, not writeTexture ═══
+  var antEncoded = vec4<f32>(0.0);
+  var isAntPixel = false;
 
   for (var a = 0; a < 3; a++) {
     let apx = a * cellSize;
@@ -106,14 +120,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if sCell.x == fcx && sCell.y == fcy { state = 1.0 - state; heat += flipBoost; }
     isAntHere += select(0.0, 1.0, sCell.x == ax && sCell.y == ay);
 
-    let isAntPixel = select(false, true, pixel.x == apx && pixel.y == 0);
-    if isAntPixel {
+    if pixel.x == apx && pixel.y == 0 {
+      isAntPixel = true;
       adir = (adir + select(3, 1, state > 0.5)) % 4;
       let nd = dirVec(adir);
       ax = (ax + nd.x + gridSize) % gridSize;
       ay = (ay + nd.y + gridSize) % gridSize;
-      textureStore(writeTexture, pixel, vec4<f32>(f32(ax) / 128.0, f32(ay) / 128.0, f32(adir) / 4.0, 1.0));
-      return;
+      antEncoded = vec4<f32>(f32(ax) / 128.0, f32(ay) / 128.0, f32(adir) / 4.0, 1.0);
     }
   }
 
@@ -131,6 +144,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = acesToneMap(color * 1.2);
 
   let alpha = clamp(heat * 0.08 + isAntHere * 0.5, 0.0, 1.0) * depth;
-  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+  textureStore(writeTexture, pixel, applyGenerativePrimaryControls(vec4<f32>(color, alpha)));
   textureStore(writeDepthTexture, pixel, vec4<f32>(heat * 0.08, 0.0, 0.0, 0.0));
+
+  // ═══ Persistent state: cell flip-state(.r), heat(.g), ant-here(.b) everywhere;
+  //     ant position/direction encoding overrides at the 3 tracker pixels (apx, 0) ═══
+  let cellStateOut = vec4<f32>(state, heat, isAntHere, 1.0);
+  textureStore(dataTextureA, pixel, select(cellStateOut, antEncoded, isAntPixel));
 }

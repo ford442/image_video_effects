@@ -1,7 +1,7 @@
 {
   "id": "gen-magnetic-dipole-field",
   "name": "Magnetic Dipole Field Lines",
-    "category": "generative",
+  "category": "generative",
   "url": "shaders/gen-magnetic-dipole-field.wgsl",
   "description": "Procedurally rendered magnetic dipole field lines with charged particle trajectories. Simulates iron filings aligning to field lines with glowing ionized particles tracing the magnetic topology. Mouse moves the dipole position and controls field strength.",
   "features": [
@@ -27,7 +27,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "speed",
@@ -35,7 +36,8 @@
       "default": 0.35,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "scale",
@@ -43,15 +45,17 @@
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "colorshift",
       "name": "Color Shift",
-      "default": 0.0,
+      "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ]
 }

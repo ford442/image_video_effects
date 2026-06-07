@@ -28,7 +28,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Recursion depth of branching"
+      "description": "Recursion depth of branching",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "branchAngle",
@@ -37,7 +38,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Angle between child branches"
+      "description": "Angle between child branches",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "colorShift",
@@ -46,7 +48,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Base hue rotation"
+      "description": "Base hue rotation",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "saturation",
@@ -55,7 +58,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Color saturation"
+      "description": "Color saturation",
+      "mapping": "zoom_params.w"
     }
   ]
 }

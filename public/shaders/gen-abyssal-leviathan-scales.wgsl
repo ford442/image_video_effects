@@ -128,6 +128,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) { return; }
 
     var uv = (fragCoord * 2.0 - dims) / dims.y;
+    let dataUV = fragCoord / dims;
+    let prev = textureSampleLevel(dataTextureC, u_sampler, dataUV, 0.0);
     g_time = u.config.x;
     g_audio = u.config.y * 0.1; // u.config.y accumulates clicks/beats
     let mX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
@@ -206,5 +208,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = col / (col + vec3<f32>(1.0));
     col = pow(col, vec3<f32>(0.4545));
 
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, col, 0.25);
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(temporal, 1.0));
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
 }

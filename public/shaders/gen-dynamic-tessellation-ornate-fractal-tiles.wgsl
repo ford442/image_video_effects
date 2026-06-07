@@ -4,7 +4,7 @@
 //  Features: audio-reactive, fractal, tiled, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,6 +27,16 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
+fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
+  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
+  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
+  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
+  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
+  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
+  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
+  return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
+}
+
 
 fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
     let l = 0.4122214708*c.r + 0.5363325363*c.g + 0.0514459929*c.b;
@@ -67,6 +77,15 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
 }
 fn ign(p: vec2<f32>) -> f32 {
     return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -119,9 +138,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tm = aces(hdr) + vec3<f32>((ign(vec2<f32>(coords)) - 0.5) / 255.0);
     let srgb = pow(tm, vec3<f32>(1.0 / 2.2));
 
-    let finalColor = vec4<f32>(srgb * a, a);
+    var finalColor = vec4<f32>(srgb * a, a);
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    finalColor = vec4<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5, finalColor.a);
 
-    textureStore(writeTexture, coords, finalColor);
+    textureStore(writeTexture, coords, applyGenerativePrimaryControls(finalColor));
     textureStore(dataTextureA, global_id.xy, finalColor);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

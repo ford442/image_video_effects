@@ -111,6 +111,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var generatedColor = vec3<f32>(0.008, 0.008, 0.015);
   generatedColor = generatedColor + accum;
   generatedColor = generatedColor + chroma;
+  let caStr = 0.003 * (1.0 + bass);
+  generatedColor = vec3<f32>(generatedColor.r + caStr, generatedColor.g, generatedColor.b - caStr * 0.5);
 
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
   let decayed = prev.rgb * trailPersist * (1.0 - mids * 0.05);

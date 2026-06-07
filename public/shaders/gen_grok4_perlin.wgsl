@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Stratified Erosion Terrain
 //  Category: generative
-//  Features: upgraded-rgba, depth-aware, audio-reactive, procedural, mouse-driven, temporal
+//  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, procedural, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Sediment-transport terrain with hydraulic incision, wind abrasion, layered hardness, seismic uplift, and reflective water-table basins
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -124,6 +124,15 @@ fn faultMask(uv: vec2<f32>, time: f32) -> f32 {
   return smoothstep(0.72, 0.98, 1.0 - folded);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -226,7 +235,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let finalAlpha = max(inputColor.a, 0.88 + waterMask * 0.08);
   let finalDepth = mix(inputDepth, height, 0.96);
 
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeTexture, coord, vec4<f32>(acesToneMap((finalColor) * 1.1), finalAlpha));
   textureStore(dataTextureA, coord, vec4<f32>(newErosion, newSediment, newWater, newUplift));
   textureStore(dataTextureB, coord, vec4<f32>(height, slope, waterMask, hardness));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));

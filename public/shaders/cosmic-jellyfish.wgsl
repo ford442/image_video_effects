@@ -107,6 +107,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / resolution.y;
     let time = u.config.x;
+    let texUV = vec2<f32>(global_id.xy) / resolution;
+    let prev = textureSampleLevel(dataTextureC, u_sampler, texUV, 0.0);
 
     // Camera
     var mouse = u.zoom_config.yz * 2.0 - 1.0;
@@ -182,6 +184,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let glow_intensity = u.zoom_params.w;
     col += glow * glowColor * glow_intensity * 0.02;
+
+    // Temporal feedback via dataTextureA
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, col, 0.25);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, 1.0));
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
 }

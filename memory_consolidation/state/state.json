@@ -1,0 +1,27 @@
+{
+  "stm": {
+    "count": 1,
+    "last_ts": "2026-06-06T17:51:24.440516",
+    "last_sessions": 3,
+    "last_messages": 7,
+    "last_chars": 4201
+  },
+  "diary": {
+    "count": 1,
+    "last_ts": "2026-06-07T03:57:38.155681",
+    "last_day": 2,
+    "last_sessions": 7,
+    "last_messages": 48,
+    "last_filename": "day2-2026-06-07-echo_chamber_energy_and_gold.md",
+    "last_latency_s": 9.9
+  },
+  "compact": {
+    "count": 1,
+    "last_ts": "2026-06-07T03:57:42.212901",
+    "last_invoke": 1,
+    "last_sessions": 6,
+    "last_messages": 29,
+    "last_latency_s": 3.9,
+    "last_model": "k2p6"
+  }
+}

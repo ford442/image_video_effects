@@ -2,10 +2,10 @@
 //  Crystalline Fracture v2
 //  Category: generative
 //  Features: audio-reactive, fracture-mechanics, stress-intensity,
-//            crack-propagation, iridescence, subsurface-scatter, upgraded-rgba
+//            crack-propagation, iridescence, subsurface-scatter, upgraded-rgba, aces-tone-map
 //  Complexity: Very High
 //  Created: 2026-05-31
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -45,6 +45,15 @@ fn aces_tone_map(x: vec3<f32>) -> vec3<f32> {
     let d = 0.59;
     let e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -164,6 +173,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Alpha: crack density × stress intensity × depth perspective
     let alpha = clamp(crackDensity * K * depth + edge * 0.15, 0.0, 1.0);
 
+    color = acesToneMap(color * 1.1);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(stress, crackDensity, 0.0, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(edge * 0.5 + crackDensity * 0.3, 0.0, 0.0, 0.0));

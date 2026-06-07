@@ -27,7 +27,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Mass of gravitational bodies"
+      "description": "Mass of gravitational bodies",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "numBodies",
@@ -36,7 +37,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Number of gravitational bodies"
+      "description": "Number of gravitational bodies",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "lensStrength",
@@ -45,7 +47,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Intensity of gravitational lensing distortion"
+      "description": "Intensity of gravitational lensing distortion",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "densityAmt",
@@ -54,7 +57,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Density of accreted gas and filamentary structures"
+      "description": "Density of accreted gas and filamentary structures",
+      "mapping": "zoom_params.w"
     }
   ]
 }

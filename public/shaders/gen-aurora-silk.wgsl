@@ -2,10 +2,10 @@
 //  Aurora Silk
 //  Category: generative
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
-//            upgraded-rgba, depth-aware
+//            upgraded-rgba, aces-tone-map, depth-aware
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -64,6 +64,15 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
   return a + b * cos(6.28318 * (c * t + d));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -112,6 +121,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let alpha = sat(presence * 0.9 + shimmer * 0.08);
   let depth = sat(0.9 - presence * 0.75);
 
+  color = acesToneMap(color * 1.1);
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
   textureStore(dataTextureA, coord, vec4<f32>(wind, band, shimmer, alpha));

@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -73,6 +73,15 @@ fn plasma(p: vec2<f32>, t: f32, mids: f32) -> f32 {
   let r = length(p);
   let s4 = sin(r * 5.0 - t * 2.0 + mids * 1.5);
   return 0.25 * (s1 + s2 + s3 + s4);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -158,7 +167,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Depth: radial distance encodes depth (center is near)
   let depth = clamp(1.0 - r * 0.5, 0.0, 1.0);
 
-  let final_color = vec4<f32>(col, alpha);
+  let final_color = vec4<f32>(acesToneMap(col * 1.1), alpha);
   textureStore(writeTexture,      coord, final_color);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA,      coord, final_color);

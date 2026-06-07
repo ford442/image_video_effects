@@ -4,7 +4,17 @@
   "url": "shaders/gen-buddhabrot-aura.wgsl",
   "category": "generative",
   "description": "Upgraded Buddhabrot fractal with proper escaping-orbit trajectory accumulation, importance sampling, orbit-trap iridescence, HDR bloom, ACES tone mapping, and chromatic aberration on high-density regions. Bass drives orbit iteration count, mouse zooms into fractal regions, and depth controls orbit density perspective.",
-  "tags": ["buddhabrot", "fractal", "generative", "audio-reactive", "ethereal", "mouse-interactive", "orbit-trap", "HDR", "bloom"],
+  "tags": [
+    "buddhabrot",
+    "fractal",
+    "generative",
+    "audio-reactive",
+    "ethereal",
+    "mouse-interactive",
+    "orbit-trap",
+    "HDR",
+    "bloom"
+  ],
   "features": [
     "audio-reactive",
     "mouse-driven",
@@ -16,9 +26,10 @@
       "name": "Orbit Threshold",
       "default": 0.6,
       "min": 0.1,
-      "max": 1.0,
+      "max": 1,
       "step": 0.01,
-      "param": "zoom_params.x"
+      "param": "zoom_params.x",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "densityScale",
@@ -27,25 +38,28 @@
       "min": 0.2,
       "max": 1.4,
       "step": 0.01,
-      "param": "zoom_params.y"
+      "param": "zoom_params.y",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "mouseZoom",
       "name": "Mouse Zoom",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
-      "param": "zoom_params.z"
+      "param": "zoom_params.z",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "aura",
       "name": "Aura Intensity",
       "default": 0.65,
-      "min": 0.0,
+      "min": 0,
       "max": 1.5,
       "step": 0.01,
-      "param": "zoom_params.w"
+      "param": "zoom_params.w",
+      "mapping": "zoom_params.w"
     }
   ]
 }

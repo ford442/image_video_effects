@@ -77,6 +77,15 @@ fn glow(d: f32, intensity: f32) -> f32 {
   return exp(-d * d * intensity);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
@@ -229,6 +238,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(0.4545));
 
+  let caStr = 0.003 * (1.0 + bass);
+  col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
   // ── Alpha encoding ──────────────────────────────────────────────
   // Alpha = glow intensity + tentacle density.
   // Glowing parts are translucent (lower alpha), dense body is more opaque.
@@ -243,7 +255,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   alpha += shockwave * 0.2;
   alpha = clamp(alpha, 0.0, 0.92);
 
-  let outCol = vec4<f32>(col, alpha);
+  let outCol = vec4<f32>(acesToneMap(col * 1.1), alpha);
   textureStore(writeTexture, gid.xy, outCol);
   textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(pulsePhase, 0.0, 0.0, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(alpha, 0.0, 0.0, 0.0));

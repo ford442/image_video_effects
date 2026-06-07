@@ -4,12 +4,59 @@
   "url": "shaders/magnetic-flux-garden.wgsl",
   "category": "generative",
   "description": "Ferrofluid-like magnetic field lines curve between cursor poles, blooming with organic turbulence and treble seeds.",
-  "tags": ["generative", "magnetic", "ferrofluid", "fields", "organic", "audio-reactive"],
-  "features": ["procedural", "audio-reactive", "mouse-driven", "upgraded-rgba", "temporal", "chromatic", "depth-aware"],
+  "tags": [
+    "generative",
+    "magnetic",
+    "ferrofluid",
+    "fields",
+    "organic",
+    "audio-reactive"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
   "params": [
-    { "id": "fieldLines", "name": "Field Lines", "default": 0.44, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "fieldStrength", "name": "Field Strength", "default": 0.48, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "organic", "name": "Organic", "default": 0.35, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "bloom", "name": "Bloom", "default": 0.42, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "id": "fieldLines",
+      "name": "Field Lines",
+      "default": 0.44,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "fieldStrength",
+      "name": "Field Strength",
+      "default": 0.48,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "organic",
+      "name": "Organic",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "bloom",
+      "name": "Bloom",
+      "default": 0.42,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }

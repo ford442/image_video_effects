@@ -2,9 +2,10 @@
 //  Conway Game of Life
 //  Category: generative
 //  Features: cellular-automata, neon, audio-reactive, mouse-interactive,
-//    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration
+//    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration, generation-counter, hue-preserve-clamp, ign-dither
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-06-07
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -35,6 +36,17 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let d = 0.59;
   let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══ CHUNK: hue-preserve-clamp (from AGENTS.md) ═══
+fn huePreserveClamp(c: vec3<f32>, maxLum: f32) -> vec3<f32> {
+  let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return c * min(1.0, maxLum / max(l, 1e-4));
+}
+
+// ═══ CHUNK: ign-dither (from AGENTS.md) ═══
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
 fn hashf(n: f32) -> f32 {
@@ -71,6 +83,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let p4 = u.zoom_params.w;
   let bass = plasmaBuffer[0].x;
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  // dataTextureC.r = CA state from last frame; dataTextureC.g = generation counter
   let prev = textureLoad(dataTextureC, pixel, 0);
 
   let depthScale = mix(0.5, 1.5, depth);
@@ -127,10 +140,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let caShift = activity * caStr * 2.0;
   color = vec3<f32>(color.r * (1.0 + caShift), color.g, color.b * (1.0 - caShift * 0.5));
 
-  color = acesToneMap(color * 1.3);
+  // ═══ CHUNK: generation-counter — track cell longevity for color aging ═══
+  let prevGen = prev.g;
+  // Increment generation when alive, reset to 0 when dead
+  let generation = select(0.0, min(prevGen + 1.0 / 255.0, 1.0), newState > 0.5);
+  // Age tint: older cells shift toward warm amber
+  let ageTint = vec3<f32>(1.0 + generation * 0.4, 1.0 - generation * 0.15, 1.0 - generation * 0.35);
+  color *= mix(vec3<f32>(1.0), ageTint, survival * 0.6);
+
+  var outCol = acesToneMap(huePreserveClamp(color * 1.3, 2.0));
+  outCol += (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
 
   let alpha = newState * (activity + birthEvent * 0.5 + 0.1) * depth;
 
-  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(newState, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, pixel, vec4<f32>(outCol, alpha));
+  // Depth: use cell age as depth proxy — older cells appear deeper
+  textureStore(writeDepthTexture, pixel, vec4<f32>(mix(0.3, 1.0, newState * (0.5 + generation * 0.5)), 0.0, 0.0, 0.0));
+  // ═══ CA state for next-frame ping-pong: .r=alive, .g=generation, .b=activity ═══
+  textureStore(dataTextureA, pixel, vec4<f32>(newState, generation, activity, alpha));
 }

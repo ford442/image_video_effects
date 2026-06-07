@@ -4,7 +4,7 @@
 //  Features: mouse-driven, audio-reactive, audio-driven, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-03-14
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -109,6 +109,15 @@ fn fringeColor(pathDiff: f32, t: f32) -> vec3<f32> {
     let phase  = pathDiff * 12.0;
     let bright = pow(cos(phase) * 0.5 + 0.5, 3.0);
     return hsv2rgb(fract(phase * 0.08 + t * 0.05), 0.9, bright);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(8, 8, 1)
@@ -229,7 +238,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let alpha = clamp(normalizedProb * 4.0 * waveOpacity + trebleSparkle, 0.0, 1.0);
-    let finalColor = vec4<f32>(col, alpha);
+    let finalColor = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);

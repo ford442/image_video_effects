@@ -14,9 +14,14 @@
     "music"
   ],
   "features": [
-    "generative",
+    "aces-tone-map",
     "audio-reactive",
-    "mouse-driven"
+    "chromatic-aberration",
+    "depth-aware",
+    "generative",
+    "mouse-driven",
+    "temporal-feedback",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -26,7 +31,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Number of topological defect singularities"
+      "description": "Number of topological defect singularities",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "defectSpeed",
@@ -35,7 +41,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "How fast defects move and pair/annihilate"
+      "description": "How fast defects move and pair/annihilate",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "irisIntensity",
@@ -44,7 +51,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Intensity of oil-slick iridescent coloring"
+      "description": "Intensity of oil-slick iridescent coloring",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "flowStrength",
@@ -53,7 +61,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Strength of painterly flow field stripes"
+      "description": "Strength of painterly flow field stripes",
+      "mapping": "zoom_params.w"
     }
   ]
 }

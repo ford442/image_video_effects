@@ -3,7 +3,7 @@
   "name": "Murmuration Phantom",
   "url": "shaders/gen-murmuration-phantom.wgsl",
   "category": "generative",
-  "description": "Starling murmuration simulation — thousands of dark birds flowing in organic, ever-changing shapes against a twilight sky. The flock morphs between coherent structures driven by a curl noise flow field, with individual birds only visible as subtle silver glints at the edges. Bass drives flock density, mids morph between swarm shapes, treble adds edge glints, and mouse creates predator disturbance.",
+  "description": "Starling murmuration simulation \u2014 thousands of dark birds flowing in organic, ever-changing shapes against a twilight sky. The flock morphs between coherent structures driven by a curl noise flow field, with individual birds only visible as subtle silver glints at the edges. Bass drives flock density, mids morph between swarm shapes, treble adds edge glints, and mouse creates predator disturbance.",
   "tags": [
     "murmuration",
     "flock",
@@ -18,7 +18,15 @@
     "audio-reactive",
     "mouse-driven",
     "ripple-scatter",
-    "temporal"
+    "temporal",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "trail-accumulation",
+    "chromatic-aberration",
+    "depth-aware",
+    "hue-preserve-clamp",
+    "ign-dither"
   ],
   "params": [
     {

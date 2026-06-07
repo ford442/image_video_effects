@@ -4,6 +4,7 @@
 //  Features: generative, audio-reactive, geometric-recursion, pulsing-nodes, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -30,6 +31,15 @@ struct Uniforms {
 fn hash21(p: vec2<f32>) -> f32 {
     let h = dot(p, vec2<f32>(127.1, 311.7));
     return fract(sin(h) * 43758.5453123);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -104,7 +114,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         glow = glow + ringMask * 0.3;
     }
 
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    color = mix(color, prev.rgb * 0.92, 0.05 + bass * 0.01);
+
+    let caStr = 0.003 * (1.0 + bass) + glow * 0.001;
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
     let alpha = clamp(glow * 0.6 + 0.15 + bass * 0.05, 0.0, 1.0);
+    color = acesToneMap(color * 1.1);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(glow * 0.3, 0.0, 0.0, 0.0));

@@ -4,12 +4,59 @@
   "url": "shaders/holographic-crystal.wgsl",
   "category": "generative",
   "description": "Crystal facet interference patterns with rainbow holographic shifts. Mouse tilts the crystal lattice.",
-  "tags": ["generative", "crystal", "holographic", "prismatic", "interference", "audio-reactive"],
-  "features": ["procedural", "audio-reactive", "mouse-driven", "upgraded-rgba", "temporal", "chromatic", "depth-aware"],
+  "tags": [
+    "generative",
+    "crystal",
+    "holographic",
+    "prismatic",
+    "interference",
+    "audio-reactive"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
   "params": [
-    { "id": "facets", "name": "Facets", "default": 0.46, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "tilt", "name": "Tilt", "default": 0.35, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "interference", "name": "Interference", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "dispersion", "name": "Dispersion", "default": 0.42, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "id": "facets",
+      "name": "Facets",
+      "default": 0.46,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "tilt",
+      "name": "Tilt",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "interference",
+      "name": "Interference",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "dispersion",
+      "name": "Dispersion",
+      "default": 0.42,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }

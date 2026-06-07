@@ -88,11 +88,6 @@ export const MULTIPASS_REGISTRY: Record<string, MultipassInfo> = {
     "totalPasses": 2,
     "nextShader": null
   },
-  "tone-histogram": {
-    "pass": 1,
-    "totalPasses": 2,
-    "nextShader": "tone-histogram-apply"
-  },
   "digital-glitch-pass1": {
     "pass": 1,
     "totalPasses": 2,

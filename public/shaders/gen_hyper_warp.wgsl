@@ -1,3 +1,13 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Hyper Warp
+//  Category: generative
+//  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
+//            upgraded-rgba, aces-tone-map, chromatic-aberration
+//  Complexity: High
+//  Created: 2026-05-30
+//  Upgraded: 2026-06-06
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -18,6 +28,25 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
+  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
+  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
+  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
+  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
+  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
+  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
+  return vec4<f32>(controlled, color.a);
+}
+
 
 // Psychedelic Hyper-Warp
 // Advanced WGSL shader with domain warping, fractal noise, and reaction-diffusion feedback.
@@ -67,6 +96,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x * 0.2;
     let px = vec2<i32>(global_id.xy);
+    let bass = plasmaBuffer[0].x;
 
     // --- Feedback and Coordinates ---
     // Sample current pixel for feedback effect
@@ -133,7 +163,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalColor = mix(inputColor.rgb, generatedColor, opacity);
     let finalAlpha = max(inputColor.a, opacity);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, finalAlpha));
+    let caStr = 0.003 * (1.0 + bass) + inputDepth * 0.001;
+    let chromaticColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
+    let acesColor = acesToneMap(chromaticColor * 1.1);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), applyGenerativePrimaryControls(vec4<f32>(acesColor, finalAlpha)));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(acesColor, finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

@@ -139,6 +139,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let uv = (vec2<f32>(coord) - 0.5 * resolution) / resolution.y;
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     var base_time = u.config.x * 0.5;
 
     // Mouse time dilation field
@@ -233,6 +234,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let bioIntensity = acc_glow * 0.8 + (plasmaBuffer[0].y + plasmaBuffer[0].z) * 0.3;
     let alpha = clamp(luma * 0.55 + bioIntensity * 0.9 + 0.15, 0.0, 1.15);
+
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, col, 0.25);
+    textureStore(dataTextureA, coord, vec4<f32>(temporal, 1.0));
 
     // Premultiplied write
     let a = clamp(alpha, 0.0, 1.0);

@@ -5,6 +5,7 @@
 //            chromatic-dispersion, depth-aware, stellar-simulation
 //  Complexity: High
 //  Created: 2026-05-30
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 //  Solar prominence and flare cascades erupting from a stellar limb.
 //  Bass drives flare intensity, mids create magnetic loop structures,
@@ -73,6 +74,15 @@ fn fbm3(p: vec3<f32>, octaves: i32) -> f32 {
 fn smoothstepf32(edge0: f32, edge1: f32, x: f32) -> f32 {
   let t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
   return t * t * (3.0 - 2.0 * t);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -208,6 +218,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Depth: surface is near, distant corona is far
   let depth = clamp(0.95 - presence * 0.6 - coreGlow * 0.3, 0.0, 1.0);
 
+  color = acesToneMap(color * 1.1);
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
   textureStore(dataTextureA, coord, vec4<f32>(color, presence));

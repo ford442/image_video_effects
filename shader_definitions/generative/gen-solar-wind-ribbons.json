@@ -4,8 +4,21 @@
   "url": "shaders/gen-solar-wind-ribbons.wgsl",
   "category": "generative",
   "description": "Magnetised plasma ribbons stream like coronal mass ejections caught mid-flight. Bass swells ribbon width, treble brightens edges, mouse steers the aurora curtain.",
-  "tags": ["solar", "aurora", "ribbons", "plasma", "generative", "audio-reactive", "cosmic", "abstract"],
-  "features": ["mouse-driven", "audio-reactive", "upgraded-rgba"],
+  "tags": [
+    "solar",
+    "aurora",
+    "ribbons",
+    "plasma",
+    "generative",
+    "audio-reactive",
+    "cosmic",
+    "abstract"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "ribbonCount",
@@ -13,7 +26,8 @@
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "twist",
@@ -21,7 +35,8 @@
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "speed",
@@ -29,7 +44,8 @@
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "glow",
@@ -37,7 +53,8 @@
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ]
 }

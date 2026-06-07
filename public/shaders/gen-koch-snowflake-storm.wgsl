@@ -2,9 +2,10 @@
 //  Koch Snowflake Storm
 //  Category: generative
 //  Features: procedural, fractal, koch-snowflake, domain-warping,
-//            fbm-turbulence, audio-reactive, mouse-driven, aces-tonemap, upgraded-rgba
+//            fbm-turbulence, audio-reactive, mouse-driven, aces-tonemap, upgraded-rgba, aces-tone-map
 //  Complexity: High
 //  Created: 2026-05-30
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -71,6 +72,15 @@ fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -135,6 +145,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let alpha = density * turbStrength * 2.5;
   let depth = clamp(1.0 - edge * 0.8, 0.0, 1.0);
 
+  color = acesToneMap(color * 1.1);
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
   textureStore(dataTextureA, coord, vec4<f32>(color, alpha));

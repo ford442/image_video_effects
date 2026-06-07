@@ -5,6 +5,7 @@
 //            audio-reactive, mouse-driven, aces-tonemap, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-30
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -50,6 +51,7 @@ fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
   let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
+
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -118,6 +120,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let alpha = density * clamp(orbitMin * 3.0, 0.0, 1.0);
   let depth = density * clamp(orbitMin * 2.5, 0.0, 1.0);
 
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+  color = aces_tonemap(color * 2.2);
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
   textureStore(dataTextureA, coord, vec4<f32>(color, alpha));

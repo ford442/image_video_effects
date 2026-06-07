@@ -1,10 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Topological Acoustic Knots
 //  Category: generative
+//  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
+//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
+//  Complexity: High
 //  Description: Orientational director field inspired by liquid crystals.
 //  Audio frequencies drive topological defect creation, motion, and
 //  annihilation. Mouse can pin or create defects. Iridescent oil-slick coloring.
-//  Complexity: High
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,6 +30,15 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -155,6 +167,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let v = 1.0 - smoothstep(0.3, 0.8, length(uv - 0.5));
     color *= v;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+    // Depth for alpha modulation
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    // Semantic alpha: presence-based with depth modulation
+    let presence = clamp(length(color) * 1.5, 0.0, 1.0);
+    let alpha = clamp(presence * (0.7 + depth * 0.3), 0.2, 0.95);
+
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+    // ACES tone mapping
+    color = acesToneMap(color * 1.1);
+
+    // Temporal feedback blend
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let decay = 0.97;
+    color = mix(prev.rgb * decay, color, 0.2 + bass * 0.1);
+
+    textureStore(writeTexture, global_id.xy, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(color, alpha));
 }

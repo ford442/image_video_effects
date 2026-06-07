@@ -4,6 +4,7 @@
 //  Features: generative, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-23
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -80,6 +81,15 @@ fn hue2rgb(h: f32) -> vec3<f32> {
     return clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
@@ -128,7 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let finalRGB = rgb * val + specColor;
     let alpha = clamp(diffuse * 0.5 + surfaceNoise * 0.3 + specular * 0.2 + 0.15, 0.0, 1.0);
-    let finalColor = vec4<f32>(finalRGB, alpha);
+    let finalColor = vec4<f32>(acesToneMap(finalRGB * 1.1), alpha);
     
     let depth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
     

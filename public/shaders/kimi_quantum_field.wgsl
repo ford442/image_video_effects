@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -46,6 +46,15 @@ fn psi(x: f32, y: f32, t: f32, k: f32, w: f32, sx: f32, sy: f32) -> f32 {
     var envelope = exp(-(x * x / (2.0 * sx * sx) + y * y / (2.0 * sy * sy)));
     var wave = cos(k * x - w * t);
     return envelope * wave;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -165,7 +174,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Alpha encodes probability density (|ψ|²) + collapse flashes, never flat 1.0
     let alpha = clamp(probability + nodes * 0.3 + collapsed * mouseDown, 0.0, 1.0);
-    let out = vec4<f32>(col, alpha);
+    let out = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     // Depth: denser probability regions read as nearer
     let depth = clamp(probability * 1.5, 0.0, 1.0);

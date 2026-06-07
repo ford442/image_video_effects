@@ -23,28 +23,32 @@
       "name": "Sun Angle",
       "default": 0.2,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "fog_density",
       "name": "Fog Density",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "artifact_scale",
       "name": "Artifact Scale",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "complexity",
       "name": "Structure Complexity",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.w"
     }
   ]
 }

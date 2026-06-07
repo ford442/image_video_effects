@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Erosion Strata
 //  Category: generative
-//  Features: generative, fbm, voronoi, domain-warping, audio-reactive, mouse-driven
+//  Features: generative, fbm, voronoi, domain-warping, audio-reactive, mouse-driven,
+//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-06-06
 //  By: Kimi Code CLI
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -70,8 +72,8 @@ fn voronoi(p: vec2<f32>, seed: f32) -> vec2<f32> {
   return vec2<f32>(sqrt(md), sqrt(md2));
 }
 
-fn aces(c: vec3<f32>) -> vec3<f32> {
-  return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -129,9 +131,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let depth = fbm(uv * 2.0 + vec2<f32>(0.0, 0.5)) * 0.5 + 0.5;
   let haze = 1.0 - exp(-depth * 2.0 * (1.0 + uv.y));
   col = mix(col, vec3<f32>(0.5, 0.55, 0.6), haze * 0.4);
-  col = aces(col * 1.2);
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  col = mix(col, prev.rgb * 0.92, 0.05 + bass * 0.01);
+
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+  col = acesToneMap(col * 1.2);
   let alpha = exposed * weather * (1.0 - haze * 0.5);
   let a = clamp(alpha, 0.0, 1.0);
   textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(col * a, a));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(mix(0.2, 0.9, depth * (1.0 - wet * 0.3)), 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(col, a));
 }

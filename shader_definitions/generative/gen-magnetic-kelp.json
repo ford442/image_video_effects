@@ -4,13 +4,59 @@
   "url": "shaders/gen-magnetic-kelp.wgsl",
   "category": "generative",
   "description": "Subsea kelp strands sway in synthetic currents while cursor magnetism bends entire bioluminescent forests.",
-  "tags": ["generative", "kelp", "underwater", "bioluminescent", "organic", "audio-reactive"],
-  "features": ["procedural", "audio-reactive", "mouse-driven", "upgraded-rgba", "temporal", "chromatic", "depth-aware"],
+  "tags": [
+    "generative",
+    "kelp",
+    "underwater",
+    "bioluminescent",
+    "organic",
+    "audio-reactive"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
   "params": [
-    { "id": "strandDensity", "name": "Strand Density", "default": 0.44, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "currentSpeed", "name": "Current Speed", "default": 0.47, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "magnetism", "name": "Magnetism", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
-    { "id": "biolume", "name": "Biolume", "default": 0.52, "min": 0, "max": 1, "step": 0.01 }
+    {
+      "id": "strandDensity",
+      "name": "Strand Density",
+      "default": 0.44,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "currentSpeed",
+      "name": "Current Speed",
+      "default": 0.47,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "magnetism",
+      "name": "Magnetism",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "biolume",
+      "name": "Biolume",
+      "default": 0.52,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }
-

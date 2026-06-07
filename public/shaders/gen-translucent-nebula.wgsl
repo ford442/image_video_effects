@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Translucent Nebula
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba, chromatic-aberration, distance-lod
 //  Complexity: High
 //  Description: Volumetric gas clouds with density-based alpha
 //    translucency. FBM and Worley noise create nebula structure.
@@ -118,24 +118,24 @@ fn nebulaColor(density: f32, depth: f32, hueShift: f32) -> vec3<f32> {
   let edgeColor = vec3<f32>(0.1, 0.8, 0.7);   // teal edges
   let darkColor = vec3<f32>(0.02, 0.03, 0.08);
 
-  // Hue rotation
+  // Hue rotation (branchless)
   let hue = fract(density * 0.3 + depth * 0.1 + hueShift);
-  let h6 = hue * 6.0;
-  let c = 1.0;
-  let x = c * (1.0 - abs(h6 - floor(h6 / 2.0) * 2.0 - 1.0));
-  var hueCol: vec3<f32>;
-  if (h6 < 1.0) { hueCol = vec3<f32>(c, x, 0.0); }
-  else if (h6 < 2.0) { hueCol = vec3<f32>(x, c, 0.0); }
-  else if (h6 < 3.0) { hueCol = vec3<f32>(0.0, c, x); }
-  else if (h6 < 4.0) { hueCol = vec3<f32>(0.0, x, c); }
-  else if (h6 < 5.0) { hueCol = vec3<f32>(x, 0.0, c); }
-  else { hueCol = vec3<f32>(c, 0.0, x); }
+  let hueCol = hueToRGB(hue);
 
   var col = mix(darkColor, edgeColor, density * 0.5);
   col = mix(col, midColor, smoothstep(0.3, 0.6, density));
   col = mix(col, coreColor, smoothstep(0.6, 0.9, density));
   col = mix(col, hueCol * 0.7, density * 0.4);
   return col;
+}
+
+// ═══ CHUNK: branchless hue-to-RGB (replaces if/else cascade) ═══
+fn hueToRGB(hue: f32) -> vec3<f32> {
+  let h6 = hue * 6.0;
+  let r = clamp(abs(h6 - 3.0) - 1.0, 0.0, 1.0);
+  let g = clamp(2.0 - abs(h6 - 2.0), 0.0, 1.0);
+  let b = clamp(2.0 - abs(h6 - 4.0), 0.0, 1.0);
+  return vec3<f32>(r, g, b);
 }
 
 // ═══ CHUNK: star field ═══
@@ -164,6 +164,15 @@ fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
 }
 
 var<private> time: f32;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -203,7 +212,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Sample multiple layers along Z to approximate volumetric density
   var accumDensity = 0.0;
   var accumColor = vec3<f32>(0.0);
-  let layers = 8;
+  // ═══ CHUNK: distance-based layer LOD (perf) ═══
+  // Peripheral pixels (far from screen center) need fewer volumetric
+  // samples — the eye resolves less detail there, so we relax from
+  // 8 layers at center to 5 toward the edges.
+  let distFromCenter = length(uv - vec2<f32>(0.5));
+  let layers = i32(mix(8.0, 5.0, smoothstep(0.25, 0.6, distFromCenter)));
   let zStep = 1.0 / f32(layers);
 
   for (var z = 0; z < layers; z = z + 1) {
@@ -271,12 +285,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let breath = 1.0 + smoothBass * 0.15 + rms * 0.1;
   let finalAlpha = clamp(accumDensity * breath * 0.9 + prevState.a * 0.05, 0.0, 1.0);
 
+  // Depth for chromatic + pass-through
+  let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
   // Store state for temporal feedback
   textureStore(dataTextureA, coord, vec4<f32>(finalColor, finalAlpha));
 
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+  finalColor = acesToneMap(finalColor * 1.1);
 
-  // Depth pass-through
-  let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  // Chromatic aberration
+  let caStr = 0.003 * (1.0 + smoothBass) + depthVal * 0.001;
+  finalColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
+
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }

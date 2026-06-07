@@ -25,7 +25,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Speed of surface traversal"
+      "description": "Speed of surface traversal",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "textureDensity",
@@ -34,7 +35,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "FBM surface texture detail"
+      "description": "FBM surface texture detail",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "lightIntensity",
@@ -43,7 +45,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Specular highlight strength"
+      "description": "Specular highlight strength",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "colorShift",
@@ -52,7 +55,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Base color offset"
+      "description": "Base color offset",
+      "mapping": "zoom_params.w"
     }
   ]
 }

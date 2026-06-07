@@ -2,9 +2,10 @@
 //  Newton Fractal
 //  Category: generative
 //  Features: procedural, fractal, newton-method, orbit-trap,
-//            audio-reactive, mouse-driven, aces-tonemap, upgraded-rgba
+//            audio-reactive, mouse-driven, aces-tonemap, upgraded-rgba, aces-tone-map
 //  Complexity: High
 //  Created: 2026-05-30
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -41,6 +42,15 @@ fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
 }
 
 fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
   let c = 2.43;
@@ -125,6 +135,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let alpha = convergence * (1.0 - boundary * 0.25) * clamp(1.0 - length(uv - 0.5) * 1.1, 0.0, 1.0);
   let depth = convergence * (0.8 + iterRatio * 0.2);
 
+  color = acesToneMap(color * 1.1);
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
   textureStore(dataTextureA, coord, vec4<f32>(color, alpha));

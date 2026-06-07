@@ -2,10 +2,10 @@
 //  Cycloid Bloom
 //  Category: generative
 //  Features: audio-reactive, temporal, psychedelic, procedural, mouse-distortion,
-//            chromatic-layer-separation, depth-output, upgraded-rgba
+//            chromatic-layer-separation, depth-output, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
 //  Created: 2026-05-23
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 //  Nested hypotrochoid and epicycloid curves layered to form a
 //  blooming flower/mandala. Multiple gear-ratio pairs evolve slowly,
@@ -47,6 +47,15 @@ fn hypotrochoid(t: f32, R: f32, r: f32, d: f32) -> vec2<f32> {
   let x = (R - r) * cos(t) + d * cos((R - r) / r * t);
   let y = (R - r) * sin(t) - d * sin((R - r) / r * t);
   return vec2<f32>(x, y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -117,6 +126,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = clamp(glowAcc * 0.35, 0.0, 1.0);
   let alpha = clamp(length(colorAcc) * 0.75 + bass * 0.05, 0.0, 1.0);
 
+  colorAcc = acesToneMap(colorAcc * 1.1);
   textureStore(writeTexture,      coord, vec4<f32>(colorAcc, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA,      coord, vec4<f32>(colorAcc, alpha));

@@ -4,8 +4,9 @@
   "url": "shaders/gen-translucent-nebula.wgsl",
   "description": "Volumetric gas clouds with density-based alpha translucency. FBM and Worley noise create organic nebula structure where dense cores are opaque and edges fade to transparent. Star sparkle reacts to treble and nebula pulses with bass.",
   "features": [
-    "mouse-driven",
     "audio-reactive",
+    "chromatic-aberration",
+    "mouse-driven",
     "temporal",
     "upgraded-rgba"
   ],
@@ -24,7 +25,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "scale",
@@ -32,7 +34,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "color_shift",
@@ -40,7 +43,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "stars",
@@ -48,7 +52,8 @@
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ]
 }

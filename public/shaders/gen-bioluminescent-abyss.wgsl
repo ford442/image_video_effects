@@ -256,6 +256,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
 
+    let texUV = vec2<f32>(global_id.xy) / resolution;
+    let prev = textureSampleLevel(dataTextureC, u_sampler, texUV, 0.0);
+
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
 
     // Camera
@@ -402,6 +405,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = fogColor;
         alpha = 0.0;
     }
+
+    // Temporal feedback via dataTextureA
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, color, 0.25);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, 1.0));
 
     // Final premultiplied write with improved alpha for layering
     let a = clamp(alpha, 0.0, 1.0);

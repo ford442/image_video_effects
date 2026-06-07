@@ -13,10 +13,14 @@
     "music"
   ],
   "features": [
-    "temporal",
-    "motion-aware",
+    "aces-tone-map",
+    "audio-driven",
     "audio-reactive",
-    "audio-driven"
+    "chromatic-aberration",
+    "depth-aware",
+    "motion-aware",
+    "temporal",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -25,7 +29,8 @@
       "default": 0.85,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "sensitivity",
@@ -33,7 +38,8 @@
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "directionality",
@@ -41,7 +47,8 @@
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "intensity",
@@ -49,7 +56,8 @@
       "default": 0.8,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ]
 }

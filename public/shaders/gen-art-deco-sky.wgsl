@@ -244,6 +244,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    let uv_screen = vec2<f32>(global_id.xy) / resolution;
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv_screen, 0.0);
 
     // Audio reactivity — bass amplifies gold glow and window flicker
     let bass = plasmaBuffer[0].x;
@@ -389,8 +391,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vign = 1.0 - length(uv) * 0.5;
     color = color * vign;
 
+    // Temporal blend before ACES
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, color, 0.25);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, 1.0));
+
     // ACES filmic tone mapping (replaces Reinhard — gold accents keep their warmth)
-    color = acesToneMapping(color);
+    color = acesToneMapping(temporal);
     color = pow(color, vec3<f32>(1.0 / 2.2)); // Gamma correction
 
     // IGN dither — suppresses banding in the dark night-sky gradient

@@ -86,10 +86,12 @@ fn hueShift(color: vec3<f32>, shift: f32) -> vec3<f32> {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let coord = vec2<i32>(global_id.xy);
     let resolution = u.config.zw;
     let uv_screen = vec2<f32>(global_id.xy) / resolution;
     // Aspect ratio correction
     var uv = (uv_screen - 0.5) * vec2<f32>(resolution.x / resolution.y, 1.0) + 0.5;
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
 
     let time = u.config.x * u.zoom_params.z; // Speed control
 
@@ -157,8 +159,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gTint = mix(vec3<f32>(0.7, 0.85, 1.0), vec3<f32>(1.0, 0.9, 0.7), gRand.x);
     color = color + gTint * galaxy * 1.5;
 
+    // Temporal feedback
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, color, 0.25);
+    textureStore(dataTextureA, coord, vec4<f32>(temporal, 1.0));
+
     // Output
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
 
     // Simple depth based on density
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(density, 0.0, 0.0, 0.0));

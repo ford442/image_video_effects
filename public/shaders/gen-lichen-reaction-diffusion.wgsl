@@ -6,6 +6,7 @@
 //    patterns reminiscent of coral lichens, leopard spots, and
 //    maze-like structures. Mouse deposits additional activator.
 //  Complexity: High
+//  Upgraded: 2026-06-07
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════
@@ -197,4 +198,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(pattern_density, 0.0, 0.0, 0.0));
+
+  // ═══ CHUNK: multi-pass state packing — persist color for `prev.rgb * persistence` feedback ═══
+  // Without this write, dataTextureC always reads zero and growth persistence/activity tracking is dead code.
+  textureStore(dataTextureA, pixel, vec4<f32>(color, pattern_density));
 }

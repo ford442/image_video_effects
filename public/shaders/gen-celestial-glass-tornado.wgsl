@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -83,6 +83,15 @@ fn map(p: vec3<f32>) -> f32 {
     return final_dist;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let texSize = vec2<f32>(u.config.z, u.config.w);
@@ -155,7 +164,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         alpha = clamp(star + glow * 0.1, 0.0, 1.0);
     }
 
-    let out = vec4<f32>(col, alpha);
+    let out = vec4<f32>(acesToneMap(col * 1.1), alpha);
     // Depth: tornado hit distance; background sits at far plane
     let depth = select(0.0, clamp(1.0 - t / 40.0, 0.0, 1.0), hit);
     let coord = vec2<i32>(id.xy);

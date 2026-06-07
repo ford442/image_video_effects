@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Ghost Flame
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba, aces-tone-map
 //  Complexity: High
 //  Description: Fluid advection flame simulation with temperature-based
 //    alpha translucency. Hot regions are bright and slightly translucent,
@@ -126,6 +126,15 @@ fn velocityField(p: vec3<f32>, t: f32, turbulence: f32) -> vec2<f32> {
 fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
   let k = select(release, attack, bass > prev);
   return mix(prev, bass, k);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -300,15 +309,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Temporal smoothing for flicker reduction
   let prevAlpha = prevState.a;
-  let finalColor = mix(flameColor, prevState.rgb, 0.1);
+  var finalColor = mix(flameColor, prevState.rgb, 0.1);
   let smoothAlpha = mix(finalAlpha, prevAlpha, 0.08);
+
+  // Depth for chromatic + pass-through
+  let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   // Store state for next frame
   textureStore(dataTextureA, coord, vec4<f32>(temperature, fuel, velocityX, age));
 
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, smoothAlpha));
+  // Chromatic aberration + ACES
+  let caStr = 0.003 * (1.0 + bass) + depthVal * 0.001;
+  finalColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
+  finalColor = acesToneMap(finalColor * 1.1);
 
-  // Depth pass-through
-  let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, smoothAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }

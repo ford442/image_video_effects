@@ -2,7 +2,7 @@
   "id": "gen-liquid-crystal-hive-mind",
   "name": "Liquid-Crystal Hive-Mind",
   "url": "shaders/gen-liquid-crystal-hive-mind.wgsl",
-  "description": "A vast, breathing network of hexagonal bio-synthetic cells containing turbulent, iridescent liquid crystals that synchronize and glow with a pulsing collective consciousness.",
+  "description": "A vast, breathing network of hexagonal bio-synthetic cells containing turbulent, iridescent liquid crystals. Smoothed audio drives hive pulse, turbulence, and shimmer while mouse motion rotates and disrupts the local field.",
   "tags": [
     "cellular",
     "liquid-crystal",
@@ -10,12 +10,23 @@
     "honeycomb",
     "audio-reactive",
     "audio",
-    "music"
+    "music",
+    "temporal",
+    "chromatic",
+    "depth-aware",
+    "raymarched",
+    "showcase"
   ],
   "features": [
+    "generative",
     "mouse-driven",
-    "audio-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration",
+    "depth-aware",
+    "raymarched"
   ],
   "params": [
     {
@@ -24,7 +35,8 @@
       "default": 1,
       "min": 0.5,
       "max": 3,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "fluidTurbulence",
@@ -32,7 +44,8 @@
       "default": 2.5,
       "min": 0,
       "max": 5,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "syncPulse",
@@ -40,7 +53,8 @@
       "default": 1,
       "min": 0,
       "max": 3,
-      "step": 0.1
+      "step": 0.1,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "disruptionRadius",
@@ -48,7 +62,8 @@
       "default": 0.5,
       "min": 0.1,
       "max": 2,
-      "step": 0.05
+      "step": 0.05,
+      "mapping": "zoom_params.w"
     }
   ]
 }

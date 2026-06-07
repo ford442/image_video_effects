@@ -26,7 +26,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Density and complexity of the light network"
+      "description": "Density and complexity of the light network",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "competition",
@@ -35,7 +36,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "0=symbiotic amplification, 1=competitive suppression"
+      "description": "0=symbiotic amplification, 1=competitive suppression",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "lightIntensity",
@@ -44,7 +46,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Intensity of bioluminescent light transport"
+      "description": "Intensity of bioluminescent light transport",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "growthAmt",
@@ -53,7 +56,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Network growth phase (0=growing, 1=mature)"
+      "description": "Network growth phase (0=growing, 1=mature)",
+      "mapping": "zoom_params.w"
     }
   ]
 }

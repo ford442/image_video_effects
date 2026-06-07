@@ -20,7 +20,12 @@
   "features": [
     "generative",
     "audio-reactive",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration",
+    "depth-aware"
   ],
   "author": "AI",
   "params": [
@@ -31,7 +36,8 @@
       "max": 1,
       "default": 0.5,
       "step": 0.01,
-      "description": "Depth of erosion channels cutting through sedimentary layers"
+      "description": "Depth of erosion channels cutting through sedimentary layers",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "param2",
@@ -40,7 +46,8 @@
       "max": 1,
       "default": 0.5,
       "step": 0.01,
-      "description": "Density of horizontal sedimentary layers"
+      "description": "Density of horizontal sedimentary layers",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "param3",
@@ -49,7 +56,8 @@
       "max": 1,
       "default": 0.4,
       "step": 0.01,
-      "description": "Prominence of Voronoi mineral vein networks"
+      "description": "Prominence of Voronoi mineral vein networks",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "param4",
@@ -58,7 +66,8 @@
       "max": 1,
       "default": 0.3,
       "step": 0.01,
-      "description": "Vertical water level submerging lower canyon layers"
+      "description": "Vertical water level submerging lower canyon layers",
+      "mapping": "zoom_params.w"
     }
   ]
 }

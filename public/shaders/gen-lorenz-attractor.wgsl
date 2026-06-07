@@ -9,7 +9,7 @@
 //    trajectory near one of the two equilibrium points; Gaussian
 //    kernel splatting onto the x-z projection builds the butterfly.
 //    Temporal blending converges to the full attractor over frames.
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 //  zoom_params: x=sigma(8–14), y=rho_mod(0–14), z=glow_radius, w=decay
 
@@ -52,6 +52,15 @@ fn palette(t: f32, hueOff: f32) -> vec3<f32> {
     let c = vec3<f32>(1.0, 1.0, 1.0);
     let d = vec3<f32>(0.00, 0.25, 0.60);
     return clamp(a + b * cos(6.28318 * (c * h + d)), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -122,7 +131,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let col = mix(coolCol, warmCol, lobeMix);
 
     let alpha    = clamp(density * 0.9 + bass * 0.08, 0.0, 1.0);
-    let finalOut = vec4<f32>(col, alpha);
+    let finalOut = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     textureStore(dataTextureA, coord, vec4<f32>(accumulated, 0.0, 0.0, 0.0));
     textureStore(writeTexture, coord, finalOut);

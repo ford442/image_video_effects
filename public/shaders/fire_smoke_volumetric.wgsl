@@ -4,7 +4,7 @@
 //  Features: advanced-alpha, fire, smoke, volumetric,
 //            chromatic-temperature, temporal-smoke, audio-turbulence
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -48,6 +48,15 @@ fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
 
 fn hash(p: vec3<f32>) -> f32 {
     return fract(sin(dot(p, vec3<f32>(12.9898, 78.233, 54.53))) * 43758.5453);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -102,7 +111,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalColor = mix(baseColor.rgb, transmitted, effectAlpha);
     let finalAlpha = mix(baseColor.a, 1.0, effectAlpha * 0.7);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap((finalColor) * 1.1), finalAlpha));
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0, 0, 0.0));
 }

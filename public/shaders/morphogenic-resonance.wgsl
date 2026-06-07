@@ -127,6 +127,15 @@ fn hueShiftRGB(hue: f32) -> vec3<f32> {
   return clamp(h - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
@@ -212,6 +221,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Depth based on morph field distance
   let depth = clamp(0.5 + dist * 2.0 + interiorTex * 0.2, 0.0, 1.0);
 
+  fbCol = acesToneMap(fbCol * 1.1);
   textureStore(writeTexture, gid.xy, vec4<f32>(fbCol, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, gid.xy, vec4<f32>(fbCol, alpha));

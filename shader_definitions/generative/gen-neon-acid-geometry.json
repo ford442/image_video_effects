@@ -1,15 +1,60 @@
 {
   "id": "gen-neon-acid-geometry",
   "name": "Neon Acid Geometry",
-    "category": "generative",
+  "category": "generative",
   "url": "shaders/gen-neon-acid-geometry.wgsl",
   "description": "Geometric shapes (triangles, hexagons, circles) morphing and melting in psychedelic neon. Bright acid colors (electric lime, hot magenta, neon orange). Shapes pulse to a beat-like rhythm, scale in/out, rotate, and overlap with additive blending creating intense color mixing.",
-  "features": ["interactive", "mouse-reactive", "temporal", "procedural"],
-  "tags": ["psychedelic", "neon", "geometry", "acid", "morphing", "additive", "shapes"],
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural"
+  ],
+  "tags": [
+    "psychedelic",
+    "neon",
+    "geometry",
+    "acid",
+    "morphing",
+    "additive",
+    "shapes"
+  ],
   "params": [
-    {"id": "intensity", "name": "Intensity", "default": 0.7, "min": 0, "max": 1, "step": 0.01},
-    {"id": "speed", "name": "Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01},
-    {"id": "scale", "name": "Scale", "default": 0.6, "min": 0, "max": 1, "step": 0.01},
-    {"id": "colorshift", "name": "Color Shift", "default": 0.0, "min": 0, "max": 1, "step": 0.01}
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
   ]
 }

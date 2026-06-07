@@ -26,28 +26,32 @@
       "name": "Zoom",
       "default": 0.35,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "power",
       "name": "Exponent n",
       "default": 0,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "trapMode",
       "name": "Trap Mode",
       "default": 0,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "trapScale",
       "name": "Trap Scale",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "mapping": "zoom_params.w"
     }
   ]
 }

@@ -16,7 +16,8 @@
   "features": [
     "generative",
     "audio-reactive",
-    "mouse-driven"
+    "mouse-driven",
+    "temporal"
   ],
   "params": [
     {
@@ -26,7 +27,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Zoom level in 4D fractal space"
+      "description": "Zoom level in 4D fractal space",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "rotSpeed",
@@ -35,7 +37,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Speed of 4D rotation through hyperspace"
+      "description": "Speed of 4D rotation through hyperspace",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "colorShift",
@@ -44,7 +47,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Hue rotation of the color palette"
+      "description": "Hue rotation of the color palette",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "detailLevel",
@@ -53,7 +57,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Fractal iteration depth and detail"
+      "description": "Fractal iteration depth and detail",
+      "mapping": "zoom_params.w"
     }
   ]
 }

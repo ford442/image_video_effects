@@ -27,7 +27,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Speed of mycelial growth across time layers"
+      "description": "Speed of mycelial growth across time layers",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "generations",
@@ -36,7 +37,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Number of temporal mycelium generations"
+      "description": "Number of temporal mycelium generations",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "decay",
@@ -45,7 +47,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "How quickly older generations fade"
+      "description": "How quickly older generations fade",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "glow",
@@ -54,7 +57,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "description": "Intensity of glowing network tips"
+      "description": "Intensity of glowing network tips",
+      "mapping": "zoom_params.w"
     }
   ]
 }

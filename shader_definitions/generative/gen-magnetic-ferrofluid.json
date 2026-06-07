@@ -27,7 +27,8 @@
       "max": 1,
       "default": 0.5,
       "step": 0.01,
-      "description": "Controls the height and intensity of the fluid spikes."
+      "description": "Controls the height and intensity of the fluid spikes.",
+      "mapping": "zoom_params.x"
     },
     {
       "id": "param2",
@@ -36,7 +37,8 @@
       "max": 1,
       "default": 0.3,
       "step": 0.01,
-      "description": "Controls how many small spikes and structures form."
+      "description": "Controls how many small spikes and structures form.",
+      "mapping": "zoom_params.y"
     },
     {
       "id": "param3",
@@ -45,7 +47,8 @@
       "max": 3,
       "default": 1,
       "step": 0.01,
-      "description": "Speed at which the fluid pulsates and shifts."
+      "description": "Speed at which the fluid pulsates and shifts.",
+      "mapping": "zoom_params.z"
     },
     {
       "id": "param4",
@@ -54,7 +57,8 @@
       "max": 1,
       "default": 0.2,
       "step": 0.01,
-      "description": "Shifts the thin-film interference colors on the metallic surface."
+      "description": "Shifts the thin-film interference colors on the metallic surface.",
+      "mapping": "zoom_params.w"
     }
   ]
 }

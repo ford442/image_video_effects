@@ -4,7 +4,7 @@
 //  Features: facet-refraction, depth-aware, chromatic-aberration, upgraded-rgba,
 //            temporal-rotation, audio-refraction, chromatic-edge-dispersion
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,11 +27,30 @@ struct Uniforms {
     zoom_params: vec4<f32>,
     ripples: array<vec4<f32>, 50>,
 };
+fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
+  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
+  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
+  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
+  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
+  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
+  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
+  return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
+}
+
 
 fn rot2D(angle: f32) -> mat2x2<f32> {
     let c = cos(angle);
     let s = sin(angle);
     return mat2x2<f32>(c, -s, s, c);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -111,6 +130,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = clamp(0.8 + luma * 0.2 + bass * 0.05, 0.0, 1.0);
 
     textureStore(writeDepthTexture, coords, vec4<f32>(luma, 0.0, 0.0, 1.0));
-    textureStore(writeTexture, coords, vec4<f32>(col, alpha));
+    textureStore(writeTexture, coords, applyGenerativePrimaryControls(vec4<f32>(col, alpha)));
     textureStore(dataTextureA, coords, vec4<f32>(col, alpha));
 }
