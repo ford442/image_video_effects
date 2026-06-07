@@ -6,7 +6,15 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "aces-tone-map",
+    "upgraded-rgba",
+    "depth-aware",
+    "temporal-feedback",
+    "chromatic-aberration",
+    "hue-preserve-clamp",
+    "ign-dither",
+    "distance-lod"
   ],
   "tags": [
     "3d",

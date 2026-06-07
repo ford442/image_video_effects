@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chronos Labyrinth - Escher-esque Shifting Maze
 //  Category: generative
-//  Features: raymarching, impossible-geometry, temporal-rifts, mouse-driven, audio-reactive, ACES
+//  Features: raymarching, impossible-geometry, temporal-rifts, mouse-driven, audio-reactive,
+//            aces-tone-map, upgraded-rgba, depth-aware, temporal-feedback, chromatic-aberration,
+//            hue-preserve-clamp, ign-dither, distance-lod
 //  Complexity: High
 //  Created: 2026-05-10
-//  By: Claude Sonnet 4.6 (swarm optimization pass 2026-05-31)
+//  By: Claude Sonnet 4.6 (swarm optimization pass 2026-05-31; F1 flagship deep upgrade 2026-06-07)
 //  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 //  OPTIMIZATION LOG (2026-05-31):
@@ -14,6 +16,18 @@
 //  - Reinhard replaced with ACES (hue-preserving, broadcast-safe highlights)
 //  - Bass reactivity added to fog density and camera drift
 //  - IGN dither added before final write
+//
+//  F1 FLAGSHIP DEEP UPGRADE (2026-06-07):
+//  - Distance-based ray-step LOD: stride relaxes from 0.8→1.15 past 60% of MAX_DIST,
+//    cutting iterations in empty space (background-heavy frames see the biggest win)
+//  - Early-exit on atmosphere-faded hits: skips calcNormal (6 map() calls) + calcAO
+//    (5 map() calls) + full lighting model for pixels whose predicted alpha < 0.02 —
+//    those ~11 extra map() evaluations per far pixel are pure waste once fog swallows them
+//  - Temporal Rift memory: dataTextureA now stores a slow-decaying rift-glow echo,
+//    read back via dataTextureC next frame — rifts leave faint "afterimage" trails that
+//    breathe in and out, giving the anomalies a genuine sense of bleeding through time
+//  - huePreserveClamp before ACES — keeps rift cyan/turquoise saturated at peak brightness
+//  - Chromatic aberration on rift glow — RGB channel offset scaled by mid-band energy
 
 // --- STANDARD HEADER ---
 @group(0) @binding(0) var u_sampler: sampler;
@@ -242,6 +256,12 @@ fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
     return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// ═══ CHUNK: hue-preserve-clamp (from AGENTS.md) — keeps rift cyan saturated pre-ACES ═══
+fn huePreserveClamp(c: vec3<f32>, maxLum: f32) -> vec3<f32> {
+    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    return c * min(1.0, maxLum / max(l, 1e-4));
+}
+
 // Soft shadows removed — was calcSoftShadow() doing 32 map() calls per pixel.
 // AO provides enough contact-shadow feel at much lower cost.
 // Shadow approximated as (ao * diff) which is visually comparable at these camera distances.
@@ -273,7 +293,12 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
             mat = res.y;
             break;
         }
-        t += d * 0.8; // Slight under-step for better detail
+        // ═══ CHUNK: distance-lod-step — relax stride with distance (AGENTS.md pattern) ═══
+        // Near camera: 0.8x stride preserves surface detail. Past 60% of MAX_DIST,
+        // empty-space traversal dominates — widen toward 1.15x to reach the horizon
+        // (or a hit) in fewer iterations. Detail loss there is masked by fog/atmosphere.
+        let stepLOD = mix(0.8, 1.15, smoothstep(0.0, MAX_DIST * 0.6, t));
+        t += d * stepLOD;
     }
     
     return vec3<f32>(t, mat, 0.0);
@@ -320,34 +345,49 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = vec3<f32>(0.0);
     var depth = MAX_DIST;
     var alpha = 1.0;
-    
+    // Rift glow luminance for this frame — feeds the temporal-echo memory below
+    var riftGlowNow = 0.0;
+
     if (mat > 0.0 && t < MAX_DIST) {
         var p = ro + rd * t;
-        let n = calcNormal(p);
         depth = t;
-        
+
+        // ═══ CHUNK: early-exit (low-contribution pixels, AGENTS.md) ═══
+        // Predict the atmospheric-perspective alpha BEFORE paying for calcNormal (6 map()
+        // calls) + calcAO (5 map() calls) + the full lighting model. Once fog has nearly
+        // swallowed a hit (alpha < 0.02), none of that 11-call investment is visible —
+        // composite straight from the fog color instead.
+        let atm_perspective = u.zoom_params.w * 0.08 + 0.005;
+        let predictedAlpha = exp(-t * atm_perspective);
+
+        if (predictedAlpha < 0.02) {
+            color = mix(vec3<f32>(0.02, 0.02, 0.04), vec3<f32>(0.0, 0.0, 0.08), 0.5);
+            alpha = predictedAlpha;
+        } else {
+        let n = calcNormal(p);
+
         // Materials
         var base_color: vec3<f32>;
         var roughness: f32;
         let material_blend = 0.5;
-        
+
         if (mat < 1.5) {
             // Wall material - blend between stone and obsidian
             let stone_col = vec3<f32>(0.45, 0.42, 0.38); // Ancient stone
             let obsidian_col = vec3<f32>(0.08, 0.08, 0.12); // Polished obsidian
             base_color = mix(stone_col, obsidian_col, material_blend);
-            
+
             // Add procedural texture variation
             let tex_noise = fract(sin(dot(p.xz, vec2<f32>(12.9898, 78.233))) * 43758.5453);
             base_color *= 0.9 + tex_noise * 0.2;
-            
+
             roughness = mix(0.9, 0.1, material_blend); // Stone rough, obsidian smooth
         } else {
             // Temporal Rift - glowing energy
             base_color = vec3<f32>(0.0);
             roughness = 0.0;
         }
-        
+
         // Lighting
         let light_dir = normalize(vec3<f32>(0.5, 0.8, -0.3));
         let diff = max(dot(n, light_dir), 0.0);
@@ -371,6 +411,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let rift_colors = vec3<f32>(0.4, 0.9, 1.0);
             let pulse = 0.7 + 0.3 * sin(time * 3.0);
             color = rift_colors * (2.0 + pulse + mid * 0.5) * u.zoom_params.z;
+            riftGlowNow = dot(color, vec3<f32>(0.333));
         } else {
             // Standard material — ao folds in diffuse shadow role
             let amb = 0.15 * ao;
@@ -383,11 +424,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let fog_amount = 1.0 - exp(-t * fogDensity);
         let fog_color = mix(vec3<f32>(0.02, 0.02, 0.04), vec3<f32>(0.0, 0.0, 0.08), material_blend);
         color = mix(color, fog_color, fog_amount);
-        
-        // Distance-field alpha fade (atmospheric perspective)
-        let atm_perspective = u.zoom_params.w * 0.08 + 0.005;
-        alpha = exp(-t * atm_perspective);
-        
+
+        alpha = predictedAlpha;
+        }
+
     } else {
         // Void background with subtle stars
         let star_hash = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233)) + time * 0.01) * 43758.5453);
@@ -399,9 +439,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         alpha = 0.0;
     }
     
+    // ═══ CHUNK: multi-pass state packing — temporal rift echo (AGENTS.md) ═══
+    // Rifts are intermittent (rift_pulse gating in map()); without memory they simply
+    // blink on/off. Reading last frame's glow from dataTextureC and slow-decaying it
+    // (0.96/frame) creates a lingering "afterimage" — the anomaly bleeds through time
+    // even after the geometry stops rendering it, which is exactly the shader's conceit.
+    let uvSample = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+    let prevMemory = textureSampleLevel(dataTextureC, u_sampler, uvSample, 0.0);
+    let riftEcho = max(riftGlowNow * 0.5, prevMemory.r * 0.96);
+    let echoColor = vec3<f32>(0.4, 0.9, 1.0);
+    color += echoColor * riftEcho * 0.12 * (1.0 - alpha * 0.5);
+
+    // ═══ CHUNK: chromatic-aberration — mid-band energy splits the rift echo across RGB ═══
+    let caStrength = (0.0015 + mid * 0.0025) * riftEcho;
+    color = vec3<f32>(
+        color.r + echoColor.r * riftEcho * caStrength * 40.0,
+        color.g,
+        color.b - echoColor.b * riftEcho * caStrength * 40.0
+    );
+
     // Vignette
     let vignette = 1.0 - 0.4 * length(uv);
     color *= vignette;
+
+    // Hue-preserving clamp keeps rift cyan saturated instead of blowing out to white
+    color = huePreserveClamp(color, 2.4);
 
     // ACES filmic tone mapping (replaces Reinhard — more hue-neutral in highlights)
     color = acesToneMapping(color);
@@ -412,4 +474,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth / MAX_DIST, 0.0, 0.0, 0.0));
+    // Persist rift-echo memory (.r), normalized depth (.g), material id (.b), alpha (.a)
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(riftEcho, depth / MAX_DIST, mat, alpha));
 }
