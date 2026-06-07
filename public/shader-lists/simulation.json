@@ -2,7 +2,7 @@
   {
     "id": "aero-chromatics",
     "name": "Aero Chromatics",
-    "url": "shaders/aero-chromatics.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/aero-chromatics.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -49,7 +49,7 @@
   {
     "id": "alpha-crystal-growth-phase",
     "name": "Alpha Crystal Growth Phase",
-    "url": "shaders/alpha-crystal-growth-phase.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-crystal-growth-phase.wgsl",
     "description": "Phase-field model of crystal growth with RGBA-packed state. Phase (solid/liquid), temperature, crystal orientation, and impurity concentration evolve together. Creates dendritic crystal patterns with orientation-dependent color. Mouse seeds new crystals; ripples trigger nucleation.",
     "tags": [
       "crystal",
@@ -108,7 +108,7 @@
   {
     "id": "alpha-em-field-simulation",
     "name": "Alpha EM Field Simulation",
-    "url": "shaders/alpha-em-field-simulation.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-em-field-simulation.wgsl",
     "description": "Electromagnetic field simulation using RGBA32FLOAT as four data channels: R=E-field X, G=E-field Y, B=magnetic potential, A=charge density. Mouse and ripples inject alternating positive/negative charges. Wave equation propagation with damping.",
     "tags": [
       "electromagnetic",
@@ -166,7 +166,7 @@
   {
     "id": "alpha-erosion-terrain",
     "name": "Alpha Erosion Terrain",
-    "url": "shaders/alpha-erosion-terrain.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-erosion-terrain.wgsl",
     "description": "Hydraulic erosion simulation with RGBA-packed terrain state. Height from image luminance is eroded by flowing water that picks up sediment and deposits it in flat areas. Mouse creates rainstorms; ripples trigger flash floods. Alpha tracks cumulative erosion history.",
     "tags": [
       "erosion",
@@ -225,7 +225,7 @@
   {
     "id": "alpha-fire-temperature",
     "name": "Alpha Fire Temperature",
-    "url": "shaders/alpha-fire-temperature.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-fire-temperature.wgsl",
     "description": "Fire simulation with RGBA-packed state: fuel, temperature, smoke density, and combustion age. Temperature drives blackbody radiation color. Fuel burns, generates smoke, and heat rises via convection. Mouse injects fuel; ripples create sparks.",
     "tags": [
       "fire",
@@ -284,7 +284,7 @@
   {
     "id": "alpha-fluid-simulation-paint",
     "name": "Alpha Fluid Simulation Paint",
-    "url": "shaders/alpha-fluid-simulation-paint.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-fluid-simulation-paint.wgsl",
     "description": "Full 2D incompressible fluid simulation packed into a single RGBA32FLOAT texture. R=velocity.x, G=velocity.y, B=pressure, A=dye density. Mouse creates vortices and injects dye. Requires f32 for signed velocity and pressure fields.",
     "tags": [
       "fluid",
@@ -343,7 +343,7 @@
   {
     "id": "alpha-multi-state-ecosystem",
     "name": "Alpha Multi-State Ecosystem",
-    "url": "shaders/alpha-multi-state-ecosystem.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-multi-state-ecosystem.wgsl",
     "description": "Continuous multi-species ecosystem simulation packed into RGBA32FLOAT. Two species compete for shared resources while producing toxins. Species diffuse, grow, compete, and die. Mouse nurtures by adding resources.",
     "tags": [
       "ecosystem",
@@ -401,7 +401,7 @@
   {
     "id": "alpha-reaction-diffusion-rgba",
     "name": "Alpha Reaction Diffusion RGBA",
-    "url": "shaders/alpha-reaction-diffusion-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alpha-reaction-diffusion-rgba.wgsl",
     "description": "Four-species reaction-diffusion simulation packed into RGBA32FLOAT. A feeds B, C feeds D, with cross-inhibition between pairs. Creates complex multi-color patterns impossible in 2-species systems.",
     "tags": [
       "reaction-diffusion",
@@ -459,7 +459,7 @@
   {
     "id": "bitonic-sort",
     "name": "Bitonic Pixel Sort",
-    "url": "shaders/bitonic-sort.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/bitonic-sort.wgsl",
     "description": "Workgroup bitonic pixel sort with FBM-enhanced sort keys, bass-reactive mixing, and semantic luminance-key alpha.",
     "features": [
       "upgraded-rgba",
@@ -518,7 +518,7 @@
   {
     "id": "cellular-automata-rgba",
     "name": "Cellular Automata RGBA",
-    "url": "shaders/cellular-automata-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cellular-automata-rgba.wgsl",
     "description": "2D ecosystem cellular automaton with four interacting species packed into RGBA. Plants grow from nutrients, herbivores eat plants, predators eat herbivores, and all dead matter cycles back to soil nutrients. Continuous densities enable stable predator-prey oscillations.",
     "tags": [
       "simulation",
@@ -577,7 +577,7 @@
   {
     "id": "chromatic-reaction-diffusion-rgba",
     "name": "Chromatic Reaction Diffusion RGBA",
-    "url": "shaders/chromatic-reaction-diffusion-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-reaction-diffusion-rgba.wgsl",
     "description": "Four-species reaction-diffusion with chromatic cross-coupling. Activators A/C and inhibitors B/D form warm/cool tone pairs that suppress each other at boundaries, creating iridescent fringe patterns. RGBA packs full simulation state.",
     "tags": [
       "reaction-diffusion",
@@ -637,7 +637,7 @@
     "id": "cymatic-sand",
     "name": "Cymatic Sand",
     "description": "Multi-harmonic Chladni plate simulation. Sand accumulates on nodal lines with temporal persistence, audio-driven harmonic superposition, and SDF-based rounded grain rendering.",
-    "url": "shaders/cymatic-sand.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cymatic-sand.wgsl",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -694,7 +694,7 @@
   {
     "id": "digital-moss",
     "name": "Digital Moss",
-    "url": "shaders/digital-moss.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-moss.wgsl",
     "description": "Digital moss grows on dark areas. Use the mouse to clean it.",
     "features": [
       "mouse-driven"
@@ -742,7 +742,7 @@
     "id": "ferrofluid-spikes",
     "name": "Ferrofluid Spikes",
     "category": "simulation",
-    "url": "shaders/ferrofluid-spikes.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ferrofluid-spikes.wgsl",
     "description": "Mouse-driven ferrofluid simulation. The cursor acts as a magnet, pulling up metallic spikes from a dark liquid surface. Audio adds turbulence.",
     "features": [
       "mouse-driven",
@@ -794,7 +794,7 @@
   {
     "id": "flow-sort",
     "name": "Streamline Pixel Sort",
-    "url": "shaders/flow-sort.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/flow-sort.wgsl",
     "description": "Pixel sorting along vector field lines derived from luminance gradients.",
     "params": [
       {
@@ -840,7 +840,7 @@
   {
     "id": "galaxy-compute",
     "name": "Galaxy Compute",
-    "url": "shaders/galaxy-compute.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/galaxy-compute.wgsl",
     "description": "Volumetric spiral galaxy with logarithmic spiral SDF, procedural nebula clouds, Keplerian orbital mechanics, and stellar particle glow.",
     "params": [
       {
@@ -886,7 +886,7 @@
   {
     "id": "lenia-on-video",
     "name": "Lenia on Video",
-    "url": "shaders/lenia-on-video.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/lenia-on-video.wgsl",
     "category": "simulation",
     "description": "Continuous Lenia cellular automaton (Chan 2019) seeded and continuously driven by live video. Video luminance seeds the initial cell state; video hue and saturation modulate Lenia's growth center and width parameters in real time, coupling the CA tightly to the subject. Bass beats inject fresh cells from bright video regions. Mouse spawns or clears cells. Outputs a neon bioluminescent CA layer composited over the source video.",
     "tags": [
@@ -948,7 +948,7 @@
     "id": "lichtenberg-fractal",
     "name": "Lichtenberg Fractal",
     "description": "High-voltage electrical discharge with curl-noise branching, depth-aware strike targeting, audio-reactive spread, and chromatic glow (white core → cyan → deep purple).",
-    "url": "shaders/lichtenberg-fractal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/lichtenberg-fractal.wgsl",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -1002,7 +1002,7 @@
   {
     "id": "luma-flow-field",
     "name": "Luma Flow Field",
-    "url": "shaders/luma-flow-field.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/luma-flow-field.wgsl",
     "description": "Luma-gradient curl-noise flow field. Pixels stream along iso-luminance curves driven by multi-octave divergence-free noise, with depth-aware vortices, audio-reactive speed/turbulence, and iridescent palette streaks.",
     "features": [
       "audio-reactive",
@@ -1059,7 +1059,7 @@
   {
     "id": "nano-assembler",
     "name": "Nano Assembler",
-    "url": "shaders/nano-assembler.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/nano-assembler.wgsl",
     "description": "Simulates nanobots constructing the image. Mouse movement disrupts the assembly, scattering the particles.",
     "params": [
       {
@@ -1102,7 +1102,7 @@
   {
     "id": "photonic-caustics",
     "name": "Photonic Caustics",
-    "url": "shaders/photonic-caustics.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/photonic-caustics.wgsl",
     "description": "Light caustics simulation with chromatic dispersion, Fresnel reflections, and refractive surfaces.",
     "params": [
       {
@@ -1152,7 +1152,7 @@
   {
     "id": "pixel-sand",
     "name": "Pixel Sand",
-    "url": "shaders/pixel-sand.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-sand.wgsl",
     "description": "Falling granular automata with curl noise force fields, height-field weight physics, mouse gravity wells, audio-reactive spawn, depth shading, and bounce.",
     "features": [
       "upgraded-rgba",
@@ -1209,7 +1209,7 @@
   {
     "id": "predator-prey",
     "name": "Pixel Ecology",
-    "url": "shaders/predator-prey.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/predator-prey.wgsl",
     "description": "Cellular automata ecosystem with plants, herbivores, and carnivores - watch the food chain unfold.",
     "params": [
       {
@@ -1255,7 +1255,7 @@
   {
     "id": "quantum-foam-pass1",
     "name": "Quantum Foam (Pass 1: Field Generation)",
-    "url": "shaders/quantum-foam-pass1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/quantum-foam-pass1.wgsl",
     "description": "Generates quantum probability field with curl noise and FBM. First pass of 3-pass system.",
     "features": [
       "multi-pass-1",
@@ -1311,7 +1311,7 @@
   {
     "id": "quantum-foam-pass2",
     "name": "Quantum Foam (Pass 2: Particle Advection)",
-    "url": "shaders/quantum-foam-pass2.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/quantum-foam-pass2.wgsl",
     "description": "Advects particles through the quantum field. Second pass of 3-pass system.",
     "features": [
       "multi-pass-2",
@@ -1368,7 +1368,7 @@
   {
     "id": "quantum-foam-pass3",
     "name": "Quantum Foam (Pass 3: Compositing)",
-    "url": "shaders/quantum-foam-pass3.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/quantum-foam-pass3.wgsl",
     "description": "Volumetric rendering and final compositing with glow and tone mapping. Third pass of 3-pass system.",
     "features": [
       "multi-pass-3",
@@ -1424,7 +1424,7 @@
   {
     "id": "rd-on-video-pass1",
     "name": "RD on Video (Pass 1: State Update)",
-    "url": "shaders/rd-on-video-pass1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/rd-on-video-pass1.wgsl",
     "description": "Gray-Scott reaction-diffusion seeded and continuously driven by video luminance.",
     "features": [
       "multi-pass-1",
@@ -1482,7 +1482,7 @@
   {
     "id": "rd-on-video-pass2",
     "name": "RD on Video (Pass 2: Turing Color Map)",
-    "url": "shaders/rd-on-video-pass2.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/rd-on-video-pass2.wgsl",
     "description": "Color-maps reaction-diffusion chemistry into vivid Turing pattern fields.",
     "features": [
       "multi-pass-2",
@@ -1539,7 +1539,7 @@
   {
     "id": "rd-on-video-pass3",
     "name": "RD on Video (Pass 3: Composite)",
-    "url": "shaders/rd-on-video-pass3.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/rd-on-video-pass3.wgsl",
     "description": "Composites Turing color output over video using luminance-aware masking.",
     "features": [
       "multi-pass-3",
@@ -1596,7 +1596,7 @@
   {
     "id": "sim-decay-system-rgba",
     "name": "Sim: Decay System RGBA",
-    "url": "shaders/sim-decay-system-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-decay-system-rgba.wgsl",
     "description": "Four-layer material decay simulation with cross-coupling. Paint integrity, metal corrosion, organic rot, and structural integrity each decay at different rates. When one layer fails, others decay faster. Mouse interaction can restore/repair.",
     "tags": [
       "simulation",
@@ -1655,7 +1655,7 @@
   {
     "id": "sim-decay-system",
     "name": "Decay System",
-    "url": "shaders/sim-decay-system.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-decay-system.wgsl",
     "description": "Multi-layer decay and corrosion simulation. Image corrodes from edges inward with different materials.",
     "features": [
       "simulation",
@@ -1719,7 +1719,7 @@
   {
     "id": "sim-fluid-feedback-coupled",
     "name": "Fluid Feedback Coupled",
-    "url": "shaders/sim-fluid-feedback-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-fluid-feedback-coupled.wgsl",
     "description": "Mouse-steerable coupled fluid simulation combining Navier-Stokes feedback fields with viscous fluid stirring. Mouse drags fluid creating vortex streets; click ripples inject bursts. Fluid thickness drives color absorption, blur, and glow.",
     "features": [
       "simulation",
@@ -1791,7 +1791,7 @@
   {
     "id": "sim-fluid-feedback-field",
     "name": "Fluid Feedback Field",
-    "url": "shaders/sim-fluid-feedback-field-pass1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-fluid-feedback-field-pass1.wgsl",
     "description": "Multi-pass Navier-Stokes fluid simulation with feedback trails. Glowing fluid that swirls and mixes.",
     "features": [
       "simulation",
@@ -1878,7 +1878,7 @@
   {
     "id": "sim-heat-haze-field",
     "name": "Heat Haze Field",
-    "url": "shaders/sim-heat-haze-field.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-heat-haze-field.wgsl",
     "description": "Temperature simulation with convection currents. Desert mirage effect with rising heat patterns.",
     "features": [
       "simulation",
@@ -1942,7 +1942,7 @@
   {
     "id": "sim-ink-diffusion-rgba",
     "name": "Sim: Ink Diffusion RGBA",
-    "url": "shaders/sim-ink-diffusion-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-ink-diffusion-rgba.wgsl",
     "description": "Four-ink wet diffusion simulation on paper texture. RGB channels hold cyan, magenta, and yellow pigment concentrations; alpha holds water saturation that drives all diffusion. Pigments mix subtractively on wet paper.",
     "tags": [
       "simulation",
@@ -2001,7 +2001,7 @@
   {
     "id": "sim-ink-diffusion",
     "name": "Ink Diffusion",
-    "url": "shaders/sim-ink-diffusion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-ink-diffusion.wgsl",
     "description": "Fluid ink diffusion with paper absorption. Multi-channel Gray-Scott with Wolfram-validated parameters.",
     "features": [
       "simulation",
@@ -2070,7 +2070,7 @@
   {
     "id": "sim-sand-dunes-rgba",
     "name": "Sim: Sand Dunes RGBA",
-    "url": "shaders/sim-sand-dunes-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-sand-dunes-rgba.wgsl",
     "description": "Four-grain-type sand physics with distinct behaviors. Fine sand blows easily in wind, coarse sand is stable with high angle of repose, moist sand clumps together, and dust rises on updrafts. RGBA packs all grain fractions per cell.",
     "tags": [
       "simulation",
@@ -2129,7 +2129,7 @@
   {
     "id": "sim-sand-dunes",
     "name": "Sand Dunes",
-    "url": "shaders/sim-sand-dunes.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-sand-dunes.wgsl",
     "description": "Falling sand physics with wind erosion. Sand falls, piles at angle of repose, wind moves loose sand.",
     "features": [
       "simulation",
@@ -2192,7 +2192,7 @@
   {
     "id": "sim-slime-mold-growth-em",
     "name": "Slime Mold Growth + EM Field",
-    "url": "shaders/sim-slime-mold-growth-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-slime-mold-growth-em.wgsl",
     "description": "Physarum slime mold simulation with mouse electromagnetic field interaction. Agents steer along electric field lines; click ripples spawn secondary charges.",
     "features": [
       "simulation",
@@ -2267,7 +2267,7 @@
   {
     "id": "sim-slime-mold-growth",
     "name": "Slime Mold Growth",
-    "url": "shaders/sim-slime-mold-growth.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-slime-mold-growth.wgsl",
     "description": "Physarum-style slime mold with trail following. Branching network of glowing trails exploring space.",
     "features": [
       "simulation",
@@ -2332,7 +2332,7 @@
   {
     "id": "sim-smoke-trails",
     "name": "Smoke Trails",
-    "url": "shaders/sim-smoke-trails.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-smoke-trails.wgsl",
     "description": "Volumetric smoke with vorticity and buoyancy. Billowing smoke rising with natural turbulence.",
     "features": [
       "simulation",
@@ -2396,7 +2396,7 @@
   {
     "id": "sim-volumetric-fake",
     "name": "Volumetric Fake (God Rays)",
-    "url": "shaders/sim-volumetric-fake.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-volumetric-fake.wgsl",
     "description": "Fast approximation of volumetric lighting. Radial blur from light source with depth-based scattering.",
     "features": [
       "simulation",
@@ -2461,7 +2461,7 @@
     "id": "slime-mold-on-video",
     "name": "Slime Mold on Video",
     "category": "simulation",
-    "url": "shaders/slime-mold-on-video.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/slime-mold-on-video.wgsl",
     "description": "Video luminance feeds a slime-mold trail simulation. Audio shifts tendril colors (bass green, mids cyan, treble magenta). Depth boosts glow intensity. Mouse deposits extra food.",
     "features": [
       "simulation",
@@ -2523,7 +2523,7 @@
   {
     "id": "spec-runge-kutta-advection",
     "name": "Runge-Kutta Advection",
-    "url": "shaders/spec-runge-kutta-advection.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-runge-kutta-advection.wgsl",
     "description": "4th-order Runge-Kutta fluid advection. Dramatically more accurate than Euler method, preserving fine dye structures 10x longer. Mouse creates counter-rotating vortex pairs.",
     "tags": [
       "runge-kutta",
@@ -2580,7 +2580,7 @@
   {
     "id": "split-flap-display",
     "name": "Split Flap Display",
-    "url": "shaders/split-flap-display.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/split-flap-display.wgsl",
     "features": [
       "interactive",
       "simulation",
@@ -2640,7 +2640,7 @@
   {
     "id": "steamy-glass",
     "name": "Steamy Glass",
-    "url": "shaders/steamy-glass.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/steamy-glass.wgsl",
     "description": "Simulates a foggy window that can be wiped clean with the mouse. The steam slowly returns over time.",
     "params": [
       {
@@ -2687,7 +2687,7 @@
   {
     "id": "wave-equation",
     "name": "Wave Tank",
-    "url": "shaders/wave-equation.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/wave-equation.wgsl",
     "description": "2D wave equation simulation with ripple physics, refraction effects, and rainbow phase coloring.",
     "params": [
       {
