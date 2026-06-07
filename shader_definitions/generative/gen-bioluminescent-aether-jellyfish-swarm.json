@@ -4,7 +4,11 @@
   "url": "shaders/gen-bioluminescent-aether-jellyfish-swarm.wgsl",
   "category": "generative",
   "description": "A mesmerizing deep-space ocean with translucent aether-jellyfish reacting to audio.",
-  "features": ["audio-reactive"],
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal"
+  ],
   "params": [
     {
       "id": "param1",

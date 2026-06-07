@@ -18,7 +18,9 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "animated"
+    "animated",
+    "upgraded-rgba",
+    "temporal"
   ],
   "params": [
     {

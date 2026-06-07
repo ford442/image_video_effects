@@ -1,23 +1,23 @@
 {
   "version": "3.0",
   "created": "2026-06-07",
-  "description": "Generative shader v2 upgrade swarm batch 2 - 12 shaders",
+  "description": "Generative shader v2 upgrade swarm batch 3 - 12 genuinely un-upgraded shaders",
   "batch_size": 12,
   "phases": {
     "a": { "total": 12, "completed": 0, "pending": 12 }
   },
   "items": [
-    { "id": "gen-fractal-bioluminescence-spore-network", "size": 1311, "status": "pending", "priority": 1, "agent_role": "Algorithmist", "target_lines": 170, "phase": "a" },
-    { "id": "gen-buddhabrot-aura", "size": 1594, "status": "pending", "priority": 1, "agent_role": "Algorithmist", "target_lines": 180, "phase": "a" },
-    { "id": "gen-dragon-curve", "size": 1789, "status": "pending", "priority": 1, "agent_role": "Algorithmist", "target_lines": 180, "phase": "a" },
-    { "id": "molten-gold", "size": 1280, "status": "pending", "priority": 1, "agent_role": "Visualist", "target_lines": 170, "phase": "a" },
-    { "id": "gen-lichtenberg-storm", "size": 1680, "status": "pending", "priority": 1, "agent_role": "Visualist", "target_lines": 180, "phase": "a" },
-    { "id": "tornado-vortex", "size": 1406, "status": "pending", "priority": 1, "agent_role": "Visualist", "target_lines": 180, "phase": "a" },
-    { "id": "gen-metaball-soft-body", "size": 1321, "status": "pending", "priority": 1, "agent_role": "Interactivist", "target_lines": 170, "phase": "a" },
-    { "id": "gen-coral-reef-colony", "size": 1624, "status": "pending", "priority": 1, "agent_role": "Interactivist", "target_lines": 180, "phase": "a" },
-    { "id": "gen-fourier-epicycles", "size": 1339, "status": "pending", "priority": 1, "agent_role": "Interactivist", "target_lines": 180, "phase": "a" },
-    { "id": "gen_capabilities", "size": 1286, "status": "pending", "priority": 1, "agent_role": "Optimizer", "target_lines": 170, "phase": "a" },
-    { "id": "gravito-phononic-accretion", "size": 1847, "status": "pending", "priority": 1, "agent_role": "Optimizer", "target_lines": 180, "phase": "a" },
-    { "id": "phase-memory-weave", "size": 1824, "status": "pending", "priority": 1, "agent_role": "Optimizer", "target_lines": 180, "phase": "a" }
+    { "id": "gen-von-karman-vortex", "size": 1420, "status": "pending", "priority": 1, "agent_role": "Algorithmist", "target_lines": 180, "phase": "a" },
+    { "id": "gen-barnsley-fern", "size": 1737, "status": "pending", "priority": 1, "agent_role": "Algorithmist", "target_lines": 180, "phase": "a" },
+    { "id": "gen-sierpinski-tetrahedron", "size": 1312, "status": "pending", "priority": 1, "agent_role": "Algorithmist", "target_lines": 180, "phase": "a" },
+    { "id": "supernova-core", "size": 1466, "status": "pending", "priority": 1, "agent_role": "Visualist", "target_lines": 180, "phase": "a" },
+    { "id": "aurora-curtain", "size": 1448, "status": "pending", "priority": 1, "agent_role": "Visualist", "target_lines": 180, "phase": "a" },
+    { "id": "sand-dunes", "size": 1401, "status": "pending", "priority": 1, "agent_role": "Visualist", "target_lines": 180, "phase": "a" },
+    { "id": "gen-feedback-echo-chamber", "size": 1370, "status": "pending", "priority": 1, "agent_role": "Interactivist", "target_lines": 180, "phase": "a" },
+    { "id": "hyperbolic-crystal-symbiosis", "size": 1852, "status": "pending", "priority": 1, "agent_role": "Interactivist", "target_lines": 190, "phase": "a" },
+    { "id": "gen-ifs-fractal-flame", "size": 1423, "status": "pending", "priority": 1, "agent_role": "Interactivist", "target_lines": 180, "phase": "a" },
+    { "id": "spec-distance-field-text", "size": 1247, "status": "pending", "priority": 1, "agent_role": "Optimizer", "target_lines": 180, "phase": "a" },
+    { "id": "gen-quasicrystal", "size": 1199, "status": "pending", "priority": 1, "agent_role": "Optimizer", "target_lines": 180, "phase": "a" },
+    { "id": "cosmic-web", "size": 1107, "status": "pending", "priority": 1, "agent_role": "Optimizer", "target_lines": 180, "phase": "a" }
   ]
 }

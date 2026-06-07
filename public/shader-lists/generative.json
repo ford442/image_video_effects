@@ -1063,7 +1063,9 @@
       "chromatic-dispersion",
       "hydrothermal-plumes",
       "bioluminescence",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -2702,7 +2704,9 @@
     "category": "generative",
     "description": "A mesmerizing deep-space ocean with translucent aether-jellyfish reacting to audio.",
     "features": [
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -3120,7 +3124,9 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -4138,7 +4144,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "animated"
+      "animated",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -4495,7 +4503,9 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -18610,7 +18620,8 @@
       "mouse-driven",
       "temporal",
       "chromatic",
-      "showcase"
+      "showcase",
+      "upgraded-rgba"
     ],
     "params": [
       {
