@@ -86,6 +86,23 @@ fn rfbm(p: vec2<f32>) -> f32 {
     return val;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 0.15 + 0.05) + 0.004;
+  let b = x * (x * 0.15 + 0.50) + 0.06;
+  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Physarum growth ~1 mm/h, Steiner tree approximation
+fn slimeGradient(p: vec2<f32>, time: f32) -> vec2<f32> {
+    // Nutrient gradient following: moves toward higher chemoattractant concentrations
+    let chemotaxis = 0.3;
+    let nR = vnoise(p + vec2<f32>(0.01, 0.0) + time * 0.05);
+    let nL = vnoise(p - vec2<f32>(0.01, 0.0) + time * 0.05);
+    let nU = vnoise(p + vec2<f32>(0.0, 0.01) + time * 0.05);
+    let nD = vnoise(p - vec2<f32>(0.0, 0.01) + time * 0.05);
+    return vec2<f32>(nR - nL, nU - nD) * chemotaxis * 10.0;
+}
+
 // 2D rotation
 fn rot2(a: f32) -> mat2x2<f32> {
     let c = cos(a);
@@ -152,6 +169,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let resolution = vec2<f32>(u.config.z, u.config.w);
     let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
+    let uv01 = vec2<f32>(pixel) / resolution;
     let time = u.config.x;
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let mouseDown = u.zoom_config.w;
@@ -199,7 +217,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Local coordinates relative to seed
         let localP = uv - seedPos;
-        let scaledP = localP * (1.5 + 2.0 * scale);
+        let nutrientGrad = slimeGradient(localP, time);
+        let scaledP = (localP + nutrientGrad * 0.05) * (1.5 + 2.0 * scale);
 
         // Growth factor - veins extend over time with pulses
         let growthPhase = fract(time * 0.06 * speed + fv * 0.17);
@@ -271,12 +290,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vig = 1.0 - dot(uv * 0.7, uv * 0.7) * vigPulse;
     col *= clamp(vig, 0.0, 1.0) * 1.3;
 
-    // Tone map
-    col = col / (1.0 + col * 0.28);
+    // Read depth for chromatic aberration
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
+
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+    // ACES tone map
+    col = acesToneMap(col);
     col = pow(col, vec3<f32>(0.9));
 
     // Brightness boost
     col = col * 2.0;
 
-    textureStore(writeTexture, pixel, vec4<f32>(col, 1.0));
+    // Semantic alpha
+    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
+
+    // Temporal feedback
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, col, 0.25);
+    textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
+
+    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
 }

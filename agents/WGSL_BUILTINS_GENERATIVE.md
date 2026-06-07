@@ -322,41 +322,70 @@ fn heatColor(t: f32) -> vec3<f32> {
 }
 ```
 
-### Psychedelic Color & Motion Helpers
+### Psychedelic Utilities
 
-Use these for Batch 4 color/movement upgrades. They are compute-safe and do not add bindings.
+Use these for Batch 4 color/movement upgrades. They are compute-safe, Naga-safe, and avoid unbounded loops. `psychedelicPalette`, `neonGlow`, `organicDrift`, and `pulseScale` add no bindings. `chromaticAberration` uses the existing canonical `readTexture`/`u_sampler` bindings.
 
 ```wgsl
+// Usage:
+// let raw = psychedelicPalette(u.config.x * 0.08 + u.zoom_params.x);
+// let color = mix(vec3<f32>(dot(raw, vec3<f32>(0.2126, 0.7152, 0.0722))), raw, clamp(u.zoom_params.y, 0.0, 1.0));
 fn psychedelicPalette(t: f32) -> vec3<f32> {
-    let h = fract(t);
-    let a = vec3<f32>(0.55, 0.45, 0.62);
-    let b = vec3<f32>(0.45, 0.55, 0.38);
-    let c = vec3<f32>(1.0, 1.0, 1.0);
-    let d = vec3<f32>(0.00, 0.33, 0.67);
-    let rgb = a + b * cos(TAU * (c * h + d));
-    return clamp(rgb * vec3<f32>(1.25, 1.08, 1.35), vec3<f32>(0.0), vec3<f32>(1.6));
+    let hue = fract(t);
+    let saturation = clamp(0.72 + 0.28 * sin(TAU * (t * 0.137 + 0.19)), 0.45, 1.0);
+    let value = 1.0 + 0.18 * sin(TAU * (t * 0.071 + 0.43));
+    let rgb = clamp(abs(fract(vec3<f32>(hue) + vec3<f32>(0.0, 0.6666667, 0.3333333)) * 6.0 - vec3<f32>(3.0)) - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
+    let smoothRgb = rgb * rgb * (vec3<f32>(3.0) - 2.0 * rgb);
+    return mix(vec3<f32>(value), smoothRgb * value, saturation);
 }
 
+// Usage:
+// color = neonGlow(color, 0.35 + plasmaBuffer[0].z * 0.2);
 fn neonGlow(color: vec3<f32>, intensity: f32) -> vec3<f32> {
-    let lum = luma(color);
-    let bloomMask = smoothstep(0.35, 1.0, lum);
-    let saturated = mix(color, normalize(max(color, vec3<f32>(0.001))) * max(lum, 0.25), 0.35);
-    return color + saturated * bloomMask * intensity;
+    let safeColor = max(color, vec3<f32>(0.0));
+    let lum = dot(safeColor, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let glowMask = smoothstep(0.22, 1.0, lum);
+    let chroma = normalize(safeColor + vec3<f32>(0.001)) * max(lum, 0.18);
+    let bloom = (safeColor * safeColor + chroma) * glowMask * max(intensity, 0.0);
+    return safeColor + bloom;
 }
 
+// Usage:
+// let driftedUv = uv + organicDrift(uv, u.config.x, 8.0) * 0.05;
 fn organicDrift(uv: vec2<f32>, time: f32, scale: f32) -> vec2<f32> {
-    let p = uv * scale;
+    let safeScale = max(scale, 0.001);
+    let p = uv * safeScale;
     let slow = vec2<f32>(time * 0.11, -time * 0.08);
     let q = vec2<f32>(
         fbm(p + slow, 3),
-        fbm(p + vec2<f32>(5.2, 1.3) - slow.yx, 3)
+        fbm(p * 1.37 + vec2<f32>(5.2, 1.3) - slow.yx, 3)
     );
-    return (q * 2.0 - vec2<f32>(1.0)) / max(scale, 0.001);
+    let r = vec2<f32>(
+        fbm(p * 0.73 + q * 2.0 + vec2<f32>(1.7, 9.2), 2),
+        fbm(p * 0.91 - q.yx * 2.0 + vec2<f32>(8.1, 2.8), 2)
+    );
+    return ((q + r * 0.5) * 2.0 - vec2<f32>(1.5)) / safeScale;
 }
 
+// Usage:
+// let breathing = pulseScale(u.config.x, 1.25 + plasmaBuffer[0].x);
 fn pulseScale(time: f32, speed: f32) -> f32 {
     let wave = 0.5 + 0.5 * sin(time * speed);
-    return 0.92 + smoothstep(0.0, 1.0, wave) * 0.16;
+    return 0.8 + smoothstep(0.0, 1.0, wave) * 0.4;
+}
+
+// Usage:
+// let ca = chromaticAberration(uv01, 0.003 + readDepth * 0.002);
+fn chromaticAberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
+    let center = vec2<f32>(0.5);
+    let delta = uv - center;
+    let lenSq = max(dot(delta, delta), 0.000001);
+    let dir = delta * inverseSqrt(lenSq);
+    let offset = dir * max(amount, 0.0);
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    return vec3<f32>(r, g, b);
 }
 ```
 
@@ -364,7 +393,8 @@ fn pulseScale(time: f32, speed: f32) -> f32 {
 ```wgsl
 let drift = organicDrift(uv01, time, 8.0) * (0.05 + bass * 0.03);
 let p = uv + drift;
-var color = psychedelicPalette(fbm(p * 3.0, 4) + time * 0.08 + treble * 0.12);
+var color = psychedelicPalette(fbm(p * 3.0, 4) + time * 0.08 + u.zoom_params.x);
+color = mix(vec3<f32>(dot(color, vec3<f32>(0.2126, 0.7152, 0.0722))), color, clamp(u.zoom_params.y, 0.0, 1.0));
 color = neonGlow(color, 0.4 + mids * 0.25);
 color *= pulseScale(time, 1.5 + bass);
 color = acesToneMap(color * 1.1);
@@ -475,14 +505,8 @@ fn rotZ(v: vec3<f32>, a: f32) -> vec3<f32> {
 ## 8. Chromatic Aberration (required for modern shaders)
 
 ```wgsl
-// Split-channel sampling along a direction
-fn chromaticAberration(uv: vec2<f32>, strength: f32) -> vec3<f32> {
-    let dir = normalize(uv - vec2<f32>(0.5));
-    let r = textureSampleLevel(readTexture, u_sampler, uv + dir * strength,        0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv,                          0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv - dir * strength * 0.5,  0.0).b;
-    return vec3<f32>(r, g, b);
-}
+// For texture-backed shaders, use chromaticAberration(uv, amount) from
+// "Psychedelic Utilities" above.
 
 // For generative shaders (no readTexture) — separate hue channels
 fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32, time: f32) -> vec3<f32> {

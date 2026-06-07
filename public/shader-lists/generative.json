@@ -677,7 +677,7 @@
     "name": "Chrono-Voronoi Mycelium",
     "url": "shaders/chrono-voronoi-mycelium.wgsl",
     "category": "generative",
-    "description": "A living fungal network that grows across multiple time scales. Different generations of mycelium coexist as translucent layers. Mouse seeds new growth while audio seasons control the balance between expansion and decay. Now with chromatic dispersion and enhanced temporal feedback.",
+    "description": "A living fungal network that grows across multiple time scales. Voronoi cells represent fungal colonies; cell edges glow as mycelium hyphae. Different generations coexist as translucent layers. Temporal feedback accumulates growth rings. Bass = nutrient pulse triggers spore bursts and faster spread via golden-ratio seed displacement. Mouse inoculates new colonies. ACES tonemapped with chromatic aberration.",
     "features": [
       "temporal-layers",
       "voronoi-growth",
@@ -685,8 +685,10 @@
       "mouse-seeding",
       "multi-scale",
       "temporal",
-      "chromatic",
-      "depth-aware"
+      "upgraded-rgba",
+      "depth-aware",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "tags": [
       "organic",
@@ -694,7 +696,10 @@
       "temporal",
       "voronoi",
       "generative",
-      "audio-reactive"
+      "audio-reactive",
+      "mouse-driven",
+      "golden-ratio",
+      "biological"
     ],
     "params": [
       {
@@ -3165,17 +3170,23 @@
     "name": "Celestial Aether-Seraphim Wings",
     "url": "shaders/gen-celestial-aether-seraphim-wings.wgsl",
     "category": "generative",
-    "description": "A majestic, hyper-dimensional array of ethereal, fractal wings woven from liquid plasma and quantum light that endlessly fold, beat, and shatter into geometric feathers in response to cosmic audio resonance.",
+    "description": "A majestic hyper-dimensional array of fractal wings enriched with aerodynamic lift physics. Angle of attack α from mouse Y drives C_L=2πα (thin airfoil). Stall at ~15° creates turbulent breakdown. Bass drives flapping frequency via damped oscillation. Temporal feedback, chromatic aberration, and ACES tone mapping.",
     "tags": [
       "wings",
       "angelic",
       "plasma",
       "fractal",
       "audio-reactive",
-      "raymarching"
+      "raymarched",
+      "upgraded-rgba",
+      "temporal",
+      "mouse-driven"
     ],
     "features": [
+      "upgraded-rgba",
+      "temporal",
       "audio-reactive",
+      "mouse-driven",
       "raymarched"
     ],
     "params": [
@@ -3814,11 +3825,12 @@
     "name": "Chromatic Acid Drip",
     "category": "generative",
     "url": "shaders/gen-chromatic-acid-drip.wgsl",
-    "description": "Simulates liquid LSD-like chromatic dripping and flowing with RGB channel separation creating rainbow fringes. Liquid metaball blobs merge and split like ferrofluid with extremely saturated neon colors. Mouse attracts the liquid creating interactive acid trails.",
+    "description": "Liquid LSD-like chromatic dripping with RGB channel separation. Upgraded with universal-indicator pH color science: drips change color as they fall through a realistic acid→base gradient. Mouse creates localized acid/base splashes. Critical-angle refraction, temporal feedback trails, chromatic aberration, and ACES tone mapping.",
     "features": [
-      "interactive",
-      "mouse-reactive",
+      "upgraded-rgba",
       "temporal",
+      "audio-reactive",
+      "mouse-driven",
       "procedural"
     ],
     "tags": [
@@ -3829,7 +3841,9 @@
       "chromatic",
       "drip",
       "ferrofluid",
-      "metaball"
+      "metaball",
+      "ph-science",
+      "chemistry"
     ],
     "params": [
       {
@@ -4624,7 +4638,8 @@
       "temporal",
       "procedural",
       "simulation",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "psychedelic",
@@ -4995,9 +5010,23 @@
   {
     "id": "cyber-organic-liquid-neon-pulsar",
     "name": "Cyber-Organic Liquid-Neon Pulsar",
-    "description": "A biomechanical, pulsating celestial core composed of hyper-viscous liquid-neon and crystalline techno-organic fibers.",
+    "description": "A biomechanical, pulsating celestial core composed of hyper-viscous liquid-neon and crystalline techno-organic fibers. Enriched with Crab Pulsar 30.2 Hz strobe and 10^8 Tesla magnetic field topology.",
     "category": "generative",
     "url": "shaders/gen-cyber-organic-liquid-neon-pulsar.wgsl",
+    "features": [
+      "upgraded-rgba",
+      "temporal",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "tags": [
+      "neon",
+      "pulsar",
+      "magnetic-field",
+      "astrophysics",
+      "raymarched",
+      "abstract"
+    ],
     "params": [
       {
         "id": "param1",
@@ -5572,21 +5601,25 @@
     "name": "DMT Fractal Zoom",
     "category": "generative",
     "url": "shaders/gen-dmt-fractal-zoom.wgsl",
-    "description": "An infinite zoom through a fractal landscape with DMT-vision-like visual complexity. Each zoom level reveals new fractal details. Colors are extremely saturated rainbow gradients that shift as you zoom. Mouse controls zoom speed, direction, and panning. Mandelbrot-Burning Ship hybrid with heavy post-processing glow.",
+    "description": "An infinite zoom through a fractal landscape with DMT-vision-like visual complexity enriched by Wolfram Alpha Mandelbrot data. Each zoom level reveals new fractal details. Escape radius |z|>2 guarantees divergence. Smooth coloring uses log(log|z|)/log(2). Colors are extremely saturated rainbow gradients that shift as you zoom. Bass drives zoom speed and iteration count. Mouse warps the complex plane as a Julia set constant. Temporal feedback creates trails during zoom.",
     "features": [
-      "interactive",
-      "mouse-reactive",
+      "upgraded-rgba",
       "temporal",
+      "audio-reactive",
+      "mouse-driven",
+      "interactive",
       "procedural"
     ],
     "tags": [
       "psychedelic",
       "fractal",
       "mandelbrot",
+      "julia",
       "zoom",
       "dmt",
       "rainbow",
-      "neon"
+      "neon",
+      "wolfram"
     ],
     "params": [
       {
@@ -5837,6 +5870,13 @@
   {
     "id": "gen-eldritch-quantum-fractal-eye",
     "name": "Eldritch-Quantum Fractal-Eye",
+    "features": [
+      "generative",
+      "mouse-driven",
+      "audio-reactive",
+      "raymarched",
+      "upgraded-rgba"
+    ],
     "tags": [
       "fractal",
       "eldritch",
@@ -5978,7 +6018,8 @@
       "mouse-reactive",
       "temporal",
       "procedural",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "psychedelic",
@@ -6033,7 +6074,7 @@
     "name": "Emergent Calligraphic Ecosystems",
     "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
     "category": "generative",
-    "description": "A system of interacting calligraphic strokes following local orientation rules that spontaneously form complex alien writing systems. Mouse plants seeds or disturbs regions. Audio influences stroke behavior and interaction rules. Elegant ink-like or neon self-organizing glyphs.",
+    "description": "A system of interacting calligraphic strokes following local orientation rules that spontaneously form complex alien writing systems. Mouse plants seeds or disturbs regions. Audio influences stroke behavior and interaction rules. Enriched with Wolfram Alpha Lotka-Volterra predator-prey dynamics: cyclic population oscillations drive ecosystem color waves where prey = green flora and predators = red-orange fauna.",
     "tags": [
       "generative",
       "calligraphy",
@@ -6042,10 +6083,14 @@
       "organic",
       "audio-reactive",
       "procedural",
-      "music"
+      "music",
+      "ecosystem",
+      "predator-prey"
     ],
     "features": [
       "generative",
+      "upgraded-rgba",
+      "temporal",
       "audio-reactive",
       "mouse-driven"
     ],
@@ -6097,7 +6142,7 @@
     "name": "Emergent Script Gardens",
     "url": "shaders/gen-emergent-script-gardens.wgsl",
     "category": "generative",
-    "description": "Interacting ink-like and neon strokes follow local rules to self-organize into alien symbolic gardens. Mouse interaction plants dense stroke seeds, while audio bands influence stroke curvature, length, and glyph clustering.",
+    "description": "Interacting ink-like and neon strokes follow golden-ratio phyllotaxis (137.5°) to self-organize into alien symbolic gardens. Bass drives growth iteration count. Mouse interaction plants dense stroke seeds with φ-boosted intensity. Temporal feedback creates organic overgrowth trails. ACES tonemapped with chromatic aberration.",
     "tags": [
       "generative",
       "calligraphy",
@@ -6107,12 +6152,17 @@
       "strokes",
       "audio-reactive",
       "mouse-driven",
-      "procedural"
+      "procedural",
+      "golden-ratio",
+      "phyllotaxis",
+      "biological"
     ],
     "features": [
       "generative",
       "audio-reactive",
       "mouse-driven",
+      "temporal",
+      "upgraded-rgba",
       "meaningful-alpha"
     ],
     "params": [
@@ -6296,7 +6346,24 @@
     "name": "Ethereal-Aurora Ghost-Orchid",
     "url": "shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
     "category": "generative",
-    "description": "A phantom-like, hyper-dimensional orchid whose transparent, glowing petals are formed entirely from captured aurora borealis, blooming and disintegrating infinitely in a volumetric dark-matter void, driven by acoustic resonance.",
+    "description": "A phantom-like, hyper-dimensional orchid whose transparent, glowing petals are formed entirely from captured aurora borealis, blooming and disintegrating infinitely in a volumetric dark-matter void, driven by acoustic resonance. Enriched with Wolfram Alpha aurora physics: oxygen green (557.7 nm) at lower altitude, red (630.0 nm) at higher altitude, nitrogen blue/purple at base, and bass-driven solar wind particle density.",
+    "tags": [
+      "generative",
+      "aurora",
+      "orchid",
+      "raymarched",
+      "volumetric",
+      "audio-reactive",
+      "mouse-driven",
+      "organic",
+      "neon"
+    ],
+    "features": [
+      "upgraded-rgba",
+      "temporal",
+      "audio-reactive",
+      "mouse-driven"
+    ],
     "params": [
       {
         "id": "param1",
@@ -6658,6 +6725,13 @@
   {
     "id": "gen-fractal-bioluminescence-spore-network",
     "name": "Fractal Bioluminescence Spore-Network",
+    "features": [
+      "generative",
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
     "tags": [
       "fractal",
       "organic",
@@ -7102,7 +7176,7 @@
     "name": "Gravito-Phononic Accretion",
     "url": "shaders/gen-gravito-phononic-accretion.wgsl",
     "category": "generative",
-    "description": "Multiple audio-driven gravitational centers that accrete and sculpt procedural density fields with gravitational lensing distortion. Different audio bands control different gravitational bodies. Mouse can add temporary mass concentration. Dark cores with swirling filamentary gas.",
+    "description": "Multiple audio-driven gravitational centers that accrete and sculpt procedural density fields with gravitational lensing distortion. Different audio bands control different gravitational bodies. Mouse can add temporary mass concentration. Dark cores with swirling filamentary gas. Blackbody temperature colors for accretion disks.",
     "tags": [
       "generative",
       "gravity",
@@ -7111,12 +7185,16 @@
       "accretion",
       "audio-reactive",
       "procedural",
-      "music"
+      "music",
+      "blackbody",
+      "physics"
     ],
     "features": [
       "generative",
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -7165,6 +7243,14 @@
     "id": "gen-graviton-plasma-lotus",
     "name": "Graviton Plasma Lotus",
     "url": "shaders/gen-graviton-plasma-lotus.wgsl",
+    "features": [
+      "generative",
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
     "type": "shader",
     "coordinate": 860,
     "params": [
@@ -7494,9 +7580,11 @@
       "raymarching"
     ],
     "features": [
+      "generative",
       "mouse-driven",
-      "audio-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "raymarched",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7542,11 +7630,12 @@
     "name": "Holographic Rainbow Surface",
     "category": "generative",
     "url": "shaders/gen-holographic-rainbow-surface.wgsl",
-    "description": "A liquid holographic surface with iridescent rainbow colors that ripple and undulate like liquid light. Prismatic diffraction highlights, spectral color separation based on surface normals, and mouse-reactive wave propagation create a stunning chromatic light simulation.",
+    "description": "A liquid holographic surface with iridescent rainbow colors driven by thin-film interference physics. Prismatic diffraction highlights, spectral color separation based on surface normals, temporal feedback trails, chromatic aberration, and audio-reactive film thickness modulation create a scientifically-grounded chromatic light simulation. Mouse tilts the interference plane.",
     "features": [
-      "interactive",
-      "mouse-reactive",
+      "upgraded-rgba",
       "temporal",
+      "audio-reactive",
+      "mouse-driven",
       "procedural"
     ],
     "tags": [
@@ -7556,7 +7645,9 @@
       "iridescent",
       "prismatic",
       "liquid",
-      "rainbow"
+      "rainbow",
+      "thin-film",
+      "interference"
     ],
     "params": [
       {
@@ -7679,9 +7770,11 @@
       "raymarching"
     ],
     "features": [
+      "generative",
       "mouse-driven",
-      "audio-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "raymarched",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7784,12 +7877,12 @@
     "name": "Hyper Rainbow Vortex",
     "category": "generative",
     "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
-    "description": "A multi-layered chromatic vortex that sucks colors into a spiraling center. Multiple counter-rotating spiral arms with different rainbow offsets create intense color interference. Bright saturated neon palette. Mouse position shifts the vortex center and changes pull strength.",
+    "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Mouse spawns secondary vortices. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
     "features": [
-      "interactive",
-      "mouse-reactive",
+      "upgraded-rgba",
       "temporal",
-      "procedural"
+      "audio-reactive",
+      "mouse-driven"
     ],
     "tags": [
       "psychedelic",
@@ -7797,7 +7890,9 @@
       "vortex",
       "rainbow",
       "spiral",
-      "chromatic"
+      "chromatic",
+      "fluid-dynamics",
+      "rankine"
     ],
     "params": [
       {
@@ -8313,11 +8408,13 @@
     "name": "Islamic Geometric Star-Rose",
     "category": "generative",
     "url": "shaders/gen-islamic-star-rose.wgsl",
-    "description": "Procedurally generated Islamic geometric patterns with girih-style star and polygon tessellations. Features intricate strapwork, rosette centers, and metallic gold/blue/crimson coloring on a hexagonal grid. Mouse controls pattern rotation and scale for close examination of the geometry.",
+    "description": "Procedurally generated Islamic geometric patterns enriched by Wolfram Alpha regular pentagon data. Interior angle 108°, central angle 72°. Diagonal/edge ratio φ≈1.618 determines petal proportions. Features girih-style star and polygon tessellations with pentagram-aware geometry. Bass rotates the tessellation. Mouse morphs between star and rose forms. Temporal feedback and chromatic aberration complete the upgraded-rgba stack.",
     "features": [
-      "interactive",
-      "mouse-reactive",
+      "upgraded-rgba",
       "temporal",
+      "audio-reactive",
+      "mouse-driven",
+      "interactive",
       "procedural",
       "geometric"
     ],
@@ -8327,9 +8424,11 @@
       "girih",
       "tessellation",
       "star",
+      "pentagram",
       "generative",
       "ornamental",
-      "metallic"
+      "metallic",
+      "wolfram"
     ],
     "params": [
       {
@@ -8622,6 +8721,8 @@
       "crystalline"
     ],
     "features": [
+      "generative",
+      "upgraded-rgba",
       "audio-reactive",
       "mouse-interactive",
       "volumetric"
@@ -9103,7 +9204,8 @@
       "interactive",
       "mouse-reactive",
       "temporal",
-      "procedural"
+      "procedural",
+      "upgraded-rgba"
     ],
     "tags": [
       "psychedelic",
@@ -10489,6 +10591,14 @@
     "id": "gen-nebular-chrono-astrolabe",
     "name": "Nebular Chrono Astrolabe",
     "url": "shaders/gen-nebular-chrono-astrolabe.wgsl",
+    "features": [
+      "generative",
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
     "type": "shader",
     "coordinate": 858,
     "params": [
@@ -10539,11 +10649,12 @@
     "name": "Neon Acid Geometry",
     "category": "generative",
     "url": "shaders/gen-neon-acid-geometry.wgsl",
-    "description": "Geometric shapes (triangles, hexagons, circles) morphing and melting in psychedelic neon. Bright acid colors (electric lime, hot magenta, neon orange). Shapes pulse to a beat-like rhythm, scale in/out, rotate, and overlap with additive blending creating intense color mixing.",
+    "description": "Geometric shapes (triangles, hexagons, circles) morphing and melting in psychedelic neon. Upgraded with universal-indicator pH color science: geometry edges glow with realistic acid/base transitions driven by bass oscillation. Critical-angle refraction distortion, temporal feedback trails, chromatic aberration, and ACES tone mapping.",
     "features": [
-      "interactive",
-      "mouse-reactive",
+      "upgraded-rgba",
       "temporal",
+      "audio-reactive",
+      "mouse-driven",
       "procedural"
     ],
     "tags": [
@@ -10553,7 +10664,9 @@
       "acid",
       "morphing",
       "additive",
-      "shapes"
+      "shapes",
+      "ph-science",
+      "chemistry"
     ],
     "params": [
       {
@@ -10599,12 +10712,15 @@
     "name": "Neon Cyber Mandala",
     "category": "generative",
     "url": "shaders/gen-neon-cyber-mandala.wgsl",
-    "description": "A slowly rotating mandala made of neon geometric shapes including rings, stars, and polygons. Each ring features a different decorative pattern - dots, radiating lines, zigzags, waves, and diamonds. Bright neon rainbow gradients cycle through colors. Connecting threads pulse with energy. Floating particles orbit the design. Mouse controls rotation speed and zoom into the center. Breathing pulse effect brings the mandala to life.",
+    "description": "A slowly rotating mandala made of neon geometric shapes including rings, stars, and polygons. Each ring features a different decorative pattern - dots, radiating lines, zigzags, waves, and diamonds. Bright neon rainbow gradients cycle through colors. Connecting threads pulse with energy. Floating particles orbit the design. Mouse controls rotation speed and zoom into the center. Breathing pulse effect brings the mandala to life. Upgraded with golden ratio φ symmetry, Fibonacci petal counts, golden-angle layer rotation, bass-driven rotation, mouse symmetry warp, ACES tone mapping, temporal feedback, and chromatic aberration.",
     "features": [
       "interactive",
       "mouse-reactive",
       "temporal",
-      "procedural"
+      "procedural",
+      "upgraded-rgba",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "tags": [
       "psychedelic",
@@ -10613,7 +10729,9 @@
       "geometric",
       "sacred-geometry",
       "rainbow",
-      "generative"
+      "generative",
+      "golden-ratio",
+      "fibonacci"
     ],
     "params": [
       {
@@ -10719,11 +10837,13 @@
     "name": "Neon Neural Network",
     "category": "generative",
     "url": "shaders/gen-neon-neural-network.wgsl",
-    "description": "A glowing neon neural network visualization with pulsing nodes as bright circles connected by animated signal paths. Electric blue, hot pink, lime green and violet neon colors. Signals pulse along edges like data flowing through a living AI brain. Mouse controls a cursor node that lights up nearby connections.",
+    "description": "A glowing neon neural network visualization enriched with ReLU activation mathematics. Neurons fire using R(x)=max(0,x) thresholds. Bass drives input layer activation intensity. Mids control synaptic connection strength. Treble adds backpropagation error glow as red halos along edges. Network layers visualized as concentric rings of neurons with pulsing signal paths. Mouse controls a cursor node that lights up nearby connections.",
     "features": [
-      "interactive",
-      "mouse-reactive",
+      "upgraded-rgba",
       "temporal",
+      "audio-reactive",
+      "mouse-driven",
+      "neural-relu",
       "procedural"
     ],
     "tags": [
@@ -10733,7 +10853,11 @@
       "glow",
       "signals",
       "data-flow",
-      "generative"
+      "generative",
+      "neural",
+      "relu",
+      "ai",
+      "abstract"
     ],
     "params": [
       {
@@ -10897,12 +11021,14 @@
     "name": "Neon Tropical Paradise",
     "category": "generative",
     "url": "shaders/gen-neon-tropical-paradise.wgsl",
-    "description": "A psychedelic tropical paradise with stylized neon palm trees, aurora sky, glowing flowers, and bioluminescent water. Hot pinks, electric blues, neon greens, sunset oranges. Mouse creates ripples in the water and sways the trees. Stars twinkle in a psychedelic sky.",
+    "description": "A psychedelic tropical paradise with stylized neon palm trees, aurora sky, glowing flowers, and bioluminescent water enriched with ocean light attenuation physics. Hot pinks, electric blues, neon greens, sunset oranges. Mouse creates ripples in the water and sways the trees. Stars twinkle in a psychedelic sky. Surface waters are bright cyan, deeper layers shift through green-blue into abyssal darkness via scientific wavelength-dependent attenuation.",
     "features": [
       "interactive",
-      "mouse-reactive",
+      "mouse-driven",
       "temporal",
-      "procedural"
+      "audio-reactive",
+      "procedural",
+      "upgraded-rgba"
     ],
     "tags": [
       "psychedelic",
@@ -10911,7 +11037,11 @@
       "nature",
       "bioluminescent",
       "aurora",
-      "sunset"
+      "sunset",
+      "ocean",
+      "ocean-optics",
+      "coral",
+      "fluorescence"
     ],
     "params": [
       {
@@ -11975,11 +12105,12 @@
     "name": "Psychedelic Wormhole",
     "category": "generative",
     "url": "shaders/gen-plasma-psychedelic-wormhole.wgsl",
-    "description": "A wildly colorful tunnel/wormhole effect with swirling rainbow plasma patterns spiraling inward. Bright saturated colors cycling through the full spectrum. Multi-octave fBm noise creates organic flowing patterns. Stars and particles stream past the edges as you travel through the cosmic vortex. Mouse controls tunnel curvature and travel speed.",
+    "description": "A wildly colorful tunnel/wormhole effect with swirling rainbow plasma patterns spiraling inward. Bright saturated colors cycling through the full spectrum. Multi-octave fBm noise creates organic flowing patterns. Stars and particles stream past the edges as you travel through the cosmic vortex. Mouse controls tunnel curvature and travel speed. Blackbody peak wavelength drives plasma color transitions.",
     "features": [
-      "interactive",
-      "mouse-reactive",
+      "upgraded-rgba",
       "temporal",
+      "audio-reactive",
+      "mouse-driven",
       "procedural"
     ],
     "tags": [
@@ -11990,7 +12121,9 @@
       "plasma",
       "rainbow",
       "cosmic",
-      "generative"
+      "generative",
+      "blackbody",
+      "physics"
     ],
     "params": [
       {
@@ -12036,12 +12169,12 @@
     "name": "Polar Rainbow Explosion",
     "category": "generative",
     "url": "shaders/gen-polar-rainbow-explosion.wgsl",
-    "description": "A polar coordinate explosion of rainbow color rays emanating from center. Ray colors cycle through full spectrum. Noise modulated for organic wobble in the rays. Mouse position changes the origin and intensity. Particles burst along the rays. Dreamlike and intense.",
+    "description": "A polar coordinate explosion enriched with Wolfram spherical shock-wave dynamics. Bass triggers radial shock fronts; treble injects high-frequency ripple. Mouse directs the explosion origin. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
     "features": [
-      "interactive",
-      "mouse-reactive",
+      "upgraded-rgba",
       "temporal",
-      "procedural"
+      "audio-reactive",
+      "mouse-driven"
     ],
     "tags": [
       "psychedelic",
@@ -12050,7 +12183,9 @@
       "polar",
       "explosion",
       "rays",
-      "particles"
+      "particles",
+      "shock-wave",
+      "fluid-dynamics"
     ],
     "params": [
       {
@@ -12805,8 +12940,12 @@
       "audio-reactive"
     ],
     "features": [
+      "generative",
       "mouse-driven",
-      "audio-driven"
+      "audio-reactive",
+      "raymarched",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -12852,6 +12991,28 @@
     "name": "Quantum-Entangled Ferrofluid Engine",
     "category": "generative",
     "url": "shaders/gen-quantum-entangled-ferrofluid-engine.wgsl",
+    "description": "A quantum-mechanically enriched ferrofluid visualization. Wavefunction ψ(x,t) interference patterns drive ferrofluid spike formation. Probability density |ψ|² modulates glow intensity. Bass triggers wavefunction collapse probability. Mouse acts as a quantum measurement device, collapsing superposition and sharpening the interference pattern. Features double-slit interference, entanglement glow, and metallic PBR rendering.",
+    "features": [
+      "upgraded-rgba",
+      "temporal",
+      "audio-reactive",
+      "mouse-driven",
+      "quantum-interference",
+      "raymarched",
+      "pbr"
+    ],
+    "tags": [
+      "quantum",
+      "ferrofluid",
+      "interference",
+      "wavefunction",
+      "entanglement",
+      "metallic",
+      "glow",
+      "generative",
+      "neon",
+      "abstract"
+    ],
     "params": [
       {
         "id": "param1",
@@ -13325,9 +13486,11 @@
       "reactive"
     ],
     "features": [
+      "generative",
       "animated",
       "audio-reactive",
-      "audio-driven"
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -13611,7 +13774,7 @@
     "name": "Recursive Ancestral Terrains",
     "url": "shaders/gen-recursive-ancestral-terrains.wgsl",
     "category": "generative",
-    "description": "Fractal landscape generator where terrain features carry genetic parameters from parent generations. The mouse position locally selects which ancestral lineage is expressed, creating alien mountain ranges with evolutionary history. Audio controls mutation rate and generational blending.",
+    "description": "Fractal landscape generator where terrain features carry genetic parameters from parent generations. The mouse position locally selects which ancestral lineage is expressed, creating alien mountain ranges with evolutionary history. Audio controls mutation rate and generational blending. Upgraded with golden ratio φ persistence, fractal dimension roughness control (Koch D=1.2619 to Sierpinski D=1.585), bass-driven erosion, mouse river carving, temporal sediment layers, ACES tone mapping, and chromatic aberration.",
     "tags": [
       "generative",
       "fractal",
@@ -13620,12 +13783,16 @@
       "procedural",
       "evolutionary",
       "audio-reactive",
-      "music"
+      "music",
+      "golden-ratio",
+      "fractal-dimension"
     ],
     "features": [
       "generative",
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -13635,7 +13802,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "description": "Rate of genetic mutation between terrain generations",
+        "description": "Rate of genetic mutation between terrain generations; also controls fractal dimension roughness",
         "mapping": "zoom_params.x"
       },
       {
@@ -13665,7 +13832,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "description": "Amount of geological erosion carving channels",
+        "description": "Amount of geological erosion carving channels; bass-reactive",
         "mapping": "zoom_params.w"
       }
     ]
@@ -13796,12 +13963,13 @@
     "name": "Crystalline Pulse",
     "category": "generative",
     "url": "shaders/gen-showcase-crystalline-pulse.wgsl",
-    "description": "Geometric crystal formations that grow and refract. Mouse creates a shattering disruption field. Audio-reactive: bass triggers growth pulses, mids shift hue, treble adds edge refraction sparkles. Showcase-optimized for 12-second rotation cycles.",
+    "description": "Geometric crystal formations based on diamond cubic Bravais lattice structure with phonon pulse propagation. FCC lattice positions, acoustic phonon frequency ω = 2√(k/m)|sin(ka/2)|, bass-driven vibration, temporal feedback trails, chromatic aberration, and mouse lattice defect injection create a scientifically-grounded crystallographic visualization.",
     "features": [
-      "audio-reactive",
-      "generative",
-      "mouse-driven",
+      "upgraded-rgba",
       "temporal",
+      "audio-reactive",
+      "mouse-driven",
+      "generative",
       "chromatic",
       "showcase"
     ],
@@ -13849,7 +14017,10 @@
       "mouse-driven",
       "temporal",
       "chromatic",
-      "abstract"
+      "abstract",
+      "diamond-lattice",
+      "phonon",
+      "bravais"
     ]
   },
   {
@@ -13857,14 +14028,12 @@
     "name": "Kinetic Bloom",
     "category": "generative",
     "url": "shaders/gen-showcase-kinetic-bloom.wgsl",
-    "description": "Geometric flower mandala that breathes and rotates. Mouse controls the bloom center and opens petals. Audio-reactive: bass opens petals, mids spin faster, treble adds pollen sparkles. Showcase-optimized for 12-second rotation cycles.",
+    "description": "Geometric flower mandala with damped harmonic oscillator physics. Each petal is a spring-mass system: ζ from mids, ω₀ from bass, underdamped motion x(t)=e^(-ζω₀t)cos(ωt). Bloom cycles triggered by bass. Temporal feedback, chromatic aberration, and ACES tone mapping.",
     "features": [
-      "audio-reactive",
-      "generative",
-      "mouse-driven",
+      "upgraded-rgba",
       "temporal",
-      "chromatic",
-      "showcase"
+      "audio-reactive",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -13910,7 +14079,8 @@
       "temporal",
       "chromatic",
       "geometric",
-      "organic"
+      "organic",
+      "upgraded-rgba"
     ]
   },
   {
@@ -13918,12 +14088,12 @@
     "name": "Nebula Core",
     "category": "generative",
     "url": "shaders/gen-showcase-nebula-core.wgsl",
-    "description": "Deep-space nebula with organic plasma clouds. Mouse becomes a gravity well that pulls the nebula. Audio-reactive: bass creates shockwave rings, treble adds star-like sparkles, mids control rotation. Showcase-optimized for 12-second rotation cycles.",
+    "description": "Deep-space nebula with organic plasma clouds enriched by Wolfram Alpha Hydrogen Balmer Series astrophysics data. H-alpha dominates core, H-beta fills mid regions. Bass drives ionization front expansion. Mouse seeds new star formation.",
     "features": [
-      "audio-reactive",
-      "generative",
-      "mouse-driven",
+      "upgraded-rgba",
       "temporal",
+      "audio-reactive",
+      "mouse-driven",
       "chromatic",
       "showcase"
     ],
@@ -13971,7 +14141,9 @@
       "temporal",
       "chromatic",
       "abstract",
-      "atmospheric"
+      "atmospheric",
+      "balmer-series",
+      "astrophysics"
     ]
   },
   {
@@ -14656,9 +14828,13 @@
       "reactive"
     ],
     "features": [
+      "generative",
       "audio-reactive",
       "animated",
-      "audio-driven"
+      "chromatic-aberration",
+      "temporal",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -15141,7 +15317,7 @@
     "name": "Topological Phase Weave",
     "url": "shaders/gen-topological-phase-weave.wgsl",
     "category": "generative",
-    "description": "A simulation of nematic liquid crystal fields where audio frequencies control topological defect creation, motion, and annihilation, producing mesmerizing swirling defect lattices with iridescent color mapping.",
+    "description": "A simulation of nematic liquid crystal fields where audio frequencies control topological defect creation, motion, and annihilation, producing mesmerizing swirling defect lattices with iridescent color mapping. Enriched with phase transition physics: bass drives an order parameter from disordered (warm chaotic weave) to ordered (cool crystal lattice). Mouse inserts topological defects. Euler characteristic visible as color modulation.",
     "tags": [
       "generative",
       "topology",
@@ -15153,12 +15329,16 @@
       "audio",
       "music",
       "reactive",
-      "scientific"
+      "scientific",
+      "phase-transition",
+      "euler-characteristic"
     ],
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "animated"
+      "animated",
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -15764,9 +15944,12 @@
       "reactive"
     ],
     "features": [
+      "generative",
       "animated",
       "audio-reactive",
-      "audio-driven"
+      "depth-aware",
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -15945,9 +16128,12 @@
       "reactive"
     ],
     "features": [
+      "generative",
       "mouse-driven",
-      "audio-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "depth-aware",
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -19254,7 +19440,9 @@
       "chromatic-dispersion",
       "quantum-foam",
       "crystalline-lattice",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {

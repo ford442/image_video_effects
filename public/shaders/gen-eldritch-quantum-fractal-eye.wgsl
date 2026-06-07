@@ -1,7 +1,10 @@
-// ----------------------------------------------------------------
-// Eldritch-Quantum Fractal-Eye
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Eldritch-Quantum Fractal-Eye
+//  Category: generative
+//  Features: generative, mouse-driven, audio-reactive, raymarched, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-06-07
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -108,6 +111,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let time = u.config.x;
     let audioBass = plasmaBuffer[0].x; // 0 to 1
+    let audioMids = plasmaBuffer[0].y;
+    let audioTreble = plasmaBuffer[0].z;
 
     // Sliders
     let fractalIters = i32(u.zoom_params.x); // 1 to 15
@@ -156,6 +161,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Sclera Veins
         col += vec3<f32>(0.0, 1.0, 0.8) * plasma * 2.0; // Bioluminescent cyan
+        col += vec3<f32>(0.9, 0.4, 0.0) * audioTreble * plasma * 0.5; // treble-driven sclera sparkle
 
         // Iris glow
         let pupilDist = length(p.xy); // Simplified pupil check
@@ -183,5 +189,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor += vec3<f32>(0.5, 0.0, 1.0) * (0.1 / (axisDist + 0.01)) * audioBass;
     }
 
-    textureStore(writeTexture, global_id.xy, applyGenerativePrimaryControls(vec4<f32>(finalColor, 1.0)));
+    let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
+    let semantic_alpha = clamp(luma * 1.5 + audioBass * 0.1, 0.05, 0.98);
+    let outDepth = clamp(t / max_t, 0.0, 1.0);
+    let outColor = applyGenerativePrimaryControls(vec4<f32>(finalColor, semantic_alpha));
+
+    textureStore(writeTexture, global_id.xy, outColor);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, outColor);
 }

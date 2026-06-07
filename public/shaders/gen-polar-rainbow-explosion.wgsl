@@ -1,11 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Polar Rainbow Explosion
 //  Category: generative
-//  Features: polar, explosion, rainbow, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
 //  Complexity: Medium
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Updated: 2026-06-07
+//  By: Kimi Agent
+// ═══════════════════════════════════════════════════════════════════
+//  Wolfram Spherical Shock-Wave Enrichment:
+//  Shock front propagates radially: r_shock = r0 + speed*time
+//  Gaussian intensity profile: I = exp(-|r - r_shock| * 10)
+//  High-frequency ripple: sin(r*50 - time*10) * treble
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +36,12 @@ struct Uniforms {
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
+
+// Canonical ACES Filmic Tone Mapping
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // Hash functions
 fn hash2(p: vec2<f32>) -> f32 {
@@ -77,11 +88,11 @@ fn hue2rgb(h: f32) -> vec3<f32> {
 
 // Saturated neon palette
 fn neonSpectrum(t: f32) -> vec3<f32> {
-    let c1 = vec3<f32>(1.0, 0.08, 0.58);   // Hot magenta
-    let c2 = vec3<f32>(1.0, 0.84, 0.0);    // Electric yellow
-    let c3 = vec3<f32>(0.0, 1.0, 0.5);     // Neon green
-    let c4 = vec3<f32>(0.0, 0.8, 1.0);     // Cyan
-    let c5 = vec3<f32>(0.55, 0.0, 1.0);    // Violet
+    let c1 = vec3<f32>(1.0, 0.08, 0.58);
+    let c2 = vec3<f32>(1.0, 0.84, 0.0);
+    let c3 = vec3<f32>(0.0, 1.0, 0.5);
+    let c4 = vec3<f32>(0.0, 0.8, 1.0);
+    let c5 = vec3<f32>(0.55, 0.0, 1.0);
 
     let tt = fract(t);
     if (tt < 0.2) {
@@ -101,6 +112,16 @@ fn neonSpectrum(t: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let resolution = vec2<f32>(u.config.z, u.config.w);
+
+    if (pixel.x >= i32(resolution.x) || pixel.y >= i32(resolution.y)) {
+        return;
+    }
+
+    // ── Audio reads ──
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
     let time = u.config.x;
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
@@ -114,8 +135,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var col = vec3<f32>(0.0);
 
-    // Origin can be shifted by mouse
-    var origin = mouseNorm * 0.5 * mouseDown;
+    // Origin directed by mouse (always follows cursor)
+    var origin = mouseNorm * 0.5;
     let centerUV = uv - origin;
 
     // Polar coordinates
@@ -124,6 +145,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Base color - deep space
     col = vec3<f32>(0.01, 0.0, 0.03);
+
+    // ── Wolfram Shock-Wave Enrichment ──
+    let shockR = fract(time * 0.25 * (1.0 + bass * 2.0)) * 1.5;
+    let shockIntensity = exp(-abs(radius - shockR) * 10.0) * (0.5 + bass * 1.5);
+    let ripple = sin(radius * 50.0 - time * 10.0) * treble;
 
     // ---- RAINBOW RAYS ----
     let numRays = 36.0;
@@ -138,14 +164,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let wobble2 = vnoise(vec2<f32>(radius * 3.0, r + time * speed)) * 0.1 * intensity;
 
         let angleDiff = angle - rayCenterAngle + wobble + wobble2;
-        // Wrap angle difference to [-PI, PI]
         let wrappedDiff = fract(angleDiff / TAU + 0.5) - 0.5;
         let distFromRay = abs(wrappedDiff) * TAU;
 
-        // Ray width modulated by radius and noise
+        // Ray width modulated by radius, noise, and shock wave
         let rayWidth = (0.03 + 0.02 * sin(radius * 8.0 + time * speed + r) * intensity) / (radius * 2.0 + 0.5) * scale;
 
-        // Ray intensity falls off with radius
+        // Ray intensity falls off with radius; shock wave boosts it
         let radialFalloff = exp(-radius * radius * 1.5) * (1.0 + 2.0 * mouseDown);
         let rayMask = smoothstep(rayWidth, 0.0, distFromRay) * radialFalloff;
 
@@ -153,10 +178,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let pulse = 0.6 + 0.4 * sin(time * 3.0 * speed + r * 0.5);
 
         // Color for this ray
-        let hue = fract(rayPhase + time * 0.08 * speed + colorShift + radius * 0.3);
+        let hue = fract(rayPhase + time * 0.08 * speed + colorShift + radius * 0.3 + ripple * 0.02);
         let rayColor = neonSpectrum(hue);
 
         col += rayColor * rayMask * pulse * intensity * 2.5;
+        // Shock-front energy injection
+        col += rayColor * shockIntensity * radialFalloff * 0.8;
     }
 
     // ---- PARTICLE BURSTS ALONG RAYS ----
@@ -204,6 +231,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let centerHue = fract(time * 0.12 * speed + colorShift);
     col += neonSpectrum(centerHue) * centerGlow * intensity * 2.0;
 
+    // Shock-front glow ring
+    let shockGlow = exp(-abs(radius - shockR) * 10.0) * bass * 2.0;
+    col += vec3<f32>(1.0, 0.95, 0.8) * shockGlow;
+
+    // Ripple color modulation
+    col += vec3<f32>(0.8, 0.9, 1.0) * ripple * exp(-radius * radius * 2.0) * 0.3;
+
     // Mouse interaction - extra burst from cursor
     if (mouseDown > 0.5) {
         let mouseDist = length(uv - mouseNorm);
@@ -216,12 +250,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vig = 1.0 - dot(uv * 0.65, uv * 0.65);
     col *= clamp(vig, 0.0, 1.0) * 1.4;
 
-    // Tone map
-    col = col / (1.0 + col * 0.3);
-    col = pow(col, vec3<f32>(0.92));
+    // ── Temporal feedback ──
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    col = mix(prev.rgb * 0.96, col, 0.25);
+    textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
 
-    // Brightness boost
-    col = col * 2.2;
+    // ── Chromatic aberration ──
+    let caStr = 0.003 * (1.0 + bass);
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-    textureStore(writeTexture, pixel, vec4<f32>(col, 1.0));
+    // ── ACES tone mapping + semantic alpha ──
+    col = acesToneMap(col * 1.1);
+    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
+
+    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
 }

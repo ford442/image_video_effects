@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chromatic Acid Drip
 //  Category: generative
-//  Features: acid, chromatic, drip, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: acid, chromatic, drip, audio-reactive, mouse-interactive,
+//            semantic-alpha, upgraded-rgba, temporal, chromatic-aberration
 //  Complexity: Medium
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Updated: 2026-06-07
+//  By: Kimi Agent Upgrade
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -90,6 +91,41 @@ fn fbm3(p: vec3<f32>, octaves: i32) -> f32 {
     return v;
 }
 
+// ═══ CHUNK: acesToneMap (standard ACES) ═══
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══ CHUNK: phToColor (universal indicator pH→RGB) ═══
+fn phToColor(ph: f32) -> vec3<f32> {
+    let p = clamp(ph, 0.0, 14.0);
+    let c0 = vec3<f32>(1.0, 0.0, 0.2);   // pH 0  strong acid
+    let c1 = vec3<f32>(1.0, 0.6, 0.0);   // pH 3.5 weak acid
+    let c2 = vec3<f32>(0.0, 0.8, 0.3);   // pH 7   neutral
+    let c3 = vec3<f32>(0.0, 0.4, 1.0);   // pH 9   weak base
+    let c4 = vec3<f32>(0.6, 0.0, 1.0);   // pH 14  strong base
+    let t1 = smoothstep(0.0, 3.5, p);
+    let t2 = smoothstep(3.5, 7.0, p);
+    let t3 = smoothstep(7.0, 9.0, p);
+    let t4 = smoothstep(9.0, 14.0, p);
+    var col = mix(c0, c1, t1);
+    col = mix(col, c2, t2);
+    col = mix(col, c3, t3);
+    col = mix(col, c4, t4);
+    return col;
+}
+
+// ═══ CHUNK: Snell's Law / Critical Angle ═══
+fn snellRefract(incident: f32, n1: f32, n2: f32) -> f32 {
+    let sinTheta2 = (n1 / n2) * sin(incident);
+    return asin(clamp(sinTheta2, -1.0, 1.0));
+}
+
+fn criticalAngle(n1: f32, n2: f32) -> f32 {
+    return asin(clamp(n2 / n1, 0.0, 1.0));
+}
+
 fn metaballField(p: vec2<f32>, time: f32) -> f32 {
     var field = 0.0;
 
@@ -118,18 +154,16 @@ fn metaballField(p: vec2<f32>, time: f32) -> f32 {
     return field;
 }
 
-fn acidColor(dripCoord: f32, t: f32, colorShift: f32) -> vec3<f32> {
-    let hue = fract(dripCoord * 2.5 + t * 0.3 + colorShift);
-    var col = vec3<f32>(0.0);
-    col.r = pow(abs(sin(hue * 6.28318530718 + 0.0)), 0.5);
-    col.g = pow(abs(sin(hue * 6.28318530718 + 2.094)), 0.5);
-    col.b = pow(abs(sin(hue * 6.28318530718 + 4.189)), 0.5);
-    return col * 3.0;
+// Drip color changes as it falls through pH gradient
+fn phDripColor(dripCoord: f32, t: f32, colorShift: f32, phGradient: f32) -> vec3<f32> {
+    let ph = fract(dripCoord * 2.5 + t * 0.3 + colorShift + phGradient) * 14.0;
+    return phToColor(ph);
 }
 
-fn chromaticDrip(uv: vec2<f32>, time: f32, offset: f32, colorShift: f32) -> vec3<f32> {
+fn chromaticDrip(uv: vec2<f32>, time: f32, offset: f32, colorShift: f32, phCycle: f32, mids: f32) -> vec3<f32> {
     let noiseY = fbm3(vec3<f32>(uv.x * 3.0 + offset, time * 0.5, offset), 4);
-    let flowSpeed = 0.3 + 0.2 * sin(uv.x * 6.28318530718 + offset);
+    // Mids control drip speed
+    let flowSpeed = 0.3 + 0.2 * sin(uv.x * 6.28318530718 + offset) + mids * 0.5;
     let dripLine = uv.y + noiseY * 0.3 - time * flowSpeed;
     let drip = fract(dripLine);
     let dripIntensity = smoothstep(0.0, 0.15, drip) * smoothstep(0.85, 0.5, drip);
@@ -137,13 +171,15 @@ fn chromaticDrip(uv: vec2<f32>, time: f32, offset: f32, colorShift: f32) -> vec3
     let flowNoise = fbm3(vec3<f32>(uv * 2.0 + offset, time * 0.3), 3);
     let flowDistort = flowNoise * 0.15;
 
+    // pH changes as drip falls (lower in frame = more acidic, higher = more basic)
+    let fallPH = mix(2.0, 12.0, drip) + phCycle;
     let chromaticAmount = 0.03 + 0.02 * sin(time + offset);
     let dripCoord = drip + flowDistort;
 
     var col = vec3<f32>(0.0);
-    col.r = acidColor(dripCoord + chromaticAmount, time, colorShift).r;
-    col.g = acidColor(dripCoord, time, colorShift + 0.1).g;
-    col.b = acidColor(dripCoord - chromaticAmount, time, colorShift + 0.2).b;
+    col.r = phDripColor(dripCoord + chromaticAmount, time, colorShift, fallPH * 0.1).r;
+    col.g = phDripColor(dripCoord, time, colorShift + 0.1, fallPH * 0.1).g;
+    col.b = phDripColor(dripCoord - chromaticAmount, time, colorShift + 0.2, fallPH * 0.1).b;
 
     col *= dripIntensity * (1.0 + flowNoise * 0.5);
     return col;
@@ -173,15 +209,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audioIntensity = intensity * (0.9 + treble * 0.5);
     let audioColor = colorShift + mids * 0.2;
 
+    // pH oscillation driven by bass: 0→14→0 cycle
+    let phCycle = 7.0 + 7.0 * sin(time * (0.5 + bass * 2.0));
+
     let t = time * (0.3 + audioSpeed * 1.5);
     let centeredUV = vec2<f32>((uv.x - 0.5) * aspect, uv.y - 0.5);
     let scaledUV = centeredUV * (1.5 + scale * 4.0);
 
     let mouseUV = vec2<f32>((mousePos.x / res.x - 0.5) * aspect, mousePos.y / res.y - 0.5);
     let mouseDist = length(scaledUV - mouseUV);
+
+    // Mouse creates acid/base splashes with realistic color shifts
+    let splashPH = select(2.0, 12.0, mouseDown > 0.5 && fract(time * 0.7) > 0.5);
     let mouseAttraction = select(0.0, exp(-mouseDist * 6.0) * 2.0, mouseDown > 0.5);
 
-    var field = metaballField(scaledUV * (0.8 + scale), t);
+    // Critical-angle refraction distortion (water-air ~48.6°)
+    let crit = criticalAngle(1.33, 1.0);
+    let refractUV = scaledUV + vec2<f32>(
+        sin(scaledUV.y * 3.0 + t) * 0.02 * sin(crit),
+        cos(scaledUV.x * 3.0 + t) * 0.02 * sin(crit)
+    ) * bass;
+
+    var field = metaballField(refractUV * (0.8 + scale), t);
     field += mouseAttraction * 3.0;
 
     let fieldThreshold1 = 2.5;
@@ -200,13 +249,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hue2 = 0.33 + colorShift;
     let hue3 = 0.66 + colorShift;
 
-    let c1 = acidColor(0.1, t, hue1);
-    let c2 = acidColor(0.4, t, hue2);
-    let c3 = acidColor(0.7, t, hue3);
+    let c1 = phToColor(fract(hue1 + phCycle / 14.0) * 14.0);
+    let c2 = phToColor(fract(hue2 + phCycle / 14.0) * 14.0);
+    let c3 = phToColor(fract(hue3 + phCycle / 14.0) * 14.0);
 
-    let edgeColor1 = acidColor(0.2, t, hue1 + 0.15);
-    let edgeColor2 = acidColor(0.5, t, hue2 + 0.15);
-    let edgeColor3 = acidColor(0.8, t, hue3 + 0.15);
+    let edgeColor1 = phToColor(fract(hue1 + 0.15 + phCycle / 14.0) * 14.0);
+    let edgeColor2 = phToColor(fract(hue2 + 0.15 + phCycle / 14.0) * 14.0);
+    let edgeColor3 = phToColor(fract(hue3 + 0.15 + phCycle / 14.0) * 14.0);
 
     var color = vec3<f32>(0.02, 0.0, 0.04);
 
@@ -218,22 +267,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += edgeColor2 * edgeGlow2 * 2.0;
     color += edgeColor3 * edgeGlow3 * 2.0;
 
-    let drip1 = chromaticDrip(uv, t, 0.0, colorShift);
-    let drip2 = chromaticDrip(uv, t * 1.1 + 10.0, 3.33, colorShift + 0.2);
-    let drip3 = chromaticDrip(uv, t * 0.9 + 20.0, 6.67, colorShift + 0.4);
+    let drip1 = chromaticDrip(uv, t, 0.0, colorShift, phCycle, mids);
+    let drip2 = chromaticDrip(uv, t * 1.1 + 10.0, 3.33, colorShift + 0.2, phCycle, mids);
+    let drip3 = chromaticDrip(uv, t * 0.9 + 20.0, 6.67, colorShift + 0.4, phCycle, mids);
 
     color += drip1 * 0.3 * intensity;
     color += drip2 * 0.25 * intensity;
     color += drip3 * 0.2 * intensity;
 
-    let flowDetail = fbm3(vec3<f32>(scaledUV * 5.0, t * 0.4), 3);
-    color += acidColor(flowDetail * 0.5 + 0.5, t, colorShift + 0.3) * flowDetail * 0.15 * intensity;
+    let flowDetail = fbm3(vec3<f32>(refractUV * 5.0, t * 0.4), 3);
+    color += phToColor(fract(flowDetail * 0.5 + 0.5 + phCycle / 14.0) * 14.0) * flowDetail * 0.15 * intensity;
 
-    color *= 1.0 + intensity * 2.0;
-    color = color / (1.0 + color * 0.15);
-
+    // Mouse splash glow with pH color
     let glow = exp(-mouseDist * 4.0) * 0.5;
-    color += acidColor(glow, t, colorShift + t * 0.1) * glow * mouseDown;
+    color += phToColor(splashPH) * glow * mouseDown;
 
-    textureStore(writeTexture, pixel, vec4<f32>(color, 0.85));
+    // ═══ TEMPORAL FEEDBACK ═══
+    let prev = textureSampleLevel(dataTextureC, u_sampler, (vec2<f32>(pixel) + 0.5) / res, 0.0);
+    color = mix(prev.rgb * 0.96, color, 0.25);
+    textureStore(dataTextureA, pixel, vec4<f32>(color, 1.0));
+
+    // ═══ CHROMATIC ABERRATION ═══
+    let caStr = 0.003 * (1.0 + bass);
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+    // ═══ ACES TONE MAP + SEMANTIC ALPHA ═══
+    color = acesToneMap(color * 1.1);
+    let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+
+    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
 }

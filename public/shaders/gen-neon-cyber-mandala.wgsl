@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Cyber Mandala
 //  Category: generative
-//  Features: mandala, neon, cyber, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: mandala, neon, cyber, audio-reactive, mouse-interactive,
+//            semantic-alpha, upgraded-rgba, temporal, chromatic
 //  Complexity: Medium-High
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
+//  Updated: 2026-06-07
 //  By: Kimi Agent (Bright batch)
+//  Math: Golden Ratio φ=1.6180339887, Fibonacci symmetry, golden angle
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +33,14 @@ struct Uniforms {
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
+const PHI: f32 = 1.618033988749895;
+const GOLDEN_ANGLE: f32 = 2.399963229728653;
+
+// ─── ACES Filmic Tone Mapping ───
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // Noise/hash functions
 fn hash1(n: f32) -> f32 {
@@ -147,6 +157,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let res = vec2<f32>(u.config.z, u.config.w);
     let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
+    let uvTex = vec2<f32>(pixel) / res;
     
     let time = u.config.x;
     let mousePos = (u.zoom_config.yz - res * 0.5) / min(res.x, res.y);
@@ -168,18 +179,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse controls
     let mouseRot = atan2(mousePos.y, mousePos.x);
     
+    // ─── Golden Ratio Enrichment ───
+    // Fibonacci petal counts: 5, 8, 13, 21 mapped via phi
+    let nPetals = i32(mix(5.0, 21.0, clamp(intensity * PHI, 0.0, 1.0)));
+    let fibPetals = array<i32, 4>(5, 8, 13, 21);
+    
     // Zoom: mouse Y controls zoom into center
     let zoomAmount = (mousePos.y + 0.5) * 0.5;
     let zoom = mix(0.4, 2.5, zoomAmount);
     let p = uv * (zoom * (0.5 + scale));
     
-    // Rotation speed from mouse X and speed param
-    let rotSpeed = (mousePos.x * 0.5 + 0.5) * 0.3 + audioSpeed * 0.5;
-    let rotAngle = time * rotSpeed + mouseRot * 0.2;
+    // ─── Mouse Warp of Symmetry Field ───
+    let mouseWarp = mousePos * 0.15 * (1.0 + bass * 0.5);
+    let warpedP = p + vec2<f32>(
+        sin(p.y * PHI * 3.0 + time) * mouseWarp.x,
+        cos(p.x * PHI * 3.0 + time) * mouseWarp.y
+    );
+    
+    // Rotation speed from mouse X and speed param + bass rotation
+    let rotSpeed = (mousePos.x * 0.5 + 0.5) * 0.3 + audioSpeed * 0.5 + bass * 0.15;
+    let rotAngle = time * rotSpeed + mouseRot * 0.2 + bass * 0.3;
     let cos_r = cos(rotAngle);
     let sin_r = sin(rotAngle);
     let rotMat = mat2x2<f32>(cos_r, -sin_r, sin_r, cos_r);
-    let rp = rotMat * p;
+    let rp = rotMat * warpedP;
     
     // Breathing pulse effect
     let breathe = 1.0 + sin(time * 1.5) * 0.08 * intensity;
@@ -194,9 +217,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bgGlow = exp(-d * d * 1.5) * 0.15;
     col += vec3<f32>(0.05, 0.02, 0.08) * bgGlow;
     
-    // Ring definitions
+    // ─── Ring definitions with golden-angle layer rotation ───
     let rings = 6;
-    let ringSpacing = 0.12 / zoom * (1.0 + scale * 0.5);
+    let ringSpacing = 0.12 / zoom * (1.0 + scale * 0.5) / PHI;
     
     for (var i = 0; i < rings; i++) {
         let fi = f32(i);
@@ -204,18 +227,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let outerR = innerR + ringSpacing * 0.7;
         let ringHue = fract(fi / f32(rings) + colorShift + time * 0.02);
         
-        let ringCol = patternedRing(brp, innerR, outerR, i % 5, time * (0.5 + speed), ringHue);
+        // Golden-angle rotation per layer
+        let layerAngle = GOLDEN_ANGLE * fi;
+        let cos_la = cos(layerAngle);
+        let sin_la = sin(layerAngle);
+        let layerRot = mat2x2<f32>(cos_la, -sin_la, sin_la, cos_la);
+        let layerP = layerRot * brp;
+        
+        let ringCol = patternedRing(layerP, innerR, outerR, i % 5, time * (0.5 + speed), ringHue);
         col += ringCol * intensity * 2.0;
         
-        // Add geometric shapes on some rings
+        // Add geometric shapes on some rings using Fibonacci petal counts
         if (i % 2 == 0) {
             let shapeR = (innerR + outerR) * 0.5;
-            let numShapes = 6 + i * 2;
+            let petalIdx = clamp(i / 2, 0, 3);
+            let numShapes = fibPetals[petalIdx];
             for (var s = 0; s < numShapes; s++) {
                 let fs = f32(s);
                 let sa = (fs / f32(numShapes)) * TAU + time * (0.2 + speed * 0.3) * (1.0 - fi * 0.1);
                 let sc = vec2<f32>(cos(sa), sin(sa)) * shapeR;
-                let toShape = brp - sc;
+                let toShape = layerP - sc;
                 
                 // Rotated shape
                 let shapeRot = time * (0.5 + fi * 0.2) + fs * 0.5;
@@ -226,11 +257,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 
                 var shapeDist: f32;
                 if (i % 4 == 0) {
-                    // Hexagon
+                    // Hexagon (6 is close to Fibonacci 5, 8)
                     shapeDist = sdPolygon(shapeP, 0.025 / zoom, 6);
                 } else {
-                    // Star
-                    shapeDist = starRays(shapeP, 0.03 / zoom, 5 + i, 0.4);
+                    // Star with Fibonacci ray count
+                    let starRayCount = fibPetals[clamp(petalIdx + 1, 0, 3)];
+                    shapeDist = starRays(shapeP, 0.03 / zoom, starRayCount, 0.4);
                 }
                 
                 let shapeGlow = exp(-shapeDist * shapeDist * 800.0 * zoom);
@@ -254,7 +286,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let lineDir = outerP - innerP;
                 let lineLen = length(lineDir);
                 let lineN = normalize(lineDir);
-                let toP = brp - innerP;
+                let toP = layerP - innerP;
                 let proj = clamp(dot(toP, lineN), 0.0, lineLen);
                 let lineD = length(toP - lineN * proj);
                 
@@ -266,8 +298,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     
-    // Central star burst
-    let starGlow = starRays(brp, 0.05 / zoom, 8, 0.3);
+    // Central star burst with Fibonacci rays
+    let centerRays = fibPetals[2]; // 13
+    let starGlow = starRays(brp, 0.05 / zoom, centerRays, 0.3);
     let starMask = exp(-starGlow * starGlow * 500.0);
     let centerHue = fract(colorShift + time * 0.03);
     col += neonRainbow(centerHue) * starMask * 1.5 * intensity;
@@ -286,7 +319,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Floating particles
     for (var fp = 0; fp < 12; fp++) {
         let ffp = f32(fp);
-        let particleSeed = ffp * 17.0 + 100.0;
+        let particleSeed = ffp * PHI * 10.0 + 100.0;
         let pa = hash1(particleSeed) * TAU + time * (0.2 + hash1(particleSeed * 2.0) * 0.5);
         let pr = hash1(particleSeed * 3.0) * borderR;
         let particleP = vec2<f32>(cos(pa), sin(pa)) * pr;
@@ -301,27 +334,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = 1.0 - dot(uv, uv) * 0.3;
     col *= max(vignette, 0.5);
     
-    // Tone mapping and color boost
-    col = col / (1.0 + col * 0.25);
-    
     // Saturation boost
     let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     col = mix(vec3<f32>(lum), col, 1.2 + intensity * 0.3);
     
-    // Subtle chromatic aberration at edges
-    let chromaShift = length(uv) * 0.003;
-    col = vec3<f32>(
-        col.r * (1.0 + chromaShift),
-        col.g,
-        col.b * (1.0 - chromaShift * 0.5)
-    );
+    // ─── Chromatic aberration driven by bass ───
+    let caStr = 0.003 * (1.0 + bass);
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
     
-    // Final gamma
-    col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(0.95, 1.0, 1.05));
-
-    // Semantic alpha - stronger on dense neon areas
-    let effect = clamp(dot(col, vec3<f32>(0.3, 0.3, 0.4)) * 1.1, 0.4, 1.0);
-    let semantic_alpha = mix(0.55, 0.98, effect);
-
-    textureStore(writeTexture, pixel, vec4<f32>(col, semantic_alpha));
+    // ─── ACES tone mapping + semantic alpha ───
+    col = acesToneMap(col * 1.1);
+    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
+    
+    // ─── Temporal feedback ───
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uvTex, 0.0);
+    let feedback = mix(prev.rgb * 0.96, col, 0.25);
+    
+    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(feedback, 1.0));
 }

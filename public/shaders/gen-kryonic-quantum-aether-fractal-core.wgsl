@@ -1,7 +1,10 @@
-// ----------------------------------------------------------------
-// Kryonic Quantum-Aether Fractal-Core
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Kryonic Quantum-Aether Fractal-Core
+//  Category: generative
+//  Features: generative, mouse-driven, audio-reactive, raymarched, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-06-07
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -104,7 +107,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (f32(coords.x) >= res.x || f32(coords.y) >= res.y) { return; }
 
     let time = u.config.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * res;
 
     let scale_param = u.zoom_params.x; // default 1.5
@@ -158,8 +163,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let dif = max(dot(n, l), 0.0);
-        let ref = reflect(rd, n);
-        let spec = pow(max(dot(ref, l), 0.0), 32.0);
+        let reflectionDir = reflect(rd, n);
+        let spec = pow(max(dot(reflectionDir, l), 0.0), 32.0);
 
         let base_col = vec3<f32>(0.05, 0.1, 0.2);
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 5.0);
@@ -174,6 +179,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // deep cyan, glacial blue, void black
     col = mix(col, vec3<f32>(0.0, 0.05, 0.1), smoothstep(0.0, 10.0, t));
+    col += vec3<f32>(0.05, 0.0, 0.1) * treble * 0.3;
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let semantic_alpha = clamp(luma * 1.6 + length(glow) * 0.3, 0.05, 0.98);
+    let outDepth = clamp(t / 10.0, 0.0, 1.0);
+
+    textureStore(writeTexture, coords, vec4<f32>(col, semantic_alpha));
+    textureStore(writeDepthTexture, coords, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, vec4<f32>(col, semantic_alpha));
 }

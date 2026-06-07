@@ -11,9 +11,11 @@
     "raymarching"
   ],
   "features": [
+    "generative",
     "mouse-driven",
-    "audio-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "raymarched",
+    "upgraded-rgba"
   ],
   "params": [
     {

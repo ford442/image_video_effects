@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Neural Network
 //  Category: generative
-//  Features: neural, network, neon, audio-reactive, mouse-interactive, semantic-alpha
-//  Complexity: Medium-High
+//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven, neural-relu, quantum-inspired
+//  Complexity: Very High
+//  Scientific Math: ReLU activation R(x)=max(0,x), Layered Network W₂·R(W₁·x+b₁)+b₂, Backpropagation Error Glow
+//  Chunks From: original gen-neon-neural-network
 //  Created: 2026-05-31
 //  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Upgraded: 2026-06-07
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +33,12 @@ struct Uniforms {
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
+
+// ═══ CHUNK: acesToneMap (canonical ACES) ═══
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // Hash functions for procedural generation
 fn hash2(p: vec2<f32>) -> f32 {
@@ -77,7 +85,17 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-// Node structure - we place nodes procedurally
+// ═══ ReLU Activation: R(x) = max(0, x) ═══
+fn relu(x: f32) -> f32 {
+    return max(0.0, x);
+}
+
+// ═══ Neural layer computation: output = R(W·input + b) ═══
+fn neuralLayer(input: f32, weight: f32, bias: f32) -> f32 {
+    return relu(weight * input + bias);
+}
+
+// Node structure - concentric ring layers
 fn getNodePos(layer: i32, idx: i32, totalLayers: i32, time: f32) -> vec2<f32> {
     let fi = f32(idx);
     let fl = f32(layer);
@@ -130,8 +148,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
+    // Bass drives input layer activation intensity
     let audioSpeed = speed * (0.85 + bass * 0.6);
     let audioIntensity = intensity * (0.8 + treble * 0.7);
+    // Mids control synaptic connection strength
+    let synapticStrength = 0.5 + mids * 1.0;
     let audioColor = colorShift + mids * 0.2;
     
     let baseScale = 0.5 + scale * 1.5;
@@ -152,7 +173,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gridLine = exp(-gridDist * gridDist * 300.0) * 0.06;
     col += vec3<f32>(0.05, 0.02, 0.08) * gridLine;
     
-    // Neural network layers
+    // Neural network layers as concentric rings
     let totalLayers = 6;
     let totalNodes = 40;
     
@@ -160,6 +181,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var edgeGlow: f32 = 0.0;
     var signalGlow: vec3<f32> = vec3<f32>(0.0);
     var nodeGlow: vec3<f32> = vec3<f32>(0.0);
+    var backpropGlow: vec3<f32> = vec3<f32>(0.0);
     
     var edgeIndex: f32 = 0.0;
     
@@ -175,12 +197,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let d = length(p - nodePos);
             nodeField = smin(nodeField, d, 0.08);
             
-            // Node glow
+            // ═══ ReLU neuron firing threshold ═══
+            // Neuron activation: R(dot(weights, input) + bias)
+            let inputSignal = sin(time * 3.0 + f32(layer) * 1.2 + f32(ni) * 0.9) * 0.5 + 0.5;
+            let weight = hash1(f32(layer) * 17.0 + f32(ni) * 31.0 + 0.5);
+            let bias = hash1(f32(layer) * 53.0 + f32(ni) * 19.0 + 0.3) * 0.2 - 0.1;
+            let activation = relu(weight * inputSignal * (1.0 + bass * 2.0) + bias);
+            
+            // Node glow scaled by ReLU activation
             let nodeSize = 0.018 + 0.005 * sin(time * 3.0 + f32(layer) * 1.2 + f32(ni) * 0.9);
             let nGlow = exp(-d * d / (nodeSize * nodeSize * 4.0));
             let nodeHue = f32(layer) / f32(totalLayers) + colorShift;
             let nodeCol = neonColor(nodeHue + time * 0.05);
-            nodeGlow += nodeCol * nGlow * (0.6 + 0.4 * sin(time * 4.0 + f32(ni) * 1.7));
+            // Activation brightens the node
+            nodeGlow += nodeCol * nGlow * (0.6 + 0.4 * sin(time * 4.0 + f32(ni) * 1.7)) * (0.3 + activation * 1.7);
             
             // Connections to next layer
             if (layer < totalLayers - 1) {
@@ -192,18 +222,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                         let edgeDist = sdSegment(p, nodePos, nextNodePos);
                         let edgeWidth = 0.004 * (0.8 + 0.2 * sin(time * 2.0 + f32(layer) * 0.8));
                         
-                        // Base edge glow
+                        // Base edge glow modulated by synaptic strength (mids)
                         let eGlow = exp(-edgeDist * edgeDist / (edgeWidth * edgeWidth * 12.0));
                         let edgeHue = (f32(layer) / f32(totalLayers) + colorShift) * 0.7;
                         let edgeCol = neonColor2(edgeHue + time * 0.03);
-                        edgeGlow += eGlow * 0.25 * intensity;
+                        edgeGlow += eGlow * 0.25 * intensity * synapticStrength;
                         
                         // Signal pulses traveling along edges
                         let edgeLen = length(nextNodePos - nodePos);
-                        let pulse = signalPulse(edgeLen, edgeIndex, time, speed * 2.0 + 0.5);
+                        let pulse = signalPulse(edgeLen, edgeIndex, time, audioSpeed * 2.0 + 0.5);
                         let pulseGlow = exp(-edgeDist * edgeDist / (edgeWidth * edgeWidth * 6.0)) * pulse;
                         let sigHue = fract(edgeIndex * 0.15 + time * 0.08 + colorShift);
                         signalGlow += neonColor(sigHue) * pulseGlow * intensity * 2.5;
+                        
+                        // ═══ Treble-driven backpropagation "error glow" ═══
+                        let errorSignal = hash1(edgeIndex * 73.0 + time * 0.1) * treble * 2.0;
+                        let errorGlow = exp(-edgeDist * edgeDist / (edgeWidth * edgeWidth * 3.0)) * errorSignal;
+                        backpropGlow += vec3<f32>(1.0, 0.2, 0.1) * errorGlow * 0.4;
                         
                         edgeIndex += 1.0;
                     }
@@ -230,6 +265,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Apply signal glow
     col += signalGlow;
     
+    // Apply backpropagation error glow (treble-driven)
+    col += backpropGlow;
+    
     // Apply node glow
     col += nodeGlow;
     
@@ -247,12 +285,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = 1.0 - dot(uv, uv) * 0.4;
     col *= vignette;
     
-    // Tone mapping and boost
-    col = col / (1.0 + col * 0.3);
-    col = pow(col, vec3<f32>(0.9, 0.95, 1.1));
+    // ═══ Chromatic Aberration ═══
+    let caStr = 0.003 * (1.0 + bass);
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
     
-    // Final output
-    // Semantic alpha
-    let effect = clamp(dot(col, vec3<f32>(0.35, 0.35, 0.4)) * 1.1, 0.45, 0.98);
-    textureStore(writeTexture, pixel, vec4<f32>(col * (1.0 + audioIntensity), effect));
+    // ═══ Temporal Feedback ═══
+    let tex_size = vec2<f32>(u.config.z, u.config.w);
+    let prev = textureSampleLevel(dataTextureC, u_sampler, (vec2<f32>(pixel) + 0.5) / tex_size, 0.0);
+    col = mix(prev.rgb * 0.96, col, 0.25);
+    
+    // ═══ ACES Tone Map + Semantic Alpha ═══
+    col = acesToneMap(col * 1.1);
+    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
+    
+    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
 }

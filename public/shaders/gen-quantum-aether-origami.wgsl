@@ -1,8 +1,10 @@
-// ----------------------------------------------------------------
-// Quantum Aether-Origami
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Quantum Aether-Origami
+//  Category: generative
+//  Features: generative, mouse-driven, audio-reactive, raymarched, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-06-07
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -156,18 +158,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let audio_pulse = 1.0 + u.config.y * u.zoom_params.z;
         let emissive = vec3<f32>(1.0, 0.8, 0.2) * edge_glow * u.zoom_params.y * audio_pulse;
 
-        color = vec4<f32>(base_col + emissive, 1.0);
+        let _luma_hit = dot(base_col + emissive, vec3<f32>(0.299, 0.587, 0.114));
+        color = vec4<f32>(base_col + emissive, clamp(_luma_hit * 1.2 + 0.15, 0.05, 0.98));
     } else {
         let bg_glow = 0.1 / max(length(centered_uv), 0.01);
-        color = vec4<f32>(vec3<f32>(0.05, 0.0, 0.1) * bg_glow, 1.0);
+        let bgCol = vec3<f32>(0.05, 0.0, 0.1) * bg_glow;
+        color = vec4<f32>(bgCol, clamp(dot(bgCol, vec3<f32>(0.299, 0.587, 0.114)) * 1.5, 0.05, 0.6));
     }
 
     let fog = 1.0 - exp(-0.05 * t);
-    color = mix(color, vec4<f32>(0.0, 0.0, 0.02, 1.0), fog);
+    color = mix(color, vec4<f32>(0.0, 0.0, 0.02, color.a), fog);
 
-        // (alpha already semantic)
     textureStore(writeTexture, id.xy, color);
     let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
     let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(id.xy), color);
 }

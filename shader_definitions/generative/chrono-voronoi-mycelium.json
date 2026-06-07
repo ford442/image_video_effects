@@ -3,7 +3,7 @@
   "name": "Chrono-Voronoi Mycelium",
   "url": "shaders/chrono-voronoi-mycelium.wgsl",
   "category": "generative",
-  "description": "A living fungal network that grows across multiple time scales. Different generations of mycelium coexist as translucent layers. Mouse seeds new growth while audio seasons control the balance between expansion and decay. Now with chromatic dispersion and enhanced temporal feedback.",
+  "description": "A living fungal network that grows across multiple time scales. Voronoi cells represent fungal colonies; cell edges glow as mycelium hyphae. Different generations coexist as translucent layers. Temporal feedback accumulates growth rings. Bass = nutrient pulse triggers spore bursts and faster spread via golden-ratio seed displacement. Mouse inoculates new colonies. ACES tonemapped with chromatic aberration.",
   "features": [
     "temporal-layers",
     "voronoi-growth",
@@ -11,8 +11,10 @@
     "mouse-seeding",
     "multi-scale",
     "temporal",
-    "chromatic",
-    "depth-aware"
+    "upgraded-rgba",
+    "depth-aware",
+    "audio-reactive",
+    "mouse-driven"
   ],
   "tags": [
     "organic",
@@ -20,7 +22,10 @@
     "temporal",
     "voronoi",
     "generative",
-    "audio-reactive"
+    "audio-reactive",
+    "mouse-driven",
+    "golden-ratio",
+    "biological"
   ],
   "params": [
     {

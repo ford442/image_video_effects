@@ -11,6 +11,8 @@
     "crystalline"
   ],
   "features": [
+    "generative",
+    "upgraded-rgba",
     "audio-reactive",
     "mouse-interactive",
     "volumetric"

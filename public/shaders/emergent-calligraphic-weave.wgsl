@@ -45,15 +45,6 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-fn aces_tone_map(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51;
-    let b = 0.03;
-    let c = 2.43;
-    let d = 0.59;
-    let e = 0.14;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -154,8 +145,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Add paper fiber texture to final color
     finalCol = finalCol + vec3<f32>(0.05, 0.04, 0.03) * fiberMask;
 
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    finalCol = vec3<f32>(finalCol.r + caStr, finalCol.g, finalCol.b - caStr * 0.5);
+
     // ACES tone map
-    finalCol = aces_tone_map(finalCol);
+    finalCol = acesToneMap(finalCol);
 
     let alpha = clamp(ink * paperAbsorb * depth + splatter * 0.5, 0.0, 1.0);
 

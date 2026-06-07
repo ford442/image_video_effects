@@ -1,6 +1,13 @@
 {
   "id": "gen-fractal-bioluminescence-spore-network",
   "name": "Fractal Bioluminescence Spore-Network",
+  "features": [
+    "generative",
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba"
+  ],
   "tags": [
     "fractal",
     "organic",

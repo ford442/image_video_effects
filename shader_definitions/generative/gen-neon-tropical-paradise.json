@@ -3,12 +3,14 @@
   "name": "Neon Tropical Paradise",
   "category": "generative",
   "url": "shaders/gen-neon-tropical-paradise.wgsl",
-  "description": "A psychedelic tropical paradise with stylized neon palm trees, aurora sky, glowing flowers, and bioluminescent water. Hot pinks, electric blues, neon greens, sunset oranges. Mouse creates ripples in the water and sways the trees. Stars twinkle in a psychedelic sky.",
+  "description": "A psychedelic tropical paradise with stylized neon palm trees, aurora sky, glowing flowers, and bioluminescent water enriched with ocean light attenuation physics. Hot pinks, electric blues, neon greens, sunset oranges. Mouse creates ripples in the water and sways the trees. Stars twinkle in a psychedelic sky. Surface waters are bright cyan, deeper layers shift through green-blue into abyssal darkness via scientific wavelength-dependent attenuation.",
   "features": [
     "interactive",
-    "mouse-reactive",
+    "mouse-driven",
     "temporal",
-    "procedural"
+    "audio-reactive",
+    "procedural",
+    "upgraded-rgba"
   ],
   "tags": [
     "psychedelic",
@@ -17,7 +19,11 @@
     "nature",
     "bioluminescent",
     "aurora",
-    "sunset"
+    "sunset",
+    "ocean",
+    "ocean-optics",
+    "coral",
+    "fluorescence"
   ],
   "params": [
     {

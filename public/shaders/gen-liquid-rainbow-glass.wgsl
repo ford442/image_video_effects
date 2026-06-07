@@ -174,6 +174,20 @@ fn vortexStir(uv: vec2<f32>, mousePos: vec2<f32>, time: f32, strength: f32) -> v
   return vec2<f32>(swirlX, swirlY) * exp(-r * r * 8.0);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 0.15 + 0.05) + 0.004;
+  let b = x * (x * 0.15 + 0.50) + 0.06;
+  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Sellmeier equation: n² = 1 + B1λ²/(λ²-C1) + B2λ²/(λ²-C2) + B3λ²/(λ²-C3)
+// Crown glass refractive index at 589nm (sodium D-line): n ≈ 1.52
+// Cauchy approximation: n(λ) ≈ A + B/λ² + C/λ⁴
+fn sellmeierN(wavelength: f32) -> f32 {
+  // Simplified Sellmeier for normalized wavelength 0.4-0.7
+  return 1.5 + 0.02 / (wavelength * wavelength);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
@@ -202,6 +216,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
+
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
 
   let audioSpeed = speed * (0.85 + bass * 0.6);
   let audioIntensity = intensity * (0.9 + treble * 0.5);
@@ -303,10 +319,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lum = dot(color, vec3<f32>(0.299, 0.587, 0.114));
   color = mix(vec3<f32>(lum), color, 1.4 + intensity * 0.3);
   
-  // Tone map preserving neon
-  color = color / (1.0 + color * 0.1);
+  // Standard chromatic aberration with Sellmeier dispersion
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  let lambda = 0.55;
+  let n = sellmeierN(lambda);
+  let dndl = -0.02 / (lambda * lambda * lambda);
+  color = vec3<f32>(color.r + caStr * n, color.g, color.b - caStr * 0.5 * abs(dndl) * 10.0);
+
+  // ACES tone mapping
+  color = acesToneMap(color);
+
+  // Temporal feedback
+  let decay = 0.96;
+  let temporal = mix(prev.rgb * decay, color, 0.25);
 
   // Semantic alpha - stronger where the bright liquid effect is active
   let effectStrength = clamp(luminance * 0.6 + bubbleField * 0.4, 0.3, 0.95);
   textureStore(writeTexture, pixel, vec4<f32>(color, effectStrength));
+  textureStore(dataTextureA, pixel, vec4<f32>(temporal, effectStrength));
 }

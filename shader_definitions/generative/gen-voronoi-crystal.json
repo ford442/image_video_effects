@@ -14,9 +14,12 @@
     "reactive"
   ],
   "features": [
+    "generative",
     "animated",
     "audio-reactive",
-    "audio-driven"
+    "depth-aware",
+    "temporal",
+    "upgraded-rgba"
   ],
   "params": [
     {

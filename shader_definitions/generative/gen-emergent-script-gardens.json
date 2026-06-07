@@ -3,7 +3,7 @@
   "name": "Emergent Script Gardens",
   "url": "shaders/gen-emergent-script-gardens.wgsl",
   "category": "generative",
-  "description": "Interacting ink-like and neon strokes follow local rules to self-organize into alien symbolic gardens. Mouse interaction plants dense stroke seeds, while audio bands influence stroke curvature, length, and glyph clustering.",
+  "description": "Interacting ink-like and neon strokes follow golden-ratio phyllotaxis (137.5°) to self-organize into alien symbolic gardens. Bass drives growth iteration count. Mouse interaction plants dense stroke seeds with φ-boosted intensity. Temporal feedback creates organic overgrowth trails. ACES tonemapped with chromatic aberration.",
   "tags": [
     "generative",
     "calligraphy",
@@ -13,12 +13,17 @@
     "strokes",
     "audio-reactive",
     "mouse-driven",
-    "procedural"
+    "procedural",
+    "golden-ratio",
+    "phyllotaxis",
+    "biological"
   ],
   "features": [
     "generative",
     "audio-reactive",
     "mouse-driven",
+    "temporal",
+    "upgraded-rgba",
     "meaningful-alpha"
   ],
   "params": [

@@ -1,9 +1,10 @@
-// ----------------------------------------------------------------
-// Graviton Plasma-Lotus
-// Category: generative
-// ----------------------------------------------------------------
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Graviton Plasma-Lotus
+//  Category: generative
+//  Features: generative, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-06-07
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -163,8 +164,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Output
         let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, _alpha));
+    let outColor = vec4<f32>(col, _alpha);
+    textureStore(writeTexture, vec2<i32>(id.xy), outColor);
     let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
     let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(id.xy), outColor);
 }

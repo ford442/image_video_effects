@@ -1,6 +1,13 @@
 {
   "id": "gen-eldritch-quantum-fractal-eye",
   "name": "Eldritch-Quantum Fractal-Eye",
+  "features": [
+    "generative",
+    "mouse-driven",
+    "audio-reactive",
+    "raymarched",
+    "upgraded-rgba"
+  ],
   "tags": [
     "fractal",
     "eldritch",

@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Emergent Script Gardens
 //  Category: generative
+//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven,
+//            golden-ratio-branching, phyllotaxis, overgrowth-trails
 //  Description: Interacting calligraphic strokes self-organize into
-//  alien symbolic gardens. Mouse plants stroke seeds. Audio controls
-//  curvature, length, and local interaction rules.
+//  alien symbolic gardens via golden-ratio phyllotaxis (137.5°).
+//  Mouse plants stroke seeds. Bass drives growth iterations.
+//  Temporal feedback creates organic overgrowth trails.
 //  Complexity: Medium-High
 //  Created: 2026-05-31
+//  Upgraded: 2026-06-07
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +35,13 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+const GOLDEN: f32 = 1.6180339887;
+const PHYLLOTAXIS: f32 = 2.3999632297; // 137.5° in radians = 360° / φ²
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -77,16 +88,22 @@ fn brushStroke(uv: vec2<f32>, seed: vec2<f32>, lengthScale: f32, inkWidth: f32, 
 fn glyphGarden(uv: vec2<f32>, cluster: vec2<f32>, t: f32, bass: f32, mids: f32, treble: f32,
                strokeDensity: f32, curvature: f32, inkWidth: f32) -> f32 {
     var ink = 0.0;
-    let count = i32(clamp(4.0 + strokeDensity * 8.0 + treble * 2.0, 4.0, 14.0));
+    // Bass drives number of growth iterations (phyllotactic spiral density)
+    let count = i32(clamp(4.0 + strokeDensity * 8.0 + bass * 6.0, 4.0, 20.0));
     let clusterHash = hash22(cluster * 13.7 + 0.4);
     let bloom = smoothstep(0.0, 0.45, fract(t * 0.06 + clusterHash.x));
 
     for (var i: i32 = 0; i < count; i++) {
         let fi = f32(i);
+        // Phyllotaxis spiral: r = sqrt(n) * scale, theta = n * 137.5°
+        let goldenR = sqrt(fi + 1.0) * 0.032 * (1.0 + mids * 0.3);
+        let goldenTheta = fi * PHYLLOTAXIS + clusterHash.x * TAU;
+        let orbit = vec2<f32>(cos(goldenTheta), sin(goldenTheta)) * goldenR;
         let h = hash22(cluster + vec2<f32>(fi * 0.71, fi * 1.37));
-        let orbit = vec2<f32>(cos(h.x * TAU), sin(h.x * TAU)) * h.y * 0.055 * (1.0 + mids * 0.45);
         let seed = cluster + orbit;
-        let angle = ruleAngle(seed, t + fi * 0.3, bass, mids, treble, curvature) + (h.x - 0.5) * PI * 0.7;
+        // Branching angle enriched by golden-ratio harmonic
+        let angle = ruleAngle(seed, t + fi * 0.3, bass, mids, treble, curvature)
+                    + (h.x - 0.5) * PI * 0.7 + fi * (PHYLLOTAXIS * 0.05);
         let len = (0.028 + h.y * 0.07 + bass * 0.025) * bloom;
         let bend = t * (0.5 + mids) + fi + h.x * TAU;
         ink += brushStroke(uv, seed, len, inkWidth * (0.65 + h.x * 0.8), angle, bend);
@@ -119,7 +136,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouse = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
     let mouseDown = step(0.5, u.zoom_config.w);
     let mouseDist = length(p - mouse);
-    let plantedSeed = exp(-mouseDist * mouseDist * 70.0) * (0.35 + bass * 0.65) * (0.35 + mouseDown * 0.65);
+    // Mouse click plants new seed with golden-ratio intensity boost
+    let plantedSeed = exp(-mouseDist * mouseDist * 70.0)
+                      * (0.35 + bass * 0.65)
+                      * select(0.35, 1.0 + GOLDEN * 0.2, mouseDown > 0.5);
 
     let grid = p * gardenScale;
     let cell = floor(grid);
@@ -149,7 +169,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     let prev = textureLoad(dataTextureC, coord, 0);
-    let persistence = mix(0.74, 0.91, palette) + bass * 0.03;
+    // Temporal feedback creates "overgrowth" trails
+    let persistence = mix(0.76, 0.93, palette) + bass * 0.04;
     totalInk = clamp(max(totalInk + plantedSeed, prev.a * persistence), 0.0, 1.0);
 
     let normalizedChroma = chroma / max(dot(chroma, vec3<f32>(0.3333)), 0.001);
@@ -161,8 +182,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color += normalizedChroma * totalInk * palette * (0.35 + treble * 0.55);
     color += vec3<f32>(0.7, 0.55, 1.0) * plantedSeed * palette;
 
-    let alpha = clamp(totalInk * (0.35 + palette * 0.55) + plantedSeed * 0.25, 0.0, 1.0);
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass);
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+    // ACES tone mapping + semantic alpha
+    let finalColor = acesToneMap(color * 1.1);
+    let alpha = clamp(length(finalColor) * 1.2, 0.2, 0.95);
+
     textureStore(dataTextureA, gid.xy, vec4<f32>(color, alpha));
-    textureStore(writeTexture, gid.xy, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), alpha));
+    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(totalInk, 0.0, 0.0, 0.0));
 }

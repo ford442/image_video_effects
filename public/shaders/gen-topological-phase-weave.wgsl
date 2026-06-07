@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Topological Phase Weave
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba,
+//            topological-defects, phase-transition, euler-characteristic
 //  Complexity: High
 //  Created: 2026-05-31
+//  Updated: 2026-06-07
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -26,6 +28,12 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+// ---- ACES TONE MAPPING ----
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // ═══ Hash / Noise ═══
 fn hash21(p: vec2<f32>) -> f32 {
@@ -53,7 +61,7 @@ fn noise(p: vec2<f32>) -> f32 {
 
 // ═══ Director Field (nematic angle) ═══
 // Computes the local nematic director angle at position p given defect configuration
-fn directorField(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32) -> f32 {
+fn directorField(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mousePos: vec2<f32>, mouseDown: f32) -> f32 {
     var angle = 0.0;
     let numDefects = 8;
 
@@ -75,6 +83,13 @@ fn directorField(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32) -> 
         angle += charge * defectAngle;
     }
 
+    // Mouse creates topological defect when down
+    if (mouseDown > 0.5) {
+        let mdp = p - mousePos;
+        let mouseAngle = atan2(mdp.y, mdp.x);
+        angle += 0.5 * mouseAngle;
+    }
+
     // Add smooth background field from noise
     angle += noise(p * 2.0 + time * 0.05) * 0.5;
 
@@ -82,9 +97,10 @@ fn directorField(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32) -> 
 }
 
 // ═══ Defect proximity (singularity detector) ═══
-fn defectProximity(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32) -> vec2<f32> {
+fn defectProximity(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32, mousePos: vec2<f32>, mouseDown: f32) -> vec4<f32> {
     var minDist = 100.0;
     var charge = 0.0;
+    var totalCharge = 0.0;
     let numDefects = 8;
 
     for (var i: i32 = 0; i < numDefects; i++) {
@@ -101,9 +117,24 @@ fn defectProximity(p: vec2<f32>, time: f32, defectDensity: f32, mobility: f32) -
             minDist = dist;
             charge = select(-0.5, 0.5, i % 2 == 0);
         }
+        totalCharge += select(-0.5, 0.5, i % 2 == 0);
     }
 
-    return vec2<f32>(minDist, charge);
+    // Mouse defect contributes +1/2 charge
+    if (mouseDown > 0.5) {
+        let mouseDist = length(p - mousePos);
+        if (mouseDist < minDist) {
+            minDist = mouseDist;
+            charge = 0.5;
+        }
+        totalCharge += 0.5;
+    }
+
+    // Euler characteristic: chi = 2 * totalCharge (for nematic defects)
+    // Torus: chi = 0, Sphere: chi = 2
+    let eulerChar = totalCharge * 2.0;
+
+    return vec4<f32>(minDist, charge, totalCharge, eulerChar);
 }
 
 // ═══ Iridescent color mapping (oil-slick) ═══
@@ -145,13 +176,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let perturbation = mix(0.0, 1.0, u.zoom_params.z);       // Treble perturbation
     let colorSaturation = mix(0.3, 1.5, u.zoom_params.w);
 
-    // Mouse: pin defect or create attractor
+    // Mouse: creates topological defect
     let mousePos = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
 
     // Smooth audio
     var prevBass = extraBuffer[0];
     let smoothBass = bassEnv(prevBass, bass, 0.15, 0.02);
     extraBuffer[0] = smoothBass;
+
+    // Phase transition order parameter: 0 = disordered, 1 = ordered
+    let orderParam = smoothstep(0.2, 0.8, smoothBass);
 
     // Aspect ratio
     let aspect = res.x / res.y;
@@ -162,18 +197,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dynMobility = mobility * (1.0 + mids * 0.4);
     let dynPerturb = perturbation + treble * 0.3;
 
-    // Mouse influence: create local attractor field
+    // Mouse influence position in normalized space
     let mp = (mousePos - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
-    let mouseDist = length(p - mp);
-    let mouseAttract = exp(-mouseDist * 4.0) * 0.8;
 
     // ═══ DIRECTOR FIELD COMPUTATION ═══
-    let angle = directorField(p, time, dynDensity, dynMobility);
+    let angle = directorField(p, time, dynDensity, dynMobility, mp, mouseDown);
 
     // Add high-frequency treble perturbation
     let perturbAngle = angle + noise(p * 10.0 + time * 2.0) * dynPerturb * 0.5;
 
     // Mouse pins the local field
+    let mouseAttract = exp(-length(p - mp) * 4.0) * 0.8;
     let finalAngle = mix(perturbAngle, atan2(p.y - mp.y, p.x - mp.x), mouseAttract);
 
     // ═══ FIELD VISUALIZATION ═══
@@ -187,9 +221,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fieldVis = streak * 0.6 + streak2 * 0.4;
 
     // ═══ DEFECT VISUALIZATION ═══
-    let defect = defectProximity(p, time, dynDensity, dynMobility);
+    let defect = defectProximity(p, time, dynDensity, dynMobility, mp, mouseDown);
     let defectDist = defect.x;
     let defectCharge = defect.y;
+    let totalCharge = defect.z;
+    let eulerChar = defect.w;
 
     // Singularity glow
     let singularityGlow = exp(-defectDist * 15.0) * 1.5;
@@ -206,15 +242,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Brush-stroke pattern from field
     let brushIntensity = smoothstep(0.3, 0.7, fieldVis);
 
-    // Compose final color
+    // Phase transition color shift:
+    // Disordered (low bass) = warm colors (high entropy)
+    // Ordered (high bass) = cool crystal colors
+    let disorderedCol = vec3<f32>(1.0, 0.35, 0.1);  // warm amber-red
+    let orderedCol = vec3<f32>(0.2, 0.7, 1.0);      // cool cyan-crystal
+    let phaseCol = mix(disorderedCol, orderedCol, orderParam);
+
+    // Compose final color with phase transition influence
     var col = iridescentBase * brushIntensity * colorSaturation;
+    col = mix(col, col * phaseCol * 2.0, orderParam * 0.6 + 0.2);
 
     // Add defect singularity highlights
     col += defectCol;
 
     // Nematic order parameter visualization: darker near defect cores
-    let orderParam = smoothstep(0.0, 0.15, defectDist);
-    col *= orderParam * 0.8 + 0.2;
+    let localOrder = smoothstep(0.0, 0.15, defectDist);
+    col *= localOrder * 0.8 + 0.2;
 
     // Background: very dark with subtle field texture
     let bgField = fieldVis * 0.08;
@@ -222,6 +266,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Audio pulse on defect regions
     col += defectCol * smoothBass * 0.4;
+
+    // Euler characteristic visible as color change
+    // Torus (chi=0): neutral, Sphere-like (chi>0): golden tint
+    let eulerTint = vec3<f32>(1.0, 0.8, 0.3) * eulerChar * 0.25;
+    col += eulerTint * brushIntensity;
 
     // Temporal feedback for trail persistence
     let prev = textureLoad(dataTextureC, coord, 0).rgb;
@@ -231,10 +280,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let vignette = 1.0 - length(uv - 0.5) * 0.5;
     col *= vignette;
 
-    // Alpha based on field visibility and defect proximity
-    let alpha = clamp(brushIntensity * 0.8 + singularityGlow * 0.5, 0.0, 1.0);
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass);
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+    // ACES tone mapping
+    col = acesToneMap(col * 1.1);
+
+    // Semantic alpha
+    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
 
     textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
     textureStore(writeTexture, coord, vec4<f32>(col, alpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(1.0 - orderParam, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(1.0 - localOrder, 0.0, 0.0, 0.0));
 }

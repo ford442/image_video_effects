@@ -3,9 +3,25 @@
   "name": "Celestial Aether-Seraphim Wings",
   "url": "shaders/gen-celestial-aether-seraphim-wings.wgsl",
   "category": "generative",
-  "description": "A majestic, hyper-dimensional array of ethereal, fractal wings woven from liquid plasma and quantum light that endlessly fold, beat, and shatter into geometric feathers in response to cosmic audio resonance.",
-  "tags": ["wings", "angelic", "plasma", "fractal", "audio-reactive", "raymarching"],
-  "features": ["audio-reactive", "raymarched"],
+  "description": "A majestic hyper-dimensional array of fractal wings enriched with aerodynamic lift physics. Angle of attack α from mouse Y drives C_L=2πα (thin airfoil). Stall at ~15° creates turbulent breakdown. Bass drives flapping frequency via damped oscillation. Temporal feedback, chromatic aberration, and ACES tone mapping.",
+  "tags": [
+    "wings",
+    "angelic",
+    "plasma",
+    "fractal",
+    "audio-reactive",
+    "raymarched",
+    "upgraded-rgba",
+    "temporal",
+    "mouse-driven"
+  ],
+  "features": [
+    "upgraded-rgba",
+    "temporal",
+    "audio-reactive",
+    "mouse-driven",
+    "raymarched"
+  ],
   "params": [
     {
       "id": "param1",

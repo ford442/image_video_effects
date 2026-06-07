@@ -3,7 +3,24 @@
   "name": "Ethereal-Aurora Ghost-Orchid",
   "url": "shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
   "category": "generative",
-  "description": "A phantom-like, hyper-dimensional orchid whose transparent, glowing petals are formed entirely from captured aurora borealis, blooming and disintegrating infinitely in a volumetric dark-matter void, driven by acoustic resonance.",
+  "description": "A phantom-like, hyper-dimensional orchid whose transparent, glowing petals are formed entirely from captured aurora borealis, blooming and disintegrating infinitely in a volumetric dark-matter void, driven by acoustic resonance. Enriched with Wolfram Alpha aurora physics: oxygen green (557.7 nm) at lower altitude, red (630.0 nm) at higher altitude, nitrogen blue/purple at base, and bass-driven solar wind particle density.",
+  "tags": [
+    "generative",
+    "aurora",
+    "orchid",
+    "raymarched",
+    "volumetric",
+    "audio-reactive",
+    "mouse-driven",
+    "organic",
+    "neon"
+  ],
+  "features": [
+    "upgraded-rgba",
+    "temporal",
+    "audio-reactive",
+    "mouse-driven"
+  ],
   "params": [
     {
       "id": "param1",

@@ -79,7 +79,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // === GUIDED FILTER ===
     // Use depth as guide for edge-aware smoothing
-    let guidedRadius = i32(mix(2.0, 5.0, 0.5));
+    let guidedRadius = i32(mix(2.0f, 5.0f, 0.5f));
     let epsilon = 0.001;
     let maxRadius = min(guidedRadius, 5);
 

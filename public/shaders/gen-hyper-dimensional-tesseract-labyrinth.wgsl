@@ -1,8 +1,10 @@
-// ----------------------------------------------------------------
-// Hyper-Dimensional Tesseract-Labyrinth
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Hyper-Dimensional Tesseract-Labyrinth
+//  Category: generative
+//  Features: generative, mouse-driven, audio-reactive, raymarched, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-06-07
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -121,7 +123,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (fragCoord * 2.0 - res) / res.y;
     let time = u.config.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Parameters mapped from zoom_params
     let complexity = u.zoom_params.x;
@@ -187,6 +191,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let envReflection = vec3<f32>(0.1, 0.3, 0.8) * fresnel * 2.0;
             let transparency = vec3<f32>(0.05, 0.05, 0.1);
             col = envReflection + transparency;
+            col += vec3<f32>(0.7, 0.2, 0.9) * treble * fresnel * 0.4;
         }
     }
 
@@ -195,5 +200,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = mix(col, vec3<f32>(0.02, 0.01, 0.05), smoothstep(0.0, 60.0, t));
 
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+
+    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let semantic_alpha = clamp(luma * 1.4 + length(glowCol) * 0.2, 0.05, 0.98);
+    let outDepth = clamp(t / 60.0, 0.0, 1.0);
+    let outColor = vec4<f32>(col, semantic_alpha);
+
+    textureStore(writeTexture, vec2<i32>(id.xy), outColor);
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(id.xy), outColor);
 }

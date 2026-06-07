@@ -35,10 +35,11 @@ fn circle_inv(p: vec2<f32>, c: vec2<f32>, r: f32) -> vec2<f32> {
   return c + d * (r * r) / l2;
 }
 
-fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
-  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 0.15 + 0.05) + 0.004;
+  let b = x * (x * 0.15 + 0.50) + 0.06;
+  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
 }
-
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -60,12 +61,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   var p = (uv - 0.5) * vec2<f32>(aspect, 1.0) * 3.0 / circleSize;
 
+  // Descartes theorem: k4 = k1+k2+k3 ± 2*sqrt(k1k2+k2k3+k3k1)
+  // Curvature k = 1/r. For r=0.5, k=2.0; for r=0.155, k≈6.45; for r=0.3, k≈3.33
   let circles = array<vec3<f32>, 5>(
-    vec3<f32>(0.5, 0.0, 0.5),
-    vec3<f32>(-0.5, 0.0, 0.5),
-    vec3<f32>(0.0, 0.866, 0.5),
-    vec3<f32>(0.0, 0.289, 0.155),
-    vec3<f32>(0.0, -0.5, 0.3)
+    vec3<f32>(0.5, 0.0, 0.5),    // center=(0.5,0), r=0.5, k=2.0
+    vec3<f32>(-0.5, 0.0, 0.5),   // center=(-0.5,0), r=0.5, k=2.0
+    vec3<f32>(0.0, 0.866, 0.5),  // center=(0,0.866), r=0.5, k=2.0
+    vec3<f32>(0.0, 0.289, 0.155),// center=(0,0.289), r=0.155, k≈6.45
+    vec3<f32>(0.0, -0.5, 0.3)    // center=(0,-0.5), r=0.3, k≈3.33
   );
 
   var q = p;
@@ -119,16 +122,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color.b * (1.0 - ca * 0.1)
   );
 
-  color = aces_tonemap(color * 2.0);
-
   let alpha = density * clamp(invCount / 8.0, 0.0, 1.0) * (0.7 + bass * 0.3);
   let depth = clamp(1.0 - minDist * 2.0, 0.0, 1.0);
 
+  // Temporal feedback
+  let histUV = uv + vec2<f32>(sin(time * 0.18) * 0.001, cos(time * 0.12) * 0.001);
+  let prev = textureSampleLevel(dataTextureC, u_sampler, histUV, 0.0).rgb;
+  color = mix(color, prev * 0.94, 0.05);
+
+  // Chromatic aberration
   let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
-  color = aces_tonemap(color * 2.0);
+  // Write temporal feedback before ACES so next frame reads untonemapped color
+  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
+
+  // Single ACES tonemap
+  color = acesToneMap(color * 2.0);
+
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
 }

@@ -1,8 +1,10 @@
-// ----------------------------------------------------------------
-// Holographic Plasma-Geode
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Holographic Plasma-Geode
+//  Category: generative
+//  Features: generative, mouse-driven, audio-reactive, raymarched, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-06-07
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -103,7 +105,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (vec2<f32>(id.xy) * 2.0 - dims) / min(dims.x, dims.y);
     let res = u.config.zw;
     let time = u.config.x;
-    let audio = u.config.y;
+    let audio = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
     let mouseY = u.zoom_config.z * 2.0 - 1.0;
@@ -139,7 +143,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             if (matId > 0.5) {
                 // Holographic crystals
                 let viewAngle = dot(n, -rd);
-                let holoColor = palette(viewAngle + u.zoom_params.z);
+                let holoColor = palette(viewAngle + u.zoom_params.z + treble * 0.15);
                 // Subsurface scattering approximation
                 let sss = smoothstep(0.0, 1.0, map(p + rd * 0.1, time, audio).x);
                 col = holoColor * (0.5 + 0.5 * sss);
@@ -195,5 +199,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     col = pow(col, vec3<f32>(0.4545)); // Gamma correction
 
-    textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
+    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let semantic_alpha = clamp(luma * 1.4 + length(plasma) * 0.25, 0.05, 0.98);
+    let outDepth = clamp(t / 20.0, 0.0, 1.0);
+    let outColor = vec4<f32>(col, semantic_alpha);
+
+    textureStore(writeTexture, id.xy, outColor);
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, id.xy, outColor);
 }

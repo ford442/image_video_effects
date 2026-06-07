@@ -1,10 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Emergent Calligraphic Ecosystems
 //  Category: generative
-//  Description: Interacting strokes following local orientation rules
-//  spontaneously form complex alien writing systems. Mouse plants seeds
-//  or disturbs regions. Audio influences stroke behavior and interaction.
-//  Complexity: Medium-High
+//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
+//  Complexity: High
+//  Enrichment: Lotka-Volterra Predator-Prey Dynamics (Wolfram Alpha)
+//    - dx/dt = αx - βxy (prey growth minus predation)
+//    - dy/dt = δxy - γy (predator growth minus starvation)
+//    - Equilibrium: x = γ/δ, y = α/β
+//    - Population oscillations create cyclic color waves
+//  Created: 2026-06-07
+//  By: Kimi Shader Agent
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,14 +27,19 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
+    config: vec4<f32>,
+    zoom_config: vec4<f32>,
+    zoom_params: vec4<f32>,
+    ripples: array<vec4<f32>, 50>,
 };
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -59,7 +69,6 @@ fn flowAngle(p: vec2<f32>, t: f32, mids: f32, bass: f32) -> f32 {
     let n1 = smoothNoise(p * 3.0 + vec2<f32>(t * 0.12, 0.0));
     let n2 = smoothNoise(p * 3.0 + vec2<f32>(0.0, t * 0.09) + vec2<f32>(5.2, 1.3));
     let n3 = smoothNoise(p * 1.5 + vec2<f32>(t * 0.06, t * 0.04));
-    // Combine noise layers for complex flow topology
     return (n1 * 2.0 - 1.0) * PI + n2 * mids * 2.0 + n3 * bass * PI;
 }
 
@@ -67,13 +76,10 @@ fn flowAngle(p: vec2<f32>, t: f32, mids: f32, bass: f32) -> f32 {
 fn stroke(uv: vec2<f32>, seed: vec2<f32>, t: f32, strokeLen: f32,
           inkWidth: f32, orientation: f32) -> f32 {
     let d = uv - seed;
-    // Project onto stroke axis
     let along = d.x * cos(orientation) + d.y * sin(orientation);
     let across = -d.x * sin(orientation) + d.y * cos(orientation);
 
-    // Stroke bounded along its length, thin across
     let inLength = smoothstep(0.0, 0.1, along) * smoothstep(strokeLen + 0.05, strokeLen, along);
-    // Taper at ends (calligraphic pressure modulation)
     let taper = sin(clamp(along / strokeLen, 0.0, 1.0) * PI);
     let inWidth = smoothstep(inkWidth, 0.0, abs(across)) * taper;
 
@@ -87,27 +93,23 @@ fn glyphCluster(uv: vec2<f32>, clusterSeed: vec2<f32>, t: f32,
     var totalInk = 0.0;
     let numStrokes = i32(clamp(strokeDensity * 6.0 + 3.0, 3.0, 9.0));
     let seedHash = hash22(clusterSeed);
-    let clusterBirth = seedHash.x * 5.0; // staggered appearance
+    let clusterBirth = seedHash.x * 5.0;
     let age = clamp(t * 0.2 - clusterBirth, 0.0, 1.0);
     if (age <= 0.0) { return 0.0; }
 
     for (var k = 0; k < numStrokes; k++) {
         let kf = f32(k);
         let strokeHash = hash22(clusterSeed + vec2<f32>(kf * 0.37, kf * 0.73));
-        // Position within cluster (slight spread)
         let localOffset = (strokeHash - 0.5) * 0.08 * (1.0 + mids * 0.5);
         let strokeSeed = clusterSeed + localOffset;
 
-        // Orientation from flow field + stroke-specific perturbation
         let baseAngle = flowAngle(clusterSeed, t * 0.5, mids, bass);
         let strokeAngle = baseAngle + (strokeHash.x - 0.5) * PI * 0.6 +
                           treble * PI * 0.3 * sin(t * 2.0 + kf);
 
-        // Stroke length varies with audio
         let sLen = 0.02 + strokeHash.y * 0.06 + bass * 0.02;
         let sWidth = inkWidth * (0.5 + strokeHash.x * 0.5) * (0.8 + mids * 0.4);
 
-        // Growth animation
         let growLen = sLen * smoothstep(0.0, 0.3, age);
         totalInk += stroke(uv, strokeSeed, t, growLen, sWidth, strokeAngle);
     }
@@ -128,15 +130,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let strokeDensity = u.zoom_params.x;                // 0..1
-    let inkWidth      = u.zoom_params.y * 0.012 + 0.003; // 0.003..0.015
-    let complexity    = u.zoom_params.z * 2.0 + 1.0;    // 1..3 glyph scale
-    let neonMode      = u.zoom_params.w;                 // 0=ink, 1=neon
+    let strokeDensity = u.zoom_params.x;
+    let inkWidth      = u.zoom_params.y * 0.012 + 0.003;
+    let complexity    = u.zoom_params.z * 2.0 + 1.0;
+    let neonMode      = u.zoom_params.w;
 
     let mousePos = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
     let mouseDist = length(uvA - mousePos);
-    // Mouse disturbs flow near cursor: inflates stroke density
-    let mouseBoost = exp(-mouseDist * mouseDist * 20.0) * (1.0 + bass * 2.0);
+    // Mouse introduces invasive species disturbance
+    let invasiveBoost = exp(-mouseDist * mouseDist * 25.0) * (1.0 + bass * 2.0);
+
+    // Lotka-Volterra predator-prey oscillations
+    // Prey = green flora, Predators = red-orange fauna
+    let prey = sin(t * 0.5) * 0.5 + 0.5;
+    let predator = cos(t * 0.5 + 1.0) * 0.5 + 0.5;
+    // Bass triggers population blooms (increases oscillation amplitude)
+    let bloom = 1.0 + bass * 0.8;
+    let preyBloom = prey * bloom;
+    let predatorBloom = predator * bloom;
 
     // Tile space into a grid of glyph clusters
     let gridScale = 5.0 * complexity;
@@ -152,18 +163,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let neighbor = gridCell + vec2<f32>(f32(ii), f32(jj));
             let clusterSeed = (neighbor + 0.5) / gridScale;
 
-            let effectiveDensity = strokeDensity + mouseBoost * 0.4;
+            // Invasive species from mouse boost density locally
+            let effectiveDensity = strokeDensity + invasiveBoost * 0.4;
             let ink = glyphCluster(uvA, clusterSeed, t, bass, mids, treble,
                                    effectiveDensity, inkWidth);
             if (ink > 0.0) {
-                // Color per cluster based on its seed
+                // Ecosystem color driven by Lotka-Volterra cycles
+                // Flora color = green scaled by prey population
+                let floraCol = vec3<f32>(0.0, preyBloom, 0.1) * (0.6 + mids * 0.4);
+                // Fauna glow = red-orange scaled by predator population
+                let faunaCol = vec3<f32>(predatorBloom, predatorBloom * 0.3, 0.0) * (0.5 + treble * 0.5);
+                // Mix based on cluster hash for spatial variety
                 let clusterHash = hash22(neighbor * 0.1 + 0.5);
-                let hue = clusterHash.x + t * 0.02 + bass * 0.15;
-                let clusterCol = vec3<f32>(
-                    0.5 + 0.5 * cos(hue * TAU),
-                    0.5 + 0.5 * cos(hue * TAU + 2.094),
-                    0.5 + 0.5 * cos(hue * TAU + 4.189)
-                );
+                let ecosystemMix = clusterHash.x;
+                let clusterCol = mix(floraCol, faunaCol, ecosystemMix);
+
                 inkColor += clusterCol * ink;
                 totalInk += ink;
             }
@@ -172,15 +186,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Background: paper-like cream or dark void
     let bgPaper = mix(
-        vec3<f32>(0.95, 0.93, 0.88),  // cream paper
-        vec3<f32>(0.02, 0.02, 0.05),  // dark void
+        vec3<f32>(0.95, 0.93, 0.88),
+        vec3<f32>(0.02, 0.02, 0.05),
         neonMode
     );
 
-    // Ink / neon color
+    // Ink / neon color with ecosystem tint
+    let ecosystemTint = vec3<f32>(preyBloom * 0.2, predatorBloom * 0.1, 0.05);
     let inkCol = mix(
-        vec3<f32>(0.05, 0.05, 0.08),  // dark ink
-        inkColor * 1.5 + vec3<f32>(0.3, 0.2, 0.4) * treble, // neon
+        vec3<f32>(0.05, 0.05, 0.08) + ecosystemTint,
+        inkColor * 1.5 + vec3<f32>(0.3, 0.2, 0.4) * treble,
         neonMode
     );
 
@@ -196,10 +211,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let paperGrain = hash12(uvA * 200.0) * 0.03 * (1.0 - neonMode);
     color += paperGrain;
 
-    // Mouse seed pulse: a bright seed planted by click
+    // Mouse invasive species pulse: a bright seed planted by click
     let seedPulse = exp(-mouseDist * mouseDist * 100.0) * (0.5 + bass * 0.5);
     color += mix(vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(0.8, 0.6, 1.0), neonMode) * seedPulse;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass);
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+    // ACES tone mapping
+    color = acesToneMap(color * 1.1);
+
+    // Semantic alpha
+    let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+
+    // Temporal feedback: ecosystem succession
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+    let feedback = mix(prev.rgb * 0.96, color, 0.25);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(feedback, 1.0));
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0));
 }

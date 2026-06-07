@@ -3,11 +3,12 @@
   "name": "Holographic Rainbow Surface",
   "category": "generative",
   "url": "shaders/gen-holographic-rainbow-surface.wgsl",
-  "description": "A liquid holographic surface with iridescent rainbow colors that ripple and undulate like liquid light. Prismatic diffraction highlights, spectral color separation based on surface normals, and mouse-reactive wave propagation create a stunning chromatic light simulation.",
+  "description": "A liquid holographic surface with iridescent rainbow colors driven by thin-film interference physics. Prismatic diffraction highlights, spectral color separation based on surface normals, temporal feedback trails, chromatic aberration, and audio-reactive film thickness modulation create a scientifically-grounded chromatic light simulation. Mouse tilts the interference plane.",
   "features": [
-    "interactive",
-    "mouse-reactive",
+    "upgraded-rgba",
     "temporal",
+    "audio-reactive",
+    "mouse-driven",
     "procedural"
   ],
   "tags": [
@@ -17,7 +18,9 @@
     "iridescent",
     "prismatic",
     "liquid",
-    "rainbow"
+    "rainbow",
+    "thin-film",
+    "interference"
   ],
   "params": [
     {

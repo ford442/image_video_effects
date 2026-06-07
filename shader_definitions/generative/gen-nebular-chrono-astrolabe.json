@@ -2,6 +2,14 @@
   "id": "gen-nebular-chrono-astrolabe",
   "name": "Nebular Chrono Astrolabe",
   "url": "shaders/gen-nebular-chrono-astrolabe.wgsl",
+  "features": [
+    "generative",
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
   "type": "shader",
   "coordinate": 858,
   "params": [

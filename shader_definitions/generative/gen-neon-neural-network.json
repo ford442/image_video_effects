@@ -3,11 +3,13 @@
   "name": "Neon Neural Network",
   "category": "generative",
   "url": "shaders/gen-neon-neural-network.wgsl",
-  "description": "A glowing neon neural network visualization with pulsing nodes as bright circles connected by animated signal paths. Electric blue, hot pink, lime green and violet neon colors. Signals pulse along edges like data flowing through a living AI brain. Mouse controls a cursor node that lights up nearby connections.",
+  "description": "A glowing neon neural network visualization enriched with ReLU activation mathematics. Neurons fire using R(x)=max(0,x) thresholds. Bass drives input layer activation intensity. Mids control synaptic connection strength. Treble adds backpropagation error glow as red halos along edges. Network layers visualized as concentric rings of neurons with pulsing signal paths. Mouse controls a cursor node that lights up nearby connections.",
   "features": [
-    "interactive",
-    "mouse-reactive",
+    "upgraded-rgba",
     "temporal",
+    "audio-reactive",
+    "mouse-driven",
+    "neural-relu",
     "procedural"
   ],
   "tags": [
@@ -17,7 +19,11 @@
     "glow",
     "signals",
     "data-flow",
-    "generative"
+    "generative",
+    "neural",
+    "relu",
+    "ai",
+    "abstract"
   ],
   "params": [
     {

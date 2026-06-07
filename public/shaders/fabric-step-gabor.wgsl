@@ -169,7 +169,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ═══ GABOR TEXTURE ANALYSIS ON FABRIC ═══
     let pixelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
     let freq = mix(0.05, 0.25, 0.3 + strain * 0.4);
-    let sigma = mix(1.5, 3.0, 0.4);
+    let sigma = mix(1.5f, 3.0f, 0.4f);
     let responseScale = mix(0.5, 2.0, 0.5 + strain);
 
     // Strain rotates the Gabor bank

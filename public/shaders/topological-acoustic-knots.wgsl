@@ -164,7 +164,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let plusOneBloom = select(0.0, 1.0, charge > 0.65) * defectDensity * vec3<f32>(1.0, 0.7, 0.4) * 2.0;
 
   let base = vec3<f32>(0.55, 0.6, 0.65) * (0.3 + schlieren * 0.7);
-  let hdr = base + defectGlow + plusOneBloom + vec3<f32>(phonon * 0.3 + 0.1);
+  var hdr = base + defectGlow + plusOneBloom + vec3<f32>(phonon * 0.3 + 0.1);
+
+  // Chromatic aberration
+  let caStr = 0.003 * (1.0 + bass);
+  hdr = vec3<f32>(hdr.r + caStr, hdr.g, hdr.b - caStr * 0.5);
+
   let tone = acesToneMap(hdr * (0.8 + p1 * 0.3));
 
   // Alpha: order parameter S × (1.0 + defect_charge_density)

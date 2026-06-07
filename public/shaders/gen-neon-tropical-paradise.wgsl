@@ -1,13 +1,16 @@
-// Neon Tropical Paradise - Psychedelic tropical scene with neon palms, aurora sky, 
+// Neon Tropical Paradise - Psychedelic tropical scene with neon palms, aurora sky,
 // glowing flowers, bioluminescent water. Hot pinks, electric blues, neon greens, sunset oranges.
+// Upgraded: ocean light attenuation, ACES tone mapping, chromatic aberration, temporal feedback,
+// coral fluorescence, bass wave surge.
 
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Tropical Paradise
 //  Category: generative
-//  Features: tropical, neon, paradise, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: tropical, neon, paradise, audio-reactive, mouse-interactive, semantic-alpha,
+//            upgraded-rgba, temporal, ocean-optics
 //  Complexity: Medium
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
+//  Updated: 2026-06-07
 //  By: Kimi Agent (Bright batch)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -35,6 +38,12 @@ struct Uniforms {
 const PI: f32 = 3.14159265;
 const TAU: f32 = 6.28318530718;
 
+// ---- ACES TONE MAPPING ----
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // ---- NOISE FUNCTIONS ----
 fn hash2(p: vec2<f32>) -> vec2<f32> {
   let r = vec2<f32>(
@@ -52,7 +61,7 @@ fn noise2d(p: vec2<f32>) -> f32 {
   let i = floor(p);
   let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
-  
+
   return mix(
     mix(hash1(i), hash1(i + vec2<f32>(1.0, 0.0)), u.x),
     mix(hash1(i + vec2<f32>(0.0, 1.0)), hash1(i + vec2<f32>(1.0, 1.0)), u.x),
@@ -136,19 +145,18 @@ fn palmFrond(uv: vec2<f32>, tipX: f32, tipY: f32, baseX: f32, baseY: f32, spread
 fn palmTree(uv: vec2<f32>, xPos: f32, time: f32, swayAmt: f32, scale: f32) -> vec3<f32> {
   let treeColor = vec3<f32>(0.15, 0.6, 0.2) * 1.5;
   let trunkColor = vec3<f32>(0.4, 0.25, 0.15);
-  
+
   let sway = sin(time * 0.8) * swayAmt;
   let h = 0.45 * scale;
   let topY = 0.3 + h * 0.5;
   let trunk = palmTrunk(uv, xPos, sway * 0.5, h);
-  
+
   let tipX = xPos + sway;
-  let frond = 0.0;
-  
+
   // Multiple fronds radiating from top
   let angles = array<f32, 7>(-0.8, -0.4, -0.1, 0.15, 0.4, 0.7, 1.0);
   let spreads = array<f32, 7>(-0.08, -0.05, -0.02, 0.02, 0.05, 0.08, 0.06);
-  
+
   var totalFrond: f32 = 0.0;
   for (var i: i32 = 0; i < 7; i = i + 1) {
     let a = angles[i];
@@ -158,11 +166,11 @@ fn palmTree(uv: vec2<f32>, xPos: f32, time: f32, swayAmt: f32, scale: f32) -> ve
     let f = palmFrond(uv, frondX, frondY, tipX, topY - 0.02, sp + sway * 0.03);
     totalFrond = max(totalFrond, f);
   }
-  
+
   var col = vec3<f32>(0.0);
   col += trunkColor * trunk * 2.0;
   col += treeColor * totalFrond * 1.5;
-  
+
   return col;
 }
 
@@ -171,11 +179,11 @@ fn neonFlower(uv: vec2<f32>, center: vec2<f32>, time: f32, petals: i32, scale: f
   let d = uv - center;
   let r = length(d);
   let a = atan2(d.y, d.x);
-  
+
   let petalShape = abs(sin(a * f32(petals) * 0.5)) * scale;
   var flower = smoothstep(petalShape + 0.02, petalShape * 0.5, r) * step(0.0, r);
   flower = max(flower, smoothstep(0.04 * scale, 0.01, r));
-  
+
   let flowerHue = time * 0.1 + center.x * 3.0;
   let flowerColor = electricPalette(flowerHue);
   return flowerColor * flower * 2.0;
@@ -191,56 +199,75 @@ fn twinkleStar(uv: vec2<f32>, starPos: vec2<f32>, time: f32, idx: f32) -> vec3<f
   return starColor * star * 1.5;
 }
 
-// Bioluminescent water
-fn bioWater(uv: vec2<f32>, time: f32, mouseNorm: vec2<f32>, mouseDown: f32, intensity: f32, scale: f32, colorShift: f32) -> vec3<f32> {
+// Bioluminescent water with ocean light attenuation
+fn bioWater(uv: vec2<f32>, time: f32, mouseNorm: vec2<f32>, mouseDown: f32, intensity: f32, scale: f32, colorShift: f32, bass: f32, treble: f32) -> vec3<f32> {
   let waterY = 0.32;
   if (uv.y < waterY - 0.05) {
     return vec3<f32>(0.0);
   }
-  
+
   let waterSurf = uv.y;
   let inWater = smoothstep(waterY + 0.08, waterY - 0.03, waterSurf);
-  
+
   if (inWater < 0.01) {
     return vec3<f32>(0.0);
   }
-  
-  // Base water color - deep electric blue
-  let depth = (waterY - uv.y) * 4.0;
-  let baseWater = mix(vec3<f32>(0.05, 0.2, 0.6), vec3<f32>(0.02, 0.08, 0.3), depth);
-  
-  // Animated waves
-  let wave1 = sin(uv.x * 20.0 + time * 1.5) * 0.008;
-  let wave2 = sin(uv.x * 35.0 - time * 2.0) * 0.004;
-  let wave3 = sin(uv.x * 8.0 + time * 0.8) * 0.012;
+
+  // Ocean light attenuation: red fades fastest, blue penetrates deepest
+  // Blue 450nm: 0.02/m, Green 550nm: 0.05/m, Red 650nm: 0.3/m
+  let waterDepth = max(0.0, (uv.y - waterY) * 12.0 * scale);
+  let attenuation = exp(-waterDepth * vec3<f32>(0.3, 0.05, 0.02));
+
+  // Depth color shift: surface = bright cyan/white, deep = green-blue, abyss = dark blue/black
+  let surfaceColor = vec3<f32>(0.9, 1.0, 1.0);
+  let midColor = vec3<f32>(0.1, 0.5, 0.7);
+  let deepColor = vec3<f32>(0.02, 0.08, 0.25);
+  let depthPhase = clamp(waterDepth * 0.5, 0.0, 1.0);
+  let baseWater = mix(surfaceColor, midColor, depthPhase);
+  let baseWater2 = mix(baseWater, deepColor, depthPhase * depthPhase);
+
+  // Apply scientific attenuation
+  var color = baseWater2 * attenuation * inWater;
+
+  // Bass-driven wave surge
+  let surge = bass * 0.02;
+
+  // Animated waves with surge
+  let wave1 = sin(uv.x * 20.0 + time * 1.5) * (0.008 + surge);
+  let wave2 = sin(uv.x * 35.0 - time * 2.0) * (0.004 + surge * 0.5);
+  let wave3 = sin(uv.x * 8.0 + time * 0.8) * (0.012 + surge * 0.3);
   let surfaceLine = waterY + wave1 + wave2 + wave3;
   let nearSurface = smoothstep(0.04, 0.0, abs(uv.y - surfaceLine));
-  
+
   // Bioluminescent sparkles
   var sparkle = pow(noise2d(vec2<f32>(uv.x * 50.0 * scale, uv.y * 30.0 - time * 0.5)), 8.0);
   sparkle += pow(noise2d(vec2<f32>(uv.x * 80.0 * scale + 100.0, uv.y * 50.0 + time * 0.3)), 10.0) * 0.5;
-  
-  // Mouse ripple
+
+  // Mouse ripple disturbs water surface
   var mouseRipple: f32 = 0.0;
   if (mouseDown > 0.5) {
     let md = length(uv - mouseNorm);
     mouseRipple = sin(md * 60.0 - time * 8.0) * exp(-md * 8.0) * 0.5;
     mouseRipple = max(mouseRipple, 0.0);
   }
-  
+
+  // Coral fluorescence = vec3(1.0, 0.3, 0.6) * treble
+  let coralFluor = vec3<f32>(1.0, 0.3, 0.6) * treble * 2.0;
+  let coralGlow = pow(noise2d(vec2<f32>(uv.x * 30.0 + 50.0, uv.y * 25.0 - time * 0.2)), 4.0) * coralFluor;
+
   // Bioluminescent color
   let bioColor = electricPalette(uv.x * 3.0 + time * 0.1 + colorShift) * 2.0;
   let bioGlow = sparkle * intensity * 3.0 + mouseRipple * intensity;
-  
-  var color = baseWater * inWater;
+
   color += nearSurface * vec3<f32>(0.3, 0.7, 1.0) * 0.6;
   color += bioColor * bioGlow * inWater;
   color += vec3<f32>(0.2, 0.8, 1.0) * nearSurface * 0.8;
-  
+  color += coralGlow * inWater;
+
   // Reflection band
   let reflect = smoothstep(surfaceLine + 0.01, surfaceLine - 0.01, uv.y);
   color += vec3<f32>(0.4, 0.9, 1.0) * reflect * 0.15;
-  
+
   return color;
 }
 
@@ -288,8 +315,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var i: i32 = 0; i < 5; i = i + 1) {
     let bandY = 0.55 + f32(i) * 0.08 + sin(t * 0.2 + f32(i)) * 0.03;
     let width = 0.04 + f32(i) * 0.005;
-    let band = auroraBand(uvAspect.x, uvAspect.y, bandY, width, t, colorShift + f32(i) * 0.2);
-    color += band * intensity;
+    let band = auroraBand(uvAspect.x, uvAspect.y, bandY, width, t, audioColor + f32(i) * 0.2);
+    color += band * audioIntensity;
   }
 
   // ---- STARS ---- (upper portion only)
@@ -311,7 +338,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dune = fbm(vec2<f32>(uvAspect.x * 8.0, uv.y * 4.0) + t * 0.02, 3) * 0.03;
     let groundH = groundY + dune;
     let onGround = smoothstep(groundH + 0.01, groundH - 0.01, uv.y);
-    
+
     let sandColor = mix(
       vec3<f32>(0.9, 0.4, 0.2),
       vec3<f32>(1.0, 0.7, 0.3),
@@ -321,30 +348,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // ---- PALM TREES ----
-  let sway = sin(t * 0.8) * 0.015 * intensity;
+  let sway = sin(t * 0.8) * 0.015 * audioIntensity;
   let treeScale = 0.8 + scale * 0.4;
-  
+
   let tree1 = palmTree(uvAspect, 0.15, time, 0.015, treeScale);
   color += tree1;
-  
+
   let tree2 = palmTree(uvAspect, 0.82, time + 1.0, 0.012, treeScale * 0.85);
   color += tree2;
-  
+
   let tree3 = palmTree(uvAspect, 0.5, time + 2.5, 0.018, treeScale * 0.65);
   color += tree3;
 
   // ---- NEON FLOWERS ----
   let flower1 = neonFlower(uvAspect, vec2<f32>(0.25, 0.28), time, 6, 1.2);
   color += flower1;
-  
+
   let flower2 = neonFlower(uvAspect, vec2<f32>(0.7, 0.26), time + 1.0, 8, 1.0);
   color += flower2;
-  
+
   let flower3 = neonFlower(uvAspect, vec2<f32>(0.45, 0.24), time + 2.0, 5, 0.8);
   color += flower3;
 
   // ---- BIOLUMINESCENT WATER ----
-  let water = bioWater(uvAspect, time, mouseNorm, mouseDown, intensity, scale, colorShift);
+  let water = bioWater(uvAspect, time, mouseNorm, mouseDown, audioIntensity, scale, audioColor, bass, treble);
   color += water;
 
   // ---- FLOATING PARTICLES ----
@@ -354,18 +381,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pPos = vec2<f32>(px * aspect, py);
     let pd = length(vec2<f32>(uvAspect.x, uv.y) - pPos);
     let particle = exp(-pd * pd / 0.0003) * (sin(t * 3.0 + f32(i)) * 0.5 + 0.5);
-    let pColor = electricPalette(f32(i) * 0.1 + t * 0.05 + colorShift);
-    color += pColor * particle * 0.8 * intensity;
+    let pColor = electricPalette(f32(i) * 0.1 + t * 0.05 + audioColor);
+    color += pColor * particle * 0.8 * audioIntensity;
   }
+
+  // ---- TEMPORAL FEEDBACK ----
+  let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+  color = mix(color, max(color, prev * 0.9), 0.25);
 
   // ---- GLOBAL POST ----
   // Saturation boost
   let lum = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-  color = mix(vec3<f32>(lum), color, 1.3 + intensity * 0.3);
-  
-  // Tone map
-  color = max(color, vec3<f32>(0.0));
-  color = color / (1.0 + color * 0.15);
+  color = mix(vec3<f32>(lum), color, 1.3 + audioIntensity * 0.3);
 
-  textureStore(writeTexture, pixel, vec4<f32>(color, 0.85));
+  // Chromatic aberration
+  let caStr = 0.003 * (1.0 + bass);
+  color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+  // ACES tone mapping
+  color = acesToneMap(color * 1.1);
+
+  // Semantic alpha
+  let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+
+  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
 }

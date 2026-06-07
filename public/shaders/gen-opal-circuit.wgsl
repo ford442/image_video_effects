@@ -37,6 +37,11 @@ fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+  let k = select(release, attack, bass > prev);
+  return mix(prev, bass, k);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -55,6 +60,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(gid.xy);
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
+
+  // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
+  let prevBass = extraBuffer[0];
+  let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
+  extraBuffer[0] = smoothBass;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
@@ -79,12 +89,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let vias = exp(-dot(gl, gl) * 60.0) * step(0.7, rnd);
   let traces = max(max(hLine, vLine), vias);
 
-  let signal = 0.5 + 0.5 * sin(time * pulseRate * (1.0 + bass * 0.8) + (gc.x + gc.y) * 0.7);
+  let signal = 0.5 + 0.5 * sin(time * pulseRate * (1.0 + smoothBass * 0.8) + (gc.x + gc.y) * 0.7);
 
   // Chromatic opal: each signal phase gets shifted hue
   let opalR = 0.5 + 0.5 * sin(signal * 6.28318 + 0.0 + mids);
-  let opalG = 0.5 + 0.5 * sin(signal * 6.28318 + 2.1 + treble + bass * 0.1);
-  let opalB = 0.5 + 0.5 * sin(signal * 6.28318 + 4.2 + bass + mids * 0.05);
+  let opalG = 0.5 + 0.5 * sin(signal * 6.28318 + 2.1 + treble + smoothBass * 0.1);
+  let opalB = 0.5 + 0.5 * sin(signal * 6.28318 + 4.2 + smoothBass + mids * 0.05);
 
   var color = vec3<f32>(0.02, 0.02, 0.03);
   color = color + vec3<f32>(opalR * 1.1, opalG, opalB * 0.95) * traces * iridescence;
@@ -92,7 +102,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Temporal circuit persistence: signal echoes through traces
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  color = mix(color, prev.rgb * 0.92, 0.02 + bass * 0.01);
+  color = mix(color, prev.rgb * 0.92, 0.02 + smoothBass * 0.01);
 
   let presence = sat(traces * 0.9 + vias * 0.5);
   let alpha = sat(0.08 + presence * 0.92);

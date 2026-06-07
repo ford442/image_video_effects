@@ -41,6 +41,11 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
   return vec2<f32>(hash21(p), hash21(p + vec2<f32>(31.2, 13.6)));
 }
 
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+  let k = select(release, attack, bass > prev);
+  return mix(prev, bass, k);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -59,6 +64,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(gid.xy);
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
+
+  // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
+  let prevBass = extraBuffer[0];
+  let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
+  extraBuffer[0] = smoothBass;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
@@ -75,14 +85,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let flakePos = rnd - 0.5 + vec2<f32>(mouse.x * 0.35, 0.0);
   let d = length(local - flakePos * 0.9);
 
-  let flake = exp(-d * d * (40.0 + bass * 30.0));
+  let flake = exp(-d * d * (40.0 + smoothBass * 30.0));
   let trail = exp(-(local.x - flakePos.x) * (local.x - flakePos.x) * 130.0) * sat(0.45 - (local.y - flakePos.y)) * streak;
   let twinkle = 0.5 + 0.5 * sin(time * (8.0 + treble * 26.0) + rnd.x * 20.0);
 
   // Chromatic snowfall: each flake gets a hue, trails are shifted
   let hue = rnd.x + time * 0.03 + mids * 0.15;
   let r = 0.5 + 0.5 * sin(6.28318 * (hue + 0.0 + treble * 0.05));
-  let g = 0.5 + 0.5 * sin(6.28318 * (hue + 0.33 + bass * 0.03));
+  let g = 0.5 + 0.5 * sin(6.28318 * (hue + 0.33 + smoothBass * 0.03));
   let b = 0.5 + 0.5 * sin(6.28318 * (hue + 0.66 + mids * 0.04));
 
   var color = vec3<f32>(0.01, 0.02, 0.05);
@@ -91,7 +101,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Temporal snowfall persistence: streaks accumulate
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  color = mix(color, prev.rgb * 0.92, trail * 0.08 + bass * 0.01);
+  color = mix(color, prev.rgb * 0.92, trail * 0.08 + smoothBass * 0.01);
 
   let presence = sat(flake * 0.95 + trail * 0.6);
   let alpha = sat(0.06 + presence * 0.94);

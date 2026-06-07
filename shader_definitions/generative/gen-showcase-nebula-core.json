@@ -3,12 +3,12 @@
   "name": "Nebula Core",
   "category": "generative",
   "url": "shaders/gen-showcase-nebula-core.wgsl",
-  "description": "Deep-space nebula with organic plasma clouds. Mouse becomes a gravity well that pulls the nebula. Audio-reactive: bass creates shockwave rings, treble adds star-like sparkles, mids control rotation. Showcase-optimized for 12-second rotation cycles.",
+  "description": "Deep-space nebula with organic plasma clouds enriched by Wolfram Alpha Hydrogen Balmer Series astrophysics data. H-alpha dominates core, H-beta fills mid regions. Bass drives ionization front expansion. Mouse seeds new star formation.",
   "features": [
-    "audio-reactive",
-    "generative",
-    "mouse-driven",
+    "upgraded-rgba",
     "temporal",
+    "audio-reactive",
+    "mouse-driven",
     "chromatic",
     "showcase"
   ],
@@ -56,6 +56,8 @@
     "temporal",
     "chromatic",
     "abstract",
-    "atmospheric"
+    "atmospheric",
+    "balmer-series",
+    "astrophysics"
   ]
 }

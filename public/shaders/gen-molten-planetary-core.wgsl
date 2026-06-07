@@ -30,11 +30,6 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn aces(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
 fn hash21(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
   p3 += dot(p3, p3.yzx + 33.33);
@@ -159,10 +154,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rim = smoothstep(sphereR - 0.05, sphereR + 0.0, r) * smoothstep(sphereR + 0.12, sphereR - 0.0, r);
   col += vec3<f32>(0.9, 0.3, 0.1) * rim * (1.0 + bass * 0.4);
 
-  col = aces(col);
+  col = acesToneMap(col);
   let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(onSphere * 0.9 + rim * 0.1, 0.0, 1.0);
   let depth = clamp(nz * onSphere, 0.0, 1.0);
+
+  // Chromatic aberration
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
   let finalColor = vec4<f32>(acesToneMap(col * 1.1), alpha);
   textureStore(writeTexture,      coord, finalColor);

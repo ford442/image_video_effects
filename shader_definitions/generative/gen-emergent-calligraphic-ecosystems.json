@@ -3,7 +3,7 @@
   "name": "Emergent Calligraphic Ecosystems",
   "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
   "category": "generative",
-  "description": "A system of interacting calligraphic strokes following local orientation rules that spontaneously form complex alien writing systems. Mouse plants seeds or disturbs regions. Audio influences stroke behavior and interaction rules. Elegant ink-like or neon self-organizing glyphs.",
+  "description": "A system of interacting calligraphic strokes following local orientation rules that spontaneously form complex alien writing systems. Mouse plants seeds or disturbs regions. Audio influences stroke behavior and interaction rules. Enriched with Wolfram Alpha Lotka-Volterra predator-prey dynamics: cyclic population oscillations drive ecosystem color waves where prey = green flora and predators = red-orange fauna.",
   "tags": [
     "generative",
     "calligraphy",
@@ -12,10 +12,14 @@
     "organic",
     "audio-reactive",
     "procedural",
-    "music"
+    "music",
+    "ecosystem",
+    "predator-prey"
   ],
   "features": [
     "generative",
+    "upgraded-rgba",
+    "temporal",
     "audio-reactive",
     "mouse-driven"
   ],

@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chrono-Mycelial Tapestry
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
@@ -139,6 +139,20 @@ fn bassEnv(prev: f32, current: f32, attack: f32, release: f32) -> f32 {
     return mix(prev, current, release);
 }
 
+// ═══ ACES Tone Mapping ═══
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 0.15 + 0.05) + 0.004;
+  let b = x * (x * 0.15 + 0.50) + 0.06;
+  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══ Fick's law nutrient diffusion ═══
+// Fick's law: J = -D∇c, hyphal growth ~100-1000 μm/h
+fn nutrientDiffusion(dist: f32, time: f32) -> f32 {
+    let D = 0.5;
+    return exp(-dist * dist / (4.0 * D * time));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
@@ -241,10 +255,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sporeBurst = mouseInfluence * (0.5 + treble * 0.5);
     col += vec3<f32>(0.8, 0.7, 0.3) * sporeBurst * 0.3;
 
+    // Apply nutrient diffusion from mouse (Fick's law)
+    let diffusion = nutrientDiffusion(mouseDist, time * 0.1 + 0.1);
+    col += vec3<f32>(0.6, 0.5, 0.2) * diffusion * smoothBass * 0.2;
+
     // Temporal feedback: blend with previous frame for persistence
     let prev = textureLoad(dataTextureC, coord, 0).rgb;
     let decayRate = 0.92 + temporalDepth * 0.05;
     col = max(col, prev * decayRate);
+
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + smoothBass) + ancient.x * 0.001;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+    // ACES tone mapping
+    col = acesToneMap(col);
 
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.6;

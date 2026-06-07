@@ -1,9 +1,14 @@
 {
-  "timestamp": "2026-04-17T04:27:14.128304+00:00",
-  "total": 713,
-  "valid": 713,
+  "timestamp": "2026-06-07T04:44:57.535010+00:00",
+  "total": 1217,
+  "valid": 1217,
   "invalid": 0,
   "shaders": [
+    {
+      "file": "public/shaders/4d-projection-dream-weavers.wgsl",
+      "valid": true,
+      "errors": []
+    },
     {
       "file": "public/shaders/_hash_library.wgsl",
       "valid": true,
@@ -20,7 +25,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/acoustic-string-theory.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/adaptive-mosaic.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/aero-chromatics-prismatic.wgsl",
       "valid": true,
       "errors": []
     },
@@ -30,7 +45,92 @@
       "errors": []
     },
     {
+      "file": "public/shaders/aerogel-smoke-hdr.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/aerogel-smoke.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-aurora-bands.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-crystal-growth-phase.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-depth-fog-volumetric.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-em-field-simulation.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-erosion-terrain.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-fire-temperature.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-fluid-simulation-paint.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-hdr-bloom-chain.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-luminance-history.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-multi-layer-glass.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-multi-state-ecosystem.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-paint-thickness.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-reaction-diffusion-rgba.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-spectral-decompose.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alpha-watercolor-wetness.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/alucinate-hdr.wgsl",
       "valid": true,
       "errors": []
     },
@@ -40,12 +140,42 @@
       "errors": []
     },
     {
+      "file": "public/shaders/ambient-liquid-coupled.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/ambient-liquid.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/anaglyph-3d.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/analog-film-degrade.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/anamorphic-caustic-flare.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/anamorphic-flare-iridescence.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/anamorphic-flare.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/anisotropic-kuwahara-nlm.wgsl",
       "valid": true,
       "errors": []
     },
@@ -61,6 +191,11 @@
     },
     {
       "file": "public/shaders/ascii-decode.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/ascii-flow-structure.wgsl",
       "valid": true,
       "errors": []
     },
@@ -95,6 +230,16 @@
       "errors": []
     },
     {
+      "file": "public/shaders/astral-kaleidoscope-julia.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/astral-kaleidoscope-morph.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/astral-kaleidoscope.wgsl",
       "valid": true,
       "errors": []
@@ -105,7 +250,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/atmos-fog-volumetric.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/atmos_volumetric_fog.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/audio-reactive-pyramid.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/audio-reactive-rgb-dispersion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/audio-reactive-temporal-decay.wgsl",
       "valid": true,
       "errors": []
     },
@@ -115,7 +280,32 @@
       "errors": []
     },
     {
+      "file": "public/shaders/audio-voronoi-gabor.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/audio_geometric_pulse.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/aurora-borealis-iridescence.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/aurora-borealis-loom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/aurora-curtain.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/aurora-rift-2-iridescence.wgsl",
       "valid": true,
       "errors": []
     },
@@ -136,6 +326,11 @@
     },
     {
       "file": "public/shaders/aurora-rift-gemini.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/aurora-rift-iridescence.wgsl",
       "valid": true,
       "errors": []
     },
@@ -165,12 +360,32 @@
       "errors": []
     },
     {
+      "file": "public/shaders/bio-lenia-rgba.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/bio-touch-em.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/bio-touch.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/bio_lenia_continuous.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/bioluminescent-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/bioluminescent-bloom.wgsl",
       "valid": true,
       "errors": []
     },
@@ -185,6 +400,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/bismuth-crystal-growth.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/bismuth-crystallizer.wgsl",
       "valid": true,
       "errors": []
@@ -195,7 +415,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/black-hole-iridescence.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/black-hole.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/block-distort-em.wgsl",
       "valid": true,
       "errors": []
     },
@@ -205,7 +435,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/blueprint-reveal-guided.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/blueprint-reveal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/boids-rgba-ecosystem.wgsl",
       "valid": true,
       "errors": []
     },
@@ -215,12 +455,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/breathing-kaleidoscope-morph.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/breathing-kaleidoscope.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/brush-strokes.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/bubble-chamber.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/bubble-lens-coupled.wgsl",
       "valid": true,
       "errors": []
     },
@@ -235,6 +490,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/byte-mosh-explosion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/byte-mosh.wgsl",
       "valid": true,
       "errors": []
@@ -245,7 +505,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/cellular-automata-rgba.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/charcoal-rub-diffusion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/charcoal-rub.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/chroma-depth-tunnel-prismatic.wgsl",
       "valid": true,
       "errors": []
     },
@@ -255,7 +530,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/chroma-kinetic-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/chroma-kinetic.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/chroma-lens-iridescence.wgsl",
       "valid": true,
       "errors": []
     },
@@ -270,7 +555,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/chroma-threads-gabor.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/chroma-threads.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/chroma-vortex-coupled.wgsl",
       "valid": true,
       "errors": []
     },
@@ -280,7 +575,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/chromatic-crawler-structure.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/chromatic-crawler.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/chromatic-focus-coupled.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/chromatic-focus-guided.wgsl",
       "valid": true,
       "errors": []
     },
@@ -300,12 +610,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/chromatic-folds-bilateral.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/chromatic-folds-gemini.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/chromatic-folds.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/chromatic-ghost-tunnel.wgsl",
       "valid": true,
       "errors": []
     },
@@ -335,6 +655,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/chromatic-reaction-diffusion-rgba.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/chromatic-reaction-diffusion.wgsl",
       "valid": true,
       "errors": []
@@ -355,12 +680,37 @@
       "errors": []
     },
     {
+      "file": "public/shaders/chrono-luma-slit-scan.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/chrono-slit-scan.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/chrono-voronoi-mycelium.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/chronos-brush-explosion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/chronos-brush.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/cinematic-flare.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/circuit-breaker-explosion.wgsl",
       "valid": true,
       "errors": []
     },
@@ -371,6 +721,11 @@
     },
     {
       "file": "public/shaders/circular-pixelate.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/cmyk-halftone-explosion.wgsl",
       "valid": true,
       "errors": []
     },
@@ -390,6 +745,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/color-channel-weave.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/complex-exponent-warp.wgsl",
       "valid": true,
       "errors": []
@@ -405,7 +765,97 @@
       "errors": []
     },
     {
+      "file": "public/shaders/conv-anisotropic-diffusion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-bilateral-dream.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-bilateral-grid-splat.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-difference-of-gaussians-cascade.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-fractal-kernel.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-frequency-domain-notch.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-gabor-texture-analyzer.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-guided-filter-depth.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-guided-video-filter.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-morphological-erosion-dilation.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-non-local-means.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-reaction-convolution.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-spiral-blur.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-steerable-pyramid.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-stochastic-stipple.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/conv-structure-tensor-flow.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/coral-growth.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/cosmic-flow.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/cosmic-jellyfish-coupled.wgsl",
       "valid": true,
       "errors": []
     },
@@ -415,7 +865,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/cosmic-web-structure.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/cosmic-web.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/cross-conv-mouse-bilateral.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/cross-mouse-spec-dispersion-lens.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/cross-spec-alpha-spectral-bloom.wgsl",
       "valid": true,
       "errors": []
     },
@@ -440,6 +910,16 @@
       "errors": []
     },
     {
+      "file": "public/shaders/crt-scanline-damage.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/crt-tv-stipple.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/crt-tv.wgsl",
       "valid": true,
       "errors": []
@@ -460,12 +940,42 @@
       "errors": []
     },
     {
+      "file": "public/shaders/crystal-illuminator-iridescence.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/crystal-illuminator.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/crystal-mosaic.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/crystal-refraction.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/crystalline-fracture.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/crystalline-shatter.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/crystalline-veins.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/cursor-aura-explosion.wgsl",
       "valid": true,
       "errors": []
     },
@@ -500,6 +1010,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/cyber-lattice-bilateral.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/cyber-lattice.wgsl",
       "valid": true,
       "errors": []
@@ -515,12 +1030,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/cyber-organic-ecosystem.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/cyber-organic.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/cyber-physical-portal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/cyber-rain-em.wgsl",
       "valid": true,
       "errors": []
     },
@@ -535,7 +1060,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/cyber-ripples-coupled.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/cyber-ripples.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/cyber-scan-gabor.wgsl",
       "valid": true,
       "errors": []
     },
@@ -555,6 +1090,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/cyber-trace-structure.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/cyber-trace.wgsl",
       "valid": true,
       "errors": []
@@ -565,7 +1105,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/data-moshing-diffusion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/data-moshing.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/data-scanner-gabor.wgsl",
       "valid": true,
       "errors": []
     },
@@ -585,12 +1135,32 @@
       "errors": []
     },
     {
+      "file": "public/shaders/data-stream-corruption-hdr.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/data-stream-corruption.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/data-stream-spectral.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/data-stream-structure.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/data-stream.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/datamosh-brush-diffusion.wgsl",
       "valid": true,
       "errors": []
     },
@@ -605,12 +1175,47 @@
       "errors": []
     },
     {
+      "file": "public/shaders/deep-sea-thermal-vent.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/deep-workgroup-multi-effect-blend.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/digital-compression.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/digital-crease.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/digital-decay-rgba.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/digital-decay.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/digital-glitch-explosion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/digital-glitch-pass1.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/digital-glitch-pass2.wgsl",
       "valid": true,
       "errors": []
     },
@@ -625,6 +1230,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/digital-lens-prismatic.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/digital-lens.wgsl",
       "valid": true,
       "errors": []
@@ -635,7 +1245,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/digital-moss-rgba.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/digital-moss.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/digital-reveal-guided.wgsl",
       "valid": true,
       "errors": []
     },
@@ -646,6 +1266,11 @@
     },
     {
       "file": "public/shaders/digital-waves.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/dimension-slicer-guided.wgsl",
       "valid": true,
       "errors": []
     },
@@ -665,6 +1290,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/distortion-gravitational-prismatic.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/distortion_gravitational_lens.wgsl",
       "valid": true,
       "errors": []
@@ -675,12 +1305,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/divine-light-iridescence.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/divine-light.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/dla-crystals.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/double-exposure-hdr.wgsl",
       "valid": true,
       "errors": []
     },
@@ -700,6 +1340,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/dynamic-lens-flares-prismatic.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/dynamic-lens-flares.wgsl",
       "valid": true,
       "errors": []
@@ -715,7 +1360,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/edge-glow-mouse-em.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/edge-glow-mouse.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/elastic-chromatic-explosion.wgsl",
       "valid": true,
       "errors": []
     },
@@ -740,12 +1395,42 @@
       "errors": []
     },
     {
+      "file": "public/shaders/electric-eel-storm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/ember-drift-dissolve.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/emergent-calligraphic-weave.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/encaustic-wax-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/encaustic-wax.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/energy-shield-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/energy-shield.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/engraving-stipple-blue-noise.wgsl",
       "valid": true,
       "errors": []
     },
@@ -760,7 +1445,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/ethereal-swirl-coupled.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/ethereal-swirl.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/fabric-step-gabor.wgsl",
       "valid": true,
       "errors": []
     },
@@ -775,12 +1470,37 @@
       "errors": []
     },
     {
+      "file": "public/shaders/ferrofluid-em.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/ferrofluid-spikes.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/ferrofluid.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/fiber-optic-weave.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/film-cross-process.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/film-gate-weave.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/fire-smoke-volumetric-fog.wgsl",
       "valid": true,
       "errors": []
     },
@@ -796,6 +1516,11 @@
     },
     {
       "file": "public/shaders/flow-sort.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/fluid-grid-rgba-fluid.wgsl",
       "valid": true,
       "errors": []
     },
@@ -820,12 +1545,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/fractal-boids-field-coupled.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/fractal-boids-field.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/fractal-glass-distort-bilateral.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/fractal-glass-distort.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/fractal-ice-palace.wgsl",
       "valid": true,
       "errors": []
     },
@@ -840,12 +1580,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/fractal-noise-dissolve-nlm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/fractal-noise-dissolve.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/frost-reveal-crystal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/frost-reveal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/frosted-glass-lens-iridescence.wgsl",
       "valid": true,
       "errors": []
     },
@@ -870,7 +1625,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gamma-ray-burst-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gamma-ray-burst.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gemstone-fractures-crystal.wgsl",
       "valid": true,
       "errors": []
     },
@@ -880,7 +1645,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-3d-sierpinski-chaos.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-4d-projection-dream-weavers.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-abyssal-chrono-coral.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-abyssal-leviathan-iridescence.wgsl",
       "valid": true,
       "errors": []
     },
@@ -890,7 +1670,42 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-acid-lissajous.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-alien-flora-ecosystem.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-alien-flora.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-alpha-aurora.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-aperiodic-monotile.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-apollonian-gasket.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-art-deco-sky-prismatic.wgsl",
       "valid": true,
       "errors": []
     },
@@ -905,7 +1720,32 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-astro-orrery-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-audio-spirograph-julia.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-audio-spirograph.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-audiovisual-mandelbulb-raymarcher.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-aurora-borealis-synthesis.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-aurora-silk.wgsl",
       "valid": true,
       "errors": []
     },
@@ -915,7 +1755,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-barnsley-fern.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-belousov-zhabotinsky.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-bifurcation-diagram.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-bio-luminescent-jelly.wgsl",
       "valid": true,
       "errors": []
     },
@@ -925,12 +1780,37 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-bioluminescent-aether-jellyfish-swarm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-bioluminescent-aether-pulsar.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/gen-bioluminescent-reaction-diffusion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-biomechanical-hive-julia.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-biomechanical-hive.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-bioreactor-bloom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-bismuth-citadel-crystal.wgsl",
       "valid": true,
       "errors": []
     },
@@ -945,6 +1825,16 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-buddhabrot-aura.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-celestial-aether-seraphim-wings.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-celestial-forge.wgsl",
       "valid": true,
       "errors": []
@@ -955,7 +1845,42 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-celestial-nanite-swarm-nebula.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-celestial-prism-orchid.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-celestial-quantum-glass-dragonfly.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-celestial-weave.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-celestial-yggdrasil-matrix.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-cellular-automata-tapestry.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-chaos-game-ifs.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-chromatic-acid-drip.wgsl",
       "valid": true,
       "errors": []
     },
@@ -965,12 +1890,62 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-chromatic-singularity-loom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-chromatic-vortex.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-chromodynamic-plasma-collider.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/gen-chrono-erosion-feedback-melting.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-chrono-mycelial-tapestry.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-chrono-voronoi-mycelium.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-chronodynamic-aether-weaver-automata.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-chronos-labyrinth.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-conway-game-of-life.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-coral-reef-colony.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-cosmic-clockwork-dyson-sphere.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-cosmic-slime-mold.wgsl",
       "valid": true,
       "errors": []
     },
@@ -985,7 +1960,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-crystal-lattice-growth.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-crystalline-chrono-dyson.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-crystalline-mandala-bloom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-cyber-organic-liquid-neon-pulsar.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1000,7 +1990,82 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-cybernetic-liquid-chrome-engine.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-cycloid-bloom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-cymatic-plasma-mandalas.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-de-jong-attractor.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-depth-refracted-liquid-stained-glass.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-dla-copper-deposition.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-dmt-fractal-zoom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-dragon-curve.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-dynamic-tessellation-ornate-fractal-tiles.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-echo-dunes.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-eldritch-quantum-fractal-eye.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-eldritch-tesseract-hive-mind.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-electric-kaleidoscope-storm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-emergent-calligraphic-ecosystems.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-emergent-script-gardens.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-erosion-strata.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1010,7 +2075,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-ethereal-quantum-medusa.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-ethereal-silk-veil.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-evolutionary-cellular-gardens.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1020,7 +2100,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-fourier-epicycles.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fractal-bioluminescence-spore-network.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-fractal-clockwork.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fractal-ember-lattice.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1030,7 +2125,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-ghost-flame.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-glacial-aether-quantum-cavern.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-glass-mosaic-liquid-refraction.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-gravitational-strain.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-gravito-phononic-accretion.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1040,12 +2155,37 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-holographic-bismuth-core-reactor.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-holographic-data-core.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/gen-holographic-lens-flare-matrix.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-holographic-membrane.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-holographic-plasma-geode.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-holographic-rainbow-surface.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-hopf-fibration-fiber-bundle.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1060,12 +2200,47 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-hyper-rainbow-vortex.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-hyper-refractive-rain-matrix.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-hyperbolic-crystal-symbiosis.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-hyperbolic-tessellation.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/gen-hyperbolic-tree.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-hypnotic-vortex-tunnel.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-ifs-fractal-flame.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-inverse-mandelbrot.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-islamic-star-rose.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1080,12 +2255,77 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-klein-bottle-walk.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-koch-snowflake-storm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-kryonic-quantum-aether-fractal-core.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-langton-ant.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-lenia-2.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/gen-lichen-reaction-diffusion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-lichtenberg-storm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-liquid-crystal-hive-mind.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-liquid-neon-cyber-metropolis.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-liquid-rainbow-glass.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-lorenz-attractor.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-luminous-cauldron.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-luminous-fluid-chladni-resonator.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-magnetic-dipole-field.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1100,7 +2340,52 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-magnetic-field-warp.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-magnetic-kelp.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-magnetic-storm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-mandelbox-explorer.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-metaball-soft-body.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-micro-cosmos.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-minimal-surface-soap-iridescence.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-molten-planetary-core.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-multi-scale-evolutionary-cellular-gardens.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-murmuration-phantom.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1110,7 +2395,52 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-navier-stokes-ink.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-nebula-light-trail-swarm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-nebular-chrono-astrolabe.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-neon-acid-geometry.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-neon-cyber-mandala.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-neon-lotus.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-neon-neural-network.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-neon-plasma-biomechanical-hive.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-neon-snowfall.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-neon-tropical-paradise.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1120,7 +2450,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-neural-fractal-hdr.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-neural-fractal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-neural-network-glow-synaptic-pulse.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1135,6 +2475,71 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-neuro-kinetic-liquid-gold-lotus.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-newton-fractal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-obsidian-echo-chamber.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-opal-circuit.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-percolation-threshold.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-phase-transition-memory-weave.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-photonic-crystal-brain.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-phyllotaxis-galaxy-spiral.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-physarum-sacred-geometry.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-plasma-mandala.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-plasma-psychedelic-wormhole.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-polar-rainbow-explosion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-prism-tide.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-prismatic-aether-loom.wgsl",
       "valid": true,
       "errors": []
@@ -1145,12 +2550,67 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-prismatic-crystal-growth.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-prismatic-fractal-dunes.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/gen-prismatic-ion-cascade.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-protocell-division.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-psychedelic-layered-time-stamps.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-psychedelic-moire-flower.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-psychedelic-time-warp-kaleidoscope.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-quantum-aether-origami.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-quantum-entangled-ferrofluid-engine.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-quantum-foam-alpha.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-quantum-foam.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1165,7 +2625,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-quantum-pollen.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-quantum-superposition.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-quasicrystal-iridescence.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1175,7 +2645,62 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-radiant-chrono-glass-nautilus.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-radiant-quantum-crystalline-forge.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-rainbow-firefly-dance.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-raptor-mini-flow.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-raptor-mini.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-recursive-ancestral-terrains.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-rgb-diffraction.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-sentient-aether-flora-biosphere.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-showcase-crystalline-pulse.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-showcase-kinetic-bloom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-showcase-nebula-core.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-sierpinski-tetrahedron.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1185,7 +2710,42 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-singularity-forge-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-singularity-forge.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-solar-wind-ribbons.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-sonic-lava-flow.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-sonoluminescent-chrono-geode-matrix.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-spectral-ferrofluid.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-stable-fluids-jos-stam.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-stardust-nebula.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1196,6 +2756,16 @@
     },
     {
       "file": "public/shaders/gen-stellar-web-loom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-strange-field-flow.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-string-theory-structure.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1215,7 +2785,32 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-symbiotic-chrono-mycelium-engine.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-symbiotic-light-networks.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-temporal-motion-smear.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-thermal-rainbow-topography.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-topological-acoustic-knots.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-topological-phase-weave.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1225,7 +2820,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-torus-knot-rainbow.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-translucent-nebula.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-turing-morphogenesis.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-velocity-bloom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-verlet-cloth-wind.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1235,12 +2850,47 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-volcanic-ink.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-von-karman-vortex.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-voronoi-crystal.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/gen-vortex-cathedral.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-worley-cellular-noise.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-xeno-botanical-ecosystem.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-xeno-botanical-synth-flora.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-xeno-mycelial-resonance-web.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-zeta-function-landscape.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1365,6 +3015,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/glass-bead-curtain-iridescence.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/glass-bead-curtain.wgsl",
       "valid": true,
       "errors": []
@@ -1380,12 +3035,32 @@
       "errors": []
     },
     {
+      "file": "public/shaders/glass-refraction-prismatic.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/glass-shatter-morph.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/glass-shatter.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/glass-wall-prismatic.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/glass-wall.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/glass-wipes-coupled.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1430,12 +3105,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gravitational-lensing-nlm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gravitational-lensing.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/gravito-phononic-accretion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gravity-lens.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gravity-well-em.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1461,6 +3151,16 @@
     },
     {
       "file": "public/shaders/heat-haze-gpt52.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/heat-haze-mirage.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/heat-haze-volumetric.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1495,12 +3195,37 @@
       "errors": []
     },
     {
+      "file": "public/shaders/holographic-crystal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/holographic-edge-ripple.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/holographic-entropy-vortex.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/holographic-failure-iridescence.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/holographic-flicker.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/holographic-glitch.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/holographic-interferometry-bilateral.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1541,6 +3266,11 @@
     },
     {
       "file": "public/shaders/holographic_interference.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/honey-melt-blackbody.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1590,6 +3320,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/hybrid-spectral-decomposed.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/hybrid-spectral-sorting.wgsl",
       "valid": true,
       "errors": []
@@ -1605,12 +3340,32 @@
       "errors": []
     },
     {
+      "file": "public/shaders/hyper-space-jump-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/hyper-space-jump.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/hyper-tensor-fluid-coupled.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/hyper-tensor-fluid.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/hyperbolic-crystal-symbiosis.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/hyperbolic-dreamweaver-julia.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1625,7 +3380,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/impasto-swirl-bilateral.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/impasto-swirl.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/infinite-fractal-feedback-hdr.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1655,7 +3420,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/ink-bleed-fluid.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/ink-bleed.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/ink-diffusion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/ink-dispersion-guided.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1715,7 +3495,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/interactive-magnetic-ripple-em.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/interactive-magnetic-ripple.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/interactive-origami-coupled.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1730,7 +3520,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/interactive-pixel-wind-structure.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/interactive-pixel-wind.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/interactive-rgb-split-explosion.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1805,6 +3605,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/kimi-flock-symphony-em.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/kimi_chromatic_warp.wgsl",
       "valid": true,
       "errors": []
@@ -1870,12 +3675,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/lava-lamp-blobs.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/lenia-on-video.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/lenia.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/lens-flare-brush.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/lenticular-holographic-shift.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1920,12 +3740,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/liquid-jelly-fluid.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/liquid-jelly.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/liquid-lens.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/liquid-magnetic-ferro-em.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/liquid-metal-prismatic.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1940,12 +3775,37 @@
       "errors": []
     },
     {
+      "file": "public/shaders/liquid-oil-iridescence.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/liquid-oil.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/liquid-optimized-pass1.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/liquid-optimized-pass2.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/liquid-optimized.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/liquid-pass1.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/liquid-pass2.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1965,6 +3825,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/liquid-rainbow-prismatic.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/liquid-rainbow.wgsl",
       "valid": true,
       "errors": []
@@ -1975,12 +3840,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/liquid-smear-structure.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/liquid-smear.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/liquid-swirl.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/liquid-tensor-vortex.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2051,6 +3926,16 @@
     },
     {
       "file": "public/shaders/log-polar-droste.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/long-exposure.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/lorenz-attractor-flow.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2150,6 +4035,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/magnetic-flux-garden.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/magnetic-interference.wgsl",
       "valid": true,
       "errors": []
@@ -2185,7 +4075,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/melting-oil-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/melting-oil.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mercury-temporal-mirror.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2210,6 +4110,16 @@
       "errors": []
     },
     {
+      "file": "public/shaders/molten-gold.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/morphogenic-resonance.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/mosaic-reveal.wgsl",
       "valid": true,
       "errors": []
@@ -2225,7 +4135,62 @@
       "errors": []
     },
     {
+      "file": "public/shaders/mouse-chromatic-explosion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-electromagnetic-aurora.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-fluid-coupling.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/mouse-gravity.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-hyperbolic-navigator.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-ink-bleed.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-julia-morph.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-kaleidoscope-tunnel.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-magnetic-pixel-sand.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-mandelbrot-zoom-portal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-neural-dreamscape.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-paint-splatter.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2235,12 +4200,57 @@
       "errors": []
     },
     {
+      "file": "public/shaders/mouse-polarized-light-field.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-synesthetic-sound-paint.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-time-crystal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-voronoi-mosaic.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mouse-wormhole-lens.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/multi-fractal-compositor-lens.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/multi-fractal-compositor.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/multi-scale-evolutionary-cellular-gardens.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/multi-turing.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/mycelium-network.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/nano-assembler-crystal.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2295,6 +4305,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/neon-edge-glow.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/neon-edge-pulse.wgsl",
       "valid": true,
       "errors": []
@@ -2311,6 +4326,11 @@
     },
     {
       "file": "public/shaders/neon-edges.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/neon-fern-garden.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2335,6 +4355,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/neon-pulse-dissolve.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/neon-pulse-edge.wgsl",
       "valid": true,
       "errors": []
@@ -2346,6 +4371,11 @@
     },
     {
       "file": "public/shaders/neon-pulse.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/neon-quantum-lattice.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2375,7 +4405,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/neural-mandala.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/neural-nexus.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/neural-raymarcher-gabor.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2390,12 +4430,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/neural-synapse-web.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/night-vision-scope.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/oil-slick-iridescence.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/optical-feedback.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/optical-flow-tracer.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2416,6 +4471,11 @@
     },
     {
       "file": "public/shaders/page-curl-interactive.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/painterly-oil-bilateral.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2450,6 +4510,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/particle-dreams-hdr.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/particle-swarm.wgsl",
       "valid": true,
       "errors": []
@@ -2465,7 +4530,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/phantom-lag-history.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/phantom-lag.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/phase-memory-weave.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2481,6 +4556,16 @@
     },
     {
       "file": "public/shaders/phosphor-magnifier.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/phosphorescent-jellyfish.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/photonic-caustics-iridescence.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2590,6 +4675,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/pixel-tornado.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/pixel-wind-chimes.wgsl",
       "valid": true,
       "errors": []
@@ -2601,6 +4691,16 @@
     },
     {
       "file": "public/shaders/pixelation-drift.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/plasma-jet-stream.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/plasma-orb.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2640,6 +4740,16 @@
       "errors": []
     },
     {
+      "file": "public/shaders/porcelain-fracture-glow.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/posterize-neon-edges.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/pp-bloom.wgsl",
       "valid": true,
       "errors": []
@@ -2675,6 +4785,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/predator-prey-rgba.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/predator-prey.wgsl",
       "valid": true,
       "errors": []
@@ -2705,6 +4820,21 @@
       "errors": []
     },
     {
+      "file": "public/shaders/pyramid-bandprocess-pass2.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/pyramid-composite-pass3.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/pyramid-downsample-pass1.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/quad-mirror.wgsl",
       "valid": true,
       "errors": []
@@ -2730,6 +4860,16 @@
       "errors": []
     },
     {
+      "file": "public/shaders/quantum-foam-bilateral.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/quantum-foam-lattice.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/quantum-foam-pass1.wgsl",
       "valid": true,
       "errors": []
@@ -2751,6 +4891,11 @@
     },
     {
       "file": "public/shaders/quantum-fractal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/quantum-ghost.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2845,6 +4990,21 @@
       "errors": []
     },
     {
+      "file": "public/shaders/rd-on-video-pass1.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/rd-on-video-pass2.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/rd-on-video-pass3.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/reaction-diffusion.wgsl",
       "valid": true,
       "errors": []
@@ -2865,6 +5025,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/recursive-ancestral-terrains.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/refraction-shards.wgsl",
       "valid": true,
       "errors": []
@@ -2881,6 +5046,16 @@
     },
     {
       "file": "public/shaders/retro-gameboy.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/retro-phosphor-hdr.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/retro-phosphor-stipple.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2955,12 +5130,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/ripple-bloom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/rorschach-inkblot.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/rotoscope-ink.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/sacred-geometry-torus.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/sand-dunes.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2976,6 +5166,11 @@
     },
     {
       "file": "public/shaders/scan-slice.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/scanline-cyberpunk.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3025,7 +5220,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/silk-flow-advection.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/sim-decay-system-rgba.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/sim-decay-system.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/sim-fluid-feedback-coupled.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3045,7 +5255,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/sim-heat-haze-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/sim-heat-haze-field.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/sim-ink-diffusion-rgba.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3055,7 +5275,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/sim-sand-dunes-rgba.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/sim-sand-dunes.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/sim-slime-mold-growth-em.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3065,7 +5295,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/sim-smoke-trails-thermal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/sim-smoke-trails.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/sim-volumetric-fake-em.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3095,12 +5335,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/slime-mold-on-video.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/slinky-distort.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/snow.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/soft-vignette-bloom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/solar-flare-cascade.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3130,6 +5385,86 @@
       "errors": []
     },
     {
+      "file": "public/shaders/spatio-temporal-3d-conv.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-analytic-noise-flow.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-bicubic-crystal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-blackbody-thermal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-blue-noise-stipple.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-cooperative-edge-linking.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-distance-field-text.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-histogram-equalize.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-hypercube-projection.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-importance-sampled-bokeh.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-iridescence-engine.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-prismatic-dispersion.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-quaternion-julia.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-runge-kutta-advection.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-spherical-harmonics-light.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spec-temporal-path-tracer.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/spectral-bleed-confine.wgsl",
       "valid": true,
       "errors": []
@@ -3151,6 +5486,11 @@
     },
     {
       "file": "public/shaders/spectral-flow-sorting.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spectral-flow-structure.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3186,6 +5526,16 @@
     },
     {
       "file": "public/shaders/spectral-waves.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spectrogram-displace-pass1.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/spectrogram-displace-pass2.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3230,6 +5580,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/spore-galaxy.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/static-reveal.wgsl",
       "valid": true,
       "errors": []
@@ -3240,12 +5595,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/steamy-glass-volumetric.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/steamy-glass.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/stella-orbit.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/stellar-plasma-blackbody.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3275,12 +5640,32 @@
       "errors": []
     },
     {
+      "file": "public/shaders/supernova-core.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/supernova-remnant.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/swirling-void.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/symbiotic-light-propagation-networks.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/synthwave-grid-warp.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/temporal-decay-multiresolution.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3291,6 +5676,41 @@
     },
     {
       "file": "public/shaders/temporal-echo.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/temporal-feedback-zoom-tracer.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/temporal-frequency-decomposition.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/temporal-halation-freeze.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/temporal-layered-time-stamps.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/temporal-phosphor-burn-motion-adaptive.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/temporal-phosphor-burn.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/temporal-rgb-ghost.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3310,7 +5730,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/temporal-slit-scan.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/temporal_echo.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/tensor-flow-morphological.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3335,7 +5765,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/thermal-touch-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/thermal-touch.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/thermal-vision-blackbody.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3365,6 +5805,26 @@
       "errors": []
     },
     {
+      "file": "public/shaders/tone-histogram-apply.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/tone-histogram.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/topological-acoustic-knots.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/tornado-vortex.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/triangle-mosaic.wgsl",
       "valid": true,
       "errors": []
@@ -3375,12 +5835,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/vaporwave-horizon-prismatic.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/vaporwave-horizon.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/velocity-field-paint.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/velvet-scatter-bloom.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3400,7 +5870,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/vhs-chroma-bleed.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/vhs-jog.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/vhs-tracking-bilateral.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3426,6 +5906,11 @@
     },
     {
       "file": "public/shaders/virtual-lens.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/viscous-drag-bilateral.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3505,7 +5990,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/vortex-pass1.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/vortex-pass2.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/vortex-prism.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/vortex-warp-coupled.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3530,7 +6030,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/warp-drive-blackbody.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/warp_drive.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/watercolor-bloom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/wave-equation-rgba-fluid.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3566,6 +6081,11 @@
     },
     {
       "file": "public/shaders/zipper-reveal.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/zoom-burst.wgsl",
       "valid": true,
       "errors": []
     }

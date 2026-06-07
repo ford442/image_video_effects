@@ -1,8 +1,18 @@
-// ----------------------------------------------------------------
-// Ethereal-Aurora Ghost-Orchid
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Ethereal-Aurora Ghost-Orchid
+//  Category: generative
+//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
+//  Complexity: High
+//  Enrichment: Aurora Borealis Physics (Wolfram Alpha)
+//    - Altitude: 80-640 km (most intense at 100-300 km)
+//    - Green color (557.7 nm): oxygen at 100-240 km
+//    - Red color (630.0 nm): oxygen above 240 km
+//    - Purple/blue (427.8 nm): nitrogen at lower altitudes
+//    - Solar wind particles spiral along Earth's magnetic field lines
+//  Created: 2026-06-07
+//  By: Kimi Shader Agent
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,7 +26,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
     config: vec4<f32>,
@@ -26,6 +35,11 @@ struct Uniforms {
 };
 
 const PI: f32 = 3.14159265359;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash1(n: f32) -> f32 {
     return fract(sin(n) * 43758.5453123);
@@ -73,15 +87,21 @@ fn snoise(x: vec3<f32>) -> f32 {
     return mix(res1, res2, f_smooth.z) * 2.0 - 1.0;
 }
 
-fn map(p_in: vec3<f32>, time: f32, audio_react: f32, mouse_pos: vec2<f32>) -> f32 {
+fn map(p_in: vec3<f32>, time: f32, audio_react: f32, mouse_pos: vec2<f32>, bass: f32) -> f32 {
     var p = p_in;
 
-    // Mouse Interaction: Gravity well
+    // Mouse Interaction: Magnetic field disturbance
     let mouse_world = vec3<f32>((mouse_pos.x - 0.5) * 5.0, (mouse_pos.y - 0.5) * -5.0, 0.0);
     let dist_mouse = length(p.xy - mouse_world.xy);
     let pull = smoothstep(3.0, 0.0, dist_mouse);
-    p.x -= pull * (mouse_world.x - p.x) * 0.5;
-    p.y -= pull * (mouse_world.y - p.y) * 0.5;
+    // Magnetic field line spiral distortion
+    let spiral = sin(atan2(p.y - mouse_world.y, p.x - mouse_world.x) * 3.0 + dist_mouse * 2.0 - time * 2.0);
+    p.x -= pull * (mouse_world.x - p.x) * 0.5 + spiral * pull * 0.3;
+    p.y -= pull * (mouse_world.y - p.y) * 0.5 + spiral * pull * 0.3;
+
+    // Solar wind particle density driven by bass
+    let solarWind = 1.0 + bass * 2.0;
+    p.z += sin(p.x * solarWind + time) * 0.05 * pull;
 
     // Stem
     let stem_d = length(p.xy) - 0.05 + p.z * 0.01;
@@ -96,7 +116,7 @@ fn map(p_in: vec3<f32>, time: f32, audio_react: f32, mouse_pos: vec2<f32>) -> f3
         q.x = q_xy.x;
         q.y = q_xy.y;
 
-        q.y -= 0.5; // Offset from center
+        q.y -= 0.5;
 
         // Bend
         q.z -= q.y * q.y * 0.5;
@@ -134,10 +154,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let audio = u.config.y;
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
 
-    let petal_complex = u.zoom_params.x; // Petal Complexity
-    let aurora_int = u.zoom_params.y; // Aurora Intensity
-    let audio_react = u.zoom_params.z * audio; // Audio Reactivity
-    let pollen_dens = u.zoom_params.w; // Pollen Density
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let petal_complex = u.zoom_params.x;
+    let aurora_int = u.zoom_params.y;
+    let audio_react = u.zoom_params.z * audio;
+    let pollen_dens = u.zoom_params.w;
 
     var ro = vec3<f32>(0.0, 0.0, -5.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
@@ -153,14 +177,40 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Raymarching
     for (var i = 0; i < 64; i += 1) {
         let p = ro + rd * t;
-        d = map(p, time, audio_react, mouse);
+        d = map(p, time, audio_react, mouse, bass);
 
         if (d < 0.01) {
-            // Volumetric aurora emission
+            // Altitude-based aurora emission physics
+            let altitude = clamp(p.y * 0.5 + 0.5, 0.0, 1.0);
+
+            // Green (557.7 nm): oxygen at lower altitude (100-240 km)
+            let greenOxygen = vec3<f32>(0.2, 1.0, 0.3);
+            // Red (630.0 nm): oxygen above 240 km
+            let redOxygen = vec3<f32>(1.0, 0.1, 0.1);
+            // Purple/blue (427.8 nm): nitrogen at lower altitudes
+            let blueNitrogen = vec3<f32>(0.4, 0.2, 1.0);
+
             let noise_val = snoise(p * petal_complex + vec3<f32>(0.0, -time, 0.0));
-            let aurora_col = mix(vec3<f32>(0.0, 0.8, 1.0), vec3<f32>(0.8, 0.0, 1.0), noise_val * 0.5 + 0.5);
-            emission += aurora_col * 0.05 * aurora_int / (1.0 + abs(d) * 10.0);
-            t += 0.02; // Step inside
+
+            // Altitude-based color gradient
+            var aurora_col: vec3<f32>;
+            if (altitude < 0.4) {
+                aurora_col = mix(blueNitrogen, greenOxygen, altitude / 0.4);
+            } else if (altitude < 0.7) {
+                aurora_col = mix(greenOxygen, redOxygen, (altitude - 0.4) / 0.3);
+            } else {
+                aurora_col = redOxygen;
+            }
+
+            // Magnetic field line curvature modulates color
+            let fieldLine = sin(p.x * PI * 3.0) * 0.5 + 0.5;
+            aurora_col = mix(aurora_col, aurora_col * vec3<f32>(1.2, 0.9, 1.1), fieldLine * 0.3);
+
+            // Solar wind intensity = bass-driven particle density
+            let solarWindInt = 1.0 + bass * 3.0;
+            emission += aurora_col * 0.05 * aurora_int * solarWindInt / (1.0 + abs(d) * 10.0);
+
+            t += 0.02;
         } else {
             t += d;
         }
@@ -177,9 +227,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     col += emission;
 
-    // Bloom / ACES
-    col = col / (col + vec3<f32>(1.0));
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass);
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // ACES tone mapping
+    col = acesToneMap(col * 1.1);
+
+    // Semantic alpha (ghost orchid transparency)
+    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
+
+    // Temporal feedback
+    let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
+    let feedback = mix(prev.rgb * 0.96, col, 0.25);
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(feedback, 1.0));
+
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
 }

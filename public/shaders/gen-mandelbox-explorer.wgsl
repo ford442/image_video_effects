@@ -29,6 +29,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+// Mandelbox: boxFold + sphereFold + scale, typical scale ≈ 2.5
 fn boxFold(v: vec3<f32>) -> vec3<f32> {
   return clamp(v, vec3<f32>(-1.0), vec3<f32>(1.0)) * 2.0 - v;
 }
@@ -43,15 +44,16 @@ fn sphereFold(v: vec3<f32>) -> vec3<f32> {
   return v;
 }
 
-fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51;
-  let b = 0.03;
-  let c = 2.43;
-  let d = 0.59;
-  let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+fn fractalDimension(orbitMin: f32) -> f32 {
+  // 3D fractal dimension of Mandelbox boundary: ~2.0-2.5
+  return 2.0 + orbitMin * 0.5;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 0.15 + 0.05) + 0.004;
+  let b = x * (x * 0.15 + 0.50) + 0.06;
+  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -93,6 +95,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   orbitAvg = orbitAvg / f32(maxIter);
 
+  let fdim = fractalDimension(orbitMin);
+
   let ao = exp(-orbitMin * 4.0);
   let temp = fract(orbitAvg * 0.1 + 0.5);
   let warm = vec3<f32>(0.95, 0.78, 0.55);
@@ -110,21 +114,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color.b * (1.0 - edge * 0.1)
   );
 
+  // Temporal feedback
   let histUV = uv + vec2<f32>(sin(time * 0.18) * 0.001, cos(time * 0.12) * 0.001);
   let prev = textureSampleLevel(dataTextureC, u_sampler, histUV, 0.0).rgb;
   color = mix(color, prev * 0.94, 0.05);
 
-  color = aces_tonemap(color * 2.2);
-
+  // Chromatic aberration before tonemap
   let density = 1.0 - ao;
-  let alpha = density * clamp(orbitMin * 3.0, 0.0, 1.0);
   let depth = density * clamp(orbitMin * 2.5, 0.0, 1.0);
-
   let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
-  color = aces_tonemap(color * 2.2);
+  // Write temporal feedback before ACES so next frame reads untonemapped color
+  let alpha = density * clamp(orbitMin * 3.0, 0.0, 1.0);
+  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
+
+  // Single ACES tonemap
+  color = acesToneMap(color * 2.2);
+
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
 }

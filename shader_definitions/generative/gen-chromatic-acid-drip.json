@@ -3,11 +3,12 @@
   "name": "Chromatic Acid Drip",
   "category": "generative",
   "url": "shaders/gen-chromatic-acid-drip.wgsl",
-  "description": "Simulates liquid LSD-like chromatic dripping and flowing with RGB channel separation creating rainbow fringes. Liquid metaball blobs merge and split like ferrofluid with extremely saturated neon colors. Mouse attracts the liquid creating interactive acid trails.",
+  "description": "Liquid LSD-like chromatic dripping with RGB channel separation. Upgraded with universal-indicator pH color science: drips change color as they fall through a realistic acid→base gradient. Mouse creates localized acid/base splashes. Critical-angle refraction, temporal feedback trails, chromatic aberration, and ACES tone mapping.",
   "features": [
-    "interactive",
-    "mouse-reactive",
+    "upgraded-rgba",
     "temporal",
+    "audio-reactive",
+    "mouse-driven",
     "procedural"
   ],
   "tags": [
@@ -18,7 +19,9 @@
     "chromatic",
     "drip",
     "ferrofluid",
-    "metaball"
+    "metaball",
+    "ph-science",
+    "chemistry"
   ],
   "params": [
     {

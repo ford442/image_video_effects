@@ -3,12 +3,13 @@
   "name": "Crystalline Pulse",
   "category": "generative",
   "url": "shaders/gen-showcase-crystalline-pulse.wgsl",
-  "description": "Geometric crystal formations that grow and refract. Mouse creates a shattering disruption field. Audio-reactive: bass triggers growth pulses, mids shift hue, treble adds edge refraction sparkles. Showcase-optimized for 12-second rotation cycles.",
+  "description": "Geometric crystal formations based on diamond cubic Bravais lattice structure with phonon pulse propagation. FCC lattice positions, acoustic phonon frequency ω = 2√(k/m)|sin(ka/2)|, bass-driven vibration, temporal feedback trails, chromatic aberration, and mouse lattice defect injection create a scientifically-grounded crystallographic visualization.",
   "features": [
-    "audio-reactive",
-    "generative",
-    "mouse-driven",
+    "upgraded-rgba",
     "temporal",
+    "audio-reactive",
+    "mouse-driven",
+    "generative",
     "chromatic",
     "showcase"
   ],
@@ -56,6 +57,9 @@
     "mouse-driven",
     "temporal",
     "chromatic",
-    "abstract"
+    "abstract",
+    "diamond-lattice",
+    "phonon",
+    "bravais"
   ]
 }

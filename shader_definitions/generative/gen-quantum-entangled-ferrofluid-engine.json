@@ -3,6 +3,28 @@
   "name": "Quantum-Entangled Ferrofluid Engine",
   "category": "generative",
   "url": "shaders/gen-quantum-entangled-ferrofluid-engine.wgsl",
+  "description": "A quantum-mechanically enriched ferrofluid visualization. Wavefunction ψ(x,t) interference patterns drive ferrofluid spike formation. Probability density |ψ|² modulates glow intensity. Bass triggers wavefunction collapse probability. Mouse acts as a quantum measurement device, collapsing superposition and sharpening the interference pattern. Features double-slit interference, entanglement glow, and metallic PBR rendering.",
+  "features": [
+    "upgraded-rgba",
+    "temporal",
+    "audio-reactive",
+    "mouse-driven",
+    "quantum-interference",
+    "raymarched",
+    "pbr"
+  ],
+  "tags": [
+    "quantum",
+    "ferrofluid",
+    "interference",
+    "wavefunction",
+    "entanglement",
+    "metallic",
+    "glow",
+    "generative",
+    "neon",
+    "abstract"
+  ],
   "params": [
     {
       "id": "param1",

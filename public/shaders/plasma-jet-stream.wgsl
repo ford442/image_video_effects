@@ -1,11 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Plasma Jet Stream
-//  Category: generative
-//  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
-//            upgraded-rgba, aces-tone-map, depth-aware
-//  Complexity: High
-//  Created: 2026-05-31
-//  Upgraded: 2026-06-06
+//  Plasma Jet Stream — Algorithmist Upgrade
+//  Warped FBM turbulence + Clifford drift + Gold-noise sparks
+//  Multi-scale jet boundaries with divergence-free perturbation
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -29,20 +25,54 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn sat(x: f32) -> f32 {
-  return clamp(x, 0.0, 1.0);
-}
+const PI     = 3.14159265358979323846;
+const TAU    = 6.28318530717958647692;
+const PHI    = 1.61803398874989484820;
+const INV_PI = 0.31830988618379067154;
+
+fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
 
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
+fn goldNoise(uv: vec2<f32>, seed: f32) -> f32 {
+  let d = distance(uv * PHI, uv);
+  return fract(sin(d * seed) * cos(d * seed * 0.7) * uv.x * 43758.5453);
+}
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+
+fn fbm(p: vec2<f32>) -> f32 {
+  var a = 0.5; var s = 0.0; var q = p;
+  for (var i = 0; i < 5; i = i + 1) {
+    s = s + a * valueNoise(q);
+    q = q * 2.02; a = a * 0.5;
+  }
+  return s;
+}
+
+fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
+  let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)),
+                    fbm(p + vec2<f32>(5.2, 1.3)));
+  let r = vec2<f32>(fbm(p + 4.0 * q + vec2<f32>(1.7, 9.2)),
+                    fbm(p + 4.0 * q + vec2<f32>(8.3, 2.8)));
+  return fbm(p + 4.0 * r);
+}
+
+fn clifford(p: vec2<f32>, a: f32, b: f32, c: f32, d: f32) -> vec2<f32> {
+  return vec2<f32>(sin(a * p.y) + c * cos(a * p.x),
+                   sin(b * p.x) + d * cos(b * p.y));
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51;
-  let b = 0.03;
-  let c = 2.43;
-  let d = 0.59;
-  let e = 0.14;
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
@@ -75,24 +105,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var j = 0u; j < u32(jetCount); j = j + 1u) {
     let fj = f32(j);
     let seed = hash21(vec2<f32>(fj, 7.3));
-    let angle = (fj / jetCount) * 6.28318 + seed * 2.0 + aim.x * 2.0;
+    let angle = (fj / jetCount) * TAU + seed * 2.0 + aim.x * 2.0;
     let dir = vec2<f32>(cos(angle), sin(angle));
     let perp = vec2<f32>(-dir.y, dir.x);
 
-    let along = dot(p - aim * 0.5, dir);
-    let across = dot(p - aim * 0.5, perp);
+    // Clifford attractor drift for organic jet origin perturbation
+    let drift = clifford(vec2<f32>(fj, time * 0.1), 1.5, 2.1, 0.9, 1.3) * 0.04 * turbulence;
+    let origin = aim * 0.5 + drift;
+    let along = dot(p - origin, dir);
+    let across = dot(p - origin, perp);
+
     let pulse = 0.5 + 0.5 * sin(time * velocity * (1.0 + seed * 2.0) + fj * 3.7 + bass * 4.0);
     let width = spread * (0.6 + pulse * 0.6) * (1.0 + mids * 0.3);
-    let turb = sin(across * 30.0 + along * 5.0 - time * velocity * 2.0) * turbulence * 0.15;
-    let dist = abs(across + turb);
-    let jcore = exp(-dist * dist / (width * width * 0.2 + 0.001)) * pulse;
-    let jhalo = exp(-dist * dist / (width * width * 0.8 + 0.001)) * 0.4;
+
+    // Domain-warped FBM for turbulent jet boundary
+    let warp = warpedFBM(vec2<f32>(across, along) * 2.0 + seed * 10.0, time * 0.2) * turbulence * 0.12;
+    let dist = abs(across + warp);
+
+    let jcore = exp(-0.5 * dist * dist / (width * width * 0.2 + 0.001)) * pulse;
+    let jhalo = exp(-0.5 * dist * dist / (width * width * 0.8 + 0.001)) * 0.4;
     jetIntensity = jetIntensity + jcore + jhalo;
     jetHeat = jetHeat + jcore * (1.0 + bass);
   }
 
   let shock = smoothstep(0.6, 1.0, jetIntensity);
-  let spark = step(0.996 - treble * 0.03, hash21(floor((uv + time * 0.1) * 200.0))) * shock;
+  // Gold-noise spark generation (quasi-random, better temporal stability)
+  let spark = step(0.996 - treble * 0.03, goldNoise(floor((uv + time * 0.1) * 200.0), time)) * shock;
 
   // Chromatic: R core, G shock, B sparks
   var color = vec3<f32>(0.01, 0.01, 0.02);

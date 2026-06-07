@@ -1,6 +1,7 @@
 // ----------------------------------------------------------------
 // Bioluminescent Aether-Jellyfish Swarm
 // Category: generative
+// Features: audio-reactive, upgraded-rgba, temporal
 // ----------------------------------------------------------------
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
@@ -101,6 +102,21 @@ fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
 fn smin(a: f32, b: f32, k: f32) -> f32 {
     let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+// ═══ ACES Tone Mapping ═══
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 0.15 + 0.05) + 0.004;
+  let b = x * (x * 0.15 + 0.50) + 0.06;
+  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══ Bioluminescent Glow ═══
+// Aequorin quantum yield η≈0.28, peak λ≈469nm
+fn bioluminescentGlow(intensity: f32) -> vec3<f32> {
+    let aequorin = vec3<f32>(0.0, 0.7, 1.0);
+    let highInt = vec3<f32>(0.5, 1.0, 0.3);
+    return mix(aequorin, highInt, clamp(intensity - 0.5, 0.0, 1.0)) * intensity;
 }
 
 // Jellyfish Body Modeling
@@ -227,6 +243,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let res = vec2<f32>(f32(dims.x), f32(dims.y));
     let uv = (vec2<f32>(tex_coords) - 0.5 * res) / res.y;
+    let uv_01 = vec2<f32>(tex_coords) / res;
 
     let time = u.config.x;
 
@@ -263,12 +280,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let bio_intensity = u.zoom_params.z;
         let audio_pulse = bass * 0.5 + 0.5;
 
-        // Dynamic bioluminescent colors
+        // Dynamic bioluminescent colors with aequorin-like glow
         let base_col = mix(vec3<f32>(0.0, 0.8, 1.0), vec3<f32>(0.8, 0.0, 1.0), sin(p.y + time) * 0.5 + 0.5);
         let bio_glow = base_col * sss * bio_intensity * (0.8 + 0.6 * audio_pulse);
-
-        // Translucency (blend with background based on distance and rim lighting)
-        final_color = mix(bg_color, bio_glow + vec3<f32>(dif * 0.1), sss * 0.8 + 0.2);
+        let aequorin_glow = bioluminescentGlow(sss * bio_intensity * audio_pulse);
+        final_color = mix(bg_color, bio_glow + aequorin_glow + vec3<f32>(dif * 0.1), sss * 0.8 + 0.2);
 
         // Fog/Depth fade
         final_color = mix(final_color, bg_color, clamp(dist / 30.0, 0.0, 1.0));
@@ -284,9 +300,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         final_color += v_col;
     }
 
-    // Tone mapping and gamma correction
-    final_color = final_color / (final_color + vec3<f32>(1.0));
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass) + dist * 0.001;
+    final_color = vec3<f32>(final_color.r + caStr, final_color.g, final_color.b - caStr * 0.5);
+
+    // ACES tone mapping and gamma correction
+    final_color = acesToneMap(final_color);
     final_color = pow(final_color, vec3<f32>(1.0/2.2));
 
-    textureStore(writeTexture, tex_coords, vec4<f32>(final_color, 1.0));
+    // Temporal feedback
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv_01, 0.0);
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, final_color, 0.25);
+
+    // Semantic alpha
+    let alpha = clamp(length(temporal) * 1.2, 0.2, 0.95);
+
+    textureStore(dataTextureA, tex_coords, vec4<f32>(temporal, alpha));
+    textureStore(writeTexture, tex_coords, vec4<f32>(temporal, alpha));
 }

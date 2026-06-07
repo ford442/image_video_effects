@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Acid Geometry
 //  Category: generative
-//  Features: neon, acid, geometry, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: neon, acid, geometry, audio-reactive, mouse-interactive,
+//            semantic-alpha, upgraded-rgba, temporal, chromatic-aberration
 //  Complexity: Medium-High
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Updated: 2026-06-07
+//  By: Kimi Agent Upgrade
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -75,14 +76,44 @@ fn rot2(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-// Neon acid palette
-fn acidColor(t: f32) -> vec3<f32> {
-    // Electric lime -> hot magenta -> neon orange -> electric cyan
-    let a = vec3<f32>(0.5, 0.5, 0.5);
-    let b = vec3<f32>(0.5, 0.5, 0.5);
-    let c = vec3<f32>(1.0, 1.0, 1.0);
-    let d = vec3<f32>(0.263, 0.416, 0.557);
-    return a + b * cos(TAU * (c * t + d));
+// ═══ CHUNK: acesToneMap (standard ACES) ═══
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══ CHUNK: phToColor (universal indicator pH→RGB) ═══
+// pH 0-3: strong acid → red
+// pH 4-6: weak acid → orange/yellow
+// pH 7:   neutral → green
+// pH 8-10: weak base → blue
+// pH 11-14: strong base → purple
+fn phToColor(ph: f32) -> vec3<f32> {
+    let p = clamp(ph, 0.0, 14.0);
+    let c0 = vec3<f32>(1.0, 0.0, 0.2);   // pH 0  strong acid
+    let c1 = vec3<f32>(1.0, 0.6, 0.0);   // pH 3.5 weak acid
+    let c2 = vec3<f32>(0.0, 0.8, 0.3);   // pH 7   neutral
+    let c3 = vec3<f32>(0.0, 0.4, 1.0);   // pH 9   weak base
+    let c4 = vec3<f32>(0.6, 0.0, 1.0);   // pH 14  strong base
+    let t1 = smoothstep(0.0, 3.5, p);
+    let t2 = smoothstep(3.5, 7.0, p);
+    let t3 = smoothstep(7.0, 9.0, p);
+    let t4 = smoothstep(9.0, 14.0, p);
+    var col = mix(c0, c1, t1);
+    col = mix(col, c2, t2);
+    col = mix(col, c3, t3);
+    col = mix(col, c4, t4);
+    return col;
+}
+
+// ═══ CHUNK: Snell's Law / Critical Angle ═══
+fn snellRefract(incident: f32, n1: f32, n2: f32) -> f32 {
+    let sinTheta2 = (n1 / n2) * sin(incident);
+    return asin(clamp(sinTheta2, -1.0, 1.0));
+}
+
+fn criticalAngle(n1: f32, n2: f32) -> f32 {
+    return asin(clamp(n2 / n1, 0.0, 1.0));
 }
 
 // Triangle SDF
@@ -138,12 +169,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     audioIntensity = audioIntensity * (0.85 + treble * 0.6);
     let audioColor = colorShift + mids * 0.25;
 
+    // pH oscillation driven by bass: 0→14→0 cycle
+    let phCycle = 7.0 + 7.0 * sin(time * (0.5 + bass * 2.0));
+
+    // Critical-angle refraction distortion (water-air ~48.6°)
+    let crit = criticalAngle(1.33, 1.0);
+    let refractUV = uv * (1.0 + sin(crit) * 0.1 * bass);
+
     var col = vec3<f32>(0.0);
 
-    // Deep psychedelic background
-    let bgNoise = fbm(uv * 2.0 * scale, time * 0.1 * speed);
+    // Deep psychedelic background tinted by pH
+    let bgNoise = fbm(refractUV * 2.0 * scale, time * 0.1 * speed);
     let bgHue = fract(bgNoise * 0.3 + time * 0.04 * speed + colorShift);
-    col += acidColor(bgHue) * bgNoise * 0.15;
+    col += phToColor(fract(bgHue * 14.0)) * bgNoise * 0.15;
     col += vec3<f32>(0.02, 0.0, 0.04);
 
     // Beat-like rhythm
@@ -160,7 +198,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             // Local UV rotated and scaled
             let rotAngle = time * speed * (0.3 + seed * 0.7) + seed2 * TAU + beat * 0.5;
-            let localUV = rot2(rotAngle) * (uv - center);
+            let localUV = rot2(rotAngle) * (refractUV - center);
 
             // Scale pulsing
             let shapeScale = (0.04 + 0.03 * sin(time * 2.0 * speed + seed * 5.0) * audioIntensity) * pulse;
@@ -170,17 +208,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             var shapeDist: f32 = 1000.0;
 
             if (shapeType < 1.0) {
-                // Triangle with melting distortion
+                // Triangle with melting distortion — mids control drip speed
                 let melt = vec2<f32>(
-                    vnoise(localUV * 8.0 + time * speed * 2.0) * 0.015,
-                    vnoise(localUV * 8.0 + time * speed * 2.0 + 50.0) * 0.015
+                    vnoise(localUV * 8.0 + time * speed * (2.0 + mids * 3.0)) * 0.015,
+                    vnoise(localUV * 8.0 + time * speed * (2.0 + mids * 3.0) + 50.0) * 0.015
                 ) * audioIntensity;
                 shapeDist = sdTriangle(localUV + melt, shapeScale);
             } else if (shapeType < 2.0) {
-                // Hexagon
+                // Hexagon — mids control distortion rate
                 let melt = vec2<f32>(
-                    vnoise(localUV * 6.0 + time * speed * 1.5) * 0.012,
-                    vnoise(localUV * 6.0 + time * speed * 1.5 + 30.0) * 0.012
+                    vnoise(localUV * 6.0 + time * speed * (1.5 + mids * 2.0)) * 0.012,
+                    vnoise(localUV * 6.0 + time * speed * (1.5 + mids * 2.0) + 30.0) * 0.012
                 ) * audioIntensity;
                 shapeDist = sdHexagon(localUV + melt, shapeScale * 1.2);
             } else {
@@ -189,11 +227,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 shapeDist = sdCircle(localUV, shapeScale + wobble);
             }
 
-            // Color for this shape
-            let hue = fract(seed + time * 0.1 * speed + colorShift + beat * 0.2);
-            let shapeCol = acidColor(hue);
+            // pH-based color: seed offsets phase, bass drives oscillation
+            let shapePH = fract(seed + phCycle / 14.0 + colorShift + beat * 0.2) * 14.0;
+            let shapeCol = phToColor(shapePH);
 
-            // Neon glow from shape edge
+            // Neon glow from shape edge with acid/base transitions
             let glow1 = sdfGlow(abs(shapeDist), 0.012 * audioIntensity * pulse, 2.5);
             let glow2 = sdfGlow(abs(shapeDist), 0.035 * audioIntensity * pulse, 0.8);
             let fill = smoothstep(0.005, -0.005, shapeDist) * 0.6;
@@ -203,41 +241,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             col += shapeCol * glow2 * audioIntensity * 0.5;
             col += shapeCol * fill * audioIntensity * 0.8;
 
-            // Mouse-reactive explosion at cursor
-            let toMouse = length(uv - mouseNorm);
+            // Mouse-reactive explosion at cursor with localized pH disturbance
+            let toMouse = length(refractUV - mouseNorm);
             let mouseInfluence = smoothstep(0.3, 0.0, toMouse) * mouseDown;
             if (mouseInfluence > 0.01) {
                 let mouseDist = length(localUV) * (1.0 + mouseInfluence * 3.0);
                 let mouseGlow = exp(-mouseDist * mouseDist * 80.0) * mouseInfluence;
-                col += acidColor(fract(seed + colorShift + 0.5)) * mouseGlow * audioIntensity * 3.0;
+                // Mouse toggles between acid (pH 2) and base (pH 12) splashes
+                let mousePH = select(2.0, 12.0, mouseDown > 0.5 && hash1(seed + time) > 0.5);
+                col += phToColor(mousePH) * mouseGlow * audioIntensity * 3.0;
             }
         }
     }
 
-    // Global overlay: morphing acid waves
-    let wave1 = sin(uv.x * 8.0 * scale + time * 2.0 * speed) * cos(uv.y * 6.0 * scale - time * 1.5 * speed);
-    let wave2 = sin(uv.x * 5.0 * scale - time * speed + uv.y * 7.0 * scale) * 0.5;
+    // Global overlay: morphing acid waves tinted by pH
+    let wave1 = sin(refractUV.x * 8.0 * scale + time * 2.0 * speed) * cos(refractUV.y * 6.0 * scale - time * 1.5 * speed);
+    let wave2 = sin(refractUV.x * 5.0 * scale - time * speed + refractUV.y * 7.0 * scale) * 0.5;
     let wave = (wave1 + wave2) * 0.5;
     let waveGlow = smoothstep(0.3, 0.8, abs(wave)) * 0.15 * audioIntensity;
-    col += acidColor(fract(time * 0.08 * speed + colorShift + wave * 0.2)) * waveGlow;
+    col += phToColor(fract(wave * 7.0 + phCycle * 0.5)) * waveGlow;
 
-    // Chromatic aberration effect
-    let ca = vnoise(uv * 3.0 + time * speed) * 0.03 * audioIntensity;
-    col.r += ca * 0.3;
-    col.b -= ca * 0.2;
+    // Treble-driven bubble sparkle
+    let sparkle = hash2(vec2<f32>(floor(refractUV * 40.0)));
+    let sparkleTrigger = step(1.0 - treble * 0.3, sparkle);
+    col += phToColor(fract(sparkle * 14.0)) * sparkleTrigger * treble * 2.0;
+
+    // ═══ TEMPORAL FEEDBACK ═══
+    let prev = textureSampleLevel(dataTextureC, u_sampler, (vec2<f32>(pixel) + 0.5) / resolution, 0.0);
+    col = mix(prev.rgb * 0.96, col, 0.25);
+    textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
+
+    // ═══ CHROMATIC ABERRATION ═══
+    let caStr = 0.003 * (1.0 + bass);
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
     // Vignette
     let vig = 1.0 - dot(uv * 0.7, uv * 0.7);
     col *= clamp(vig, 0.0, 1.0) * 1.3;
 
-    // Tone map
-    col = col / (1.0 + col * 0.25);
-    col = pow(col, vec3<f32>(0.92));
+    // ═══ ACES TONE MAP + SEMANTIC ALPHA ═══
+    col = acesToneMap(col * 1.1);
+    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
 
-    // Brightness boost
-    col = col * 2.0;
-
-    // Semantic alpha
-    let effect = clamp(dot(col, vec3<f32>(0.4, 0.4, 0.3)) * 1.2, 0.5, 0.98);
-    textureStore(writeTexture, pixel, vec4<f32>(col, effect));
+    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
 }

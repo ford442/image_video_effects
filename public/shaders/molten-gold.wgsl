@@ -1,6 +1,10 @@
 // molten-gold.wgsl
 // Molten gold liquid metal effect — optimized for Generative Showcase
 // Showcase features: strong idle animation, satisfying mouse claim, audio-reactive
+// Wolfram Data:
+//   Gold melting point: 1064.18°C = 1337.33 K
+//   Gold thermal conductivity: 320 W/(m·K)
+//   At 1337K, blackbody peak wavelength = 2.16683 μm (infrared)
 
 // 13-binding universal layout (matches all 694+ shaders in this repo)
 @group(0) @binding(0) var nearestSampler: sampler;
@@ -12,10 +16,10 @@
 @group(0) @binding(6) var depthWriteTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read> extraBuffer: array<f32>;
 @group(0) @binding(11) var videoTexture: texture_2d<f32>;
-@group(0) @binding(12) var videoSampler: sampler;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
     config: vec4<f32>,       // x: time, y: unused, z: unused, w: unused
@@ -51,11 +55,30 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
     return value;
 }
 
-@compute @workgroup_size(8, 8)
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = x * (x * 0.15 + 0.05) + 0.004;
+    let b = x * (x * 0.15 + 0.50) + 0.06;
+    return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn moltenGoldTemp(t: f32) -> vec3<f32> {
+    // Blackbody approximation for molten gold
+    // Gold melting point: 1064.18°C = 1337.33 K
+    // Thermal conductivity: 320 W/(m·K) — used as heat-flow scaling
+    // At 1337K, blackbody peak wavelength = 2.16683 μm (infrared, via Wien's law)
+    let tempNorm = clamp(t / 1337.33, 0.3, 2.5);
+    let r = 1.0;
+    let g = 0.42 * pow(tempNorm, 1.5);
+    let b = 0.12 * pow(tempNorm, 3.0);
+    return vec3<f32>(r, g, b);
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(textureDimensions(writeTexture));
     let uv = vec2<f32>(id.xy) / dims;
     let aspect = dims.x / dims.y;
+    let coord = vec2<i32>(id.xy);
 
     let t = u.config.x;
     let mouse = u.zoom_config.yz;
@@ -68,10 +91,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let specularStrength = u.zoom_params.z;
     let highlightFreq = u.zoom_params.w;
 
-    // Audio data from extraBuffer
-    let bass = extraBuffer[0];
-    let mid = extraBuffer[1];
-    let treble = extraBuffer[2];
+    // Audio data from plasmaBuffer
+    let bass = plasmaBuffer[0].x;
+    let mid = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let audioReactive = 1.0; // controlled by the A-toggle in App.tsx
 
     // Mouse claim interaction
@@ -115,7 +138,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let vignette = 1.0 - length(uv - 0.5) * 0.6;
     color *= vignette * 0.95 + 0.05;
 
+    // Temperature-based blackbody tint (Wolfram data)
+    let tempColor = moltenGoldTemp(1337.33 * (0.8 + molten * 0.6));
+    color = mix(color, color * tempColor, 0.35);
+
+    // Chromatic aberration
+    let depth = textureSampleLevel(depthTexture, nearestSampler, uv, 0.0).r;
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+    // ACES tone mapping
+    color = acesToneMap(color);
+
+    // Semantic alpha
+    let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+
+    // Temporal feedback
+    let prev = textureSampleLevel(dataTextureC, nearestSampler, uv, 0.0);
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, color, 0.25);
+
     // Output
-    textureStore(writeTexture, id.xy, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, id.xy, vec4<f32>(temporal, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(temporal, alpha));
     textureStore(depthWriteTexture, id.xy, vec4<f32>(molten, 0.0, 0.0, 1.0));
 }

@@ -4,7 +4,10 @@
 //  Description: Fractal landscape generator where terrain features carry
 //  genetic parameters from parent generations. Mouse position locally
 //  selects which ancestral lineage is expressed. Audio controls mutation.
+//  Features: generative, audio-reactive, mouse-driven, upgraded-rgba,
+//            temporal, semantic-alpha, chromatic
 //  Complexity: High
+//  Math: Golden Ratio φ=1.6180339887, Koch D=1.2619, Sierpinski D=1.585
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -30,6 +33,15 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+const PHI: f32 = 1.618033988749895;
+const KOCH_D: f32 = 1.2618595071429148;   // log(4)/log(3)
+const SIERPINSKI_D: f32 = 1.584962500721156; // log(3)/log(2)
+
+// ─── ACES Filmic Tone Mapping ───
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -54,14 +66,18 @@ fn smoothNoise(p: vec2<f32>) -> f32 {
     );
 }
 
-// "Genetic" FBM: each octave inherits slightly mutated parameters from parent
+// ─── Fractal-dimension FBM with phi persistence ───
 fn ancestralFbm(p: vec2<f32>, generations: i32, mutationRate: f32,
-                lineageSelector: f32, t: f32) -> f32 {
+                lineageSelector: f32, t: f32, fractalDim: f32) -> f32 {
     var value = 0.0;
     var amplitude = 0.5;
     var pos = p;
     var freq = 1.0;
     var parentAngle = 0.0;
+    // Persistence derived from golden ratio: 1/φ ≈ 0.618
+    let persistence = 1.0 / PHI;
+    // Roughness scales with fractal dimension: higher D = more detail
+    let roughness = mix(1.5, 2.5, clamp((fractalDim - KOCH_D) / (SIERPINSKI_D - KOCH_D), 0.0, 1.0));
 
     for (var g = 0; g < generations; g++) {
         let gf = f32(g);
@@ -78,15 +94,15 @@ fn ancestralFbm(p: vec2<f32>, generations: i32, mutationRate: f32,
         let s = sin(inheritedAngle);
         let rotPos = vec2<f32>(c * pos.x - s * pos.y, s * pos.x + c * pos.y);
 
-        // Frequency and amplitude also mutate
-        let mutFreq = freq * (1.8 + mutation.y * 0.4);
+        // Frequency and amplitude also mutate, scaled by fractal dimension
+        let mutFreq = freq * (roughness + mutation.y * 0.4);
         let sample = smoothNoise(rotPos * mutFreq + vec2<f32>(gf * 1.3, t * 0.05));
 
         // Geological warping: higher generations fold the terrain
         value += amplitude * sample;
         pos += vec2<f32>(cos(sample * TAU), sin(sample * TAU)) * 0.1 * mutationRate;
 
-        amplitude *= 0.5;
+        amplitude *= persistence;
         freq = mutFreq;
     }
     return value;
@@ -135,7 +151,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mutationRate  = u.zoom_params.x * 1.5 + 0.2;  // 0.2..1.7
     let generBlend    = u.zoom_params.y;               // generational blending 0..1
     let heightScale   = u.zoom_params.z * 1.5 + 0.3;  // 0.3..1.8
-    let erosionAmt    = u.zoom_params.w * 0.6 + 0.1;  // 0.1..0.7
+    let erosionAmt    = (u.zoom_params.w * 0.6 + 0.1) * (1.0 + bass * 0.5); // bass drives erosion
+
+    // Fractal dimension controls roughness via zoom_params.x
+    let fractalDim = mix(KOCH_D, SIERPINSKI_D, clamp(u.zoom_params.x, 0.0, 1.0));
 
     // Mouse selects which ancestral lineage to express locally
     let mousePos = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
@@ -151,14 +170,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let numGen = i32(3.0 + mids * 3.0 + generBlend * 2.0);
     let clampedGen = clamp(numGen, 3, 8);
 
-    // Terrain height from ancestral fractal
-    let height = ancestralFbm(uvA * 2.0, clampedGen, audioMutation, lineageSelector, t);
+    // Terrain height from ancestral fractal with fractal dimension
+    let height = ancestralFbm(uvA * 2.0, clampedGen, audioMutation, lineageSelector, t, fractalDim);
     let scaledHeight = height * heightScale;
+
+    // ─── Mouse carves river channels ───
+    let riverCarve = smoothstep(0.15, 0.0, mouseDist) * 0.25 * (1.0 + bass * 0.5);
+    let riverHeight = scaledHeight - riverCarve;
 
     // Approximate surface normal via finite differences
     let eps = 0.003;
-    let hx = ancestralFbm((uvA + vec2<f32>(eps, 0.0)) * 2.0, clampedGen, audioMutation, lineageSelector, t);
-    let hy = ancestralFbm((uvA + vec2<f32>(0.0, eps)) * 2.0, clampedGen, audioMutation, lineageSelector, t);
+    let hx = ancestralFbm((uvA + vec2<f32>(eps, 0.0)) * 2.0, clampedGen, audioMutation, lineageSelector, t, fractalDim);
+    let hy = ancestralFbm((uvA + vec2<f32>(0.0, eps)) * 2.0, clampedGen, audioMutation, lineageSelector, t, fractalDim);
     let nx = (hx - height) / eps;
     let ny = (hy - height) / eps;
     let nz = 1.0;
@@ -171,7 +194,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Erosion: carves channels, driven by audio
     let erosionNoise = smoothNoise(uvA * 8.0 + vec2<f32>(t * 0.03, 0.0));
-    let eroded = scaledHeight * (1.0 - erosionNoise * erosionAmt);
+    let eroded = riverHeight * (1.0 - erosionNoise * erosionAmt);
 
     // Depth (viewer distance from top)
     let terrainDepth = 1.0 - clamp(eroded, 0.0, 1.0);
@@ -193,6 +216,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let skyColor = vec3<f32>(0.05 + bass * 0.05, 0.08, 0.15 + mids * 0.1);
     color = mix(color, skyColor, skyT);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
+    // ─── Chromatic aberration driven by bass ───
+    let caStr = 0.003 * (1.0 + bass);
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+    // ─── ACES tone mapping + semantic alpha ───
+    color = acesToneMap(color * 1.1);
+    let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+
+    // ─── Temporal feedback: sediment layers ───
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let sediment = mix(prev.rgb * 0.96, color, 0.25);
+
+    textureStore(writeTexture, global_id.xy, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(1.0 - eroded));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(sediment, 1.0));
 }

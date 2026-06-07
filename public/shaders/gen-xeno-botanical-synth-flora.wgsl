@@ -2,7 +2,7 @@
 //  Gen Xeno Botanical Synth Flora - L-System Growth Simulation
 //  Category: generative
 //  Alpha Mode: Depth-Layered Alpha + Physical Transmittance
-//  Features: advanced-alpha, botanical, generative, depth-aware, l-system
+//  Features: advanced-alpha, botanical, generative, depth-aware, l-system, mouse-driven, audio-reactive, temporal, upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -169,6 +169,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let feather = glowSpread * 0.5 + 0.05;
     let alpha = volumetricAlpha(combinedFlora, 1.0) * depthLayeredAlpha(floraColorBase, uv, depthWeight) * smoothstep(0.0, feather, combinedFlora);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(floraColor, alpha));
+    let outColor = vec4<f32>(floraColor, alpha);
+    textureStore(writeTexture, global_id.xy, outColor);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, global_id.xy, outColor);
 }

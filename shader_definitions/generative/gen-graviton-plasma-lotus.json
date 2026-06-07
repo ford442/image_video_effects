@@ -2,6 +2,14 @@
   "id": "gen-graviton-plasma-lotus",
   "name": "Graviton Plasma Lotus",
   "url": "shaders/gen-graviton-plasma-lotus.wgsl",
+  "features": [
+    "generative",
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
   "type": "shader",
   "coordinate": 860,
   "params": [

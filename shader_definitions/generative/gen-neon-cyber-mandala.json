@@ -3,12 +3,15 @@
   "name": "Neon Cyber Mandala",
   "category": "generative",
   "url": "shaders/gen-neon-cyber-mandala.wgsl",
-  "description": "A slowly rotating mandala made of neon geometric shapes including rings, stars, and polygons. Each ring features a different decorative pattern - dots, radiating lines, zigzags, waves, and diamonds. Bright neon rainbow gradients cycle through colors. Connecting threads pulse with energy. Floating particles orbit the design. Mouse controls rotation speed and zoom into the center. Breathing pulse effect brings the mandala to life.",
+  "description": "A slowly rotating mandala made of neon geometric shapes including rings, stars, and polygons. Each ring features a different decorative pattern - dots, radiating lines, zigzags, waves, and diamonds. Bright neon rainbow gradients cycle through colors. Connecting threads pulse with energy. Floating particles orbit the design. Mouse controls rotation speed and zoom into the center. Breathing pulse effect brings the mandala to life. Upgraded with golden ratio φ symmetry, Fibonacci petal counts, golden-angle layer rotation, bass-driven rotation, mouse symmetry warp, ACES tone mapping, temporal feedback, and chromatic aberration.",
   "features": [
     "interactive",
     "mouse-reactive",
     "temporal",
-    "procedural"
+    "procedural",
+    "upgraded-rgba",
+    "audio-reactive",
+    "mouse-driven"
   ],
   "tags": [
     "psychedelic",
@@ -17,7 +20,9 @@
     "geometric",
     "sacred-geometry",
     "rainbow",
-    "generative"
+    "generative",
+    "golden-ratio",
+    "fibonacci"
   ],
   "params": [
     {

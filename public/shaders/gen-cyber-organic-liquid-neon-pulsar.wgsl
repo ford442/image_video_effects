@@ -1,8 +1,12 @@
-
-// ----------------------------------------------------------------
-// Cyber-Organic Liquid-Neon Pulsar
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Cyber-Organic Liquid-Neon Pulsar
+//  Category: generative
+//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
+//  Complexity: High
+//  Wolfram Data: Crab Pulsar PSR B0531+21 — 33.08 ms period (30.2 Hz)
+//                Neutron star magnetic field: 10^8 Tesla
+//  Created: 2026-06-07
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -27,6 +31,12 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 
+// --- ACES Filmic Tone Mapping ---
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // --- Helper Functions ---
 fn hash(p: vec3<f32>) -> f32 {
     var p3 = fract(p * 0.3183099 + vec3<f32>(0.1, 0.1, 0.1));
@@ -43,7 +53,7 @@ fn hash33(p3_in: vec3<f32>) -> vec3<f32> {
 fn noise(p: vec3<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
-    let u = f * f * (vec3<f32>(3.0) - vec2<f32>(2.0).xxx * f);
+    let u = f * f * (vec3<f32>(3.0) - vec3<f32>(2.0) * f);
 
     let n = mix(
         mix(
@@ -107,58 +117,63 @@ fn rot2d(a: f32) -> mat2x2<f32> {
 }
 
 // --- SDF functions ---
-fn map(p_in: vec3<f32>, time: f32, audio: f32) -> f32 {
+fn map(p_in: vec3<f32>, time: f32, bass: f32) -> f32 {
     var p = p_in;
 
-    // Mouse Interaction
+    // Mouse Interaction — warps magnetic field topology
     let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0;
-    // The gravity well effect
-    // We treat the z plane as 0 for mouse
     let mouse_p = vec3<f32>(mouse_pos * vec2<f32>(u.config.z / u.config.w, 1.0) * 2.0, 0.0);
     let mouse_dist = length(p.xy - mouse_p.xy);
     let mouse_dir = normalize(vec3<f32>(p.xy - mouse_p.xy, p.z));
 
     p = p - mouse_dir * smoothstep(0.8, 0.0, mouse_dist) * 0.4;
 
+    // Magnetic field topology warping (Wolfram: 10^8 Tesla Crab Pulsar)
+    let angle = atan2(p.y, p.x);
+    let radius = length(p.xy);
+    let fieldStrength = 1.0 + bass * 3.0;
+    let fieldWarp = sin(angle * 10.0 + radius * 2.0 * fieldStrength - time * 0.5) * 0.15 * fieldStrength;
+    p.z = p.z + fieldWarp;
+
     // Base sphere
     let d_sphere = length(p) - 1.2;
 
     // fBM noise for liquid deformation
-    let pulse_speed = u.zoom_params.z; // param3
+    let pulse_speed = u.zoom_params.z;
     let disp = fbm(p * 2.5 + time * 0.2 * pulse_speed);
 
     // Audio pulsation
-    let pulse = audio * 0.15 * sin(time * 5.0 * pulse_speed);
+    let pulse = bass * 0.15 * sin(time * 5.0 * pulse_speed);
 
     // Liquid core surface
     let core = d_sphere + disp * 0.4 + pulse;
 
     // Biomechanical metallic fibers using Voronoi
-    let fiber_density = u.zoom_params.y; // param2
+    let fiber_density = u.zoom_params.y;
     let v = voronoi(p * fiber_density + time * 0.1);
 
     // We want the edges of the voronoi cells to be the fibers
     let fibers = (v.y - v.x) * 0.8;
     // Fibers are tubes along the voronoi edges
     // Subtract from a larger sphere to keep them bounded
-    let d_fibers_bounds = length(p) - 1.6 - audio * 0.1;
+    let d_fibers_bounds = length(p) - 1.6 - bass * 0.1;
     let d_fibers = max(d_fibers_bounds, 0.05 - fibers);
 
     // Blend fibers and core using smin
     return smin(core, d_fibers, 0.2);
 }
 
-fn getNormal(p: vec3<f32>, time: f32, audio: f32) -> vec3<f32> {
+fn getNormal(p: vec3<f32>, time: f32, bass: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
-        map(p + e.xyy, time, audio) - map(p - e.xyy, time, audio),
-        map(p + e.yxy, time, audio) - map(p - e.yxy, time, audio),
-        map(p + e.yyx, time, audio) - map(p - e.yyx, time, audio)
+        map(p + e.xyy, time, bass) - map(p - e.xyy, time, bass),
+        map(p + e.yxy, time, bass) - map(p - e.yxy, time, bass),
+        map(p + e.yyx, time, bass) - map(p - e.yyx, time, bass)
     ));
 }
 
 fn palette(t: f32) -> vec3<f32> {
-    let base_hue = u.zoom_params.x; // param1
+    let base_hue = u.zoom_params.x;
     let a = vec3<f32>(0.5, 0.5, 0.5);
     let b = vec3<f32>(0.5, 0.5, 0.5);
     let c = vec3<f32>(1.0, 1.0, 1.0);
@@ -179,7 +194,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var uv = (vec2<f32>(coords) - 0.5 * resolution) / resolution.y;
 
     let time = u.config.x;
-    let audio = u.config.y;
+
+    // Audio reads from plasmaBuffer
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Raymarching setup
     let ro = vec3<f32>(0.0, 0.0, -3.5);
@@ -203,7 +222,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let r2_2 = rot2d(time * 0.05);
         p = vec3<f32>(p.x, r2_2 * p.yz);
 
-        d = map(p, time, audio);
+        d = map(p, time, bass);
 
         if (d < 0.001) {
             hit = true;
@@ -223,7 +242,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var col = vec3<f32>(0.0);
 
     if (hit) {
-        let n = getNormal(p, time, audio);
+        let n = getNormal(p, time, bass);
 
         // Lighting
         let light_dir = normalize(vec3<f32>(1.0, 1.0, -1.0));
@@ -248,21 +267,40 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Liquid Neon Core
             col = base_col * (diff * 0.5 + 0.5) + spec * 0.5;
             // Pulsing emission
-            col = col + base_col * (audio * 2.0) * pow(rim, 2.0);
+            col = col + base_col * (bass * 2.0) * pow(rim, 2.0);
         }
     }
 
+    // Crab Pulsar lighthouse strobe — 30.2 Hz (33.08 ms period)
+    let flash = step(0.97, fract(time * 30.2 + length(p) * 0.5));
+
+    // Magnetic field line glow (Wolfram: 10^8 Tesla)
+    let angle = atan2(p.y, p.x);
+    let fieldLine = sin(angle * 10.0 + time * 2.0);
+    let fieldGlow = max(fieldLine, 0.0) * bass * 2.0 * flash;
+    col += palette(time * 0.3 + u.zoom_params.x) * fieldGlow;
+
     // Add volumetric god rays / glow
     let glow_col = palette(time * 0.2 + u.zoom_params.x) * glow * 0.05 * u.zoom_params.w;
-    col = col + glow_col * (1.0 + audio * 0.5);
+    col = col + glow_col * (1.0 + bass * 0.5);
 
     // Background fade
     let bg = vec3<f32>(0.02, 0.01, 0.05) * (1.0 - length(uv));
     col = mix(bg, col, clamp(t / 10.0, 0.0, 1.0));
 
-    // Tonemapping and gamma correction
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    // Step 3: Temporal feedback
+    let prev = textureLoad(dataTextureC, coords, 0);
+    col = mix(prev.rgb * 0.96, col, 0.25);
 
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    // Step 4: Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass);
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+    // Step 5: ACES tone mapping + semantic alpha
+    col = acesToneMap(col * 1.1);
+    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
+
+    let outColor = vec4<f32>(col, alpha);
+    textureStore(writeTexture, coords, outColor);
+    textureStore(dataTextureA, coords, outColor);
 }

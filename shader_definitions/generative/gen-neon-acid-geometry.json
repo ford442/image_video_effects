@@ -3,11 +3,12 @@
   "name": "Neon Acid Geometry",
   "category": "generative",
   "url": "shaders/gen-neon-acid-geometry.wgsl",
-  "description": "Geometric shapes (triangles, hexagons, circles) morphing and melting in psychedelic neon. Bright acid colors (electric lime, hot magenta, neon orange). Shapes pulse to a beat-like rhythm, scale in/out, rotate, and overlap with additive blending creating intense color mixing.",
+  "description": "Geometric shapes (triangles, hexagons, circles) morphing and melting in psychedelic neon. Upgraded with universal-indicator pH color science: geometry edges glow with realistic acid/base transitions driven by bass oscillation. Critical-angle refraction distortion, temporal feedback trails, chromatic aberration, and ACES tone mapping.",
   "features": [
-    "interactive",
-    "mouse-reactive",
+    "upgraded-rgba",
     "temporal",
+    "audio-reactive",
+    "mouse-driven",
     "procedural"
   ],
   "tags": [
@@ -17,7 +18,9 @@
     "acid",
     "morphing",
     "additive",
-    "shapes"
+    "shapes",
+    "ph-science",
+    "chemistry"
   ],
   "params": [
     {

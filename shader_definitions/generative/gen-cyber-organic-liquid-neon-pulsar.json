@@ -1,9 +1,11 @@
 {
   "id": "cyber-organic-liquid-neon-pulsar",
   "name": "Cyber-Organic Liquid-Neon Pulsar",
-  "description": "A biomechanical, pulsating celestial core composed of hyper-viscous liquid-neon and crystalline techno-organic fibers.",
+  "description": "A biomechanical, pulsating celestial core composed of hyper-viscous liquid-neon and crystalline techno-organic fibers. Enriched with Crab Pulsar 30.2 Hz strobe and 10^8 Tesla magnetic field topology.",
   "category": "generative",
   "url": "shaders/gen-cyber-organic-liquid-neon-pulsar.wgsl",
+  "features": ["upgraded-rgba", "temporal", "audio-reactive", "mouse-driven"],
+  "tags": ["neon", "pulsar", "magnetic-field", "astrophysics", "raymarched", "abstract"],
   "params": [
     {
       "id": "param1",

@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Coral Reef Colony
 //  Category: generative
-//  Features: coral, organic, generative, audio-reactive, mouse-interactive, semantic-alpha, simulation-like
+//  Features: coral, organic, generative, audio-reactive, mouse-interactive, semantic-alpha, simulation-like, temporal, upgraded-rgba
 //  Complexity: Very High
 //  Created: 2026-05-30
 //  Updated: 2026-06-01
@@ -51,6 +51,16 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = x * (x * 0.15 + 0.05) + 0.004;
   let b = x * (x * 0.15 + 0.50) + 0.06;
   return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn aragoniteColor(density: f32) -> vec3<f32> {
+  let pH = mix(7.3, 8.5, clamp(density, 0.0, 1.0));
+  let t1 = clamp((pH - 7.5) / 0.5, 0.0, 1.0);
+  let t2 = clamp((pH - 8.0) / 0.5, 0.0, 1.0);
+  let stressed = vec3<f32>(0.92, 0.9, 0.88);
+  let transitional = vec3<f32>(0.95, 0.75, 0.55);
+  let healthy = vec3<f32>(0.15, 0.85, 0.6);
+  return mix(mix(stressed, transitional, t1), healthy, t2);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -107,6 +117,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     0.35 + 0.65 * sin(hue * 6.28 + 4.1)
   );
   coral = mix(coral, vec3<f32>(0.1, 0.9, 0.7), spawnPulse * 0.4);
+  coral = mix(coral, aragoniteColor(coralDensity), 0.4);
 
   let sss = smoothstep(0.0, 0.4, coralDensity) * 0.35;
   var color = coral * (coralDensity * 0.8 + polyp * 1.4 + sss);
@@ -115,15 +126,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += bloom * 0.6;
   color += vec3<f32>(0.1, 0.3, 0.5) * causticLight;
 
+  let sparkle = pow(abs(sin(caustics * 12.0 + time * 2.0 + branchNoise * 30.0)), 20.0) * 1.68 * coralDensity;
+  color += vec3<f32>(0.7, 0.9, 1.0) * sparkle * 0.2;
+
   let waterTint = vec3<f32>(0.02, 0.08, 0.14);
   let depthAtten = mix(0.25, 0.85, depth);
   color = mix(waterTint * depthAtten, color, clamp(coralDensity + polyp * 0.5, 0.0, 1.0));
 
-  color = acesToneMap(color * (1.0 + bass * 0.25));
-
   let biolum = polyp * (0.4 + bass * 0.5);
   let semantic_alpha = clamp(coralDensity * biolum * depthAtten, 0.2, 0.98);
 
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+  color = acesToneMap(color * (1.0 + bass * 0.25));
+
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let decay = 0.96;
+  let temporal = mix(prev.rgb * decay, color, 0.25);
+  color = temporal;
+
   textureStore(writeTexture, global_id.xy, vec4<f32>(color, semantic_alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(color, semantic_alpha));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(coralDensity * depthAtten, 0.0, 0.0, 0.0));
 }

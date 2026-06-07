@@ -90,8 +90,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gridMask = 1.0 - smoothstep(currentThickness, currentThickness + 0.05, gridLine);
 
   // Bilateral filter inside grid cell
-  let spatialSigmaBase = mix(0.1, 1.0, 0.5);
-  let colorSigma = mix(0.05, 1.0, 0.3);
+  let spatialSigmaBase = mix(0.1f, 1.0f, 0.5f);
+  let colorSigma = mix(0.05f, 1.0f, 0.3f);
   let hueShiftAmt = 0.2;
 
   let mouseDist = length(uv - mousePos);

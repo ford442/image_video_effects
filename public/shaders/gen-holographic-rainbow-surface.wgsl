@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Holographic Rainbow Surface
+//  Holographic Rainbow Surface — UPGRADED
 //  Category: generative
-//  Features: holographic, rainbow, surface, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven, holographic, rainbow, thin-film-interference
 //  Complexity: Medium-High
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Updated: 2026-06-07
+//  Wolfram Data: Thin-film interference 2nd cos(θ) = mλ, n=1.33, d=500nm
+//  By: Kimi Agent
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,6 +29,11 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // Utility functions
 fn hash2(p: vec2<f32>) -> f32 {
@@ -89,6 +95,21 @@ fn computeNormal(p: vec2<f32>, t: f32, eps: f32) -> vec3<f32> {
     return normalize(vec3<f32>(hL - hR, hD - hU, 2.0 * eps));
 }
 
+// ═══ CHUNK: thin-film interference (Wolfram Alpha optics) ═══
+// Constructive interference: 2 n d cos(θ) = m λ
+// For soap film (n=1.33, d=500nm): λ_visible ≈ 400-700 nm
+// Color shifts with viewing angle due to cos(θ) term
+fn thinFilmIridescence(viewAngle: f32, filmThickness: f32, n: f32) -> vec3<f32> {
+    // Visible wavelength sampling: R=650nm, G=530nm, B=460nm
+    let wavelengths = vec3<f32>(650.0, 530.0, 460.0);
+    // Phase = 2 * n * d * cos(θ) / λ
+    let phase = 2.0 * n * filmThickness * cos(viewAngle) / wavelengths;
+    // Constructive interference intensity
+    let intensity = 0.5 + 0.5 * cos(phase * 6.28318530718);
+    // Boost for holographic vibrancy
+    return pow(intensity, vec3<f32>(0.8)) * 2.0;
+}
+
 fn holographicColor(theta: f32, shift: f32) -> vec3<f32> {
     let t = theta * 6.0 + shift * 6.28318530718;
     let r = 0.5 + 0.5 * sin(t + 0.0);
@@ -131,6 +152,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scale = u.zoom_params.z;
     let colorShift = u.zoom_params.w;
 
+    // Audio reads
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     let centeredUV = vec2<f32>(uv.x * aspect - (aspect - 1.0) * 0.5, uv.y);
     let p = (centeredUV - 0.5) * (3.0 - scale * 2.5);
 
@@ -144,14 +170,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lightDir2 = normalize(vec3<f32>(cos(t * 0.3) * 1.5, sin(t * 0.25) * 1.5, 1.2));
     let lightDir3 = normalize(vec3<f32>(0.0, 0.0, 1.0));
 
-    let viewDir = normalize(vec3<f32>(0.0, 0.0, 1.2));
+    // Mouse tilts the interference plane
+    let mouseTilt = select(vec2<f32>(0.0), (mousePos - 0.5) * 0.5, mouseDown > 0.5);
+    let viewDir = normalize(vec3<f32>(mouseTilt.x, mouseTilt.y, 1.2));
 
     let NdotL1 = max(dot(normal, lightDir1), 0.0);
     let NdotL2 = max(dot(normal, lightDir2), 0.0);
     let NdotL3 = max(dot(normal, lightDir3), 0.0);
 
-    let hueBase = h * 2.0 + colorShift * 3.0 + time * 0.15;
-    let baseColor = holographicColor(h * 0.5, hueBase);
+    // Thin-film interference enrichment
+    // n = 1.33 (soap film), d = 500nm + bass * 200nm
+    let filmThickness = 500.0 + bass * 200.0;
+    let nSoap = 1.33;
+    let viewAngle = acos(clamp(dot(normal, viewDir), 0.0, 1.0));
+    let interferenceColor = thinFilmIridescence(viewAngle, filmThickness, nSoap);
+
+    // Base color now driven by thin-film interference + holographic
+    let hueBase = h * 2.0 + colorShift * 3.0 + time * 0.15 + mids * 0.5;
+    let baseColor = holographicColor(h * 0.5, hueBase) * interferenceColor;
 
     let diffraction1 = spectralDiffraction(normal, lightDir1, viewDir, time);
     let diffraction2 = spectralDiffraction(normal, lightDir2, viewDir, time + 1.047);
@@ -195,9 +231,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let microDetail = fbm(scaledP * 20.0 + t * 0.5, 3);
     color += holographicColor(microDetail, time * 0.1 + colorShift) * microDetail * 0.15 * intensity;
 
-    color = color / (1.0 + color * 0.15);
-    color = pow(color, vec3<f32>(0.9, 0.95, 1.05));
-    color *= 1.2 + intensity * 0.5;
+    // Treble sparkles
+    let sparkle = hash12(vec3<f32>(scaledP * 50.0, time * 0.1));
+    color += vec3<f32>(1.0, 0.9, 0.7) * smoothstep(0.97, 1.0, sparkle) * treble * 2.0;
 
-    textureStore(writeTexture, pixel, vec4<f32>(color, 0.85));
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass);
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+    // Temporal feedback
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    color = mix(prev.rgb * 0.96, color, 0.25);
+
+    // ACES tone map + semantic alpha
+    color = acesToneMap(color * 1.1);
+    let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+
+    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
 }

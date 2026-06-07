@@ -76,8 +76,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gridIntensity = u.zoom_params.y;
   let colorSpeed = u.zoom_params.z * 5.0;
   let freq = mix(0.05, 0.3, u.zoom_params.w);
-  let sigma = mix(1.5, 4.0, 0.4);
-  let responseScale = mix(0.5, 3.0, 0.5);
+  let sigma = mix(1.5f, 4.0f, 0.4f);
+  let responseScale = mix(0.5f, 3.0f, 0.5f);
 
   // Scan band
   let distY = abs(uv.y - mousePos.y);

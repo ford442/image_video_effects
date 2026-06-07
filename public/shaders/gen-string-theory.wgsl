@@ -2,7 +2,7 @@
 //  String Theory - Vibrating string visualizations with harmonics
 //  Category: generative
 //  Features: procedural, wave equation, interference patterns,
-//    chromatic-aberration, audio-reactive, temporal-feedback, depth-aware
+//    chromatic-aberration, audio-reactive, temporal-feedback, depth-aware, upgraded-rgba
 //  Created: 2026-03-22
 //  Updated: 2026-06-01
 //  By: Agent 4A
@@ -168,6 +168,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = acesToneMap(col * 1.2);
 
   let alpha = clamp(gResult.w * length(gResult.rgb) * depth, 0.0, 1.0);
-  textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
+  let outColor = vec4<f32>(col, alpha);
+  textureStore(writeTexture, pixel, outColor);
   textureStore(writeDepthTexture, pixel, vec4<f32>(gResult.w, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, outColor);
 }

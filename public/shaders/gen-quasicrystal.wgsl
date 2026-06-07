@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Quasicrystal - Penrose tiling-inspired patterns with 5-fold symmetry
 //  Category: generative
-//  Features: procedural, aperiodic tiling, projection method
+//  Features: procedural, aperiodic tiling, projection method, audio-reactive, mouse-driven, temporal, upgraded-rgba
 //  Created: 2026-03-22
 //  By: Agent 4A
 // ═══════════════════════════════════════════════════════════════════
@@ -157,6 +157,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let _luma_q = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let _alpha_q = clamp(_luma_q * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, _alpha_q));
+    let outColor = vec4<f32>(col, _alpha_q);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
 }

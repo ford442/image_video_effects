@@ -11,8 +11,12 @@
     "audio-reactive"
   ],
   "features": [
+    "generative",
     "mouse-driven",
-    "audio-driven"
+    "audio-reactive",
+    "raymarched",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {

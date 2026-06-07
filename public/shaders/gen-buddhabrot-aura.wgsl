@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Buddhabrot Aura
 //  Category: generative
-//  Features: buddhabrot, fractal, generative, audio-reactive, mouse-interactive, semantic-alpha
+//  Features: buddhabrot, fractal, generative, audio-reactive, mouse-interactive, semantic-alpha, upgraded-rgba, temporal
 //  Complexity: Very High
 //  Created: 2026-05-30
 //  Updated: 2026-06-01
@@ -52,6 +52,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
   let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+  let uv01 = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
@@ -78,8 +79,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let samples = 4u;
   let h0 = hash22(vec2<f32>(f32(global_id.x), f32(global_id.y)) + fract(time) * 13.37);
 
+  // Golden ratio φ for quasi-random sampling offsets
+  let phi = 1.6180339887;
+
   for (var s: u32 = 0u; s < samples; s = s + 1u) {
-    let h = hash22(h0 + vec2<f32>(f32(s) * 1.618, f32(s) * 2.718));
+    // Buddhabrot: probability density of escaping orbits
+    // Mandelbrot escape radius |z|>2 (dist > 4.0 in squared magnitude)
+    let h = hash22(h0 + vec2<f32>(f32(s) * phi, f32(s) * 2.718));
     let offset = (h - 0.5) * 0.002;
     let c = center + offset;
 
@@ -87,6 +93,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var orbit = vec3<f32>(0.0);
     var pathLen = 0.0;
 
+    // Escape count statistics accumulate orbit trajectory density
     for (var i: i32 = 0; i < baseIter; i = i + 1) {
       z = vec2<f32>(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
       pathLen = pathLen + 1.0;
@@ -123,15 +130,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let centerGlow = length(uv - mouseC * 0.25);
   color += vec3<f32>(0.2, 0.15, 0.35) * smoothstep(0.9, 0.15, centerGlow) * aura * (0.6 + bass * 0.4);
 
-  let chrOffset = density * densityScale * 0.012 * aura;
-  let chrR = mix(color.r, color.r * 1.15, chrOffset * 8.0);
-  let chrB = mix(color.b, color.b * 1.1, chrOffset * 6.0);
-  color = vec3<f32>(chrR, color.g, chrB);
+  // Standard chromatic aberration
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
   color = acesToneMap(color * (1.0 + densityScale * 0.4));
 
   let semantic_alpha = clamp(density * escapeVel * (0.4 + depth * 0.6), 0.25, 0.98);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(color, semantic_alpha));
+  // Temporal feedback
+  let coord = vec2<i32>(global_id.xy);
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+  let decay = 0.96;
+  let temporal = mix(prev.rgb * decay, color, 0.25);
+
+  textureStore(writeTexture, global_id.xy, vec4<f32>(temporal, semantic_alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(temporal, semantic_alpha));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(density * 0.7, 0.0, 0.0, 0.0));
 }

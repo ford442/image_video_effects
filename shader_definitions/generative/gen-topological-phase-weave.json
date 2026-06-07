@@ -3,7 +3,7 @@
   "name": "Topological Phase Weave",
   "url": "shaders/gen-topological-phase-weave.wgsl",
   "category": "generative",
-  "description": "A simulation of nematic liquid crystal fields where audio frequencies control topological defect creation, motion, and annihilation, producing mesmerizing swirling defect lattices with iridescent color mapping.",
+  "description": "A simulation of nematic liquid crystal fields where audio frequencies control topological defect creation, motion, and annihilation, producing mesmerizing swirling defect lattices with iridescent color mapping. Enriched with phase transition physics: bass drives an order parameter from disordered (warm chaotic weave) to ordered (cool crystal lattice). Mouse inserts topological defects. Euler characteristic visible as color modulation.",
   "tags": [
     "generative",
     "topology",
@@ -15,12 +15,16 @@
     "audio",
     "music",
     "reactive",
-    "scientific"
+    "scientific",
+    "phase-transition",
+    "euler-characteristic"
   ],
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "animated"
+    "animated",
+    "temporal",
+    "upgraded-rgba"
   ],
   "params": [
     {

@@ -178,7 +178,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Iridescence parameters
     let filmThicknessBase = mix(200.0, 800.0, u.zoom_params.y);
-    let filmIOR = mix(1.2, 2.4, 0.3);
+    let filmIOR = mix(1.2f, 2.4f, 0.3f);
     let iridIntensity = mix(0.3, 1.5, u.zoom_params.z);
 
     if (t < maxT) {

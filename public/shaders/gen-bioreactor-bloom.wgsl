@@ -41,6 +41,11 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
   return vec2<f32>(hash21(p), hash21(p + vec2<f32>(17.1, 29.6)));
 }
 
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+  let k = select(release, attack, bass > prev);
+  return mix(prev, bass, k);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -59,6 +64,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(gid.xy);
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
+
+  // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
+  let prevBass = extraBuffer[0];
+  let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
+  extraBuffer[0] = smoothBass;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz;
@@ -68,7 +78,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let reactivity = mix(0.2, 2.2, u.zoom_params.z);
   let toxicity = mix(0.0, 1.0, u.zoom_params.w);
 
-  let gridUV = uv * cellScale + vec2<f32>(time * (0.08 + bass * 0.18), -time * 0.06);
+  let gridUV = uv * cellScale + vec2<f32>(time * (0.08 + smoothBass * 0.18), -time * 0.06);
   let cell = floor(gridUV);
   let local = fract(gridUV) - 0.5;
   let seed = hash22(cell);
@@ -85,14 +95,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Chromatic bioreactor: green colony, cyan nucleus, red poison, gold spores
   var color = vec3<f32>(0.02, 0.05, 0.03);
-  color = color + vec3<f32>(0.1, 0.95, 0.5) * colony * (0.6 + reactivity * 0.7) * (1.0 + bass * 0.1);
+  color = color + vec3<f32>(0.1, 0.95, 0.5) * colony * (0.6 + reactivity * 0.7) * (1.0 + smoothBass * 0.1);
   color = color + vec3<f32>(0.5, 1.0, 0.85) * nucleus * pulse * 0.6 * (1.0 + mids * 0.1);
   color = color + vec3<f32>(0.65, 0.05, 0.15) * poisonCloud * (1.0 + treble * 0.15);
   color = color + vec3<f32>(0.9, 1.0, 0.75) * spores * (0.3 + treble);
 
   // Temporal bloom persistence: colonies grow and fade
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  color = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
+  color = mix(color, prev.rgb * 0.9, 0.03 + smoothBass * 0.01);
 
   let presence = sat(colony * 0.9 + poisonCloud * 0.45 + spores * 0.8);
   let alpha = sat(0.15 + presence * 0.85);

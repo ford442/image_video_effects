@@ -66,6 +66,26 @@ fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
   return v;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 0.15 + 0.05) + 0.004;
+  let b = x * (x * 0.15 + 0.50) + 0.06;
+  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Planck length: 1.6163×10^-35 meters
+// Planck time: 5.39×10^-44 seconds
+// Vacuum energy density: ~10^-9 J/m³ (cosmological constant problem: theoretical QED predicts 10^113 J/m³!)
+// Quantum foam: fluctuations at Planck scale l_P = 1.616e-35 m
+fn planckScaleNoise(p: vec2<f32>, time: f32) -> f32 {
+  // Conceptual Planck-scale granularity mapped to shader frequency space
+  let highFreq = 120.0; // Inspired by inverse Planck length scaled to render space
+  let planckTimeScale = 5.39; // 5.39e-44 s × 1e44, conceptual scaling
+  let t = time * planckTimeScale * 0.1;
+  let h1 = hash21(p * highFreq + vec2<f32>(t, t * 0.7));
+  let h2 = hash21(p * highFreq * 1.618 + vec2<f32>(-t * 0.5, t));
+  return (h1 + h2) * 0.5;
+}
+
 fn voronoi(p: vec2<f32>, time: f32) -> vec3<f32> {
   let n = floor(p);
   let f = fract(p);
@@ -121,10 +141,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let warpedP = p + normalize(mouseWarp + vec2<f32>(0.001)) * mouseInfluence * 2.0;
 
   // Quantum foam: bubbling vacuum fluctuations
-  let foamTime = time * (0.5 + bass * 1.5);
+  // Planck time 5.39e-44 s drives foam animation speed conceptually
+  let planckTimeScale = 5.39; // scaled conceptual factor
+  let foamTime = time * (0.5 + bass * 1.5) * planckTimeScale * 0.1;
   let foamScale = 4.0 + bass * 6.0;
   let foamNoise = fbm2(warpedP * foamScale + vec2<f32>(foamTime * 0.2, foamTime * 0.15), 4);
-  let bubbleField = sin(foamNoise * 12.0 + foamTime) * 0.5 + 0.5;
+  let planckFluctuation = planckScaleNoise(warpedP, time);
+  let bubbleField = sin(foamNoise * 12.0 + foamTime + planckFluctuation * 2.0) * 0.5 + 0.5;
   let bubbleMask = smoothstep(0.55, 0.75, bubbleField) * foamIntensity;
 
   // Crystalline lattice from voronoi
@@ -184,6 +207,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Temporal feedback: blend with previous frame
   let feedback = mix(color, prev.rgb, 0.25 + bass * 0.15);
   color = feedback;
+
+  // ACES tone mapping
+  color = acesToneMap(color);
 
   // Semantic alpha: based on edge density + bubble presence + sparkle
   let alpha = clamp(distortedEdge * 0.7 + bubbleMask * 0.5 + node * 0.6 + sparkle * 0.3, 0.0, 1.0);

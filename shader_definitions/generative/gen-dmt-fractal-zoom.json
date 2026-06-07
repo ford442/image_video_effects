@@ -3,21 +3,25 @@
   "name": "DMT Fractal Zoom",
   "category": "generative",
   "url": "shaders/gen-dmt-fractal-zoom.wgsl",
-  "description": "An infinite zoom through a fractal landscape with DMT-vision-like visual complexity. Each zoom level reveals new fractal details. Colors are extremely saturated rainbow gradients that shift as you zoom. Mouse controls zoom speed, direction, and panning. Mandelbrot-Burning Ship hybrid with heavy post-processing glow.",
+  "description": "An infinite zoom through a fractal landscape with DMT-vision-like visual complexity enriched by Wolfram Alpha Mandelbrot data. Each zoom level reveals new fractal details. Escape radius |z|>2 guarantees divergence. Smooth coloring uses log(log|z|)/log(2). Colors are extremely saturated rainbow gradients that shift as you zoom. Bass drives zoom speed and iteration count. Mouse warps the complex plane as a Julia set constant. Temporal feedback creates trails during zoom.",
   "features": [
-    "interactive",
-    "mouse-reactive",
+    "upgraded-rgba",
     "temporal",
+    "audio-reactive",
+    "mouse-driven",
+    "interactive",
     "procedural"
   ],
   "tags": [
     "psychedelic",
     "fractal",
     "mandelbrot",
+    "julia",
     "zoom",
     "dmt",
     "rainbow",
-    "neon"
+    "neon",
+    "wolfram"
   ],
   "params": [
     {

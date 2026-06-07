@@ -2,7 +2,7 @@
 //  Deep Sea Thermal Vent
 //  Category: generative
 //  Features: audio-reactive, temporal-feedback, chromatic-dispersion,
-//            hydrothermal-plumes, bioluminescence, mouse-flow-distortion
+//            hydrothermal-plumes, bioluminescence, mouse-flow-distortion, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-30
 // ═══════════════════════════════════════════════════════════════════
@@ -88,6 +88,22 @@ fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
   let dx = (n1 - n2) / (2.0 * eps);
   let dy = (n3 - n4) / (2.0 * eps);
   return vec2<f32>(dy, -dx);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 0.15 + 0.05) + 0.004;
+  let b = x * (x * 0.15 + 0.50) + 0.06;
+  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn ventTempColor(tempFactor: f32) -> vec3<f32> {
+  let t = clamp(tempFactor, 0.0, 1.0);
+  let cool = vec3<f32>(0.1, 0.2, 0.5);
+  let warm = vec3<f32>(0.9, 0.5, 0.1);
+  let hot = vec3<f32>(1.0, 0.95, 0.7);
+  let t1 = clamp(t / 0.3, 0.0, 1.0);
+  let t2 = clamp((t - 0.3) / 0.4, 0.0, 1.0);
+  return mix(mix(cool, warm, t1), hot, t2);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -214,8 +230,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = floorColor + floorMask * ventColor * ventWall + plumeColor + turbColor;
   color = color + microbeColor * microbeGlow;
 
-  // Vent glow adds warm light
-  color = color + vec3<f32>(1.0, 0.6, 0.2) * ventGlow * 0.5;
+  // Vent glow adds warm light with temperature-based tint (350C max reference)
+  let tempFactor = clamp(ventGlow * 1.2 + totalPlume * 0.2, 0.0, 1.0);
+  color = color + ventTempColor(tempFactor) * ventGlow * 0.5;
+
+  // ACES tone mapping
+  color = acesToneMap(color);
 
   // Temporal feedback: trailing plume smoke
   let feedback = mix(color, prev.rgb, 0.2 + bass * 0.1);

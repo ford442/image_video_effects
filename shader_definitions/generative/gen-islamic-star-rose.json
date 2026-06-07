@@ -3,11 +3,13 @@
   "name": "Islamic Geometric Star-Rose",
   "category": "generative",
   "url": "shaders/gen-islamic-star-rose.wgsl",
-  "description": "Procedurally generated Islamic geometric patterns with girih-style star and polygon tessellations. Features intricate strapwork, rosette centers, and metallic gold/blue/crimson coloring on a hexagonal grid. Mouse controls pattern rotation and scale for close examination of the geometry.",
+  "description": "Procedurally generated Islamic geometric patterns enriched by Wolfram Alpha regular pentagon data. Interior angle 108°, central angle 72°. Diagonal/edge ratio φ≈1.618 determines petal proportions. Features girih-style star and polygon tessellations with pentagram-aware geometry. Bass rotates the tessellation. Mouse morphs between star and rose forms. Temporal feedback and chromatic aberration complete the upgraded-rgba stack.",
   "features": [
-    "interactive",
-    "mouse-reactive",
+    "upgraded-rgba",
     "temporal",
+    "audio-reactive",
+    "mouse-driven",
+    "interactive",
     "procedural",
     "geometric"
   ],
@@ -17,9 +19,11 @@
     "girih",
     "tessellation",
     "star",
+    "pentagram",
     "generative",
     "ornamental",
-    "metallic"
+    "metallic",
+    "wolfram"
   ],
   "params": [
     {

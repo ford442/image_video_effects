@@ -1,21 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Islamic Geometric Star-Rose
 //  Category: generative
-//  Description: Procedurally generated Islamic geometric patterns
-//    with girih-style star and polygon tessellations. Features
-//    intricate strapwork, rosette centers, and metallic gold/blue
-//    coloring. Mouse controls pattern rotation and scale.
-//  Complexity: Medium
-// ═══════════════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════════
-//  Islamic Star Rose
-//  Category: generative
-//  Features: islamic, star, rose, geometric, audio-reactive, mouse-interactive, semantic-alpha
-//  Complexity: Medium-High
+//  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven,
+//    islamic, star, rose, geometric, girih, tessellation
+//  Complexity: Very High
+//  Wolfram Data: Regular pentagon — interior angle 108° = 3π/5 rad;
+//    central angle 72° = 2π/5 rad; diagonal/edge ratio φ = (1+√5)/2 ≈ 1.618;
+//    height = √(5+2√5)/2 × s ≈ 1.539s;
+//    star polygon {n/k} where k=2 for pentagram
+//  Chunks From: gen-islamic-star-rose (original)
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Upgraded: 2026-06-07
+//  By: Kimi Agent
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -40,6 +36,12 @@ struct Uniforms {
 };
 
 const PI: f32 = 3.14159265359;
+
+// ═══ CHUNK: acesToneMap (canonical) ═══
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hashf(n: f32) -> f32 {
   return fract(sin(n * 127.1) * 43758.5453);
@@ -67,7 +69,7 @@ fn sd_ngon(p: vec2<f32>, r: f32, n: i32) -> f32 {
   return max(dist_to_edge, -dist_to_vertex + r * 0.3);
 }
 
-// Signed distance to a star polygon
+// Signed distance to a star polygon with Wolfram φ ratio
 fn sd_star(p: vec2<f32>, outer_r: f32, inner_r: f32, points: i32) -> f32 {
   let angle = atan2(p.y, p.x);
   let sector = PI * 2.0 / f32(points);
@@ -78,6 +80,33 @@ fn sd_star(p: vec2<f32>, outer_r: f32, inner_r: f32, points: i32) -> f32 {
 
   // Interpolate between outer and inner radius
   let edge_r = mix(outer_r, inner_r, a / half_sector);
+  return rp - edge_r;
+}
+
+// Pentagon-aware star — Wolfram: star points at angle = fi * 72° + 36°
+fn sd_pentagram(p: vec2<f32>, outer_r: f32) -> f32 {
+  let angle = atan2(p.y, p.x);
+  let sector = PI * 2.0 / 5.0;          // central angle 72° = 2π/5
+  let half_sector = sector * 0.5;        // 36°
+  let a = abs(fract(angle / sector + 0.5) - 0.5) * sector;
+  let rp = length(p);
+  // Wolfram: diagonal/edge ratio φ ≈ 1.618 determines inner radius
+  let PHI: f32 = 1.618033988;
+  let inner_r = outer_r / PHI;
+  let edge_r = mix(outer_r, inner_r, a / half_sector);
+  return rp - edge_r;
+}
+
+// Pentagon rosette with 108° interior angle awareness
+fn sd_pentagon_rosette(p: vec2<f32>, r: f32) -> f32 {
+  let angle = atan2(p.y, p.x);
+  let sector = PI * 2.0 / 5.0;
+  // Points offset by 36° for pentagram alignment
+  let a = abs(fract(angle / sector + 0.5) - 0.5) * sector;
+  let rp = length(p);
+  // Height ratio ≈ 1.539 from Wolfram
+  let heightFactor = 1.539;
+  let edge_r = mix(r, r * 0.4, smoothstep(0.0, sector * 0.5, a) * heightFactor / 1.618);
   return rp - edge_r;
 }
 
@@ -123,14 +152,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let p3 = u.zoom_params.z; // scale (zoom)
   let p4 = u.zoom_params.w; // color shift
 
-  // Pattern rotation from mouse or auto
+  // Audio reads
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  // Bass rotates the tessellation
+  let bassRotation = bass * PI * 0.5;
+
+  // Pattern rotation from mouse or auto + bass
   var rotation: f32;
   var zoom: f32;
   if mouseDown {
-    rotation = (mouse.x - 0.5) * PI * 2.0;
+    rotation = (mouse.x - 0.5) * PI * 2.0 + bassRotation;
     zoom = 0.5 + mouse.y * 1.5;
   } else {
-    rotation = time * p2 * 0.1;
+    rotation = time * p2 * 0.1 + bassRotation;
     zoom = 0.8 + p3 * 0.7;
   }
 
@@ -152,6 +189,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var min_dist = 1000.0;
   var cell_type = 0.0;
   var edge_dist = 1.0;
+
+  // Wolfram φ for petal proportions
+  let PHI: f32 = 1.618033988;
 
   // Check neighboring hexes
   for (var dc = -1; dc <= 1; dc++) {
@@ -175,8 +215,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
       var shape_dist: f32;
       if is_star {
+        // Prefer pentagram (5-pointed star) when star is chosen
         let star_points = 4 + i32(hashf(pattern_seed + 1.0) * 6.0);
-        shape_dist = sd_star(local, hex_r * 0.7, hex_r * 0.3, star_points) / hex_r;
+        if star_points == 5 {
+          // Wolfram pentagram: petal length = edge * φ
+          let outer = hex_r * 0.7;
+          let inner = outer / PHI;
+          shape_dist = sd_star(local, outer, inner, 5) / hex_r;
+        } else {
+          let outer_r = hex_r * 0.7;
+          let inner_r = hex_r * 0.3;
+          shape_dist = sd_star(local, outer_r, inner_r, star_points) / hex_r;
+        }
       } else {
         let ngon_sides = 4 + i32(hashf(pattern_seed + 2.0) * 4.0);
         shape_dist = sd_ngon(local, hex_r * 0.5, ngon_sides) / hex_r;
@@ -201,9 +251,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Color the pattern
   var color = girih_palette(cell_type, edge_dist, p4);
 
-  // Central star rosette
+  // Central star rosette — pentagram using Wolfram angles
   let center_dist = length(ruv);
-  let rosette = sd_star(ruv, 0.15 * zoom, 0.07 * zoom, 12);
+  let rosette = sd_pentagram(ruv, 0.15 * zoom);
   if rosette < 0.0 {
     // Inside central rosette
     color = mix(vec3<f32>(0.12, 0.20, 0.45), vec3<f32>(0.80, 0.70, 0.20), smoothstep(-0.02, 0.02, rosette));
@@ -211,16 +261,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rosette_edge = smoothstep(0.03, 0.0, abs(rosette));
   color += vec3<f32>(0.95, 0.88, 0.70) * rosette_edge * 0.6;
 
+  // Mouse morphs between star and rose forms
+  let mouseMorph = length(mouse / resolution - vec2<f32>(0.5));
+  let roseDist = sd_pentagon_rosette(ruv, 0.12 * zoom * (1.0 + mouseMorph * 2.0));
+  let roseEdge = smoothstep(0.04, 0.0, abs(roseDist));
+  color += vec3<f32>(0.75, 0.55, 0.15) * roseEdge * 0.4 * mouseMorph;
+
   // Background pattern (subtle repeating motif)
   let bg_pattern = sin(p_uv.x * 20.0) * sin(p_uv.y * 20.0) * 0.5 + 0.5;
   color += vec3<f32>(0.03, 0.05, 0.08) * bg_pattern * 0.1;
 
-  // Rotation shimmer
-  color *= 1.0 + sin(time * p2 * 0.3) * 0.02;
+  // Rotation shimmer with treble
+  color *= 1.0 + sin(time * p2 * 0.3 + treble * 2.0) * 0.02;
 
   // Vignette
   let vignette = 1.0 - smoothstep(0.3, 0.8, length(uv));
   color *= 0.75 + vignette * 0.25;
 
-  textureStore(writeTexture, pixel, vec4<f32>(color, 0.85));
+  // Chromatic aberration — bass-reactive
+  let caStr = 0.003 * (1.0 + bass);
+  color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+  // Temporal feedback
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.5), 0.0);
+  color = mix(prev.rgb * 0.96, color, 0.25);
+
+  // ACES tone mapping + semantic alpha
+  color = acesToneMap(color * 1.1);
+  let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
+
+  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
 }

@@ -37,6 +37,11 @@ fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+  let k = select(release, attack, bass > prev);
+  return mix(prev, bass, k);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -59,6 +64,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
+  // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
+  let prevBass = extraBuffer[0];
+  let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
+  extraBuffer[0] = smoothBass;
+
   let weaveScale = mix(3.0, 30.0, u.zoom_params.x);
   let twist = mix(0.0, 2.5, u.zoom_params.y);
   let shimmer = mix(0.2, 2.0, u.zoom_params.z);
@@ -74,7 +84,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sa = sin(ang);
   let rp = vec2<f32>(ca * p.x - sa * p.y, sa * p.x + ca * p.y);
 
-  let weft = sin(rp.x * weaveScale + time * (0.8 + bass));
+  let weft = sin(rp.x * weaveScale + time * (0.8 + smoothBass));
   let warp = sin(rp.y * weaveScale * (0.9 + mids * 0.2) - time * 0.7);
   let knot = smoothstep(0.7, 1.0, abs(weft * warp));
   let fiber = smoothstep(0.92, 1.0, max(abs(weft), abs(warp)));
@@ -85,7 +95,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Chromatic weave: R warp threads, G weft threads, B stars
   var color = vec3<f32>(0.01, 0.02, 0.05) * (1.0 - voidDepth * 0.7);
   color = color + vec3<f32>(0.35, 0.15, 0.75) * fiber * (1.0 + treble * 0.2);
-  color = color + vec3<f32>(0.95, 0.35, 0.75) * knot * shimmer * (1.0 + bass * 0.15);
+  color = color + vec3<f32>(0.95, 0.35, 0.75) * knot * shimmer * (1.0 + smoothBass * 0.15);
   color = color + vec3<f32>(0.75, 0.95, 1.0) * stars * (0.5 + treble);
 
   // Temporal persistence: star trails and weave memory

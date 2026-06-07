@@ -33,6 +33,11 @@ fn sat(x: f32) -> f32 {
   return clamp(x, 0.0, 1.0);
 }
 
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+  let k = select(release, attack, bass > prev);
+  return mix(prev, bass, k);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -51,6 +56,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = vec2<i32>(gid.xy);
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
+
+  // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
+  let prevBass = extraBuffer[0];
+  let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
+  extraBuffer[0] = smoothBass;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
@@ -67,7 +77,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let r = max(length(p), 1e-5);
   let a = atan2(p.y, p.x);
-  let spinA = a + time * spin * (1.0 + bass * 0.7) - r * (1.8 + mids);
+  let spinA = a + time * spin * (1.0 + smoothBass * 0.7) - r * (1.8 + mids);
   let sector = sin(spinA * archCount);
   let arches = smoothstep(0.75, 1.0, abs(sector));
 
@@ -79,13 +89,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Chromatic cathedral separation: R arches, G columns, B fog
   let chromaR = arches * (1.0 + treble * 0.15);
   let chromaG = columns * (1.0 + mids * 0.1);
-  let chromaB = fog * (1.0 + bass * 0.1);
+  let chromaB = fog * (1.0 + smoothBass * 0.1);
 
   var color = vec3<f32>(0.02, 0.01, 0.03);
   color = color + vec3<f32>(0.42, 0.15, 0.65) * chromaR;
   color = color + vec3<f32>(0.75, 0.55, 0.85) * chromaG;
   color = color + vec3<f32>(0.15, 0.3, 0.55) * chromaB;
-  color = color + vec3<f32>(0.9, 0.7, 1.0) * centerLight * (0.5 + bass);
+  color = color + vec3<f32>(0.9, 0.7, 1.0) * centerLight * (0.5 + smoothBass);
 
   // Temporal persistence: previous light bleeds for ghost cathedral
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);

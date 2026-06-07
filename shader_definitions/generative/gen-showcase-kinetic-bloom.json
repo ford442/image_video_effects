@@ -3,14 +3,12 @@
   "name": "Kinetic Bloom",
   "category": "generative",
   "url": "shaders/gen-showcase-kinetic-bloom.wgsl",
-  "description": "Geometric flower mandala that breathes and rotates. Mouse controls the bloom center and opens petals. Audio-reactive: bass opens petals, mids spin faster, treble adds pollen sparkles. Showcase-optimized for 12-second rotation cycles.",
+  "description": "Geometric flower mandala with damped harmonic oscillator physics. Each petal is a spring-mass system: ζ from mids, ω₀ from bass, underdamped motion x(t)=e^(-ζω₀t)cos(ωt). Bloom cycles triggered by bass. Temporal feedback, chromatic aberration, and ACES tone mapping.",
   "features": [
-    "audio-reactive",
-    "generative",
-    "mouse-driven",
+    "upgraded-rgba",
     "temporal",
-    "chromatic",
-    "showcase"
+    "audio-reactive",
+    "mouse-driven"
   ],
   "params": [
     {
@@ -56,6 +54,7 @@
     "temporal",
     "chromatic",
     "geometric",
-    "organic"
+    "organic",
+    "upgraded-rgba"
   ]
 }

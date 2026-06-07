@@ -91,7 +91,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     blended = mix(vec3<f32>(gray), blended, 0.5 + saturation * 0.5);
 
     // ═══ HDR BLOOM CHAIN ═══
-    let bloomRadius = mix(0.01, 0.06, 0.4);
+    let bloomRadius = mix(0.01f, 0.06f, 0.4f);
     let bloomIntensity = 1.5;
     let bloomSamples = 12;
 
@@ -138,7 +138,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     // Tone map
-    let toneMapExp = mix(0.5, 2.0, 0.5);
+    let toneMapExp = mix(0.5f, 2.0f, 0.5f);
     let ldrColor = toneMapACES(hdrColor * toneMapExp);
     let exposure = max(0.0, max(hdrColor.r, max(hdrColor.g, hdrColor.b)) - 1.0);
 

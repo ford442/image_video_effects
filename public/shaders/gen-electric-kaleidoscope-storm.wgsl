@@ -182,11 +182,28 @@ fn electricColor(idx: f32) -> vec3<f32> {
     }
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = x * (x * 0.15 + 0.05) + 0.004;
+  let b = x * (x * 0.15 + 0.50) + 0.06;
+  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Dielectric breakdown E_break ≈ 3×10^6 V/m, lightning V ≈ 10^8 V
+fn dielectricBreakdown(dist: f32, fieldStrength: f32) -> f32 {
+    let breakdown = 3.0;
+    let effectiveField = fieldStrength * exp(-dist);
+    if (effectiveField > breakdown) {
+        return 1.0;
+    }
+    return smoothstep(breakdown * 0.5, breakdown, effectiveField);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let res = vec2<f32>(u.config.z, u.config.w);
     let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
+    let uv01 = vec2<f32>(pixel) / res;
     
     let time = u.config.x;
     let mousePos = (u.zoom_config.yz - res * 0.5) / min(res.x, res.y);
@@ -272,8 +289,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Central electric orb
     let centerDist = length(kp);
+    let fieldStrength = 5.0 * audioIntensity;
+    let bd = dielectricBreakdown(centerDist, fieldStrength);
     let orbGlow = exp(-centerDist * centerDist * 100.0) * (0.5 + 0.5 * sin(time * 6.0)) * (1.0 + bass * 0.3);
-    col += vec3<f32>(0.8, 0.9, 1.0) * orbGlow * audioIntensity;
+    col += vec3<f32>(0.8, 0.9, 1.0) * orbGlow * audioIntensity * (0.5 + 0.5 * bd);
     
     // Energy rings from center
     let ringFreq = 4.0 + scale * 8.0;
@@ -298,12 +317,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Bloom/vignette
     let vignette = 1.0 - dot(uv, uv) * 0.35;
     col *= max(vignette, 0.3);
-    
-    // Tone mapping
-    col = col / (1.0 + col * 0.3);
-    
+
+    // Read depth for chromatic aberration
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
+
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+    // ACES tone mapping
+    col = acesToneMap(col);
+
     // Neon glow color grading
     col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(1.1, 1.0, 0.9));
-    
-    textureStore(writeTexture, pixel, vec4<f32>(col, 1.0));
+
+    // Semantic alpha
+    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
+
+    // Temporal feedback
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+    let decay = 0.96;
+    let temporal = mix(prev.rgb * decay, col, 0.25);
+    textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
+
+    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
 }

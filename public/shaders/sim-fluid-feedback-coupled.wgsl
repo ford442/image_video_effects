@@ -91,7 +91,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fadeRate = mix(0.92, 0.998, u.zoom_params.z);
   let glowAmount = mix(0.3, 1.8, u.zoom_params.w);
 
-  let mouseRadius = mix(0.03, 0.15, 0.5);
+  let mouseRadius = mix(0.03f, 0.15f, 0.5f);
   let colorShift = 0.6;
   let vortexStrength = 1.5;
 

@@ -10,7 +10,9 @@
     "chromatic-dispersion",
     "quantum-foam",
     "crystalline-lattice",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal"
   ],
   "params": [
     {
