@@ -1,0 +1,53 @@
+{
+  "id": "rgb-topology",
+  "name": "RGB Topology",
+  "category": "visual-effects",
+  "url": "shaders/rgb-topology.wgsl",
+  "description": "Topographic contour extraction per RGB channel with 3D terrain visualization. Each channel is a heightfield with independent contour intervals, hypsometric tinting, HDR specular peaks, and chromatic blending at crossings.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "depth-aware"
+  ],
+  "tags": [
+    "topology",
+    "contour",
+    "rgb",
+    "depth-aware",
+    "audio-reactive",
+    "hypsometric",
+    "3d-terrain",
+    "hdr-specular"
+  ],
+  "params": [
+    {
+      "id": "contour_density",
+      "name": "Contour Density",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "line_thickness",
+      "name": "Line Thickness",
+      "default": 0.22,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "channel_separation",
+      "name": "Channel Separation",
+      "default": 0.35,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "source_blend",
+      "name": "Source Blend",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    }
+  ]
+}

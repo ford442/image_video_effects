@@ -1,0 +1,58 @@
+{
+  "id": "crt-phosphor-decay",
+  "name": "CRT Phosphor Decay",
+  "url": "shaders/crt-phosphor-decay.wgsl",
+  "description": "Simulates CRT phosphor persistence with per-channel RGB decay rates, scanline masking, sub-pixel triad rendering, and halation bloom. Audio-reactive brightness flash and scanline flutter. Touch cursor adds static.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "decay_rate",
+      "name": "Decay Rate",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "scanline_intensity",
+      "name": "Scanline Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "halation_spread",
+      "name": "Halation Spread",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "audio_sensitivity",
+      "name": "Audio Sensitivity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "crt",
+    "retro",
+    "glitch",
+    "phosphor",
+    "scanline",
+    "vintage",
+    "television",
+    "temporal",
+    "audio"
+  ]
+}

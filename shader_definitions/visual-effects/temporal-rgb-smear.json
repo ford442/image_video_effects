@@ -1,0 +1,63 @@
+{
+  "id": "temporal-rgb-smear",
+  "name": "Temporal RGB Smear",
+  "url": "shaders/temporal-rgb-smear.wgsl",
+  "description": "Directional RGB smear with time-based offset, chromatic split modulated by mids, temporal feedback decay, and accumulative trail alpha.",
+  "params": [
+    {
+      "id": "smear_length",
+      "name": "Smear Length",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Length of the directional smear"
+    },
+    {
+      "id": "smear_decay",
+      "name": "Smear Decay",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Temporal feedback decay amount"
+    },
+    {
+      "id": "chromatic_split",
+      "name": "Chromatic Split",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "RGB channel separation along smear direction"
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Time-based directional turbulence"
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "audio-reactive",
+    "interactive",
+    "temporal",
+    "feedback",
+    "chromatic"
+  ]
+}

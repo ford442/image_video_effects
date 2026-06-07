@@ -1,0 +1,176 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Bitonic Pixel Sort — Algorithmist Upgrade (May 2026 Batch D)
+//  Category: simulation
+//  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, multi-ripple
+//  Complexity: High
+//  Chunks: FBM curl noise, SDF smooth union, true bitonic sort
+// ═══════════════════════════════════════════════════════════════════
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
+  zoom_params: vec4<f32>,  // x=SortMix, y=NoiseMix, z=SortDir, w=NoiseOctaves
+  ripples: array<vec4<f32>, 50>,
+};
+
+var<workgroup> sKey: array<f32, 256>;
+var<workgroup> sCol: array<vec4<f32>, 256>;
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  let n = sin(dot(p, vec2<f32>(127.1, 311.7)));
+  return fract(vec2<f32>(n, n * 43758.5453));
+}
+
+fn vnoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash22(i).x, hash22(i + vec2<f32>(1.0, 0.0)).x, u.x),
+             mix(hash22(i + vec2<f32>(0.0, 1.0)).x, hash22(i + vec2<f32>(1.0, 1.0)).x, u.x), u.y);
+}
+
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+  var s = 0.0;
+  var a = 0.5;
+  var pp = p;
+  for (var i: i32 = 0; i < octaves; i = i + 1) {
+    s = s + a * vnoise(pp);
+    pp = pp * 2.0 + vec2<f32>(3.1, 1.7);
+    a = a * 0.5;
+  }
+  return s;
+}
+
+fn curl2D(p: vec2<f32>) -> vec2<f32> {
+  let e = 0.01;
+  let n = vnoise(p);
+  let dx = vnoise(p + vec2<f32>(e, 0.0)) - n;
+  let dy = vnoise(p + vec2<f32>(0.0, e)) - n;
+  return vec2<f32>(-dy, dx) / e;
+}
+
+fn fbmCurl(p: vec2<f32>, octaves: i32) -> vec2<f32> {
+  var v = vec2<f32>(0.0);
+  var a = 0.5;
+  var pp = p;
+  for (var i: i32 = 0; i < octaves; i = i + 1) {
+    v = v + a * curl2D(pp);
+    pp = pp * 2.0 + vec2<f32>(3.1, 1.7);
+    a = a * 0.5;
+  }
+  return v;
+}
+
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+  let h = max(k - abs(a - b), 0.0) / k;
+  return min(a, b) - h * h * k * 0.25;
+}
+
+fn rgbToLuma(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>,
+        @builtin(local_invocation_id) lid: vec3<u32>,
+        @builtin(workgroup_id) wgid: vec3<u32>) {
+  let li = lid.y * 16u + lid.x;
+  let gx = wgid.x * 16u + lid.x;
+  let gy = wgid.y * 16u + lid.y;
+  let x = i32(gx);
+  let y = i32(gy);
+  let uv = vec2<f32>(f32(gx), f32(gy)) / u.config.zw;
+  let time = u.config.x;
+
+  let resX = u32(u.config.z);
+  let resY = u32(u.config.w);
+  let inBounds = gx < resX && gy < resY;
+
+  let sortMix = u.zoom_params.x;
+  let noiseMix = u.zoom_params.y;
+  let sortDir = u.zoom_params.z;
+  let octaves = max(i32(u.zoom_params.w * 6.0), 1);
+
+  let bass = plasmaBuffer[0].x;
+  let bassMod = 1.0 + bass * 0.3;
+
+  let scale = 2.0 + u.zoom_params.w * 10.0;
+  let speed = 0.2 + u.zoom_params.y * 0.3;
+  let warp = fbmCurl(uv * scale + time * speed, octaves) * (0.02 + u.zoom_params.w * 0.03);
+  let warpedUV = uv + warp;
+
+  let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  var d = distance(uv, mouse) - (0.1 + u.zoom_params.w * 0.2);
+  for (var i: i32 = 0; i < 50; i = i + 1) {
+    let rp = u.ripples[i];
+    if (rp.z > 0.0) {
+      let age = time - rp.z;
+      if (age > 0.0 && age < 4.0) {
+        let rd = distance(uv, rp.xy) - (0.15 * (1.0 - age / 4.0));
+        d = smin(d, rd, 0.15);
+      }
+    }
+  }
+  let mask = 1.0 - smoothstep(-0.05, 0.05, d);
+
+  var p: vec4<f32>;
+  var key: f32;
+  if (inBounds) {
+    p = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
+    let lum = rgbToLuma(p.rgb);
+    let n = fbm(uv * 8.0 + time * 0.1, octaves);
+    key = lum * (1.0 - noiseMix) + n * noiseMix;
+    key = key + f32(li) * 0.00001;
+  } else {
+    p = vec4<f32>(0.0);
+    key = select(-1.0, 2.0, sortDir > 0.5);
+  }
+
+  sKey[li] = key;
+  sCol[li] = p;
+
+  for (var k: u32 = 2u; k <= 256u; k = k << 1u) {
+    for (var j: u32 = k >> 1u; j > 0u; j = j >> 1u) {
+      workgroupBarrier();
+      let partner = li ^ j;
+      let bit = li & k;
+      let a = sKey[li];
+      let b = sKey[partner];
+      let globalAsc = sortDir < 0.5;
+      let asc = select(bit != 0u, bit == 0u, globalAsc);
+      let swap = select(a > b, a < b, asc);
+      if (swap && partner > li) {
+        sKey[li] = b;
+        sKey[partner] = a;
+        let ca = sCol[li];
+        sCol[li] = sCol[partner];
+        sCol[partner] = ca;
+      }
+      workgroupBarrier();
+    }
+  }
+
+  if (inBounds) {
+    let sorted = sCol[li];
+    let effectiveMix = sortMix * mask * bassMod;
+    let finalRgb = mix(p.rgb, sorted.rgb, effectiveMix);
+    let alpha = mix(p.a, smoothstep(0.0, 0.3, rgbToLuma(sorted.rgb)), effectiveMix);
+    textureStore(writeTexture, vec2<i32>(x, y), vec4<f32>(finalRgb, alpha));
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(x, y), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  }
+}

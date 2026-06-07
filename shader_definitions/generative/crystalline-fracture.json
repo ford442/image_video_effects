@@ -1,0 +1,69 @@
+{
+  "id": "crystalline-fracture",
+  "name": "Crystalline Fracture",
+  "category": "generative",
+  "url": "shaders/crystalline-fracture.wgsl",
+  "description": "Fracture mechanics simulation with stress intensity factor-driven crack propagation, branching, percolation connectivity, and hackle marks on translucent crystal surfaces. Thin-film iridescence and subsurface scattering. Audio loads stress and triggers catastrophic failure; mouse applies point stress. Depth controls crystal thickness perspective.",
+  "features": [
+    "audio-reactive",
+    "fracture-mechanics",
+    "stress-intensity",
+    "crack-propagation",
+    "iridescence",
+    "subsurface-scatter",
+    "voronoi-cells",
+    "upgraded-rgba",
+    "chromatic-edges"
+  ],
+  "params": [
+    {
+      "id": "cells",
+      "name": "Cell Density",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "glow",
+      "name": "Edge Glow",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "fracture",
+      "name": "Fracture Amount",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "chromatic",
+      "name": "Chromatic Shift",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "crystal",
+    "fracture",
+    "voronoi",
+    "chromatic",
+    "audio-reactive",
+    "geometric",
+    "abstract",
+    "fracture-mechanics",
+    "stress-intensity",
+    "crack-propagation",
+    "iridescence",
+    "subsurface-scatter",
+    "percolation",
+    "hackle"
+  ]
+}

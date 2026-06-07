@@ -1,0 +1,46 @@
+# Shader Param Uploader Agent
+
+**Role:** Upload extracted param defaults to storage manager API
+
+**Target:** https://storage.noahcohn.com/api/shaders
+
+## Task
+
+1. **Receive extracted param data** from Extractor Agent
+   - JSON file with shader IDs and their real params
+
+2. **Upload to storage manager**
+   - For each shader, send PATCH/POST request to update params
+   - Use bulk endpoint if available: `POST /api/shaders/batch`
+   - Or individual: `PUT /api/shaders/{id}`
+
+3. **Verify uploads**
+   - Fetch back from API to confirm defaults are saved
+   - Check that `default` values are not all 0.5
+
+## API Format
+```bash
+# Update single shader
+curl -X PUT https://storage.noahcohn.com/api/shaders/liquid \
+  -H "Content-Type: application/json" \
+  -d '{
+    "params": [
+      {"name": "param1", "label": "Viscosity", "default": 0.5, "min": 0, "max": 1},
+      {"name": "param2", "label": "Turbulence", "default": 0.4, "min": 0, "max": 1}
+    ]
+  }'
+
+# Or use batch endpoint
+curl -X POST https://storage.noahcohn.com/api/shaders/batch \
+  -H "Content-Type: application/json" \
+  -d '[{"id": "liquid", "params": [...]}, ...]'
+```
+
+## Report Format
+```markdown
+## Upload Results
+- Total shaders uploaded: X
+- Success count: Y
+- Failed count: Z
+- Verification: [sample shader fetched back]
+```

@@ -1,0 +1,58 @@
+{
+  "id": "rorschach-inkblot",
+  "name": "Rorschach Inkblot",
+  "url": "shaders/rorschach-inkblot.wgsl",
+  "description": "Symmetrical inkblot visualization with audio-driven ink flow, chromatic ink tints, temporal ink diffusion memory, mouse-controlled symmetry axis, and depth-aware ink density.",
+  "params": [
+    {
+      "name": "Threshold",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "id": "threshold"
+    },
+    {
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "id": "distortion"
+    },
+    {
+      "name": "Smoothness",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "id": "smoothness"
+    },
+    {
+      "name": "Invert Mode",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "id": "invert_mode"
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "inkblot",
+    "rorschach",
+    "temporal",
+    "audio-reactive",
+    "chromatic",
+    "depth-aware"
+  ]
+}

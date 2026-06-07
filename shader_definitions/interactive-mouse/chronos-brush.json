@@ -1,0 +1,58 @@
+{
+  "id": "chronos-brush",
+  "name": "Chronos Brush",
+  "category": "interactive-mouse",
+  "url": "shaders/chronos-brush.wgsl",
+  "description": "Freeze time by painting over the video feed with chromatic brush tints that cycle per click. Audio boosts brush size and opacity; depth modulates paint intensity.",
+  "params": [
+    {
+      "id": "brushSize",
+      "name": "Brush Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "decay",
+      "name": "Freeze Decay",
+      "default": 0.9,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "distortion",
+      "name": "Time Edge Distort",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "mode",
+      "name": "Mode (Paint/Erase)",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "labels": [
+        "Freeze",
+        "Unfreeze"
+      ]
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic-brush",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "brush",
+    "temporal",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic"
+  ]
+}

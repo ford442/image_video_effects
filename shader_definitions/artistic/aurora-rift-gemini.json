@@ -1,0 +1,48 @@
+{
+  "id": "aurora-rift-gemini",
+  "name": "Aurora Rift Gemini",
+  "url": "shaders/aurora-rift-gemini.wgsl",
+  "description": "An enhanced simulation of aurora borealis, with dynamic, time-driven color shifts, deeper atmospheric rifts, and shimmering, mouse-driven particle effects.",
+  "features": [
+    "mouse-driven",
+    "time-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

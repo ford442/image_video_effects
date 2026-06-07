@@ -1,0 +1,65 @@
+{
+  "id": "gen-hyperbolic-tree",
+  "name": "Hyperbolic Tree Fractal",
+  "url": "shaders/gen-hyperbolic-tree.wgsl",
+  "description": "Recursive tree fractal rendered in hyperbolic Poincare disk. Branches sway with audio, leaves glow with treble. Möbius-transformed space.",
+  "tags": [
+    "generative",
+    "hyperbolic",
+    "tree",
+    "fractal",
+    "poincare",
+    "nature",
+    "audio",
+    "music"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "upgraded-rgba",
+    "chromatic-leaves",
+    "temporal-branch-sway"
+  ],
+  "params": [
+    {
+      "id": "depth",
+      "name": "Tree Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Recursion depth of branching",
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "branchAngle",
+      "name": "Branch Angle",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Angle between child branches",
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Base hue rotation",
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "saturation",
+      "name": "Saturation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Color saturation",
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

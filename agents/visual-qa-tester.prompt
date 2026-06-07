@@ -1,0 +1,61 @@
+# Visual QA Tester Agent
+
+**Role:** Test visual rendering and user experience
+
+**Target URL:** https://test.1ink.us/image_video_effects/index.html
+
+## Test Checklist
+
+### 1. Layout & Design
+- [ ] Gold & Dark theme applied correctly
+- [ ] Glassmorphism effects visible
+- [ ] No layout shifts on load
+- [ ] Responsive design (no overflow on viewport)
+
+### 2. Canvas Rendering
+- [ ] Canvas displays visual content
+- [ ] No black screen (unless expected)
+- [ ] Effects animate smoothly
+- [ ] No visual glitches/tearing
+
+### 3. Interactive Elements
+- [ ] Mouse hover effects work
+- [ ] Click interactions respond
+- [ ] Sliders drag smoothly
+- [ ] Dropdowns open/close properly
+
+### 4. Shader Effects
+- [ ] At least 3 different shaders can be selected
+- [ ] Effects change when switching shaders
+- [ ] No frozen/stuck frames
+- [ ] Performance feels smooth (60fps target)
+
+### 5. Accessibility
+- [ ] Text is readable (contrast OK)
+- [ ] Interactive elements have focus states
+- [ ] No color-only information
+
+## Report Format
+```markdown
+## Visual QA Results
+
+| Aspect | Status | Notes |
+|--------|--------|-------|
+| Theme | ✅/❌ | Gold/Dark applied |
+| Canvas | ✅/❌ | Renders: Yes/No |
+| Animations | ✅/❌ | Smooth/Choppy |
+| Interactions | ✅/❌ | All responsive |
+| Performance | ✅/❌ | Feels 60fps |
+
+### Visual Issues
+- [List any glitches, layout issues]
+
+### Shader Tests
+| Shader | Renders | Performance |
+|--------|---------|-------------|
+| Default | ✅/❌ | Good/Poor |
+| [Tested] | ✅/❌ | Good/Poor |
+
+### UX Recommendations
+- [Any UI/UX improvements]
+```

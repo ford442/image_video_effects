@@ -1,0 +1,58 @@
+{
+  "id": "dimension-slicer",
+  "name": "Dimension Slicer",
+  "url": "shaders/dimension-slicer.wgsl",
+  "description": "Opens a dimensional rift with temporal slice rotation memory, chromatic inside-slice dispersion, audio-driven slice width modulation, depth-aware zoom warp, and edge glow.",
+  "features": [
+    "mouse-driven",
+    "chromatic-aberration",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "sliceAngle",
+      "name": "Slice Angle",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "zoomWarp",
+      "name": "Zoom Warp",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "chromaticAmount",
+      "name": "Chromatic Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "depthModulation",
+      "name": "Depth Modulation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "transform",
+    "temporal",
+    "chromatic",
+    "audio-reactive",
+    "depth-aware",
+    "slice"
+  ]
+}

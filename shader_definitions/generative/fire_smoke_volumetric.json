@@ -1,0 +1,65 @@
+{
+  "id": "fire_smoke_volumetric",
+  "name": "Fire Smoke Volumetric",
+  "url": "shaders/fire_smoke_volumetric.wgsl",
+  "description": "Volumetric fire and smoke simulation with chromatic temperature gradients (R hot to B cool), temporal smoke persistence via dataTextureC, audio-driven turbulence enhancement, physical transmittance, and depth-layered alpha.",
+  "tags": [
+    "fire",
+    "smoke",
+    "volumetric",
+    "simulation",
+    "temporal",
+    "audio-reactive",
+    "chromatic",
+    "depth-aware",
+    "blackbody"
+  ],
+  "features": [
+    "upgraded-rgba",
+    "volumetric",
+    "fire",
+    "smoke",
+    "audio-reactive",
+    "temporal",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "fireIntensity",
+      "name": "Fire Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "smokeDensity",
+      "name": "Smoke Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "depthWeight",
+      "name": "Depth Weight",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "target_rating": 4.7
+}

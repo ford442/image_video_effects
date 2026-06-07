@@ -1,0 +1,57 @@
+{
+  "id": "gen-julia-set",
+  "name": "Julia Set — Orbit Trap",
+  "url": "shaders/gen_julia_set.wgsl",
+  "description": "Generalised Julia set iteration z^n+c for n=2..6 with smooth (continuous) iteration count μ=i−log₂(log₂|z|), multi-trap orbit colouring (circle, line, cross traps), and animated Julia parameter c orbiting a Mandelbrot cardioid boundary. Audio-driven trap scale.",
+  "features": [
+    "audio-reactive",
+    "procedural",
+    "animated",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "fractal",
+    "julia",
+    "orbit-trap",
+    "abstract",
+    "colorful"
+  ],
+  "params": [
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "power",
+      "name": "Exponent n",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "trapMode",
+      "name": "Trap Mode",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "trapScale",
+      "name": "Trap Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "id": "gen-celestial-nanite-swarm-nebula",
+  "name": "Celestial Nanite-Swarm Nebula",
+  "tags": [
+    "cosmic",
+    "particle-system",
+    "geometric",
+    "audio-reactive",
+    "nanites"
+  ],
+  "description": "A majestic, slowly churning nebula constructed entirely from trillions of glowing, synchronized nanites that dynamically self-assemble into intricate, shifting geometric constellations and colossal architectural megastructures in deep space.",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Swarm Density",
+      "type": "slider",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Constellation Link",
+      "type": "slider",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Wind Speed",
+      "type": "slider",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Geometric Order",
+      "type": "slider",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "url": "shaders/gen-celestial-nanite-swarm-nebula.wgsl",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
+}

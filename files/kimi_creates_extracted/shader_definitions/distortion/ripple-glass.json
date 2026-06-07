@@ -1,0 +1,41 @@
+{
+  "id": "ripple-glass",
+  "name": "Ripple Glass",
+  "url": "shaders/ripple-glass.wgsl",
+  "features": ["mouse-driven"],
+  "tags": ["distortion", "ripple", "glass", "refraction", "liquid"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Frequency",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Amplitude",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

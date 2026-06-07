@@ -1,0 +1,61 @@
+{
+  "id": "kimi_flock_symphony",
+  "name": "Kimi Flock Symphony",
+  "url": "shaders/kimi_flock_symphony.wgsl",
+  "description": "Advanced particle flocking simulation with musical visualization, featuring separation, alignment, cohesion, and mouse interaction.",
+  "tags": [
+    "boids",
+    "flocking",
+    "generative",
+    "particles",
+    "musical",
+    "interactive",
+    "procedural"
+  ],
+  "features": [
+    "mouse-driven"
+  ],
+  "author": "Kimi",
+  "params": [
+    {
+      "id": "trail_length",
+      "name": "Trail Length",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Controls the overall strength of the generated effect."
+    },
+    {
+      "id": "glow_radius",
+      "name": "Glow Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Controls animation and temporal evolution speed."
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Controls spatial scale, frequency, or detail contrast."
+    },
+    {
+      "id": "density",
+      "name": "Particle Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Controls mouse-driven or secondary variation influence."
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "id": "gen-bismuth-crystal-citadel",
+  "name": "Bismuth Crystal Citadel",
+  "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
+  "description": "Endless procedural canyon of iridescent bismuth crystals with physical light transmission. Features metallic Fresnel reflection, thin-film interference, and oxide layer transmission.",
+  "tags": [
+    "generative",
+    "raymarch",
+    "procedural",
+    "crystal",
+    "bismuth",
+    "metallic",
+    "iridescent",
+    "geometry",
+    "fractal",
+    "alpha-transmission",
+    "audio",
+    "music"
+  ],
+  "features": [
+    "raymarched",
+    "mouse-driven",
+    "physical-transmission",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "author": "AI",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Terrace Step Size",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01,
+      "description": "Size of stepped terraces characteristic of bismuth crystals",
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Ascension Speed",
+      "min": 0,
+      "max": 2,
+      "default": 0.5,
+      "step": 0.01,
+      "description": "Camera movement speed through the crystal citadel",
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Metallic Shine",
+      "min": 0,
+      "max": 2,
+      "default": 0.8,
+      "step": 0.01,
+      "description": "Specular highlight intensity on metallic surfaces",
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Iridescence Shift",
+      "min": 0,
+      "max": 5,
+      "default": 1,
+      "step": 0.1,
+      "description": "Thin-film interference color shift on crystal surfaces",
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

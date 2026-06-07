@@ -1,0 +1,73 @@
+{
+  "id": "gen-minimal-surface-soap-iridescence",
+  "name": "Minimal Surface Soap Iridescence",
+  "url": "shaders/gen-minimal-surface-soap-iridescence.wgsl",
+  "description": "Parametric minimal surfaces morphing between catenoid and helicoid via Bonnet rotation. Thin-film interference produces rainbow soap-film colors based on optical path length and mean curvature, with HDR caustics and subsurface scattering.",
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "procedural",
+    "generative",
+    "3d",
+    "upgraded-rgba",
+    "chromatic-film",
+    "temporal-surface-memory",
+    "audio-caustics",
+    "depth-output"
+  ],
+  "tags": [
+    "soap",
+    "iridescence",
+    "minimal-surface",
+    "interference",
+    "caustics",
+    "rainbow",
+    "generative",
+    "abstract",
+    "organic",
+    "thin-film"
+  ],
+  "params": [
+    {
+      "id": "bonnet",
+      "name": "Bonnet Rotation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Controls the overall strength of the generated effect."
+    },
+    {
+      "id": "tension",
+      "name": "Surface Tension",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Controls animation and temporal evolution speed."
+    },
+    {
+      "id": "yRotation",
+      "name": "Y Rotation",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Controls spatial scale, frequency, or detail contrast."
+    },
+    {
+      "id": "caustics",
+      "name": "Caustic Glow",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Controls mouse-driven or secondary variation influence."
+    }
+  ]
+}

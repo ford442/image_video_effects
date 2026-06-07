@@ -1,0 +1,43 @@
+{
+  "id": "crystalline-shatter",
+  "name": "Crystalline Shatter",
+  "url": "shaders/crystalline-shatter.wgsl",
+  "category": "image",
+  "description": "Voronoi cell decomposition shatters the image into crystal facets, each refracting light independently with chromatic aberration. Bass pulses crack new cells; mouse proximity amplifies the shatter.",
+  "tags": ["crystal", "shatter", "voronoi", "refraction", "chromatic", "audio-reactive", "mouse-driven"],
+  "features": ["mouse-driven", "audio-reactive", "upgraded-rgba", "semantic-alpha"],
+  "params": [
+    {
+      "id": "cell_scale",
+      "name": "Cell Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "refraction",
+      "name": "Refraction",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chromatic_aberration",
+      "name": "Chromatic Aberration",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "edge_glow",
+      "name": "Edge Glow",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

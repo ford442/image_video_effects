@@ -1,0 +1,63 @@
+{
+  "id": "gen-hyperbolic-crystal-symbiosis",
+  "name": "Hyperbolic Crystal Symbiosis",
+  "url": "shaders/gen-hyperbolic-crystal-symbiosis.wgsl",
+  "description": "Competing and cooperating crystal growth occurring in hyperbolic (Poincaré disk) geometry. Local curvature influenced by audio and mouse position. Exquisite non-Euclidean tiling patterns with iridescent jewel-like coloring and beautiful symmetry breaking.",
+  "tags": [
+    "generative",
+    "hyperbolic",
+    "geometry",
+    "crystal",
+    "non-euclidean",
+    "iridescent",
+    "audio-reactive",
+    "mathematical"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "growthSpeed",
+      "name": "Growth Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Speed of hyperbolic crystal growth",
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "competition",
+      "name": "Competition",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Crystal competition level and symmetry breaking",
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "curvature",
+      "name": "Curvature",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Hyperbolic curvature magnitude",
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mutation",
+      "name": "Mutation",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Crystal growth mutation and irregularity",
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

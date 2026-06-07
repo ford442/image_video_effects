@@ -1,0 +1,52 @@
+{
+  "id": "gemstone-fractures",
+  "name": "Gemstone Fractures",
+  "url": "shaders/gemstone-fractures.wgsl",
+  "features": [
+    "alpha-transmission",
+    "physical-refraction"
+  ],
+  "description": "Fragments the image into crystalline shards with physical light transmission. Features internal fractures that scatter light, variable purity per cell, and IOR-based refraction.",
+  "params": [
+    {
+      "name": "Facet Size",
+      "id": "zoomParam1",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "description": "Size of Voronoi crystal cells"
+    },
+    {
+      "name": "Refractive Index",
+      "id": "zoomParam2",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "description": "IOR: Quartz (1.54) to Diamond (2.42)"
+    },
+    {
+      "name": "Rotation",
+      "id": "zoomParam3",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "description": "Cell rotation animation speed"
+    },
+    {
+      "name": "Fracture Density",
+      "id": "zoomParam4",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "description": "Internal fractures: 0 = pure crystal, 1 = heavily fractured"
+    }
+  ],
+  "tags": [
+    "crystal",
+    "gemstone",
+    "fracture",
+    "transmission",
+    "voronoi",
+    "physical"
+  ]
+}

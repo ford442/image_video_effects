@@ -1,0 +1,62 @@
+{
+  "id": "gen-volcanic-ink",
+  "name": "Volcanic Ink",
+  "url": "shaders/gen-volcanic-ink.wgsl",
+  "category": "generative",
+  "description": "Molten fissures and soot plumes mix with ember sparks in a dark volcanic ink basin.",
+  "tags": [
+    "generative",
+    "volcanic",
+    "lava",
+    "ink",
+    "embers",
+    "audio-reactive"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "fissureDensity",
+      "name": "Fissure Density",
+      "default": 0.48,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "magmaFlow",
+      "name": "Magma Flow",
+      "default": 0.44,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "soot",
+      "name": "Soot",
+      "default": 0.34,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "ember",
+      "name": "Ember Intensity",
+      "default": 0.52,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

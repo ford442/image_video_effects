@@ -1,0 +1,44 @@
+{
+  "id": "nano-repair",
+  "name": "Nano-Tech Repair",
+  "url": "shaders/nano-repair.wgsl",
+  "description": "The image is corrupted by digital rot. Use the mouse to deploy nano-bots that repair the image.",
+  "params": [
+    {
+      "id": "radius",
+      "name": "Repair Radius",
+      "default": 0.2,
+      "min": 0,
+      "max": 0.5
+    },
+    {
+      "id": "decay",
+      "name": "Decay Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "glitch",
+      "name": "Glitch Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "scanlines",
+      "name": "Scanlines",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "feedback"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

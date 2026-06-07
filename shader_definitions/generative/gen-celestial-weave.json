@@ -1,0 +1,62 @@
+{
+  "id": "gen-celestial-weave",
+  "name": "Celestial Weave",
+  "url": "shaders/gen-celestial-weave.wgsl",
+  "category": "generative",
+  "description": "A woven night-sky tapestry of luminous warp and weft threads stitched with star knots.",
+  "tags": [
+    "generative",
+    "weave",
+    "cosmic",
+    "stars",
+    "textile",
+    "audio-reactive"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "weaveScale",
+      "name": "Weave Scale",
+      "default": 0.46,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "twist",
+      "name": "Twist",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "shimmer",
+      "name": "Shimmer",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "voidDepth",
+      "name": "Void Depth",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

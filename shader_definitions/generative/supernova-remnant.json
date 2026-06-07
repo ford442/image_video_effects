@@ -1,0 +1,59 @@
+{
+  "id": "supernova-remnant",
+  "name": "Supernova Remnant",
+  "url": "shaders/supernova-remnant.wgsl",
+  "description": "Expanding supernova shockwave with turbulent ejecta filaments. Bass drives the expansion front, mids create Rayleigh-Taylor instability fingers, treble adds radioactive decay sparkles. Mouse pulls the remnant center.",
+  "tags": [
+    "generative",
+    "supernova",
+    "space",
+    "shockwave",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "chromatic"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Expansion Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Filament Turbulence",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Shock Density",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Decay Sparkles",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

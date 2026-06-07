@@ -1,0 +1,72 @@
+{
+  "id": "gen-dynamic-tessellation-ornate-fractal-tiles",
+  "name": "Dynamic Tessellation (Ornate Fractal Tiles)",
+  "type": "compute",
+  "coordinate": 874,
+  "description": "Compute a screen-space tile grid and replace each tile with a tiny procedurally rendered fractal. The result is a morphing lattice of fractal mini-universes. Now audio-reactive to bass frequencies with meaningful alpha compositing.",
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "parameters": [
+    {
+      "id": "iterations",
+      "name": "Fractal Iterations",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "density",
+      "name": "Tile Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "url": "shaders/gen-dynamic-tessellation-ornate-fractal-tiles.wgsl",
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Controls the overall strength of the generated effect."
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Controls animation and temporal evolution speed."
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Controls spatial scale, frequency, or detail contrast."
+    },
+    {
+      "id": "mouseInfluence",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Controls mouse-driven or secondary variation influence."
+    }
+  ]
+}

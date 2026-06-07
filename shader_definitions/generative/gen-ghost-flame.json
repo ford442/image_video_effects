@@ -1,0 +1,59 @@
+{
+  "id": "gen-ghost-flame",
+  "name": "Ghost Flame",
+  "url": "shaders/gen-ghost-flame.wgsl",
+  "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire.",
+  "features": [
+    "audio-reactive",
+    "chromatic-aberration",
+    "mouse-driven",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "flame",
+    "fire",
+    "ghost",
+    "fluid",
+    "blackbody",
+    "ethereal"
+  ],
+  "params": [
+    {
+      "id": "flame_height",
+      "name": "Flame Height",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "cooling",
+      "name": "Cooling Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "diffusion",
+      "name": "Diffusion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

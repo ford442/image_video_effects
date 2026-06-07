@@ -1,0 +1,632 @@
+{
+  "total_processed": 104,
+  "wgsl_updated": 3,
+  "json_updated": 104,
+  "errors": 0,
+  "results": [
+    {
+      "shader_id": "stellar-plasma",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-xeno-botanical-synth-flora",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "tensor-flow-sculpting",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "hyperbolic-dreamweaver",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "liquid-metal",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "voronoi-glass",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "chromatic-manifold",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "infinite-fractal-feedback",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "ethereal-swirl",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-audio-spirograph",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "quantum-superposition",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "kimi_liquid_glass",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "crystal-refraction",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-voronoi-crystal",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-supernova-remnant",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-string-theory",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "plasma",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "holographic-projection",
+      "wgsl_updated": true,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "holographic-projection-gpt52",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "holographic-projection-failure",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "holographic-glitch",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "holographic-contour",
+      "wgsl_updated": true,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "holographic-sticker",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "holographic-prism",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "holographic-shatter",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "holographic-edge-ripple",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-pulse",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-light",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-edges",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-echo",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-warp",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-strings",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-fluid-warp",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-topology",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-edge-pulse",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-edge-reveal",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-pulse-edge",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-pulse-stream",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-contour-drag",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-contour-interactive",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-edge-diffusion",
+      "wgsl_updated": true,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-edge-radar",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-flashlight",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neon-cursor-trace",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "vortex",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "vortex-distortion",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "vortex-warp",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "vortex-prism",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "vortex-drag",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "velvet-vortex",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "chroma-vortex",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "hyper-tensor-fluid",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "neural-raymarcher",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "chromatic-reaction-diffusion",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "audio-voronoi-displacement",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "fractal-boids-field",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "holographic-interferometry",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gravitational-lensing",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "cellular-automata-3d",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "spectral-flow-sorting",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "multi-fractal-compositor",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-neural-fractal",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-mycelium-network",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-magnetic-field-lines",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-bifurcation-diagram",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-quantum-superposition",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-quantum-mycelium",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-quantum-neural-lace",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-quasicrystal",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-cosmic-web-filament",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-crystal-caverns",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-cymatic-plasma-mandalas",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-ethereal-anemone-bloom",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-stellar-web-loom",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-singularity-forge",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-liquid-crystal-hive-mind",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-magnetic-ferrofluid",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-prismatic-bismuth-lattice",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-chromatic-metamorphosis",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-chronos-labyrinth",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-hyper-labyrinth",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-fractal-clockwork",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-astro-kinetic-chrono-orrery",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-temporal-motion-smear",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-velocity-bloom",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-topology-flow",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-hyperbolic-tessellation",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-inverse-mandelbrot",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-cyber-terminal",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-biomechanical-hive",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-bismuth-crystal-citadel",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-brutalist-monument",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-celestial-forge",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-holographic-data-core",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-fractured-monolith",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-gravitational-strain",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-isometric-city",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-lenia-2",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-micro-cosmos",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-raptor-mini",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-silica-tsunami",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-feedback-echo-chamber",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-alien-flora",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    },
+    {
+      "shader_id": "gen-art-deco-sky",
+      "wgsl_updated": false,
+      "json_updated": true,
+      "error": null
+    }
+  ]
+}

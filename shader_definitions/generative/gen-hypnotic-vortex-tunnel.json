@@ -1,0 +1,60 @@
+{
+  "id": "gen-hypnotic-vortex-tunnel",
+  "name": "Hypnotic Vortex Tunnel",
+  "url": "shaders/gen-hypnotic-vortex-tunnel.wgsl",
+  "category": "generative",
+  "description": "An infinite vortex tunnel of nested spinning rings coloured by spectral light. Bass spins the rings faster, treble fires radial arc strobes, mouse shifts the vanishing point.",
+  "tags": [
+    "tunnel",
+    "vortex",
+    "hypnotic",
+    "generative",
+    "audio-reactive",
+    "psychedelic",
+    "abstract",
+    "neon"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "rings",
+      "name": "Rings",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "rotSpeed",
+      "name": "Rotation Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "distort",
+      "name": "Distortion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

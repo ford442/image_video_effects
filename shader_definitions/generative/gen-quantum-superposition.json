@@ -1,0 +1,68 @@
+{
+  "id": "gen-quantum-superposition",
+  "name": "Quantum Superposition Lattice",
+  "url": "shaders/gen-quantum-superposition.wgsl",
+  "description": "Particles exist in quantum superposition — visible at multiple Lissajous-orbit positions simultaneously as Gaussian probability clouds. Mouse clicks collapse the wave function locally.",
+  "tags": [
+    "quantum",
+    "superposition",
+    "particles",
+    "wavefunction",
+    "probability",
+    "physics",
+    "generative",
+    "abstract",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven",
+    "upgraded-rgba"
+  ],
+  "author": "AI",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Particle Count",
+      "min": 0,
+      "max": 1,
+      "default": 0.4,
+      "step": 0.01,
+      "description": "Number of quantum particles (maps to 1–8).",
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Decoherence",
+      "min": 0,
+      "max": 1,
+      "default": 0.3,
+      "step": 0.01,
+      "description": "Wave-function spread (decoherence / Gaussian sigma).",
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Wave Speed",
+      "min": 0,
+      "max": 1,
+      "default": 0.35,
+      "step": 0.01,
+      "description": "Oscillation frequency of the quantum wave functions.",
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Wavefunction Opacity",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01,
+      "description": "Probability cloud opacity scale.",
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

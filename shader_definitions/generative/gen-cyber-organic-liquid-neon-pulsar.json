@@ -1,0 +1,45 @@
+{
+  "id": "cyber-organic-liquid-neon-pulsar",
+  "name": "Cyber-Organic Liquid-Neon Pulsar",
+  "description": "A biomechanical, pulsating celestial core composed of hyper-viscous liquid-neon and crystalline techno-organic fibers.",
+  "category": "generative",
+  "url": "shaders/gen-cyber-organic-liquid-neon-pulsar.wgsl",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Base Color Hue",
+      "defaultValue": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Fiber Density",
+      "defaultValue": 2.5,
+      "min": 0.5,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Pulsation Speed",
+      "defaultValue": 1,
+      "min": 0.1,
+      "max": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Glow Intensity",
+      "defaultValue": 1.5,
+      "min": 0,
+      "max": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

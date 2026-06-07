@@ -1,0 +1,53 @@
+{
+  "id": "glitch-slice-mirror",
+  "name": "Glitch Slice Mirror",
+  "url": "shaders/glitch-slice-mirror.wgsl",
+  "description": "Mirrors the image at the mouse position with digital glitch artifacts, chromatic aberration, and scanlines along the seam. Audio-reactive intensity boost.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "glitch",
+    "mirror",
+    "distortion",
+    "chromatic-aberration",
+    "scanlines",
+    "filter"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "detail",
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

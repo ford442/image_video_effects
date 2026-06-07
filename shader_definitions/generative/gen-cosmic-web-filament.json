@@ -1,0 +1,71 @@
+{
+  "id": "gen-cosmic-web-filament",
+  "name": "Cosmic Web Filament",
+  "url": "shaders/gen-cosmic-web-filament.wgsl",
+  "description": "Dark matter web with Voronoi filaments, FBM warping, and mouse gravity wells. Hypnotic cosmic structure with purple-to-cyan gradients.",
+  "tags": [
+    "generative",
+    "cosmic",
+    "voronoi",
+    "filament",
+    "organic",
+    "dark-matter",
+    "web",
+    "gravity",
+    "procedural",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
+  "author": "ford442",
+  "params": [
+    {
+      "id": "warp",
+      "name": "Warp Strength",
+      "default": 0.33,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Controls the overall strength of the generated effect."
+    },
+    {
+      "id": "density",
+      "name": "Filament Density",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Controls animation and temporal evolution speed."
+    },
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Controls spatial scale, frequency, or detail contrast."
+    },
+    {
+      "id": "color",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Controls mouse-driven or secondary variation influence."
+    }
+  ]
+}

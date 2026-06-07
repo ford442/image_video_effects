@@ -1,0 +1,49 @@
+{
+  "id": "circuit-breaker-explosion",
+  "name": "Circuit Breaker Explosion",
+  "url": "shaders/circuit-breaker-explosion.wgsl",
+  "description": "Circuit board edges chromatically separated near the mouse prism. Overload flashes become spectral rainbows. Click ripples launch chromatic shockwaves through the circuit pattern.",
+  "features": [
+    "mouse-driven",
+    "chromatic",
+    "circuit-simulation",
+    "glitch"
+  ],
+  "params": [
+    {
+      "id": "x",
+      "name": "Grid Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "y",
+      "name": "Overload",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "z",
+      "name": "Jitter",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "w",
+      "name": "Prism Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "mouse-driven",
+    "chromatic",
+    "circuit",
+    "glitch",
+    "interactive"
+  ]
+}

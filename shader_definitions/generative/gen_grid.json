@@ -1,0 +1,62 @@
+{
+  "id": "gen-grid",
+  "name": "Domain-Warped FBM Grid",
+  "url": "shaders/gen_grid.wgsl",
+  "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moiré sub-grids, chromatic dispersion edges, and temporal motion blur.",
+  "features": [
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "domain-warping",
+    "audio-reactive",
+    "temporal"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "noise",
+    "grid",
+    "domain-warp",
+    "moire",
+    "audio-reactive",
+    "vj"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Warp Amount",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Grid Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Line Thickness",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Palette Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

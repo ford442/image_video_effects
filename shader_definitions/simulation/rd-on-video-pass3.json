@@ -1,0 +1,57 @@
+{
+  "id": "rd-on-video-pass3",
+  "name": "RD on Video (Pass 3: Composite)",
+  "url": "shaders/rd-on-video-pass3.wgsl",
+  "description": "Composites Turing color output over video using luminance-aware masking.",
+  "features": [
+    "multi-pass-3",
+    "video-composite",
+    "luma-mask",
+    "webcam-friendly"
+  ],
+  "multipass": {
+    "pass": 3,
+    "totalPasses": 3,
+    "prevShader": "rd-on-video-pass2"
+  },
+  "tags": [
+    "reaction-diffusion",
+    "composite",
+    "video",
+    "luma-mask"
+  ],
+  "params": [
+    {
+      "id": "luma_gate",
+      "name": "Luma Gate",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "mask_softness",
+      "name": "Mask Softness",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Glow",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "blend",
+      "name": "Blend",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

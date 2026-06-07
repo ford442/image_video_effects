@@ -1,0 +1,63 @@
+{
+  "id": "gen-orb",
+  "name": "Lorenz Strange Attractor",
+  "url": "shaders/gen_orb.wgsl",
+  "description": "Audio-reactive Lorenz strange attractor (σ, ρ, β) with bioluminescent depth halos and persistent scent trails. Mids drive rotation, bass adds streams, treble jitters chaos.",
+  "features": [
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "audio-reactive",
+    "temporal",
+    "mathematical-art",
+    "particles"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "particles",
+    "mathematical-art",
+    "chaos",
+    "attractor",
+    "audio-reactive",
+    "vj"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Sigma (σ)",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Rho (ρ)",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Beta (β)",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Trail Persistence",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

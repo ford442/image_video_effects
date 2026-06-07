@@ -1,0 +1,55 @@
+{
+  "id": "kimi-ripple-touch",
+  "name": "Kimi Ripple Touch",
+  "url": "shaders/kimi_ripple_touch.wgsl",
+  "description": "Interactive water ripple effect at mouse position with expanding waves, chromatic aberration, and bass-driven audio reactivity.",
+  "features": [
+    "mouse-driven",
+    "interactive",
+    "ripple",
+    "water",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "rippleCount",
+      "name": "Ripple Count",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01
+    },
+    {
+      "id": "rippleSpeed",
+      "name": "Ripple Speed",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01
+    },
+    {
+      "id": "rippleStrength",
+      "name": "Distortion",
+      "min": 0,
+      "max": 1,
+      "default": 0.3,
+      "step": 0.01
+    },
+    {
+      "id": "rippleDecay",
+      "name": "Decay Rate",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive",
+    "ripple",
+    "water",
+    "audio-reactive"
+  ]
+}

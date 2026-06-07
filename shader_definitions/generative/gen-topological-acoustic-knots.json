@@ -1,0 +1,68 @@
+{
+  "id": "gen-topological-acoustic-knots",
+  "name": "Topological Acoustic Knots",
+  "url": "shaders/gen-topological-acoustic-knots.wgsl",
+  "description": "Orientational director field inspired by liquid crystals where audio frequencies drive topological defect creation, motion, and annihilation. Mouse can pin or create defects. Iridescent oil-slick coloring with flowing directional fields.",
+  "tags": [
+    "generative",
+    "topological",
+    "liquid-crystal",
+    "audio-reactive",
+    "flow-field",
+    "iridescent",
+    "abstract",
+    "music"
+  ],
+  "features": [
+    "aces-tone-map",
+    "audio-reactive",
+    "chromatic-aberration",
+    "depth-aware",
+    "generative",
+    "mouse-driven",
+    "temporal-feedback",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "defectDensity",
+      "name": "Defect Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Number of topological defect singularities",
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "defectSpeed",
+      "name": "Defect Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "How fast defects move and pair/annihilate",
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "irisIntensity",
+      "name": "Iridescence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Intensity of oil-slick iridescent coloring",
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "flowStrength",
+      "name": "Flow Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Strength of painterly flow field stripes",
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

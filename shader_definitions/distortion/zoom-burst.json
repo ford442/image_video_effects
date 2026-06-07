@@ -1,0 +1,55 @@
+{
+  "id": "zoom-burst",
+  "name": "Zoom Burst",
+  "category": "distortion",
+  "url": "shaders/zoom-burst.wgsl",
+  "description": "Exponential zoom burst with radial motion blur, angular streak sampling, starburst light rays, chromatic radial dispersion, HDR bloom, film grain, and ACES tone mapping. Bass accelerates the burst; mouse positions the center; depth controls streak perspective.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "radial-blur",
+    "starburst",
+    "film-grain"
+  ],
+  "tags": [
+    "zoom",
+    "burst",
+    "radial",
+    "chromatic",
+    "audio-reactive",
+    "starburst",
+    "bloom",
+    "film-grain"
+  ],
+  "params": [
+    {
+      "id": "burst_length",
+      "name": "Burst Length",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "sample_quality",
+      "name": "Sample Quality",
+      "default": 0.55,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "spin",
+      "name": "Spin",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "chroma",
+      "name": "Chroma",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ]
+}

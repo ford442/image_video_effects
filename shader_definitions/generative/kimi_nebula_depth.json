@@ -1,0 +1,54 @@
+{
+  "id": "kimi-nebula-depth",
+  "name": "Kimi Nebula Depth",
+  "url": "shaders/kimi_nebula_depth.wgsl",
+  "description": "Volumetric nebula with 3D noise, ray marching, and depth-based color grading.",
+  "features": [
+    "mouse-driven",
+    "generative",
+    "volumetric",
+    "3d"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

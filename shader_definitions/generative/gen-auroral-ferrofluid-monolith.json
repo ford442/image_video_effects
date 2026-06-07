@@ -1,0 +1,64 @@
+{
+  "id": "gen-auroral-ferrofluid-monolith",
+  "name": "Auroral Ferrofluid-Monolith",
+  "url": "shaders/gen-auroral-ferrofluid-monolith.wgsl",
+  "category": "generative",
+  "description": "A colossal liquid-metal monolith whose surface forms readable magnetic glyphs under strong bass, then collapses into chaotic auroral breakup on treble. Mouse drag rotates an external magnetic field that sculpts the ferrofluid in real time.",
+  "tags": [
+    "ferrofluid",
+    "monolith",
+    "aurora",
+    "liquid-metal",
+    "glyphs",
+    "audio-reactive",
+    "collapse"
+  ],
+  "features": [
+    "mouse-magnetic-field",
+    "bass-glyph-formation",
+    "treble-collapse",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "spikeLength",
+      "name": "Spike Length",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Base spike length (strongly amplified by bass into glyph structures)"
+    },
+    {
+      "id": "auroraIntensity",
+      "name": "Aurora Intensity",
+      "default": 0.8,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Strength of the surrounding auroral volumetric field"
+    },
+    {
+      "id": "magneticTwist",
+      "name": "Magnetic Twist",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Internal twisting of the monolith under magnetic forces"
+    },
+    {
+      "id": "fluidMetallic",
+      "name": "Fluid Metallic Response",
+      "default": 0.9,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How sharply the ferrofluid surface reflects and behaves metallically"
+    }
+  ]
+}

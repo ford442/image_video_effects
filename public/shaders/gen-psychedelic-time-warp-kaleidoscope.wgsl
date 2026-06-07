@@ -1,0 +1,154 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Psychedelic Time-Warp Kaleidoscope
+//  Category: generative
+//  Features: kaleidoscope, noise, audio-reactive, temporal, chromatic, depth-aware
+//  Complexity: High
+//  Chunks From: standard kaleidoscope + temporal feedback patterns
+//  Created: original
+//  Upgraded: 2026-05-31
+// ═══════════════════════════════════════════════════════════════════
+
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    zoom_params: vec4<f32>,  // x=Mirror Strength, y=Wobble, z=Noise Intensity, w=unused
+    ripples: array<vec4<f32>, 50>,
+};
+fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
+  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
+  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
+  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
+  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
+  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
+  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
+  return vec4<f32>(controlled, color.a);
+}
+
+
+// Hash function
+fn hash31(p: vec3<f32>) -> f32 {
+    let q = fract(p * 0.1031);
+    let r = q + vec3<f32>(dot(q, q.yzx + vec3<f32>(33.33)));
+    return fract((r.x + r.y) * r.z);
+}
+
+// 3D Noise for distortion
+fn noise3D(p: vec3<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (vec3<f32>(3.0) - vec3<f32>(2.0) * f);
+    return mix(
+        mix(mix(hash31(i + vec3<f32>(0.0,0.0,0.0)), hash31(i + vec3<f32>(1.0,0.0,0.0)), u.x),
+            mix(hash31(i + vec3<f32>(0.0,1.0,0.0)), hash31(i + vec3<f32>(1.0,1.0,0.0)), u.x), u.y),
+        mix(mix(hash31(i + vec3<f32>(0.0,0.0,1.0)), hash31(i + vec3<f32>(1.0,0.0,1.0)), u.x),
+            mix(hash31(i + vec3<f32>(0.0,1.0,1.0)), hash31(i + vec3<f32>(1.0,1.0,1.0)), u.x), u.y),
+        u.z
+    );
+}
+
+fn curlNoise3D(p: vec3<f32>) -> vec2<f32> {
+    let e = 0.01;
+    let nx = noise3D(p + vec3<f32>(e, 0.0, 0.0)) - noise3D(p - vec3<f32>(e, 0.0, 0.0));
+    let ny = noise3D(p + vec3<f32>(0.0, e, 0.0)) - noise3D(p - vec3<f32>(0.0, e, 0.0));
+    let nz = noise3D(p + vec3<f32>(0.0, 0.0, e)) - noise3D(p - vec3<f32>(0.0, 0.0, e));
+    return vec2<f32>(ny - nz, nz - nx);
+}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let coords = vec2<i32>(global_id.xy);
+    let res = vec2<f32>(u.config.z, u.config.w);
+    if (coords.x >= i32(res.x) || coords.y >= i32(res.y)) { return; }
+
+    let time = u.config.x;
+    let audio = plasmaBuffer[0].x; // Audio reactivity
+
+    // Mouse center, default to middle if 0
+    var center = u.zoom_config.yz * res;
+    if (center.x == 0.0 && center.y == 0.0) {
+        center = res * 0.5;
+    }
+
+    // Calculate 3D curl noise for distortion
+    let norm_coords = vec2<f32>(coords) / res;
+    let noise_val = curlNoise3D(vec3<f32>(norm_coords * 5.0, time * 0.2));
+
+    // Store in dataTextureA as requested
+    textureStore(dataTextureA, coords, vec4<f32>(noise_val, 0.0, 1.0));
+
+    // Modulate based on u.zoom_params which might be 0.0 if sliders are missing.
+    // If they are 0.0, default to interesting values.
+    let mirror_strength = mix(1.0, 2.0, u.zoom_params.x);
+    let wobble = mix(0.1, 0.5, u.zoom_params.y);
+    let noise_intensity = mix(0.5, 2.0, u.zoom_params.z);
+
+    // Retrieve sine wave from plasmaBuffer to modulate mirror count
+    let plasmaIndex = u32(abs(time * 10.0 + audio * 100.0)) % 256u;
+    var plasmaVal = plasmaBuffer[plasmaIndex].x;
+    if (plasmaVal == 0.0) { plasmaVal = 0.5; }
+
+    // Dynamic mirror count
+    let min_mirrors = 3.0;
+    let max_mirrors = 12.0;
+    let mirror_count = mix(min_mirrors, max_mirrors, plasmaVal);
+    let angle_step = 3.14159265 * 2.0 / mirror_count;
+
+    var uv = vec2<f32>(coords) - center;
+    let dist = length(uv);
+    var angle = atan2(uv.y, uv.x);
+
+    // Wobble effect
+    angle += wobble * sin(dist * 0.02 - time * 2.0);
+
+    // Kaleidoscope mirroring logic
+    angle = ((angle - angle_step * floor(angle / angle_step)) + angle_step); angle = angle - angle_step * floor(angle / angle_step);
+    angle = abs(angle - angle_step / 2.0) * mirror_strength;
+
+    uv = vec2<f32>(cos(angle), sin(angle)) * dist;
+
+    // Add curl noise distortion based on noise_intensity
+    let dist_uv = vec2<i32>(uv + center + noise_val * 50.0 * noise_intensity);
+
+    // Wrap or clamp texture coordinates.
+    // We can just mirror repeat or clamp. Clamp for simplicity since readTexture might be a video feed.
+    let clamped_uv = clamp(dist_uv, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+    var color = textureLoad(readTexture, clamped_uv, 0).rgb;
+
+    // Audio glow to the edges of the kaleidescope
+    let glow = max(0.0, 1.0 - (dist / (res.x * 0.5))) * audio;
+    color += vec3<f32>(0.2, 0.5, 1.0) * glow * plasmaVal;
+
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // Temporal feedback
+    let prev = textureSampleLevel(dataTextureC, u_sampler, norm_coords, 0.0);
+    color = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
+
+    // Chromatic dispersion: audio-modulated channel offsets on glow
+    color.r += glow * bass * 0.35;
+    color.g += glow * mids * 0.25;
+    color.b += glow * treble * 0.3;
+
+    let _luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    textureStore(writeTexture, coords, applyGenerativePrimaryControls(vec4<f32>(color, _alpha)));
+    let _depth_uv = clamp(vec2<f32>(coords) / res, vec2<f32>(0.0), vec2<f32>(1.0));
+    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    textureStore(writeDepthTexture, coords, vec4<f32>(_depth, 0.0, 0.0, 0.0));
+}

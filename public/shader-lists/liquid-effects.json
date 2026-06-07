@@ -1,0 +1,1553 @@
+[
+  {
+    "id": "glass-wipes",
+    "name": "Rainy Window",
+    "url": "shaders/glass-wipes.wgsl",
+    "description": "Simulates rain on a window that distorts the view. Use the mouse to wipe the glass clean.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Rain Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "wiper",
+        "name": "Wiper Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "distortion",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dry_speed",
+        "name": "Drying Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "ink-marbling",
+    "name": "Ink Marbling",
+    "url": "shaders/ink-marbling.wgsl",
+    "description": "Distorts the image with fluid, ink-like domain warping.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "kimi-liquid-glass",
+    "name": "Kimi Liquid Glass",
+    "url": "shaders/kimi_liquid_glass.wgsl",
+    "description": "Realistic liquid surface with caustics, chromatic refraction, and specular highlights.",
+    "features": [
+      "mouse-driven",
+      "liquid",
+      "caustics",
+      "refraction",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "fluid",
+      "liquid",
+      "water",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-displacement",
+    "name": "Liquid Displacement",
+    "url": "shaders/liquid-displacement.wgsl",
+    "description": "Navier-Stokes fluid simulation for realistic water-like displacement. Features swirling eddies, vortices, and volume-conserving flow with pressure projection.",
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "pressure_iterations",
+        "name": "Pressure Iterations",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "multi-pass",
+      "depth-aware"
+    ],
+    "tags": [
+      "navier-stokes",
+      "fluid",
+      "liquid",
+      "water",
+      "simulation",
+      "vortex",
+      "eddy",
+      "interactive",
+      "physics"
+    ]
+  },
+  {
+    "id": "liquid-fast",
+    "name": "Liquid Fast",
+    "url": "shaders/liquid-fast.wgsl",
+    "description": "",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "liquid-glitch",
+    "name": "Liquid Glitch",
+    "url": "shaders/liquid-glitch.wgsl",
+    "description": "",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "liquid-jelly",
+    "name": "Liquid Jelly",
+    "url": "shaders/liquid-jelly.wgsl",
+    "description": "Elastic liquid effect with subsurface scattering and alpha physics",
+    "features": [
+      "upgraded-rgba",
+      "depth-aware",
+      "elastic-bounce",
+      "volume-shading",
+      "subsurface-scattering",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "liquid"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ]
+  },
+  {
+    "id": "liquid-metal",
+    "name": "Liquid Metal",
+    "url": "shaders/liquid-metal.wgsl",
+    "description": "PBR mercury surface with FBM height field, Schlick-Fresnel reflectance, chromatic RGB dispersion, depth-aware pooling, and audio-reactive surface pulsing.",
+    "features": [
+      "mouse-driven",
+      "depth-aware",
+      "temporal",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "liquid",
+      "metal",
+      "mercury",
+      "reflection",
+      "chromatic",
+      "distortion",
+      "organic",
+      "futuristic"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "reflectivity",
+        "name": "Reflectivity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromatic_spread",
+        "name": "Chromatic Spread",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-mirror",
+    "name": "Liquid Mirror",
+    "url": "shaders/liquid-mirror.wgsl",
+    "description": "Metallic liquid surface that reflects the image and ripples under the mouse.",
+    "params": [
+      {
+        "id": "distort",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "smooth",
+        "name": "Smoothness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "reflect",
+        "name": "Reflectivity",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "push",
+        "name": "Push Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "liquid-oil",
+    "name": "Liquid Oil",
+    "url": "shaders/liquid-oil.wgsl",
+    "description": "",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "liquid-optimized-pass1",
+    "name": "Liquid Optimized (Pass 1)",
+    "url": "shaders/liquid-optimized-pass1.wgsl",
+    "description": "Physics simulation pass: capillary wave dynamics, Laplace pressure, ripple propagation, and ambient micro-ripples. Outputs height field state to dataTextureA.",
+    "tags": [
+      "liquid",
+      "surface-tension",
+      "capillary-waves",
+      "multi-pass",
+      "physics"
+    ],
+    "features": [
+      "multi-pass-1",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "liquid-optimized-pass2"
+    },
+    "params": [
+      {
+        "id": "surfaceTension",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "gravityScale",
+        "name": "Gravity Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbidity",
+        "name": "Turbidity",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-optimized-pass2",
+    "name": "Liquid Optimized (Pass 2)",
+    "url": "shaders/liquid-optimized-pass2.wgsl",
+    "description": "Fluid rendering pass: Fresnel reflection, Beer-Lambert absorption, specular highlights, and alpha blending. Reads physics state from dataTextureC.",
+    "tags": [
+      "liquid",
+      "fresnel",
+      "beer-lambert",
+      "multi-pass",
+      "rendering"
+    ],
+    "features": [
+      "multi-pass-2",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2
+    },
+    "params": [
+      {
+        "id": "surfaceTension",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "gravityScale",
+        "name": "Gravity Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbidity",
+        "name": "Turbidity",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-optimized",
+    "name": "Liquid Surface Tension (Optimized)",
+    "url": "shaders/liquid-optimized.wgsl",
+    "description": "Surface tension liquid simulation with shared memory optimization. Uses workgroup-local caching to reduce texture fetches by 80% for 8-10x performance improvement. Audio reactivity drives ambient wave amplitude and virtual ripple sources.",
+    "tags": [
+      "liquid",
+      "surface-tension",
+      "capillary-waves",
+      "optimized",
+      "shared-memory",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "surfaceTension",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "gravityScale",
+        "name": "Gravity Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbidity",
+        "name": "Turbidity",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-pass1",
+    "name": "Liquid (Pass 1)",
+    "url": "shaders/liquid-pass1.wgsl",
+    "description": "Capillary wave physics pass: surface tension simulation with Laplacian and biharmonic operators, gravity waves, ripple sources, and ambient micro-ripples. Outputs persistent height field to dataTextureA.",
+    "tags": [
+      "liquid",
+      "capillary-waves",
+      "physics",
+      "multi-pass"
+    ],
+    "features": [
+      "multi-pass-1",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "liquid-pass2"
+    },
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-pass2",
+    "name": "Liquid (Pass 2)",
+    "url": "shaders/liquid-pass2.wgsl",
+    "description": "Fluid rendering pass: surface normal calculation, Snell's law refraction, Fresnel reflection, Beer-Lambert wavelength-dependent absorption, specular highlights, and physics-based alpha blending.",
+    "tags": [
+      "liquid",
+      "refraction",
+      "fresnel",
+      "beer-lambert",
+      "multi-pass"
+    ],
+    "features": [
+      "multi-pass-2",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2
+    },
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-perspective",
+    "name": "Liquid Perspective",
+    "url": "shaders/liquid-perspective.wgsl",
+    "description": "",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "shift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "liquid-rainbow",
+    "name": "Liquid Rainbow",
+    "url": "shaders/liquid-rainbow.wgsl",
+    "description": "Liquid rainbow refraction with single-sample spectral tint mixing, Fresnel-based alpha translucency, and depth-aware compositing.",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
+  },
+  {
+    "id": "liquid-rgb",
+    "name": "Liquid RGB",
+    "url": "shaders/liquid-rgb.wgsl",
+    "description": "",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "liquid-smear",
+    "name": "Liquid Smear",
+    "url": "shaders/liquid-smear.wgsl",
+    "description": "Smudge pixels like wet paint with your mouse.",
+    "params": [
+      {
+        "id": "strength",
+        "name": "Smear Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "size",
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "decay",
+        "name": "Persistence",
+        "default": 0.9,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "mix",
+        "name": "Mix Strength",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "liquid-tensor-vortex",
+    "name": "Liquid Tensor Vortex",
+    "url": "shaders/liquid-tensor-vortex.wgsl",
+    "description": "A 3D tensor field that melts and reforms like liquid metal under mouse vorticity, with bass-driven surface tension and transmission alpha that lets the background breathe through the folds.",
+    "tags": [
+      "liquid",
+      "metal",
+      "tensor",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "vorticity"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "tensor-field"
+    ],
+    "params": [
+      {
+        "id": "flowScale",
+        "name": "Flow Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "surfaceTension",
+        "name": "Surface Tension",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "id": "specular",
+        "name": "Specular",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "transmission",
+        "name": "Transmission",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ]
+  },
+  {
+    "id": "liquid-v1",
+    "name": "Liquid (Ambient)",
+    "url": "shaders/liquid-v1.wgsl",
+    "description": "",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-viscous-grokcf1",
+    "name": "Liquid Viscous Nebula grokcf1",
+    "url": "shaders/liquid-viscous-grokcf1.wgsl",
+    "description": "Enhanced viscous liquid with nebula glow, multi-layer flow, and cosmic viscosity.",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid-viscous-simple",
+    "name": "Liquid Viscous (Simple)",
+    "url": "shaders/liquid-viscous-simple.wgsl",
+    "description": "",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "liquid-viscous",
+    "name": "Liquid Viscous",
+    "url": "shaders/liquid-viscous.wgsl",
+    "description": "",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ],
+    "features": [
+      "mouse-driven"
+    ]
+  },
+  {
+    "id": "liquid-zoom",
+    "name": "Liquid Zoom",
+    "url": "shaders/liquid-zoom.wgsl",
+    "description": "",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "liquid",
+    "name": "Liquid (Interactive)",
+    "url": "shaders/liquid.wgsl",
+    "description": "",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ]
+  },
+  {
+    "id": "luma-melt-interactive",
+    "url": "shaders/luma-melt-interactive.wgsl",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "speed",
+        "name": "Melt Speed",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "persistence",
+        "name": "Trails",
+        "type": "float",
+        "default": 0.9,
+        "min": 0.5,
+        "max": 0.99
+      },
+      {
+        "id": "radius",
+        "name": "Heat Radius",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "heat",
+        "name": "Heat Intensity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "description": "Video melts downwards, accelerated by brightness and mouse heat.",
+    "tags": [
+      "fluid",
+      "liquid",
+      "water"
+    ],
+    "name": "Luma Melt"
+  },
+  {
+    "id": "luma-velocity-melt",
+    "name": "Luma Velocity Melt",
+    "category": "liquid-effects",
+    "url": "shaders/luma-velocity-melt.wgsl",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "chromatic-drip",
+      "curl-turbulence"
+    ],
+    "description": "Image melts downwards with curl-noise turbulence. Bright pixels drip faster; chromatic separation makes R/B channels drip at different rates. Audio heat pulses and depth viscosity modulate flow.",
+    "params": [
+      {
+        "name": "Melt Speed",
+        "id": "melt-speed",
+        "default": 0.005,
+        "min": 0,
+        "max": 0.02
+      },
+      {
+        "name": "Heat Intensity",
+        "id": "heat-intensity",
+        "default": 2,
+        "min": 0,
+        "max": 5
+      },
+      {
+        "name": "Persistence",
+        "id": "persistence",
+        "default": 0.95,
+        "min": 0.5,
+        "max": 0.999
+      },
+      {
+        "name": "Luma Threshold",
+        "id": "luma-threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "liquid",
+      "melt",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic",
+      "curl-noise"
+    ]
+  },
+  {
+    "id": "rain-ripples",
+    "name": "Rain Ripples",
+    "url": "shaders/rain-ripples.wgsl",
+    "description": "Interactive water ripples and raindrops.",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "viscous-drag",
+    "name": "Viscous Drag",
+    "url": "shaders/viscous-drag.wgsl",
+    "description": "The screen becomes a thick, viscous fluid that ripples and deforms under your touch.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "min": 0,
+        "max": 1,
+        "default": 0.6
+      },
+      {
+        "id": "drag-strength",
+        "name": "Push Strength",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "recovery-speed",
+        "name": "Flow Memory",
+        "min": 0,
+        "max": 1,
+        "default": 0.95
+      },
+      {
+        "id": "distortion-scale",
+        "name": "Warp Amount",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      }
+    ],
+    "tags": [
+      "fluid",
+      "liquid",
+      "water"
+    ]
+  }
+]

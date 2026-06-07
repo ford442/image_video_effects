@@ -1,0 +1,44 @@
+{
+  "id": "interactive-frost",
+  "name": "Interactive Frost",
+  "url": "shaders/frost-reveal.wgsl",
+  "description": "Realistic frost grows over the image; use your mouse (warmth) to melt it away.",
+  "params": [
+    {
+      "id": "growth",
+      "name": "Growth Speed",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "radius",
+      "name": "Melt Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "opacity",
+      "name": "Frost Opacity",
+      "default": 0.9,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "distortion",
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

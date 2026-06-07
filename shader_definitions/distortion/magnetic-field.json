@@ -1,0 +1,55 @@
+{
+  "id": "magnetic-field",
+  "name": "Magnetic Field",
+  "url": "shaders/magnetic-field.wgsl",
+  "description": "Multi-pole magnetic field simulation with curl-noise particle traces and audio-reactive attraction. Field lines wiggle organically via FBM curl, depth modulates field strength, and treble adds particle sparkle.",
+  "params": [
+    {
+      "id": "strength",
+      "name": "Field Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "radius",
+      "name": "Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "density",
+      "name": "Field Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "mode",
+      "name": "Mode",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "animated",
+    "physics",
+    "mouse-driven",
+    "audio-reactive",
+    "curl-noise",
+    "field-lines",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "audio",
+    "music",
+    "reactive",
+    "magnetic",
+    "curl",
+    "particles"
+  ]
+}

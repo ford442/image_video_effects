@@ -1,0 +1,65 @@
+{
+  "id": "neon-edge-glow",
+  "name": "Neon Edge Glow",
+  "url": "shaders/neon-edge-glow.wgsl",
+  "category": "visual-effects",
+  "description": "Gas discharge tube simulation with accurate neon emission spectrum, AC rectification flicker, mercury vapor secondary lines, electrode sputtering, and atmospheric haze. Bass drives flicker frequency, mouse bends the tube, depth controls atmospheric scatter.",
+  "tags": [
+    "neon",
+    "edge",
+    "glow",
+    "bloom",
+    "sobel",
+    "gas-discharge",
+    "spectrum",
+    "colorful",
+    "post-processing",
+    "audio-reactive",
+    "depth-aware"
+  ],
+  "features": [
+    "audio-reactive",
+    "post-processing",
+    "depth-aware",
+    "semantic-alpha",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "edgeStrength",
+      "name": "Edge Strength",
+      "default": 0.85,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01,
+      "param": "zoom_params.x"
+    },
+    {
+      "id": "glowRadius",
+      "name": "Glow Radius",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.01,
+      "param": "zoom_params.y"
+    },
+    {
+      "id": "neonTint",
+      "name": "Neon Tint / Hue",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.z"
+    },
+    {
+      "id": "intensity",
+      "name": "Overall Intensity",
+      "default": 0.9,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01,
+      "param": "zoom_params.w"
+    }
+  ]
+}

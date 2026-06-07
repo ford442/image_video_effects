@@ -1,0 +1,60 @@
+{
+  "id": "gen-polar-rainbow-explosion",
+  "name": "Polar Rainbow Explosion",
+  "category": "generative",
+  "url": "shaders/gen-polar-rainbow-explosion.wgsl",
+  "description": "A polar coordinate explosion of rainbow color rays emanating from center. Ray colors cycle through full spectrum. Noise modulated for organic wobble in the rays. Mouse position changes the origin and intensity. Particles burst along the rays. Dreamlike and intense.",
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural"
+  ],
+  "tags": [
+    "psychedelic",
+    "neon",
+    "rainbow",
+    "polar",
+    "explosion",
+    "rays",
+    "particles"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.75,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

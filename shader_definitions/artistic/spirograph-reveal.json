@@ -1,0 +1,61 @@
+{
+  "id": "spirograph-reveal",
+  "name": "Spirograph Reveal",
+  "url": "shaders/spirograph-reveal.wgsl",
+  "category": "artistic",
+  "description": "True epicycloid/hypocycloid spirograph with multiple rotating gears and gear-ratio modulated patterns. Features metallic ink aesthetic with specular highlights, gradient fills along curve length, and HDR bloom at cusps. Bass drives rotation speed, mouse modulates gear ratio, and depth creates 3D depth layers.",
+  "tags": [
+    "spirograph",
+    "geometric",
+    "artistic",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "metallic",
+    "HDR"
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "outerTeeth",
+      "name": "Outer Teeth",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "innerTeeth",
+      "name": "Inner Teeth",
+      "type": "float",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Rotation Speed",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "thickness",
+      "name": "Line Thickness",
+      "type": "float",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

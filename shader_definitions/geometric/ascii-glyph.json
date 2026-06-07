@@ -1,0 +1,55 @@
+{
+  "id": "ascii-glyph",
+  "name": "ASCII Glyphs",
+  "url": "shaders/ascii-glyph.wgsl",
+  "description": "SDF glyph morph with bass character swap and depth luminance map. Pixels are quantized into glyph cells; depth controls brightness tiering. Bass swaps glyph patterns on beats, treble adds chromatic highlights to dense characters.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "sdf-glyph",
+    "depth-luminance",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "ascii",
+    "glyph",
+    "SDF",
+    "typography"
+  ],
+  "params": [
+    {
+      "id": "glyphSize",
+      "name": "Glyph Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "brightness",
+      "name": "Brightness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "colorAmount",
+      "name": "Color Amount",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "densityBoost",
+      "name": "Density Boost",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

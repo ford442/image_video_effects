@@ -1,0 +1,51 @@
+{
+  "id": "refraction-tunnel",
+  "name": "Refraction Tunnel",
+  "url": "shaders/refraction-tunnel.wgsl",
+  "description": "Multi-layer chromatic refraction through a cylindrical tunnel with Snell's-law dispersion, rainbow caustics, volumetric fog, and anamorphic streaks.",
+  "params": [
+    {
+      "id": "depth",
+      "name": "Tunnel Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "twist",
+      "name": "Twist Amount",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "aberration",
+      "name": "Chromatic Dispersion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "curvature",
+      "name": "Tunnel Curvature",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "animated",
+    "3d",
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "distortion",
+    "refraction",
+    "chromatic",
+    "tunnel",
+    "volumetric"
+  ]
+}

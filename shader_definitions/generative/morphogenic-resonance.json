@@ -1,0 +1,64 @@
+{
+  "id": "morphogenic-resonance",
+  "name": "Morphogenic Resonance",
+  "category": "generative",
+  "url": "shaders/morphogenic-resonance.wgsl",
+  "description": "Organic shapes that morph between geometric and biological forms via sinusoidal interpolation. Bass drives morph speed, mids add surface ripple resonance, treble creates edge discharge. Mouse warps the morph field.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "morph-speed",
+      "name": "Morph Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "geo-bias",
+      "name": "Geometric Bias",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "ripple-intensity",
+      "name": "Ripple Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "color-shift",
+      "name": "Color Shift",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "organic",
+    "geometric",
+    "morphing",
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "abstract",
+    "biological"
+  ]
+}

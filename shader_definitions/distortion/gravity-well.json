@@ -1,0 +1,48 @@
+{
+  "id": "gravity-well",
+  "name": "Gravity Well",
+  "url": "shaders/gravity-well.wgsl",
+  "description": "Schwarzschild-inspired lensing with photon-sphere rings, gravitational redshift, and Doppler-bright accretion flow.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "schwarzschild_radius",
+      "name": "Schwarzschild Radius",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "disk_extent",
+      "name": "Disk Extent",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "flare_gain",
+      "name": "Flare Gain",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "lensing_order",
+      "name": "Lensing Order",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "black-hole",
+    "relativistic",
+    "accretion"
+  ]
+}

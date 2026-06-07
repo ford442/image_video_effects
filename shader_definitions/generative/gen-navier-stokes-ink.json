@@ -1,0 +1,67 @@
+{
+  "id": "gen-navier-stokes-ink",
+  "name": "Navier-Stokes Ink",
+  "url": "shaders/gen-navier-stokes-ink.wgsl",
+  "description": "2D Navier-Stokes fluid simulation with semi-Lagrangian advection, pressure projection, and ink injection. Bass drives injection rate, mouse injects ink and vortices, depth controls viscosity.",
+  "features": [
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "audio-reactive",
+    "temporal",
+    "simulation",
+    "pressure-stub",
+    "hue-preserve-clamp",
+    "ign-dither"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "simulation",
+    "fluid",
+    "navier-stokes",
+    "ink",
+    "turbulence",
+    "audio-reactive",
+    "vj"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Injection Rate",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Viscosity",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Dispersion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Vorticity Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

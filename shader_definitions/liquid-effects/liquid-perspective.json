@@ -1,0 +1,43 @@
+{
+  "id": "liquid-perspective",
+  "name": "Liquid Perspective",
+  "url": "shaders/liquid-perspective.wgsl",
+  "description": "",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "density",
+      "name": "Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "shift",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

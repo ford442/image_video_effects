@@ -1,0 +1,50 @@
+{
+  "id": "thermal-touch",
+  "name": "Thermal Touch",
+  "url": "shaders/thermal-touch.wgsl",
+  "category": "interactive-mouse",
+  "description": "Heat diffusion simulation with Gaussian blur approximation, blackbody radiation color mapping, persistent mouse heat trails, and HDR glow with ACES tone mapping.",
+  "params": [
+    {
+      "id": "heat-intensity",
+      "name": "Heat Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "radius",
+      "name": "Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "ambient-temp",
+      "name": "Ambient Temp",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "cooling-rate",
+      "name": "Cooling Rate",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "thermal",
+    "heat",
+    "blackbody",
+    "filter",
+    "image-processing"
+  ]
+}

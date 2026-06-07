@@ -1,0 +1,63 @@
+{
+  "id": "gen-phase-transition-memory-weave",
+  "name": "Phase-Transition Memory Weave",
+  "url": "shaders/gen-phase-transition-memory-weave.wgsl",
+  "description": "A viscous history-dependent field undergoing phase transitions between fluid, crystalline, and chaotic states with strong visual memory of past configurations. Audio controls phase transition thresholds. Mouse locally forces phase changes. Beautiful hysteresis and pattern retention.",
+  "tags": [
+    "generative",
+    "phase-transition",
+    "fluid",
+    "crystalline",
+    "temporal",
+    "audio-reactive",
+    "abstract",
+    "music"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Material memory and viscous resistance to change",
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "phaseScale",
+      "name": "Phase Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Spatial scale of phase domain structures",
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "transitionSharpness",
+      "name": "Transition Sharpness",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Sharpness of phase boundary transitions",
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "glow",
+      "name": "Glow Intensity",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Overall glow and luminosity of the material",
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

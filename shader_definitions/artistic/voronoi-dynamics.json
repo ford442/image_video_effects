@@ -1,0 +1,46 @@
+{
+  "id": "voronoi-dynamics",
+  "name": "Voronoi Bubbles",
+  "url": "shaders/voronoi-dynamics.wgsl",
+  "description": "Dynamic Voronoi cells with bubble physics, iridescent edges, and interactive centroids.",
+  "params": [
+    {
+      "id": "centroidCount",
+      "name": "Bubble Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "repulsion",
+      "name": "Repulsion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "attraction",
+      "name": "Attraction",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "edgeWidth",
+      "name": "Edge Width",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "interactive",
+    "depth-aware",
+    "physics",
+    "mouse-driven"
+  ],
+  "tags": [
+    "geometric",
+    "pattern"
+  ]
+}

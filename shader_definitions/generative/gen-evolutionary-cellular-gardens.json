@@ -1,0 +1,63 @@
+{
+  "id": "gen-evolutionary-cellular-gardens",
+  "name": "Evolutionary Cellular Gardens",
+  "url": "shaders/gen-evolutionary-cellular-gardens.wgsl",
+  "description": "Multi-state cellular automata where the rules themselves slowly evolve based on local conditions and global audio input. Audio drives genetic pressure on the automata. Mouse introduces invasive species or protected zones. Organic coral-like emergent structures that change fundamental behavior over time.",
+  "tags": [
+    "generative",
+    "cellular-automata",
+    "evolutionary",
+    "organic",
+    "coral",
+    "audio-reactive",
+    "procedural",
+    "music"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "cellScale",
+      "name": "Cell Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Scale of the cellular automata grid",
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "evolutionSpeed",
+      "name": "Evolution Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Speed of rule evolution and mutation",
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "invasiveForce",
+      "name": "Invasive Force",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Strength of mouse-planted invasive species",
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "glow",
+      "name": "Bioluminescence",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Bioluminescent glow intensity",
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

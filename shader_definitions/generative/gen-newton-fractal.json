@@ -1,0 +1,60 @@
+{
+  "id": "gen-newton-fractal",
+  "name": "Newton Fractal",
+  "url": "shaders/gen-newton-fractal.wgsl",
+  "category": "generative",
+  "description": "Newton's method basins of attraction for complex polynomials z^n - 1. Colored by convergent root with HDR boundary bloom, ACES tone mapping, and chromatic aberration on high-iteration regions.",
+  "tags": [
+    "generative",
+    "fractal",
+    "newton",
+    "complex",
+    "audio-reactive",
+    "neon",
+    "mathematical"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "degree",
+      "name": "Polynomial Degree",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "precision",
+      "name": "Iteration Precision",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "bloom",
+      "name": "Boundary Bloom",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

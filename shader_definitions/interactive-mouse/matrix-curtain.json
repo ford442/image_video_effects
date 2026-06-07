@@ -1,0 +1,52 @@
+{
+  "id": "matrix-curtain",
+  "name": "Matrix Curtain",
+  "category": "interactive-mouse",
+  "url": "shaders/matrix-curtain.wgsl",
+  "description": "Conway's Game of Life on a falling phosphor character grid with Perlin-noise column velocities, CRT glow, ghosting trails, and ACES tone mapping. Bass drives spawn rate, mouse scrubs horizontal shift and rain speed, depth creates parallax.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Rain Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "density",
+      "name": "Column Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "width",
+      "name": "Curtain Width",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "glow",
+      "name": "Phosphor Glow",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal"
+  ],
+  "tags": [
+    "matrix",
+    "code-rain",
+    "conway",
+    "phosphor",
+    "crt",
+    "audio-reactive",
+    "temporal"
+  ]
+}

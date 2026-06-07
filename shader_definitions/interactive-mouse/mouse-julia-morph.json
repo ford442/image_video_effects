@@ -1,0 +1,46 @@
+{
+  "id": "mouse-julia-morph",
+  "name": "Julia Morph",
+  "url": "shaders/mouse-julia-morph.wgsl",
+  "features": [
+    "mouse-driven"
+  ],
+  "description": "Mouse position controls the Julia set constant c for real-time fractal morphing. Click ripples pin configurations that blend together over the input image palette.",
+  "params": [
+    {
+      "id": "zoom",
+      "name": "Zoom",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "maxIter",
+      "name": "Iteration Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "morphSpeed",
+      "name": "Auto Morph Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "rippleInfluence",
+      "name": "Ripple Blend",
+      "default": 0.7,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "interactive",
+    "mouse-driven",
+    "fractal",
+    "psychedelic",
+    "morphing"
+  ]
+}

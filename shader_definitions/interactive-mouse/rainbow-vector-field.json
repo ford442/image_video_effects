@@ -1,0 +1,45 @@
+{
+  "id": "rainbow-vector-field",
+  "name": "Rainbow Vector Field (Pass 1)",
+  "url": "shaders/rainbow-vector-field.wgsl",
+  "description": "Generates a base rainbow pattern and computes a displacement field (stored to depth) for a follow-up prismatic feedback pass.",
+  "params": [
+    {
+      "id": "frequency",
+      "name": "Frequency",
+      "default": 4,
+      "min": 0.1,
+      "max": 12
+    },
+    {
+      "id": "saturation",
+      "name": "Saturation",
+      "default": 0.8,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "brightness",
+      "name": "Brightness",
+      "default": 1,
+      "min": 0,
+      "max": 2
+    },
+    {
+      "id": "displacementScale",
+      "name": "Displacement Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 2
+    }
+  ],
+  "features": [
+    "multi-pass",
+    "mouse-driven",
+    "color"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

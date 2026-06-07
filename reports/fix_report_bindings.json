@@ -1,0 +1,60 @@
+{
+  "agent": "Fix Agent 2: Invalid Binding Fixer",
+  "fixed_count": 7,
+  "failed_count": 0,
+  "fixed_shaders": [
+    "aurora-rift-pass1.wgsl",
+    "aurora-rift-pass2.wgsl",
+    "aurora-rift-2-pass1.wgsl",
+    "aurora-rift-2-pass2.wgsl",
+    "quantum-foam-pass1.wgsl",
+    "quantum-foam-pass2.wgsl",
+    "quantum-foam-pass3.wgsl"
+  ],
+  "details": [
+    {
+      "shader": "aurora-rift-pass1.wgsl",
+      "old_bindings": [13],
+      "new_bindings": [7],
+      "notes": "Replaced @binding(13) dataTextureA with @binding(7) dataTextureA. Remapped historyBuf/unusedBuf/historyTex to standard dataTextureA/B/C bindings. Pass 1 writes volumetric data to dataTextureA."
+    },
+    {
+      "shader": "aurora-rift-pass2.wgsl",
+      "old_bindings": [13],
+      "new_bindings": [9, 7],
+      "notes": "Replaced @binding(13) dataTextureA with @binding(9) dataTextureC for reading Pass 1 data. Updated textureLoad to use dataTextureC. Updated temporal feedback to write to @binding(7) dataTextureA and sample from @binding(9) dataTextureC."
+    },
+    {
+      "shader": "aurora-rift-2-pass1.wgsl",
+      "old_bindings": [13],
+      "new_bindings": [7],
+      "notes": "Replaced @binding(13) dataTextureA with @binding(7) dataTextureA. Remapped historyBuf/unusedBuf/historyTex to standard dataTextureA/B/C bindings. Pass 1 writes volumetric data to dataTextureA."
+    },
+    {
+      "shader": "aurora-rift-2-pass2.wgsl",
+      "old_bindings": [13],
+      "new_bindings": [9, 7],
+      "notes": "Replaced @binding(13) dataTextureA with @binding(9) dataTextureC for reading Pass 1 data. Updated textureLoad to use dataTextureC. Updated temporal feedback to write to @binding(7) dataTextureA and sample from @binding(9) dataTextureC."
+    },
+    {
+      "shader": "quantum-foam-pass1.wgsl",
+      "old_bindings": [13],
+      "new_bindings": [7],
+      "notes": "Replaced @binding(13) dataTextureA with @binding(7) dataTextureA. Remapped historyBuf/unusedBuf/historyTex to standard dataTextureA/B/C bindings. Pass 1 writes field data to dataTextureA."
+    },
+    {
+      "shader": "quantum-foam-pass2.wgsl",
+      "old_bindings": [13, 14],
+      "new_bindings": [9, 7, 8],
+      "notes": "Replaced @binding(13) dataTextureA (input) with @binding(9) dataTextureC. Replaced @binding(14) dataTextureB (output) with @binding(8) dataTextureB. Updated textureLoad to use dataTextureC. Updated temporal feedback to write to @binding(7) dataTextureA and sample from @binding(9) dataTextureC."
+    },
+    {
+      "shader": "quantum-foam-pass3.wgsl",
+      "old_bindings": [13],
+      "new_bindings": [9],
+      "notes": "Replaced @binding(13) dataTextureB with @binding(9) dataTextureC for reading Pass 2 data. Remapped historyBuf/unusedBuf/historyTex to standard dataTextureA/B/C bindings. Updated textureLoad and textureSampleLevel calls to use dataTextureC."
+    }
+  ],
+  "summary": "All 7 multi-pass shaders have been fixed to use only valid bindings 0-12. The fix follows the standard data texture convention: Pass 1 writes to dataTextureA (binding 7), Pass 2 reads from dataTextureC (binding 9) which contains Pass 1's output, and Pass 2 writes to dataTextureB (binding 8). Temporal feedback has been remapped to use dataTextureA for writing history and dataTextureC for reading history.",
+  "timestamp": "2026-04-01T07:57:00Z"
+}

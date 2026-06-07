@@ -1,0 +1,51 @@
+{
+  "id": "pixel-scattering",
+  "name": "Pixel Scattering",
+  "url": "/shaders/pixel-scattering.wgsl",
+  "category": "distortion",
+  "description": "Velocity-field advection using curl noise and Fibonacci spiral patterns. Motion blur trails, chromatic separation along velocity vectors, and HDR accumulation. Bass triggers explosive scatter events.",
+  "params": [
+    {
+      "id": "radius",
+      "name": "Scatter Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "strength",
+      "name": "Scatter Distance",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "trail_length",
+      "name": "Trail Length",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "chaos",
+      "name": "Chaos",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "velocity-field"
+  ],
+  "tags": [
+    "distortion",
+    "scatter",
+    "velocity",
+    "curl-noise",
+    "chromatic",
+    "audio-reactive"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "id": "gen-fluffy-raincloud",
+  "name": "Vorticity Raincloud",
+  "url": "shaders/gen_fluffy_raincloud.wgsl",
+  "description": "Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow.",
+  "features": [
+    "upgraded-rgba",
+    "depth-aware",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "clouds",
+    "rain",
+    "storm",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Coverage",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Turbulence",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Rain",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Wind",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "id": "rgb-fluid",
+  "name": "RGB Fluidity",
+  "url": "shaders/rgb-fluid.wgsl",
+  "description": "Image behaves like a fluid, stirred by the mouse cursor.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "decay",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "force",
+      "name": "Mouse Force",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "shift",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

@@ -1,0 +1,105 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Moiré Interference
+//  Category: image
+//  Features: [mouse-driven, audio-reactive, upgraded-rgba]
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Frequency, y=Distortion, z=Aberration, w=Complexity
+  ripples: array<vec4<f32>, 50>,
+};
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(global_id.xy);
+  var uv = vec2<f32>(global_id.xy) / resolution;
+  let time = u.config.x;
+  let aspect = resolution.x / resolution.y;
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  // Params
+  let freq = mix(20.0, 200.0, u.zoom_params.x) * (1.0 + bass * 0.1 + mids * 0.05);
+  let strength = u.zoom_params.y * 0.05 * (1.0 + treble * 0.1);
+  let abb = u.zoom_params.z * 0.02;
+  let complexity = u.zoom_params.w;
+
+  // Points
+  var center = vec2<f32>(0.5 * aspect, 0.5);
+  var mouse = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
+  let current_uv = vec2<f32>(uv.x * aspect, uv.y);
+
+  // Distances
+  let d1 = distance(current_uv, center);
+  let d2 = distance(current_uv, mouse);
+
+  // Wave functions
+  let w1 = sin(d1 * freq - time * 2.0);
+  let w2 = sin(d2 * freq - time * 2.0);
+
+  // Basic Interference
+  var interference = w1 + w2;
+
+  // Complexity adds a third point or modulates freq
+  if (complexity > 0.0) {
+      let d3 = distance(current_uv, mix(center, mouse, 0.5));
+      let w3 = sin(d3 * freq * 1.5 + time);
+      interference += w3 * complexity;
+  }
+
+  // Normalize roughly
+  interference = interference * 0.5;
+
+  // Distortion Vector
+  var dir = normalize(uv - vec2<f32>(0.5));
+  let displacement = vec2<f32>(cos(interference * 3.14), sin(interference * 3.14)) * strength;
+
+  // Sample with Aberration
+  let r_uv = uv + displacement * (1.0 + abb * 10.0);
+  let g_uv = uv + displacement;
+  let b_uv = uv + displacement * (1.0 - abb * 10.0);
+
+  let r = textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
+
+  var color = vec3<f32>(r, g, b);
+
+  // Depth pass-through
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+
+  // Alpha: preserve input transparency, blend to opaque based on effect intensity
+  let dispMag = length(displacement);
+  let effectIntensity = clamp(dispMag * 10.0 + abs(interference) * 0.2, 0.0, 1.0);
+  let finalAlpha = mix(baseColor.a, 1.0, effectIntensity);
+
+  textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
+  textureStore(dataTextureA, coord, vec4<f32>(color, finalAlpha));
+}

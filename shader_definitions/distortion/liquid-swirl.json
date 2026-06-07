@@ -1,0 +1,51 @@
+{
+  "id": "liquid-swirl",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven",
+    "upgraded-rgba",
+    "depth-aware"
+  ],
+  "url": "shaders/liquid-swirl.wgsl",
+  "description": "Swirls the image around the cursor like mixing paint.",
+  "params": [
+    {
+      "id": "strength",
+      "name": "Swirl Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "radius",
+      "name": "Swirl Radius",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "smoothness",
+      "name": "Smoothness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "rotation",
+      "name": "Auto Rotation",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "transform",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "name": "Liquid Swirl"
+}

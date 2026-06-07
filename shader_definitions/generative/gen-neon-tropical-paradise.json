@@ -1,0 +1,60 @@
+{
+  "id": "gen-neon-tropical-paradise",
+  "name": "Neon Tropical Paradise",
+  "category": "generative",
+  "url": "shaders/gen-neon-tropical-paradise.wgsl",
+  "description": "A psychedelic tropical paradise with stylized neon palm trees, aurora sky, glowing flowers, and bioluminescent water. Hot pinks, electric blues, neon greens, sunset oranges. Mouse creates ripples in the water and sways the trees. Stars twinkle in a psychedelic sky.",
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural"
+  ],
+  "tags": [
+    "psychedelic",
+    "neon",
+    "tropical",
+    "nature",
+    "bioluminescent",
+    "aurora",
+    "sunset"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+# Compatibility Tester Agent
+
+**Role:** Test cross-browser and device compatibility
+
+**Target URL:** https://test.1ink.us/image_video_effects/index.html
+
+## Test Checklist
+
+### 1. Browser Compatibility
+- [ ] Chrome/Chromium: WebGPU works
+- [ ] Firefox Nightly: WebGPU flag detection
+- [ ] Edge: WebGPU works
+- [ ] Safari: Graceful fallback message
+
+### 2. Mobile/Tablet
+- [ ] Touch events work (if applicable)
+- [ ] Layout adapts to screen size
+- [ ] No horizontal scroll on mobile
+- [ ] Performance acceptable on mid-tier devices
+
+### 3. Error Handling
+- [ ] Graceful degradation without WebGPU
+- [ ] Clear error messages for unsupported browsers
+- [ ] No infinite loading spinners
+- [ ] Recovery from shader compile errors
+
+### 4. Network Resilience
+- [ ] Works with slow connections (throttled)
+- [ ] Retry logic for failed shader loads
+- [ ] Offline detection (if applicable)
+
+### 5. Security
+- [ ] HTTPS required message (if on HTTP)
+- [ ] CORS errors handled
+- [ ] No mixed content warnings
+
+## Report Format
+```markdown
+## Compatibility Test Results
+
+| Browser | WebGPU | Renders | Notes |
+|---------|--------|---------|-------|
+| Chrome  | ✅/❌  | ✅/❌   | Version: XX |
+| Firefox | ✅/❌  | ✅/❌   | Flag needed |
+| Safari  | ✅/❌  | N/A     | Fallback OK |
+
+### Mobile Tests
+| Device | Layout | Touch | Performance |
+|--------|--------|-------|-------------|
+| iPhone | ✅/❌  | ✅/❌ | Good/Poor |
+| Android| ✅/❌  | ✅/❌ | Good/Poor |
+
+### Error Handling
+- Unsupported browser message: [Clear/Confusing/Missing]
+- WebGPU fail fallback: [Works/Broken]
+
+### Issues Found
+- [List compatibility problems]
+```

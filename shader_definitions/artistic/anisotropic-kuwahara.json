@@ -1,0 +1,46 @@
+{
+  "id": "anisotropic-kuwahara",
+  "name": "Van Gogh Flow",
+  "url": "shaders/anisotropic-kuwahara.wgsl",
+  "description": "Anisotropic Kuwahara filter creating painterly Van Gogh-style brushstroke effects.",
+  "params": [
+    {
+      "id": "windowSize",
+      "name": "Brush Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "anisotropy",
+      "name": "Flow Anisotropy",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "sharpness",
+      "name": "Edge Sharpness",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "flowStrength",
+      "name": "Flow Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "depth-aware",
+    "interactive",
+    "painterly",
+    "mouse-driven"
+  ],
+  "tags": [
+    "stylized",
+    "artistic"
+  ]
+}

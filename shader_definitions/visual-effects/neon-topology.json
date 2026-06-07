@@ -1,0 +1,53 @@
+{
+  "id": "neon-topology",
+  "url": "shaders/neon-topology.wgsl",
+  "description": "Renders the image as a glowing 3D topographic map.",
+  "params": [
+    {
+      "id": "density",
+      "name": "Line Density",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "height",
+      "name": "Height Scale",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "mouse",
+      "name": "Mouse Force",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "glow",
+      "name": "Glow Strength",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "tags": [
+    "vfx",
+    "particles",
+    "glow",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "name": "Neon Topology"
+}

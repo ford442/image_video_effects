@@ -1,0 +1,63 @@
+{
+  "id": "sand-dunes",
+  "name": "Sand Dunes",
+  "category": "generative",
+  "url": "shaders/sand-dunes.wgsl",
+  "description": "Bagnold dune physics with anisotropic fBm, separation bubbles at crests, and ripple superposition on slip faces. Desert palette with subsurface scattering and HDR saltation sparkles. Audio drives wind migration and treble sparkles. Mouse creates wind shadows. Depth controls atmospheric haze.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "bagnold-physics",
+    "anisotropic-fbm",
+    "wind-erosion",
+    "separation-bubble",
+    "upgraded-rgba",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "scale",
+      "name": "Dune Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "wind",
+      "name": "Wind Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "erosion",
+      "name": "Erosion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "shadows",
+      "name": "Shadow Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "desert",
+    "dunes",
+    "sand",
+    "landscape",
+    "wind",
+    "audio-reactive",
+    "nature",
+    "bagnold",
+    "physics"
+  ]
+}

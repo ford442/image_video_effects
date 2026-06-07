@@ -1,0 +1,53 @@
+{
+  "id": "sketch-reveal",
+  "name": "Sketch Reveal",
+  "category": "interactive-mouse",
+  "url": "shaders/sketch-reveal.wgsl",
+  "description": "Gradient-directed pencil and charcoal cross-hatching with graphite sheen, paper tooth texture, smudge effects, and chromatic edge darkening. Bass drives reveal progression, mouse acts as the pencil, depth controls stroke size perspective.",
+  "params": [
+    {
+      "id": "brushSize",
+      "name": "Brush Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "edgeStrength",
+      "name": "Edge Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "contrast",
+      "name": "Sketch Contrast",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "softness",
+      "name": "Brush Softness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "sketch",
+    "pencil",
+    "reveal",
+    "brush",
+    "audio-reactive",
+    "charcoal",
+    "hatching",
+    "graphite"
+  ]
+}

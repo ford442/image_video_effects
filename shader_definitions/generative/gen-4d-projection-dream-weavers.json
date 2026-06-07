@@ -1,0 +1,63 @@
+{
+  "id": "gen-4d-projection-dream-weavers",
+  "name": "4D Projection Dream Weavers",
+  "url": "shaders/gen-4d-projection-dream-weavers.wgsl",
+  "description": "Smooth continuous slicing and projection through higher-dimensional fractals and lattices. Mouse controls navigation through the extra two dimensions providing genuine higher-dimensional exploration. Audio affects fractal parameters and projection quality. Ethereal mathematical dream-like forms.",
+  "tags": [
+    "generative",
+    "4d",
+    "fractal",
+    "higher-dimensional",
+    "julia",
+    "mathematical",
+    "audio-reactive",
+    "music"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "zoomLevel",
+      "name": "Zoom Level",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Zoom level in 4D fractal space",
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "rotSpeed",
+      "name": "Rotation Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Speed of 4D rotation through hyperspace",
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Hue rotation of the color palette",
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "detailLevel",
+      "name": "Detail Level",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Fractal iteration depth and detail",
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

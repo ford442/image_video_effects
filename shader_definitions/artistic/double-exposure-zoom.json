@@ -1,0 +1,52 @@
+{
+  "id": "double-exposure-zoom",
+  "name": "Double Exposure Zoom",
+  "url": "shaders/double-exposure-zoom.wgsl",
+  "description": "Multi-scale double exposure with luminance-based matte extraction, film stock color response curves, light leak artifacts, ACES tone mapping, and chromatic aberration on zoom edges. Bass drives zoom speed, mouse controls secondary exposure position with depth parallax.",
+  "params": [
+    {
+      "id": "rotation",
+      "name": "Rotation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "zoom",
+      "name": "Zoom Level",
+      "default": 0.6,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "edgeFade",
+      "name": "Edge Fade",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "audioReact",
+      "name": "Audio Reactivity",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "audio",
+    "music",
+    "reactive",
+    "film",
+    "double-exposure"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "id": "temporal-feedback-zoom-tracer",
+  "name": "Temporal Feedback Zoom Tracer",
+  "url": "shaders/temporal-feedback-zoom-tracer.wgsl",
+  "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content.",
+  "tags": [
+    "temporal",
+    "feedback",
+    "zoom",
+    "tunnel",
+    "psychedelic",
+    "warp",
+    "abstract"
+  ],
+  "features": [
+    "temporal",
+    "history-ring",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "requiresHistoryRing": true,
+  "params": [
+    {
+      "id": "param1",
+      "name": "Zoom Power",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Rotation",
+      "default": 0.625,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Persistence",
+      "default": 0.71,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Current Blend",
+      "default": 0.29,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

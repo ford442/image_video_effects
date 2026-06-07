@@ -1,0 +1,52 @@
+{
+  "id": "magnetic-pixels",
+  "name": "Magnetic Pixels",
+  "category": "interactive-mouse",
+  "url": "shaders/magnetic-pixels.wgsl",
+  "description": "Pixels behave as iron filings in a magnetic dipole field. Mouse positions the dipole; bass oscillates field strength. Metallic sheen, chromatic aberration, and HDR bloom on field concentrations.",
+  "params": [
+    {
+      "id": "dipoleStrength",
+      "name": "Dipole Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "fieldRadius",
+      "name": "Field Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "metallic",
+      "name": "Metallic Sheen",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "chroma",
+      "name": "Chromatic Aberration",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "magnetic",
+    "dipole",
+    "iron-filings",
+    "metallic",
+    "chromatic",
+    "HDR",
+    "physics"
+  ]
+}

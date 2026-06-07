@@ -1,0 +1,846 @@
+[
+  {
+    "id": "adaptive-mosaic",
+    "name": "Adaptive Mosaic",
+    "url": "shaders/adaptive-mosaic.wgsl",
+    "description": "Depth-adaptive tile mosaic: near objects render as fine tiles, far objects as coarse blocks. SDF bevel on every tile edge, Voronoi crackle overlay at coarse sizes, mouse-focus zone, and audio-reactive tile-size pulse.",
+    "features": [
+      "mouse-driven",
+      "depth-aware",
+      "audio-reactive",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "tile_size",
+        "name": "Tile Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "depth_blend",
+        "name": "Depth Blend",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bevel_width",
+        "name": "Bevel Width",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "audio_sensitivity",
+        "name": "Audio Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "tags": [
+      "mosaic",
+      "pixel",
+      "geometric",
+      "depth",
+      "voronoi",
+      "tiles",
+      "pattern",
+      "audio",
+      "reactive"
+    ]
+  },
+  {
+    "id": "ascii-glyph",
+    "name": "ASCII Glyphs",
+    "url": "shaders/ascii-glyph.wgsl",
+    "description": "SDF glyph morph with bass character swap and depth luminance map. Pixels are quantized into glyph cells; depth controls brightness tiering. Bass swaps glyph patterns on beats, treble adds chromatic highlights to dense characters.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "sdf-glyph",
+      "depth-luminance",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "ascii",
+      "glyph",
+      "SDF",
+      "typography"
+    ],
+    "params": [
+      {
+        "id": "glyphSize",
+        "name": "Glyph Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "brightness",
+        "name": "Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorAmount",
+        "name": "Color Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "densityBoost",
+        "name": "Density Boost",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "crystal-mosaic",
+    "name": "Crystal Mosaic",
+    "category": "geometric",
+    "url": "shaders/crystal-mosaic.wgsl",
+    "description": "Image broken into triangular mosaic tiles that rotate based on mouse proximity. Chromatic edges at tile boundaries with depth parallax shifting.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "chromatic-edges"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Tile Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chroma",
+        "name": "Chromatic Edge",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "influence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "mosaic",
+      "crystal",
+      "geometric",
+      "triangular",
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic"
+    ]
+  },
+  {
+    "id": "datamosh",
+    "name": "Datamosh",
+    "url": "shaders/datamosh.wgsl",
+    "description": "True video compression datamoshing with I/P-frame simulation, motion vector prediction, and authentic macroblock smearing artifacts.",
+    "features": [
+      "mouse-driven",
+      "multi-pass",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "datamosh",
+      "glitch",
+      "compression",
+      "motion-vectors",
+      "retro",
+      "video-artifacts",
+      "smear",
+      "trail"
+    ],
+    "params": [
+      {
+        "id": "motion_strength",
+        "name": "Motion Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Strength of motion vector displacement (creates smearing trails)"
+      },
+      {
+        "id": "iframe_interval",
+        "name": "I-Frame Interval",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "Time between full frame refreshes (0=often, 1=rarely)"
+      },
+      {
+        "id": "blend_amount",
+        "name": "Smear Blend",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "How much displaced pixels blend with current frame"
+      },
+      {
+        "id": "feedback_decay",
+        "name": "Trail Decay",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "description": "How long motion trails persist (higher=longer trails)"
+      }
+    ]
+  },
+  {
+    "id": "digital-crease",
+    "name": "Digital Crease",
+    "category": "geometric",
+    "url": "shaders/digital-crease.wgsl",
+    "description": "Origami crease pattern simulation with mountain/valley assignment, Kawasaki-Justin flat-foldability approximation, depth-driven layer shadows, digital paper fiber texture, chromatic folding, HDR crease specular, and ACES tone mapping. Bass drives fold speed; mouse performs local folds; depth controls layer ordering.",
+    "params": [
+      {
+        "id": "fold-count",
+        "name": "Fold Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fold-depth",
+        "name": "Fold Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fold-softness",
+        "name": "Fold Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chroma-offset",
+        "name": "Chromatic Offset",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal-paper-fold",
+      "chromatic-folding",
+      "origami"
+    ],
+    "tags": [
+      "geometric",
+      "paper",
+      "crease",
+      "fold",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic",
+      "temporal",
+      "origami"
+    ]
+  },
+  {
+    "id": "flip-matrix",
+    "name": "Flip Matrix",
+    "url": "shaders/flip-matrix.wgsl",
+    "description": "Grid of tiles that flip vertically in pseudo-3D based on mouse proximity.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Grid Density",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Effect Radius",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rotation",
+        "name": "Flip Intensity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "gap",
+        "name": "Tile Gap",
+        "type": "float",
+        "default": 0.1,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "hyperbolic-dreamweaver",
+    "name": "Hyperbolic Dreamweaver",
+    "url": "shaders/hyperbolic-dreamweaver.wgsl",
+    "description": "Infinite non-Euclidean Poincaré disk tilings weaving the image through psychedelic Möbius transformations, depth-aware curvature, chromatic aberration, and glowing symmetry lines. Mouse centers the dream; ripples perturb the fabric.",
+    "params": [
+      {
+        "name": "Tile Count",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "desc": "Number of hyperbolic tiles (3-9)",
+        "id": "tile_count"
+      },
+      {
+        "name": "Curvature",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "desc": "Hyperbolic bending strength (depth-modulated)",
+        "id": "curvature"
+      },
+      {
+        "name": "Aberration",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "desc": "Chromatic splitting in curved space",
+        "id": "aberration"
+      },
+      {
+        "name": "Glow Intensity",
+        "type": "range",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "desc": "Symmetry line luminescence",
+        "id": "glow_intensity"
+      }
+    ],
+    "features": [
+      "geometric",
+      "psychedelic",
+      "depth-aware",
+      "non-euclidean",
+      "interactive",
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "interactive-origami",
+    "name": "Interactive Origami",
+    "url": "shaders/interactive-origami.wgsl",
+    "description": "Simulates folded paper with triangle-wave crease planes radiating from the mouse. Normal-map facet shading, depth-aware fold amplitude (far objects fold more), audio-reactive bass amplitude, and ripple-triggered expanding crease rings.",
+    "features": [
+      "mouse-driven",
+      "depth-aware",
+      "audio-reactive",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "fold_scale",
+        "name": "Fold Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "fold_depth",
+        "name": "Fold Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "light_intensity",
+        "name": "Light Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "depth_influence",
+        "name": "Depth Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "tags": [
+      "origami",
+      "fold",
+      "paper",
+      "geometric",
+      "normal-map",
+      "interactive",
+      "depth",
+      "audio",
+      "reactive"
+    ]
+  },
+  {
+    "id": "kaleido-scope-grokcf1",
+    "name": "Kaleido-Scope Prism grokcf1",
+    "url": "shaders/kaleido-scope-grokcf1.wgsl",
+    "description": "Kaleidoscope with spring-damper mouse follow, attack/release audio envelope, and temporal feedback trails.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "segments",
+        "name": "Segments",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "offset",
+        "name": "Ring Offset",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "geometric",
+      "pattern",
+      "audio",
+      "feedback"
+    ]
+  },
+  {
+    "id": "kaleido-scope",
+    "name": "Kaleido-Scope",
+    "category": "geometric",
+    "url": "shaders/kaleido-scope.wgsl",
+    "description": "Hyperbolic Poincaré-disk tessellation kaleidoscope with animated morphing between symmetry types, iridescent metallic boundaries, HDR specular vertices, and depth-driven stereoscopic chromatic aberration.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "segments",
+        "name": "Segments",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "speed",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "offset",
+        "name": "Ring Offset",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "geometric",
+      "pattern",
+      "kaleidoscope",
+      "prismatic",
+      "hyperbolic",
+      "tessellation"
+    ]
+  },
+  {
+    "id": "kinetic-tiles",
+    "name": "Kinetic Tiles",
+    "url": "shaders/kinetic_tiles.wgsl",
+    "description": "Grid of tiles that rotate and scale responsively to mouse proximity.",
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Grid Density",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Mouse Radius",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation Amt",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scale",
+        "name": "Tile Scale",
+        "type": "float",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "neon-poly-grid",
+    "name": "Neon Poly Grid",
+    "url": "shaders/neon-poly-grid.wgsl",
+    "description": "A futuristic hexagonal grid that lights up when you touch it, leaving a fading trail.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "grid-scale",
+        "name": "Grid Scale",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "line-width",
+        "name": "Line Width",
+        "min": 0,
+        "max": 1,
+        "default": 0.2
+      },
+      {
+        "id": "glow-strength",
+        "name": "Glow Strength",
+        "min": 0,
+        "max": 1,
+        "default": 0.8
+      },
+      {
+        "id": "decay-speed",
+        "name": "Trail Duration",
+        "min": 0,
+        "max": 1,
+        "default": 0.8
+      }
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  {
+    "id": "neon-quantum-lattice",
+    "name": "Neon Quantum Lattice",
+    "url": "shaders/neon-quantum-lattice.wgsl",
+    "description": "Aperiodic Penrose-like quasi-crystal tiling with neon edge glow, metallic fill gradients, HDR vertex bloom, and quantum uncertainty zones.",
+    "params": [
+      {
+        "id": "inflation",
+        "name": "Tile Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glow",
+        "name": "Neon Glow Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "parallax",
+        "name": "Depth Parallax",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "brightness",
+        "name": "Brightness",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "geometric",
+      "neon",
+      "quasicrystal",
+      "penrose",
+      "tiling",
+      "metallic"
+    ]
+  },
+  {
+    "id": "spec-hypercube-projection",
+    "name": "Hypercube Projection",
+    "url": "shaders/spec-hypercube-projection.wgsl",
+    "description": "Animated 4D tesseract projected into 2D using double rotation in XW and YZ planes. 32 edges are rendered with depth-based glow and input image texture-mapped onto faces.",
+    "tags": [
+      "hypercube",
+      "tesseract",
+      "4D",
+      "projection",
+      "geometric",
+      "rotation"
+    ],
+    "features": [
+      "4D",
+      "hypercube",
+      "mouse-driven",
+      "geometric"
+    ],
+    "params": [
+      {
+        "id": "rot_xw",
+        "name": "XW Rotation",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "rot_yz",
+        "name": "YZ Rotation",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "edge_glow",
+        "name": "Edge Glow",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "face_opacity",
+        "name": "Face Opacity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "time-lag-map",
+    "name": "Time-Lag Map",
+    "url": "shaders/time-lag-map.wgsl",
+    "description": "Per-pixel temporal delay creating echo, smear, and time-displacement effects.",
+    "params": [
+      {
+        "id": "bufferLength",
+        "name": "Delay Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "mappingFunction",
+        "name": "Delay Pattern",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "feedbackMix",
+        "name": "Feedback Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "motionSense",
+        "name": "Motion Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "motion-detection",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "voronoi-zoom-turbulence",
+    "name": "Voronoi Zoom Turbulence",
+    "url": "shaders/voronoi-zoom-turbulence.wgsl",
+    "description": "Divides the screen into Voronoi cells where each cell applies a chaotic, time-varying zoom. Mouse proximity calms or agitates the turbulence.",
+    "params": [
+      {
+        "name": "Cell Density",
+        "type": "float",
+        "default": 1,
+        "min": 1,
+        "max": 5,
+        "target": "zoom_params.x",
+        "id": "cell_density"
+      },
+      {
+        "name": "Turbulence Speed",
+        "type": "float",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "target": "zoom_params.y",
+        "id": "turbulence_speed"
+      },
+      {
+        "name": "Zoom Intensity",
+        "type": "float",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "target": "zoom_params.z",
+        "id": "zoom_intensity"
+      },
+      {
+        "name": "Mouse Influence",
+        "type": "float",
+        "default": 1,
+        "min": -1,
+        "max": 1,
+        "target": "zoom_params.w",
+        "id": "mouse_influence"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  }
+]

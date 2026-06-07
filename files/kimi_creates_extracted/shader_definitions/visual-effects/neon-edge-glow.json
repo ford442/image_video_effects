@@ -1,0 +1,41 @@
+{
+  "id": "neon-edge-glow",
+  "name": "Neon Edge Glow",
+  "url": "shaders/neon-edge-glow.wgsl",
+  "features": ["post-processing"],
+  "tags": ["neon", "edge", "glow", "bloom", "sobel", "colorful", "post-processing"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Edge Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Glow Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Neon Tint",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

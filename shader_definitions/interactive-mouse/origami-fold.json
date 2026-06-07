@@ -1,0 +1,63 @@
+{
+  "id": "origami-fold",
+  "name": "Origami Fold",
+  "category": "interactive-mouse",
+  "url": "shaders/origami-fold.wgsl",
+  "description": "Upgraded paper folding with mountain/valley crease patterns, dihedral angle constraints, Kawasaki-Justin flat-foldable vertices, paper fiber texture, shadow casting, HDR specular highlights on creases, ACES tone mapping, and chromatic edge darkening. Bass drives fold animation speed, mouse performs folds (mountain vs valley by click parity), depth controls paper layer ordering.",
+  "params": [
+    {
+      "id": "foldSpeed",
+      "name": "Fold Speed",
+      "default": 0.1,
+      "min": 0,
+      "max": 0.5,
+      "step": 0.01,
+      "param": "zoom_params.x"
+    },
+    {
+      "id": "shadowStrength",
+      "name": "Shadow Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "param": "zoom_params.y"
+    },
+    {
+      "id": "angle",
+      "name": "Fold Angle",
+      "default": 0,
+      "min": 0,
+      "max": 6.28,
+      "step": 0.01,
+      "param": "zoom_params.z"
+    },
+    {
+      "id": "paperOpacity",
+      "name": "Paper Opacity",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "param": "zoom_params.w"
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "semantic-alpha",
+    "chromatic-edge"
+  ],
+  "tags": [
+    "origami",
+    "paper",
+    "fold",
+    "interactive",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic",
+    "mountain-valley",
+    "Kawasaki-Justin"
+  ]
+}

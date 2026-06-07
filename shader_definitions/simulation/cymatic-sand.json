@@ -1,0 +1,58 @@
+{
+  "id": "cymatic-sand",
+  "name": "Cymatic Sand",
+  "description": "Multi-harmonic Chladni plate simulation. Sand accumulates on nodal lines with temporal persistence, audio-driven harmonic superposition, and SDF-based rounded grain rendering.",
+  "url": "shaders/cymatic-sand.wgsl",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "frequency_mode",
+      "name": "Frequency Mode",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "harmonic_mix",
+      "name": "Harmonic Mix",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "grain_density",
+      "name": "Grain Density",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "audio_sensitivity",
+      "name": "Audio Sensitivity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "cymatic",
+    "sand",
+    "chladni",
+    "procedural",
+    "simulation",
+    "audio",
+    "music",
+    "reactive",
+    "organic"
+  ]
+}

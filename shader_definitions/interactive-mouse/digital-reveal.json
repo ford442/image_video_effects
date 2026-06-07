@@ -1,0 +1,55 @@
+{
+  "id": "digital-reveal",
+  "name": "Digital Rain Reveal",
+  "category": "interactive-mouse",
+  "url": "shaders/digital-reveal.wgsl",
+  "description": "Hides the image behind chromatic digital rain; move the mouse to reveal content. Audio shifts rain colors (bass green, treble white). Depth makes near objects reveal faster.",
+  "params": [
+    {
+      "id": "density",
+      "name": "Rain Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "size",
+      "name": "Reveal Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "fade",
+      "name": "Trail Fade",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "speed",
+      "name": "Rain Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "temporal-digital-rain",
+    "chromatic-drops"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "digital-rain",
+    "reveal",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic",
+    "temporal"
+  ]
+}

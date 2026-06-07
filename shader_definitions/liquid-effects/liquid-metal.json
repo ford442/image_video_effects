@@ -1,0 +1,57 @@
+{
+  "id": "liquid-metal",
+  "name": "Liquid Metal",
+  "url": "shaders/liquid-metal.wgsl",
+  "description": "PBR mercury surface with FBM height field, Schlick-Fresnel reflectance, chromatic RGB dispersion, depth-aware pooling, and audio-reactive surface pulsing.",
+  "features": [
+    "mouse-driven",
+    "depth-aware",
+    "temporal",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "liquid",
+    "metal",
+    "mercury",
+    "reflection",
+    "chromatic",
+    "distortion",
+    "organic",
+    "futuristic"
+  ],
+  "params": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "reflectivity",
+      "name": "Reflectivity",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chromatic_spread",
+      "name": "Chromatic Spread",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "flow_speed",
+      "name": "Flow Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

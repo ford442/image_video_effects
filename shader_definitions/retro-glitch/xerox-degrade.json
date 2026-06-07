@@ -1,0 +1,47 @@
+{
+  "id": "xerox-degrade",
+  "name": "Xerox Degrade",
+  "url": "shaders/xerox-degrade.wgsl",
+  "description": "Simulates the degradation of repeated photocopying with grain, high contrast, and smear.",
+  "params": [
+    {
+      "id": "contrast",
+      "name": "Contrast",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "grain",
+      "name": "Grain",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "smear",
+      "name": "Smear",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "threshold",
+      "name": "Threshold",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "glitch",
+    "branchless",
+    "texture",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

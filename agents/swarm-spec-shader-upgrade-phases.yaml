@@ -1,0 +1,652 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+#  SHADER UPGRADE SWARM - Two Phase Operation
+#  Project: Pixelocity / image_video_effects
+#  Target: Upgrade 593 WGSL shaders + create new hybrid shaders
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ───────────────────────────────────────────────────────────────────────────────
+# GLOBAL CONFIGURATION
+# ───────────────────────────────────────────────────────────────────────────────
+
+repository:
+  path: projects/image_video_effects
+  shader_dir: public/shaders
+  definitions_dir: shader_definitions
+  output_dir: /workspaces/codepit/swarm-outputs/shader-upgrade
+
+architecture:
+  type: WebGPU Compute Shaders
+  language: WGSL
+  bindings: Universal BindGroup (13 bindings - see AGENTS.md)
+  workgroup_size: [8, 8, 1]
+  internal_resolution: 2048x2048
+
+uniforms:
+  struct: Uniforms
+  fields:
+    config: vec4<f32>       # x=Time, y=ClickCount/RandomSeed, z=ResX, w=ResY
+    zoom_config: vec4<f32>  # x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    zoom_params: vec4<f32>  # x=Param1, y=Param2, z=Param3, w=Param4
+    ripples: array<vec4<f32>, 50>
+
+randomize_context:
+  feature: "Randomize button randomizes zoom_params.x/y/z/w simultaneously"
+  constraint: "All params must produce VISUALLY VALID output at ANY combination"
+  safe_ranges:
+    - "Prefer 0.0-1.0 normalized ranges"
+    - "Avoid 'dead zones' where params produce black/blank output"
+    - "Ensure smooth interpolation across full param range"
+    - "Test extreme values: all 0.0, all 1.0, random mixes"
+
+# ───────────────────────────────────────────────────────────────────────────────
+# PHASE A: SMALL SHADER UPGRADES + NEW CREATIONS
+# Timeline: Weeks 1-3
+# Target: 61 shaders (9 Tiny + 52 Small)
+# ───────────────────────────────────────────────────────────────────────────────
+
+phase_a:
+  name: "Foundation & Seeding"
+  priority: CRITICAL_FIRST
+  
+  targets:
+    tiny_shaders:
+      count: 9
+      size_range: "< 2KB"
+      files:
+        - texture
+        - gen_orb
+        - gen_grokcf_interference
+        - gen_grid
+        - gen_grokcf_voronoi
+        - gen_grok41_plasma
+        - galaxy
+        - gen_trails
+        - gen_grok41_mandelbrot
+    
+    small_shaders:
+      count: 52
+      size_range: "2-3KB"
+      sample_targets:
+        - imageVideo
+        - gen_julia_set
+        - quantized-ripples
+        - scanline-wave
+        - luma-flow-field
+        - phantom-lag
+        - frosty-window
+        - parallax-shift
+        - ion-stream
+        - liquid-jelly
+        - anamorphic-flare
+        - kaleidoscope
+
+  agents:
+    # ─────────────────────────────────────────────────────────────────────────
+    agent_1a:
+      name: "Alpha Channel Specialist"
+      role: RGB → RGBA Upgrade Engineer
+      scope: "Tiny + Small shaders lacking alpha processing"
+      focus: |
+        Add proper alpha channel handling to shaders that currently:
+        - Output vec3<f32> colors without alpha
+        - Don't write to writeDepthTexture
+        - Have hardcoded alpha = 1.0
+        - Don't consider depth-aware alpha
+      
+      alpha_upgrade_patterns:
+        - pattern: "RGB_OUTPUT_ONLY"
+          solution: |
+            // OLD: textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
+            // NEW: Calculate alpha based on:
+            // - Luminance (bright = more opaque)
+            // - Depth (foreground = more opaque)
+            // - Edge detection (edges = preserve alpha)
+            // - Effect intensity (fade to transparent at edges)
+        
+        - pattern: "FLAT_ALPHA"
+          solution: |
+            // Create depth-aware or luminance-aware alpha
+            let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+            let depth = textureSampleLevel(readDepthTexture, ...).r;
+            let alpha = mix(0.7, 1.0, luma * depth);
+        
+        - pattern: "NO_DEPTH_WRITE"
+          solution: |
+            // Always add: textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+            // OR modulate depth: vec4<f32>(depth * effectStrength, 0.0, 0.0, 0.0);
+      
+      deliverables:
+        - "Upgraded WGSL files with proper RGBA handling"
+        - "Alpha calculation explanation comment"
+        - "Randomization-safe params (no dead zones)"
+
+    # ─────────────────────────────────────────────────────────────────────────
+    agent_2a:
+      name: "Shader Surgeon / Chunk Librarian"
+      role: Code Reuse & Hybrid Creator
+      scope: "Extract reusable patterns from existing shaders"
+      focus: |
+        Create new shaders by combining chunks from existing ones.
+        Build a "chunk library" of reusable WGSL functions.
+      
+      chunk_categories:
+        noise_functions:
+          sources: [gen_grok4_perlin, fbm_*, stellar-plasma, gen_grid]
+          chunks:
+            - hash2/3/13 functions
+            - value_noise
+            - perlin_noise
+            - simplex_noise
+            - fbm (fractal Brownian motion)
+            - domain_warping
+        
+        color_utilities:
+          sources: [liquid-metal, chromatic-*, rgb-*]
+          chunks:
+            - hsl_to_rgb / rgb_to_hsl
+            - palette functions
+            - chromatic_aberration
+            - color_quantization
+            - tone_mapping
+        
+        uv_transforms:
+          sources: [kaleidoscope, julia-warp, hyperbolic-dreamweaver]
+          chunks:
+            - kaleidoscope_mirror
+            - polar_transform
+            - mobius_transform
+            - julia_set_distortion
+            - hyperbolic_tiling
+        
+        sdf_primitives:
+          sources: [gen-xeno-botanical-synth-flora, crystal-*]
+          chunks:
+            - sdSphere, sdBox, sdCylinder
+            - sdCappedCone
+            - smooth_union
+            - repeat/infinite domains
+        
+        lighting_effects:
+          sources: [anamorphic-flare, lens-flare-brush, neon-*]
+          chunks:
+            - specular_highlight
+            - fresnel_effect
+            - glow/bloom_approximation
+            - vignette
+      
+      hybrid_creation_rules:
+        - "Combine 2-3 compatible chunks"
+        - "Ensure chunk interfaces match (uv coordinates, output types)"
+        - "Add parameter blending between chunk effects"
+        - "Test randomization safety"
+      
+      new_shader_targets:
+        - id: "hybrid-noise-kaleidoscope"
+          name: "Noise-Kaleidoscope Hybrid"
+          chunks: [fbm_noise, kaleidoscope_mirror, chromatic_aberration]
+        - id: "hybrid-sdf-plasma"
+          name: "SDF Plasma Field"
+          chunks: [sdSphere, domain_warping, plasma_coloring]
+        - id: "hybrid-chromatic-liquid"
+          name: "Chromatic Liquid Distortion"
+          chunks: [liquid_displacement, chromatic_split, noise_flow]
+        - id: "hybrid-cyber-organic"
+          name: "Cyber-Organic Fusion"
+          chunks: [circuit_patterns, organic_growth, neon_edges]
+
+    # ─────────────────────────────────────────────────────────────────────────
+    agent_3a:
+      name: "Parameter Randomization Engineer"
+      role: Randomization Safety Specialist
+      scope: "All Phase A shaders"
+      focus: |
+        Ensure all shader parameters work correctly with the Randomize button.
+        The Randomize button sets zoom_params.x/y/z/w to random 0.0-1.0 values.
+      
+      validation_checklist:
+        - "Shader renders SOMETHING at all params = 0.0"
+        - "Shader renders SOMETHING at all params = 1.0"
+        - "Shader renders SOMETHING at random param combinations"
+        - "No parameter creates completely black/blank output"
+        - "No parameter creates error/invalid state"
+      
+      safe_param_patterns:
+        - type: "normalized_intensity"
+          range: [0.0, 1.0]
+          behavior: "0.0 = minimal effect, 1.0 = maximum effect"
+          safe: true
+        
+        - type: "blend_factor"
+          range: [0.0, 1.0]
+          behavior: "mix(a, b, param) - always valid"
+          safe: true
+        
+        - type: "frequency_scale"
+          range: [0.5, 5.0]
+          mapping: "mix(0.5, 5.0, param)"
+          behavior: "Avoid 0 frequency (infinite wavelength)"
+          safe: true
+        
+        - type: "count_quantized"
+          range: [2.0, 16.0]
+          mapping: "f32(i32(param * 14.0) + 2)"
+          behavior: "Quantize to integer counts"
+          safe: true
+      
+      fixes_for_unsafe_params:
+        - problem: "Division by param when param can be 0"
+          fix: "Add epsilon: 1.0 / (param + 0.001)"
+        
+        - problem: "Log(0) when param can be 0"
+          fix: "Use log(param + 1.0) or log(max(param, 0.001))"
+        
+        - problem: "Pow(0, negative)"
+          fix: "Ensure base is always > 0"
+
+    # ─────────────────────────────────────────────────────────────────────────
+    agent_4a:
+      name: "Generative Shader Creator"
+      role: Procedural Effect Generator
+      scope: "Create 10 new generative shaders (no input texture)"
+      focus: |
+        Create entirely new generative shaders that don't require input images.
+        These should be audio-reactive or time-driven.
+      
+      concepts:
+        - id: "gen-neural-fractal"
+          description: "Neural network weight visualization style fractals"
+          features: [procedural, animated, audio-reactive]
+        - id: "gen-voronoi-crystal"
+          description: "Animated crystal growth using Voronoi diagrams"
+          features: [procedural, geometric, depth-like layers]
+        - id: "gen-audio-spirograph"
+          description: "Audio-reactive spirograph with harmonic resonance"
+          features: [audio-reactive, geometric, loops]
+        - id: "gen-topology-flow"
+          description: "Topological surface flow with Morse theory inspiration"
+          features: [mathematical, flow, gradient-based]
+        - id: "gen-string-theory"
+          description: "Vibrating string visualizations with interference patterns"
+          features: [physics-inspired, waves, interference]
+        - id: "gen-supernova-remnant"
+          description: "Expanding shell structures with shockwave physics"
+          features: [simulation, explosive, radial]
+        - id: "gen-quasicrystal"
+          description: "Penrose tiling-inspired quasicrystal patterns"
+          features: [geometric, aperiodic, mathematical]
+        - id: "gen-mycelium-network"
+          description: "Growing network patterns like fungal mycelium"
+          features: [organic, growth, network]
+        - id: "gen-magnetic-field-lines"
+          description: "Visualizing magnetic field lines with charged particles"
+          features: [physics, particle-trails, vector-field]
+        - id: "gen-bifurcation-diagram"
+          description: "Logistic map bifurcation as visual art"
+          features: [chaos-theory, mathematical, fractal]
+
+    # ─────────────────────────────────────────────────────────────────────────
+    agent_5a:
+      name: "Quality Assurance & Integration"
+      role: Final Review & Standardization
+      scope: "All Phase A outputs"
+      focus: |
+        Final review of all shaders for consistency and correctness.
+      
+      checklist:
+        - "Standard header comment with category and description"
+        - "All 13 bindings declared in correct order"
+        - "Uniforms struct matches specification"
+        - "@compute @workgroup_size(8, 8, 1) present"
+        - "Both writeTexture AND writeDepthTexture written to"
+        - "RGB output uses proper vec4<f32>(rgb, alpha)"
+        - "No compilation errors ( Tint/WGSL validator )"
+        - "Randomization-safe parameters"
+        - "JSON definition created/updated"
+
+# ───────────────────────────────────────────────────────────────────────────────
+# PHASE B: COMPLEX SHADER UPGRADES + ADVANCED CREATIONS
+# Timeline: Weeks 4-8
+# Target: 50+ complex shaders + 10 new advanced shaders
+# ───────────────────────────────────────────────────────────────────────────────
+
+phase_b:
+  name: "Advanced Enhancement & Innovation"
+  priority: HIGH_SECOND
+  
+  targets:
+    complex_upgrades:
+      selection_criteria:
+        - "High visual impact shaders"
+        - "User favorites (if metrics available)"
+        - "Diverse category representation"
+        - "Shaders with 5-8KB size (upgradeable, not too huge)"
+      
+      sample_targets:
+        - tensor-flow-sculpting      # Add multi-pass support
+        - hyperbolic-dreamweaver     # Add interactivity
+        - stellar-plasma            # Add audio reactivity
+        - liquid-metal              # Add parameter randomization
+        - quantum-superposition     # Add depth integration
+        - infinite-fractal-feedback # Add alpha blending
+        - voronoi-glass             # Add chromatic dispersion
+        - kimi_liquid_glass         # Add hybrid features
+        - gen-xeno-botanical-synth-flora  # Add more params
+        - chromatographic-separation # Add new color modes
+    
+    huge_shader_candidates:
+      note: "Consider splitting into multi-pass"
+      files:
+        - quantum-foam      # 20KB - modularize
+        - aurora-rift-2     # 21KB - split passes
+        - aurora-rift       # 21KB - split passes
+
+  agents:
+    # ─────────────────────────────────────────────────────────────────────────
+    agent_1b:
+      name: "Multi-Pass Architecture Specialist"
+      role: Complex Shader Refactoring
+      scope: "Huge shaders and complex upgrades"
+      focus: |
+        Split oversized shaders into multi-pass pipelines.
+        Optimize complex shaders for better performance.
+      
+      refactoring_patterns:
+        - pattern: "MONOLITHIC_HUGE"
+          approach: |
+            Split into Pass 1 (Data Generation) + Pass 2 (Compositing)
+            Pass 1 outputs to writeTexture/writeDepthTexture
+            Pass 2 reads from readTexture/readDepthTexture
+          
+        - pattern: "EXPENSIVE_NOISE"
+          approach: |
+            Precompute noise in Pass 1, store in dataTextureA/B
+            Sample precomputed noise in Pass 2
+          
+        - pattern: "MULTIPLE_EFFECTS"
+          approach: |
+            Separate distinct visual elements into passes
+            Example: Background → Midground → Foreground
+      
+      optimization_techniques:
+        - "Early exit in raymarching (sphere tracing)"
+        - "Reduce FBM octaves based on distance"
+        - "Use lower precision where possible (f32 → careful)"
+        - "Precompute constants outside loops"
+        - "Branchless where possible (mix instead of if)"
+
+    # ─────────────────────────────────────────────────────────────────────────
+    agent_2b:
+      name: "Advanced Alpha Compositor"
+      role: Complex Alpha Channel Logic
+      scope: "Complex shader RGBA upgrades"
+      focus: |
+        Advanced alpha channel techniques for complex shaders.
+      
+      advanced_alpha_modes:
+        - mode: "DEPTH_LAYERED"
+          description: |
+            Use depth buffer to create layered transparency
+            Farther pixels = more transparent
+            Creates depth-based fog/atmospheric effect
+        
+        - mode: "LUMINANCE_KEY"
+          description: |
+            Make dark pixels transparent (like screen blend)
+            Useful for light/glow effects
+        
+        - mode: "EDGE_PRESERVE"
+          description: |
+            Use edge detection to preserve hard edges
+            Blur/transparent in smooth areas
+        
+        - mode: "ACCUMULATIVE"
+          description: |
+            For iterative/feedback shaders
+            Alpha accumulates over time like a canvas
+        
+        - mode: "PHYSICAL_TRANSMITTANCE"
+          description: |
+            Beer's law for light absorption
+            Simulates light passing through colored medium
+
+    # ─────────────────────────────────────────────────────────────────────────
+    agent_3b:
+      name: "Advanced Hybrid Shader Creator"
+      role: Complex Multi-Technique Shaders
+      scope: "Create 10 new advanced hybrid shaders"
+      focus: |
+        Create complex shaders combining multiple advanced techniques.
+      
+      advanced_concepts:
+        - id: "hyper-tensor-fluid"
+          name: "Hyper Tensor Fluid"
+          techniques: [tensor_flow, navier_stokes, depth_aware]
+          description: "Combines tensor field with fluid simulation"
+        
+        - id: "neural-raymarcher"
+          name: "Neural Raymarcher"
+          techniques: [sdf_raymarching, neural_pattern, volumetric]
+          description: "Raymarched neural network visualizations"
+        
+        - id: "chromatic-reaction-diffusion"
+          name: "Chromatic Reaction-Diffusion"
+          techniques: [reaction_diffusion, chromatic_aberration, feedback]
+          description: "Multi-channel reaction diffusion with color splits"
+        
+        - id: "audio-voronoi-displacement"
+          name: "Audio Voronoi Displacement"
+          techniques: [voronoi, audio_fft, displacement_mapping]
+          description: "Audio-driven Voronoi cell displacement"
+        
+        - id: "fractal-boids-field"
+          name: "Fractal Boids Field"
+          techniques: [boids_flocking, fractal_noise, vector_field]
+          description: "Flocking simulation on fractal vector field"
+        
+        - id: "holographic-interferometry"
+          name: "Holographic Interferometry"
+          techniques: [interference_patterns, holography, depth_parallax]
+          description: "Simulated hologram with interference fringes"
+        
+        - id: "gravitational-lensing"
+          name: "Gravitational Lensing"
+          techniques: [physics_simulation, spacetime_distortion, raytracing]
+          description: "Black hole / massive object light bending"
+        
+        - id: "cellular-automata-3d"
+          name: "3D Cellular Automata"
+          techniques: [cellular_automata, 3d_texture, raymarching]
+          description: "3D CA rendered with volume raymarching"
+        
+        - id: "spectral-flow-sorting"
+          name: "Spectral Flow Pixel Sort"
+          techniques: [pixel_sorting, optical_flow, spectral_analysis]
+          description: "Flow-aware pixel sorting with frequency analysis"
+        
+        - id: "multi-fractal-compositor"
+          name: "Multi-Fractal Compositor"
+          techniques: [mandelbrot, julia, lyapunov, hybrid_fractals]
+          description: "Blends multiple fractal types with smooth transitions"
+
+    # ─────────────────────────────────────────────────────────────────────────
+    agent_4b:
+      name: "Audio Reactivity Specialist"
+      role: Audio-Driven Enhancement
+      scope: "Add audio reactivity to existing and new shaders"
+      focus: |
+        Make shaders respond to audio input.
+        The zoom_config.x field carries audio FFT data.
+      
+      audio_integration:
+        data_source: "zoom_config.x (FFT magnitude)"
+        patterns:
+          - pattern: "BASS_PUMP"
+            implementation: |
+              let bass = zoom_config.x;
+              let scale = 1.0 + bass * 0.5;
+              // Apply to UV or effect intensity
+          
+          - pattern: "FREQUENCY_COLOR"
+            implementation: |
+              // Use audio to drive hue shifts
+              let audio_hue = zoom_config.x * 2.0;
+              color = hueShift(color, audio_hue);
+          
+          - pattern: "BEAT_TRIGGER"
+            implementation: |
+              // Detect beat and trigger effects
+              let beat = step(0.7, zoom_config.x);
+              // Use beat to trigger ripples, flashes, etc.
+
+    # ─────────────────────────────────────────────────────────────────────────
+    agent_5b:
+      name: "Final Integration & Validation"
+      role: Complex Shader QA
+      scope: "All Phase B outputs"
+      focus: |
+        Final validation of complex shaders.
+      
+      performance_gates:
+        - "60fps on mid-tier GPU (GTX 1060 / RX 580 equivalent)"
+        - "No shader compilation warnings"
+        - "Memory usage < 512MB VRAM"
+        - "No infinite loops or hangs"
+      
+      visual_quality_gates:
+        - "No artifacts at parameter extremes"
+        - "Smooth animation (no strobing/flicker)"
+        - "Consistent visual style across randomization"
+        - "Proper alpha blending in multi-pass"
+
+# ───────────────────────────────────────────────────────────────────────────────
+# MERGE STRATEGY
+# ───────────────────────────────────────────────────────────────────────────────
+
+merge_strategy:
+  phase_a_order:
+    - step: 1
+      agent: agent_5a
+      task: "Establish base patterns and standards"
+    - step: 2
+      agent: agent_1a
+      task: "Alpha upgrades on tiny shaders (pilot)"
+    - step: 3
+      agent: agent_2a
+      task: "Chunk library extraction"
+    - step: 4
+      agent: agent_3a
+      task: "Randomization validation"
+    - step: 5
+      agent: agent_4a
+      task: "New generative shaders"
+    - step: 6
+      agent: agent_2a
+      task: "Hybrid shader creation"
+    - step: 7
+      agent: agent_5a
+      task: "Final QA integration"
+
+  phase_b_order:
+    - step: 1
+      agent: agent_1b
+      task: "Multi-pass refactoring of huge shaders"
+    - step: 2
+      agent: agent_2b
+      task: "Advanced alpha on complex shaders"
+    - step: 3
+      agent: agent_4b
+      task: "Audio reactivity additions"
+    - step: 4
+      agent: agent_3b
+      task: "Advanced hybrid creation"
+    - step: 5
+      agent: agent_5b
+      task: "Final validation"
+
+  conflict_resolution:
+    - scenario: "Two agents modify same shader"
+      resolution: "Agent with broader scope (alpha > specific) takes precedence"
+    - scenario: "New shader ID collision"
+      resolution: "Check against all existing IDs, use gen-{unique}- naming"
+    - scenario: "Parameter overlap"
+      resolution: "Standardize on zoom_params mapping (x/y/z/w)"
+
+# ───────────────────────────────────────────────────────────────────────────────
+# OUTPUT SPECIFICATIONS
+# ───────────────────────────────────────────────────────────────────────────────
+
+output_format:
+  wgsl_file:
+    header_template: |
+      // ═══════════════════════════════════════════════════════════════════
+      //  {SHADER_NAME}
+      //  Category: {CATEGORY}
+      //  Features: {FEATURE_LIST}
+      //  Created/Upgraded: {DATE}
+      //  By: {AGENT_NAME}
+      // ═══════════════════════════════════════════════════════════════════
+      // --- STANDARD UNIFORM HEADER ---
+      @group(0) @binding(0) var u_sampler: sampler;
+      @group(0) @binding(1) var readTexture: texture_2d<f32>;
+      @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+      @group(0) @binding(3) var<uniform> u: Uniforms;
+      @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+      @group(0) @binding(5) var non_filtering_sampler: sampler;
+      @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+      @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+      @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+      @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+      @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+      @group(0) @binding(11) var comparison_sampler: sampler_comparison;
+      @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+      // -------------------------------
+      
+      struct Uniforms {
+        config: vec4<f32>,
+        zoom_config: vec4<f32>,
+        zoom_params: vec4<f32>,
+        ripples: array<vec4<f32>, 50>,
+      };
+    
+    footer_requirements:
+      - "Both writeTexture and writeDepthTexture written"
+      - "Alpha channel calculated (not hardcoded to 1.0)"
+      - "Randomization-safe parameter handling"
+
+  json_definition:
+    required_fields:
+      - id: "kebab-case-identifier"
+      - name: "Display Name"
+      - url: "shaders/filename.wgsl"
+      - category: "one of the 12 categories"
+    
+    optional_fields:
+      - description: "Brief description"
+      - tags: ["tag1", "tag2"]
+      - features: ["mouse-driven", "depth-aware", "audio-reactive"]
+      - params:
+          - id: param_name
+            name: "Display Name"
+            default: 0.5
+            min: 0.0
+            max: 1.0
+            step: 0.01
+
+# ───────────────────────────────────────────────────────────────────────────────
+# SUCCESS METRICS
+# ───────────────────────────────────────────────────────────────────────────────
+
+success_metrics:
+  phase_a:
+    - "61 shaders upgraded with RGBA support"
+    - "10 new hybrid shaders created"
+    - "10 new generative shaders created"
+    - "100% randomization-safe parameters"
+    - "0 compilation errors"
+  
+  phase_b:
+    - "50+ complex shaders upgraded"
+    - "10 new advanced shaders created"
+    - "3 huge shaders refactored to multi-pass"
+    - "60fps performance maintained"
+    - "Audio reactivity added to 20+ shaders"

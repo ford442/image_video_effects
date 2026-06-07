@@ -1,0 +1,51 @@
+{
+  "id": "neural-nexus",
+  "name": "Neural Nexus",
+  "category": "interactive-mouse",
+  "url": "shaders/neural-nexus.wgsl",
+  "description": "Biological neural network simulation with pulsing electrical signals; mouse sends shockwaves through synapses.",
+  "params": [
+    {
+      "id": "networkDensity",
+      "name": "Density",
+      "default": 1,
+      "min": 0.1,
+      "max": 4
+    },
+    {
+      "id": "signalSpeed",
+      "name": "Signal Speed",
+      "default": 1,
+      "min": 0,
+      "max": 4
+    },
+    {
+      "id": "decayRate",
+      "name": "Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 2
+    },
+    {
+      "id": "branchComplexity",
+      "name": "Branches",
+      "default": 2,
+      "min": 1,
+      "max": 8
+    }
+  ],
+  "features": [
+    "interactive",
+    "organic",
+    "network",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "neural",
+    "synapse",
+    "electric",
+    "audio-reactive"
+  ]
+}

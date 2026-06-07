@@ -1,0 +1,60 @@
+{
+  "id": "gen-crystal-lattice-growth",
+  "name": "Crystal Lattice Growth",
+  "url": "shaders/gen-crystal-lattice-growth.wgsl",
+  "category": "generative",
+  "description": "Mineral dendrites crystallise from a golden-ratio nucleation seed. Radially symmetric branches grow with bass energy, prismatic hue shifts with mids, treble adds refractive sparkle.",
+  "tags": [
+    "crystal",
+    "fractal",
+    "dendrite",
+    "generative",
+    "audio-reactive",
+    "geometric",
+    "abstract",
+    "procedural"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "symmetry",
+      "name": "Symmetry",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "growthRate",
+      "name": "Growth Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "hue",
+      "name": "Hue",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "thickness",
+      "name": "Thickness",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

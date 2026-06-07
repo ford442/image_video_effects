@@ -1,0 +1,53 @@
+{
+  "id": "interactive-glitch-brush",
+  "name": "Glitch Brush",
+  "url": "shaders/interactive-glitch-brush.wgsl",
+  "description": "Paint digital glitches onto the screen with audio-reactive intensity.",
+  "params": [
+    {
+      "id": "brush_size",
+      "name": "Brush Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "intensity",
+      "name": "Glitch Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "block_scale",
+      "name": "Block Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "color_split",
+      "name": "Color Split",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "glitch",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "glitch",
+    "interactive",
+    "brush",
+    "mouse-driven",
+    "audio-reactive"
+  ]
+}

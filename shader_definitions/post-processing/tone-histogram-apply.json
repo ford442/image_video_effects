@@ -1,0 +1,58 @@
+{
+  "id": "tone-histogram-apply",
+  "name": "Tone Histogram (Pass 2: Apply)",
+  "url": "shaders/tone-histogram-apply.wgsl",
+  "description": "Reads histogram buckets, computes auto-exposure and tone curve, and applies histogram-driven grading.",
+  "features": [
+    "multi-pass-2",
+    "histogram",
+    "auto-exposure",
+    "color-grade"
+  ],
+  "multipass": {
+    "pass": 2,
+    "totalPasses": 2,
+    "prevShader": "tone-histogram"
+  },
+  "tags": [
+    "tone",
+    "histogram",
+    "grading",
+    "auto-exposure",
+    "psychedelic"
+  ],
+  "params": [
+    {
+      "id": "target",
+      "name": "Target Luma",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "contrast",
+      "name": "Contrast",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "saturation",
+      "name": "Saturation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "psychedelic",
+      "name": "Dynamic Hue Mode",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 1
+    }
+  ]
+}

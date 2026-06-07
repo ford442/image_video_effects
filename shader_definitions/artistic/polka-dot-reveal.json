@@ -1,0 +1,54 @@
+{
+  "id": "polka-dot-reveal",
+  "name": "Polka Dot Reveal",
+  "url": "shaders/polka-dot-reveal.wgsl",
+  "description": "Interactive halftone effect with spring-damped mouse follow, attack/release audio envelope driving dot radius and saturation, and temporal feedback trails where alpha encodes trail age and interaction intensity.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "halftone",
+    "audio-reactive",
+    "temporal",
+    "trails"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Detail",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

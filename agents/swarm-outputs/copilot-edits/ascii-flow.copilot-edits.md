@@ -1,0 +1,4 @@
+- Applied a Standard Hybrid Header; the shader already used the current 13-binding contract.
+- JSON changes: added explicit `category` and the obvious `ascii` tag.
+- Confidence: High.
+- Suspicious but left alone: the existing slider metadata may still be aspirational because parameter usage is not obvious from the current shader body.

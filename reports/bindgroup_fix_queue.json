@@ -1,0 +1,103 @@
+{
+  "_meta": {
+    "generated": "2026-05-23T13:07:21.894Z",
+    "totalEntries": 3,
+    "distinctRootCauses": 3,
+    "rejected": [],
+    "fixedShaderIdsCount": 49
+  },
+  "rootCauses": [
+    {
+      "key": "PIPELINE_LAYOUT_MISMATCH:g0:unknown→unknown",
+      "category": "PIPELINE_LAYOUT_MISMATCH",
+      "group": 0,
+      "expected": "unknown",
+      "actual": "unknown",
+      "occurrences": 1,
+      "shaders": [
+        "_hash_library"
+      ],
+      "examples": [
+        {
+          "shader": "_hash_library",
+          "error": "No @compute, @vertex, or @fragment entry points found"
+        }
+      ],
+      "shadersAffected": 1,
+      "priorityScore": 11
+    },
+    {
+      "key": "MISSING_BINDING:g0:unknown→unknown",
+      "category": "MISSING_BINDING",
+      "group": 0,
+      "expected": "unknown",
+      "actual": "unknown",
+      "occurrences": 1,
+      "shaders": [
+        "gen-superfluid-quantum-foam"
+      ],
+      "examples": [
+        {
+          "shader": "gen-superfluid-quantum-foam",
+          "error": "Uniforms struct missing fields: ['ripples']"
+        }
+      ],
+      "shadersAffected": 1,
+      "priorityScore": 11
+    },
+    {
+      "key": "TYPE_MISMATCH:g0:unknown→array",
+      "category": "TYPE_MISMATCH",
+      "group": 0,
+      "expected": "unknown",
+      "actual": "array",
+      "occurrences": 1,
+      "shaders": [
+        "plasma"
+      ],
+      "examples": [
+        {
+          "shader": "plasma",
+          "error": "Binding 12 (plasmaBalls) has incompatible type: 'array<PlasmaBall, 50>'"
+        }
+      ],
+      "shadersAffected": 1,
+      "priorityScore": 11
+    }
+  ],
+  "queue": [
+    {
+      "shader": "_hash_library",
+      "rootCauseKey": "PIPELINE_LAYOUT_MISMATCH:g0:unknown→unknown",
+      "category": "PIPELINE_LAYOUT_MISMATCH",
+      "group": 0,
+      "binding": null,
+      "expected": "unknown",
+      "actual": "unknown",
+      "rawError": "No @compute, @vertex, or @fragment entry points found",
+      "wasInMay16FixPass": false
+    },
+    {
+      "shader": "gen-superfluid-quantum-foam",
+      "rootCauseKey": "MISSING_BINDING:g0:unknown→unknown",
+      "category": "MISSING_BINDING",
+      "group": 0,
+      "binding": null,
+      "expected": "unknown",
+      "actual": "unknown",
+      "rawError": "Uniforms struct missing fields: ['ripples']",
+      "wasInMay16FixPass": false
+    },
+    {
+      "shader": "plasma",
+      "rootCauseKey": "TYPE_MISMATCH:g0:unknown→array",
+      "category": "TYPE_MISMATCH",
+      "group": 0,
+      "binding": 12,
+      "expected": "unknown",
+      "actual": "array",
+      "rawError": "Binding 12 (plasmaBalls) has incompatible type: 'array<PlasmaBall, 50>'",
+      "wasInMay16FixPass": false
+    }
+  ]
+}

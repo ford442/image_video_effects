@@ -1,0 +1,58 @@
+{
+  "id": "gen-crystalline-mandala-bloom",
+  "name": "Crystalline Mandala Bloom",
+  "url": "shaders/gen-crystalline-mandala-bloom.wgsl",
+  "description": "Audio-reactive kaleidoscopic mandala that folds the source image through a rotating polar symmetry. Crystalline petal SDFs, hue-rotated chroma, concentric bass-rings, and treble sparkles bloom outward from a mouse-anchored center.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "generative",
+    "mandala",
+    "kaleidoscope",
+    "crystal",
+    "bloom",
+    "audio-reactive"
+  ],
+  "coordinate": 885,
+  "params": [
+    {
+      "id": "symmetry",
+      "name": "Symmetry Segments",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "facet_zoom",
+      "name": "Facet Zoom",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "bloom_strength",
+      "name": "Bloom Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "hue_rotation",
+      "name": "Hue Rotation",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

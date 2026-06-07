@@ -1,0 +1,41 @@
+{
+  "id": "anamorphic-flare",
+  "name": "Anamorphic Flare",
+  "url": "shaders/anamorphic-flare.wgsl",
+  "features": ["temporal"],
+  "tags": ["anamorphic", "lens", "flare", "cinematic", "bloom", "post-processing"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Threshold",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Streak Length",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Tint",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

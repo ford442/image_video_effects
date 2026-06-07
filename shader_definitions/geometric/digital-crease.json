@@ -1,0 +1,56 @@
+{
+  "id": "digital-crease",
+  "name": "Digital Crease",
+  "category": "geometric",
+  "url": "shaders/digital-crease.wgsl",
+  "description": "Origami crease pattern simulation with mountain/valley assignment, Kawasaki-Justin flat-foldability approximation, depth-driven layer shadows, digital paper fiber texture, chromatic folding, HDR crease specular, and ACES tone mapping. Bass drives fold speed; mouse performs local folds; depth controls layer ordering.",
+  "params": [
+    {
+      "id": "fold-count",
+      "name": "Fold Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "fold-depth",
+      "name": "Fold Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "fold-softness",
+      "name": "Fold Softness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "chroma-offset",
+      "name": "Chromatic Offset",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "temporal-paper-fold",
+    "chromatic-folding",
+    "origami"
+  ],
+  "tags": [
+    "geometric",
+    "paper",
+    "crease",
+    "fold",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic",
+    "temporal",
+    "origami"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "id": "time-slit-scan",
+  "name": "Time Slit Scan",
+  "url": "shaders/time-slit-scan.wgsl",
+  "description": "Multi-slit temporal scan with curved parametric slits, polar drift, and time-warp color tinting.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "slitCount",
+      "name": "Slit Count",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "slitShape",
+      "name": "Slit Shape",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "driftSpeed",
+      "name": "Drift Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "slitWidth",
+      "name": "Slit Width",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "slit-scan",
+    "temporal",
+    "artistic",
+    "time-warp"
+  ]
+}

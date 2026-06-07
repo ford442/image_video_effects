@@ -1,0 +1,69 @@
+{
+  "id": "holographic_interference",
+  "name": "Holographic Interference",
+  "category": "generative",
+  "url": "shaders/holographic_interference.wgsl",
+  "description": "Laser interference pattern simulation with multiple coherent sources, object beam and reference beam phase accumulation, speckle pattern, chromatic dispersion on holographic fringes, HDR bloom, and ACES tone mapping. Bass drives reference beam angle, mouse moves the virtual object, depth controls holographic parallax.",
+  "tags": [
+    "holographic",
+    "interference",
+    "rainbow",
+    "diffraction",
+    "temporal",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic",
+    "speckle",
+    "generative"
+  ],
+  "features": [
+    "upgraded-rgba",
+    "interference",
+    "diffraction",
+    "hologram",
+    "rainbow",
+    "audio-reactive",
+    "temporal",
+    "depth-aware",
+    "generative"
+  ],
+  "params": [
+    {
+      "id": "filmThickness",
+      "name": "Film Thickness",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "waveScale",
+      "name": "Wave Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "depthWeight",
+      "name": "Depth Weight",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "chromaAberr",
+      "name": "Chromatic Aberration",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "target_rating": 4.7
+}

@@ -1,0 +1,275 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Spectral Bleed & Confinement
+//  Category: image
+//  Features: audio-reactive, edge-detection, color-bleed, electromagnetic
+//  Complexity: High
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+    config:      vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=Time, y=MouseX, z=MouseY, w=MouseDown
+    zoom_params: vec4<f32>, // x=BleedRadius, y=Confinement, z=CurlSpeed, w=EdgeThresh
+    ripples: array<vec4<f32>, 50>,
+};
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Smooth value noise
+// ─────────────────────────────────────────────────────────────────────────────
+fn h2(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(127.1, 311.7));
+    q += dot(q, q + 19.19);
+    return fract(q.x * q.y);
+}
+fn vnoise(p: vec2<f32>) -> f32 {
+    let i = floor(p); let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(h2(i), h2(i + vec2<f32>(1.0, 0.0)), u.x),
+               mix(h2(i + vec2<f32>(0.0, 1.0)), h2(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Curl-noise 2-D vector field
+// ─────────────────────────────────────────────────────────────────────────────
+fn curlNoise(p: vec2<f32>) -> vec2<f32> {
+    let eps = 0.002;
+    let n0  = vnoise(p + vec2<f32>(eps, 0.0));
+    let n1  = vnoise(p - vec2<f32>(eps, 0.0));
+    let n2  = vnoise(p + vec2<f32>(0.0, eps));
+    let n3  = vnoise(p - vec2<f32>(0.0, eps));
+    let dNdY = (n2 - n3) / (2.0 * eps);
+    let dNdX = (n0 - n1) / (2.0 * eps);
+    return vec2<f32>(dNdY, -dNdX);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Edge-magnitude: Sobel on single channel
+// ─────────────────────────────────────────────────────────────────────────────
+fn sampleChannel(off: vec2<f32>, c: i32, uv: vec2<f32>) -> f32 {
+    let s = textureSampleLevel(readTexture, u_sampler,
+                clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    if (c == 0) { return s.r; }
+    else if (c == 1) { return s.g; }
+    return s.b;
+}
+
+fn sobelEdge(uv: vec2<f32>, tx: vec2<f32>, ch: i32) -> f32 {
+    let gx = -sampleChannel(vec2<f32>(-tx.x,  tx.y), ch, uv) + sampleChannel(vec2<f32>(tx.x,  tx.y), ch, uv)
+             -sampleChannel(vec2<f32>(-tx.x, 0.0), ch, uv) * 2.0 + sampleChannel(vec2<f32>(tx.x, 0.0), ch, uv) * 2.0
+             -sampleChannel(vec2<f32>(-tx.x, -tx.y), ch, uv) + sampleChannel(vec2<f32>(tx.x, -tx.y), ch, uv);
+    let gy = sampleChannel(vec2<f32>(-tx.x, tx.y), ch, uv) + sampleChannel(vec2<f32>(0.0, tx.y), ch, uv) * 2.0 + sampleChannel(vec2<f32>(tx.x, tx.y), ch, uv)
+             -sampleChannel(vec2<f32>(-tx.x, -tx.y), ch, uv) - sampleChannel(vec2<f32>(0.0, -tx.y), ch, uv) * 2.0 - sampleChannel(vec2<f32>(tx.x, -tx.y), ch, uv);
+    return length(vec2<f32>(gx, gy)) * 0.125;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Directional bleed
+// ─────────────────────────────────────────────────────────────────────────────
+fn channelBleed(uv: vec2<f32>, dir: vec2<f32>, radius: f32, ch: i32) -> f32 {
+    var accum = 0.0;
+    let steps = 6;
+    for (var s = 1; s <= steps; s++) {
+        let off  = dir * radius * f32(s) / f32(steps);
+        let suv  = clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0));
+        let samp = textureSampleLevel(readTexture, u_sampler, suv, 0.0);
+        let w    = 1.0 - f32(s) / f32(steps + 1);
+        if (ch == 0) { accum += samp.r * w; }
+        else if (ch == 1) { accum += samp.g * w; }
+        else { accum += samp.b * w; }
+    }
+    return accum * 2.0 / f32(steps);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Ripple accumulation
+// ─────────────────────────────────────────────────────────────────────────────
+fn rippleDisp(uv: vec2<f32>, t: f32, cnt: u32) -> vec2<f32> {
+    var d = vec2<f32>(0.0);
+    for (var i: u32 = 0u; i < cnt; i++) {
+        let r   = u.ripples[i];
+        let age = t - r.z;
+        if (age < 0.0 || age > 4.0) { continue; }
+        let dist = distance(uv, r.xy);
+        let wave = sin(dist * 32.0 - age * 5.5) * exp(-dist * 5.0) * exp(-age * 1.3);
+        if (dist > 0.001) { d += normalize(uv - r.xy) * wave * (1.0 - age / 4.0) * 0.012; }
+    }
+    return d;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  FBM curl noise (2 octaves)
+// ─────────────────────────────────────────────────────────────────────────────
+fn curlFBM(p: vec2<f32>) -> vec2<f32> {
+    var c = curlNoise(p);
+    c    += curlNoise(p * 2.0 + vec2<f32>(1.7, 3.1)) * 0.5;
+    return normalize(c + vec2<f32>(0.001));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Electromagnetic field strength
+// ─────────────────────────────────────────────────────────────────────────────
+fn emFieldStrength(p: vec2<f32>, t: f32, freq: f32) -> f32 {
+    return sin(p.x * freq + t) * cos(p.y * freq * 0.87 - t * 1.1) * 0.5 + 0.5;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Spectral line broadening
+// ─────────────────────────────────────────────────────────────────────────────
+fn spectralBroadening(uv: vec2<f32>, dir: vec2<f32>, radius: f32, ch: i32) -> f32 {
+    var accum = 0.0;
+    var wSum  = 0.0;
+    let steps = 5;
+    for (var s = -steps; s <= steps; s++) {
+        let off = dir * radius * f32(s) / f32(steps);
+        let suv = clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0));
+        let samp = textureSampleLevel(readTexture, u_sampler, suv, 0.0);
+        let w = exp(-f32(s * s) * 0.4);
+        wSum += w;
+        if (ch == 0) { accum += samp.r * w; }
+        else if (ch == 1) { accum += samp.g * w; }
+        else { accum += samp.b * w; }
+    }
+    return accum / max(wSum, 0.001);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Plasma confinement potential
+// ─────────────────────────────────────────────────────────────────────────────
+fn lorentzConfinement(bleedR: f32, bleedG: f32, bleedB: f32, strength: f32) -> vec3<f32> {
+    return vec3<f32>(
+        exp(-bleedG * bleedB * strength),
+        exp(-bleedB * bleedR * strength),
+        exp(-bleedR * bleedG * strength)
+    );
+}
+
+// ═══ ADVANCED ALPHA FUNCTION ═══
+fn calculateAdvancedAlpha(color: vec3<f32>, uv: vec2<f32>, depthVal: f32) -> f32 {
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let intensity = u.zoom_params.x * 0.6 + 0.3;
+    let softness = u.zoom_params.y * 0.12 + 0.02;
+    let depthWeight = u.zoom_params.z * 0.5;
+    let threshold = u.zoom_params.w * 0.35 + 0.05;
+    let lumaAlpha = smoothstep(threshold - softness, threshold + softness, luma) * intensity;
+    let depthAlpha = mix(0.35, 1.0, depthVal);
+    let alpha = mix(lumaAlpha, depthAlpha, depthWeight);
+    return clamp(alpha, 0.0, 1.0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Main
+// ─────────────────────────────────────────────────────────────────────────────
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let res   = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
+    let uv    = vec2<f32>(gid.xy) / res;
+    let t     = u.config.x;
+    let tx    = 1.0 / res;
+
+    // Bass from canonical plasmaBuffer
+    let audioBass = plasmaBuffer[0].x;
+    let audioOverall = audioBass * 0.85;
+    let audioPulse = 1.0 + audioBass * 0.5;
+
+    // Parameters - audio modulated
+    let bleedRadius   = (u.zoom_params.x * 0.025 + 0.004) * audioPulse;
+    let confinement   = (u.zoom_params.y * 2.0 + 0.5) * (1.0 + audioOverall * 0.2);
+    let curlSpeed     = u.zoom_params.z * 0.4 + 0.05;
+    let edgeThresh    = u.zoom_params.w * 0.3 + 0.02;
+
+    // ── Curl-noise field ──────────────────────────────────────────────────
+    let curlUV  = uv * 2.5 + vec2<f32>(t * curlSpeed, t * curlSpeed * 0.6);
+    let curl    = normalize(curlNoise(curlUV) + vec2<f32>(0.001));
+
+    // ── Per-channel bleed directions ──────────────────────────────────────
+    let a0 = atan2(curl.y, curl.x);
+    let dirR = vec2<f32>(cos(a0),               sin(a0));
+    let dirG = vec2<f32>(cos(a0 + 2.094),       sin(a0 + 2.094));
+    let dirB = vec2<f32>(cos(a0 + 4.189),       sin(a0 + 4.189));
+
+    // ── Edge masks ───────────────────────────────────────────────────────
+    let edgeR = smoothstep(edgeThresh * 0.5, edgeThresh, sobelEdge(uv, tx, 0));
+    let edgeG = smoothstep(edgeThresh * 0.5, edgeThresh, sobelEdge(uv, tx, 1));
+    let edgeB = smoothstep(edgeThresh * 0.5, edgeThresh, sobelEdge(uv, tx, 2));
+
+    // ── Compute bleed amounts per channel ─────────────────────────────────
+    let bleedR = channelBleed(uv + rippleDisp(uv, t, u32(u.config.y)), dirR, bleedRadius, 0) * edgeR;
+    let bleedG = channelBleed(uv + rippleDisp(uv, t, u32(u.config.y)), dirG, bleedRadius, 1) * edgeG;
+    let bleedB = channelBleed(uv + rippleDisp(uv, t, u32(u.config.y)), dirB, bleedRadius, 2) * edgeB;
+
+    // ── Original color ────────────────────────────────────────────────────
+    let orig = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+
+    // ── Composite ─────────────────────────────────────────────────────────
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    // ── FBM curl for richer bleed direction ───────────────────────────────
+    let curlFBMUV = uv * 3.0 + vec2<f32>(t * curlSpeed * 0.7, t * curlSpeed * 0.5);
+    let curlF = curlFBM(curlFBMUV);
+    let a0fbm = atan2(curlF.y, curlF.x);
+    let dirRF = vec2<f32>(cos(a0fbm),               sin(a0fbm));
+    let dirGF = vec2<f32>(cos(a0fbm + 2.094),       sin(a0fbm + 2.094));
+    let dirBF = vec2<f32>(cos(a0fbm + 4.189),       sin(a0fbm + 4.189));
+
+    // ── Spectral broadening ───────────────────────────────────────────────
+    let broadR = spectralBroadening(uv, dirRF, bleedRadius * 0.6, 0) * edgeR;
+    let broadG = spectralBroadening(uv, dirGF, bleedRadius * 0.6, 1) * edgeG;
+    let broadB = spectralBroadening(uv, dirBF, bleedRadius * 0.6, 2) * edgeB;
+
+    // ── EM field modulation - audio reactive ──────────────────────────────
+    let emR = emFieldStrength(uv * 8.0, t, 4.0) * edgeR * (1.0 + audioBass * 0.3);
+    let emG = emFieldStrength(uv * 8.0 + vec2<f32>(2.1, 0.0), t, 5.0) * edgeG * (1.0 + audioOverall * 0.2);
+    let emB = emFieldStrength(uv * 8.0 + vec2<f32>(0.0, 3.3), t, 3.7) * edgeB * (1.0 + audioBass * 0.3);
+
+    // ── Lorentz confinement ───────────────────────────────────────────────
+    let lorentz = lorentzConfinement(bleedR + broadR, bleedG + broadG, bleedB + broadB, confinement);
+
+    // ── Confinement ───────────────────────────────────────────────────────
+    let confR = exp(-bleedG * confinement) * lorentz.r;
+    let confG = exp(-bleedB * confinement) * lorentz.g;
+    let confB = exp(-bleedR * confinement) * lorentz.b;
+
+    let depthBoost = 0.5 + depth * 0.8;
+
+    var r = clamp(orig.r + (bleedR + broadR * 0.5) * confR * depthBoost + emR * bleedRadius * 0.3, 0.0, 1.0);
+    var g = clamp(orig.g + (bleedG + broadG * 0.5) * confG * depthBoost + emG * bleedRadius * 0.3, 0.0, 1.0);
+    var b = clamp(orig.b + (bleedB + broadB * 0.5) * confB * depthBoost + emB * bleedRadius * 0.3, 0.0, 1.0);
+
+    // ── Saturation boost ──────────────────────────────────────────────────
+    let lum   = r * 0.2126 + g * 0.7152 + b * 0.0722;
+    let satBoost = 1.0 + confinement * 0.08;
+    var outR  = clamp(mix(lum, r, satBoost), 0.0, 1.0);
+    var outG  = clamp(mix(lum, g, satBoost), 0.0, 1.0);
+    var outB  = clamp(mix(lum, b, satBoost), 0.0, 1.0);
+
+    // Beat flash on strong beats
+    let isBeat = step(0.7, audioBass);
+    outR += isBeat * 0.12;
+    outG += isBeat * 0.08;
+    outB += isBeat * 0.04;
+
+    // ── Input-aware alpha ─────────────────────────────────────────────────
+    let effectIntensity = clamp(u.zoom_params.x + u.zoom_params.y * 0.5, 0.0, 1.0);
+    let finalAlpha = mix(orig.a, 1.0, effectIntensity * 0.7);
+
+    textureStore(writeTexture, gid.xy, vec4<f32>(outR, outG, outB, finalAlpha));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0, 0, 1));
+}

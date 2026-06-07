@@ -1,0 +1,62 @@
+{
+  "id": "tornado-vortex",
+  "name": "Tornado Vortex",
+  "category": "generative",
+  "url": "shaders/tornado-vortex.wgsl",
+  "description": "Rankine vortex model with viscous core, radial inflow, and vertical updraft. Lagrangian debris advection with condensation funnel and subsurface scattering. Lightning flash illumination. Audio drives Fujita-scale intensity. Mouse acts as a probe flung by vorticity. Depth controls debris perspective.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "rankine-vortex",
+    "lagrangian-debris",
+    "upgraded-rgba",
+    "lightning",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "spin",
+      "name": "Spin Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "debris",
+      "name": "Debris Amount",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "lightning",
+      "name": "Lightning",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "tornado",
+    "vortex",
+    "storm",
+    "spiral",
+    "debris",
+    "lightning",
+    "audio-reactive",
+    "physics",
+    "rankine"
+  ]
+}

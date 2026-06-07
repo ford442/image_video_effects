@@ -1,0 +1,55 @@
+{
+  "id": "pixel-sort-glitch",
+  "name": "Pixel Sort Glitch",
+  "url": "shaders/pixel-sort-glitch.wgsl",
+  "features": [
+    "mouse-driven"
+  ],
+  "description": "Edge-aware pixel sorting glitch with threshold masking. Creates melting pixels that flow along detected edges. Features horizontal, vertical, and angular sorting directions with adjustable window size and edge influence.",
+  "params": [
+    {
+      "id": "threshold",
+      "name": "Brightness Threshold",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Pixels brighter than this threshold will be sorted; darks are protected"
+    },
+    {
+      "id": "direction",
+      "name": "Sorting Direction",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "labels": [
+        "Horizontal",
+        "Vertical",
+        "Angular/Edge"
+      ]
+    },
+    {
+      "id": "windowSize",
+      "name": "Sort Window Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "description": "Size of the local window for sorting (1-32 pixels)"
+    },
+    {
+      "id": "edgeInfluence",
+      "name": "Edge Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "How much detected edges affect sorting direction and flow"
+    }
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "transform",
+    "glitch",
+    "edge",
+    "sort"
+  ]
+}

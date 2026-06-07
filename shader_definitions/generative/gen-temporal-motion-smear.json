@@ -1,0 +1,63 @@
+{
+  "id": "gen-temporal-motion-smear",
+  "name": "Temporal Motion Smear",
+  "url": "shaders/gen-temporal-motion-smear.wgsl",
+  "description": "Motion-aware temporal smearing using frame differencing and directional blur, creating colorful trails that follow moving objects",
+  "tags": [
+    "temporal",
+    "motion",
+    "smear",
+    "trails",
+    "frame-differencing",
+    "audio",
+    "music"
+  ],
+  "features": [
+    "aces-tone-map",
+    "audio-driven",
+    "audio-reactive",
+    "chromatic-aberration",
+    "depth-aware",
+    "motion-aware",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "persistence",
+      "name": "Trail Persistence",
+      "default": 0.85,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "sensitivity",
+      "name": "Motion Sensitivity",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "directionality",
+      "name": "Smear Directionality",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "intensity",
+      "name": "Color Intensity",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

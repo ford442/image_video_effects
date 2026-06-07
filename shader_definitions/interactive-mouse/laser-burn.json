@@ -1,0 +1,53 @@
+{
+  "id": "laser-burn",
+  "name": "Laser Burn",
+  "url": "shaders/laser-burn.wgsl",
+  "description": "Temporal burn accumulation with ember glow and audio spark showers. Mouse beam chars the surface persistently; embers fade slower than heat for lingering glow. Treble creates flying spark particles near the beam, bass deepens the char.",
+  "params": [
+    {
+      "id": "beamSize",
+      "name": "Beam Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "burnSpeed",
+      "name": "Burn Intensity",
+      "default": 0.8,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "healRate",
+      "name": "Heal Rate",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "heatMode",
+      "name": "Heat Glow",
+      "default": 1,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-accumulation",
+    "ember-glow",
+    "audio-sparks",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "laser",
+    "burn",
+    "interactive",
+    "fire",
+    "embers",
+    "sparks"
+  ]
+}

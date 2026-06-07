@@ -1,0 +1,52 @@
+{
+  "id": "stipple-render",
+  "name": "Stipple Render",
+  "url": "shaders/stipple-render.wgsl",
+  "category": "artistic",
+  "description": "Weighted Voronoi stippling with Lloyd's relaxation approximation. Dot sizes match local luminance using blue noise distribution. Ink-on-paper aesthetic with dot bleeding, cross-hatching, and ACES tone mapping.",
+  "params": [
+    {
+      "id": "dot_scale",
+      "name": "Dot Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "contrast",
+      "name": "Contrast",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "wet_radius",
+      "name": "Wet Ink Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "color_reveal",
+      "name": "Color Reveal",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "stylized",
+    "artistic",
+    "stipple",
+    "ink",
+    "voronoi",
+    "cross-hatch",
+    "audio-reactive"
+  ]
+}

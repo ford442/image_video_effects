@@ -1,0 +1,55 @@
+{
+  "id": "spiral-lens",
+  "name": "Spiral Lens",
+  "url": "shaders/spiral-lens.wgsl",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "archimedean-spiral",
+    "chromatic-dispersion"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Spiral Tightness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param2",
+      "name": "Lens Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param3",
+      "name": "Chromatic",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param4",
+      "name": "Rotation Speed",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "lens",
+    "spiral",
+    "distortion",
+    "chromatic",
+    "caustic",
+    "bloom",
+    "dof",
+    "audio-reactive",
+    "depth-aware",
+    "interactive"
+  ]
+}

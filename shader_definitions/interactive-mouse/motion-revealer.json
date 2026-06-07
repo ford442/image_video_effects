@@ -1,0 +1,59 @@
+{
+  "id": "motion-revealer",
+  "name": "Motion Revealer",
+  "url": "shaders/motion-revealer.wgsl",
+  "category": "interactive-mouse",
+  "description": "Optical flow estimation via structure tensor reveals only moving regions. Motion trails with spectral chromatic aberration, HDR glow on fast objects, ACES tone mapping, and motion blur. Bass drives motion sensitivity, mouse creates a motion mask, depth controls trail length perspective.",
+  "params": [
+    {
+      "id": "sensitivity",
+      "name": "Motion Sensitivity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "trailLen",
+      "name": "Trail Length",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "glowStr",
+      "name": "Glow Strength",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chromaSep",
+      "name": "Chromatic Separation",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "optical-flow",
+    "motion-trails",
+    "audio-reactive",
+    "depth-aware",
+    "chromatic-mixing",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive",
+    "audio-reactive",
+    "depth-aware",
+    "optical-flow",
+    "motion-trails",
+    "chromatic"
+  ]
+}

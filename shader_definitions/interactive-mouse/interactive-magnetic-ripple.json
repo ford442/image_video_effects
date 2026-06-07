@@ -1,0 +1,53 @@
+{
+  "id": "interactive-magnetic-ripple",
+  "name": "Magnetic Ripple",
+  "url": "shaders/interactive-magnetic-ripple.wgsl",
+  "description": "Magnetic field distortion with curl-noise field lines, all 50 ripple point accumulation, FBM domain warping, chromatic split, and glow-alpha at ripple peaks.",
+  "params": [
+    {
+      "id": "ripple_freq",
+      "name": "Ripple Frequency",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "ripple_decay",
+      "name": "Ripple Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "field_strength",
+      "name": "Field Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "chromatic_split",
+      "name": "Chromatic Split",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "distortion",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "fbm",
+    "curl-noise",
+    "worley",
+    "domain-warp",
+    "fractal",
+    "magnetic",
+    "field-lines"
+  ]
+}

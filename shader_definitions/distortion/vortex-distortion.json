@@ -1,0 +1,49 @@
+{
+  "id": "vortex-distortion",
+  "name": "Lamb-Oseen Vortex",
+  "url": "shaders/vortex-distortion.wgsl",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal"
+  ],
+  "description": "Lamb-Oseen vortex fluid dynamics with Kelvin-Helmholtz shear instability at vortex boundaries. Multiple interacting vortices from ripple history, velocity-magnitude and vorticity colour coding with chromatic aberration.",
+  "params": [
+    {
+      "id": "circulation",
+      "name": "Circulation Γ",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "viscosity",
+      "name": "Viscosity ν",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "khAmplitude",
+      "name": "KH Instability",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "aberration",
+      "name": "Chromatic Aber",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "fluid",
+    "physics",
+    "vortex",
+    "reactive"
+  ]
+}

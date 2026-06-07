@@ -1,0 +1,61 @@
+{
+  "id": "liquid-jelly",
+  "name": "Liquid Jelly",
+  "url": "shaders/liquid-jelly.wgsl",
+  "description": "Elastic liquid effect with subsurface scattering and alpha physics",
+  "features": [
+    "upgraded-rgba",
+    "depth-aware",
+    "elastic-bounce",
+    "volume-shading",
+    "subsurface-scattering",
+    "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "liquid"
+  ],
+  "params": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Liquid thickness/resistance"
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Chaotic flow intensity"
+    },
+    {
+      "id": "ripple_strength",
+      "name": "Ripple Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Wave distortion amount"
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Color manipulation amount"
+    }
+  ]
+}

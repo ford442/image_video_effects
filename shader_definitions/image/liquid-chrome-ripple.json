@@ -1,0 +1,43 @@
+{
+  "id": "liquid-chrome-ripple",
+  "name": "Liquid Chrome Ripple",
+  "url": "shaders/liquid-chrome-ripple.wgsl",
+  "description": "Metallic liquid effect that ripples with mouse movement.",
+  "params": [
+    {
+      "id": "flow",
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "distort",
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "metal",
+      "name": "Metalness",
+      "default": 0.8,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "freq",
+      "name": "Ripple Freq",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

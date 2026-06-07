@@ -1,0 +1,48 @@
+{
+  "id": "cursor-aura",
+  "name": "Cursor Aura",
+  "url": "shaders/cursor-aura.wgsl",
+  "description": "Glowing aura around cursor with customizable colors, edge detection, and audio-reactive bass pulsing.",
+  "params": [
+    {
+      "id": "size",
+      "name": "Aura Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "intensity",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "softness",
+      "name": "Edge Softness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "hue",
+      "name": "Color Hue",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "glow",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "interactive",
+    "audio-reactive"
+  ]
+}

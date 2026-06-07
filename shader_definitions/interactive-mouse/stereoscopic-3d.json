@@ -1,0 +1,52 @@
+{
+  "id": "stereoscopic-3d",
+  "name": "Stereoscopic 3D",
+  "url": "shaders/stereoscopic-3d.wgsl",
+  "description": "Interactive Anaglyph 3D effect. Mouse X/Y controls convergence bias and focal plane with spring-damped smoothing. Audio bass drives smoothed separation pulse and glitch amplitude. Temporal feedback creates ghost trails from previous intensity.",
+  "params": [
+    {
+      "id": "separation",
+      "name": "Max Separation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "focus",
+      "name": "Focus Offset",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "glitch",
+      "name": "Glitch Jitter",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "rotation",
+      "name": "Lens Rotation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive",
+    "audio-reactive",
+    "anaglyph",
+    "3d",
+    "temporal",
+    "feedback",
+    "trails"
+  ]
+}

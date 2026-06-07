@@ -1,0 +1,60 @@
+{
+  "id": "gen-solar-wind-ribbons",
+  "name": "Solar Wind Ribbons",
+  "url": "shaders/gen-solar-wind-ribbons.wgsl",
+  "category": "generative",
+  "description": "Magnetised plasma ribbons stream like coronal mass ejections caught mid-flight. Bass swells ribbon width, treble brightens edges, mouse steers the aurora curtain.",
+  "tags": [
+    "solar",
+    "aurora",
+    "ribbons",
+    "plasma",
+    "generative",
+    "audio-reactive",
+    "cosmic",
+    "abstract"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "ribbonCount",
+      "name": "Ribbon Count",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "twist",
+      "name": "Twist",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "glow",
+      "name": "Glow",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

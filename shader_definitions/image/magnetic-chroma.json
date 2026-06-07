@@ -1,0 +1,53 @@
+{
+  "id": "magnetic-chroma",
+  "name": "Magnetic Chroma",
+  "category": "image",
+  "url": "shaders/magnetic-chroma.wgsl",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "description": "HSV hue-wheel warping via RK2-integrated magnetic field line advection per RGB channel. Chromatic dispersion, neon glow, and ACES tone mapping.",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Field Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param2",
+      "name": "Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param3",
+      "name": "Chromatic",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param4",
+      "name": "Falloff",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "magnetic",
+    "chroma",
+    "hsv",
+    "rk2",
+    "neon",
+    "bloom",
+    "audio-reactive",
+    "depth-aware"
+  ]
+}

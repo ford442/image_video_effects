@@ -1,0 +1,69 @@
+{
+  "id": "gravito-phononic-accretion",
+  "name": "Gravito-Phononic Accretion",
+  "url": "shaders/gravito-phononic-accretion.wgsl",
+  "category": "generative",
+  "description": "SPH density estimation around orbiting accretors with cubic-spline kernel, shock-wave detection, and temperature-based blackbody coloring. Bass adds mass to primaries, mids drive orbital precession, treble creates acoustic standing waves. Mouse introduces a rogue body with tidal forces. Ripples seed density perturbations.",
+  "features": [
+    "SPH-density",
+    "orbital-velocity",
+    "shock-detection",
+    "blackbody",
+    "audio-driven",
+    "mouse-rogue-body",
+    "ripple-perturbation",
+    "temporal"
+  ],
+  "tags": [
+    "gravitational",
+    "accretion",
+    "cosmic",
+    "organic",
+    "audio-reactive",
+    "lensing",
+    "blackbody",
+    "HDR"
+  ],
+  "params": [
+    {
+      "id": "accretionSpeed",
+      "name": "Accretion Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "How fast material collects around gravitational centers"
+    },
+    {
+      "id": "lensing",
+      "name": "Lensing Strength",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Amount of gravitational light distortion"
+    },
+    {
+      "id": "diffusion",
+      "name": "Material Diffusion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How much material spreads out"
+    },
+    {
+      "id": "mouseMass",
+      "name": "Mouse Gravity Power",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Temporary mass added when mouse is held"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "id": "neon-light",
+  "name": "Neon Light",
+  "url": "shaders/neon-light.wgsl",
+  "description": "Blackbody edge emission with Fresnel-bright depth normals, thermal fog, and mouse-heated hotspots.",
+  "params": [
+    {
+      "id": "base_temperature",
+      "name": "Base Temperature",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "edge_heating",
+      "name": "Edge Heating",
+      "default": 0.55,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "emissive_gain",
+      "name": "Emission Gain",
+      "default": 0.65,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "thermal_fog",
+      "name": "Thermal Fog",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "glow",
+    "neon",
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "audio",
+    "blackbody",
+    "fresnel"
+  ]
+}

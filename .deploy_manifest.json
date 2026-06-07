@@ -1,0 +1,926 @@
+{
+  "asset-manifest.json": {
+    "hash": "3e2e3aeda92a8d9a3d32a198fcc7bbe2",
+    "size": 374
+  },
+  "index.html": {
+    "hash": "34b946be093defc15a6b12608d317d4d",
+    "size": 445
+  },
+  "static/js/main.d7ca0e24.js.map": {
+    "hash": "6b501b5a4449716b529a7c78e8f2db1a",
+    "size": 14043862
+  },
+  "static/js/main.d7ca0e24.js.LICENSE.txt": {
+    "hash": "cccfa45cda3f72c4ebb3fb2f4ba53a71",
+    "size": 1210
+  },
+  "static/js/main.d7ca0e24.js": {
+    "hash": "119a0a28ca28d55ccf2503102abed6c3",
+    "size": 7821286
+  },
+  "static/js/main.503c20e6.js": {
+    "hash": "11a5fbb4bd9831d3aa002b4bc71f7969",
+    "size": 7821026
+  },
+  "static/js/main.503c20e6.js.LICENSE.txt": {
+    "hash": "cccfa45cda3f72c4ebb3fb2f4ba53a71",
+    "size": 1210
+  },
+  "static/js/main.503c20e6.js.map": {
+    "hash": "4b0723fead36c472af5b782c9e2b4ddf",
+    "size": 14043143
+  },
+  "shader-manifest-unified.json": {
+    "hash": "8d05a88d45af745f725b3d239efc2527",
+    "size": 1225463
+  },
+  "static/js/main.1ee74a77.js.map": {
+    "hash": "133d5917980545973644b5193311ac51",
+    "size": 14284313
+  },
+  "static/js/main.1ee74a77.js": {
+    "hash": "6dd7762a64ca085299f59318dc0c634d",
+    "size": 7881726
+  },
+  "static/js/main.1ee74a77.js.LICENSE.txt": {
+    "hash": "cccfa45cda3f72c4ebb3fb2f4ba53a71",
+    "size": 1210
+  },
+  "shaders/holographic-glitch.wgsl": {
+    "hash": "6f32325598fb1a9c78a20c424cd84753",
+    "size": 4802
+  },
+  "shaders/scanline-drift.wgsl": {
+    "hash": "ca163d10e06ffae79b2da52a49baa445",
+    "size": 4425
+  },
+  "shaders/fractal-glass-distort.wgsl": {
+    "hash": "e63c8beb07ade08ddc6cba49b82b0e53",
+    "size": 5975
+  },
+  "shaders/interactive-zoom-blur.wgsl": {
+    "hash": "8467f2d712e09ff335a5ae713b0de786",
+    "size": 4630
+  },
+  "shaders/posterize-neon-edges.wgsl": {
+    "hash": "d71ce424a9bda89649740126fa639e16",
+    "size": 4047
+  },
+  "shaders/gen-lorenz-attractor.wgsl": {
+    "hash": "acb5ca3244d1d2fbde703f84f7558253",
+    "size": 5733
+  },
+  "shaders/pyramid-bandprocess-pass2.wgsl": {
+    "hash": "b1c6a373cc127544a0a080530b8d8945",
+    "size": 11386
+  },
+  "shaders/cyber-halftone-scanner.wgsl": {
+    "hash": "6b45939eeb4dd018e662fe1f493c05c5",
+    "size": 4869
+  },
+  "shaders/cymatic-sand.wgsl": {
+    "hash": "384da6043e7c0dd4e708b9829beae9e3",
+    "size": 8574
+  },
+  "shaders/waveform-glitch.wgsl": {
+    "hash": "5779e7bf9dc2f758eca9ca6e2041f930",
+    "size": 8652
+  },
+  "shaders/phosphor-decay.wgsl": {
+    "hash": "2ea4b93c4197ba15a8259b3c46f6ba08",
+    "size": 6231
+  },
+  "shaders/concentric-spin.wgsl": {
+    "hash": "35f0abb7bfda35a2e54ccf0ceb9efc69",
+    "size": 3605
+  },
+  "shaders/paper-cutout.wgsl": {
+    "hash": "402c6ab1bcd1978ca08490c49629d8a2",
+    "size": 4481
+  },
+  "shaders/volumetric-god-rays.wgsl": {
+    "hash": "b76172f5441d94546c1069c8fd2e65eb",
+    "size": 3737
+  },
+  "shaders/ripple-blocks.wgsl": {
+    "hash": "1a74c099368dae65838464b0f16f0715",
+    "size": 3710
+  },
+  "shaders/temporal-slit-scan.wgsl": {
+    "hash": "34dd5619eeab2ed73d0652f3103d038c",
+    "size": 4725
+  },
+  "shaders/vhs-jog.wgsl": {
+    "hash": "7086d2e685726214ed5104cb579e5d68",
+    "size": 5507
+  },
+  "shaders/gen-aperiodic-monotile.wgsl": {
+    "hash": "1af1f99925129bdc5bcae3306aaa451c",
+    "size": 4678
+  },
+  "shaders/gen_reaction_diffusion.wgsl": {
+    "hash": "72c262e987af9e95d3cf871b9ab86fc3",
+    "size": 7645
+  },
+  "shaders/hybrid-fractal-feedback.wgsl": {
+    "hash": "a3442958d4dbf6d15838154a0bb875d4",
+    "size": 4949
+  },
+  "shaders/steampunk-gear-lens.wgsl": {
+    "hash": "ea64013613b6de3c2cddc161cf7e0fb4",
+    "size": 4642
+  },
+  "shaders/temporal-layered-time-stamps.wgsl": {
+    "hash": "c7795e678d9eeaea38cc684c65f92ee4",
+    "size": 5907
+  },
+  "shaders/byte-mosh.wgsl": {
+    "hash": "25fad3670cc00db1e1a8d47585291eeb",
+    "size": 7834
+  },
+  "shaders/pyramid-downsample-pass1.wgsl": {
+    "hash": "0990d3d758991a1b369dd1468dafd10b",
+    "size": 8767
+  },
+  "shaders/magnetic-field.wgsl": {
+    "hash": "b88553b8baa7aff554116752173edaab",
+    "size": 3727
+  },
+  "shaders/audio-reactive-temporal-decay.wgsl": {
+    "hash": "816067af5d9861d5d6a297cb04af156b",
+    "size": 5652
+  },
+  "shaders/spec-histogram-equalize-sg.wgsl": {
+    "hash": "86ec0ded33d643c5ec77440611e3d4fe",
+    "size": 6836
+  },
+  "shaders/quantum-foam.wgsl": {
+    "hash": "255d31aa13eec10b4210cbd94f22981c",
+    "size": 11659
+  },
+  "shaders/magnetic-interference.wgsl": {
+    "hash": "16baa514b8c14dfd898a84f287c3ff08",
+    "size": 6794
+  },
+  "shaders/prism-displacement.wgsl": {
+    "hash": "1b45e23bc86530e2432ac38924c19e2d",
+    "size": 4856
+  },
+  "shaders/analog-film-degrade.wgsl": {
+    "hash": "d38ba6c51932ac9bfefeef6ea0fe0da6",
+    "size": 4466
+  },
+  "shaders/spectral-waves.wgsl": {
+    "hash": "c0e2336bbdb0aa276a4f27b7ea2ff52e",
+    "size": 4137
+  },
+  "shaders/lighthouse-reveal.wgsl": {
+    "hash": "ca72a2f1c474cbc92ea8c41419e91121",
+    "size": 3434
+  },
+  "shaders/holographic-shatter.wgsl": {
+    "hash": "f0834761182896b7910d15fc1fd6eb41",
+    "size": 4996
+  },
+  "shaders/chrono-luma-slit-scan.wgsl": {
+    "hash": "e530210ff7eafeac8ddf12f1a45e3c5f",
+    "size": 6475
+  },
+  "shaders/optical-feedback.wgsl": {
+    "hash": "4b4fde1338ec2a7a03ccf83d62923e0d",
+    "size": 4690
+  },
+  "shaders/kimi_spotlight.wgsl": {
+    "hash": "1635b29fbfc09219aeb966229e040774",
+    "size": 4305
+  },
+  "shaders/digital-lens.wgsl": {
+    "hash": "2f8133f628caf25c940016adac7a96d8",
+    "size": 4556
+  },
+  "shaders/heat-haze.wgsl": {
+    "hash": "8915a8026d84c72cb65b0575b29cfed1",
+    "size": 4643
+  },
+  "shaders/dynamic-halftone.wgsl": {
+    "hash": "b8e3dcfc483b8d1798cea7a5e0a23978",
+    "size": 4012
+  },
+  "shaders/audio-reactive-rgb-dispersion.wgsl": {
+    "hash": "e21b77554729144fcb07d777bbdadf60",
+    "size": 6826
+  },
+  "shaders/divine-light-gpt52.wgsl": {
+    "hash": "896fb888f40341c94fe02bb598dc8bcb",
+    "size": 6555
+  },
+  "shaders/gen_grok4_perlin.wgsl": {
+    "hash": "f0ab578a5ac7814d8c4ebd441194b87f",
+    "size": 11238
+  },
+  "shaders/slime-mold-on-video.wgsl": {
+    "hash": "61ad5924aa1f8e6ce2d40c2ecaf7deaa",
+    "size": 4545
+  },
+  "shaders/rd-on-video-pass2.wgsl": {
+    "hash": "2b6a2d5091821ebb116d3a4a72105fe2",
+    "size": 3563
+  },
+  "shaders/mouse-gravity.wgsl": {
+    "hash": "fc514d663aa7ebf5c2b4e6fd24e02f7b",
+    "size": 4883
+  },
+  "shaders/quantum-cursor.wgsl": {
+    "hash": "35499dfe8acd179452b24d1673a45128",
+    "size": 5082
+  },
+  "shaders/liquid-swirl.wgsl": {
+    "hash": "f2c6f28a81005ec4ad4ecb025c642ab6",
+    "size": 7330
+  },
+  "shaders/liquid-viscous.wgsl": {
+    "hash": "50924f100320648ddf2df39ad2385b21",
+    "size": 9512
+  },
+  "shaders/gen-bioluminescent-reaction-diffusion.wgsl": {
+    "hash": "0d35ac50ed8a2e7f54d8fd4b3ab19dc2",
+    "size": 4632
+  },
+  "shaders/gen_cyclic_automaton.wgsl": {
+    "hash": "1581b046ef41bdb9ab48d7638a3df276",
+    "size": 6631
+  },
+  "shaders/spiral-lens.wgsl": {
+    "hash": "5e01be96cd153ebe693daa6a66afa9ec",
+    "size": 4483
+  },
+  "shaders/liquid.wgsl": {
+    "hash": "4dfe5a790ded6177a0dcaef61fdc0f19",
+    "size": 7045
+  },
+  "shaders/interactive-glitch-brush.wgsl": {
+    "hash": "df778a7c2f2816a920b8cacc3bb3c026",
+    "size": 4628
+  },
+  "shaders/pp-sharpen-sg.wgsl": {
+    "hash": "394ae5290f986c7296f9911e93b7be27",
+    "size": 9128
+  },
+  "shaders/circular-pixelate.wgsl": {
+    "hash": "85cceda68068d1955b2f735262ac2b03",
+    "size": 4639
+  },
+  "shaders/spectral-distortion.wgsl": {
+    "hash": "39d6af9982cbe394c806959e138f94e4",
+    "size": 4763
+  },
+  "shaders/datamosh-brush.wgsl": {
+    "hash": "5e24b482066902463cbbd7a2b6f50652",
+    "size": 5893
+  },
+  "shaders/chromatic-phase-inversion.wgsl": {
+    "hash": "b8bf1e9e8978c8367f97ed94d4a147a2",
+    "size": 17315
+  },
+  "shaders/static-reveal.wgsl": {
+    "hash": "2162e2f3ee46d7cedbf69bf007df107c",
+    "size": 3583
+  },
+  "shaders/vortex-drag.wgsl": {
+    "hash": "ef33fc329158d51d54ce410ecfab8009",
+    "size": 6483
+  },
+  "shaders/cyber-lattice.wgsl": {
+    "hash": "3aae4f2dda89f82bfb5d0123110bc303",
+    "size": 3849
+  },
+  "shaders/liquid-warp.wgsl": {
+    "hash": "97e7995769f7dfbef3600d1cec2da080",
+    "size": 8871
+  },
+  "shaders/recursion-mirror-vortex.wgsl": {
+    "hash": "34dd746547e1d69410ae3ad3eb3eaa03",
+    "size": 17148
+  },
+  "shaders/neon-pulse.wgsl": {
+    "hash": "204acc15d58bb487499384d9557717b3",
+    "size": 6139
+  },
+  "shaders/luma-melt-interactive.wgsl": {
+    "hash": "688a9f1501240c8338813aca5a261364",
+    "size": 3283
+  },
+  "shaders/moire-interference.wgsl": {
+    "hash": "c13804fa2bb8979097540a6207dade9c",
+    "size": 4459
+  },
+  "shaders/neon-echo.wgsl": {
+    "hash": "18cd5824fe0bd234b9f2a235a5bb3875",
+    "size": 6313
+  },
+  "shaders/sonar-pulse.wgsl": {
+    "hash": "fb655d38586d1f0c59655dd0d1a03f0e",
+    "size": 4059
+  },
+  "shaders/scanline-wave.wgsl": {
+    "hash": "f195e1c8bfb8032e6e705cea4cafbd6b",
+    "size": 3724
+  },
+  "shaders/cursor-aura.wgsl": {
+    "hash": "bf2eca48b1b8ded04ff9c5e0d69423ca",
+    "size": 4772
+  },
+  "shaders/gen-magnetic-ferrofluid.wgsl": {
+    "hash": "268e852de12239c68399f0e55088805c",
+    "size": 6806
+  },
+  "shaders/liquid-displacement.wgsl": {
+    "hash": "48486f32dffd469e91b96f9231a48fa7",
+    "size": 16921
+  },
+  "shaders/vortex.wgsl": {
+    "hash": "5cac99078c60d3c8514ad056b070c15f",
+    "size": 9138
+  },
+  "shaders/zoom-burst.wgsl": {
+    "hash": "7723a4ba58ccabbc83078019254b784a",
+    "size": 5540
+  },
+  "shaders/anaglyph-3d.wgsl": {
+    "hash": "cefe402d3493946f843616b91d6d7931",
+    "size": 5185
+  },
+  "shaders/gen-chaos-game-ifs.wgsl": {
+    "hash": "34553cf9ebfd7c4b29bc2c77717a6146",
+    "size": 4436
+  },
+  "shaders/quantum-tunnel-interactive.wgsl": {
+    "hash": "f8620f3403c7e02941281053b6fc48e6",
+    "size": 5175
+  },
+  "shaders/liquid-metal.wgsl": {
+    "hash": "58ab53ddc788da291897109b53ce0f4a",
+    "size": 9630
+  },
+  "shaders/stipple-render.wgsl": {
+    "hash": "a43642710521712379fbce496f8b445e",
+    "size": 4157
+  },
+  "shaders/rgb-glitch-displacement.wgsl": {
+    "hash": "73efc7ff3338257bba1b82848b34bf91",
+    "size": 14297
+  },
+  "shaders/echo-trace.wgsl": {
+    "hash": "cdc2370d973ed97b0bb15b7bf7bef6e1",
+    "size": 7671
+  },
+  "shaders/vertical-slice-wave.wgsl": {
+    "hash": "cbb9d3432e61a6cb58f1e2eedcf3dc06",
+    "size": 5412
+  },
+  "shaders/vinyl-scratch.wgsl": {
+    "hash": "7e7a305cd9e5500984a24f87c109bec1",
+    "size": 4913
+  },
+  "shaders/chroma-vortex.wgsl": {
+    "hash": "810ac70e9a3c8ff52103d2b68a888d22",
+    "size": 4435
+  },
+  "shaders/cyber-ripples.wgsl": {
+    "hash": "7134d842ebf5774622b29b9356637463",
+    "size": 5082
+  },
+  "shaders/temporal-rgb-ghost.wgsl": {
+    "hash": "069133f59ddeb2cf1d7c7d6888147a7e",
+    "size": 4562
+  },
+  "shaders/neon-pulse-edge.wgsl": {
+    "hash": "79121c663b15eb14025984a07b75827e",
+    "size": 8149
+  },
+  "shaders/quantum-ripples.wgsl": {
+    "hash": "a4f3c9d04efa1fc7ddefd1bb4205d4cb",
+    "size": 4327
+  },
+  "shaders/navier-stokes-dye.wgsl": {
+    "hash": "17b46dd2283e957c093d4b80ecbc4b34",
+    "size": 6339
+  },
+  "shaders/glitch-slice-mirror.wgsl": {
+    "hash": "2935ab142fa31f973fe1ac10cb4be69a",
+    "size": 5061
+  },
+  "shaders/sim-fluid-feedback-field-pass3.wgsl": {
+    "hash": "050770523dc06e017617fb5fda29216a",
+    "size": 4796
+  },
+  "shaders/long-exposure.wgsl": {
+    "hash": "5e89a7916a93ae649da0d3e40111ae7d",
+    "size": 5587
+  },
+  "shaders/rd-on-video-pass3.wgsl": {
+    "hash": "76dda65cf0085bb24cc480f193c22f67",
+    "size": 2837
+  },
+  "shaders/chroma-depth-tunnel.wgsl": {
+    "hash": "631067e9889b1a738da7912617e096a3",
+    "size": 4244
+  },
+  "shaders/pixel-rain.wgsl": {
+    "hash": "91978352a443ed3ee61ddf178afba017",
+    "size": 5182
+  },
+  "shaders/vhs-tracking-mouse.wgsl": {
+    "hash": "0cec32dfabea2f6f13508ed6d809e8a8",
+    "size": 4007
+  },
+  "shaders/rd-on-video-pass1-sg.wgsl": {
+    "hash": "2394087daa11f228afc90c6d0dadd36f",
+    "size": 4745
+  },
+  "shaders/neon-light.wgsl": {
+    "hash": "689964b8bfad1451af09a78d85a0b9b3",
+    "size": 6868
+  },
+  "shaders/spectral-rain.wgsl": {
+    "hash": "f4bc466464bf6a4e92d3217accda37a5",
+    "size": 4487
+  },
+  "shaders/tensor-flow-sculpting.wgsl": {
+    "hash": "e68fb04749b57cb5cf4eb8533927f021",
+    "size": 16516
+  },
+  "shaders/interactive-glitch.wgsl": {
+    "hash": "483c08c75a72d4bb5bc2b2dcc5de3205",
+    "size": 5755
+  },
+  "shaders/gen-quantum-superposition.wgsl": {
+    "hash": "9853ff96d76458dedc838080d5b32200",
+    "size": 10232
+  },
+  "shaders/gen-klein-bottle-walk.wgsl": {
+    "hash": "feb9213731eae1a7a3bb13872aa100d3",
+    "size": 5426
+  },
+  "shaders/infinite-video-feedback.wgsl": {
+    "hash": "a7a19ec40c5318b92a6512b32bf1d16c",
+    "size": 5089
+  },
+  "shaders/temporal-frequency-decomposition.wgsl": {
+    "hash": "5de9f7ab92958b6c748ee66ed61bc1e0",
+    "size": 5293
+  },
+  "shaders/neon-contour-drag.wgsl": {
+    "hash": "a81c9d0b059a159d01993c28d19d343a",
+    "size": 5685
+  },
+  "shaders/liquid-touch.wgsl": {
+    "hash": "e3b5cfcc2d6165549c0462c4bbf5ec54",
+    "size": 8494
+  },
+  "shaders/rgb-fluid.wgsl": {
+    "hash": "040bef332d51e5a71d68f59e92ce18b7",
+    "size": 6557
+  },
+  "shaders/soft-vignette-bloom.wgsl": {
+    "hash": "5b00650104cc0628bce60973ba7fd344",
+    "size": 3819
+  },
+  "shaders/crt-clear-zone.wgsl": {
+    "hash": "047e5ec10b6475f8ac462a5c68611ba3",
+    "size": 4644
+  },
+  "shaders/rd-on-video-pass1.wgsl": {
+    "hash": "1c5f933e5690dcb01dd7a8164991e71e",
+    "size": 3669
+  },
+  "shaders/split-flap-display.wgsl": {
+    "hash": "e479cb0aca264444ab5d27fe9b126ede",
+    "size": 7062
+  },
+  "shaders/gen-chromodynamic-plasma-collider.wgsl": {
+    "hash": "7f90ae22c41003da20dc45df831e0303",
+    "size": 6306
+  },
+  "shaders/split-dimension.wgsl": {
+    "hash": "f27b064aca8f3c2981a6793edb8b8dd4",
+    "size": 4729
+  },
+  "shaders/fiber-optic-weave.wgsl": {
+    "hash": "ef8f7c0e63bf2c0488bf03a0a92a3610",
+    "size": 5351
+  },
+  "shaders/lenia-on-video.wgsl": {
+    "hash": "053b76e1765df54f15574c12ce1d16a9",
+    "size": 10553
+  },
+  "shaders/luma-echo-warp.wgsl": {
+    "hash": "b9c5239f075bcc87f6762a911b3a8bca",
+    "size": 3692
+  },
+  "shaders/chromatic-mosaic-projector.wgsl": {
+    "hash": "cf1b9758d54b4f9eaa976f3fbed5be18",
+    "size": 5377
+  },
+  "shaders/temporal-phosphor-burn-motion-adaptive.wgsl": {
+    "hash": "28c045111d535c1e87a375abff8a874a",
+    "size": 5085
+  },
+  "shaders/holographic_interference.wgsl": {
+    "hash": "df67ffd9c91b80abfa051313062704a5",
+    "size": 4712
+  },
+  "shaders/conv-guided-video-filter.wgsl": {
+    "hash": "32bfef6cd0f8465d7e6a970b343eef6b",
+    "size": 6486
+  },
+  "shaders/quantum-field-visualizer.wgsl": {
+    "hash": "16b21a59899eedfcf1c7d22ca9ed1c00",
+    "size": 3902
+  },
+  "shaders/night-vision-scope.wgsl": {
+    "hash": "f7caa7a7b4b345a0abd255e9dab113e6",
+    "size": 4606
+  },
+  "shaders/temporal-feedback-zoom-tracer.wgsl": {
+    "hash": "67de671c701d5079a6bf29e75cfd6f02",
+    "size": 4852
+  },
+  "shaders/glitch-cathedral.wgsl": {
+    "hash": "8e0d24ceff68bc437ef5cd7e54f402d1",
+    "size": 7668
+  },
+  "shaders/pixel-repel.wgsl": {
+    "hash": "2a989076fe82425c7cc92adce98271ca",
+    "size": 4226
+  },
+  "shaders/refractive-bubbles.wgsl": {
+    "hash": "29b1ee7057407d46c3ee422bf25fc2f0",
+    "size": 5788
+  },
+  "shaders/audio-reactive-pyramid.wgsl": {
+    "hash": "15834ac387e1c9c79f2c1c7a2f58fa76",
+    "size": 7656
+  },
+  "shaders/speed-lines-focus.wgsl": {
+    "hash": "e284fcc526ab02591f8ec82895d5e6fd",
+    "size": 4450
+  },
+  "shaders/interactive-emboss.wgsl": {
+    "hash": "b01f3182461e0061f165a53bcf70ca82",
+    "size": 4563
+  },
+  "shaders/vaporwave-horizon.wgsl": {
+    "hash": "674111f0eba571124b0b4c0776c7c968",
+    "size": 8069
+  },
+  "shaders/data-stream.wgsl": {
+    "hash": "bd842b2613ec661df8adc28427ac245d",
+    "size": 4727
+  },
+  "shaders/bio-touch.wgsl": {
+    "hash": "bfcbcec6570e556a54f5d052ae34d611",
+    "size": 5144
+  },
+  "shaders/vhs-chroma-bleed.wgsl": {
+    "hash": "9644485b9965a341a46809cb6f993512",
+    "size": 4072
+  },
+  "shaders/pyramid-composite-pass3.wgsl": {
+    "hash": "ad47fa939c3f72ed1be44c37bf558673",
+    "size": 11548
+  },
+  "shaders/temporal_echo.wgsl": {
+    "hash": "30793e2612a28b7303c0c4f75ad5b8a2",
+    "size": 6820
+  },
+  "shaders/slime-mold-on-video-sg.wgsl": {
+    "hash": "d7a7d2f30de3687562cfeca8119d093b",
+    "size": 5606
+  },
+  "shaders/gen-de-jong-attractor.wgsl": {
+    "hash": "06b99b5ce705e3d96429539da957cfa2",
+    "size": 6240
+  },
+  "shaders/datamosh.wgsl": {
+    "hash": "74f0d7c3e924e77872c9c90b2cb8be11",
+    "size": 12604
+  },
+  "shaders/gen-audio-spirograph.wgsl": {
+    "hash": "54c2056c20b74e2982660fa884ae91af",
+    "size": 7049
+  },
+  "shaders/molten-glass.wgsl": {
+    "hash": "dcd386aabd193456c20fa8f1f6584fd5",
+    "size": 5497
+  },
+  "shaders/gen-psychedelic-layered-time-stamps.wgsl": {
+    "hash": "9d0c90debc188ce0bc77aab37378761c",
+    "size": 4024
+  },
+  "shaders/digital-mold.wgsl": {
+    "hash": "91dd5e6a3ef3f1350f886f57f3fbc4ca",
+    "size": 3881
+  },
+  "shaders/luma-slice-interactive.wgsl": {
+    "hash": "c3fae0af9fd21f7374ae494609b29ee6",
+    "size": 4180
+  },
+  "shaders/temporal-phosphor-burn.wgsl": {
+    "hash": "99662a381f4c831c77ebc9cb8b9880b7",
+    "size": 4784
+  },
+  "shaders/kimi_ripple_touch.wgsl": {
+    "hash": "8dc2a851ce6b3d3aedeb0cc3417b1dd4",
+    "size": 7950
+  },
+  "shaders/neon-warp.wgsl": {
+    "hash": "be637d62ade8117d0d36f7cda2d06ed9",
+    "size": 6955
+  },
+  "shaders/ferrofluid.wgsl": {
+    "hash": "45c8f49e3f0bf05f5e8a5b44a6b8cecc",
+    "size": 5261
+  },
+  "shaders/steamy-glass.wgsl": {
+    "hash": "4aaa363f52ebabd4a70bfccee2902cb0",
+    "size": 8553
+  },
+  "shaders/spatio-temporal-3d-conv.wgsl": {
+    "hash": "bf96e8b2396091a733182a470167bfbd",
+    "size": 8111
+  },
+  "shaders/sonar-reveal.wgsl": {
+    "hash": "7cc499bc1a26c93aaeb3a91b7f2b298d",
+    "size": 3503
+  },
+  "shaders/spectrogram-displace-pass2.wgsl": {
+    "hash": "c85e427bb6c03984a8cf37f54db6d998",
+    "size": 4412
+  },
+  "shaders/spectral-bleed-confinement.wgsl": {
+    "hash": "0e86a7de83e8df8348aab83baed5f840",
+    "size": 17857
+  },
+  "shaders/crt-phosphor-decay.wgsl": {
+    "hash": "c681d3ee5e1b4bf7c7d97dba22050826",
+    "size": 6076
+  },
+  "shaders/deep-workgroup-multi-effect-blend.wgsl": {
+    "hash": "7b0b9454296faf2cf135a44b4409f7d4",
+    "size": 10546
+  },
+  "shaders/kinetic_tiles.wgsl": {
+    "hash": "118ab6db29a5cc54f97091a1ad479fc7",
+    "size": 5430
+  },
+  "shaders/rgb-iso-lines.wgsl": {
+    "hash": "b55ca98fd3c0c809485c0c1df03db033",
+    "size": 6258
+  },
+  "shaders/crt-tv-stipple.wgsl": {
+    "hash": "b4125a59680a71f4d09b29a7a7ec76a4",
+    "size": 8896
+  },
+  "shaders/tone-histogram-apply.wgsl": {
+    "hash": "5c73bf4d04685666900c7334da7ad25e",
+    "size": 4712
+  },
+  "shaders/film-cross-process.wgsl": {
+    "hash": "6f731cdd15e93ece82d0b437aab407b3",
+    "size": 5670
+  },
+  "shaders/tone-histogram.wgsl": {
+    "hash": "3e62247a83e561132793ccc845d7d9dc",
+    "size": 4069
+  },
+  "shaders/gen-zeta-function-landscape.wgsl": {
+    "hash": "f0ffd57cc3ce572de3370dfe23961724",
+    "size": 4772
+  },
+  "shaders/oscilloscope-overlay.wgsl": {
+    "hash": "d86719d7e3454e880c648e1ab30d08b6",
+    "size": 4397
+  },
+  "shaders/gen-abyssal-chrono-coral.wgsl": {
+    "hash": "3f625c87860a2790b77108cbfd4ad6e0",
+    "size": 7062
+  },
+  "shaders/tensor-flow-sculpt.wgsl": {
+    "hash": "388b0a229955ac9a53a5d6f30dc8cf80",
+    "size": 17615
+  },
+  "shaders/echo-ripple.wgsl": {
+    "hash": "a3804dbd7c3667503176eaf9f0af3db6",
+    "size": 5104
+  },
+  "shaders/glass-shatter-morph.wgsl": {
+    "hash": "086e041f0866fff952483614771c81e6",
+    "size": 7781
+  },
+  "shaders/x-ray-reveal.wgsl": {
+    "hash": "bb52e7baf305ab12e23b4201bcea383b",
+    "size": 5481
+  },
+  "shaders/kinetic-dispersion.wgsl": {
+    "hash": "70c6dc2b0b8ccbe8cbddf180f23a6a12",
+    "size": 4056
+  },
+  "shaders/rgb-split-glitch.wgsl": {
+    "hash": "926c3c8293565c5df79e7cad4b6e1a1e",
+    "size": 7600
+  },
+  "shaders/spec-histogram-equalize.wgsl": {
+    "hash": "326ebdc749d64d4b634a8b256ab86761",
+    "size": 4781
+  },
+  "shaders/hex-mosaic.wgsl": {
+    "hash": "106c62468cd2f57c86a702461dc741d2",
+    "size": 4114
+  },
+  "shaders/gen-bioluminescent-aether-pulsar.wgsl": {
+    "hash": "3a049660b3034ca5153ac17a49997c94",
+    "size": 6709
+  },
+  "shaders/spectrogram-displace.wgsl": {
+    "hash": "17a5a4cad0411178b6581cf2694e4ff4",
+    "size": 11512
+  },
+  "shaders/chrono-slit-scan.wgsl": {
+    "hash": "439a1d5f8fde62afc74a2ee79f395314",
+    "size": 4762
+  },
+  "shaders/holographic-sticker.wgsl": {
+    "hash": "a2b8d7d9b19d77e9b9785f8baedeec3c",
+    "size": 4834
+  },
+  "shaders/hybrid-noise-kaleidoscope.wgsl": {
+    "hash": "ef98dbafa41a167b05fc871f4671adc3",
+    "size": 6576
+  },
+  "shaders/optical-flow-tracer.wgsl": {
+    "hash": "813a5a06e50179d4dcae8c28726b6799",
+    "size": 7765
+  },
+  "shaders/pixel-focus.wgsl": {
+    "hash": "3306bf1f893e928ee5340d339e7b93eb",
+    "size": 4388
+  },
+  "shaders/neon-edge-radar.wgsl": {
+    "hash": "f00bf486df22eca62860b963aecaca2a",
+    "size": 4993
+  },
+  "shaders/gen_rainbow_smoke.wgsl": {
+    "hash": "3de72e7ed3f9397a03ee093346ddc4b1",
+    "size": 10220
+  },
+  "shaders/gen-von-karman-vortex.wgsl": {
+    "hash": "e8b4306de3338d6389832f419e6c223d",
+    "size": 6877
+  },
+  "shaders/elastic-strip.wgsl": {
+    "hash": "bdc7134c4225aa71f8e120cc69be2a6e",
+    "size": 3413
+  },
+  "shaders/voronoi-zoom-turbulence.wgsl": {
+    "hash": "48592e90f06cfa289c443710ae0855a1",
+    "size": 5452
+  },
+  "shaders/data-scanner.wgsl": {
+    "hash": "53752e81af64eff59cd0bf46b4f9f34c",
+    "size": 6798
+  },
+  "shaders/gen_wave_equation.wgsl": {
+    "hash": "3d4583ac5bb4eb654654b39619d30f02",
+    "size": 6546
+  },
+  "shaders/digital-compression.wgsl": {
+    "hash": "1bd4845cb67f99523e094c94e43b8f91",
+    "size": 6379
+  },
+  "shaders/crt-scanline-damage.wgsl": {
+    "hash": "5e4188c4450e3764e740156690e977fc",
+    "size": 4375
+  },
+  "shaders/chroma-kinetic.wgsl": {
+    "hash": "bdc173782c2e818a46780cd8639115d1",
+    "size": 4000
+  },
+  "shaders/digital-glitch.wgsl": {
+    "hash": "89d8a4b10f4e8b3a8e28bbb1885a82b3",
+    "size": 12288
+  },
+  "shaders/spectral-smear.wgsl": {
+    "hash": "b21ad4032a5b6c61bc4a9622dbe09966",
+    "size": 4206
+  },
+  "shaders/mosaic-reveal.wgsl": {
+    "hash": "8d2347ca276d2082617708de234c2590",
+    "size": 4881
+  },
+  "shaders/sim-fluid-feedback-field-pass1.wgsl": {
+    "hash": "87d7df26dd0b292a3e36225c8510a5ef",
+    "size": 4722
+  },
+  "shaders/prismatic-feedback-loop.wgsl": {
+    "hash": "4357f186c5c6f7fa53e7ac0ab69c8f41",
+    "size": 4563
+  },
+  "shaders/vhs-tracking.wgsl": {
+    "hash": "3729d034224a4cf00336f5c07d054496",
+    "size": 7660
+  },
+  "shaders/gen_fluffy_raincloud.wgsl": {
+    "hash": "d4a85d31e44d83e258b02262214df0f3",
+    "size": 10141
+  },
+  "shaders/fire_smoke_volumetric.wgsl": {
+    "hash": "46aa167a9779903810817989b91260a4",
+    "size": 4867
+  },
+  "shaders/neon-topology.wgsl": {
+    "hash": "0eb7611fdac7a811e419d244f4210368",
+    "size": 4926
+  },
+  "shaders/crystal-freeze.wgsl": {
+    "hash": "05ac87bd8e68a455b00c6b8c9f320f96",
+    "size": 8680
+  },
+  "shaders/crt-magnet.wgsl": {
+    "hash": "06a63afe0a0776816a86aa60040303f1",
+    "size": 8148
+  },
+  "shaders/directional-glitch.wgsl": {
+    "hash": "8c06f825847ea778b54446960d4d1b50",
+    "size": 6847
+  },
+  "shaders/stereoscopic-3d.wgsl": {
+    "hash": "8c3a96b3fb5b68e77a00911691558b66",
+    "size": 5737
+  },
+  "shaders/liquid-optimized.wgsl": {
+    "hash": "371400f35d4c4aa2d6981c47f18acc66",
+    "size": 7299
+  },
+  "shaders/temporal-decay-multiresolution.wgsl": {
+    "hash": "a04ed8c5acf405910c0bd6923bf5fcec",
+    "size": 6048
+  },
+  "shaders/cyber-rain.wgsl": {
+    "hash": "99a6cbf253c693d4313ecb12ca98c177",
+    "size": 4991
+  },
+  "shaders/scan-distort-gpt52.wgsl": {
+    "hash": "9a1ccd8af5ce9ce0582143d521a91399",
+    "size": 7557
+  },
+  "shaders/laser-burn.wgsl": {
+    "hash": "5d58c316b9db1b990dfa950d6da6f23b",
+    "size": 4108
+  },
+  "shaders/digital-haze.wgsl": {
+    "hash": "5b368b76925e0a0b34ae4521d8dae4ed",
+    "size": 5711
+  },
+  "shaders/rgb-distance-split.wgsl": {
+    "hash": "b0e33542943401fa721a61844efd6f2f",
+    "size": 6417
+  },
+  "shaders/neon-edges.wgsl": {
+    "hash": "2cd58295309eb5823adaafe2e7de8a62",
+    "size": 8340
+  },
+  "shaders/gen-hyperbolic-tree.wgsl": {
+    "hash": "7b049b23a50b0da1839dca04061b7ad4",
+    "size": 5443
+  },
+  "shaders/gravity-well.wgsl": {
+    "hash": "0cfb075fe44fa3662003129a0aa8a86f",
+    "size": 6559
+  },
+  "shaders/interactive-fresnel.wgsl": {
+    "hash": "9b868b0e6add7ea3b7756ac9ee4862c3",
+    "size": 4042
+  },
+  "shaders/rgb-ripple-distortion.wgsl": {
+    "hash": "cda0a6284c404a7e85903edf869a6ec2",
+    "size": 7905
+  },
+  "shader_coordinates.json": {
+    "hash": "92104a1739bfd7eff07c2d690d594cb3",
+    "size": 188497
+  },
+  "wasm/pixelocity_wasm.wasm": {
+    "hash": "3a755924fba805b1b50c14ac912508bf",
+    "size": 97826
+  },
+  "wasm/pixelocity_wasm.js": {
+    "hash": "6334fd22a4f6ab421e19b8331dc957d8",
+    "size": 67071
+  },
+  "shader-lists/generative.json": {
+    "hash": "7496893e4cf377c33facf6d209742f58",
+    "size": 221453
+  }
+}

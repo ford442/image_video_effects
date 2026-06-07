@@ -1,0 +1,54 @@
+{
+  "id": "mosaic-reveal",
+  "name": "Mosaic Reveal",
+  "url": "shaders/mosaic-reveal.wgsl",
+  "description": "Mosaic reveal with hexagonal/square grid options, flood-fill reveal animation from mouse, edge glow, and audio-reactive pulse.",
+  "features": [
+    "upgraded-rgba",
+    "depth-aware",
+    "mosaic",
+    "interactive-reveal",
+    "mouse-driven",
+    "hex-grid",
+    "flood-fill-reveal",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "cellSize",
+      "name": "Cell Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "revealSpeed",
+      "name": "Reveal Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "edgeGlow",
+      "name": "Edge Glow",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "gridType",
+      "name": "Grid Type",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "mosaic",
+    "reveal",
+    "interactive",
+    "audio-reactive"
+  ]
+}

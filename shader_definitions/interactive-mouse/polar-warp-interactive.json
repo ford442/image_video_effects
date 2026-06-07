@@ -1,0 +1,55 @@
+{
+  "id": "polar-warp-interactive",
+  "name": "Polar Warp",
+  "url": "shaders/polar-warp-interactive.wgsl",
+  "description": "Maps the image to polar coordinates centered on the mouse with bass-driven warp strength, spiral twist, click-triggered ripple bursts, and depth-aware fading.",
+  "features": [
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware",
+    "multi-ripple"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Warp Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Spiral Amount",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Ripple Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Pinch/Expand",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "interactive",
+    "polar",
+    "warp",
+    "audio-reactive"
+  ]
+}

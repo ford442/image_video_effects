@@ -1,0 +1,59 @@
+{
+  "id": "tone-histogram",
+  "name": "Tone Histogram v2",
+  "category": "post-processing",
+  "url": "shaders/tone-histogram.wgsl",
+  "description": "Single-pass local adaptive histogram equalization with film-like tonal curves, split-tone shadows/highlights, grain texture, and depth-driven haze removal. Bass stretches histogram dynamically.",
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "tone",
+    "histogram",
+    "exposure",
+    "luminance",
+    "grading",
+    "film",
+    "local-contrast",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "target",
+      "name": "Stretch Amount",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "contrast",
+      "name": "Toe Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "saturation",
+      "name": "Shoulder Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "psychedelic",
+      "name": "Haze Removal",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

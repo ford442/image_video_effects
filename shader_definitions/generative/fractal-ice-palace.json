@@ -1,0 +1,71 @@
+{
+  "id": "fractal-ice-palace",
+  "name": "Fractal Ice Palace",
+  "url": "shaders/fractal-ice-palace.wgsl",
+  "category": "generative",
+  "description": "Recursive ice crystal palace with fractal branching architecture. Chromatic ice refractions: blue core, cyan edges, white sparkle. Bass shakes the palace, mids control recursion depth visually, treble adds frost glitter. Mouse melts local ice.",
+  "tags": [
+    "generative",
+    "fractal",
+    "ice",
+    "crystal",
+    "palace",
+    "winter",
+    "audio-reactive",
+    "chromatic",
+    "temporal",
+    "recursive"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware",
+    "fractal-branching"
+  ],
+  "params": [
+    {
+      "id": "palaceScale",
+      "name": "Palace Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Overall size of the ice palace structures",
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "recursionDepth",
+      "name": "Recursion Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Fractal recursion depth of ice branching",
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "frostAmount",
+      "name": "Frost Amount",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Amount of frost glitter and ice particles",
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "refraction",
+      "name": "Refraction",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "description": "Strength of chromatic refraction dispersion",
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

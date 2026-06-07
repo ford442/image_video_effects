@@ -1,0 +1,59 @@
+{
+  "id": "prism-displacement",
+  "name": "Prism Lens",
+  "url": "shaders/prism-displacement.wgsl",
+  "description": "Prismatic lens effect with chromatic angular dispersion, temporal lens rotation memory, depth-weighted magnification, audio-reactive refraction responding to bass, and edge shine.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "zoomAmount",
+      "name": "Zoom Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "chromatic",
+      "name": "Chromatic Amount",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "rotationSpeed",
+      "name": "Rotation Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "depthWeight",
+      "name": "Depth Weight",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "transform",
+    "prism",
+    "chromatic",
+    "lens",
+    "temporal",
+    "audio-reactive",
+    "depth-aware"
+  ]
+}

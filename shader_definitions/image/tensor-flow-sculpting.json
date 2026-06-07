@@ -1,0 +1,62 @@
+{
+  "id": "tensor-flow-sculpting",
+  "name": "Tensor Flow Sculpting",
+  "url": "shaders/tensor-flow-sculpting.wgsl",
+  "description": "Depth is treated as a 4-D strain tensor that warps and sculpts the image like clay — bulk regions bend dramatically while high-frequency edge details stay crisp.",
+  "tags": [
+    "depth",
+    "tensor",
+    "warp",
+    "sculpt",
+    "flow",
+    "artistic",
+    "deformation",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "author": "AI",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Strain Scale",
+      "min": 0,
+      "max": 1,
+      "default": 0.4,
+      "step": 0.01,
+      "description": "Amplitude of the tensor-field deformation."
+    },
+    {
+      "id": "param2",
+      "name": "Detail Preserve",
+      "min": 0,
+      "max": 1,
+      "default": 0.6,
+      "step": 0.01,
+      "description": "How much high-frequency detail is added back after warping."
+    },
+    {
+      "id": "param3",
+      "name": "Flow Speed",
+      "min": 0,
+      "max": 1,
+      "default": 0.3,
+      "step": 0.01,
+      "description": "Speed of the time-varying noise flow that modulates the tensor."
+    },
+    {
+      "id": "param4",
+      "name": "Tensor Mode",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "step": 0.01,
+      "description": "Blend from stretch-dominant (0) to shear-dominant (1) deformation."
+    }
+  ]
+}

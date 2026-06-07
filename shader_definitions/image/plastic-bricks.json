@@ -1,0 +1,53 @@
+{
+  "id": "plastic-bricks",
+  "name": "Plastic Bricks",
+  "category": "image",
+  "url": "shaders/plastic-bricks.wgsl",
+  "description": "LEGO-style plastic bricks with microfacet BRDF, ambient occlusion in stud cavities, fingerprint smudges, and subsurface scattering. Bass drives assembly animation, mouse deconstructs bricks, depth controls stud perspective.",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Brick Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param2",
+      "name": "Stud Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param3",
+      "name": "Relief Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "param4",
+      "name": "Bevel",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "plastic",
+    "bricks",
+    "toy",
+    "relief",
+    "brdf",
+    "ambient-occlusion",
+    "audio-reactive",
+    "depth-aware"
+  ]
+}

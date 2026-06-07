@@ -1,0 +1,68 @@
+{
+  "id": "gen-dla-copper-deposition",
+  "name": "DLA Copper Deposition",
+  "url": "shaders/gen-dla-copper-deposition.wgsl",
+  "description": "Procedural diffusion-limited aggregation copper dendrite growth. Domain-warped fBm noise simulates random walker deposition with stick probability, producing metallic branching structures with oxidation patina and electrolyte depletion fields.",
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "procedural",
+    "generative",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "copper",
+    "metallic",
+    "dendrite",
+    "DLA",
+    "fractal",
+    "organic",
+    "generative",
+    "abstract",
+    "oxidation",
+    "patina"
+  ],
+  "params": [
+    {
+      "id": "scale",
+      "name": "Growth Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Controls the overall strength of the generated effect."
+    },
+    {
+      "id": "arms",
+      "name": "Arm Count",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Controls animation and temporal evolution speed."
+    },
+    {
+      "id": "oxidation",
+      "name": "Oxidation",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Controls spatial scale, frequency, or detail contrast."
+    },
+    {
+      "id": "spark",
+      "name": "Spark Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Controls mouse-driven or secondary variation influence."
+    }
+  ]
+}

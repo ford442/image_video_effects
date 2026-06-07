@@ -1,0 +1,48 @@
+# Website Load Tester Agent
+
+**Role:** Test page load performance and bundle loading
+
+**Target URL:** https://test.1ink.us/image_video_effects/index.html
+
+## Test Checklist
+
+### 1. Initial Load Tests
+- [ ] HTTP 200 response from index.html
+- [ ] HTML contains valid bundle references (main.*.js, main.*.css)
+- [ ] No 404 errors for critical resources
+- [ ] .htaccess cache headers working (Cache-Control: no-cache on HTML)
+
+### 2. Bundle Loading
+- [ ] JS bundle loads successfully (200 OK)
+- [ ] CSS bundle loads successfully (200 OK)
+- [ ] Source maps load (optional but good)
+- [ ] WASM files load (if applicable)
+
+### 3. Performance Metrics
+- [ ] Time to First Byte (TTFB) < 500ms
+- [ ] First Contentful Paint (FCP) < 2s
+- [ ] Total JS bundle size < 10MB
+- [ ] No render-blocking resources
+
+### 4. Error Detection
+- [ ] No console errors on load
+- [ ] No 404 errors for shaders
+- [ ] No CSP violations
+
+## Report Format
+```markdown
+## Load Test Results
+
+| Test | Status | Details |
+|------|--------|---------|
+| index.html | ✅/❌ | HTTP 200, TTFB: Xms |
+| JS Bundle | ✅/❌ | main.XXXX.js, Size: XMB |
+| CSS Bundle | ✅/❌ | main.XXXX.css, Size: XKB |
+| Cache Headers | ✅/❌ | HTML: no-cache, JS: immutable |
+
+### Console Errors
+- [List any errors found]
+
+### Recommendations
+- [Any fixes needed]
+```

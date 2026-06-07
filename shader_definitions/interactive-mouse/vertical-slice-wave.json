@@ -1,0 +1,49 @@
+{
+  "id": "vertical-slice-wave",
+  "name": "Vertical Slice Wave",
+  "url": "shaders/vertical-slice-wave.wgsl",
+  "description": "Splits the image into vertical strips that oscillate with spring-damped mouse follow, attack/release audio envelope, and temporal feedback trails. Mouse X/Y control frequency/amplitude with smooth lag. Audio bass drives wave amplitude.",
+  "params": [
+    {
+      "id": "strips",
+      "name": "Strip Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "speed",
+      "name": "Wave Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "split",
+      "name": "RGB Split",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "jitter",
+      "name": "Jitter",
+      "default": 0.1,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive",
+    "audio-reactive",
+    "distortion",
+    "temporal"
+  ]
+}

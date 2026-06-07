@@ -1,0 +1,67 @@
+{
+  "id": "gen-neural-network-glow-synaptic-pulse",
+  "name": "Neural Network Glow",
+  "url": "/shaders/gen-neural-network-glow-synaptic-pulse.wgsl",
+  "coordinate": 873,
+  "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers.",
+  "tags": [
+    "neural",
+    "glow",
+    "audio-reactive",
+    "network",
+    "mesh",
+    "feedback",
+    "trails"
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "upgraded-rgba",
+    "chromatic-synapse",
+    "temporal-potentiation",
+    "depth-scaled-nodes"
+  ],
+  "params": [
+    {
+      "id": "pulse_speed",
+      "name": "Pulse Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Controls the overall strength of the generated effect."
+    },
+    {
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
+      "default": 1,
+      "min": 0,
+      "max": 3,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Controls animation and temporal evolution speed."
+    },
+    {
+      "id": "trail_decay",
+      "name": "Trail Decay",
+      "default": 0.93,
+      "min": 0.8,
+      "max": 0.99,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Controls spatial scale, frequency, or detail contrast."
+    },
+    {
+      "id": "mouseInfluence",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Controls mouse-driven or secondary variation influence."
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "id": "pixelation-drift",
+  "name": "Pixelation Drift",
+  "url": "shaders/pixelation-drift.wgsl",
+  "description": "Dynamic pixelated mosaic with audio-reactive pixel sizing, chromatic RGB pixel separation, depth-aware sizing, organic noise drift, and temporal persistence.",
+  "params": [
+    {
+      "id": "pixelSize",
+      "name": "Pixel Size",
+      "default": 0.15,
+      "min": 0.01,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "driftSpeed",
+      "name": "Drift Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "colorBleed",
+      "name": "Color Bleed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "depthInfluence",
+      "name": "Depth Influence",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "features": [
+    "depth-aware",
+    "temporal-persistence",
+    "organic-motion",
+    "mouse-driven",
+    "audio-reactive",
+    "chromatic",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "pixelation",
+    "drift",
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "id": "zipper-reveal",
+  "name": "Zipper Reveal",
+  "category": "visual-effects",
+  "url": "shaders/zipper-reveal.wgsl",
+  "description": "Mechanical zipper with interlocking tooth simulation, fabric physics, metallic specular highlights, and chromatic aberration on fast-moving teeth. Bass drives zipper speed and mouse controls pull position.",
+  "params": [
+    {
+      "id": "zipper_width",
+      "name": "Spread",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Width of the zipper V-shape opening"
+    },
+    {
+      "id": "tooth_size",
+      "name": "Tooth Size",
+      "default": 0.02,
+      "min": 0.005,
+      "max": 0.1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Size of zipper teeth"
+    },
+    {
+      "id": "angle",
+      "name": "Angle",
+      "default": 0,
+      "min": -1.57,
+      "max": 1.57,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Rotation angle of the zipper"
+    },
+    {
+      "id": "tooth_amplitude",
+      "name": "Tooth Amplitude",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Amplitude of the tooth protrusion"
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "zipper",
+    "fashion",
+    "reveal",
+    "metal",
+    "fabric",
+    "chromatic",
+    "audio-reactive"
+  ]
+}

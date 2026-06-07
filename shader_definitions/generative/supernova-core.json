@@ -1,0 +1,62 @@
+{
+  "id": "supernova-core",
+  "name": "Supernova Core",
+  "category": "generative",
+  "url": "shaders/supernova-core.wgsl",
+  "description": "Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "sedov-taylor",
+    "rayleigh-taylor",
+    "upgraded-rgba",
+    "chromatic-aberration",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "expansion",
+      "name": "Expansion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "rays",
+      "name": "Ray Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "shockwaves",
+      "name": "Shockwave Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "chromatic",
+      "name": "Chromatic Shift",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "supernova",
+    "space",
+    "explosion",
+    "rays",
+    "shockwave",
+    "audio-reactive",
+    "chromatic",
+    "physics",
+    "sedov-taylor"
+  ]
+}

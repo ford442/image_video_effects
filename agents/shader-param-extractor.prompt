@@ -1,0 +1,46 @@
+# Shader Param Extractor Agent
+
+**Role:** Extract real parameter defaults from the working old deployment
+
+**Target:** https://go.1ink.us/image_video_effects
+
+## Task
+
+1. **Identify how the old deployment loads shader params**
+   - Check network requests for shader list endpoint
+   - Look for `shader-lists/*.json` or API calls
+   - Find where real defaults (not 0.5) come from
+
+2. **Extract all shader definitions with real params**
+   - Get complete list of shaders
+   - For each shader, extract:
+     - `id` (e.g., "liquid", "neon-pulse")
+     - `params` array with real defaults (not 0.5)
+   - Save to JSON format
+
+3. **Output Format**
+   ```json
+   {
+     "liquid": {
+       "params": [
+         {"id": "viscosity", "name": "Viscosity", "default": 0.5, "min": 0, "max": 1},
+         {"id": "turbulence", "name": "Turbulence", "default": 0.4, "min": 0, "max": 1}
+       ]
+     },
+     "neon-pulse": { ... }
+   }
+   ```
+
+## Tools
+- `curl` to fetch endpoints
+- Browser dev tools inspection
+- Parse JSON responses
+
+## Report Format
+```markdown
+## Extraction Results
+- Total shaders found: X
+- Shaders with real params: Y
+- Endpoint used: [URL]
+- Sample output: [JSON snippet]
+```

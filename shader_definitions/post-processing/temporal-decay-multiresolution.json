@@ -1,0 +1,57 @@
+{
+  "id": "temporal-decay-multiresolution",
+  "name": "Temporal Decay Multiresolution",
+  "url": "shaders/temporal-decay-multiresolution.wgsl",
+  "description": "Four-timescale temporal decomposition. R=fast (ages 1–2), G=medium (ages 4–5), B=slow (age 7), A=ultra-slow (full average). Per-channel independent decay rates create psychedelic rainbow splits where motion speed maps to color. Stacks cleanly behind sim-decay-system-rgba.",
+  "tags": [
+    "temporal",
+    "multiresolution",
+    "decay",
+    "timescale",
+    "psychedelic",
+    "rainbow",
+    "motion"
+  ],
+  "features": [
+    "temporal",
+    "history-ring",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "requiresHistoryRing": true,
+  "params": [
+    {
+      "id": "param1",
+      "name": "Fast Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Medium Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Slow Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Original Blend",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

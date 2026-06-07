@@ -1,0 +1,74 @@
+{
+  "name": "webgpu-react-app",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": ".",
+  "dependencies": {
+    "@mlc-ai/web-llm": "^0.2.80",
+    "@types/node": "^16.18.126",
+    "@types/react": "^19.1.11",
+    "@types/react-dom": "^19.1.8",
+    "@webgpu/types": "^0.1.64",
+    "@xenova/transformers": "2.17.2",
+    "hls.js": "^1.6.15",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "typescript": "^4.9.5",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "prestart": "node scripts/generate_shader_lists.js --base-url=https://test.1ink.us/image_video_effects/ && npm run build:manifest",
+    "start": "react-scripts start",
+    "prebuild": "npm run wasm:build && node scripts/generate_shader_lists.js --base-url=https://test.1ink.us/image_video_effects/ && npm run build:manifest",
+    "build": "react-scripts build && npm run wasm:build",
+    "build:manifest": "tsx --tsconfig scripts/tsconfig.scripts.json scripts/build-unified-manifest.ts",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "wasm:build": "bash wasm_renderer/build.sh",
+    "wasm:clean": "rm -rf wasm_renderer/build public/wasm",
+    "bucket:sync": "node scripts/watch-bucket-simple.js",
+    "bucket:watch": "node scripts/watch-bucket-simple.js --watch",
+    "bucket:sync-full": "node scripts/watch-bucket.js",
+    "bucket:watch-full": "node scripts/watch-bucket.js --watch",
+    "audit:shaders": "bash scripts/wgsl-audit-swarm.sh 4",
+    "audit:shaders:sample": "bash scripts/wgsl-audit-swarm.sh 4 --sample",
+    "deploy": "python scripts/deploy.py",
+    "deploy:app": "python scripts/deploy_app_only.py",
+    "deploy:full": "npm run build && python scripts/deploy_app_only.py && python scripts/sync_shaders_to_storage.py",
+    "sync:shaders": "python scripts/sync_shaders_to_storage.py",
+    "sync:shaders:dry": "python scripts/sync_shaders_to_storage.py --dry-run",
+    "swarm:upgrade": "node scripts/run-upgrade-swarm.js"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@types/hls.js": "^0.13.3",
+    "@types/jest": "^27.5.2",
+    "playwright": "^1.57.0",
+    "react-scripts": "^5.0.1",
+    "tsx": "^4.22.1",
+    "xml2js": "^0.6.2",
+    "yaml": "^2.8.2"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "id": "gen-topological-phase-weave",
+  "name": "Topological Phase Weave",
+  "url": "shaders/gen-topological-phase-weave.wgsl",
+  "category": "generative",
+  "description": "A simulation of nematic liquid crystal fields where audio frequencies control topological defect creation, motion, and annihilation, producing mesmerizing swirling defect lattices with iridescent color mapping.",
+  "tags": [
+    "generative",
+    "topology",
+    "liquid-crystal",
+    "nematic",
+    "defects",
+    "iridescent",
+    "procedural",
+    "audio",
+    "music",
+    "reactive",
+    "scientific"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "animated"
+  ],
+  "params": [
+    {
+      "id": "defectDensity",
+      "name": "Defect Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "mobility",
+      "name": "Defect Mobility",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "perturbation",
+      "name": "Perturbation",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "colorSaturation",
+      "name": "Color Saturation",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

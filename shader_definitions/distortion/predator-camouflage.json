@@ -1,0 +1,63 @@
+{
+  "id": "predator-camouflage",
+  "name": "Predator Camouflage",
+  "category": "distortion",
+  "url": "shaders/predator-camouflage.wgsl",
+  "description": "Upgraded active camouflage with chromatophore pigment-sac simulation, predator thermal vision (IR false-color), heat-map distortion, HDR bloom on heat signatures, ACES tone mapping, and chromatic separation on camouflage edges. Bass drives chromatophore oscillation, mouse acts as prey heat source, depth controls thermal haze.",
+  "params": [
+    {
+      "id": "radius",
+      "name": "Cloak Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "param": "zoom_params.x"
+    },
+    {
+      "id": "distortion",
+      "name": "Refraction Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "param": "zoom_params.y"
+    },
+    {
+      "id": "shimmer",
+      "name": "Chromatophore Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "param": "zoom_params.z"
+    },
+    {
+      "id": "noise_scale",
+      "name": "Noise Scale",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "param": "zoom_params.w"
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "semantic-alpha",
+    "chromatic-aberration",
+    "thermal-vision"
+  ],
+  "tags": [
+    "cloak",
+    "predator",
+    "camouflage",
+    "chromatic",
+    "audio-reactive",
+    "thermal",
+    "chromatophore",
+    "IR"
+  ]
+}

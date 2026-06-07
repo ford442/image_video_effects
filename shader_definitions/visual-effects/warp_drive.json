@@ -1,0 +1,53 @@
+{
+  "id": "warp-drive",
+  "name": "Warp Drive",
+  "category": "visual-effects",
+  "url": "shaders/warp_drive.wgsl",
+  "description": "Alcubierre warp metric approximation with radial compression ahead and expansion behind. Star streaks with relativistic Doppler shift, HDR bloom on contracted stars, chromatic aberration on high-velocity regions, and ACES tone mapping.",
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba",
+    "radial-blur",
+    "mouse-driven"
+  ],
+  "tags": [
+    "warp",
+    "streak",
+    "space",
+    "chromatic",
+    "audio-reactive",
+    "doppler",
+    "relativistic",
+    "alcubierre"
+  ],
+  "params": [
+    {
+      "id": "warp_speed",
+      "name": "Warp Speed",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "prism_split",
+      "name": "Prism Split",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "core_glow",
+      "name": "Core Glow",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "blur_quality",
+      "name": "Blur Quality",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "id": "gen-trails",
+  "name": "Boids Flocking",
+  "url": "shaders/gen_trails.wgsl",
+  "description": "Audio-reactive Reynolds boids flocking with bass-driven panic, mids cohesion, treble flash bursts, mouse attraction, motion-blur streaks, and pheromone trails.",
+  "features": [
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "particles",
+    "audio-reactive",
+    "temporal",
+    "flocking"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "flocking",
+    "particles",
+    "boids",
+    "trails",
+    "audio-reactive",
+    "vj"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Separation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Alignment",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Cohesion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Max Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

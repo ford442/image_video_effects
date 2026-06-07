@@ -1,0 +1,68 @@
+{
+  "id": "hyperbolic-crystal-symbiosis",
+  "name": "Hyperbolic Crystal Symbiosis",
+  "url": "shaders/hyperbolic-crystal-symbiosis.wgsl",
+  "category": "generative",
+  "description": "Voronoi crystal facets on a true Poincaré disk with geodesic distance and Gray-Scott reaction-diffusion. Iridescent thin-film coloring on facet edges with HDR bloom at triple junctions. Bass drives crystal growth, mids morph between hyperbolic/parabolic/Euclidean curvature, treble adds sparkle. Mouse warps the disk center.",
+  "features": [
+    "poincare-disk",
+    "geodesic-voronoi",
+    "gray-scott",
+    "iridescent-facets",
+    "audio-driven",
+    "mouse-warp",
+    "temporal"
+  ],
+  "tags": [
+    "hyperbolic",
+    "crystalline",
+    "symbiosis",
+    "geometric",
+    "audio-reactive",
+    "abstract",
+    "iridescent",
+    "reaction-diffusion"
+  ],
+  "params": [
+    {
+      "id": "curvature",
+      "name": "Base Curvature",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Strength of the hyperbolic distortion"
+    },
+    {
+      "id": "competition",
+      "name": "Species Tension",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "How strongly the two crystal types compete"
+    },
+    {
+      "id": "symbiosis",
+      "name": "Symbiotic Tendency",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Encourages beautiful blending between species"
+    },
+    {
+      "id": "mousePower",
+      "name": "Mouse Curvature Power",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How strongly the mouse warps local geometry"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "id": "ripple-bloom",
+  "name": "Ripple Bloom",
+  "url": "shaders/ripple-bloom.wgsl",
+  "features": ["mouse-driven", "temporal"],
+  "tags": ["ripple", "bloom", "hdr", "distortion", "glow", "hybrid"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Ripple Freq",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Ripple Amp",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Bloom Threshold",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Bloom Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

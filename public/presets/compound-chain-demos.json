@@ -1,0 +1,30 @@
+[
+  {
+    "id": "demo-material-decay-phosphor-bloom",
+    "name": "Decay Phosphor Bloom",
+    "description": "Synthetic material decay overlaid with motion-history phosphor and spectral bloom.",
+    "shaderIds": [
+      "sim-decay-system-rgba",
+      "temporal-phosphor-burn-motion-adaptive",
+      "cross-spec-alpha-spectral-bloom"
+    ]
+  },
+  {
+    "id": "demo-pyramid-rgb-ghost",
+    "name": "Pyramid Spectral Trails",
+    "description": "High-frequency Laplacian band processing with temporal RGB ghost trails.",
+    "shaderIds": [
+      "pyramid-bandprocess-pass2",
+      "temporal-rgb-ghost"
+    ]
+  },
+  {
+    "id": "demo-slime-phosphor-tendrils",
+    "name": "Slime Phosphor Tendrils",
+    "description": "Video-fed slime mold tendrils amplified with phosphor afterimages.",
+    "shaderIds": [
+      "slime-mold-on-video",
+      "temporal-phosphor-burn"
+    ]
+  }
+]

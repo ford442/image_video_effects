@@ -1,0 +1,53 @@
+{
+  "id": "infinite-zoom-lens",
+  "name": "Infinite Zoom Lens",
+  "category": "distortion",
+  "url": "shaders/infinite-zoom-lens.wgsl",
+  "description": "Droste effect with recursive self-similar zoom via logarithmic spiral Möbius transformation. Escher-like infinite recursion with chromatic aberration on spiral arms, HDR bloom on focal points, film grain, and temporal feedback.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal"
+  ],
+  "tags": [
+    "zoom",
+    "tunnel",
+    "temporal",
+    "spiral",
+    "audio-reactive",
+    "droste",
+    "escher",
+    "recursive"
+  ],
+  "params": [
+    {
+      "id": "zoom_strength",
+      "name": "Zoom Strength",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "lens_radius",
+      "name": "Lens Radius",
+      "default": 0.35,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "feedback_persistence",
+      "name": "Feedback Persistence",
+      "default": 0.65,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "twist",
+      "name": "Twist",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "id": "electric-eel-storm",
+  "name": "Electric Eel Storm",
+  "category": "generative",
+  "url": "shaders/electric-eel-storm.wgsl",
+  "description": "Electric eels swimming through a conductive storm cloud, discharging arcs between them. Bass drives eel body pulses, mids create storm cloud turbulence, treble triggers lightning arc flashes. Mouse attracts the eel school.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "eel-count",
+      "name": "Eel Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "storm-intensity",
+      "name": "Storm Intensity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "pulse-speed",
+      "name": "Pulse Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "lightning-freq",
+      "name": "Lightning Frequency",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "electric",
+    "storm",
+    "lightning",
+    "eel",
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "abstract",
+    "bioluminescent"
+  ]
+}

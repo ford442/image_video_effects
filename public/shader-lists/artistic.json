@@ -1,0 +1,5270 @@
+[
+  {
+    "id": "alpha-paint-thickness",
+    "name": "Alpha Paint Thickness",
+    "url": "shaders/alpha-paint-thickness.wgsl",
+    "description": "Impasto paint thickness simulation where alpha tracks paint depth. Thin paint creates transparent washes, medium shows full color, thick paint catches specular highlights and casts micro-shadows. Mouse paints with color-cycling brush; ripples create splatters.",
+    "tags": [
+      "paint",
+      "impasto",
+      "artistic",
+      "interactive",
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine",
+      "texture"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "brushSize",
+        "name": "Brush Size",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "paintSaturation",
+        "name": "Paint Saturation",
+        "type": "float",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "specularPower",
+        "name": "Specular Power",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dryingRate",
+        "name": "Drying Rate",
+        "type": "float",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "alpha-watercolor-wetness",
+    "name": "Alpha Watercolor Wetness",
+    "url": "shaders/alpha-watercolor-wetness.wgsl",
+    "description": "Watercolor simulation with wetness map in alpha. Pigment flows with water gradients via capillary action. Wet areas allow bleeding; dry areas lock pigment. Mouse drops colored water; ripples add water drops. Authentic dark-edge effects at wet boundaries.",
+    "tags": [
+      "watercolor",
+      "paint",
+      "artistic",
+      "interactive",
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine",
+      "wetness"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine"
+    ],
+    "params": [
+      {
+        "id": "dryRate",
+        "name": "Drying Rate",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "pigmentDeposit",
+        "name": "Pigment Deposit",
+        "type": "float",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "waterCapacity",
+        "name": "Water Capacity",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flowStrength",
+        "name": "Flow Strength",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "ambient-liquid",
+    "name": "Ambient Liquid",
+    "url": "shaders/ambient-liquid.wgsl",
+    "description": "Gentle ambient liquid motion effects.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ]
+  },
+  {
+    "id": "anisotropic-kuwahara",
+    "name": "Van Gogh Flow",
+    "url": "shaders/anisotropic-kuwahara.wgsl",
+    "description": "Anisotropic Kuwahara filter creating painterly Van Gogh-style brushstroke effects.",
+    "params": [
+      {
+        "id": "windowSize",
+        "name": "Brush Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "anisotropy",
+        "name": "Flow Anisotropy",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "sharpness",
+        "name": "Edge Sharpness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "flowStrength",
+        "name": "Flow Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "interactive",
+      "painterly",
+      "mouse-driven"
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  {
+    "id": "artistic_painterly_oil",
+    "name": "Oil Painting",
+    "url": "shaders/artistic_painterly_oil.wgsl",
+    "description": "Oil painting effect with anisotropic Kuwahara filter, impasto texture, wet paint specular highlights, and canvas texture",
+    "tags": [
+      "oil",
+      "painting",
+      "artistic",
+      "impasto",
+      "kuwahara",
+      "canvas"
+    ],
+    "features": [
+      "anisotropic",
+      "edge-aware",
+      "texture-synthesis"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Wetness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Color Levels",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Canvas Texture",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.5
+  },
+  {
+    "id": "astral-kaleidoscope-gemini",
+    "name": "Astral Kaleidoscope Gemini",
+    "url": "shaders/astral-kaleidoscope-gemini.wgsl",
+    "description": "An enhanced cosmic kaleidoscope with astral color schemes, featuring dynamic, time-driven evolution and intricate, mouse-driven fractal details.",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "astral-kaleidoscope-grokcf1",
+    "name": "Astral Kaleidoscope grokcf1",
+    "url": "shaders/astral-kaleidoscope-grokcf1.wgsl",
+    "description": "An enhanced cosmic kaleidoscope with astral color schemes, featuring dynamic, time-driven evolution and intricate, mouse-driven fractal details.",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "astral-kaleidoscope",
+    "name": "Astral Kaleidoscope",
+    "url": "shaders/astral-kaleidoscope.wgsl",
+    "description": "Cosmic kaleidoscope with astral color schemes.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "astral-veins",
+    "name": "Astral Veins",
+    "url": "shaders/astral-veins.wgsl",
+    "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour‑cycle. Click to seed new veins.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scale",
+        "name": "Noise Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "intensity",
+        "name": "Glow Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "hueShift",
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "aurora-rift-2",
+    "name": "Aurora Rift V2",
+    "url": "shaders/aurora-rift-2.wgsl",
+    "description": "Enhanced aurora effects with improved color gradients.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "aurora-rift-gemini",
+    "name": "Aurora Rift Gemini",
+    "url": "shaders/aurora-rift-gemini.wgsl",
+    "description": "An enhanced simulation of aurora borealis, with dynamic, time-driven color shifts, deeper atmospheric rifts, and shimmering, mouse-driven particle effects.",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "aurora-rift",
+    "name": "Aurora Rift",
+    "url": "shaders/aurora-rift.wgsl",
+    "description": "Aurora borealis-inspired lighting effects with atmospheric rifts.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "bioluminescent",
+    "name": "Bioluminescent Growth",
+    "url": "shaders/bioluminescent.wgsl",
+    "description": "Living, organic growth patterns that spread across surfaces like glowing fungus. Click to plant spores, watch them grow over time with depth-aware branching.",
+    "params": [
+      {
+        "id": "spread",
+        "name": "Spread Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Branch Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glow",
+        "name": "Glow Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "spores",
+        "name": "Spore Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "multi-mode",
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "boids",
+    "name": "Boids Reveal",
+    "url": "shaders/boids.wgsl",
+    "description": "Flocking boids with reveal masking and simple attraction mechanics.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "chromatic-crawler",
+    "name": "Chromatic Crawler",
+    "url": "shaders/chromatic-crawler.wgsl",
+    "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi-based patterns, temporal feedback trails, and alpha translucency blending.",
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "chromatic-focus",
+    "name": "Chromatic Focus",
+    "category": "artistic",
+    "url": "shaders/chromatic-focus.wgsl",
+    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into colorful chromatic bokeh.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "focus",
+      "bokeh",
+      "spectral",
+      "chromatic",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "aperture_size",
+        "name": "Aperture Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "focus_radius",
+        "name": "Focus Radius",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "spectral_spread",
+        "name": "Spectral Spread",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "animation_speed",
+        "name": "Animation Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "chromatic-folds-2",
+    "name": "Chromatic Folds V2",
+    "url": "shaders/chromatic-folds-2.wgsl",
+    "description": "Enhanced geometric color folding with improved warping.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "chromatic-folds-gemini",
+    "name": "Chromatic Folds Gemini",
+    "url": "shaders/chromatic-folds-gemini.wgsl",
+    "description": "An advanced geometric color folding and warping effect with dynamic, time-driven animation, fractal layering, and interactive, mouse-driven vortex manipulation.",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "chromatic-folds",
+    "name": "Chromatic Folds",
+    "url": "shaders/chromatic-folds.wgsl",
+    "description": "Geometric color folding and warping effects.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "chromatic-infection",
+    "name": "Chromatic Infection",
+    "url": "shaders/chromatic-infection.wgsl",
+    "description": "Strong colours spread like a living organism, infecting neutral regions with organic, pulsing tendrils. Watch vibrant hues consume the dull!",
+    "params": [
+      {
+        "id": "spreadSpeed",
+        "name": "Spread Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "intensity",
+        "name": "Infection Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "satThresh",
+        "name": "Saturation Threshold",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "tendrilScale",
+        "name": "Tendril Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "colour-masking",
+      "organic-growth",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "chromatic-manifold-2",
+    "name": "Chromatic Manifold V2",
+    "url": "shaders/chromatic-manifold-2.wgsl",
+    "description": "Enhanced 4D topological color manifold.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "chromatic-manifold",
+    "name": "Chromatic Manifold",
+    "url": "shaders/chromatic-manifold.wgsl",
+    "description": "4D topological color manifold with HDR tears, temporal persistence, and depth-driven curvature.",
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "color_boost",
+        "name": "Color Boost",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Saturation and color intensity boost"
+      },
+      {
+        "id": "warpStrength",
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of spatial warp"
+      },
+      {
+        "id": "tearThreshold",
+        "name": "Tear Threshold",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Threshold for HDR tear artifacts"
+      },
+      {
+        "id": "curvature",
+        "name": "Curvature Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Depth-driven curvature amount"
+      }
+    ]
+  },
+  {
+    "id": "chromatic-phase-inversion",
+    "name": "Chromatic Phase Inversion",
+    "url": "shaders/chromatic-phase-inversion.wgsl",
+    "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image in surreal independent waves. Audio reactivity pulses phase speed and ghost offset with the beat.",
+    "tags": [
+      "chromatic",
+      "phase",
+      "inversion",
+      "ghost",
+      "temporal",
+      "color",
+      "surreal",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "author": "AI",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Phase Speed",
+        "min": 0,
+        "max": 1,
+        "default": 0.35,
+        "step": 0.01,
+        "description": "Speed of the temporal phase oscillation per channel."
+      },
+      {
+        "id": "param2",
+        "name": "Ghost Offset",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Spatial displacement of each color ghost from the source."
+      },
+      {
+        "id": "param3",
+        "name": "Inversion Depth",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "How much depth accumulates extra phase (near objects phase faster)."
+      },
+      {
+        "id": "param4",
+        "name": "Spatial Coherence",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Mix of spatial noise field into the phase (low=global, high=local)."
+      }
+    ]
+  },
+  {
+    "id": "chromatographic-separation",
+    "name": "Chromatographic Separation",
+    "url": "shaders/chromatographic-separation.wgsl",
+    "description": "RGB channel fluid simulation with separate viscosities, wind forces, and inter-layer drag.",
+    "params": [
+      {
+        "id": "viscosityR",
+        "name": "Red Viscosity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "viscosityG",
+        "name": "Green Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "viscosityB",
+        "name": "Blue Viscosity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "temperature",
+        "name": "Temperature",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "fluid-dynamics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "cosmic-flow",
+    "name": "Cosmic Flow Pro",
+    "url": "shaders/cosmic-flow.wgsl",
+    "description": "Depth-aware ethereal energy field with domain warping, temporal trails, chromatic aberration, and multiple color modes ranges.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "scale",
+        "name": "Pattern Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "intensity",
+        "name": "Glow Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Phase",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "chromatic-aberration",
+      "multi-mode",
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "distortion_gravitational_lens",
+    "name": "Gravitational Lens",
+    "url": "shaders/distortion_gravitational_lens.wgsl",
+    "description": "Einstein ring gravitational lensing with Schwarzschild metric deflection, accretion disk blackbody radiation, and chromatic aberration",
+    "tags": [
+      "gravity",
+      "lens",
+      "einstein",
+      "relativity",
+      "space",
+      "accretion"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "relativistic",
+      "hdr"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Lens Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Mass Count",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Disk Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Chromatic Aberration",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "dla-crystals",
+    "name": "DLA Crystal Growth",
+    "url": "shaders/dla-crystals.wgsl",
+    "description": "Diffusion-limited aggregation creating fractal crystal structures that grow from click points.",
+    "params": [
+      {
+        "id": "walkerSpeed",
+        "name": "Walker Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "attractStrength",
+        "name": "Attraction Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "stickiness",
+        "name": "Stickiness",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "branchAngle",
+        "name": "Branch Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "fractal",
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "double-exposure-zoom",
+    "name": "Double Exposure Zoom",
+    "url": "shaders/double-exposure-zoom.wgsl",
+    "description": "Multi-scale double exposure with luminance-based matte extraction, film stock color response curves, light leak artifacts, ACES tone mapping, and chromatic aberration on zoom edges. Bass drives zoom speed, mouse controls secondary exposure position with depth parallax.",
+    "params": [
+      {
+        "id": "rotation",
+        "name": "Rotation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom Level",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edgeFade",
+        "name": "Edge Fade",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "audioReact",
+        "name": "Audio Reactivity",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive",
+      "film",
+      "double-exposure"
+    ]
+  },
+  {
+    "id": "echo-trace",
+    "name": "Temporal Velocity Echo",
+    "url": "shaders/echo-trace.wgsl",
+    "description": "Predictive velocity echo field combining structure-tensor advection, smoothed mouse-motion extrapolation, deformed brush trails, curl-noise flow, and temporal feedback displacement.",
+    "params": [
+      {
+        "id": "prediction_horizon",
+        "name": "Prediction Horizon",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "velocity_smoothing",
+        "name": "Velocity Smoothing",
+        "default": 0.55,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "trail_deformation",
+        "name": "Trail Deformation",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "velocity_threshold",
+        "name": "Velocity Threshold",
+        "default": 0.15,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal-persistence",
+      "audio-reactive",
+      "structure-tensor",
+      "flow-advection",
+      "multi-octave-echo",
+      "velocity-sensing",
+      "predictive-echo",
+      "feedback-displacement",
+      "curl-noise"
+    ],
+    "tags": [
+      "stylized",
+      "artistic",
+      "echo",
+      "flow",
+      "anisotropic",
+      "audio-reactive",
+      "velocity",
+      "motion-blur"
+    ]
+  },
+  {
+    "id": "encaustic-wax",
+    "name": "Encaustic Wax",
+    "category": "artistic",
+    "url": "shaders/encaustic-wax.wgsl",
+    "description": "Thermal wax flow simulation with layered strata, subsurface scattering, metallic pigment sparkle, HDR specular ridges, ACES tone mapping, and canvas grain. Bass drives heat gun intensity; mouse applies local heat; depth controls wax thickness.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "painterly",
+      "thermal-flow"
+    ],
+    "tags": [
+      "wax",
+      "encaustic",
+      "painting",
+      "glossy",
+      "audio-reactive",
+      "strata",
+      "metallic",
+      "canvas"
+    ],
+    "params": [
+      {
+        "id": "brush_scale",
+        "name": "Brush Scale",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "melt_intensity",
+        "name": "Melt Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "pigment_deposit",
+        "name": "Pigment Deposit",
+        "default": 0.55,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "relief",
+        "name": "Relief",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "engraving-stipple",
+    "name": "Engraving Stipple",
+    "category": "artistic",
+    "url": "shaders/engraving-stipple.wgsl",
+    "description": "Upgraded copperplate engraving with gradient-aware contour hatching, burr effects at crossings, ink pooling, paper texture, and chromatic edge darkening. Bass drives tool pressure, mouse acts as burin, depth controls line width.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "line-art",
+      "depth-aware"
+    ],
+    "tags": [
+      "engraving",
+      "stipple",
+      "etching",
+      "line-art",
+      "audio-reactive",
+      "cross-hatch",
+      "copperplate"
+    ],
+    "params": [
+      {
+        "id": "line_density",
+        "name": "Line Density",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "stipple_scale",
+        "name": "Stipple Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "light_rotation",
+        "name": "Light Rotation",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "fabric-step",
+    "name": "Fabric of Reality",
+    "url": "shaders/fabric-step.wgsl",
+    "description": "Mass-spring cloth simulation with Verlet integration, constraint solving, and interactive tearing mechanics.",
+    "params": [
+      {
+        "id": "stiffness",
+        "name": "Stiffness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "tearThreshold",
+        "name": "Tear Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "gravity",
+        "name": "Gravity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "physics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "film-cross-process",
+    "name": "Film Cross-Process",
+    "url": "shaders/film-cross-process.wgsl",
+    "description": "Simulates E6 slide film developed in C41 negative chemistry. Each RGB channel is routed through a different S-curve (lifted shadows, crushed mids, blown highlights), the colour gamut is skewed so greens shift cyan and reds shift orange-yellow, film grain is layered in, and the image is pushed toward the iconic high-contrast vivid-yet-desaturated cross-processed aesthetic. Bass boosts contrast punch; mids intensify the colour skew; treble raises grain texture.",
+    "tags": [
+      "film",
+      "cross-process",
+      "color-grade",
+      "darkroom",
+      "vintage",
+      "grain",
+      "audio-reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "contrast",
+        "name": "Contrast Punch",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "colorSkew",
+        "name": "Colour Skew",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "grain",
+        "name": "Film Grain",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "vignette",
+        "name": "Vignette",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "coordinate": 891
+  },
+  {
+    "id": "frosty-window",
+    "name": "Frosty Window",
+    "url": "shaders/frosty-window.wgsl",
+    "description": "Animated frost crystal patterns on glass with audio-reactive growth and mouse-driven melting.",
+    "params": [
+      {
+        "id": "density",
+        "name": "Frost Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "crystal_size",
+        "name": "Crystal Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "blur",
+        "name": "Blur Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "sparkle",
+        "name": "Sparkle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "upgraded-rgba",
+      "depth-aware",
+      "animated",
+      "crystalline",
+      "interactive",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "tags": [
+      "frost",
+      "ice",
+      "glass",
+      "winter",
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "galaxy-sim",
+    "name": "Galaxy Simulation",
+    "url": "shaders/galaxy.wgsl",
+    "description": "Audio-reactive spiral galaxy with breathing arms, diffraction-spike stars, mouse-parallax center, and silence-driven reverse flow.",
+    "features": [
+      "depth-aware",
+      "upgraded-rgba",
+      "animated",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "tags": [
+      "procedural",
+      "generative",
+      "galaxy",
+      "space",
+      "stars",
+      "spiral",
+      "audio-reactive",
+      "vj"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Opacity",
+        "default": 0.85,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Arm Count",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Rotation Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Arm Spread",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-chrono-erosion-feedback-melting",
+    "name": "Chrono Erosion",
+    "url": "shaders/gen-chrono-erosion-feedback-melting.wgsl",
+    "description": "Datamosh-like flow effect where video melts along a curl-noise vector field with feedback decay and audio-driven turbulence.",
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "mouse-driven",
+      "feedback"
+    ],
+    "tags": [
+      "erosion",
+      "melt",
+      "datamosh",
+      "feedback",
+      "curl-noise",
+      "audio",
+      "artistic"
+    ],
+    "params": [
+      {
+        "id": "decay",
+        "name": "Trail Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flowIntensity",
+        "name": "Flow Intensity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "feedbackMix",
+        "name": "Feedback Mix",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-glass-mosaic-liquid-refraction",
+    "name": "Glass Mosaic Refraction",
+    "url": "/shaders/gen-glass-mosaic-liquid-refraction.wgsl",
+    "description": "Stained-glass polygon mosaic with pseudo-depth height-field refraction, audio-reactive ripples, and depth output.",
+    "tags": [
+      "glass",
+      "mosaic",
+      "refraction",
+      "stained-glass",
+      "audio-reactive",
+      "ornate",
+      "caustics"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "facets",
+        "name": "Facet Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bevel",
+        "name": "Bevel Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "refraction",
+        "name": "Refraction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ripple",
+        "name": "Ripple Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "gen-sonic-lava-flow",
+    "name": "Sonic Lava Flow",
+    "url": "/shaders/gen-sonic-lava-flow.wgsl",
+    "description": "Navier-Stokes-style fluid solver with decayed feedback creating a molten lava overlay, audio-reactive heat and chromatic shimmer.",
+    "tags": [
+      "lava",
+      "fluid",
+      "fire",
+      "audio-reactive",
+      "molten",
+      "heat",
+      "temporal",
+      "organic"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "decay",
+        "name": "Decay",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "heatGlow",
+        "name": "Heat Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "glass_refraction_alpha",
+    "name": "Glass Refraction RGBA",
+    "url": "shaders/glass_refraction_alpha.wgsl",
+    "description": "Ray-marched glass blobs with Snell's law refraction, Fresnel reflectivity, chromatic dispersion. Alpha = transparency based on thickness and angle.",
+    "tags": [
+      "interactive",
+      "cursor",
+      "glass",
+      "refraction",
+      "dispersion",
+      "fresnel",
+      "raymarch",
+      "transparent",
+      "alpha",
+      "physical-transmittance"
+    ],
+    "features": [
+      "mouse-driven",
+      "rgba",
+      "ray-marching",
+      "refraction",
+      "fresnel",
+      "chromatic",
+      "glass",
+      "advanced-alpha"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Transparency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Thickness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Roughness",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.8
+  },
+  {
+    "id": "green-tracer",
+    "name": "Green Tracer World",
+    "url": "shaders/green-tracer.wgsl",
+    "description": "Surreal green video effect with persistent motion trails, edge glow, and film grain. Perfect for toxic/night‑vision aesthetics.",
+    "params": [
+      {
+        "id": "trailLen",
+        "name": "Trail Length",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "glowInt",
+        "name": "Glow Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "greenTint",
+        "name": "Green Tint",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "noiseAmt",
+        "name": "Film Grain",
+        "default": 0.1,
+        "min": 0,
+        "max": 0.5
+      }
+    ],
+    "features": [
+      "temporal‑persistence",
+      "edge‑glow",
+      "film‑grain",
+      "depth‑aware",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "halftone-reveal",
+    "name": "Halftone Reveal",
+    "category": "artistic",
+    "url": "shaders/halftone-reveal.wgsl",
+    "description": "CMYK halftone reveal with stipple patterns, per-channel rotated screening, dot-gain simulation, moiré overlap, paper texture, and depth-controlled perspective dot sizing.",
+    "params": [
+      {
+        "name": "Dot Size",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "id": "dot_size"
+      },
+      {
+        "name": "Angle",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "angle"
+      },
+      {
+        "name": "Reveal Size",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "id": "reveal_size"
+      },
+      {
+        "name": "Magnify",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "id": "magnify"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "halftone",
+      "print",
+      "reveal",
+      "audio-reactive",
+      "cmyk",
+      "stipple"
+    ]
+  },
+  {
+    "id": "holographic-contour",
+    "name": "Holographic Contour",
+    "url": "shaders/holographic-contour.wgsl",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "threshold",
+        "name": "Edge Threshold",
+        "default": 0.1,
+        "min": 0.01,
+        "max": 0.5
+      },
+      {
+        "id": "glow_strength",
+        "name": "Glow Strength",
+        "default": 2,
+        "min": 0,
+        "max": 5
+      },
+      {
+        "id": "shift_amount",
+        "name": "Hologram Shift",
+        "default": 0.05,
+        "min": 0,
+        "max": 0.2
+      },
+      {
+        "id": "dim_bg",
+        "name": "Darken Background",
+        "default": 0.8,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "stylized",
+      "artistic",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "ink-diffusion",
+    "name": "Ink Diffusion",
+    "category": "artistic",
+    "url": "shaders/ink-diffusion.wgsl",
+    "description": "Navier-Stokes advection-diffusion ink simulation in water with vorticity confinement and surface tension at boundaries. Sumi-e ink wash with turbulent eddies, paper fiber texture, chromatic edge darkening, ACES tone mapping, and HDR specular on wet regions.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal-ink-spread",
+      "organic-growth",
+      "navier-stokes",
+      "vorticity-confinement",
+      "surface-tension"
+    ],
+    "params": [
+      {
+        "id": "spread",
+        "name": "Spread Rate",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "decay",
+        "name": "Ink Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "density",
+        "name": "Ink Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "ink",
+      "wash",
+      "painting",
+      "organic",
+      "temporal",
+      "mouse-driven",
+      "audio-reactive",
+      "artistic",
+      "navier-stokes",
+      "vorticity",
+      "surface-tension",
+      "sumi-e",
+      "hdr-specular",
+      "aces-tone-mapping"
+    ]
+  },
+  {
+    "id": "ink_dispersion_alpha",
+    "name": "Ink Dispersion RGBA",
+    "url": "shaders/ink_dispersion_alpha.wgsl",
+    "description": "Ink in water simulation with Navier-Stokes velocity field. Alpha = ink density/concentration. Multiple colors, chemical reactions.",
+    "tags": [
+      "ink",
+      "fluid",
+      "dispersion",
+      "chemical",
+      "curl",
+      "water"
+    ],
+    "features": [
+      "rgba",
+      "fluid-sim",
+      "curl-noise",
+      "advection",
+      "alpha-density",
+      "mouse-spawn"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Diffusion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Reaction",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "ion-stream",
+    "name": "Ion Stream",
+    "url": "shaders/ion-stream.wgsl",
+    "features": [
+      "upgraded-rgba",
+      "depth-aware",
+      "curl-turbulence",
+      "magnetic-bending",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "description": "Particle trail advection with curl turbulence and magnetic bending. FBM-driven curl noise warps the flow field; mouse creates magnetic deflection. Ion glow streams pulse with treble, bass deepens the bend.",
+    "params": [
+      {
+        "name": "Stream Speed",
+        "id": "speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Curl Strength",
+        "id": "curlStrength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Stream Density",
+        "id": "streamDensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "name": "Ion Color",
+        "id": "colorIntensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "ion",
+      "curl",
+      "turbulence",
+      "magnetic",
+      "particles"
+    ]
+  },
+  {
+    "id": "iridescent-oil-slick",
+    "name": "Iridescent Oil Slick",
+    "url": "shaders/iridescent-oil-slick.wgsl",
+    "description": "Mesmerizing thin-film interference simulation that recreates the rainbow patterns of oil on water or soap bubbles. Features flowing organic motion, hexagonal bubble cells, and mouse-reactive disturbances.",
+    "tags": [
+      "iridescent",
+      "oil",
+      "soap-bubble",
+      "interference",
+      "rainbow",
+      "organic",
+      "flowing",
+      "kaleidoscope",
+      "artistic",
+      "stylized"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "Kimi",
+    "params": [
+      {
+        "id": "filmScale",
+        "name": "Film Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorShift",
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "iso-hills",
+    "name": "Iso Hills v2",
+    "category": "artistic",
+    "url": "shaders/iso-hills.wgsl",
+    "description": "Topographic terrain rendering with fBm-generated hills, hydraulic erosion, contour hachures, and depth-based atmospheric haze. Mouse drops carve water channels; bass triggers rainfall.",
+    "params": [
+      {
+        "name": "Contour Steps",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "id": "steps"
+      },
+      {
+        "name": "Height Scale",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "height_scale"
+      },
+      {
+        "name": "Smoothness",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0,
+        "id": "smoothness"
+      },
+      {
+        "name": "Haze Strength",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "id": "shadow_strength"
+      }
+    ],
+    "features": [
+      "artistic",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "stylized",
+      "terrain",
+      "contours",
+      "topographic",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware"
+    ]
+  },
+  {
+    "id": "lenia",
+    "name": "Lenia Cellular Automata",
+    "url": "shaders/lenia.wgsl",
+    "description": "Continuous cellular automata with audio-driven growth rate, chromatic species colors (R/G/B evolve at different thresholds), temporal accumulation, mouse life injection, and neighborhood kernel expansion.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "chromatic",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "simulation",
+      "physics",
+      "cellular-automata",
+      "lenia",
+      "audio-reactive",
+      "temporal",
+      "chromatic"
+    ],
+    "params": [
+      {
+        "id": "radius",
+        "name": "Neighborhood Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "growthRate",
+        "name": "Growth Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "accumulation",
+        "name": "Accumulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "threshold",
+        "name": "Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "lidar",
+    "name": "LiDAR Scanner Pro",
+    "url": "shaders/lidar.wgsl",
+    "description": "Multi-mode LiDAR with point clouds, persistence trails, and 3D edge detection. Modes: Linear/Radial/Spiral scan.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Scan Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "width",
+        "name": "Beam Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "contours",
+        "name": "Contour Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edges",
+        "name": "Edge Sensitivity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "multi-mode",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "liquid-prism-cascade",
+    "name": "Liquid Prism Cascade",
+    "url": "shaders/liquid-prism-cascade.wgsl",
+    "description": "Colors separate along curved planes like light through prisms, creating a layered 3-D depth illusion where R, G, and B channels drift independently through warped color-space.",
+    "tags": [
+      "chromatic",
+      "prism",
+      "dispersion",
+      "depth",
+      "color",
+      "warp",
+      "artistic"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "AI",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Dispersion Strength",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "How far each color channel drifts from the source."
+      },
+      {
+        "id": "param2",
+        "name": "Depth Curvature",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "How strongly depth data amplifies the prism bending."
+      },
+      {
+        "id": "param3",
+        "name": "Prism Twist",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "step": 0.01,
+        "description": "Rotational twist applied to each channel's dispersion vector."
+      },
+      {
+        "id": "param4",
+        "name": "Depth Weight",
+        "min": 0,
+        "max": 1,
+        "default": 0.6,
+        "step": 0.01,
+        "description": "Blend weight between luminance gradient and depth curvature."
+      }
+    ]
+  },
+  {
+    "id": "luminance-wind",
+    "name": "Luminance Wind",
+    "category": "artistic",
+    "url": "shaders/luminance-wind.wgsl",
+    "description": "Pixels are blown by a curl-noise wind field. Lighter pixels travel further. Chromatic drift separates R/B channels. Audio gusts boost wind strength; depth creates parallax layering.",
+    "params": [
+      {
+        "name": "Wind Speed",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "id": "wind_speed"
+      },
+      {
+        "name": "Trail Decay",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.8,
+        "id": "trail_decay"
+      },
+      {
+        "name": "Luma Threshold",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.1,
+        "id": "luma_threshold"
+      },
+      {
+        "name": "Turbulence",
+        "type": "f32",
+        "min": 0,
+        "max": 1,
+        "default": 0.2,
+        "id": "turbulence"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "curl-noise",
+      "chromatic-drift"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "wind",
+      "curl-noise",
+      "audio-reactive",
+      "depth-aware",
+      "temporal",
+      "chromatic"
+    ]
+  },
+  {
+    "id": "magnetic-dipole",
+    "name": "Magnetic Dipole Field",
+    "url": "shaders/magnetic-dipole.wgsl",
+    "description": "Magnetic field visualization with iron filing alignment and dipole physics.",
+    "params": [
+      {
+        "id": "chargeStrength",
+        "name": "Charge Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "alignmentInertia",
+        "name": "Alignment Inertia",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "spriteSize",
+        "name": "Filing Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fieldDensity",
+        "name": "Field Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "physics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "melting-oil",
+    "name": "Melting Oil",
+    "url": "shaders/melting-oil.wgsl",
+    "description": "Sobel gradient-driven oil-paint flow with viscosity and hue shifts.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ]
+  },
+  {
+    "id": "mirror-dimension",
+    "name": "Mirror Dimension",
+    "url": "shaders/mirror-dimension.wgsl",
+    "description": "A rotating kaleidoscope that fractures reality. Mouse moves the center of symmetry.",
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "segments",
+        "name": "Segments",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      },
+      {
+        "id": "rotation-speed",
+        "name": "Spin Speed",
+        "min": 0,
+        "max": 1,
+        "default": 0.6
+      },
+      {
+        "id": "offset",
+        "name": "Shift",
+        "min": 0,
+        "max": 1,
+        "default": 0
+      },
+      {
+        "id": "zoom",
+        "name": "Zoom",
+        "min": 0,
+        "max": 1,
+        "default": 0.5
+      }
+    ],
+    "tags": [
+      "stylized",
+      "artistic"
+    ]
+  },
+  {
+    "id": "mosaic-reveal",
+    "name": "Mosaic Reveal",
+    "url": "shaders/mosaic-reveal.wgsl",
+    "description": "Mosaic reveal with hexagonal/square grid options, flood-fill reveal animation from mouse, edge glow, and audio-reactive pulse.",
+    "features": [
+      "upgraded-rgba",
+      "depth-aware",
+      "mosaic",
+      "interactive-reveal",
+      "mouse-driven",
+      "hex-grid",
+      "flood-fill-reveal",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "cellSize",
+        "name": "Cell Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "revealSpeed",
+        "name": "Reveal Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edgeGlow",
+        "name": "Edge Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "gridType",
+        "name": "Grid Type",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "mosaic",
+      "reveal",
+      "interactive",
+      "audio-reactive"
+    ]
+  },
+  {
+    "id": "mouse-pixel-sort",
+    "name": "Mouse Pixel Sort",
+    "category": "artistic",
+    "url": "shaders/mouse-pixel-sort.wgsl",
+    "description": "Luminance-based pixel sorting controlled by mouse proximity.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "threshold",
+        "name": "Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "length",
+        "name": "Sort Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "direction",
+        "name": "Direction (V/H)",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "mode",
+        "name": "Invert Sort",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "pixel-sort",
+      "streak",
+      "interactive",
+      "audio-reactive"
+    ]
+  },
+  {
+    "id": "multi-turing",
+    "name": "Multiscale Turing Patterns",
+    "url": "shaders/multi-turing.wgsl",
+    "description": "Multiple reaction-diffusion systems at different scales combined for organic pattern generation.",
+    "params": [
+      {
+        "id": "feed1",
+        "name": "Feed Rate 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "kill1",
+        "name": "Kill Rate 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "feed2",
+        "name": "Feed Rate 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "kill2",
+        "name": "Kill Rate 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "temporal-persistence",
+      "interactive",
+      "organic-growth",
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ]
+  },
+  {
+    "id": "navier-stokes-dye",
+    "name": "Navier-Stokes Dye",
+    "url": "shaders/navier-stokes-dye.wgsl",
+    "description": "Velocity advection and dye injection with a pressure-like solve placeholder.",
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ]
+  },
+  {
+    "id": "nebulous-dream",
+    "name": "Nebulous Dream",
+    "url": "shaders/nebulous-dream.wgsl",
+    "description": "Swirling vortex of rainbow candy clouds with fractal noise and flow fields.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "neon-contour-interactive",
+    "name": "Neon Contour",
+    "url": "shaders/neon-contour-interactive.wgsl",
+    "description": "Interactive edge detection with neon glow responsive to mouse proximity.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "params": [
+      {
+        "id": "threshold",
+        "name": "Edge Thresh",
+        "default": 0.1,
+        "min": 0,
+        "max": 0.5
+      },
+      {
+        "id": "glow",
+        "name": "Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "cycle",
+        "name": "Color Cycle",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "pulse",
+        "name": "Pulse Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "stylized",
+      "artistic",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  },
+  {
+    "id": "neon-edge-diffusion",
+    "name": "Neon Edge Diffusion",
+    "url": "shaders/neon-edge-diffusion.wgsl",
+    "description": "Sobel edge detection with neon-diffusion and color bleeding.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Liquid thickness/resistance"
+      },
+      {
+        "id": "turbulence",
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Chaotic flow intensity"
+      },
+      {
+        "id": "ripple_strength",
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Wave distortion amount"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Color manipulation amount"
+      }
+    ]
+  },
+  {
+    "id": "neural-dreamscape",
+    "name": "Neural Dreamscape",
+    "url": "shaders/neural-dreamscape.wgsl",
+    "description": "Neural network-inspired dreamlike visuals.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "neural-resonance",
+    "name": "Neural Resonance",
+    "category": "artistic",
+    "url": "shaders/neural-resonance.wgsl",
+    "description": "A temporal synaptic feedback field bends the source image into chromatic neural currents around the cursor.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal"
+    ],
+    "tags": [
+      "neural",
+      "feedback",
+      "chromatic",
+      "synapse",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "amplification",
+        "name": "Amplification",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "curl_strength",
+        "name": "Curl Strength",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "feedback_mix",
+        "name": "Feedback Mix",
+        "default": 0.55,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "chromatic_drift",
+        "name": "Chromatic Drift",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "parallax_depth_layers",
+    "name": "Parallax Layers RGBA",
+    "url": "shaders/parallax_depth_layers.wgsl",
+    "description": "5 depth layers with parallax displacement. Each layer has independent alpha for occlusion. Atmospheric perspective and depth of field.",
+    "tags": [
+      "parallax",
+      "depth",
+      "layers",
+      "alpha",
+      "perspective",
+      "scrolling"
+    ],
+    "features": [
+      "rgba",
+      "parallax",
+      "depth-layers",
+      "alpha-occlusion",
+      "dof",
+      "atmospheric"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Parallax",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Layer Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Depth of Field",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Fog",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.6
+  },
+  {
+    "id": "particle_dreams_alpha",
+    "name": "Particle Dreams RGBA",
+    "url": "shaders/particle_dreams_alpha.wgsl",
+    "description": "80+ particles with alpha-based lifetime, trail accumulation, birth/death fades. Alpha channel stores particle density for blending.",
+    "tags": [
+      "particles",
+      "alpha",
+      "trails",
+      "dreamy",
+      "generative"
+    ],
+    "features": [
+      "rgba",
+      "alpha-trails",
+      "temporal-feedback",
+      "mouse-attraction",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Particle Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param2",
+        "name": "Trail Persistence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param3",
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "id": "param4",
+        "name": "Chaos",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "target_rating": 4.7
+  },
+  {
+    "id": "physarum-gemini",
+    "name": "Physarum Gemini",
+    "url": "shaders/physarum-gemini.wgsl",
+    "description": "An advanced, agent-based slime mold simulation with emergent, time-driven growth patterns, complex nutrient interaction, and mouse-driven agent spawning.",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "physarum-grokcf1",
+    "name": "Physarum grokcf1",
+    "url": "shaders/physarum-grokcf1.wgsl",
+    "description": "An advanced, agent-based slime mold simulation with emergent, time-driven growth patterns, complex nutrient interaction, and mouse-driven agent spawning.",
+    "features": [
+      "mouse-driven",
+      "time-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "physarum",
+    "name": "Physarum Slime Mold",
+    "url": "shaders/physarum.wgsl",
+    "description": "Agent-based slime mold texture feeder that creates trails and networks.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "plasma",
+    "name": "Plasma Ball",
+    "url": "shaders/plasma.wgsl",
+    "description": "",
+    "tags": [
+      "procedural",
+      "generative",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "poincare-tile",
+    "name": "Hyperbolic Tiling",
+    "url": "shaders/poincare-tile.wgsl",
+    "description": "Poincaré disk hyperbolic geometry with Möbius transformations and animated tilings.",
+    "params": [
+      {
+        "id": "curvature",
+        "name": "Curvature",
+        "default": 0.7,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "symmetry",
+        "name": "Symmetry",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "animSpeed",
+        "name": "Animation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "tileScale",
+        "name": "Tile Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "interactive",
+      "mathematical",
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  {
+    "id": "polka-dot-reveal",
+    "name": "Polka Dot Reveal",
+    "url": "shaders/polka-dot-reveal.wgsl",
+    "description": "Interactive halftone effect with spring-damped mouse follow, attack/release audio envelope driving dot radius and saturation, and temporal feedback trails where alpha encodes trail age and interaction intensity.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "halftone",
+      "audio-reactive",
+      "temporal",
+      "trails"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "porcelain-fracture-glow",
+    "name": "Porcelain Fracture Glow",
+    "url": "shaders/porcelain-fracture-glow.wgsl",
+    "description": "The image is rendered on delicate porcelain that develops fine luminous cracks. The cracks follow image edges and can be drawn with the mouse. Bass makes the golden light pulse and sing through the fractures.",
+    "tags": [
+      "porcelain",
+      "crack",
+      "kintsugi",
+      "light",
+      "artistic",
+      "audio-reactive",
+      "interactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "mouse-driven",
+      "mouse-crack",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "crack",
+        "name": "Crack Amount",
+        "default": 0.65,
+        "min": 0,
+        "max": 1.4,
+        "step": 0.01
+      },
+      {
+        "id": "glow",
+        "name": "Glow Intensity",
+        "default": 0.85,
+        "min": 0,
+        "max": 1.6,
+        "step": 0.01
+      },
+      {
+        "id": "light",
+        "name": "Light Temperature",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "age",
+        "name": "Patina Age",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "quantum-foam",
+    "name": "Quantum Foam",
+    "url": "shaders/quantum-foam.wgsl",
+    "description": "Quantum foam texture with spacetime fluctuations.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "quantum-fractal",
+    "name": "Quantum Fractal",
+    "url": "shaders/quantum-fractal.wgsl",
+    "description": "Fractal quantum interference patterns.",
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Fractal scale"
+      },
+      {
+        "id": "iterations",
+        "name": "Iterations",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Iteration depth"
+      },
+      {
+        "id": "entanglement",
+        "name": "Entanglement",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Quantum entanglement strength"
+      },
+      {
+        "id": "edge_glow",
+        "name": "Edge Glow",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Glow on fractal edges"
+      }
+    ]
+  },
+  {
+    "id": "quantum-smear",
+    "name": "Quantum Smear",
+    "url": "shaders/quantum-smear.wgsl",
+    "description": "Quantum particle disintegration with stochastic advection and pointillist effects.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "quantum-wormhole",
+    "name": "Quantum Wormhole",
+    "url": "shaders/quantum-wormhole.wgsl",
+    "description": "Wormhole-like spacetime distortion effects.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "radiating-displacement",
+    "name": "Radiating Displacement",
+    "url": "shaders/radiating-displacement.wgsl",
+    "description": "Rippling displacement waves emanate only from strong colours; neutrals stay sharp. Mouse-click to seed ripples.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "strength",
+        "name": "Displace Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "satThresh",
+        "name": "Saturation Threshold",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Wave Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "interactive",
+      "colour-masking",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "radiating-haze",
+    "name": "Radiating Haze",
+    "url": "shaders/radiating-haze.wgsl",
+    "description": "Animated aura around strong colours; browns, greys & blacks are ignored. Now with colour-mode switch.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Wave Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "intensity",
+        "name": "Aura Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "satThresh",
+        "name": "Saturation Threshold",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Aura Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "depth-aware",
+      "temporal-persistence",
+      "colour-masking",
+      "multi-mode",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "rain",
+    "name": "Rain",
+    "category": "artistic",
+    "url": "shaders/rain.wgsl",
+    "description": "Upgraded rain with gravity-accelerated streak physics, chromatic droplet lensing, HDR bloom on light sources, fog layers, and splash particles. Bass drives intensity, mouse creates wind gusts, depth controls droplet perspective.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "atmospheric",
+      "depth-aware"
+    ],
+    "tags": [
+      "rain",
+      "wet",
+      "mist",
+      "atmospheric",
+      "audio-reactive",
+      "chromatic",
+      "bloom",
+      "physics"
+    ],
+    "params": [
+      {
+        "id": "rain_density",
+        "name": "Rain Density",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "fall_speed",
+        "name": "Fall Speed",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "wind",
+        "name": "Wind",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "wetness",
+        "name": "Wetness",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "rainbow-cloud",
+    "name": "Rainbow Cloud",
+    "category": "artistic",
+    "url": "shaders/rainbow-cloud.wgsl",
+    "description": "Ray-marched volumetric clouds with 3D Perlin noise density, Mie scattering, iridescent nacreous colors, HDR god rays through cloud gaps, ACES tone mapping, and atmospheric perspective. Bass drives cloud turbulence, mouse scatters cloud particles, depth controls density layering.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "volumetric-cloud",
+      "mie-scattering",
+      "upgraded-rgba",
+      "atmospheric"
+    ],
+    "tags": [
+      "rainbow",
+      "cloud",
+      "volumetric",
+      "iridescent",
+      "atmospheric",
+      "audio-reactive",
+      "raymarched"
+    ],
+    "params": [
+      {
+        "id": "cloud_scale",
+        "name": "Cloud Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "drift_speed",
+        "name": "Drift Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "reaction-diffusion",
+    "name": "Reaction-Diffusion",
+    "url": "shaders/reaction-diffusion.wgsl",
+    "description": "Grey-Scott style color bleed with cross-channel inhibition.",
+    "features": [
+      "mouse-driven"
+    ],
+    "tags": [
+      "simulation",
+      "physics"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "recursion-mirror-vortex",
+    "name": "Recursion Mirror Vortex",
+    "url": "shaders/recursion-mirror-vortex.wgsl",
+    "description": "Nested Möbius-fold mirrors that fold the image into itself at precise singularity points, creating infinite-hallway illusions that remain spatially coherent.",
+    "tags": [
+      "mirror",
+      "vortex",
+      "fractal",
+      "recursive",
+      "mobius",
+      "warp",
+      "psychedelic"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "author": "AI",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Fold Depth",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Number of Möbius fold iterations (1–6)."
+      },
+      {
+        "id": "param2",
+        "name": "Fold Radius",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Radius of each fold's influence sphere."
+      },
+      {
+        "id": "param3",
+        "name": "Vortex Speed",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Speed and direction of the vortex rotation."
+      },
+      {
+        "id": "param4",
+        "name": "Mirror Blend",
+        "min": 0,
+        "max": 1,
+        "default": 0.6,
+        "step": 0.01,
+        "description": "Blend strength between original and folded image."
+      }
+    ]
+  },
+  {
+    "id": "rorschach-inkblot",
+    "name": "Rorschach Inkblot",
+    "url": "shaders/rorschach-inkblot.wgsl",
+    "description": "Symmetrical inkblot visualization with audio-driven ink flow, chromatic ink tints, temporal ink diffusion memory, mouse-controlled symmetry axis, and depth-aware ink density.",
+    "params": [
+      {
+        "name": "Threshold",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "id": "threshold"
+      },
+      {
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "id": "distortion"
+      },
+      {
+        "name": "Smoothness",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "id": "smoothness"
+      },
+      {
+        "name": "Invert Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "id": "invert_mode"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "chromatic",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "inkblot",
+      "rorschach",
+      "temporal",
+      "audio-reactive",
+      "chromatic",
+      "depth-aware"
+    ]
+  },
+  {
+    "id": "rotoscope-ink",
+    "name": "Rotoscope Ink",
+    "category": "artistic",
+    "url": "shaders/rotoscope-ink.wgsl",
+    "description": "Upgraded rotoscope ink with temporal edge detection, brushstroke-tapered outlines following motion vectors, paint-bucket bleed, film grain, and chromatic separation on fast edges. Bass drives jitter, mouse paints strokes, depth controls parallax.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "edge-stylization",
+      "depth-aware"
+    ],
+    "tags": [
+      "rotoscope",
+      "ink",
+      "posterize",
+      "outline",
+      "audio-reactive",
+      "cel-animation",
+      "chromatic",
+      "grain"
+    ],
+    "params": [
+      {
+        "id": "edge_threshold",
+        "name": "Edge Threshold",
+        "default": 0.32,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "posterize_levels",
+        "name": "Posterize Levels",
+        "default": 0.45,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "ink_density",
+        "name": "Ink Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "shade_mix",
+        "name": "Shade Mix",
+        "default": 0.55,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "snow",
+    "name": "Blizzard (Depth-Aware)",
+    "url": "shaders/snow.wgsl",
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "spec-blue-noise-stipple",
+    "name": "Blue Noise Stipple",
+    "url": "shaders/spec-blue-noise-stipple.wgsl",
+    "description": "Blue-noise dithered pointillism rendering. Uses golden-ratio low-discrepancy sequences for perceptually optimal, uniformly-spaced dot distributions with smooth gradients and no aliasing.",
+    "tags": [
+      "pointillism",
+      "blue-noise",
+      "stipple",
+      "artistic",
+      "dithering",
+      "seurat"
+    ],
+    "features": [
+      "blue-noise",
+      "pointillism",
+      "stochastic-sampling",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "dot_scale",
+        "name": "Dot Scale",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dot_size",
+        "name": "Dot Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "color_var",
+        "name": "Color Variation",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "density",
+        "name": "Dot Density",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "target_rating": 4.6
+  },
+  {
+    "id": "spectral-bleed-confinement",
+    "name": "Spectral Bleed & Confinement",
+    "url": "shaders/spectral-bleed-confinement.wgsl",
+    "description": "Specific color bands leak outward from image edges while being electromagnetically confined by competing channels, creating glowing halos that feel physically constrained. Audio reactivity pulses bleed radius and adds beat-synchronized flashes.",
+    "tags": [
+      "spectral",
+      "bleed",
+      "halo",
+      "edge",
+      "glow",
+      "chromatic",
+      "electromagnetic",
+      "alpha",
+      "luminance-key",
+      "audio",
+      "music"
+    ],
+    "features": [
+      "mouse-driven",
+      "advanced-alpha",
+      "audio-reactive"
+    ],
+    "author": "AI",
+    "params": [
+      {
+        "id": "param1",
+        "name": "Bleed Radius",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Distance color bleeds outward from edges."
+      },
+      {
+        "id": "param2",
+        "name": "Confinement",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01,
+        "description": "Strength of cross-channel suppression (electromagnetic confinement)."
+      },
+      {
+        "id": "param3",
+        "name": "Curl Speed",
+        "min": 0,
+        "max": 1,
+        "default": 0.4,
+        "step": 0.01,
+        "description": "Speed of the curl-noise vector field driving bleed direction."
+      },
+      {
+        "id": "param4",
+        "name": "Edge Threshold",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "step": 0.01,
+        "description": "Minimum edge magnitude required to trigger spectral bleed."
+      }
+    ]
+  },
+  {
+    "id": "spectral-slit-scan",
+    "name": "Spectral Slit Scan",
+    "url": "shaders/spectral-slit-scan.wgsl",
+    "category": "artistic",
+    "description": "Multi-slit spectral scan effect with 3 simultaneous parametric slits (sine wave, spiral, radial). Chromatic time smearing decomposes RGB across temporal offsets. HDR streak accumulation with ACES tone mapping. Bass drives slit velocity, mouse positions add parallax, and depth creates layered slit separation.",
+    "tags": [
+      "slit-scan",
+      "temporal",
+      "chromatic",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "HDR",
+      "artistic"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "slitCount",
+        "name": "Slit Density",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "trailDecay",
+        "name": "Trail Decay",
+        "type": "float",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "chromaShift",
+        "name": "Chromatic Shift",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "curveAmp",
+        "name": "Curve Amplitude",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "spectrogram-displace-pass1",
+    "name": "Spectrogram Displace (Pass 1)",
+    "url": "shaders/spectrogram-displace-pass1.wgsl",
+    "description": "Spectrogram field generation: synthetic audio analysis, frequency bin calculation, perceptual color mapping, and displacement vector computation. Outputs spectrogram data to dataTextureA.",
+    "tags": [
+      "spectrogram",
+      "audio",
+      "frequency-analysis",
+      "multi-pass",
+      "displacement"
+    ],
+    "features": [
+      "multi-pass-1",
+      "mouse-driven"
+    ],
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 2,
+      "nextShader": "spectrogram-displace-pass2"
+    },
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "spectrogram-displace-pass2",
+    "name": "Spectrogram Displace (Pass 2)",
+    "url": "shaders/spectrogram-displace-pass2.wgsl",
+    "description": "Image displacement and compositing pass: applies spectrogram-driven displacement to the input image, blends with spectrogram colors, applies frequency-based color grading and vignette, and reacts to bass audio input.",
+    "tags": [
+      "spectrogram",
+      "displacement",
+      "compositing",
+      "multi-pass",
+      "audio-reactive",
+      "color-grading"
+    ],
+    "features": [
+      "multi-pass-2",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2
+    },
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "spectrogram-displace",
+    "name": "Spectrogram Displace",
+    "url": "shaders/spectrogram-displace.wgsl",
+    "description": "Audio-driven per-pixel displacements from an FFT texture.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "speed-lines-focus",
+    "name": "Speed Lines Focus",
+    "url": "shaders/speed-lines-focus.wgsl",
+    "description": "Applies a radial zoom blur and manga-style speed lines focused on the mouse.",
+    "params": [
+      {
+        "name": "Blur Strength",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "id": "blur_strength"
+      },
+      {
+        "name": "Line Density",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "id": "line_density"
+      },
+      {
+        "name": "Line Speed",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "id": "line_speed"
+      },
+      {
+        "name": "Contrast",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "id": "contrast"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "spirograph-reveal",
+    "name": "Spirograph Reveal",
+    "url": "shaders/spirograph-reveal.wgsl",
+    "category": "artistic",
+    "description": "True epicycloid/hypocycloid spirograph with multiple rotating gears and gear-ratio modulated patterns. Features metallic ink aesthetic with specular highlights, gradient fills along curve length, and HDR bloom at cusps. Bass drives rotation speed, mouse modulates gear ratio, and depth creates 3D depth layers.",
+    "tags": [
+      "spirograph",
+      "geometric",
+      "artistic",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "metallic",
+      "HDR"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "outerTeeth",
+        "name": "Outer Teeth",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "innerTeeth",
+        "name": "Inner Teeth",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Rotation Speed",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "thickness",
+        "name": "Line Thickness",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "static-reveal",
+    "name": "Static Reveal",
+    "url": "/shaders/static-reveal.wgsl",
+    "category": "artistic",
+    "description": "Multi-layer temporal static grain with chromatic displacement and depth-reactive decay. Fine + coarse noise layers plus per-channel chromatic shift driven by treble. Mouse scratches reveal video; bass intensifies static flicker.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "multi-layer-static",
+      "chromatic-displacement",
+      "upgraded-rgba",
+      "temporal",
+      "film-grain"
+    ],
+    "params": [
+      {
+        "id": "decay",
+        "name": "Regrowth Speed",
+        "default": 0.01,
+        "min": 0,
+        "max": 0.1
+      },
+      {
+        "id": "radius",
+        "name": "Brush Size",
+        "default": 0.3,
+        "min": 0.05,
+        "max": 0.5
+      },
+      {
+        "id": "noise",
+        "name": "Static Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "noiseScale",
+        "name": "Noise Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive",
+      "static",
+      "film-grain",
+      "reveal",
+      "chromatic"
+    ]
+  },
+  {
+    "id": "stella-orbit",
+    "name": "Stellar Orbit",
+    "url": "shaders/stella-orbit.wgsl",
+    "description": "Orbital motion patterns with stellar particle systems.",
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "stipple-render",
+    "name": "Stipple Render",
+    "url": "shaders/stipple-render.wgsl",
+    "category": "artistic",
+    "description": "Weighted Voronoi stippling with Lloyd's relaxation approximation. Dot sizes match local luminance using blue noise distribution. Ink-on-paper aesthetic with dot bleeding, cross-hatching, and ACES tone mapping.",
+    "params": [
+      {
+        "id": "dot_scale",
+        "name": "Dot Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "wet_radius",
+        "name": "Wet Ink Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "color_reveal",
+        "name": "Color Reveal",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "stylized",
+      "artistic",
+      "stipple",
+      "ink",
+      "voronoi",
+      "cross-hatch",
+      "audio-reactive"
+    ]
+  },
+  {
+    "id": "temporal-echo",
+    "name": "Temporal Echo",
+    "url": "shaders/temporal-echo.wgsl",
+    "description": "Feedback buffer and history texture for temporally offset echoes.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "thermal-vision",
+    "name": "Thermal Vision",
+    "url": "shaders/thermal-vision.wgsl",
+    "description": "Heat signature camera view.",
+    "params": [
+      {
+        "id": "sensitivity",
+        "name": "Heat Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "color_range",
+        "name": "Color Range",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "noise",
+        "name": "Sensor Noise",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "blur",
+        "name": "Thermal Blur",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "color-remap",
+      "mouse-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing"
+    ]
+  },
+  {
+    "id": "voronoi-dynamics",
+    "name": "Voronoi Bubbles",
+    "url": "shaders/voronoi-dynamics.wgsl",
+    "description": "Dynamic Voronoi cells with bubble physics, iridescent edges, and interactive centroids.",
+    "params": [
+      {
+        "id": "centroidCount",
+        "name": "Bubble Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "repulsion",
+        "name": "Repulsion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "attraction",
+        "name": "Attraction",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "edgeWidth",
+        "name": "Edge Width",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "interactive",
+      "depth-aware",
+      "physics",
+      "mouse-driven"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ]
+  },
+  {
+    "id": "voronoi",
+    "name": "Voronoi Tessellation",
+    "url": "shaders/voronoi.wgsl",
+    "description": "Animated Voronoi reconstruction (simplified feature detection).",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "geometric",
+      "pattern"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "vortex-prism",
+    "name": "Vortex Prism",
+    "url": "shaders/vortex-prism.wgsl",
+    "description": "Twists the image around the mouse cursor, separating colors like a prism.",
+    "params": [
+      {
+        "id": "twist",
+        "name": "Twist Force",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "prism",
+        "name": "Prism Split",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "radius",
+        "name": "Effect Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "smoothness",
+        "name": "Smoothness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "distortion",
+      "audio-reactive",
+      "audio-driven"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "audio",
+      "music",
+      "reactive"
+    ]
+  }
+]

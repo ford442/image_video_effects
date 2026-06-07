@@ -1,0 +1,55 @@
+{
+  "id": "holographic-prism",
+  "name": "Holographic Prism",
+  "category": "interactive-mouse",
+  "url": "shaders/holographic-prism.wgsl",
+  "description": "Triangular prism dispersion with Snell's law refraction, wavelength-accurate rainbow spectrum, holographic interference fringes and speckle. Bass rotates prism, mouse controls incident angle, depth drives parallax.",
+  "params": [
+    {
+      "id": "facets",
+      "name": "Facet Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "dispersion",
+      "name": "Dispersion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "rotation",
+      "name": "Rotation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "glitch",
+      "name": "Holo Glitch",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "chromatic-aberration",
+    "audio-reactive",
+    "audio-driven",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "prism",
+    "holographic",
+    "dispersion",
+    "interference",
+    "speckle",
+    "audio",
+    "chromatic",
+    "depth-aware"
+  ]
+}

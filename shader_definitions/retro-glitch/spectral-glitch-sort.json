@@ -1,0 +1,47 @@
+{
+  "id": "spectral-glitch-sort",
+  "name": "Spectral Glitch Sort",
+  "url": "shaders/spectral-glitch-sort.wgsl",
+  "features": [
+    "mouse-driven",
+    "chromatic-aberration",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "description": "Displaces pixels based on their brightness, creating a glitchy sorting effect controlled by the mouse.",
+  "params": [
+    {
+      "id": "strength",
+      "name": "Sort Length",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "threshold",
+      "name": "Luma Threshold",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "angle",
+      "name": "Direction",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "noise",
+      "name": "Digital Noise",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "glitch",
+    "retro",
+    "vintage"
+  ]
+}

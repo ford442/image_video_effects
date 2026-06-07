@@ -1,0 +1,49 @@
+{
+  "id": "neon-echo",
+  "name": "Neon Echo",
+  "url": "shaders/neon-echo.wgsl",
+  "description": "Per-channel CRT phosphor persistence with blackbody-aged echoes, cursor drift, and scanline halation.",
+  "params": [
+    {
+      "id": "persistence_gain",
+      "name": "Persistence Gain",
+      "default": 0.55,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "cursor_drift",
+      "name": "Cursor Drift",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "excitation_threshold",
+      "name": "Excitation Threshold",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "halation",
+      "name": "Halation",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "depth-aware"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "audio",
+    "crt",
+    "phosphor"
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "id": "ink-diffusion",
+  "name": "Ink Diffusion",
+  "category": "artistic",
+  "url": "shaders/ink-diffusion.wgsl",
+  "description": "Navier-Stokes advection-diffusion ink simulation in water with vorticity confinement and surface tension at boundaries. Sumi-e ink wash with turbulent eddies, paper fiber texture, chromatic edge darkening, ACES tone mapping, and HDR specular on wet regions.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal-ink-spread",
+    "organic-growth",
+    "navier-stokes",
+    "vorticity-confinement",
+    "surface-tension"
+  ],
+  "params": [
+    {
+      "id": "spread",
+      "name": "Spread Rate",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "decay",
+      "name": "Ink Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "density",
+      "name": "Ink Density",
+      "default": 0.6,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "ink",
+    "wash",
+    "painting",
+    "organic",
+    "temporal",
+    "mouse-driven",
+    "audio-reactive",
+    "artistic",
+    "navier-stokes",
+    "vorticity",
+    "surface-tension",
+    "sumi-e",
+    "hdr-specular",
+    "aces-tone-mapping"
+  ]
+}

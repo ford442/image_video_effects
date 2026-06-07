@@ -1,0 +1,50 @@
+{
+  "id": "spectral-distortion",
+  "name": "Spectral Distortion",
+  "url": "shaders/spectral-distortion.wgsl",
+  "description": "RGB channels split and warp based on noise, mouse proximity, and bass-driven audio reactivity.",
+  "params": [
+    {
+      "id": "separation",
+      "name": "RGB Separation",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "warpScale",
+      "name": "Warp Scale",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "mouseInfluence",
+      "name": "Mouse Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence",
+    "glitch",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "chromatic",
+    "warp",
+    "noise"
+  ]
+}

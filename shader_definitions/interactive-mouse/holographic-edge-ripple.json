@@ -1,0 +1,50 @@
+{
+  "id": "holographic-edge-ripple",
+  "name": "Holographic Edge Ripple",
+  "url": "shaders/holographic-edge-ripple.wgsl",
+  "category": "interactive-mouse",
+  "description": "SDF edge detection with Laplacian zero-crossings, damped wave equation ripples, holographic rainbow diffraction, and Fresnel iridescence with ACES tone mapping.",
+  "params": [
+    {
+      "id": "edge-threshold",
+      "name": "Edge Threshold",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "ripple-speed",
+      "name": "Ripple Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "ripple-damping",
+      "name": "Ripple Damping",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "holographic-shift",
+      "name": "Holographic Shift",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "holographic",
+    "edge-detect",
+    "diffraction",
+    "iridescence",
+    "filter"
+  ]
+}

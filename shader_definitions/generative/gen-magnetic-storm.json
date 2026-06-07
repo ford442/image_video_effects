@@ -1,0 +1,60 @@
+{
+  "id": "gen-magnetic-storm",
+  "name": "Magnetic Storm",
+  "url": "shaders/gen-magnetic-storm.wgsl",
+  "description": "A dynamic magnetic field storm using divergence-free curl noise to render flowing field lines. The mouse sets the magnetic pole; bass drives flow speed and storm intensity; mids shift field-line color; treble adds sparkle.",
+  "tags": [
+    "magnetic",
+    "field-lines",
+    "storm",
+    "generative",
+    "fluid",
+    "audio-reactive",
+    "abstract",
+    "particles",
+    "warp"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "fieldScale",
+      "name": "Field Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "flowSpeed",
+      "name": "Flow Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "lineDensity",
+      "name": "Line Density",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "stormPower",
+      "name": "Storm Power",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

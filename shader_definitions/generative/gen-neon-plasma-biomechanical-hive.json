@@ -1,0 +1,56 @@
+{
+  "id": "gen-neon-plasma-biomechanical-hive",
+  "name": "Neon-Plasma Biomechanical Hive",
+  "tags": [
+    "biomechanical",
+    "neon",
+    "organic",
+    "plasma",
+    "audio-reactive",
+    "cyberpunk"
+  ],
+  "description": "A hyper-organic, biomechanical labyrinth of pulsing neon circuitry and breathing metallic tissue that spawns luminescent plasma-spores reacting to ambient cosmic frequencies.",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Hive Breathing Speed",
+      "default": 1,
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.x",
+      "description": "Controls the overall strength of the generated effect."
+    },
+    {
+      "id": "param2",
+      "name": "Neon Intensity",
+      "default": 2,
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "mapping": "zoom_params.y",
+      "description": "Controls animation and temporal evolution speed."
+    },
+    {
+      "id": "param3",
+      "name": "Spore Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "mapping": "zoom_params.z",
+      "description": "Controls spatial scale, frequency, or detail contrast."
+    },
+    {
+      "id": "param4",
+      "name": "Magnetic Pull",
+      "default": 1.5,
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.w",
+      "description": "Controls mouse-driven or secondary variation influence."
+    }
+  ],
+  "url": "shaders/gen-neon-plasma-biomechanical-hive.wgsl"
+}

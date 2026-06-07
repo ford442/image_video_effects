@@ -1,0 +1,49 @@
+{
+  "id": "heat-haze",
+  "name": "Heat Haze",
+  "url": "shaders/heat-haze.wgsl",
+  "description": "Interactive heat distortion with thermal glow, mouse-driven heat injection, diffusion, and audio-reactive shimmer.",
+  "params": [
+    {
+      "id": "heatGain",
+      "name": "Heat Gain",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "decayRate",
+      "name": "Decay Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "diffusion",
+      "name": "Diffusion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "refraction",
+      "name": "Refraction",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "animated",
+    "atmospheric",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "distortion",
+    "heat",
+    "thermal",
+    "filter"
+  ]
+}

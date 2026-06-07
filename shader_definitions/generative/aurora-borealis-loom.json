@@ -1,0 +1,65 @@
+{
+  "id": "aurora-borealis-loom",
+  "name": "Aurora Borealis Loom",
+  "category": "generative",
+  "url": "shaders/aurora-borealis-loom.wgsl",
+  "description": "Aurora curtains woven like fabric on a celestial loom. Threads of light interlace with weft and warp patterns. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "weave-density",
+      "name": "Weave Density",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "hue-speed",
+      "name": "Hue Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "ionization",
+      "name": "Ionization",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "curtain-flow",
+      "name": "Curtain Flow",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "aurora",
+    "fabric",
+    "loom",
+    "celestial",
+    "audio-reactive",
+    "temporal",
+    "chromatic",
+    "abstract",
+    "atmospheric"
+  ]
+}

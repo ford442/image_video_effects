@@ -1,0 +1,45 @@
+{
+  "id": "pixel-sort-radial",
+  "name": "Radial Pixel Stretch",
+  "url": "shaders/pixel-sort-radial.wgsl",
+  "description": "Radially stretches pixels from the mouse position based on luminance.",
+  "params": [
+    {
+      "id": "stretch",
+      "name": "Stretch Amt",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "thresh",
+      "name": "Luma Thresh",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "radius",
+      "name": "Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "dir",
+      "name": "Direction",
+      "default": 0,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

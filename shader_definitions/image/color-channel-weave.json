@@ -1,0 +1,43 @@
+{
+  "id": "color-channel-weave",
+  "name": "Color Channel Weave",
+  "url": "shaders/color-channel-weave.wgsl",
+  "category": "image",
+  "description": "Samples RGB channels from offset positions simulating a woven fabric. Horizontal threads carry red; vertical threads carry blue; green is neutral. Audio shifts thread spacing and chromatic offset. Mouse tilts the warp direction.",
+  "tags": ["weave", "fabric", "threads", "chromatic", "texture", "audio-reactive", "mouse-driven"],
+  "features": ["mouse-driven", "audio-reactive", "upgraded-rgba", "semantic-alpha"],
+  "params": [
+    {
+      "id": "thread_spacing",
+      "name": "Thread Spacing",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "weave_angle",
+      "name": "Weave Angle",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "shadow_depth",
+      "name": "Shadow Depth",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chroma_offset",
+      "name": "Chroma Offset",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

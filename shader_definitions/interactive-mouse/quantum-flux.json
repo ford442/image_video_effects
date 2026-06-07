@@ -1,0 +1,46 @@
+{
+  "id": "quantum-flux",
+  "name": "Quantum Flux",
+  "url": "shaders/quantum-flux.wgsl",
+  "description": "Simulates quantum instability and probability waves emanating from the mouse cursor, causing jitter and color drift.",
+  "params": [
+    {
+      "id": "jitter",
+      "name": "Flux Jitter",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "frequency",
+      "name": "Wave Freq",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "drift",
+      "name": "Color Drift",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "radius",
+      "name": "Flux Radius",
+      "default": 0.6,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "distortion",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive"
+  ]
+}

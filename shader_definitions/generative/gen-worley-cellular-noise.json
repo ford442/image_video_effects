@@ -1,0 +1,60 @@
+{
+  "id": "gen-worley-cellular-noise",
+  "name": "Worley Cellular Noise",
+  "url": "shaders/gen-worley-cellular-noise.wgsl",
+  "category": "generative",
+  "description": "Worley cellular noise generating organic tissue-like patterns. Computes F1, F2, and cell boundaries with time-varying feature points, fBm variation, and subsurface scattering simulation.",
+  "tags": [
+    "cellular",
+    "worley",
+    "organic",
+    "tissue",
+    "biological",
+    "abstract",
+    "natural"
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "scale",
+      "name": "Cell Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "speed",
+      "name": "Animation Speed",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "chromatic",
+      "name": "Chromatic Aberration",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "organic",
+      "name": "Organic Variation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

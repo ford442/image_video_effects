@@ -1,0 +1,58 @@
+{
+  "id": "crt-clear-zone",
+  "name": "CRT Clear Zone",
+  "url": "shaders/crt-clear-zone.wgsl",
+  "description": "Accurate CRT electron beam simulation with Gaussian spot spread, inline shadow mask, phosphor decay via temporal feedback, barrel distortion with corner darkening, per-RGB chromatic aberration, and ACES tone mapping.",
+  "params": [
+    {
+      "name": "Distortion",
+      "type": "f32",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01,
+      "id": "distortion"
+    },
+    {
+      "name": "Aberration",
+      "type": "f32",
+      "min": 0,
+      "max": 1,
+      "default": 0.3,
+      "step": 0.01,
+      "id": "aberration"
+    },
+    {
+      "name": "Clear Radius",
+      "type": "f32",
+      "min": 0,
+      "max": 1,
+      "default": 0.3,
+      "step": 0.01,
+      "id": "clear_radius"
+    },
+    {
+      "name": "Scanlines",
+      "type": "f32",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01,
+      "id": "scanlines"
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal"
+  ],
+  "tags": [
+    "crt",
+    "retro",
+    "electron-beam",
+    "shadow-mask",
+    "temporal",
+    "image-processing"
+  ]
+}

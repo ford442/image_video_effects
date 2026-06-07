@@ -1,0 +1,4 @@
+- Applied a Standard Hybrid Header and confirmed the existing canonical binding block.
+- JSON changes: added explicit `category`.
+- Confidence: High.
+- Suspicious but left alone: this reads more like a liquid-effects shader than an artistic one, but I kept the current library placement to avoid churn.

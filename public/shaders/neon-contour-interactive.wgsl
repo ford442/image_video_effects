@@ -1,0 +1,146 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Neon Contour Interactive
+//  Category: lighting-effects
+//  Features: mouse-driven, neon, edge, audio-pulse, depth-glow, rim-light, electric-atmosphere
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer electric rim light, audio-reactive pulses, volumetric neon)
+// ═══════════════════════════════════════════════════════════════════
+//  Created: 2026-05-30
+//  By: Copilot CLI
+// ═══════════════════════════════════════════════════════════════════
+
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture:    texture_2d<f32>;
+@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
+
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
+
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB:   texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config:      vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples:     array<vec4<f32>, 50>,
+};
+
+// Sobel kernels
+const gx: array<f32, 9> = array<f32, 9>(-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0);
+const gy: array<f32, 9> = array<f32, 9>(-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0);
+
+fn getLuminance(color: vec3<f32>) -> f32 {
+    return dot(color, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
+    let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    var p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+}
+
+// Alpha calculation for emissive materials
+fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
+    let coreAlpha = 0.3 * glowIntensity;
+    let glowAlpha = 0.0;
+    return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
+}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let dims = u.config.zw;
+    if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
+
+    var uv = vec2<f32>(gid.xy) / dims;
+    let texelSize = 1.0 / dims;
+    let time = u.config.x;
+    let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+    let audioBass = audio.x;
+    let audioMid = audio.y;
+    let audioHigh = audio.z;
+    let audioOverall = dot(audio, vec3<f32>(0.5, 0.3, 0.2));
+    let audioReactivity = 1.0 + audioOverall * 0.5;
+
+    // Grok visual flourish: Electric, pulsing neon with rich atmospheric glow
+    let electricPulse = 1.0 + audioBass * 0.7 + sin(time * 8.0) * audioHigh * 0.4;
+
+    // Params
+    // x: Threshold, y: Glow, z: CycleSpeed, w: OcclusionBalance
+    let threshold = u.zoom_params.x;
+    let glowIntensity = u.zoom_params.y * mix(2.5, 7.0, audioBass);
+    let cycleSpeed = u.zoom_params.z;
+    let pulseSpeed = u.zoom_params.w;
+    let occlusionBalance = 0.5;
+
+    var mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
+
+    // Correct aspect ratio for distance
+    let aspect = dims.x / dims.y;
+    let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
+    let dist = length(distVec);
+
+    // Mouse interaction: Lower threshold near mouse
+    let localThreshold = threshold * smoothstep(0.0, 0.4, dist) * mix(1.1, 0.75, audioBass);
+
+    // Sobel Edge Detection
+    var edgeX = 0.0;
+    var edgeY = 0.0;
+
+    for(var i = -1; i <= 1; i++) {
+        for(var j = -1; j <= 1; j++) {
+            let offset = vec2<f32>(f32(i), f32(j)) * texelSize;
+            let c = textureSampleLevel(
+                readTexture,
+                u_sampler,
+                clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)),
+                0.0
+            ).rgb;
+            let luma = getLuminance(c);
+            let idx = (j + 1) * 3 + (i + 1);
+            edgeX += luma * gx[idx];
+            edgeY += luma * gy[idx];
+        }
+    }
+
+    let edge = sqrt(edgeX * edgeX + edgeY * edgeY);
+    let isEdge = smoothstep(localThreshold, localThreshold + 0.05, edge);
+
+    // Neon Color Calculation
+    let baseHue = fract(time * cycleSpeed * audioReactivity * 0.1 + audioHigh * 0.15);
+    let hue = fract(baseHue + edge * 2.0 + dist * 0.5);
+    let pulse = sin(time * pulseSpeed * audioReactivity * 5.0) * 0.5 + 0.5;
+    let neonColor = hsv2rgb(vec3<f32>(hue, 1.0, 1.0));
+
+    // Emission calculation (HDR capable)
+    var emission = neonColor * isEdge * (glowIntensity + pulse);
+    emission += vec3<f32>(0.05 * audioBass, 0.03 * audioMid, 0.08 * audioHigh) * isEdge;
+
+    // Add extra glow near mouse
+    if (dist < 0.2) {
+        emission += neonColor * (0.2 - dist) * 2.0 * glowIntensity;
+    }
+
+    // Calculate alpha based on emission intensity
+    let glowStrength = length(emission);
+    let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
+    let depth = clamp(
+        textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + isEdge * 0.06 + audioBass * 0.02,
+        0.0,
+        1.0
+    );
+
+    // Output RGBA: RGB = emission (HDR), A = physical occlusion
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(emission, finalAlpha));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(isEdge, glowStrength, 1.0 - smoothstep(0.0, 0.2, dist), finalAlpha));
+}

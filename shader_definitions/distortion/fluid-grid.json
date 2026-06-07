@@ -1,0 +1,45 @@
+{
+  "id": "fluid-grid",
+  "name": "Fluid Grid",
+  "url": "shaders/fluid-grid.wgsl",
+  "description": "Flowing grid distortion with fluid dynamics.",
+  "params": [
+    {
+      "id": "grid_size",
+      "name": "Grid Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "flow_speed",
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "distortion",
+      "name": "Distortion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "animated",
+    "grid",
+    "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

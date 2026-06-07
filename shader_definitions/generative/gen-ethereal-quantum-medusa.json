@@ -1,0 +1,59 @@
+{
+  "id": "gen-ethereal-quantum-medusa",
+  "name": "Ethereal Quantum Medusa",
+  "url": "shaders/gen-ethereal-quantum-medusa.wgsl",
+  "coordinate": 857,
+  "type": "shader",
+  "features": [
+    "raymarched",
+    "audio-reactive",
+    "mouse-repulsion",
+    "upgraded-rgba",
+    "chromatic-tentacles",
+    "temporal-bioluminescence",
+    "audio-sway",
+    "depth-output"
+  ],
+  "params": [
+    {
+      "id": "swimming_speed",
+      "name": "Swimming Speed",
+      "default": 1,
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.x",
+      "description": "Speed of medusa movement"
+    },
+    {
+      "id": "tentacle_curl",
+      "name": "Tentacle Curl",
+      "default": 2,
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.y",
+      "description": "Curliness of tentacles"
+    },
+    {
+      "id": "quantum_glow",
+      "name": "Quantum Glow",
+      "default": 1,
+      "min": 0,
+      "max": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.z",
+      "description": "Glow intensity"
+    },
+    {
+      "id": "repulsion_strength",
+      "name": "Repulsion Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 2,
+      "step": 0.1,
+      "mapping": "zoom_params.w",
+      "description": "Mouse repulsion strength"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "id": "gen-prismatic-crystal-growth",
+  "name": "Prismatic Crystal Growth",
+  "url": "shaders/gen-prismatic-crystal-growth.wgsl",
+  "description": "SDF crystal lattice that grows over time with Fresnel reflectance for glass-like translucency. Alpha encodes crystal thickness \u2014 thin edges are transparent, thick centers opaque. Audio drives growth rate and crystal rotation.",
+  "features": [
+    "audio-reactive",
+    "chromatic-aberration",
+    "mouse-driven",
+    "raymarched",
+    "temporal",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "crystal",
+    "prismatic",
+    "glass",
+    "fresnel",
+    "growth",
+    "sdf"
+  ],
+  "params": [
+    {
+      "id": "growth_rate",
+      "name": "Growth Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "density",
+      "name": "Crystal Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "prism",
+      "name": "Prism Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "caustics",
+      "name": "Caustic Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

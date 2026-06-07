@@ -1,0 +1,59 @@
+{
+  "id": "gen-mycelium-network",
+  "name": "Mycelium Network",
+  "url": "shaders/gen-mycelium-network.wgsl",
+  "description": "Growing network patterns resembling fungal mycelium with diffusion-limited aggregation branching and bioluminescent tips",
+  "tags": [
+    "generative",
+    "organic",
+    "nature",
+    "bioluminescent",
+    "procedural",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "animated",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "growthRate",
+      "name": "Growth Rate",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "branching",
+      "name": "Branching Factor",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "nutrientDensity",
+      "name": "Nutrient Density",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "biolumIntensity",
+      "name": "Bioluminescence",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

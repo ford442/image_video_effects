@@ -1,0 +1,57 @@
+{
+  "id": "pixel-sand",
+  "name": "Pixel Sand",
+  "url": "shaders/pixel-sand.wgsl",
+  "description": "Falling granular automata with curl noise force fields, height-field weight physics, mouse gravity wells, audio-reactive spawn, depth shading, and bounce.",
+  "features": [
+    "upgraded-rgba",
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "temporal"
+  ],
+  "tags": [
+    "sand",
+    "granular",
+    "falling",
+    "interactive",
+    "audio-reactive",
+    "particles",
+    "simulation",
+    "curl-noise"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Gravity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Particle Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Curl Force",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Bounce",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

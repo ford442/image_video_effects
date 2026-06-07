@@ -1,0 +1,58 @@
+{
+  "id": "chrono-luma-slit-scan",
+  "name": "Chrono Luma Slit Scan",
+  "url": "shaders/chrono-luma-slit-scan.wgsl",
+  "category": "post-processing",
+  "description": "Luminance-driven 3D-texture slit scan: each pixel's brightness determines which frame in the history ring it samples. Bright pixels snap to the present; dark pixels reveal the deep past. Moving subjects leave temporal halos as their bright edges exist in the now while dark backgrounds drift through time.",
+  "tags": [
+    "temporal",
+    "slit-scan",
+    "chrono",
+    "luminance",
+    "history",
+    "time",
+    "psychedelic",
+    "abstract"
+  ],
+  "features": [
+    "temporal",
+    "history-ring",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "requiresHistoryRing": true,
+  "params": [
+    {
+      "id": "param1",
+      "name": "Temporal Spread",
+      "default": 1.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Warp Strength",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Luma Gamma",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Original Blend",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

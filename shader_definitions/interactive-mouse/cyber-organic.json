@@ -1,0 +1,49 @@
+{
+  "id": "cyber-organic",
+  "name": "Cyber Organic Scanner",
+  "category": "interactive-mouse",
+  "url": "shaders/cyber-organic.wgsl",
+  "description": "Biotech scan lines reveal pulsing synthetic veins beneath the image, concentrated around the cursor.",
+  "params": [
+    {
+      "id": "scanSpeed",
+      "name": "Scan Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "organicScale",
+      "name": "Organic Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "revealRadius",
+      "name": "Reveal Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "pulseSpeed",
+      "name": "Pulse Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "scanner",
+    "organic",
+    "biotech",
+    "pulse",
+    "audio-reactive"
+  ]
+}

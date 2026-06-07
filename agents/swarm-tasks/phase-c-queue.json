@@ -1,0 +1,295 @@
+{
+  "version": "3.0",
+  "created": "2026-05-10",
+  "description": "Three-phase shader upgrade swarm: A=RGBA foundation, B=advanced enhancement, C=novel compute",
+  "batch_size": 4,
+  "phases": {
+    "a": {
+      "total": 80,
+      "completed": 0,
+      "pending": 80
+    },
+    "b": {
+      "total": 65,
+      "completed": 0,
+      "pending": 65
+    },
+    "c": {
+      "total": 30,
+      "completed": 30,
+      "pending": 0
+    }
+  },
+  "items": [
+    {
+      "id": "gen-cymatic-plasma-mandalas",
+      "size": 5059,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 206,
+      "phase": "c"
+    },
+    {
+      "id": "gen-psychedelic-time-warp-kaleidoscope",
+      "size": 5155,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Visualist",
+      "target_lines": 209,
+      "phase": "c"
+    },
+    {
+      "id": "gen-nebular-chrono-astrolabe",
+      "size": 5170,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 209,
+      "phase": "c"
+    },
+    {
+      "id": "gen-graviton-plasma-lotus",
+      "size": 5281,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Visualist",
+      "target_lines": 212,
+      "phase": "c"
+    },
+    {
+      "id": "gen-crystalline-chrono-dyson",
+      "size": 5342,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 214,
+      "phase": "c"
+    },
+    {
+      "id": "gen-chromodynamic-plasma-collider",
+      "size": 5480,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Visualist",
+      "target_lines": 217,
+      "phase": "c"
+    },
+    {
+      "id": "gen-glass-mosaic-liquid-refraction",
+      "size": 5510,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 218,
+      "phase": "c"
+    },
+    {
+      "id": "gen-fractal-clockwork",
+      "size": 5693,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Visualist",
+      "target_lines": 222,
+      "phase": "c"
+    },
+    {
+      "id": "gen-quantum-aether-origami",
+      "size": 5725,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Algorithmist",
+      "target_lines": 223,
+      "phase": "c"
+    },
+    {
+      "id": "gen-feedback-echo-chamber",
+      "size": 5746,
+      "status": "completed",
+      "priority": 1,
+      "agent_role": "Visualist",
+      "target_lines": 224,
+      "phase": "c"
+    },
+    {
+      "id": "gen-cosmic-clockwork-dyson-sphere",
+      "size": 5826,
+      "status": "completed",
+      "priority": 2,
+      "agent_role": "Algorithmist",
+      "target_lines": 226,
+      "phase": "c"
+    },
+    {
+      "id": "gen-magnetic-ferrofluid",
+      "size": 5834,
+      "status": "completed",
+      "priority": 2,
+      "agent_role": "Visualist",
+      "target_lines": 226,
+      "phase": "c"
+    },
+    {
+      "id": "gen-quasicrystal",
+      "size": 5853,
+      "status": "completed",
+      "priority": 2,
+      "agent_role": "Algorithmist",
+      "target_lines": 226,
+      "phase": "c"
+    },
+    {
+      "id": "gen-photonic-crystal-brain",
+      "size": 5865,
+      "status": "completed",
+      "priority": 2,
+      "agent_role": "Visualist",
+      "target_lines": 227,
+      "phase": "c"
+    },
+    {
+      "id": "gen-bioluminescent-aether-pulsar",
+      "size": 5946,
+      "status": "completed",
+      "priority": 2,
+      "agent_role": "Algorithmist",
+      "target_lines": 229,
+      "phase": "c"
+    },
+    {
+      "id": "gen-nebula-light-trail-swarm",
+      "size": 5994,
+      "status": "completed",
+      "priority": 2,
+      "agent_role": "Visualist",
+      "target_lines": 230,
+      "phase": "c"
+    },
+    {
+      "id": "gen-sonic-lava-flow",
+      "size": 6041,
+      "status": "completed",
+      "priority": 2,
+      "agent_role": "Algorithmist",
+      "target_lines": 231,
+      "phase": "c"
+    },
+    {
+      "id": "gen-neural-fractal",
+      "size": 6126,
+      "status": "completed",
+      "priority": 2,
+      "agent_role": "Visualist",
+      "target_lines": 233,
+      "phase": "c"
+    },
+    {
+      "id": "gen-cosmic-web-filament",
+      "size": 6248,
+      "status": "completed",
+      "priority": 2,
+      "agent_role": "Algorithmist",
+      "target_lines": 236,
+      "phase": "c"
+    },
+    {
+      "id": "gen-hyper-refractive-rain-matrix",
+      "size": 6316,
+      "status": "completed",
+      "priority": 2,
+      "agent_role": "Visualist",
+      "target_lines": 238,
+      "phase": "c"
+    },
+    {
+      "id": "gen-abyssal-chrono-coral",
+      "size": 6330,
+      "status": "completed",
+      "priority": 3,
+      "agent_role": "Algorithmist",
+      "target_lines": 238,
+      "phase": "c"
+    },
+    {
+      "id": "gen-audiovisual-mandelbulb-raymarcher",
+      "size": 6379,
+      "status": "completed",
+      "priority": 3,
+      "agent_role": "Visualist",
+      "target_lines": 239,
+      "phase": "c"
+    },
+    {
+      "id": "gen-voronoi-crystal",
+      "size": 6392,
+      "status": "completed",
+      "priority": 3,
+      "agent_role": "Algorithmist",
+      "target_lines": 240,
+      "phase": "c"
+    },
+    {
+      "id": "gen-stellar-plasma-ouroboros",
+      "size": 6534,
+      "status": "completed",
+      "priority": 3,
+      "agent_role": "Visualist",
+      "target_lines": 243,
+      "phase": "c"
+    },
+    {
+      "id": "gen-physarum-sacred-geometry",
+      "size": 6612,
+      "status": "completed",
+      "priority": 3,
+      "agent_role": "Algorithmist",
+      "target_lines": 245,
+      "phase": "c"
+    },
+    {
+      "id": "gen-neural-bioluminescence-matrix",
+      "size": 6629,
+      "status": "completed",
+      "priority": 3,
+      "agent_role": "Visualist",
+      "target_lines": 246,
+      "phase": "c"
+    },
+    {
+      "id": "gen-temporal-motion-smear",
+      "size": 6689,
+      "status": "completed",
+      "priority": 3,
+      "agent_role": "Algorithmist",
+      "target_lines": 247,
+      "phase": "c"
+    },
+    {
+      "id": "gen-cybernetic-liquid-chrome-engine",
+      "size": 6771,
+      "status": "completed",
+      "priority": 3,
+      "agent_role": "Visualist",
+      "target_lines": 249,
+      "phase": "c"
+    },
+    {
+      "id": "gen-audio-spirograph",
+      "size": 6799,
+      "status": "completed",
+      "priority": 3,
+      "agent_role": "Algorithmist",
+      "target_lines": 250,
+      "phase": "c"
+    },
+    {
+      "id": "gen-prismatic-aether-loom",
+      "size": 6862,
+      "status": "completed",
+      "priority": 3,
+      "agent_role": "Visualist",
+      "target_lines": 252,
+      "phase": "c"
+    }
+  ]
+}

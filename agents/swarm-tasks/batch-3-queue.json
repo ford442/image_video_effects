@@ -1,0 +1,98 @@
+{
+  "date": "2026-06-06",
+  "sprint_completed": {
+    "batch_1_aces": 10,
+    "metadata_drift": 97,
+    "batch_2_full_plumbing": 10,
+    "total": 117
+  },
+  "remaining_gaps": {
+    "generative_total": 317,
+    "missing_chromatic": 169,
+    "missing_dataTextureA": 122,
+    "metadata_drift": 0
+  },
+  "batches": {
+    "3A_chromatic_only": {
+      "owner": "kimiclaw",
+      "validator": "codex",
+      "status": "ready",
+      "shaders": [
+        "gen-translucent-nebula",
+        "gen-alpha-aurora",
+        "gen-ghost-flame",
+        "gen-prismatic-crystal-growth"
+      ],
+      "notes": "electric-eel-storm excluded — chromatic added in Batch 2"
+    },
+    "3B_dataTextureA_plumber": {
+      "owner": "kimiclaw",
+      "validator": "codex",
+      "status": "ready",
+      "shaders": [
+        "gen-bioluminescent-abyss",
+        "cosmic-jellyfish",
+        "cosmic-web",
+        "gen-3d-sierpinski-chaos",
+        "gen-4d-projection-dream-weavers",
+        "gen-abyssal-chrono-coral",
+        "gen-abyssal-leviathan-scales",
+        "abyssal-quantum-leviathan-skeleton",
+        "gen-alien-flora",
+        "gen-art-deco-sky"
+      ]
+    },
+    "3C_chromatic_sweep": {
+      "owner": "kimiclaw",
+      "validator": "codex",
+      "status": "ready",
+      "notes": "Repurposed from empty ACES-gap batch — 3C ACES drift is 0",
+      "shaders": [
+        "aurora-curtain",
+        "bioluminescent-bloom",
+        "gen-belousov-zhabotinsky",
+        "gen-bio-luminescent-jelly",
+        "gen-celestial-nanite-swarm-nebula",
+        "gen-crystal-lattice-growth",
+        "gen-crystalline-mandala-bloom",
+        "gen-dla-copper-deposition",
+        "gen-dynamic-tessellation-ornate-fractal-tiles",
+        "gen-fourier-epicycles"
+      ]
+    },
+    "3D_multi_pass": {
+      "owner": "claude",
+      "status": "done",
+      "shaders": [
+        "gen_reaction_diffusion",
+        "gen-murmuration-phantom",
+        "gen-navier-stokes-ink",
+        "gen-belousov-zhabotinsky",
+        "gen-conway-game-of-life"
+      ],
+      "notes": "Claude optimization notes in agents/swarm-outputs/claude-notes/"
+    },
+    "3E_polish": {
+      "owner": "claude",
+      "status": "blocked",
+      "blocked_on": "kimiclaw 3A completion + .notes.kimiclaw.md",
+      "shaders": [
+        "gen-translucent-nebula",
+        "gen-prismatic-crystal-growth",
+        "electric-eel-storm"
+      ]
+    }
+  },
+  "agent_docs": {
+    "master": "agents/swarm-tasks/kimi_6_6_26.md",
+    "kimiclaw": "agents/swarm-tasks/kimiclaw_6626.md",
+    "codex": "agents/swarm-tasks/codex_6626.md",
+    "claude": "agents/swarm-tasks/claude_6_6_26.md",
+    "coordination": "agents/swarm_6626.md"
+  },
+  "github_issues": {
+    "799_wasm_context": "https://github.com/ford442/image_video_effects/issues/799",
+    "800_shader_gallery": "https://github.com/ford442/image_video_effects/issues/800",
+    "801_batch_3": "https://github.com/ford442/image_video_effects/issues/801"
+  }
+}

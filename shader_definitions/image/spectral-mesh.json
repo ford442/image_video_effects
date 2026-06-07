@@ -1,0 +1,62 @@
+{
+  "id": "spectral-mesh",
+  "name": "Spectral Mesh",
+  "category": "image",
+  "url": "shaders/spectral-mesh.wgsl",
+  "description": "Adaptive Delaunay-style spectral mesh with image-gradient-driven density, chromatic wavelength vertex coloring, wireframe glow, HDR bloom, ACES tone mapping, and subsurface scattering. Bass drives subdivision, mouse attracts vertices, depth controls foreshortening.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "mesh",
+    "wireframe",
+    "spectral",
+    "audio-reactive",
+    "grid"
+  ],
+  "params": [
+    {
+      "id": "grid_density",
+      "name": "Grid Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Density of the spectral mesh"
+    },
+    {
+      "id": "displacement",
+      "name": "Displacement Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Amount of cursor-driven mesh drift"
+    },
+    {
+      "id": "mouse_radius",
+      "name": "Mouse Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Radius of mouse interaction"
+    },
+    {
+      "id": "color_shift",
+      "name": "Color Shift",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Spectral palette offset"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "id": "plasma-jet-stream",
+  "name": "Plasma Jet Stream",
+  "url": "shaders/plasma-jet-stream.wgsl",
+  "category": "generative",
+  "description": "High-energy plasma jets radiate from center with bass-driven intensity, mids-driven spread, and treble sparks.",
+  "tags": [
+    "generative",
+    "plasma",
+    "jets",
+    "energy",
+    "physics",
+    "audio-reactive"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "jetCount",
+      "name": "Jet Count",
+      "default": 0.44,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "velocity",
+      "name": "Velocity",
+      "default": 0.48,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "spread",
+      "name": "Spread",
+      "default": 0.38,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

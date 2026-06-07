@@ -1,0 +1,69 @@
+{
+  "id": "gen-phyllotaxis-galaxy-spiral",
+  "name": "Phyllotaxis Galaxy Spiral",
+  "url": "shaders/gen-phyllotaxis-galaxy-spiral.wgsl",
+  "description": "Golden-angle phyllotaxis spiral where each floret is a star in a galaxy. Vogel's formula arranges hundreds of stars with Hubble palette colors, Lin-Shu density waves, 3D perspective projection, and depth-of-field Gaussian rendering.",
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "procedural",
+    "generative",
+    "3d",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "galaxy",
+    "spiral",
+    "phyllotaxis",
+    "golden-angle",
+    "stars",
+    "space",
+    "generative",
+    "abstract",
+    "cosmic",
+    "hubble"
+  ],
+  "params": [
+    {
+      "id": "spread",
+      "name": "Star Spread",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Controls the overall strength of the generated effect."
+    },
+    {
+      "id": "size",
+      "name": "Star Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Controls animation and temporal evolution speed."
+    },
+    {
+      "id": "rotation",
+      "name": "Disk Rotation",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Controls spatial scale, frequency, or detail contrast."
+    },
+    {
+      "id": "density",
+      "name": "Wave Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Controls mouse-driven or secondary variation influence."
+    }
+  ]
+}

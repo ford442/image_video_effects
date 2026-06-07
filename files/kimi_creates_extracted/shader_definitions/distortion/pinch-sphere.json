@@ -1,0 +1,41 @@
+{
+  "id": "pinch-sphere",
+  "name": "Pinch Sphere",
+  "url": "shaders/pinch-sphere.wgsl",
+  "features": ["mouse-driven"],
+  "tags": ["distortion", "pinch", "sphere", "bulge", "3d"],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Bulge",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Curvature",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Edge Darken",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

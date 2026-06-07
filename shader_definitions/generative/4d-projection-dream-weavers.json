@@ -1,0 +1,67 @@
+{
+  "id": "4d-projection-dream-weavers",
+  "name": "4D Projection Dream Weavers",
+  "url": "shaders/4d-projection-dream-weavers.wgsl",
+  "category": "generative",
+  "description": "A continuous slice through 4-dimensional fractal space. The mouse smoothly controls two extra dimensions, allowing genuine exploration of higher-dimensional forms. Audio modulates scale, speed, and detail.",
+  "features": [
+    "4d-fractal",
+    "smooth-navigation",
+    "mouse-4d-control",
+    "audio-parameter",
+    "dream-like",
+    "upgraded-rgba",
+    "chromatic-dispersion",
+    "depth-output"
+  ],
+  "tags": [
+    "4d",
+    "fractal",
+    "higher-dimensional",
+    "exploration",
+    "mathematical",
+    "dream"
+  ],
+  "params": [
+    {
+      "id": "scale",
+      "name": "Base Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Overall zoom level in 4D space"
+    },
+    {
+      "id": "speed",
+      "name": "Temporal Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "How fast the 4D structure evolves"
+    },
+    {
+      "id": "detail",
+      "name": "Fractal Detail",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Amount of fine detail visible"
+    },
+    {
+      "id": "mouseSensitivity",
+      "name": "4D Mouse Sensitivity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How strongly the mouse moves through the extra dimensions"
+    }
+  ]
+}

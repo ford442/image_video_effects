@@ -1,0 +1,54 @@
+{
+  "id": "breathing-kaleidoscope",
+  "name": "Breathing Kaleidoscope",
+  "category": "visual-effects",
+  "url": "shaders/breathing-kaleidoscope.wgsl",
+  "description": "Organic breathing kaleidoscope driven by domain-warped FBM, fractional symmetry, jewel-tone palette cycling, film grain, and depth-aware sector fading.",
+  "params": [
+    {
+      "id": "cycleSpeed",
+      "name": "Cycle Speed",
+      "default": 0.2,
+      "min": 0,
+      "max": 2
+    },
+    {
+      "id": "segments",
+      "name": "Segments",
+      "default": 6,
+      "min": 2,
+      "max": 16
+    },
+    {
+      "id": "rotationSpeed",
+      "name": "Rotation Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 4
+    },
+    {
+      "id": "maxRotationPercent",
+      "name": "Max Rotation",
+      "default": 0.8,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "kaleidoscope",
+    "animated",
+    "visual-effects",
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "kaleidoscope",
+    "petals",
+    "audio",
+    "reactive",
+    "organic",
+    "fbm"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "id": "bubble-lens",
+  "name": "Bubble Lens",
+  "category": "distortion",
+  "url": "shaders/bubble-lens.wgsl",
+  "description": "A thin-film soap bubble lens magnifies the source image and blooms into beat-reactive interference colors around the cursor.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "bubble",
+    "soap",
+    "interference",
+    "lens",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "bubble_size",
+      "name": "Bubble Size",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "magnification",
+      "name": "Magnification",
+      "default": 0.55,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "film_thickness",
+      "name": "Film Thickness",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "ior",
+      "name": "IOR",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ]
+}

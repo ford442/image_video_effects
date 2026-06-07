@@ -1,0 +1,62 @@
+{
+  "id": "spec-analytic-noise-flow",
+  "name": "Analytic Noise Flow",
+  "url": "shaders/spec-analytic-noise-flow.wgsl",
+  "description": "Perlin noise with analytic derivatives for ultra-smooth flow fields. Gradient computed alongside noise value in single evaluation, eliminating finite-difference jitter for perfectly parallel streamlines.",
+  "tags": [
+    "analytic-derivatives",
+    "flow-field",
+    "noise",
+    "perlin",
+    "streamlines",
+    "curl"
+  ],
+  "features": [
+    "analytic-derivatives",
+    "flow-field",
+    "noise",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "flow_scale",
+      "name": "Flow Scale",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "flow_speed",
+      "name": "Flow Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "advection",
+      "name": "Advection",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "curl",
+      "name": "Curl Amount",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "target_rating": 4.6
+}

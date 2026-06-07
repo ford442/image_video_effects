@@ -1,0 +1,56 @@
+{
+  "id": "gen-phoenix-fractal-flame",
+  "name": "Phoenix Fractal Flame",
+  "url": "shaders/gen-phoenix-fractal-flame.wgsl",
+  "description": "The Phoenix fractal set rendered with flame-like coloring. Iterates the Phoenix equation z = z^2 + c + p*z_prev to create intricate fractal patterns with fiery orange-red palette. Mouse controls the Julia seed parameter for real-time exploration. Supports zoom and pan.",
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural"
+  ],
+  "tags": [
+    "fractal",
+    "phoenix",
+    "flame",
+    "fire",
+    "generative",
+    "mathematical",
+    "juliaset",
+    "interactive"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Zoom Level",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Animation Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "scale",
+      "name": "Fractal Detail",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

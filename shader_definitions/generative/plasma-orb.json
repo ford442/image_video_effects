@@ -1,0 +1,65 @@
+{
+  "id": "plasma-orb",
+  "name": "Plasma Orb",
+  "category": "generative",
+  "url": "shaders/plasma-orb.wgsl",
+  "description": "Magnetohydrodynamic plasma orb with tokamak-style field lines, Alfvén waves, magnetic reconnection flares, and synchrotron emission. Audio drives plasma temperature and field chaos; mouse pinches the orb. Depth controls field line density perspective.",
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "mhd-turbulence",
+    "magnetic-reconnection",
+    "tokamak-field-lines",
+    "synchrotron-emission",
+    "upgraded-rgba",
+    "temporal-glow"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Arc Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "chaos",
+      "name": "Arc Chaos",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "glow",
+      "name": "Glow Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "core",
+      "name": "Core Brightness",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "plasma",
+    "electric",
+    "orb",
+    "generative",
+    "audio-reactive",
+    "mouse-driven",
+    "glow",
+    "arcs",
+    "mhd",
+    "tokamak",
+    "magnetic-reconnection",
+    "synchrotron"
+  ]
+}

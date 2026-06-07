@@ -1,0 +1,61 @@
+{
+  "id": "gen-cosmic-slime-mold",
+  "name": "Cosmic Slime Mold",
+  "category": "generative",
+  "url": "shaders/gen-cosmic-slime-mold.wgsl",
+  "description": "Simulation of slime mold growth with vivid psychedelic coloring. Branching veins of bright neon spread across the screen in organic dendritic patterns. Colors shift from deep purple to hot pink to electric cyan. Mouse feeds the slime causing rapid growth pulses.",
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural",
+    "simulation"
+  ],
+  "tags": [
+    "psychedelic",
+    "neon",
+    "slime-mold",
+    "organic",
+    "growth",
+    "veins",
+    "dendritic"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "speed",
+      "name": "Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "scale",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

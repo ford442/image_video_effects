@@ -1,0 +1,44 @@
+{
+  "id": "optical-feedback",
+  "name": "Optical Feedback Loop",
+  "url": "shaders/optical-feedback.wgsl",
+  "description": "Infinite video feedback loop centered on the mouse cursor.",
+  "params": [
+    {
+      "id": "zoom",
+      "name": "Feedback Zoom",
+      "default": 0.6,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "rotation",
+      "name": "Rotation",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "decay",
+      "name": "Decay",
+      "default": 0.95,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "shift",
+      "name": "Hue Shift",
+      "default": 0.1,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal-persistence"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

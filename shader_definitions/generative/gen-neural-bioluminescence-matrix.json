@@ -1,0 +1,56 @@
+{
+  "id": "gen-neural-bioluminescence-matrix",
+  "name": "Neural Bioluminescence Matrix",
+  "url": "shaders/gen-neural-bioluminescence-matrix.wgsl",
+  "description": "A pulsing, infinite organic matrix of glowing synthetic neurons firing quantum light impulses across a void, merging biological growth with cybernetic circuitry.",
+  "tags": [
+    "organic",
+    "quantum",
+    "matrix",
+    "bioluminescence",
+    "neural"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Node Density",
+      "default": 1,
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Pulse Speed",
+      "default": 1,
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Audio Reactivity",
+      "default": 1,
+      "min": 0,
+      "max": 2,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Bio-Glow Intensity",
+      "default": 2,
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

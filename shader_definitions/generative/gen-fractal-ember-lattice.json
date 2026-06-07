@@ -1,0 +1,63 @@
+{
+  "id": "gen-fractal-ember-lattice",
+  "name": "Fractal Ember Lattice",
+  "url": "shaders/gen-fractal-ember-lattice.wgsl",
+  "category": "generative",
+  "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, and spark frequency.",
+  "tags": [
+    "crystal",
+    "fractal",
+    "ember",
+    "fire",
+    "shatter",
+    "lattice",
+    "showcase",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "chromatic-aberration",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "glowIntensity",
+      "name": "Glow Intensity",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "shardSize",
+      "name": "Shard Size",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "latticeScale",
+      "name": "Lattice Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "sparkDensity",
+      "name": "Spark Density",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

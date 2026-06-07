@@ -1,0 +1,51 @@
+{
+  "id": "blueprint-reveal",
+  "name": "Blueprint Reveal",
+  "url": "shaders/blueprint-reveal.wgsl",
+  "description": "Temporal ink dissolve with depth hatch density and audio surge. Sobel edge detection draws blueprint lines; previous reveal state bleeds outward like spreading ink. Depth modulates hatch fineness, bass creates ink ripple surges from the mouse.",
+  "params": [
+    {
+      "id": "edgeStrength",
+      "name": "Edge Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "gridOpacity",
+      "name": "Grid Opacity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "radius",
+      "name": "Reveal Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "softness",
+      "name": "Edge Softness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal-ink",
+    "depth-hatch",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "blueprint",
+    "ink",
+    "reveal",
+    "schematic"
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "id": "gen-reaction-diffusion",
+  "name": "FitzHugh-Nagumo Excitable Media",
+  "url": "shaders/gen_reaction_diffusion.wgsl",
+  "description": "Dual-mode excitable media: Gray-Scott morphogenesis or FitzHugh-Nagumo action-potential waves with mouse/current injection and bass-triggered pulses.",
+  "features": [
+    "upgraded-rgba",
+    "aces-tone-map",
+    "depth-aware",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "hue-preserve-clamp",
+    "ign-dither"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "reaction-diffusion",
+    "excitable-media",
+    "audio-reactive",
+    "waves"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Excitability",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Recovery",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Stimulus",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Model Blend",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "labels": [
+        "Gray-Scott",
+        "FitzHugh-Nagumo"
+      ],
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

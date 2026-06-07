@@ -1,0 +1,62 @@
+{
+  "id": "gen-celestial-prism-orchid",
+  "name": "Celestial Prism-Orchid",
+  "url": "shaders/gen-celestial-prism-orchid.wgsl",
+  "description": "A mesmerizing, infinite expanse of refractive, crystalline petals that fold, bloom, and scatter starlight into vivid chromatic spectrums, dynamically responding to cosmic winds and audio vibrations.",
+  "tags": [
+    "organic",
+    "cosmic",
+    "refractive",
+    "audio-reactive",
+    "raymarching",
+    "fractal",
+    "iridescent",
+    "atmospheric"
+  ],
+  "features": [
+    "mouse-driven",
+    "mouse-pollinator",
+    "audio-reactive",
+    "audio-driven",
+    "semantic-alpha",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "bloomComplexity",
+      "name": "Bloom Complexity",
+      "default": 1.5,
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "refractiveIndex",
+      "name": "Refractive Index",
+      "default": 1.2,
+      "min": 1,
+      "max": 2.5,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "coreIntensity",
+      "name": "Core Intensity",
+      "default": 2,
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "cosmicWindSpeed",
+      "name": "Cosmic Wind Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 2,
+      "step": 0.05,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

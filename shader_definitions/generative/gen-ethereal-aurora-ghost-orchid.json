@@ -1,0 +1,49 @@
+{
+  "id": "gen-ethereal-aurora-ghost-orchid",
+  "name": "Ethereal-Aurora Ghost-Orchid",
+  "url": "shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
+  "category": "generative",
+  "description": "A phantom-like, hyper-dimensional orchid whose transparent, glowing petals are formed entirely from captured aurora borealis, blooming and disintegrating infinitely in a volumetric dark-matter void, driven by acoustic resonance.",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Petal Complexity",
+      "type": "slider",
+      "min": 1,
+      "max": 10,
+      "default": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Aurora Intensity",
+      "type": "slider",
+      "min": 0.5,
+      "max": 5,
+      "default": 2,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Audio Reactivity",
+      "type": "slider",
+      "min": 0,
+      "max": 3,
+      "default": 1.5,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Pollen Density",
+      "type": "slider",
+      "min": 0,
+      "max": 10,
+      "default": 5,
+      "step": 0.5,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

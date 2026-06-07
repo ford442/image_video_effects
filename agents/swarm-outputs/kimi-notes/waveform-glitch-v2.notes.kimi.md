@@ -1,0 +1,5 @@
+# waveform-glitch v2 — Second-Pass Notes
+
+- **Surprising behavior**: The optical-flow datamoshing causes still-image regions to remain pristine while motion edges liquify into curl-noise smears; when the bass drops, audio transients inject corruption bursts that bypass the adaptive early-exit and momentarily full-screen glitch before settling back into flow-driven distortion.
+- **Audio reactivity**: Bass spikes wave intensity and drives the base glitch amplitude; mids modulate VHS tracking jitter; treble adds head-switching noise-band intensity; the derivative of bass (transient detection via ring-buffered extraBuffer) triggers explosive corruption bursts independent of steady-state amplitude.
+- **Alpha semantics**: Alpha encodes `glitchMag * blockCorrup * transientEnergy * mouseZone` — it is zero for pristine pixels, grows with displacement magnitude and corruption severity, spikes during audio transients, and blooms under the cursor, making the glitch layer semitransparent where it distorts and fully invisible where the image is untouched.

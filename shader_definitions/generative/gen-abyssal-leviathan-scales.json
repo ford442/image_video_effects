@@ -1,0 +1,55 @@
+{
+  "id": "gen-abyssal-leviathan-scales",
+  "name": "Abyssal Leviathan-Scales",
+  "url": "shaders/gen-abyssal-leviathan-scales.wgsl",
+  "description": "A mesmerizing, infinite expanse of massive, interlocking biomechanical armor scales that undulate like a breathing cosmic leviathan, parting to reveal a blazing, audio-reactive quantum fusion core beneath.",
+  "tags": [
+    "organic",
+    "mechanical",
+    "quantum",
+    "raymarching",
+    "bioluminescence"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "scaleDensity",
+      "name": "Scale Density",
+      "default": 5,
+      "min": 1,
+      "max": 15,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "plasmaIntensity",
+      "name": "Plasma Intensity",
+      "default": 1,
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "breathingSpeed",
+      "name": "Breathing Speed",
+      "default": 1,
+      "min": 0.1,
+      "max": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "coreHeat",
+      "name": "Core Heat",
+      "default": 2,
+      "min": 0.5,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

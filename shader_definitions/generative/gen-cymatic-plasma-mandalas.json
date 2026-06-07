@@ -1,0 +1,65 @@
+{
+  "id": "gen-cymatic-plasma-mandalas",
+  "name": "Cymatic Plasma-Mandalas",
+  "url": "shaders/gen-cymatic-plasma-mandalas.wgsl",
+  "description": "A hyper-intricate, unfolding kaleidoscope of glowing liquid geometry that dances and weaves complex, sacred-geometry-inspired mandalas in direct response to audio frequencies.",
+  "tags": [
+    "generative",
+    "mandala",
+    "cymatics",
+    "plasma",
+    "kaleidoscope",
+    "audio-reactive",
+    "liquid",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven",
+    "upgraded-rgba",
+    "temporal-symmetry-memory",
+    "audio-cymatic-frequency",
+    "depth-edge-glow"
+  ],
+  "params": [
+    {
+      "id": "symmetryOrder",
+      "name": "Symmetry Order",
+      "default": 6,
+      "min": 1,
+      "max": 12,
+      "step": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "plasmaDensity",
+      "name": "Plasma Density",
+      "default": 2,
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "cymaticFrequency",
+      "name": "Cymatic Frequency",
+      "default": 10,
+      "min": 0.5,
+      "max": 30,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "swirlChaos",
+      "name": "Swirl Chaos",
+      "default": 1,
+      "min": 0,
+      "max": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

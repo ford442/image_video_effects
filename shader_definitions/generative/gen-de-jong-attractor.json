@@ -1,0 +1,62 @@
+{
+  "id": "gen-de-jong-attractor",
+  "name": "Peter de Jong Attractor",
+  "url": "shaders/gen-de-jong-attractor.wgsl",
+  "description": "Strange attractor density accumulation for the 2D Peter de Jong map: x' = sin(a·y)−cos(b·x), y' = sin(c·x)−cos(d·y). Parameters slowly morph through time, continuously transforming the attractor topology through butterflies, snowflakes, spirographs, and alien lace-work. Temporal Monte Carlo builds density; bass warps the geometry; mouse pans and click-zooms.",
+  "tags": [
+    "chaos",
+    "strange-attractor",
+    "de-jong",
+    "temporal",
+    "fractal",
+    "audio-reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba",
+    "chromatic-parameters",
+    "audio-morph-speed",
+    "depth-from-density"
+  ],
+  "params": [
+    {
+      "id": "speedA",
+      "name": "Morph Speed A",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "speedB",
+      "name": "Morph Speed B",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "glowRadius",
+      "name": "Glow Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "decay",
+      "name": "Trail Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "coordinate": 888
+}

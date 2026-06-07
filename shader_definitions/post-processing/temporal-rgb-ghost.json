@@ -1,0 +1,57 @@
+{
+  "id": "temporal-rgb-ghost",
+  "name": "Temporal RGB Ghost",
+  "url": "shaders/temporal-rgb-ghost.wgsl",
+  "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal.",
+  "tags": [
+    "temporal",
+    "ghost",
+    "chromatic",
+    "comet",
+    "rainbow",
+    "psychedelic",
+    "motion"
+  ],
+  "features": [
+    "temporal",
+    "history-ring",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "requiresHistoryRing": true,
+  "params": [
+    {
+      "id": "param1",
+      "name": "G Channel Delay",
+      "default": 0.17,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param2",
+      "name": "B Channel Delay",
+      "default": 0.67,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param3",
+      "name": "Ghost Blend",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "param4",
+      "name": "Luma Boost",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

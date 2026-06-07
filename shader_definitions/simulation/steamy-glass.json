@@ -1,0 +1,47 @@
+{
+  "id": "steamy-glass",
+  "name": "Steamy Glass",
+  "url": "shaders/steamy-glass.wgsl",
+  "description": "Simulates a foggy window that can be wiped clean with the mouse. The steam slowly returns over time.",
+  "params": [
+    {
+      "name": "Fog Density",
+      "id": "zoomParam1",
+      "default": 0.8,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Fade Speed",
+      "id": "zoomParam2",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Wipe Radius",
+      "id": "zoomParam3",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "name": "Blur Amount",
+      "id": "zoomParam4",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "feedback",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
+  ],
+  "tags": [
+    "simulation",
+    "physics"
+  ]
+}

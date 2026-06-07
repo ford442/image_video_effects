@@ -1,0 +1,61 @@
+{
+  "id": "gen-micro-cosmos",
+  "name": "Micro-Cosmos",
+  "url": "shaders/gen-micro-cosmos.wgsl",
+  "description": "A microscopic view of a teeming liquid universe, filled with procedural microorganisms, drifting particles, and organic structures.",
+  "tags": [
+    "biological",
+    "organic",
+    "microscopic",
+    "liquid",
+    "life",
+    "floating",
+    "generative",
+    "procedural",
+    "audio",
+    "music"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Population Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Fluid Activity",
+      "default": 0.3,
+      "min": 0,
+      "max": 2,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Membrane Glow",
+      "default": 1,
+      "min": 0,
+      "max": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.05,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

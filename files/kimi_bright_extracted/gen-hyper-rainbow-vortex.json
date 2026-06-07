@@ -1,0 +1,14 @@
+{
+  "id": "gen-hyper-rainbow-vortex",
+  "name": "Hyper Rainbow Vortex",
+  "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
+  "description": "A multi-layered chromatic vortex that sucks colors into a spiraling center. Multiple counter-rotating spiral arms with different rainbow offsets create intense color interference. Bright saturated neon palette. Mouse position shifts the vortex center and changes pull strength.",
+  "features": ["interactive", "mouse-reactive", "temporal", "procedural"],
+  "tags": ["psychedelic", "neon", "vortex", "rainbow", "spiral", "chromatic"],
+  "params": [
+    {"id": "intensity", "name": "Intensity", "default": 0.7, "min": 0, "max": 1, "step": 0.01},
+    {"id": "speed", "name": "Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01},
+    {"id": "scale", "name": "Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01},
+    {"id": "colorshift", "name": "Color Shift", "default": 0.0, "min": 0, "max": 1, "step": 0.01}
+  ]
+}

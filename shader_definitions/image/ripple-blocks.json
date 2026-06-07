@@ -1,0 +1,49 @@
+{
+  "id": "ripple-blocks",
+  "name": "Ripple Blocks",
+  "description": "Grid blocks that scale based on a wave pattern from the mouse.",
+  "url": "shaders/ripple-blocks.wgsl",
+  "params": [
+    {
+      "name": "Grid Size",
+      "id": "grid_size",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5
+    },
+    {
+      "name": "Wave Amp",
+      "id": "wave_amp",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5
+    },
+    {
+      "name": "Freq",
+      "id": "freq",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5
+    },
+    {
+      "name": "Speed",
+      "id": "speed",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

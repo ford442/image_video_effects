@@ -1,0 +1,50 @@
+{
+  "id": "block-distort-interactive",
+  "name": "Block Distort",
+  "category": "interactive-mouse",
+  "url": "shaders/block-distort-interactive.wgsl",
+  "icon": "grid",
+  "description": "Cursor pressure shoves image blocks into a prismatic distortion field with beat-reactive grid highlights.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "x",
+      "name": "Block Size",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "y",
+      "name": "Push Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "z",
+      "name": "RGB Split",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "w",
+      "name": "Radius",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "mouse-driven",
+    "interactive",
+    "grid",
+    "glitch",
+    "audio-reactive"
+  ]
+}

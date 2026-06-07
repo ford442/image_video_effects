@@ -1,0 +1,51 @@
+{
+  "id": "liquid-prism",
+  "url": "shaders/liquid-prism.wgsl",
+  "features": [
+    "mouse-driven",
+    "audio-reactive"
+  ],
+  "description": "Chromatic aberration waves ripple from your cursor, refracting the image like a liquid lens. Audio reactivity pulses ripple strength and prism highlights with the beat.",
+  "params": [
+    {
+      "id": "strength",
+      "name": "Prism Strength",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "frequency",
+      "name": "Wave Frequency",
+      "type": "float",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "type": "float",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "aberration",
+      "name": "Aberration",
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "tags": [
+    "warp",
+    "distort",
+    "transform",
+    "audio",
+    "music"
+  ],
+  "name": "Liquid Prism"
+}

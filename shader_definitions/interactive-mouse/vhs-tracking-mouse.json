@@ -1,0 +1,52 @@
+{
+  "id": "vhs-tracking-mouse",
+  "name": "VHS Tracking",
+  "url": "shaders/vhs-tracking-mouse.wgsl",
+  "description": "A vertical tracking bar distortion controlled by mouse height with audio-reactive intensity.",
+  "params": [
+    {
+      "id": "barHeight",
+      "name": "Bar Height",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "distortionStrength",
+      "name": "Distortion Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "noiseAmount",
+      "name": "Static Noise",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Split",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "vhs",
+    "glitch",
+    "retro"
+  ]
+}

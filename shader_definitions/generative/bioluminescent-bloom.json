@@ -1,0 +1,66 @@
+{
+  "id": "bioluminescent-bloom",
+  "name": "Bioluminescent Bloom",
+  "category": "generative",
+  "url": "shaders/bioluminescent-bloom.wgsl",
+  "description": "Deep-ocean bioluminescent colony driven by Gray-Scott reaction-diffusion with chemotaxis and quorum-sensing glow activation. Background tendrils provide ambient light. Audio injects nutrients and triggers stress flashes; mouse drops nutrient pellets. Depth attenuates bioluminescence.",
+  "features": [
+    "audio-reactive",
+    "reaction-diffusion",
+    "gray-scott",
+    "chemotaxis",
+    "quorum-sensing",
+    "volumetric-scatter",
+    "pulsing-tendrils",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "tendrils",
+      "name": "Tendril Count",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "pulse",
+      "name": "Pulse Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "dots",
+      "name": "Dot Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "glow",
+      "name": "Glow Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "bioluminescent",
+    "deep-sea",
+    "tendrils",
+    "glow",
+    "audio-reactive",
+    "organic",
+    "atmospheric",
+    "reaction-diffusion",
+    "gray-scott",
+    "chemotaxis",
+    "quorum-sensing",
+    "colony"
+  ]
+}

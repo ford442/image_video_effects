@@ -1,0 +1,57 @@
+{
+  "id": "velvet-scatter-bloom",
+  "name": "Velvet Scatter Bloom",
+  "url": "shaders/velvet-scatter-bloom.wgsl",
+  "description": "Rich velvet-like subsurface scattering on darker regions of the input, with living audio-reactive bloom and a moving mouse light that reveals hidden color beneath the surface. Feels luxurious and organic on both stills and video.",
+  "tags": [
+    "velvet",
+    "subsurface",
+    "bloom",
+    "atmospheric",
+    "audio-reactive",
+    "organic",
+    "cinematic"
+  ],
+  "features": [
+    "audio-reactive",
+    "audio-driven",
+    "mouse-driven",
+    "mouse-light",
+    "semantic-alpha",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "scatter",
+      "name": "Scatter Amount",
+      "default": 0.85,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "id": "bloom",
+      "name": "Edge Bloom",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.8,
+      "step": 0.01
+    },
+    {
+      "id": "subsurface",
+      "name": "Subsurface Depth",
+      "default": 0.75,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "lightAngle",
+      "name": "Light Angle",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

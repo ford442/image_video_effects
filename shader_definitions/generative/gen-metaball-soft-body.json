@@ -1,0 +1,61 @@
+{
+  "id": "gen-metaball-soft-body",
+  "name": "Metaball Soft Body",
+  "url": "shaders/gen-metaball-soft-body.wgsl",
+  "description": "Organic liquid-metal metaballs with coupled harmonic oscillators, Fresnel reflections, subsurface scattering, and chromatic caustics in merge regions. Bass pulsates radii, mouse attracts centers.",
+  "features": [
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "audio-reactive",
+    "temporal"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "metaballs",
+    "liquid-metal",
+    "organic",
+    "implicit-surface",
+    "audio-reactive",
+    "vj"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Ball Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Surface Roughness",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Metal Hue",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Caustic Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "id": "data-stream",
+  "name": "Digital Stream",
+  "url": "shaders/data-stream.wgsl",
+  "description": "Digital matrix-style data stream disrupted by mouse interaction. Audio-reactive bass pulses accelerate the flow.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Flow Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "density",
+      "name": "Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.8,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "glow",
+      "name": "Digital Glow",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "glitch",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "digital",
+    "matrix",
+    "green",
+    "data",
+    "stream",
+    "glitch",
+    "interactive",
+    "audio-reactive"
+  ]
+}

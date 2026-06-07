@@ -1,0 +1,1507 @@
+[
+  {
+    "id": "audio-reactive-pyramid",
+    "name": "Audio Reactive Pyramid",
+    "url": "shaders/audio-reactive-pyramid.wgsl",
+    "category": "post-processing",
+    "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0–12), mid detail by mid bins (13–50), fine detail by treble bins (51–127). Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+    "tags": [
+      "audio-reactive",
+      "sharpening",
+      "pyramid",
+      "fft",
+      "frequency",
+      "laplacian",
+      "detail"
+    ],
+    "features": [
+      "audio-reactive",
+      "fft-bins"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Bass Gain",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Mid Gain",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Treble Gain",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Blend",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "audio-reactive-rgb-dispersion",
+    "name": "Audio Reactive RGB Dispersion",
+    "url": "shaders/audio-reactive-rgb-dispersion.wgsl",
+    "category": "post-processing",
+    "description": "Chromatic (RGB) dispersion effect whose offset magnitudes and direction are driven by the spectral centroid of the live 128-bin FFT array. Bass-heavy music produces tight warm dispersion; treble-heavy music produces wide cool dispersion. Compatible with ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+    "tags": [
+      "audio-reactive",
+      "chromatic-aberration",
+      "dispersion",
+      "fft",
+      "spectral-centroid",
+      "rgb",
+      "frequency"
+    ],
+    "features": [
+      "audio-reactive",
+      "fft-bins"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Dispersion Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Angle Offset",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Edge Falloff",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Original Blend",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "audio-reactive-temporal-decay",
+    "name": "Audio Reactive Temporal Decay",
+    "url": "shaders/audio-reactive-temporal-decay.wgsl",
+    "category": "post-processing",
+    "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range. Low-band energy → long ghostly trails; high-band energy → fast fade. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+    "tags": [
+      "audio-reactive",
+      "temporal",
+      "trails",
+      "feedback",
+      "fft",
+      "decay",
+      "frequency"
+    ],
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "fft-bins"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Decay Base",
+        "default": 0.15,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Audio Drive",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Bin Range Lo",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.008
+      },
+      {
+        "id": "param4",
+        "name": "Bin Range Hi",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.008
+      }
+    ]
+  },
+  {
+    "id": "chrono-luma-slit-scan",
+    "name": "Chrono Luma Slit Scan",
+    "url": "shaders/chrono-luma-slit-scan.wgsl",
+    "category": "post-processing",
+    "description": "Luminance-driven 3D-texture slit scan: each pixel's brightness determines which frame in the history ring it samples. Bright pixels snap to the present; dark pixels reveal the deep past. Moving subjects leave temporal halos as their bright edges exist in the now while dark backgrounds drift through time.",
+    "tags": [
+      "temporal",
+      "slit-scan",
+      "chrono",
+      "luminance",
+      "history",
+      "time",
+      "psychedelic",
+      "abstract"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Temporal Spread",
+        "default": 1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Warp Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Luma Gamma",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Original Blend",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "long-exposure",
+    "name": "Long Exposure Light Painting",
+    "url": "shaders/long-exposure.wgsl",
+    "description": "Simulates an open camera shutter accumulating light over time. Bright regions of each frame persist and blend into a glowing exposure buffer stored in dataTextureC; darker regions fade slowly, leaving luminous light-painting trails. Mouse click resets the exposure. Bass brightens incoming frames for punchier accumulation; mids control bloom halo radius; treble adds sparkle to the brightest traces.",
+    "tags": [
+      "long-exposure",
+      "light-painting",
+      "temporal",
+      "accumulation",
+      "glow",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "accumSpeed",
+        "name": "Accumulation Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "decayRate",
+        "name": "Decay Rate",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glowRadius",
+        "name": "Glow Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "threshold",
+        "name": "Brightness Threshold",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "coordinate": 890
+  },
+  {
+    "id": "luma-pixel-sort",
+    "name": "Luma Pixel Sort",
+    "url": "shaders/luma-pixel-sort.wgsl",
+    "description": "Fibonacci disk neighborhood pixel sorting with depth-aware blending, audio-reactive threshold modulation, and luminance-keyed alpha.",
+    "features": [
+      "upgraded-rgba",
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "stylized",
+      "artistic",
+      "glitch",
+      "pixel-sort",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Luma Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Sort Length",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Depth Blend",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Noise Mix",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "optical-flow-tracer",
+    "name": "Optical Flow Tracer",
+    "url": "shaders/optical-flow-tracer.wgsl",
+    "category": "post-processing",
+    "description": "Lucas-Kanade optical flow tracer: computes per-pixel motion vectors between the current frame and the previous history frame, then warps after-images along those trajectories. Moving objects leave physically-accurate ghost trails that follow actual motion paths rather than fading in place.",
+    "tags": [
+      "temporal",
+      "optical-flow",
+      "motion",
+      "tracer",
+      "ghost",
+      "after-image",
+      "motion-vector"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "audio-reactive",
+      "mouse-driven",
+      "optical-flow",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Trail Decay",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Flow Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Trail Age",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Current Blend",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "pixel-depth-sort",
+    "name": "Pixel Depth Sort",
+    "url": "shaders/pixel-depth-sort.wgsl",
+    "description": "Directional pixel sorting by depth with mouse-following sort angle, chromatic aberration at boundaries, bass-driven sort length, and depth-layered alpha.",
+    "features": [
+      "upgraded-rgba",
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware"
+    ],
+    "tags": [
+      "filter",
+      "depth-aware",
+      "pixel-sort",
+      "chromatic-aberration",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Depth Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Sort Length",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Sort Angle",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Aberration",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "pp-bloom",
+    "name": "PP Bloom",
+    "url": "shaders/pp-bloom.wgsl",
+    "description": "High-quality HDR bloom with multi-tap Gaussian blur, anamorphic stretch, and lens dirt effects",
+    "tags": [
+      "post-process",
+      "bloom",
+      "hdr",
+      "blur"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Anamorphic",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Threshold",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Quality",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "pp-chromatic",
+    "name": "PP Chromatic",
+    "url": "shaders/pp-chromatic.wgsl",
+    "description": "Chromatic aberration with RGB channel separation, barrel/pincushion distortion, and vignette",
+    "tags": [
+      "post-process",
+      "chromatic",
+      "distortion",
+      "lens"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Amount",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Vignette",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "pp-sharpen",
+    "name": "PP Sharpen",
+    "url": "shaders/pp-sharpen.wgsl",
+    "description": "Unsharp mask sharpening with edge detection, halo control, and multiple enhancement modes",
+    "tags": [
+      "post-process",
+      "sharpen",
+      "edge-enhance",
+      "detail"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Amount",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Edge Mask",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "pp-ssao",
+    "name": "PP SSAO",
+    "url": "shaders/pp-ssao.wgsl",
+    "description": "Screen-space ambient occlusion for added depth, with color bleeding from occluding surfaces",
+    "tags": [
+      "post-process",
+      "ssao",
+      "ambient-occlusion",
+      "depth"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Quality",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Color Bleed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "pp-tone-map",
+    "name": "PP Tone Map",
+    "url": "shaders/pp-tone-map.wgsl",
+    "description": "HDR to LDR tone mapping with ACES, Uncharted 2, Reinhard, and AgX algorithms. Includes exposure, contrast, and saturation controls.",
+    "tags": [
+      "post-process",
+      "tone-map",
+      "hdr",
+      "color-grading"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Algorithm",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Exposure",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "pp-vignette",
+    "name": "PP Vignette",
+    "url": "shaders/pp-vignette.wgsl",
+    "description": "Film vignette with grain, sepia/warm/cool color grading, and retro scanline effects",
+    "tags": [
+      "post-process",
+      "vignette",
+      "grain",
+      "film",
+      "vintage"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Vignette",
+        "default": 0.4,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Grain",
+        "default": 0.2,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Color Style",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Effect",
+        "default": 0,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "radial-blur",
+    "name": "Radial Blur",
+    "url": "shaders/radial-blur.wgsl",
+    "description": "Depth-aware radial blur with bokeh shape selection, chromatic aberration, Gaussian kernel weighting, and vignette.",
+    "params": [
+      {
+        "id": "sigma",
+        "name": "Blur Sigma",
+        "default": 0.3,
+        "min": 0.01,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "shape",
+        "name": "Bokeh Shape",
+        "default": 0,
+        "min": 0,
+        "max": 2,
+        "step": 1,
+        "labels": [
+          "Circle",
+          "Hexagon",
+          "Star"
+        ]
+      },
+      {
+        "id": "focalDepth",
+        "name": "Focal Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "maxBlur",
+        "name": "Max Blur",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "depth-aware"
+    ],
+    "tags": [
+      "blur",
+      "bokeh",
+      "depth-of-field",
+      "post-processing",
+      "chromatic"
+    ]
+  },
+  {
+    "id": "soft-vignette-bloom",
+    "name": "Soft Vignette Bloom",
+    "url": "shaders/soft-vignette-bloom.wgsl",
+    "category": "post-processing",
+    "description": "Cinematic post-processing with multi-scale Gaussian bloom pyramid, anamorphic highlight streaks, and superellipse vignette. Features ACES tone mapping, split-tone shadows, film grain, and depth-driven haze. Bass boosts bloom threshold and mouse shifts vignette center.",
+    "tags": [
+      "bloom",
+      "vignette",
+      "cinematic",
+      "post-processing",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "filmic"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "vignetteStrength",
+        "name": "Vignette Strength",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bloomRadius",
+        "name": "Bloom Radius",
+        "type": "float",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "hazeAmount",
+        "name": "Haze Amount",
+        "type": "float",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "bloomIntensity",
+        "name": "Bloom Intensity",
+        "type": "float",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "spatio-temporal-3d-conv",
+    "name": "Spatio-Temporal 3D Convolution",
+    "url": "shaders/spatio-temporal-3d-conv.wgsl",
+    "category": "post-processing",
+    "description": "3×3×T spatio-temporal convolution using the history ring buffer. A Gaussian spatial kernel is applied at each of T past frames and blended with temporal weights. Param 3 selects the operation mode: Temporal Noise Reduction (averages frames to kill flicker), Motion Blur (exponential frame accumulation), or Temporal Sharpening (subtracts the temporal mean to amplify transient changes).",
+    "tags": [
+      "temporal",
+      "convolution",
+      "noise-reduction",
+      "motion-blur",
+      "sharpening",
+      "3d-kernel",
+      "spatio-temporal"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "advanced-convolution",
+      "audio-reactive",
+      "upgraded-rgba",
+      "spatio-temporal"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Spatial Sigma",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Temporal Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Mode (0=Denoise 0.5=MotionBlur 1=Sharpen)",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "labels": [
+          "Denoise",
+          "Motion Blur",
+          "Sharpen"
+        ]
+      },
+      {
+        "id": "param4",
+        "name": "Effect Strength",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-decay-multiresolution",
+    "name": "Temporal Decay Multiresolution",
+    "url": "shaders/temporal-decay-multiresolution.wgsl",
+    "description": "Four-timescale temporal decomposition. R=fast (ages 1–2), G=medium (ages 4–5), B=slow (age 7), A=ultra-slow (full average). Per-channel independent decay rates create psychedelic rainbow splits where motion speed maps to color. Stacks cleanly behind sim-decay-system-rgba.",
+    "tags": [
+      "temporal",
+      "multiresolution",
+      "decay",
+      "timescale",
+      "psychedelic",
+      "rainbow",
+      "motion"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Fast Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Medium Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Slow Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Original Blend",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-feedback-zoom-tracer",
+    "name": "Temporal Feedback Zoom Tracer",
+    "url": "shaders/temporal-feedback-zoom-tracer.wgsl",
+    "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content.",
+    "tags": [
+      "temporal",
+      "feedback",
+      "zoom",
+      "tunnel",
+      "psychedelic",
+      "warp",
+      "abstract"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Zoom Power",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Rotation",
+        "default": 0.625,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Persistence",
+        "default": 0.71,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Current Blend",
+        "default": 0.29,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-frequency-decomposition",
+    "name": "Temporal Frequency Decomposition",
+    "url": "shaders/temporal-frequency-decomposition.wgsl",
+    "description": "Discrete temporal Fourier analysis across the 8-frame history ring. Static pixels cancel to near-zero; pixels flickering or oscillating near the target frequency glow brightly. Reveals hidden temporal rhythms in video content.",
+    "tags": [
+      "temporal",
+      "frequency",
+      "fourier",
+      "glow",
+      "analysis",
+      "psychedelic",
+      "abstract"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Target Frequency",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Glow Brightness",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Glow Hue",
+        "default": 0.17,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Base Blend",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-halation-freeze",
+    "name": "Temporal Halation Freeze",
+    "url": "shaders/temporal-halation-freeze.wgsl",
+    "description": "Long-exposure style halation and light bloom that slowly accumulates and 'freezes' bright moments with beautiful decaying ghost echoes. Transforms video into dreamy, time-blurred poetry. Bass lengthens the exposure tail.",
+    "tags": [
+      "halation",
+      "bloom",
+      "long-exposure",
+      "temporal",
+      "ghost",
+      "cinematic",
+      "audio-reactive"
+    ],
+    "features": [
+      "audio-reactive",
+      "audio-driven",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "exposure",
+        "name": "Exposure Length",
+        "default": 0.7,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01
+      },
+      {
+        "id": "decay",
+        "name": "Decay Rate",
+        "default": 0.86,
+        "min": 0.6,
+        "max": 0.97,
+        "step": 0.01
+      },
+      {
+        "id": "color",
+        "name": "Bloom Color Temp",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ghost",
+        "name": "Ghost Echo",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-layered-time-stamps",
+    "name": "Temporal Layered Time-Stamps",
+    "url": "shaders/temporal-layered-time-stamps.wgsl",
+    "description": "Psychedelic temporal echo: blends 4–8 past frames from the history ring buffer (binding 13) with per-layer hue rotation and spiral UV distortion",
+    "tags": [
+      "temporal",
+      "psychedelic",
+      "echo",
+      "history",
+      "colorful",
+      "abstract"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Echo Layers",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Warp Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Color Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Blend Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ]
+  },
+  {
+    "id": "temporal-phosphor-burn-motion-adaptive",
+    "name": "Temporal Phosphor Burn (Motion Adaptive)",
+    "url": "shaders/temporal-phosphor-burn-motion-adaptive.wgsl",
+    "description": "Motion-adaptive CRT phosphor burn. Fast-moving pixels get slow decay (long bright trails); still areas clear quickly. Green/amber warm tint follows the motion glow for vivid CRT ambiance.",
+    "tags": [
+      "temporal",
+      "crt",
+      "phosphor",
+      "motion",
+      "adaptive",
+      "glow",
+      "amber",
+      "reactive"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Motion Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Max Decay (Fast)",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Min Decay (Still)",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Warm Tint",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-phosphor-burn",
+    "name": "Temporal Phosphor Burn",
+    "url": "shaders/temporal-phosphor-burn.wgsl",
+    "description": "CRT phosphor persistence: per-channel exponential decay (R=fast, B=slow) creates green/amber afterglow. max(current, decayed_history) luminance floor keeps bright pixels glowing long after the source moves on.",
+    "tags": [
+      "temporal",
+      "crt",
+      "phosphor",
+      "persistence",
+      "glow",
+      "retro",
+      "amber"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "R Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "G Decay",
+        "default": 0.79,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "B Decay",
+        "default": 0.93,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Luma Floor",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-rgb-ghost",
+    "name": "Temporal RGB Ghost",
+    "url": "shaders/temporal-rgb-ghost.wgsl",
+    "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal.",
+    "tags": [
+      "temporal",
+      "ghost",
+      "chromatic",
+      "comet",
+      "rainbow",
+      "psychedelic",
+      "motion"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "G Channel Delay",
+        "default": 0.17,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "B Channel Delay",
+        "default": 0.67,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Ghost Blend",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param4",
+        "name": "Luma Boost",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "temporal-slit-scan",
+    "name": "Temporal Slit Scan",
+    "url": "shaders/temporal-slit-scan.wgsl",
+    "description": "Classic slit-scan time-smear: each column (or row) samples a different point in the 8-frame history ring. One edge shows the current frame, the opposite edge shows 7 frames ago. Creates the flowing painterly time-smear of Radiohead's Street Spirit video on any motion.",
+    "tags": [
+      "temporal",
+      "slit-scan",
+      "time-smear",
+      "painterly",
+      "classic",
+      "retro",
+      "smear"
+    ],
+    "features": [
+      "temporal",
+      "history-ring",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
+    "requiresHistoryRing": true,
+    "params": [
+      {
+        "id": "param1",
+        "name": "Scan Axis",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param2",
+        "name": "Temporal Spread",
+        "default": 1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "param3",
+        "name": "Reverse",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 1
+      },
+      {
+        "id": "param4",
+        "name": "Original Blend",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "tone-histogram-apply",
+    "name": "Tone Histogram (Pass 2: Apply)",
+    "url": "shaders/tone-histogram-apply.wgsl",
+    "description": "Reads histogram buckets, computes auto-exposure and tone curve, and applies histogram-driven grading.",
+    "features": [
+      "multi-pass-2",
+      "histogram",
+      "auto-exposure",
+      "color-grade"
+    ],
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 2,
+      "prevShader": "tone-histogram"
+    },
+    "tags": [
+      "tone",
+      "histogram",
+      "grading",
+      "auto-exposure",
+      "psychedelic"
+    ],
+    "params": [
+      {
+        "id": "target",
+        "name": "Target Luma",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "contrast",
+        "name": "Contrast",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "saturation",
+        "name": "Saturation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "psychedelic",
+        "name": "Dynamic Hue Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 1
+      }
+    ]
+  },
+  {
+    "id": "tone-histogram",
+    "name": "Tone Histogram v2",
+    "category": "post-processing",
+    "url": "shaders/tone-histogram.wgsl",
+    "description": "Single-pass local adaptive histogram equalization with film-like tonal curves, split-tone shadows/highlights, grain texture, and depth-driven haze removal. Bass stretches histogram dynamically.",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "tags": [
+      "tone",
+      "histogram",
+      "exposure",
+      "luminance",
+      "grading",
+      "film",
+      "local-contrast",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "target",
+        "name": "Stretch Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "contrast",
+        "name": "Toe Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "saturation",
+        "name": "Shoulder Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "psychedelic",
+        "name": "Haze Removal",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  }
+]

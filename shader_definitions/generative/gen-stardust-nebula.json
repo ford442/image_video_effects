@@ -1,0 +1,60 @@
+{
+  "id": "gen-stardust-nebula",
+  "name": "Stardust Nebula",
+  "url": "shaders/gen-stardust-nebula.wgsl",
+  "category": "generative",
+  "description": "A stellar nursery in HII emission colours: curl-noise gas clouds, dark absorption pillars, and proto-star sparkle. Bass swells the pillars of creation, treble ignites new suns.",
+  "tags": [
+    "nebula",
+    "space",
+    "stars",
+    "generative",
+    "audio-reactive",
+    "cosmic",
+    "abstract",
+    "atmospheric"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Cloud Density",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "emission",
+      "name": "Emission",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "starField",
+      "name": "Star Field",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "drift",
+      "name": "Gas Drift",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

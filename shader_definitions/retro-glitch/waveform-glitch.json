@@ -1,0 +1,63 @@
+{
+  "id": "waveform-glitch",
+  "name": "Waveform Glitch",
+  "url": "shaders/waveform-glitch.wgsl",
+  "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, temporal feedback persistence, and alpha-channel translucency blending. Alpha encodes waveform displacement magnitude * block corruption intensity.",
+  "features": [
+    "temporal",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "wave_intensity",
+      "name": "Wave Intensity",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Base wave intensity, spiked by bass"
+    },
+    {
+      "id": "vhs_intensity",
+      "name": "VHS Intensity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "VHS tracking jitter and block corruption intensity"
+    },
+    {
+      "id": "block_glitch_size",
+      "name": "Block Glitch Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Size of block corruption cells"
+    },
+    {
+      "id": "shadow_mask",
+      "name": "Shadow Mask",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "CRT shadow mask intensity"
+    }
+  ],
+  "tags": [
+    "glitch",
+    "retro",
+    "vhs",
+    "datamosh",
+    "noise",
+    "fractal",
+    "crt"
+  ]
+}

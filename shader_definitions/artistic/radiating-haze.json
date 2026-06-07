@@ -1,0 +1,47 @@
+{
+  "id": "radiating-haze",
+  "name": "Radiating Haze",
+  "url": "shaders/radiating-haze.wgsl",
+  "description": "Animated aura around strong colours; browns, greys & blacks are ignored. Now with colour-mode switch.",
+  "params": [
+    {
+      "id": "speed",
+      "name": "Wave Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "intensity",
+      "name": "Aura Intensity",
+      "default": 0.6,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "satThresh",
+      "name": "Saturation Threshold",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "radius",
+      "name": "Aura Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "depth-aware",
+    "temporal-persistence",
+    "colour-masking",
+    "multi-mode",
+    "mouse-driven"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

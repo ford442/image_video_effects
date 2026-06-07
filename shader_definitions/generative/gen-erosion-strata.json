@@ -1,0 +1,73 @@
+{
+  "id": "gen-erosion-strata",
+  "name": "Erosion Strata",
+  "url": "shaders/gen-erosion-strata.wgsl",
+  "description": "Procedural sedimentary rock layers carved by domain-warped erosion channels, revealing mineral veins, fossil imprints, and weathered edges. Features atmospheric haze, subsurface scattering, and geological era palette cycling.",
+  "tags": [
+    "generative",
+    "procedural",
+    "erosion",
+    "sedimentary",
+    "strata",
+    "canyon",
+    "earth-tones",
+    "fbm",
+    "voronoi",
+    "domain-warping",
+    "audio-reactive",
+    "mouse-driven"
+  ],
+  "features": [
+    "generative",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration",
+    "depth-aware"
+  ],
+  "author": "AI",
+  "params": [
+    {
+      "id": "param1",
+      "name": "Erosion Depth",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01,
+      "description": "Depth of erosion channels cutting through sedimentary layers",
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Layer Density",
+      "min": 0,
+      "max": 1,
+      "default": 0.5,
+      "step": 0.01,
+      "description": "Density of horizontal sedimentary layers",
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Mineral Veins",
+      "min": 0,
+      "max": 1,
+      "default": 0.4,
+      "step": 0.01,
+      "description": "Prominence of Voronoi mineral vein networks",
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Water Level",
+      "min": 0,
+      "max": 1,
+      "default": 0.3,
+      "step": 0.01,
+      "description": "Vertical water level submerging lower canyon layers",
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

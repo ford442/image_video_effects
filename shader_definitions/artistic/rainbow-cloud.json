@@ -1,0 +1,58 @@
+{
+  "id": "rainbow-cloud",
+  "name": "Rainbow Cloud",
+  "category": "artistic",
+  "url": "shaders/rainbow-cloud.wgsl",
+  "description": "Ray-marched volumetric clouds with 3D Perlin noise density, Mie scattering, iridescent nacreous colors, HDR god rays through cloud gaps, ACES tone mapping, and atmospheric perspective. Bass drives cloud turbulence, mouse scatters cloud particles, depth controls density layering.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "volumetric-cloud",
+    "mie-scattering",
+    "upgraded-rgba",
+    "atmospheric"
+  ],
+  "tags": [
+    "rainbow",
+    "cloud",
+    "volumetric",
+    "iridescent",
+    "atmospheric",
+    "audio-reactive",
+    "raymarched"
+  ],
+  "params": [
+    {
+      "id": "cloud_scale",
+      "name": "Cloud Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "drift_speed",
+      "name": "Drift Speed",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "density",
+      "name": "Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "iridescence",
+      "name": "Iridescence",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

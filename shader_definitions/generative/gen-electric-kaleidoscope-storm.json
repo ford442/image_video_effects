@@ -1,0 +1,60 @@
+{
+  "id": "gen-electric-kaleidoscope-storm",
+  "name": "Electric Kaleidoscope Storm",
+  "category": "generative",
+  "url": "shaders/gen-electric-kaleidoscope-storm.wgsl",
+  "description": "Electric lightning bolts radiating from the center in a kaleidoscope symmetry pattern with 6, 8, or 12-fold symmetry. Neon cyan, magenta, and yellow bolts crack and flicker on a deep dark background. Bolts rebranch and reseed each frame for constant motion. Sparks fly randomly. Mouse rotates the kaleidoscope and changes symmetry count.",
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural"
+  ],
+  "tags": [
+    "psychedelic",
+    "neon",
+    "lightning",
+    "kaleidoscope",
+    "electric",
+    "storm",
+    "generative"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Bolt Intensity",
+      "default": 0.75,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "speed",
+      "name": "Flicker Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "scale",
+      "name": "Symmetry",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

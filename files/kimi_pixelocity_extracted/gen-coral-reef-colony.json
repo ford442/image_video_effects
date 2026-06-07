@@ -1,0 +1,57 @@
+{
+  "id": "gen-coral-reef-colony",
+  "name": "Coral Reef Colony",
+  "url": "shaders/gen-coral-reef-colony.wgsl",
+  "description": "Procedurally generated coral colony growth using branching L-system-like recursion. Creates organic coral forms with polyp details, depth-based color gradients, and swaying animation simulating underwater current. Caustics and light rays add realism. Mouse plants new coral colonies.",
+  "features": [
+    "interactive",
+    "mouse-reactive",
+    "temporal",
+    "procedural",
+    "organic"
+  ],
+  "tags": [
+    "coral",
+    "organic",
+    "nature",
+    "underwater",
+    "growth",
+    "generative",
+    "lsystem",
+    "reef"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Colony Count",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Sway Speed",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "scale",
+      "name": "Zoom",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "colorshift",
+      "name": "Color Shift",
+      "default": 0.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ]
+}

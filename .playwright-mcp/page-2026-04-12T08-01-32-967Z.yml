@@ -1,0 +1,176 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: Pixelocity
+      - generic [ref=e7]: AI VJ Image Playground
+    - generic [ref=e8]:
+      - button "Main" [ref=e9] [cursor=pointer]
+      - button "🎥 Live Studio" [ref=e10] [cursor=pointer]
+      - button "Open Remote" [ref=e12] [cursor=pointer]
+      - button "Hide Controls" [active] [ref=e146] [cursor=pointer]
+  - generic [ref=e14]:
+    - complementary [ref=e15]:
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]: Input Source
+          - generic [ref=e19]:
+            - generic [ref=e20] [cursor=pointer]:
+              - radio "Image" [checked] [ref=e21]
+              - text: Image
+            - generic [ref=e22] [cursor=pointer]:
+              - radio "Video" [ref=e23]
+              - text: Video
+            - generic [ref=e24] [cursor=pointer]:
+              - radio "Webcam" [ref=e25]
+              - text: Webcam
+            - generic [ref=e26] [cursor=pointer]:
+              - radio "Generative" [ref=e27]
+              - text: Generative
+            - generic [ref=e28] [cursor=pointer]:
+              - radio "🔴 Live" [ref=e29]
+              - text: 🔴 Live
+        - generic [ref=e30]:
+          - generic [ref=e31]: Effect Filter
+          - combobox "Effect Filter" [ref=e32]:
+            - option "All Effects / Filters" [selected]
+            - option "Procedural Generation"
+            - option "Distortion"
+            - option "Simulation"
+            - option "Artistic"
+            - option "Interactive / Mouse"
+            - option "Lighting Effects"
+            - option "Liquid Effects"
+            - option "Retro / Glitch"
+            - option "Visual Effects"
+            - option "Geometric"
+            - option "Post-Processing"
+        - generic [ref=e34]:
+          - button "🎰Randomize Slot 1" [ref=e35] [cursor=pointer]:
+            - text: 🎰
+            - generic [ref=e36]: Randomize Slot 1
+          - button "🎲Randomize All Slots" [ref=e37] [cursor=pointer]
+          - generic [ref=e39] [cursor=pointer]:
+            - checkbox "🔥 Chaos Mode Auto-switch every 6-10s" [ref=e40]
+            - generic [ref=e41]:
+              - text: 🔥 Chaos Mode
+              - generic [ref=e42]: Auto-switch every 6-10s
+          - generic [ref=e43]: Press R to spin
+        - generic [ref=e44]:
+          - button "⏺️ Record 8s Clip" [ref=e45] [cursor=pointer]:
+            - generic [ref=e46]: ⏺️
+            - generic [ref=e47]: Record 8s Clip
+          - generic [ref=e48]: Capture & share your creation
+        - generic [ref=e49]:
+          - generic [ref=e50]: Shader Slots
+          - generic [ref=e51] [cursor=pointer]:
+            - generic [ref=e52]:
+              - generic [ref=e53]: Slot 1
+              - generic [ref=e120]: ✕ FAILED
+            - button "Liquid Displacement ▼" [ref=e121]:
+              - generic "Liquid Displacement" [ref=e122]
+              - generic [ref=e57]: ▼
+          - generic [ref=e58] [cursor=pointer]:
+            - generic [ref=e60]: Slot 2
+            - button "None ▼" [ref=e62]:
+              - generic "None" [ref=e63]
+              - generic [ref=e64]: ▼
+          - generic [ref=e65] [cursor=pointer]:
+            - generic [ref=e67]: Slot 3
+            - button "None ▼" [ref=e69]:
+              - generic "None" [ref=e70]
+              - generic [ref=e71]: ▼
+        - generic [ref=e72] [cursor=pointer]:
+          - generic [ref=e73]:
+            - generic [ref=e74]: Current Shader
+            - generic [ref=e75]: "#126"
+          - generic [ref=e123]: Liquid Displacement
+        - generic [ref=e76]:
+          - generic [ref=e77]:
+            - button "📁 Upload Img" [ref=e78] [cursor=pointer]
+            - button "🎲 Random Img" [ref=e79] [cursor=pointer]
+          - button "📹 Use Webcam" [ref=e80] [cursor=pointer]
+        - separator
+        - generic [ref=e81]:
+          - generic [ref=e82]: Automation
+          - button "Load Depth Model" [ref=e83] [cursor=pointer]
+        - button "Start AI VJ" [ref=e85] [cursor=pointer]
+        - generic [ref=e86]:
+          - generic [ref=e87]: Manual Auto-Switch
+          - checkbox "Manual Auto-Switch" [ref=e88] [cursor=pointer]
+        - generic [ref=e89]:
+          - text: Shader Parameters
+          - generic [ref=e90]: Liquid Displacement
+        - generic [ref=e124]:
+          - generic [ref=e125]:
+            - generic [ref=e126]:
+              - generic [ref=e127]: Viscosity
+              - generic [ref=e128]: "0.99"
+            - slider "Viscosity 0.99" [ref=e129]: "0.99"
+          - generic [ref=e130]:
+            - generic [ref=e131]:
+              - generic [ref=e132]: Pressure Iterations
+              - generic [ref=e133]: "1.01"
+            - slider "Pressure Iterations 1.01" [ref=e134]: "1"
+          - generic [ref=e135]:
+            - generic [ref=e136]:
+              - generic [ref=e137]: Flow Speed
+              - generic [ref=e138]: "0.50"
+            - slider "Flow Speed 0.50" [ref=e139]: "0.5"
+          - generic [ref=e140]:
+            - generic [ref=e141]:
+              - generic [ref=e142]: Turbulence
+              - generic [ref=e143]: "0.50"
+            - slider "Turbulence 0.50" [ref=e144]: "0.5"
+        - generic [ref=e92]:
+          - heading "🔧 Dev Tools" [level=4] [ref=e93]
+          - button "🔍 Scan Shaders for Errors" [ref=e94] [cursor=pointer]
+          - generic [ref=e95]: Tests WGSL compilation on all shaders
+        - separator
+        - generic [ref=e96]: View Controls
+        - generic [ref=e97]:
+          - generic [ref=e98]:
+            - text: "Zoom:"
+            - generic [ref=e99]: 1.00x
+          - slider [ref=e100]: "1"
+        - generic [ref=e101]:
+          - generic [ref=e102]: "Pan X: 0.50"
+          - slider [ref=e103]: "0.5"
+        - generic [ref=e104]:
+          - generic [ref=e105]: "Pan Y: 0.50"
+          - slider [ref=e106]: "0.5"
+        - separator
+        - generic [ref=e107]:
+          - button "🗂️ Browse by Coordinate (B)" [ref=e108] [cursor=pointer]:
+            - generic [ref=e109]: 🗂️
+            - generic [ref=e110]: Browse by Coordinate (B)
+          - generic [ref=e111]: "Tip: Type any number to jump to that shader"
+        - generic [ref=e112]:
+          - button "📦 VPS Storage Browser" [ref=e113] [cursor=pointer]:
+            - generic [ref=e114]: 📦
+            - generic [ref=e115]: VPS Storage Browser
+          - generic [ref=e116]: Browse shaders, images & videos from VPS
+    - main [ref=e117]:
+      - generic: Image loaded
+  - generic [ref=e147]:
+    - generic [ref=e148]:
+      - heading "🔍 Shader Compilation Scanner" [level=2] [ref=e149]
+      - button "Close" [ref=e150] [cursor=pointer]
+    - generic [ref=e151]: ⚠️ WebGPU is not supported in this browser. Shader compilation scanning requires WebGPU.
+    - generic [ref=e152]:
+      - button "▶️ Start Scan" [disabled] [ref=e153]
+      - generic [ref=e154]:
+        - generic [ref=e155]: "Total: 702"
+        - generic [ref=e156]: ✅ 0
+        - generic [ref=e157]: ❌ 0
+    - generic [ref=e158]:
+      - table [ref=e159]:
+        - rowgroup [ref=e160]:
+          - row "Status ID Name Category Time Error" [ref=e161]:
+            - columnheader "Status" [ref=e162]
+            - columnheader "ID" [ref=e163]
+            - columnheader "Name" [ref=e164]
+            - columnheader "Category" [ref=e165]
+            - columnheader "Time" [ref=e166]
+            - columnheader "Error" [ref=e167]
+        - rowgroup
+      - generic [ref=e168]: Click "Start Scan" to begin checking shaders for compilation errors

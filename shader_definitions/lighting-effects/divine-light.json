@@ -1,0 +1,45 @@
+{
+  "id": "divine-light",
+  "name": "Divine Light",
+  "url": "shaders/divine-light.wgsl",
+  "description": "Volumetric god rays emanating from cursor position. Creates cinematic light beam effects.",
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Ray Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "decay",
+      "name": "Ray Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "density",
+      "name": "Ray Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "threshold",
+      "name": "Brightness Filter",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "volumetric",
+    "atmospheric"
+  ],
+  "tags": [
+    "filter",
+    "image-processing"
+  ]
+}

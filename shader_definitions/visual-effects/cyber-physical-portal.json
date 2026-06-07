@@ -1,0 +1,54 @@
+{
+  "id": "cyber-physical-portal",
+  "name": "Cyber Physical Portal",
+  "category": "visual-effects",
+  "url": "shaders/cyber-physical-portal.wgsl",
+  "description": "Upgraded cyber portal with event-horizon frame dragging, gravitational lensing, accretion disk bands, cyan-magenta holographic rim, chromatic aberration, and HDR bloom. Bass drives spin, mouse positions portal, depth controls lensing.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "portal",
+    "depth-aware"
+  ],
+  "tags": [
+    "portal",
+    "cyber",
+    "swirl",
+    "grid",
+    "audio-reactive",
+    "lensing",
+    "hologram",
+    "chromatic"
+  ],
+  "params": [
+    {
+      "id": "portal_radius",
+      "name": "Portal Radius",
+      "default": 0.35,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "swirl_amount",
+      "name": "Swirl Amount",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "grid_density",
+      "name": "Grid Density",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "glow",
+      "name": "Glow",
+      "default": 0.45,
+      "min": 0,
+      "max": 1
+    }
+  ]
+}

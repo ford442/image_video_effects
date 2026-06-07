@@ -1,0 +1,50 @@
+{
+  "id": "signal-noise",
+  "name": "Signal Noise",
+  "url": "shaders/signal-noise.wgsl",
+  "description": "Multi-octave analog noise with VHS head-switching bands, DCT block artifacts, datamoshing smear, and directional chromatic aberration with YUV chroma noise.",
+  "features": [
+    "temporal"
+  ],
+  "params": [
+    {
+      "id": "vhsIntensity",
+      "name": "VHS Intensity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "artifactStrength",
+      "name": "Artifact Strength",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "smearAmount",
+      "name": "Smear Amount",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chromaStrength",
+      "name": "Chroma Strength",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "glitch",
+    "retro",
+    "vhs",
+    "noise",
+    "analog"
+  ]
+}

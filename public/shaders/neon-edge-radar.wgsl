@@ -1,0 +1,97 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Neon Edge Radar
+//  Category: interactive-mouse
+//  Features: advanced-alpha, radar-sweep, edge-detection, mouse-driven, audio-reactive
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=EdgeThreshold, y=RadarSpeed, z=SweepWidth, w=Intensity
+  ripples: array<vec4<f32>, 50>,
+};
+
+const PI:  f32 = 3.14159265358979323846;
+const TAU: f32 = 6.28318530717958647692;
+
+// ═══ ADVANCED ALPHA FUNCTIONS ═══
+
+// Mode 2: Edge-Preserve Alpha
+fn edgePreserveAlpha(uv: vec2<f32>, pixelSize: vec2<f32>, edgeThreshold: f32) -> f32 {
+    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).r;
+    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).r;
+    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).r;
+    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, pixelSize.y), 0.0).r;
+    let depthEdge = length(vec2<f32>(dR - dL, dU - dD));
+    let edgeMask = smoothstep(edgeThreshold * 0.5, edgeThreshold, depthEdge);
+    return mix(0.2, 1.0, edgeMask);
+}
+
+// Mode 5: Effect Intensity Alpha
+fn effectIntensityAlpha(intensity: f32, falloff: f32) -> f32 {
+    return mix(0.3, 1.0, intensity * falloff);
+}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let pixelSize = 1.0 / resolution;
+    let time = u.config.x;
+    let audioBass = plasmaBuffer[0].x;
+    let audioReactivity = 1.0 + audioBass * 0.5;
+
+    let edgeThreshold = u.zoom_params.x * 0.1 + 0.02;
+    let radarSpeed = u.zoom_params.y * 2.0 * audioReactivity;
+    let sweepWidth = u.zoom_params.z * 0.3;
+    let intensity = u.zoom_params.w * 2.0;
+
+    // Radar centered on mouse — drag the radar around
+    let mouse = u.zoom_config.yz;
+    let centered = uv - mix(vec2<f32>(0.5), mouse, 0.6);
+    let angle = atan2(centered.y, centered.x);
+    let sweepAngle = fract(time * radarSpeed) * TAU - PI;
+    let angleDiff = abs(angle - sweepAngle);
+    let sweep = exp(-angleDiff * angleDiff / (sweepWidth * sweepWidth));
+    
+    let baseAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
+    
+    // Edge detection
+    let l = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
+    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
+    let edge = length(r - l);
+    
+    // Neon color
+    let neonColor = vec3<f32>(0.0, 1.0, 0.5);
+    let emission = neonColor * edge * sweep * intensity;
+    
+    let edgeAlpha = edgePreserveAlpha(uv, pixelSize, edgeThreshold);
+    let effectAlpha = effectIntensityAlpha(sweep * edge, intensity);
+    let alpha = clamp(edgeAlpha * effectAlpha, 0.0, 1.0);
+    let finalAlpha = mix(baseAlpha, 1.0, sweep * edge * intensity * 0.7);
+    
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
+    
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+}
