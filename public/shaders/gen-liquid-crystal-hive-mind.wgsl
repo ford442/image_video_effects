@@ -1,8 +1,15 @@
-// ----------------------------------------------------------------
-// Liquid-Crystal Hive-Mind
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid-Crystal Hive-Mind
+//  Category: generative
+//  Features: generative, mouse-driven, audio-reactive, upgraded-rgba,
+//            aces-tone-map, temporal-feedback, chromatic-aberration,
+//            depth-aware, raymarched
+//  Complexity: Very High
+//  Created: 2026-05-31
+//  Upgraded: 2026-06-07
+//  By: Codex F1 flagship reference pass
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,7 +23,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
@@ -30,6 +36,20 @@ fn rot2D(angle: f32) -> mat2x2<f32> {
     let s = sin(angle);
     let c = cos(angle);
     return mat2x2<f32>(c, -s, s, c);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn huePreserveClamp(color: vec3<f32>, limit: f32) -> vec3<f32> {
+    let peak = max(max(color.r, color.g), color.b);
+    return color / max(1.0, peak / max(limit, 0.001));
+}
+
+fn bass_env(prev: f32, bass: f32) -> f32 {
+    let k = select(0.08, 0.35, bass > prev);
+    return mix(prev, bass, k);
 }
 
 // Custom mod function
@@ -151,16 +171,16 @@ struct MapResult {
     hexId: vec2<f32> // ID of the current hex cell
 }
 
-fn map(p: vec3<f32>) -> MapResult {
+fn map(p: vec3<f32>, bass: f32, mids: f32, hivePulse: f32, mouseField: vec2<f32>) -> MapResult {
     var res: MapResult;
 
     let t = u.config.x;
-    let audio = u.config.y;
+    let audio = bass;
 
     // Sliders
-    let density = u.zoom_params.x; // Cell Density
-    let turbulence = u.zoom_params.y; // Fluid Turbulence
-    let syncPulse = u.zoom_params.z; // Sync Pulse
+    let density = u.zoom_params.x * (1.0 + mids * 0.12); // Cell Density
+    let turbulence = u.zoom_params.y * (1.0 + bass * 0.35); // Fluid Turbulence
+    let syncPulse = clamp(u.zoom_params.z + hivePulse * 0.35, 0.0, 3.0); // Sync Pulse
     let disruptRadius = u.zoom_params.w; // Disruption Radius
 
     // Mouse Interaction
@@ -168,12 +188,14 @@ fn map(p: vec3<f32>) -> MapResult {
     var mousePos = vec2<f32>((u.zoom_config.y * 2.0 - 1.0) * aspect, -(u.zoom_config.z * 2.0 - 1.0));
     mousePos *= 8.0; // scale to world space roughly
 
-    let mouseDist = length(p.xy - mousePos);
-    let isDisrupted = 1.0 - smoothstep(0.0, disruptRadius * 3.0, mouseDist);
+    let mouseDist = length((p.xy + mouseField * p.z * 0.25) - mousePos);
+    let mouseDown = u.zoom_config.w;
+    let isDisrupted = (1.0 - smoothstep(0.0, disruptRadius * (2.2 + mouseDown * 1.8), mouseDist)) * (0.35 + mouseDown * 0.65);
 
     // Hex Grid
     let hexSize = 1.5 / density;
-    let grid = opRepHex(p.xy, hexSize);
+    let fieldAngle = (mouseField.x - mouseField.y) * 0.18 * isDisrupted;
+    let grid = opRepHex(rot2D(fieldAngle) * p.xy, hexSize);
     let localP = vec3<f32>(grid.uv, p.z);
 
     // Cell walls (Hex Prism hollowed out)
@@ -185,7 +207,7 @@ fn map(p: vec3<f32>) -> MapResult {
 
     // Sync logic: normally they pulse randomly, but syncPulse forces them to align
     let pulsePhase = mix(cellHash * 6.28, 0.0, syncPulse * 0.3);
-    let cellHeightOffset = sin(t * 2.0 + pulsePhase) * 0.2 * (1.0 + audio * 0.5);
+    let cellHeightOffset = sin(t * (1.6 + mids * 0.5) + pulsePhase) * 0.2 * (1.0 + audio * 0.8 + hivePulse * 0.5);
 
     // Mouse disruption shatters/offsets cells
     let disruptOffset = isDisrupted * sin(cellHash * 100.0) * 0.5;
@@ -200,7 +222,7 @@ fn map(p: vec3<f32>) -> MapResult {
 
     // Fluid Displacement (Curl Noise)
     // The fluid is inside the cell, so we calculate turbulence based on global P
-    let fluidMove = curlNoise(p * 0.5 + vec3<f32>(0.0, 0.0, t * 0.5));
+    let fluidMove = curlNoise(p * 0.5 + vec3<f32>(mouseField * 0.4, t * (0.35 + mids * 0.25)));
     let fluidTurbulence = fbm(p * 2.0 + fluidMove * turbulence * (1.0 + isDisrupted * 2.0));
 
     // Determine material
@@ -220,12 +242,12 @@ fn map(p: vec3<f32>) -> MapResult {
 }
 
 // Normal Calculation for Walls
-fn calcNormal(p: vec3<f32>) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>, bass: f32, mids: f32, hivePulse: f32, mouseField: vec2<f32>) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
-        map(p + e.xyy).d - map(p - e.xyy).d,
-        map(p + e.yxy).d - map(p - e.yxy).d,
-        map(p + e.yyx).d - map(p - e.yyx).d
+        map(p + e.xyy, bass, mids, hivePulse, mouseField).d - map(p - e.xyy, bass, mids, hivePulse, mouseField).d,
+        map(p + e.yxy, bass, mids, hivePulse, mouseField).d - map(p - e.yxy, bass, mids, hivePulse, mouseField).d,
+        map(p + e.yyx, bass, mids, hivePulse, mouseField).d - map(p - e.yyx, bass, mids, hivePulse, mouseField).d
     ));
 }
 
@@ -238,10 +260,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let uv = (vec2<f32>(coord) - 0.5 * res) / res.y;
+    let uv01 = vec2<f32>(coord) / res;
+    let previousState = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+    let bass = bass_env(previousState.r, plasmaBuffer[0].x);
+    let mids = bass_env(previousState.g, plasmaBuffer[0].y);
+    let treble = bass_env(previousState.b, plasmaBuffer[0].z);
+    let hivePulse = previousState.a;
+    let mouse = u.zoom_config.yz * 2.0 - vec2<f32>(1.0);
+    let mouseField = vec2<f32>(mouse.x * res.x / max(res.y, 1.0), -mouse.y);
 
     // Camera setup - looking straight down Z
-    let ro = vec3<f32>(0.0, 0.0, -5.0);
-    let rd = normalize(vec3<f32>(uv.x, uv.y, 1.0));
+    let ro = vec3<f32>(mouseField * 0.18, -5.0);
+    let rd = normalize(vec3<f32>(uv.x + mouseField.x * 0.035, uv.y + mouseField.y * 0.035, 1.0));
 
     var t_dist = 0.0;
     var max_t = 15.0;
@@ -250,19 +280,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = vec3<f32>(0.0);
     var fluidAccum = vec3<f32>(0.0);
     var hitWall = false;
+    var glowSum = 0.0;
+    var depthHit = 1.0;
 
-    let audio = u.config.y;
     let syncPulse = u.zoom_params.z;
 
     // Raymarching Loop
     for (var i = 0; i < 80; i++) {
         p = ro + rd * t_dist;
-        let m = map(p);
+        let m = map(p, bass, mids, hivePulse, mouseField);
 
         if (m.mat == 0.0) {
             // Hitting wall
             if (m.d < 0.005) {
                 hitWall = true;
+                depthHit = clamp(t_dist / max_t, 0.0, 1.0);
                 break;
             }
             t_dist += m.d;
@@ -278,14 +310,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             // Sync shift
             let cellHash = fract(sin(dot(m.hexId, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-            let colorShift = mix(cellHash, 0.0, syncPulse * 0.5) + u.config.x * 0.1;
+            let colorShift = mix(cellHash, hivePulse, syncPulse * 0.4) + u.config.x * (0.08 + mids * 0.04) + treble * 0.08;
 
             let fluidColor = palette(m.glow + colorShift, a, b, c, d);
 
             // Accumulate
             // Deeper fluid = denser accumulation, audio boosts brightness
-            let density = 0.05 * (1.0 + audio * 0.5);
+            let density = 0.045 * (1.0 + bass * 0.8 + treble * 0.25);
             fluidAccum += fluidColor * density * exp(-t_dist * 0.2);
+            glowSum += m.glow * density;
 
             // Step forward through the fluid
             t_dist += max(0.05, m.d * 0.5);
@@ -295,7 +328,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     if (hitWall) {
-        let n = calcNormal(p);
+        let n = calcNormal(p, bass, mids, hivePulse, mouseField);
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
 
         let diff = max(dot(n, l), 0.0);
@@ -315,12 +348,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Vignette
-    let uv2 = vec2<f32>(coord) / res;
-    col *= 0.5 + 0.5 * pow(16.0 * uv2.x * uv2.y * (1.0 - uv2.x) * (1.0 - uv2.y), 0.25);
+    col *= 0.5 + 0.5 * pow(16.0 * uv01.x * uv01.y * (1.0 - uv01.x) * (1.0 - uv01.y), 0.25);
 
-    // Tone mapping
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
+    let membrane = clamp(glowSum * 2.0 + select(0.0, 0.45, hitWall), 0.0, 1.0);
+    let depthSignal = clamp(mix(1.0 - depthHit, inputDepth, 0.25) + membrane * 0.25, 0.0, 1.0);
+    let alpha = clamp(0.18 + membrane * 0.72 + bass * 0.08, 0.18, 0.96);
 
-    textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+    let chroma = (0.002 + treble * 0.003) * (0.4 + membrane);
+    col = vec3<f32>(col.r + chroma, col.g, col.b - chroma * 0.6);
+    col = huePreserveClamp(col * (1.1 + bass * 0.25), 3.0);
+    col = acesToneMap(col);
+
+    let inputColor = textureSampleLevel(readTexture, u_sampler, uv01, 0.0);
+    let finalColor = mix(inputColor.rgb, col, alpha);
+    let finalAlpha = max(inputColor.a, alpha);
+    let nextHivePulse = clamp(mix(hivePulse, membrane, 0.12 + bass * 0.04), 0.0, 1.0);
+
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depthSignal, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(bass, mids, treble, nextHivePulse));
 }

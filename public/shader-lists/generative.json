@@ -2368,10 +2368,18 @@
       "collapse"
     ],
     "features": [
-      "mouse-magnetic-field",
+      "aces-tone-map",
+      "audio-reactive",
       "bass-glyph-formation",
+      "chromatic-aberration",
+      "depth-aware",
+      "generative",
+      "mouse-driven",
+      "mouse-magnetic-field",
+      "raymarched",
+      "temporal",
       "treble-collapse",
-      "audio-reactive"
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4305,7 +4313,15 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "aces-tone-map",
+      "upgraded-rgba",
+      "depth-aware",
+      "temporal-feedback",
+      "chromatic-aberration",
+      "hue-preserve-clamp",
+      "ign-dither",
+      "distance-lod"
     ],
     "tags": [
       "3d",
@@ -8901,7 +8917,7 @@
     "id": "gen-liquid-crystal-hive-mind",
     "name": "Liquid-Crystal Hive-Mind",
     "url": "shaders/gen-liquid-crystal-hive-mind.wgsl",
-    "description": "A vast, breathing network of hexagonal bio-synthetic cells containing turbulent, iridescent liquid crystals that synchronize and glow with a pulsing collective consciousness.",
+    "description": "A vast, breathing network of hexagonal bio-synthetic cells containing turbulent, iridescent liquid crystals. Smoothed audio drives hive pulse, turbulence, and shimmer while mouse motion rotates and disrupts the local field.",
     "tags": [
       "cellular",
       "liquid-crystal",
@@ -8909,12 +8925,23 @@
       "honeycomb",
       "audio-reactive",
       "audio",
-      "music"
+      "music",
+      "temporal",
+      "chromatic",
+      "depth-aware",
+      "raymarched",
+      "showcase"
     ],
     "features": [
+      "generative",
       "mouse-driven",
-      "audio-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "temporal-feedback",
+      "chromatic-aberration",
+      "depth-aware",
+      "raymarched"
     ],
     "params": [
       {

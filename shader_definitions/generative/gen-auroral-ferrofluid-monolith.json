@@ -14,10 +14,18 @@
     "collapse"
   ],
   "features": [
-    "mouse-magnetic-field",
+    "aces-tone-map",
+    "audio-reactive",
     "bass-glyph-formation",
+    "chromatic-aberration",
+    "depth-aware",
+    "generative",
+    "mouse-driven",
+    "mouse-magnetic-field",
+    "raymarched",
+    "temporal",
     "treble-collapse",
-    "audio-reactive"
+    "upgraded-rgba"
   ],
   "params": [
     {

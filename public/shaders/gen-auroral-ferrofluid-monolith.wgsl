@@ -1,13 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Auroral Ferrofluid-Monolith
 //  Category: generative
-//  Features: ferrofluid-sculpture, magnetic-glyphs, audio-collapse, mouse-magnetic-field, auroral
-//  Complexity: High
-//  Chunks From: ferrofluid patterns + magnetic field math
+//  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
+//            upgraded-rgba, aces-tone-map, chromatic-aberration, raymarched
+//  Complexity: Very High
+//  Description: Colossal liquid-metal monolith with raymarched ferrofluid spikes,
+//    auroral volumetrics, and magnetic field sculpting. Bass-driven glyph formation
+//    via smoothed envelope; mouse drag rotates external B-field.
 //  Created: 2026-05-23
-//  Updated: 2026-05-31
-//  By: Grok (magnetic glyph formation + bass/treble collapse behavior)
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -21,16 +24,24 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Spike Length, y=Aurora Intensity, z=Magnetic Twist, w=Fluid Metallic
+    config: vec4<f32>,
+    zoom_config: vec4<f32>,
+    zoom_params: vec4<f32>,
     ripples: array<vec4<f32>, 50>,
 };
 
-// Utils
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+    let k = select(release, attack, bass > prev);
+    return mix(prev, bass, k);
+}
+
 fn rot(a: f32) -> mat2x2<f32> {
     let c = cos(a);
     let s = sin(a);
@@ -48,7 +59,6 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return min(a, b) - h * h * k * 0.25;
 }
 
-// Simple value noise
 fn noise(p: vec3<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
@@ -81,38 +91,35 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
 }
 
-// Map function for the monolith
-fn map(p_in: vec3<f32>) -> vec2<f32> {
+fn map(p_in: vec3<f32>, smoothBass: f32) -> vec2<f32> {
     var p = p_in;
 
-    // Magnetic twist
     let twist = u.zoom_params.z;
     let rot_xz = rot(p.y * twist * 0.5 + u.config.x * 0.2) * p.xz;
     p.x = rot_xz.x;
     p.z = rot_xz.y;
 
-    // Mouse as external rotating magnetic field (drag = field rotation)
     let mx = (u.zoom_config.y - 0.5) * 12.0;
     let my = -(u.zoom_config.z - 0.5) * 12.0;
-    let mouseAngle = u.config.x * 1.2 + u.zoom_config.w * 8.0; // stronger rotation when mouse is down
+    let mouseAngle = u.config.x * 1.2 + u.zoom_config.w * 8.0;
     let mousePole = vec3<f32>(mx, my, 0.0);
-    let rotatedPole = vec3<f32>(mousePole.x * cos(mouseAngle) - mousePole.z * sin(mouseAngle), mousePole.y, mousePole.x * sin(mouseAngle) + mousePole.z * cos(mouseAngle));
+    let rotatedPole = vec3<f32>(
+        mousePole.x * cos(mouseAngle) - mousePole.z * sin(mouseAngle),
+        mousePole.y,
+        mousePole.x * sin(mouseAngle) + mousePole.z * cos(mouseAngle)
+    );
     let dPole = length(p - rotatedPole);
     let poleDistort = exp(-dPole * 0.45) * (0.6 + u.zoom_config.w * 0.8);
 
-    // Monolith base shape
     let size = vec3<f32>(1.0 - p.y*0.05, 4.0, 1.0 - p.y*0.05);
     var d1 = sdBox(p, size);
 
-    // Audio state
-    let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Ferrofluid spikes — strong bass forms readable magnetic glyphs, treble collapses them into chaos
-    let glyphForm = smoothstep(0.4, 0.85, bass) * (1.0 - treble * 0.8);
+    let glyphForm = smoothstep(0.4, 0.85, smoothBass) * (1.0 - treble * 0.8);
     let chaos = treble * 1.8 + mids * 0.3;
-    let spikeLength = u.zoom_params.x * (0.7 + bass * 2.2 * glyphForm) + poleDistort - chaos * 0.4;
+    let spikeLength = u.zoom_params.x * (0.7 + smoothBass * 2.2 * glyphForm) + poleDistort - chaos * 0.4;
 
     var sp = p * 4.0;
     let n = abs(noise(sp + vec3<f32>(0.0, -u.config.x * 2.0, 0.0)));
@@ -120,24 +127,22 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
 
     d1 -= spikes;
 
-    // Ensure smoothing
-    return vec2<f32>(d1, 1.0); // 1.0 = material ID
+    return vec2<f32>(d1, 1.0);
 }
 
-fn calcNormal(p: vec3<f32>) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>, smoothBass: f32) -> vec3<f32> {
     let e = vec2<f32>(0.005, 0.0);
     return normalize(vec3<f32>(
-        map(p + e.xyy).x - map(p - e.xyy).x,
-        map(p + e.yxy).x - map(p - e.yxy).x,
-        map(p + e.yyx).x - map(p - e.yyx).x
+        map(p + e.xyy, smoothBass).x - map(p - e.xyy, smoothBass).x,
+        map(p + e.yxy, smoothBass).x - map(p - e.yxy, smoothBass).x,
+        map(p + e.yyx, smoothBass).x - map(p - e.yyx, smoothBass).x
     ));
 }
 
-// Aurora density function
 fn mapAurora(p_in: vec3<f32>) -> f32 {
     var p = p_in;
     let dBox = sdBox(p, vec3<f32>(1.5, 4.5, 1.5));
-    if (dBox > 2.0) { return 0.0; } // Optimization
+    let inRange = f32(dBox <= 2.0);
 
     let p_xz = rot(p.y * 0.5 - u.config.x * 0.5) * p.xz;
     p.x = p_xz.x;
@@ -149,7 +154,7 @@ fn mapAurora(p_in: vec3<f32>) -> f32 {
     let density = smoothstep(0.4, 0.8, f1 * f2);
     let falloff = smoothstep(2.0, 0.0, dBox);
 
-    return density * falloff * u.zoom_params.y;
+    return density * falloff * u.zoom_params.y * inRange;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -159,8 +164,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (fragCoord.x >= res.x || fragCoord.y >= res.y) { return; }
 
     let uv = (fragCoord - 0.5 * res) / res.y;
+    let uv01 = fragCoord / res;
     let bass = plasmaBuffer[0].x;
     let treble = plasmaBuffer[0].z;
+
+    // Temporal feedback read + bass envelope
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+    let prevBass = prev.a;
+    let smoothBass = bass_env(prevBass, bass, 0.12, 0.04);
 
     // Camera
     let ro = vec3<f32>(0.0, 0.0, 8.0);
@@ -172,20 +183,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Raymarch monolith
     var t = 0.0;
-    var tMax = 20.0;
+    let tMax = 20.0;
     var hit = false;
     var m = 0.0;
 
     for(var i=0; i<100; i++) {
         let p = ro + rd * t;
-        let d = map(p);
+        let d = map(p, smoothBass);
         if(d.x < 0.002) {
             hit = true;
             m = d.y;
             break;
         }
         if(t > tMax) { break; }
-        t += d.x * 0.5; // slow down for spikes
+        t += d.x * 0.5;
     }
 
     var col = vec3<f32>(0.0);
@@ -193,10 +204,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Monolith shading
     if(hit) {
         let p = ro + rd * t;
-        let n = calcNormal(p);
+        let n = calcNormal(p, smoothBass);
         let v = -rd;
 
-        // Lighting
         let l1 = normalize(vec3<f32>(1.0, 1.0, 1.0));
         let l2 = normalize(vec3<f32>(-1.0, -0.5, 0.5));
 
@@ -209,21 +219,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let f0 = 0.04;
         let fresnel = f0 + (1.0 - f0) * pow(1.0 - max(dot(n, v), 0.0), 5.0);
 
-        let baseCol = vec3<f32>(0.05, 0.05, 0.08); // Dark chrome
+        let baseCol = vec3<f32>(0.05, 0.05, 0.08);
         let metal = u.zoom_params.w;
 
         col = baseCol * (dif1 + dif2 * 0.5);
         col += vec3<f32>(1.0) * spe1 * metal;
         col = mix(col, vec3<f32>(0.5, 0.8, 1.0), fresnel * metal);
 
-        // Audio reactive chromatic dispersion on tips (based on normal variation)
-        let audio = u.config.y;
-        if (audio > 0.1) {
-            let tipGlow = smoothstep(0.7, 1.0, n.y) * audio;
-            col += vec3<f32>(0.8, 0.2, 1.0) * tipGlow;
-        }
+        // Bass-driven tip glow (branchless)
+        let tipGlow = smoothstep(0.7, 1.0, n.y) * smoothstep(0.1, 0.15, smoothBass) * smoothBass;
+        col += vec3<f32>(0.8, 0.2, 1.0) * tipGlow;
     } else {
-        t = tMax; // for volumetric pass limit
+        t = tMax;
     }
 
     // Volumetric Aurora Pass
@@ -231,20 +238,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var tVol = 0.0;
     let stepSize = 0.1;
 
-    // Offset start for dither
     tVol += hash33(vec3<f32>(uv, u.config.x)).x * stepSize;
 
     for(var i=0; i<60; i++) {
-        if(tVol >= t) { break; } // stop at geometry
+        if(tVol >= t) { break; }
 
         let p = ro + rd * tVol;
         let den = mapAurora(p);
 
         if(den > 0.01) {
-            // Color gradient based on height and density
-            let c1 = vec3<f32>(0.0, 1.0, 0.5); // Cyan/Green
-            let c2 = vec3<f32>(1.0, 0.0, 0.8); // Magenta
-
+            let c1 = vec3<f32>(0.0, 1.0, 0.5);
+            let c2 = vec3<f32>(1.0, 0.0, 0.8);
             let c = mix(c1, c2, sin(p.y + u.config.x) * 0.5 + 0.5);
             aurCol += c * den * stepSize * 2.0;
         }
@@ -259,19 +263,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += vec3<f32>(0.1, 0.1, 0.2) * bgGlow;
 
     // Bass forms glyphs → stronger metallic readable structure
-    // Treble collapses → softer, more chaotic auroral breakup
-    let glyphStrength = smoothstep(0.35, 0.8, bass) * (1.0 - treble * 0.7);
+    let glyphStrength = smoothstep(0.35, 0.8, smoothBass) * (1.0 - treble * 0.7);
     col = mix(col, col * 1.15 + vec3<f32>(0.2, 0.4, 0.9) * 0.3, glyphStrength * 0.4);
 
-    // Tone mapping
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    // Temporal color feedback
+    col = mix(prev.rgb, col, 0.82 + smoothBass * 0.08);
 
-    // Meaningful alpha: magnetic field strength + auroral intensity
-    let magneticField = u.zoom_config.w * 0.6 + bass * 0.4;
-    let aurIntensity = length(aurCol) * 0.8;
-    let alpha = clamp(0.65 + magneticField * 0.5 + aurIntensity * 0.6, 0.0, 1.1);
+    // Depth for chromatic + depth pass
+    let depth = select(1.0, t / 20.0, hit);
 
-    let a = clamp(alpha, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col * a, a));
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + smoothBass) + depth * 0.001;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+    // ACES tone mapping
+    col = acesToneMap(col * 1.1);
+
+    // Semantic alpha: presence-based on luminance + depth modulation
+    let presence = clamp(length(col) * 1.2, 0.0, 1.0);
+    let alpha = clamp(presence * (0.6 + depth * 0.25), 0.2, 0.92);
+
+    // Write temporal state: RG=color, B=smoothBass envelope, A=alpha
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(col, smoothBass));
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
 }

@@ -94,5 +94,46 @@
     "799_wasm_context": "https://github.com/ford442/image_video_effects/issues/799",
     "800_shader_gallery": "https://github.com/ford442/image_video_effects/issues/800",
     "801_batch_3": "https://github.com/ford442/image_video_effects/issues/801"
+  },
+  "flagship_f1": {
+    "description": "One generative shader per model — extensive portfolio-grade upgrade",
+    "disjoint_from_batches": ["3A", "3B", "3C"],
+    "acceptance": "agents/showcase-checklist-v1.md",
+    "validation_report": "agents/swarm-outputs/flagship-f1-validation.md",
+    "assignments": [
+      {
+        "model": "kimiclaw",
+        "shader_id": "gen-auroral-ferrofluid-monolith",
+        "lines": 278,
+        "status": "todo",
+        "mandate": "Magnetic ferrofluid sculpture + bass glyphs + mouse B-field + full upgraded-rgba stack",
+        "notes": "agents/swarm-outputs/kimi-notes/gen-auroral-ferrofluid-monolith.notes.kimiclaw.md"
+      },
+      {
+        "model": "claude",
+        "shader_id": "gen-chronos-labyrinth",
+        "lines": 416,
+        "status": "todo",
+        "mandate": "Raymarch LOD + early exit + atmospheric depth + temporal dataA + perf benchmarks",
+        "notes": "agents/swarm-outputs/claude-notes/gen-chronos-labyrinth.claude-optimization.md"
+      },
+      {
+        "model": "codex",
+        "shader_id": "gen-liquid-crystal-hive-mind",
+        "lines": 327,
+        "status": "done",
+        "mandate": "Full stack from scratch + structural cleanup + gold validation reference",
+        "notes": "agents/swarm-outputs/codex-notes/gen-liquid-crystal-hive-mind.codex-reference.md"
+      },
+      {
+        "model": "kimi",
+        "shader_id": "gen-celestial-forge",
+        "lines": 420,
+        "status": "blocked",
+        "blocked_on": "all other F1 siblings delivered",
+        "mandate": "Synthesize F1 patterns + multi-layer compositing + update WGSL_BUILTINS",
+        "notes": "agents/swarm-outputs/kimi-notes/gen-celestial-forge.notes.kimi.md"
+      }
+    ]
   }
 }
