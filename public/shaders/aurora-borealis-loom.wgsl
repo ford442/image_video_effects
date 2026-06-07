@@ -227,6 +227,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Depth: curtains in front, stars behind
   let depth = clamp(0.8 - curtains * 0.5 + weave * 0.1, 0.0, 1.0);
 
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  fbCol = vec3<f32>(fbCol.r + caStr, fbCol.g, fbCol.b - caStr * 0.5);
+
   fbCol = acesToneMap(fbCol * 1.1);
   textureStore(writeTexture, gid.xy, vec4<f32>(fbCol, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

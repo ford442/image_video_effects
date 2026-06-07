@@ -221,6 +221,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Depth based on morph field distance
   let depth = clamp(0.5 + dist * 2.0 + interiorTex * 0.2, 0.0, 1.0);
 
+  // Chromatic aberration
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  fbCol = vec3<f32>(fbCol.r + caStr, fbCol.g, fbCol.b - caStr * 0.5);
+
   fbCol = acesToneMap(fbCol * 1.1);
   textureStore(writeTexture, gid.xy, vec4<f32>(fbCol, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
