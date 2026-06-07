@@ -170,8 +170,13 @@ export class WebGPURenderer implements Renderer {
 
   // Per-frame uniforms
   private currentTime = 0;
+  // Mouse coordinates (normalized 0-1). Y=0 is TOP in browser events.
+  // Shaders ported from systems like Shadertoy expect Y=0 at BOTTOM.
+  // We store BOTH: mouseYBrowser (raw) and mouseYShader (1.0 - raw) so
+  // shaders can pick the convention that matches their math.
   private mouseX      = 0.5;
-  private mouseY      = 0.5;
+  private mouseYBrowser = 0.5;   // raw from browser (top=0)
+  private mouseYShader  = 0.5;   // inverted (bottom=0, matches Shadertoy)
   private mouseDown   = false;
   private zoomParams  = [0.5, 0.5, 0.5, 0.5];
   private ripples: Ripple[] = [];
@@ -838,7 +843,17 @@ export class WebGPURenderer implements Renderer {
 
   getFPS(): number { return this.fps; }
 
-  /** Get video pipeline status for debugging */
+  /** Get audio analysis data for external consumers (e.g. audio-reactive params). */
+  getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } | null {
+    return {
+      bass: this.audioBass,
+      mid: this.audioMid,
+      treble: this.audioTreble,
+      freqBins: this.audioFreqBins,
+    };
+  }
+
+  /** Get current video pipeline status for debugging */
   getVideoStatus(): { hasVideo: boolean; playing: boolean; readyState: number; currentTime: number; videoWidth: number; videoHeight: number } | null {
     if (!this.video) return null;
     return {
@@ -1197,7 +1212,9 @@ export class WebGPURenderer implements Renderer {
   }
 
   updateMouse(x: number, y: number): void {
-    this.mouseX = x; this.mouseY = y;
+    this.mouseX = x;
+    this.mouseYBrowser = y;
+    this.mouseYShader = 1.0 - y; // Invert so Y=0 is bottom (Shadertoy convention)
   }
 
   setParam(name: string, value: number): void {
@@ -1509,7 +1526,9 @@ export class WebGPURenderer implements Renderer {
     u.setConfig(this.currentTime, this.ripples.length, this.scaledW, this.scaledH);
     
     // zoom_config: time, mouseX, mouseY, mouseDown
-    u.setZoomConfig(this.currentTime, this.mouseX, this.mouseY, this.mouseDown ? 1 : 0);
+    // Pass mouseYShader (Y=0 at bottom) so shaders matching Shadertoy convention
+    // don't need to manually invert. Shaders that already invert must be cleaned up.
+    u.setZoomConfig(this.currentTime, this.mouseX, this.mouseYShader, this.mouseDown ? 1 : 0);
     
     // zoom_params: p1, p2, p3, p4
     u.setZoomParams(this.zoomParams[0], this.zoomParams[1], this.zoomParams[2], this.zoomParams[3]);

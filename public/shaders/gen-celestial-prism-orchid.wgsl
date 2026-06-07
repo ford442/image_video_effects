@@ -273,7 +273,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     g_audio = bass * 0.8 + mids * 0.3; // legacy for existing code, now richer
 
     let mX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mY = -(u.zoom_config.z / dims.y) * 2.0 + 1.0;
+    let mY = u.zoom_config.z * 2.0 - 1.0;
     g_mouse = vec2<f32>(mX, mY);
 
     // Pollinator mouse wind — surprising visceral interaction

@@ -93,7 +93,7 @@ fn map(p: vec3<f32>) -> f32 {
     // Mouse Interaction
     let aspect = u.config.z / u.config.w;
     let mx = (u.zoom_config.y * 2.0 - 1.0) * aspect;
-    let my = -(u.zoom_config.z * 2.0 - 1.0);
+    let my = u.zoom_config.z * 2.0 - 1.0;
     let mouse_pos = vec3<f32>(mx * 3.0, my * 3.0, 0.0);
 
     // Warping based on mouse distance

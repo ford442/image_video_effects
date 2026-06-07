@@ -85,7 +85,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audio = bass * 0.05;
 
     let mX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mY = -(u.zoom_config.z / dims.y) * 2.0 + 1.0;
+    let mY = u.zoom_config.z * 2.0 - 1.0;
     let mouse = vec2<f32>(mX, mY);
 
     let mDist = length(uv - mouse);

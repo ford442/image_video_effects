@@ -67,7 +67,7 @@ fn map(pos_in: vec3<f32>) -> vec2<f32> {
     p.y -= t * 5.0; // Falling motion
 
     // Mouse Interaction (repel)
-    let mousePos = vec2<f32>((u.zoom_config.y - 0.5) * 20.0, -(u.zoom_config.z - 0.5) * 20.0);
+    let mousePos = vec2<f32>((u.zoom_config.y - 0.5) * 20.0, u.zoom_config.z - 0.5 * 20.0);
     let dMouse = length(p.xz - mousePos);
     if (dMouse < 5.0) {
         let repelForce = (5.0 - dMouse) * 0.5;

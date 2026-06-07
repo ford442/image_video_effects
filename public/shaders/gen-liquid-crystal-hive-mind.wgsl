@@ -165,7 +165,7 @@ fn map(p: vec3<f32>) -> MapResult {
 
     // Mouse Interaction
     let aspect = u.config.z / u.config.w;
-    var mousePos = vec2<f32>((u.zoom_config.y * 2.0 - 1.0) * aspect, -(u.zoom_config.z * 2.0 - 1.0));
+    var mousePos = vec2<f32>((u.zoom_config.y * 2.0 - 1.0) * aspect, u.zoom_config.z * 2.0 - 1.0);
     mousePos *= 8.0; // scale to world space roughly
 
     let mouseDist = length(p.xy - mousePos);

@@ -21,6 +21,7 @@ import {
 import { fetchContentManifest, LoadedContent } from './services/contentLoader';
 import { VideoSegment, pickRandomSegment, hydrateDurations } from './services/videoSegmentManager';
 import { savePreset } from './services/vjPresets';
+import { useAudioAnalyzer } from './hooks';
 import './style.css';
 
 // --- Webcam Fun Shaders ---
@@ -93,6 +94,11 @@ const SHADER_DEFAULTS: Record<string, number[]> = {
     'gen-quantum-foam': [0.45, 0.45, 0.40, 0.50],
     'gen-crystal-caverns': [0.35, 0.55, 0.45, 0.35],
     'gen-fractal-clockwork': [0.50, 0.40, 0.50, 0.40],
+    // Showcase-optimized generative shaders
+    'gen-showcase-nebula-core': [0.50, 0.30, 0.40, 0.20],
+    'gen-showcase-kinetic-bloom': [0.50, 0.30, 0.40, 0.30],
+    'gen-showcase-crystalline-pulse': [0.50, 0.30, 0.50, 0.20],
+    'molten-gold': [0.50, 0.50, 0.50, 0.50],
     'galaxy': [0.50, 0.40, 0.60, 0.35],
     'plasma': [0.45, 0.55, 0.40, 0.45],
     
@@ -273,9 +279,25 @@ function MainApp() {
     const recordedChunksRef = useRef<Blob[]>([]);
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // --- State: Mouse Interaction ---
-    const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
+    // --- State: Mouse Control ---
+    const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 });
     const [isMouseDown, setIsMouseDown] = useState(false);
+
+    // --- State: Generative Showcase ---
+    const [generativeShowcaseActive, setGenerativeShowcaseActive] = useState(false);
+    const [generativeShowcaseLocked, setGenerativeShowcaseLocked] = useState(false);
+    const [generativeShowcaseDelay, setGenerativeShowcaseDelay] = useState(12);
+    const generativeShowcaseTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // --- State: Audio-Reactive Params ---
+    const [audioReactiveParams, setAudioReactiveParams] = useState(false);
+    const [audioReactiveAmount, setAudioReactiveAmount] = useState(0.8); // master 0-1 mix
+
+    // --- Audio Analyzer Hook ---
+    const { startAudio: startAudioAnalyzer, stopAudio: stopAudioAnalyzer, getAudioData: getAudioAnalyzerData, isActive: isAudioAnalyzerActive } = useAudioAnalyzer();
+
+    // --- Refs for audio-reactive param smoothing ---
+    const audioParamSmoothedRef = useRef<[number, number, number, number]>([0.5, 0.5, 0.5, 0.5]);
 
     // --- State: Boot Gate ---
     const [rendererReady, setRendererReady] = useState(false);
@@ -1143,6 +1165,222 @@ function MainApp() {
         };
     }, [chaosModeEnabled, triggerRoulette]);
 
+    // --- Generative Showcase Functions ---
+    // Build a randomized list of all available generative shaders
+    const getGenerativeShaders = useCallback((): ShaderEntry[] => {
+        return availableModes.filter(s => s.category === 'generative' && s.id !== 'none');
+    }, [availableModes]);
+
+    const advanceGenerativeShowcase = useCallback(() => {
+        const genShaders = getGenerativeShaders();
+        if (genShaders.length === 0) return;
+
+        // Pick next generative shader (random to avoid predictable order)
+        const nextShader = genShaders[Math.floor(Math.random() * genShaders.length)];
+        if (!nextShader) return;
+
+        // Switch to generative input source if not already
+        setInputSource('generative');
+        setActiveGenerativeShader(nextShader.id);
+
+        // Load the shader into slot 0
+        setMode(0, nextShader.id as RenderMode);
+
+        // Set sensible default params (or randomize for variety)
+        const defaults = getShaderDefaults(nextShader.id, nextShader.params?.length || 4);
+        updateSlotParam(0, {
+            zoomParam1: defaults[0],
+            zoomParam2: defaults[1],
+            zoomParam3: defaults[2],
+            zoomParam4: defaults[3],
+        });
+
+        setStatus(`🎨 Generative Showcase: ${nextShader.name}`);
+    }, [getGenerativeShaders, setMode, updateSlotParam, setInputSource, setActiveGenerativeShader]);
+
+    const startGenerativeShowcase = useCallback(() => {
+        setGenerativeShowcaseLocked(false);
+        setGenerativeShowcaseActive(true);
+        setInputSource('generative');
+        advanceGenerativeShowcase(); // First one immediately
+        setStatus('🎨 Generative Showcase started! Click or press SPACE to lock the current shader.');
+    }, [advanceGenerativeShowcase, setInputSource]);
+
+    const stopGenerativeShowcase = useCallback(() => {
+        setGenerativeShowcaseActive(false);
+        setGenerativeShowcaseLocked(false);
+        if (generativeShowcaseTimerRef.current) {
+            clearInterval(generativeShowcaseTimerRef.current);
+            generativeShowcaseTimerRef.current = null;
+        }
+        setStatus('Generative Showcase stopped.');
+    }, []);
+
+    const lockGenerativeShowcase = useCallback(() => {
+        if (!generativeShowcaseActive) return;
+        setGenerativeShowcaseLocked(true);
+        if (generativeShowcaseTimerRef.current) {
+            clearInterval(generativeShowcaseTimerRef.current);
+            generativeShowcaseTimerRef.current = null;
+        }
+        setStatus('🔒 Generative shader locked! Mouse control is active.');
+    }, [generativeShowcaseActive]);
+
+    const unlockGenerativeShowcase = useCallback(() => {
+        if (!generativeShowcaseActive) return;
+        setGenerativeShowcaseLocked(false);
+        // Restart timer
+        if (generativeShowcaseTimerRef.current) {
+            clearInterval(generativeShowcaseTimerRef.current);
+        }
+        generativeShowcaseTimerRef.current = setInterval(() => {
+            advanceGenerativeShowcase();
+        }, generativeShowcaseDelay * 1000);
+        setStatus('🔓 Showcase resumed. Auto-switching generative shaders.');
+    }, [generativeShowcaseActive, generativeShowcaseDelay, advanceGenerativeShowcase]);
+
+    // Generative Showcase timer effect
+    useEffect(() => {
+        if (generativeShowcaseActive && !generativeShowcaseLocked) {
+            // Clear any existing timer
+            if (generativeShowcaseTimerRef.current) {
+                clearInterval(generativeShowcaseTimerRef.current);
+            }
+            generativeShowcaseTimerRef.current = setInterval(() => {
+                advanceGenerativeShowcase();
+            }, generativeShowcaseDelay * 1000);
+        } else {
+            if (generativeShowcaseTimerRef.current) {
+                clearInterval(generativeShowcaseTimerRef.current);
+                generativeShowcaseTimerRef.current = null;
+            }
+        }
+
+        return () => {
+            if (generativeShowcaseTimerRef.current) {
+                clearInterval(generativeShowcaseTimerRef.current);
+            }
+        };
+    }, [generativeShowcaseActive, generativeShowcaseLocked, generativeShowcaseDelay, advanceGenerativeShowcase]);
+
+    // --- Audio-Reactive Param Modulation ---
+    // When enabled, zoomParam1-4 are automatically modulated by audio analysis
+    // data sent from the audioGraph / WebGPU renderer extraBuffer.
+    const updateAudioReactiveParams = useCallback(() => {
+        const manager = rendererRef.current;
+        if (!manager || !audioReactiveParams) return;
+
+        // Read audio values from the analyzer hook (started when A toggle goes on)
+        const audioData = getAudioAnalyzerData();
+        if (!audioData) return;
+
+        const { bass, mid, treble } = audioData;
+        const overall = (bass + mid + treble) / 3.0;
+        const amount = audioReactiveAmount;
+
+        // Smooth the values to avoid jitter
+        const smoothed = audioParamSmoothedRef.current;
+        const smoothing = 0.15;
+        smoothed[0] += (bass - smoothed[0]) * smoothing;
+        smoothed[1] += (mid - smoothed[1]) * smoothing;
+        smoothed[2] += (treble - smoothed[2]) * smoothing;
+        smoothed[3] += (overall - smoothed[3]) * smoothing;
+
+        // Only apply to generative shaders in active slot
+        const currentShader = modes[0];
+        const shaderEntry = availableModes.find(m => m.id === currentShader);
+        if (shaderEntry && shaderEntry.category === 'generative') {
+            const baseDefaults = getShaderDefaults(currentShader, 4);
+
+            // Modulate around defaults: default ± amount * audio
+            const modulated = {
+                zoomParam1: Math.max(0, Math.min(1, baseDefaults[0] + (smoothed[0] - 0.5) * amount)),
+                zoomParam2: Math.max(0, Math.min(1, baseDefaults[1] + (smoothed[1] - 0.5) * amount)),
+                zoomParam3: Math.max(0, Math.min(1, baseDefaults[2] + (smoothed[2] - 0.5) * amount)),
+                zoomParam4: Math.max(0, Math.min(1, baseDefaults[3] + (smoothed[3] - 0.5) * amount)),
+            };
+
+            updateSlotParam(0, modulated);
+            rendererRef.current?.updateSlotParams(modulated, 0);
+        }
+    }, [audioReactiveParams, audioReactiveAmount, modes, availableModes, updateSlotParam]);
+
+    // Animation-frame callback for audio-reactive params (runs every frame)
+    useEffect(() => {
+        if (!audioReactiveParams) return;
+
+        let rafId: number;
+        const tick = () => {
+            updateAudioReactiveParams();
+            rafId = requestAnimationFrame(tick);
+        };
+        rafId = requestAnimationFrame(tick);
+
+        return () => cancelAnimationFrame(rafId);
+    }, [audioReactiveParams, updateAudioReactiveParams]);
+
+    // Start/stop audio analyzer when A toggle changes
+    useEffect(() => {
+        if (audioReactiveParams) {
+            startAudioAnalyzer();
+        } else {
+            stopAudioAnalyzer();
+        }
+    }, [audioReactiveParams]);
+
+    // --- Keyboard shortcuts: Generative Showcase & Audio-Reactive ---
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+            // 'G' toggles Generative Showcase
+            if (e.key === 'g' || e.key === 'G') {
+                if (generativeShowcaseActive) {
+                    stopGenerativeShowcase();
+                } else {
+                    startGenerativeShowcase();
+                }
+            }
+            // SPACE locks/unlocks the current generative shader
+            if (e.key === ' ') {
+                e.preventDefault(); // prevent page scroll
+                if (generativeShowcaseActive) {
+                    if (generativeShowcaseLocked) {
+                        unlockGenerativeShowcase();
+                    } else {
+                        lockGenerativeShowcase();
+                    }
+                }
+            }
+            // 'A' toggles audio-reactive param modulation
+            if (e.key === 'a' || e.key === 'A') {
+                setAudioReactiveParams(prev => {
+                    const next = !prev;
+                    setStatus(next ? '🔊 Audio-reactive params ON' : '🔇 Audio-reactive params OFF');
+                    return next;
+                });
+            }
+            // '[' / ']' adjust audio reactive amount
+            if (e.key === '[') {
+                setAudioReactiveAmount(prev => {
+                    const next = Math.max(0, Math.min(1, prev - 0.1));
+                    setStatus(`🔊 Audio React Amount: ${Math.round(next * 100)}%`);
+                    return next;
+                });
+            }
+            if (e.key === ']') {
+                setAudioReactiveAmount(prev => {
+                    const next = Math.max(0, Math.min(1, prev + 0.1));
+                    setStatus(`🔊 Audio React Amount: ${Math.round(next * 100)}%`);
+                    return next;
+                });
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [generativeShowcaseActive, generativeShowcaseLocked, startGenerativeShowcase, stopGenerativeShowcase, lockGenerativeShowcase, unlockGenerativeShowcase]);
+
     // Keyboard shortcut for Roulette
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -1560,6 +1798,11 @@ function MainApp() {
                         isRouletteActive={isRouletteActive}
                         chaosModeEnabled={chaosModeEnabled}
                         setChaosModeEnabled={setChaosModeEnabled}
+                        // Audio-Reactive Props
+                        audioReactiveParams={audioReactiveParams}
+                        setAudioReactiveParams={setAudioReactiveParams}
+                        audioReactiveAmount={audioReactiveAmount}
+                        setAudioReactiveAmount={setAudioReactiveAmount}
                         // Recording props
                         isRecording={isRecording}
                         recordingCountdown={recordingCountdown}
@@ -1593,6 +1836,16 @@ function MainApp() {
                     />
                     <div className="status-bar">
                         <span>{isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}</span>
+                        {generativeShowcaseActive && (
+                            <span style={{ color: '#00d4ff', marginLeft: '12px', fontWeight: 600 }}>
+                                🎨 Showcase {generativeShowcaseLocked ? '🔒 LOCKED' : '● AUTO'}
+                            </span>
+                        )}
+                        {audioReactiveParams && (
+                            <span style={{ color: '#FFD700', marginLeft: '12px' }}>
+                                🔊 Audio-Reactive {Math.round(audioReactiveAmount * 100)}%
+                            </span>
+                        )}
 
                         {/* Current Renderer Badge (clickable for cycling) */}
                         <span

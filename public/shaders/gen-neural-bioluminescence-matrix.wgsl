@@ -82,7 +82,7 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     // Magnetic mouse repulsion
     let mouseX = (u.zoom_config.y / u.config.z) * 2.0 - 1.0;
-    let mouseY = -(u.zoom_config.z / u.config.w) * 2.0 + 1.0;
+    let mouseY = u.zoom_config.z * 2.0 - 1.0;
     let mousePos = vec3<f32>(mouseX * 5.0, mouseY * 5.0, p.z);
     let distToMouse = length(p.xy - mousePos.xy);
     let repulsion = 2.0 * exp(-distToMouse * 1.5);

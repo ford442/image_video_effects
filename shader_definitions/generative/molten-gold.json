@@ -1,0 +1,62 @@
+{
+  "id": "molten-gold",
+  "name": "Molten Gold",
+  "url": "shaders/molten-gold.wgsl",
+  "category": "generative",
+  "description": "Molten gold liquid metal effect with flowing fBM noise. Hypnotic idle animation with satisfying mouse claim interaction. Audio-reactive: bass fuels glow, treble adds specular highlights, mid drives ripple shimmer.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "showcase"
+  ],
+  "params": [
+    {
+      "id": "flow-speed",
+      "name": "Flow Speed / Turbulence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "specular",
+      "name": "Specular Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "highlight-freq",
+      "name": "Highlight Frequency",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "generative",
+    "showcase",
+    "gold",
+    "liquid",
+    "metal",
+    "molten",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "abstract"
+  ]
+}

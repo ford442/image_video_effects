@@ -108,7 +108,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         d = smin(b1, b2, 0.6);
     }
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * 10.0;
-    let mouseY = -(u.zoom_config.z * 2.0 - 1.0) * 10.0;
+    let mouseY = u.zoom_config.z * 2.0 - 1.0 * 10.0;
     let mouse_pos = vec3<f32>(mouseX, mouseY, 5.0);
     let dist_to_mouse = length(p - mouse_pos);
     if (dist_to_mouse < u.zoom_params.y) {

@@ -145,7 +145,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Mouse Interaction: Bending ray direction
     let mx = (u.zoom_config.y / res.x) * 2.0 - 1.0;
-    let my = -(u.zoom_config.z / res.y) * 2.0 + 1.0;
+    let my = u.zoom_config.z * 2.0 - 1.0;
 
     let ro = vec3<f32>(0.0, 2.0, -5.0);
     var rd = normalize(vec3<f32>(uv, 1.0));

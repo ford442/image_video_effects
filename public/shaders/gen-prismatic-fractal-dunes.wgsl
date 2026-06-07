@@ -166,7 +166,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Mouse position in world space
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
-    let mouseY = -(u.zoom_config.z * 2.0 - 1.0);
+    let mouseY = u.zoom_config.z * 2.0 - 1.0;
     let mousePos = ro + vec3<f32>(mouseX * 12.0, 0.0, mouseY * 12.0);
 
     // === RAYMARCH ===

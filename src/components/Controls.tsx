@@ -86,6 +86,11 @@ interface ControlsProps {
     isRouletteActive?: boolean;
     chaosModeEnabled?: boolean;
     setChaosModeEnabled?: (enabled: boolean) => void;
+    // Audio-Reactive Props
+    audioReactiveParams?: boolean;
+    setAudioReactiveParams?: (enabled: boolean) => void;
+    audioReactiveAmount?: number;
+    setAudioReactiveAmount?: (amount: number) => void;
     // Recording Props
     isRecording?: boolean;
     recordingCountdown?: number;
@@ -148,6 +153,11 @@ const Controls: React.FC<ControlsProps> = ({
     isRouletteActive = false,
     chaosModeEnabled = false,
     setChaosModeEnabled,
+    // Audio-Reactive Props
+    audioReactiveParams = false,
+    setAudioReactiveParams,
+    audioReactiveAmount = 0.8,
+    setAudioReactiveAmount,
     isRecording = false,
     recordingCountdown = 8,
     onStartRecording,
@@ -738,8 +748,39 @@ const Controls: React.FC<ControlsProps> = ({
                         </label>
                     </div>
 
+                    <div className="audio-reactive-toggle">
+                        <label className="chaos-label">
+                            <input
+                                type="checkbox"
+                                checked={audioReactiveParams}
+                                onChange={(e) => setAudioReactiveParams?.(e.target.checked)}
+                            />
+                            <span className="chaos-text">
+                                🔊 Audio-Reactive
+                                <small>Modulates zoom params by audio</small>
+                            </span>
+                        </label>
+                        {audioReactiveParams && (
+                            <div style={{ marginTop: '8px', paddingLeft: '24px' }}>
+                                <label style={{ fontSize: '11px', color: '#a0a0b0', display: 'block', marginBottom: '4px' }}>
+                                    React Amount: {Math.round((audioReactiveAmount || 0.8) * 100)}%
+                                </label>
+                                <input
+                                    type="range"
+                                    min={0}
+                                    max={1}
+                                    step={0.05}
+                                    value={audioReactiveAmount || 0.8}
+                                    onChange={(e) => setAudioReactiveAmount?.(parseFloat(e.target.value))}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                        )}
+                    </div>
+
                     <div className="roulette-shortcut-hint" style={{color: '#a0a0b0'}}>
                         Press <kbd style={{background: 'rgba(255,215,0,0.15)', borderColor: 'rgba(255,215,0,0.3)', color: '#FFD700'}}>R</kbd> to spin
+                        {audioReactiveParams && <span> · <kbd style={{background: 'rgba(0,212,255,0.15)', borderColor: 'rgba(0,212,255,0.3)', color: '#00d4ff'}}>A</kbd> toggle audio · <kbd style={{background: 'rgba(0,212,255,0.15)', borderColor: 'rgba(0,212,255,0.3)', color: '#00d4ff'}}>[ ]</kbd> amount</span>}
                     </div>
                 </div>
             </div>

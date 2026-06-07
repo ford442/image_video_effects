@@ -372,14 +372,22 @@ export class RendererManager {
     // This method prevents "render is not a function" errors from WebGPUCanvas
   }
 
-  destroy(): void {
-    this.currentRenderer?.destroy();
-    this.currentRenderer = null;
-  }
-
   /** Get latest FPS from the active renderer (real measured value). */
   getCurrentFPS(): number {
     return this.metrics.fps || 0;
+  }
+
+  /** Get audio analysis data from the active renderer (WebGPU only). */
+  getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } | null {
+    if (this.currentRenderer instanceof WebGPURenderer) {
+      return this.currentRenderer.getAudioData();
+    }
+    return null;
+  }
+
+  destroy(): void {
+    this.currentRenderer?.destroy();
+    this.currentRenderer = null;
   }
 }
 

@@ -1,0 +1,61 @@
+{
+  "id": "gen-showcase-crystalline-pulse",
+  "name": "Crystalline Pulse",
+  "category": "generative",
+  "url": "shaders/gen-showcase-crystalline-pulse.wgsl",
+  "description": "Geometric crystal formations that grow and refract. Mouse creates a shattering disruption field. Audio-reactive: bass triggers growth pulses, mids shift hue, treble adds edge refraction sparkles. Showcase-optimized for 12-second rotation cycles.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "showcase"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Crystal Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "shardSize",
+      "name": "Shard Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "glow",
+      "name": "Edge Glow",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chaos",
+      "name": "Chaos Drift",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "generative",
+    "showcase",
+    "crystal",
+    "geometric",
+    "voronoi",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "abstract"
+  ]
+}

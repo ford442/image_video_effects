@@ -155,7 +155,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let time = u.config.x;
 
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
-    let mouseY = -(u.zoom_config.z * 2.0 - 1.0);
+    let mouseY = u.zoom_config.z * 2.0 - 1.0;
     var mousePos = vec3<f32>(mouseX * 5.0, mouseY * 5.0, 0.0);
 
     var ro = vec3<f32>(0.0, 0.0, -5.0);

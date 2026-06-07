@@ -93,7 +93,7 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
 
     // Mouse as external rotating magnetic field (drag = field rotation)
     let mx = (u.zoom_config.y - 0.5) * 12.0;
-    let my = -(u.zoom_config.z - 0.5) * 12.0;
+    let my = u.zoom_config.z - 0.5 * 12.0;
     let mouseAngle = u.config.x * 1.2 + u.zoom_config.w * 8.0; // stronger rotation when mouse is down
     let mousePole = vec3<f32>(mx, my, 0.0);
     let rotatedPole = vec3<f32>(mousePole.x * cos(mouseAngle) - mousePole.z * sin(mouseAngle), mousePole.y, mousePole.x * sin(mouseAngle) + mousePole.z * cos(mouseAngle));

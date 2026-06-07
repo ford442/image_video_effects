@@ -1,0 +1,61 @@
+{
+  "id": "gen-showcase-nebula-core",
+  "name": "Nebula Core",
+  "category": "generative",
+  "url": "shaders/gen-showcase-nebula-core.wgsl",
+  "description": "Deep-space nebula with organic plasma clouds. Mouse becomes a gravity well that pulls the nebula. Audio-reactive: bass creates shockwave rings, treble adds star-like sparkles, mids control rotation. Showcase-optimized for 12-second rotation cycles.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "showcase"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Plasma Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "chaos",
+      "name": "Domain Chaos",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "warp",
+      "name": "Warp Amount",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "id": "speed",
+      "name": "Time Speed",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "tags": [
+    "generative",
+    "showcase",
+    "nebula",
+    "space",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "abstract",
+    "atmospheric"
+  ]
+}
