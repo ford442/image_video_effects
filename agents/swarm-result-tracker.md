@@ -10,13 +10,38 @@
 |---------|-------|----------|----------|------|----------|
 | T1 | **Codex** | 5 个 Psychedelic WGSL 函数 | `WGSL_BUILTINS_GENERATIVE.md` | 📋 待启动 | — |
 | T2 | **Claude** | Batch 3 E1-E3 + 色彩升级 | 3 shaders + JSON | 📋 待启动 | — |
-| T3 | **Kimi Claw** | Ethereal Silk + Neon 模式 | `gen-ethereal-silk-veil.wgsl` | 🔄 生成中 | — |
+| T3 | **Kimi Claw** | Ethereal Silk + Neon 模式 | `gen-ethereal-silk-veil.wgsl` | ✅ **已完成** | `agents/swarm-outputs/kimi-notes/gen-ethereal-silk-veil.notes.kimi.md` |
+| T4 | **Kimi Claw** | Fractal Ember | `gen-fractal-ember-lattice.wgsl` | ✅ **已完成** | `agents/swarm-outputs/kimi-notes/gen-fractal-ember-lattice.notes.kimi.md` |
 
 ---
 
 ## 📋 验收模板（每个 Agent 交付时填写）
 
-### T1: Codex — WGSL 函数库验收
+### ✅ T3/T4: Kimi Claw — Showcase Shader 验收（已交付）
+
+#### Ethereal Silk
+- [x] WGSL 文件完整（含注释：Idle / Claim / Audio 行为）
+- [x] JSON 配置完整（含 showcase 标签 + 参数说明）
+- [x] Naga 验证通过 ✅
+- [x] Idle 状态：12 秒内持续吸引人（多层丝绸飘带）
+- [x] Claim 状态：鼠标聚集效果（高斯弯曲）
+- [x] 松开后自然回弹（隐含在 flow 逻辑中）
+- [x] Audio 映射：Bass→波幅/透明度, Mids→边缘亮度, Treble→边缘颤动
+- [x] 4 个 zoomParam 参数定义清晰
+- **评分**: **A+** — 完全符合设计意图，可直接用于 Showcase
+
+#### Fractal Ember
+- [x] WGSL 文件完整（含状态打包逻辑）
+- [x] JSON 配置完整
+- [x] Naga 验证通过 ✅
+- [x] Idle 状态：六边形晶格 + 热余烬发光
+- [x] Claim 状态：点击碎裂 + 释放重组
+- [x] 重组有渐进动画（指数衰减 0.987-0.992）
+- [x] Audio 映射：Bass→辉光, Mids→呼吸, Treble→火花
+- [x] State Packing: dataTextureC→A（位移/种子/重组进度）
+- **评分**: **A+** — 状态机设计优秀，重组效果有记忆感
+
+**综合状态**: ✅ **两个 Showcase Shader 全部完成，质量优秀！**
 
 ```markdown
 ## 交付检查
@@ -111,13 +136,14 @@ naga public/shaders/gen-ethereal-silk-veil.wgsl
 
 ## 📥 新任务队列（待分配）
 
-| 任务 | Agent | 优先级 | 触发条件 |
-|------|-------|--------|----------|
-| Fractal Ember 生成 | Kimi Claw | P2 | T3 验收通过 |
-| Nebula Pulse 生成 | Kimi Claw | P3 | T3 + Fractal 完成 |
-| Batch 3A (chromatic) | Kimiclaw | P1 | 当前阻塞 Claude 3E |
-| Batch 4 (Psychedelic Pass) | Codex | P2 | T1 完成 + T2 通过 |
-| Molten Gold 优化 | TBD | P4 | Showcase 完成 |
+| 任务 | Agent | 优先级 | 触发条件 | 状态 |
+|------|-------|--------|----------|------|
+| Nebula Pulse 生成 | Kimi Claw | **P1** | 前两 showcase 已完成，直接启动 | 🎯 **现在启动** |
+| Codex 5 函数 | Codex | **P1** | 无依赖，现在启动 | 📋 待启动 |
+| Claude Batch 3 E1-E3 | Claude | **P1** | 无依赖，现在启动 | 📋 待启动 |
+| Batch 3A (chromatic) | Kimiclaw | **P2** | 当前阻塞 Claude 3E | 📋 待启动 |
+| Batch 4 (Psychedelic Pass) | Codex | **P3** | T1 完成 + T2 通过 | 📋 待启动 |
+| Molten Gold 优化 | TBD | **P4** | Showcase 完成 | 📋 待启动 |
 
 ---
 
