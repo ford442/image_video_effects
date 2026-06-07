@@ -9,7 +9,8 @@
     "mouse-driven",
     "raymarched",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "distance-lod"
   ],
   "tags": [
     "crystal",

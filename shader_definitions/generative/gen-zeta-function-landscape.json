@@ -16,6 +16,7 @@
   "features": [
     "generative",
     "audio-reactive",
+    "mouse-driven",
     "upgraded-rgba",
     "chromatic-zeros",
     "temporal-smoothing"

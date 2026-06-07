@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Electric Eel Storm
 //  Category: generative
-//  Features: generative, audio-reactive, temporal, chromatic, mouse-driven
+//  Features: generative, audio-reactive, temporal, chromatic, mouse-driven, upgraded-rgba, distance-lod
 //  Complexity: Very High
 //  Description: Electric eels swimming through a conductive storm
 //               cloud, discharging arcs between them. Bass drives
@@ -122,10 +122,18 @@ fn lightningArc(uv: vec2<f32>, a: vec2<f32>, b: vec2<f32>, time: f32, seed: f32)
 }
 
 // Storm cloud turbulence
+// ═══ CHUNK: distance-based octave LOD (perf) ═══
+// Pixels far from screen center contribute less to the focal read of
+// the storm — relax FBM octaves there (4→2 / 3→2) to cut noise2 calls
+// without a perceptible loss of detail at the periphery.
 fn stormCloud(uv: vec2<f32>, time: f32, intensity: f32) -> f32 {
+  let distFromCenter = length(uv - vec2<f32>(0.5));
+  let lod = smoothstep(0.3, 0.7, distFromCenter);
+  let oct1 = i32(mix(4.0, 2.0, lod));
+  let oct2 = i32(mix(3.0, 2.0, lod));
   let p = uv * 3.0 + vec2<f32>(time * 0.1, time * 0.05);
-  let n1 = fbm2(p, 4);
-  let n2 = fbm2(p * 2.0 + vec2<f32>(100.0, 0.0), 3);
+  let n1 = fbm2(p, oct1);
+  let n2 = fbm2(p * 2.0 + vec2<f32>(100.0, 0.0), oct2);
   let cloud = smoothstep(0.4 - intensity * 0.2, 0.7, n1) * 0.5;
   let turbulence = smoothstep(0.3, 0.6, n2) * intensity * 0.3;
   return cloud + turbulence;
@@ -157,6 +165,12 @@ fn lightningBolt(uv: vec2<f32>, start: vec2<f32>, time: f32, seed: f32, treble: 
   return bolt;
 }
 
+// ═══ CHUNK: bass envelope smoothing ═══
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+  let k = select(release, attack, bass > prev);
+  return mix(prev, bass, k);
+}
+
 fn hueToRGB(hue: f32) -> vec3<f32> {
   let k = vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0);
   let h = abs(fract(vec3<f32>(hue) + k) * 6.0 - vec3<f32>(3.0));
@@ -186,6 +200,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
+  // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
+  let prevBass = extraBuffer[3];
+  let smoothBass = bass_env(prevBass, bass, 0.08, 0.02);
+  extraBuffer[3] = smoothBass;
+
   // Parameters
   let eelCount = i32(u.zoom_params.x * 4.0 + 2.0);
   let stormIntensity = u.zoom_params.y * 1.5;
@@ -206,15 +225,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var i: i32 = 0; i < eelCount; i = i + 1) {
     let fi = f32(i);
     let eelPos = eelPosition(fi, time, pulseSpeed, mouse);
-    let d = sdEel(uv, eelPos, time, pulseSpeed, bass);
 
-    // Eel body
-    let body = smoothstep(0.005, 0.0, d);
-    eelMask += body;
+    // ═══ CHUNK: early-exit for off-screen eels (perf) ═══
+    // Skip the SDF + glow evaluation entirely for eels whose body is
+    // far outside this pixel's neighborhood — only their glow could
+    // possibly reach, and at that range it's below visibility anyway.
+    if (length(uv - eelPos) < 0.35) {
+      let d = sdEel(uv, eelPos, time, pulseSpeed, smoothBass);
 
-    // Eel glow
-    let glow = 1.0 / (1.0 + d * d * 2000.0);
-    eelGlow += glow * (0.5 + bass * 0.5);
+      // Eel body
+      let body = smoothstep(0.005, 0.0, d);
+      eelMask += body;
+
+      // Eel glow
+      let glow = 1.0 / (1.0 + d * d * 2000.0);
+      eelGlow += glow * (0.5 + smoothBass * 0.5);
+    }
 
     // Discharge arcs between nearby eels
     if (i > 0) {
@@ -241,7 +267,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   // Eel color: bioluminescent blue-green with pulse
-  let eelHue = 0.45 + bass * 0.05 + sin(time * pulseSpeed) * 0.02;
+  let eelHue = 0.45 + smoothBass * 0.05 + sin(time * pulseSpeed) * 0.02;
   let eelCol = hueToRGB(eelHue) * (0.8 + mids * 0.4);
 
   // Arc color: electric violet-white
@@ -269,7 +295,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Temporal feedback
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
-  var fbCol = mix(col, prev.rgb * 0.9, 0.06 + bass * 0.02);
+  var fbCol = mix(col, prev.rgb * 0.9, 0.06 + smoothBass * 0.02);
 
   // Blend chromatic offsets
   fbCol.r = mix(fbCol.r, prevR * 0.9, 0.05 + arcs * 0.05);

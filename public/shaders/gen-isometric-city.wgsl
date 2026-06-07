@@ -115,12 +115,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
     let time = u.config.x;
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.config.y;
-    let audioBass = u.config.y * 1.2;
-    let audioMid = u.config.z;
-    let audioHigh = u.config.w;
-    let audioReactivity = 1.0 + audioOverall * 0.5;
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audioReactivity = 1.0 + bass * 0.5;
 
     // Camera Setup (Isometric / Orthographic)
     // Isometric view: look at (0,0,0) from (1,1,1) (normalized)
@@ -152,7 +151,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Flyover animation
     // u.zoom_params.y is Speed.
-    let speed = mix(0.5, 5.0, u.zoom_params.y);
+    let speed = mix(0.5, 5.0, u.zoom_params.y) * (1.0 + mids * 0.4);
     ro.z += time * speed * audioReactivity;
     ro.x += time * speed * audioReactivity * 0.5;
 
@@ -214,11 +213,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             else if (h_rnd < 0.66) { glowCol = vec3<f32>(1.0, 0.0, 1.0); } // Magenta
             else { glowCol = vec3<f32>(0.2, 0.2, 1.0); } // Blue
 
-            let glowIntensity = mix(1.0, 5.0, u.zoom_params.z);
+            let glowIntensity = mix(1.0, 5.0, u.zoom_params.z) * (1.0 + bass * 0.6);
 
             if (isSide > 0.5 && windowPattern > 0.5) {
                 // Window light
-                 baseCol += glowCol * glowIntensity;
+                 baseCol += glowCol * glowIntensity * (1.0 + treble * 0.5);
             } else if (n.y > 0.9) {
                 // Roof lights or rim
                 if (fract(p.x*2.0) < 0.1 || fract(p.z*2.0) < 0.1) {

@@ -157,8 +157,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseDown = u.zoom_config.w;
     let mouseNorm = (mouse - resolution * 0.5) / min(resolution.x, resolution.y);
 
-    let intensity = u.zoom_params.x;
-    let speed = u.zoom_params.y;
+    // Audio reactivity
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    let intensity = u.zoom_params.x * (1.0 + bass * 1.5);
+    let speed = u.zoom_params.y * (1.0 + mids * 2.0);
     let scale = u.zoom_params.z;
     let colorShift = u.zoom_params.w;
 
@@ -167,7 +172,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Dark cosmic background
     let bgStars = vnoise(uv * 25.0);
     let starMask = smoothstep(0.88, 0.95, bgStars);
-    col += vec3<f32>(0.5, 0.7, 1.0) * starMask * 0.3;
+    col += vec3<f32>(0.5, 0.7, 1.0) * starMask * 0.3 * (1.0 + treble * 2.0);
     col += vec3<f32>(0.03, 0.0, 0.08);
 
     // Subtle nebula background
@@ -212,7 +217,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Combined vein mask
         let veinWidth = 0.015 * (1.0 + growth * 0.5) / scale;
         let veinMask = smoothstep(veinWidth, 0.0, vDist) * growth;
-        let dendriteMask = smoothstep(0.35, 0.65, dendrite) * smoothstep(0.3, 0.7, dendrite2) * growth * 0.4;
+        let dendriteMask = smoothstep(0.35, 0.65, dendrite) * smoothstep(0.3, 0.7, dendrite2) * growth * 0.4 * (1.0 + treble * 2.0);
 
         let combinedMask = max(veinMask, dendriteMask);
 
@@ -229,7 +234,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Contribution
         col += veinColor * combinedMask * intensity * 2.0;
-        col += tipColor * tipMask * intensity * 1.5;
+        col += tipColor * tipMask * intensity * 1.5 * (1.0 + treble * 2.0);
 
         // Glow around veins
         let glowMask = smoothstep(veinWidth * 4.0, 0.0, vDist) * growth * 0.3;
@@ -253,7 +258,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Core white-hot spot
         let coreGlow = exp(-mouseDist * mouseDist * 80.0);
-        col += vec3<f32>(1.0, 0.8, 0.9) * coreGlow * intensity * 3.0;
+        col += vec3<f32>(1.0, 0.8, 0.9) * coreGlow * intensity * 3.0 * (1.0 + treble);
     }
 
     // Global organic noise overlay

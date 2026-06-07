@@ -10,7 +10,8 @@
     "mouse-driven",
     "temporal",
     "chromatic",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "distance-lod"
   ],
   "params": [
     {

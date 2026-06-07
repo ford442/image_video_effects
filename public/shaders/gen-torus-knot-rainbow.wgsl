@@ -64,6 +64,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass   = plasmaBuffer[0].x;
   let mids   = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
+  let mouse  = u.zoom_config.yz;
 
   let spinSpeed  = mix(0.2, 2.0, u.zoom_params.x);
   let knotP      = floor(mix(2.0, 6.0, u.zoom_params.y));
@@ -72,7 +73,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var p = (uv - 0.5) * vec2<f32>(aspect, 1.0) * 2.2;
 
-  let rot  = time * spinSpeed * 0.18;
+  let rot  = time * spinSpeed * 0.18 + mouse.x * TAU;
   let cosR = cos(rot);
   let sinR = sin(rot);
   let px   = p.x * cosR - p.y * sinR;
@@ -84,7 +85,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let qWind = knotQ + bass * 1.5;
   let R     = 0.65;
   let r     = 0.35;
-  let cam   = 3.8;
+  let cam   = 3.8 + (mouse.y - 0.5) * 2.5;
 
   var glowAcc   = 0.0;
   var colorAccR = vec3<f32>(0.0);
