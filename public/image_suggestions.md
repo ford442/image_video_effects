@@ -5883,6 +5883,72 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Perfect for extreme volumetric lighting, flares, and liquid distortion testing.
 
 
+### Suggestion: Brass Solarpunk Airship
+- **Date:** 2026-12-31
+- **Prompt:** "A majestic, highly detailed solarpunk airship floating above a sprawling, green utopian metropolis at sunrise. The airship features a massive balloon made of semi-translucent, glowing graphene fabric and a gondola constructed from polished brass and lush, hanging hydroponic gardens. The lighting is soft, warm morning sunlight, casting long, volumetric golden rays that catch the intricate brass details and reflect off the morning mist. The mood is peaceful, optimistic, and grand. Captured with an ultra-wide 14mm lens from a slightly lower altitude to emphasize the ship's massive scale against the bright, clear sky."
+- **Negative prompt:** "dystopian, dark, grim, polluted, ugly, blurry, low resolution, rusty"
+- **Tags:** solarpunk, sci-fi, architecture, brass, bright
+- **Style / Reference:** utopian concept art, photorealistic 3D render
+- **Composition:** wide expansive view, rule of thirds, dynamic angle
+- **Color palette:** warm golden sunlight, lush vibrant greens, polished brass, sky blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_brass-solarpunk-airship.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing intricate metallic details combined with lush organic elements and soft, volumetric morning light.
+
+### Suggestion: Graphene Cyberpunk Hacker Desk
+- **Date:** 2026-12-31
+- **Prompt:** "An intensely cluttered, dark cyberpunk hacker's desk late at night, featuring multiple glowing holographic displays projecting complex data structures. The desk itself and the surrounding server racks are built from sleek, light-absorbing matte black graphene. The lighting is high-contrast, entirely diegetic, emanating from the neon cyan and magenta holograms which cast sharp, colorful reflections on scattered energy drink cans, while the graphene surfaces remain pitch black. The mood is intense, secretive, and high-tech. Captured with a 35mm lens, shallow depth of field focusing on the intricate holographic code while the background blurs into dark bokeh."
+- **Negative prompt:** "daylight, clean, minimalist, bright, sunny, soft, plain"
+- **Tags:** cyberpunk, interior, dark, neon, graphene
+- **Style / Reference:** cyberpunk cinematic concept art, photorealistic macro
+- **Composition:** medium close-up, cluttered foreground, shallow depth of field
+- **Color palette:** matte pitch black graphene, glowing neon cyan, intense magenta
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_graphene-hacker-desk.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing light-absorbing matte materials (graphene) contrasted with intense, multi-colored neon emission and cluttered micro-details.
+
+### Suggestion: Bismuth Cybernetic Dragon
+- **Date:** 2026-12-31
+- **Prompt:** "A colossal, terrifying cybernetic dragon perched on the jagged peak of a frozen mountain. The dragon's armor is composed entirely of giant, interlocking hopper crystals of iridescent bismuth, while its joints and wings reveal glowing, superheated plasma engines. The lighting is dramatic and harsh, with the glowing orange plasma illuminating the blinding white snow below and catching the multi-colored, metallic rainbow facets of the bismuth scales against a dark, stormy night sky. The mood is epic, aggressive, and majestic. Captured with a wide 24mm lens from a low angle to exaggerate the dragon's imposing size and sharp geometry."
+- **Negative prompt:** "organic scales, flesh, daytime, soft, cartoon, friendly, blurry"
+- **Tags:** fantasy, sci-fi, dragon, bismuth, epic
+- **Style / Reference:** dark fantasy concept art, photorealistic creature design
+- **Composition:** low angle looking up, dramatic silhouette, towering presence
+- **Color palette:** iridescent pinks/blues/golds, glowing plasma orange, stark white snow, dark storm grey
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_bismuth-dragon.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the integration of complex, geometric hopper crystals (bismuth) onto a complex, organic-shaped creature model with intense internal lighting.
+
+### Suggestion: Mother of Pearl Victorian Conservatory
+- **Date:** 2026-12-31
+- **Prompt:** "A breathtaking, surreal interior of a vast Victorian botanical conservatory where the elaborate, curved wrought-iron framework and the decorative floor tiles are carved entirely from shimmering, iridescent Mother of Pearl. The architectural subject is filled with lush, exotic alien flora. The lighting is soft and ethereal, filtering down from the massive glass dome above, catching the micro-ridges of the nacre to throw prismatic rainbow highlights across the humid, misty air. The mood is romantic, elegant, and otherworldly. Captured with an ultra-wide 12mm lens, utilizing deep focus to capture the immense scale and intricate pearlescent arches."
+- **Negative prompt:** "dark, scary, rusty iron, ordinary plants, lowres, flat lighting"
+- **Tags:** architecture, interior, fantasy, mother of pearl, botanical
+- **Style / Reference:** grand architectural visualization, fantasy environment design
+- **Composition:** symmetrical, deep perspective down the central walkway
+- **Color palette:** pearlescent whites, soft pinks and blues, vibrant lush greens
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_nacre-conservatory.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating large-scale iridescent reflections and thin-film interference on complex, curved Victorian architecture.
+
+### Suggestion: Aerogel Deep Space Telescope
+- **Date:** 2026-12-31
+- **Prompt:** "A massive, futuristic deep-space telescope drifting silently in orbit around a brilliant blue gas giant. The massive hexagonal mirror segments and the supporting truss structure are constructed from ultra-lightweight, translucent blue aerogel. The lighting is breathtaking, with the glaring, unattenuated light from a distant star piercing through the porous aerogel structures, creating soft, glowing internal refractions and casting sharp, dark shadows across the gas giant below. The mood is serene, vast, and highly advanced. Captured from a dynamic angle in low orbit, emphasizing the delicate, ghostly nature of the telescope against the massive planet."
+- **Negative prompt:** "solid metal, opaque, noisy, chaotic, earth, atmosphere, low quality"
+- **Tags:** sci-fi, space, technology, aerogel, ethereal
+- **Style / Reference:** cinematic space art, photorealistic sci-fi hardware
+- **Composition:** dynamic diagonal framing, vast background, stark contrast
+- **Color palette:** translucent ghostly blue, blinding starlight white, deep cosmic black, rich azure
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20261231_aerogel-telescope.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing large-scale structures made of highly scattering, incredibly low-density translucent materials (aerogel) under harsh cosmic lighting.
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
