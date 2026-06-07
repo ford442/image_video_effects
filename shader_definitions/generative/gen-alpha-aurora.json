@@ -4,12 +4,13 @@
   "url": "shaders/gen-alpha-aurora.wgsl",
   "description": "Procedural aurora borealis with rich spectral band blending, dynamic audio-reactive pulsing, and atmospheric depth. Enhanced color and motion for greater visual impact.",
   "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "temporal",
-    "upgraded-rgba",
     "atmospheric-depth",
-    "spectral-color"
+    "audio-reactive",
+    "chromatic-aberration",
+    "mouse-driven",
+    "spectral-color",
+    "temporal",
+    "upgraded-rgba"
   ],
   "tags": [
     "aurora",

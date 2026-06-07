@@ -290,13 +290,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Thicker bands = more opaque, thin atmosphere = transparent
   let finalAlpha = clamp(accumulatedAlpha * 0.8 + prevAlpha * 0.1, 0.0, 1.0);
 
+  // Depth for chromatic + pass-through
+  let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
   // Store state for temporal feedback
   textureStore(dataTextureA, coord, vec4<f32>(finalColor, finalAlpha));
 
   finalColor = acesToneMap(finalColor * 1.1);
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
 
-  // Depth pass-through
-  let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  // Chromatic aberration
+  let caStr = 0.003 * (1.0 + bass) + depthVal * 0.001;
+  finalColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
+
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }

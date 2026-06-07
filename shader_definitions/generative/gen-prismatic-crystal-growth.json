@@ -2,13 +2,14 @@
   "id": "gen-prismatic-crystal-growth",
   "name": "Prismatic Crystal Growth",
   "url": "shaders/gen-prismatic-crystal-growth.wgsl",
-  "description": "SDF crystal lattice that grows over time with Fresnel reflectance for glass-like translucency. Alpha encodes crystal thickness — thin edges are transparent, thick centers opaque. Audio drives growth rate and crystal rotation.",
+  "description": "SDF crystal lattice that grows over time with Fresnel reflectance for glass-like translucency. Alpha encodes crystal thickness \u2014 thin edges are transparent, thick centers opaque. Audio drives growth rate and crystal rotation.",
   "features": [
-    "mouse-driven",
     "audio-reactive",
+    "chromatic-aberration",
+    "mouse-driven",
+    "raymarched",
     "temporal",
-    "upgraded-rgba",
-    "raymarched"
+    "upgraded-rgba"
   ],
   "tags": [
     "crystal",

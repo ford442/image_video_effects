@@ -344,13 +344,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
   alpha = clamp(alpha, 0.0, 1.0);
 
+  // Depth from raymarch for chromatic + pass-through
+  let depthVal = clamp(t / 30.0, 0.0, 1.0);
+
   // Store state: R=thickness, G=growth, B=unused, A=alpha
   textureStore(dataTextureA, coord, vec4<f32>(thickness, storedGrowth, 0.0, alpha));
 
   color = acesToneMap(color * 1.1);
-  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
 
-  // Depth
-  let depthVal = clamp(t / 30.0, 0.0, 1.0);
+  // Chromatic aberration
+  let caStr = 0.003 * (1.0 + bass) + depthVal * 0.001;
+  color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }

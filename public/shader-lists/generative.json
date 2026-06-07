@@ -1806,12 +1806,13 @@
     "url": "shaders/gen-alpha-aurora.wgsl",
     "description": "Procedural aurora borealis with rich spectral band blending, dynamic audio-reactive pulsing, and atmospheric depth. Enhanced color and motion for greater visual impact.",
     "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "temporal",
-      "upgraded-rgba",
       "atmospheric-depth",
-      "spectral-color"
+      "audio-reactive",
+      "chromatic-aberration",
+      "mouse-driven",
+      "spectral-color",
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "aurora",
@@ -6750,6 +6751,69 @@
     ]
   },
   {
+    "id": "gen-fractal-ember-lattice",
+    "name": "Fractal Ember Lattice",
+    "url": "shaders/gen-fractal-ember-lattice.wgsl",
+    "category": "generative",
+    "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, and spark frequency.",
+    "tags": [
+      "crystal",
+      "fractal",
+      "ember",
+      "fire",
+      "shatter",
+      "lattice",
+      "showcase",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal"
+    ],
+    "features": [
+      "generative",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "chromatic-aberration",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "shardSize",
+        "name": "Shard Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "latticeScale",
+        "name": "Lattice Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "sparkDensity",
+        "name": "Spark Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-fractured-monolith",
     "name": "Fractured Monolith",
     "url": "shaders/gen-fractured-monolith.wgsl",
@@ -6816,8 +6880,9 @@
     "url": "shaders/gen-ghost-flame.wgsl",
     "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire.",
     "features": [
-      "mouse-driven",
       "audio-reactive",
+      "chromatic-aberration",
+      "mouse-driven",
       "temporal",
       "upgraded-rgba"
     ],
@@ -12171,11 +12236,12 @@
     "url": "shaders/gen-prismatic-crystal-growth.wgsl",
     "description": "SDF crystal lattice that grows over time with Fresnel reflectance for glass-like translucency. Alpha encodes crystal thickness — thin edges are transparent, thick centers opaque. Audio drives growth rate and crystal rotation.",
     "features": [
-      "mouse-driven",
       "audio-reactive",
+      "chromatic-aberration",
+      "mouse-driven",
+      "raymarched",
       "temporal",
-      "upgraded-rgba",
-      "raymarched"
+      "upgraded-rgba"
     ],
     "tags": [
       "crystal",
@@ -15032,8 +15098,9 @@
     "url": "shaders/gen-translucent-nebula.wgsl",
     "description": "Volumetric gas clouds with density-based alpha translucency. FBM and Worley noise create organic nebula structure where dense cores are opaque and edges fade to transparent. Star sparkle reacts to treble and nebula pulses with bass.",
     "features": [
-      "mouse-driven",
       "audio-reactive",
+      "chromatic-aberration",
+      "mouse-driven",
       "temporal",
       "upgraded-rgba"
     ],

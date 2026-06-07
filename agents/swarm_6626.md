@@ -129,10 +129,10 @@ Repurposed: ACES-gap batch is empty (drift = 0). Target shaders with ACES + data
 | **3B dataTextureA** | To Do | 3B | 10 | After Codex validates 3A |
 | **3C chromatic sweep** | To Do | 3C | 10 | After Codex validates 3B |
 | Write `.notes.kimiclaw.md` per shader | To Do | all | 24 | Required before Claude 3E |
-| Generate **Ethereal Silk** showcase | To Do | showcase | 1 new | Organic silk/veil; mouse claim |
-| Generate **Fractal Ember** showcase | Backlog | showcase | 1 new | Only if Ethereal Silk quality high |
-| Create `prompt-showcase-batch-1.md` | To Do | docs | — | Referenced but missing — write before showcase |
-| Create `showcase-checklist-v1.md` | To Do | docs | — | 12s rotation readiness criteria |
+| Generate **Ethereal Silk** showcase | ✅ Done | showcase | 1 new | `gen-ethereal-silk-veil` — naga validated, 4 params, full stack |
+| Generate **Fractal Ember** showcase | ✅ Done | showcase | 1 new | `gen-fractal-ember-lattice` — agent swarm synthesized, naga validated |
+| Create `prompt-showcase-batch-1.md` | ✅ Done | docs | — | Created 2026-06-07 |
+| Create `showcase-checklist-v1.md` | ✅ Done | docs | — | Created 2026-06-07 |
 | Review showcase audio param mapping | Backlog | showcase | — | zoom_params 1–4 semantics |
 
 **Invocation:** `kimi-cli --no-stream` · max 2 shaders per call · gold reference: `gen-protocell-division.wgsl`
@@ -147,7 +147,7 @@ Repurposed: ACES-gap batch is empty (drift = 0). Target shaders with ACES + data
 |------|--------|-------|---------|-------|
 | **3D multi-pass** | ✅ Done | 3D | 5 | Notes in `claude-notes/` |
 | **3E polish E1–E3** | Blocked | 3E | 3 | Unblock when Kimiclaw 3A lands |
-| **3B Priority B continuation** | To Do | 3B+ | next 10 | After Kimiclaw 3B queue — pick from remaining 112 dataA gaps |
+| **3B Priority B continuation** | In Progress | 3B+ | 3 done / next 10 | Jumped ahead on highest-impact bug-fix picks (disjoint from Kimiclaw's 10): `gen-langton-ant` (state was leaking into visible writeTexture — visual glitch + broken sim), `gen-turing-morphogenesis`, `gen-lichen-reaction-diffusion` (both had dead `prev.rgb` persistence feedback loops). Notes in `claude-notes/`. ~119 dataA gaps remain, mostly cosmetic (no `dataTextureC` read dependency). |
 | Performance audit (frequent shaders) | Backlog | P3 | TBD | LOD, early-exit, branchless paths |
 | Duplicate function cleanup | Backlog | P3 | Batch 3 touched | `aces_tonemap` vs `acesToneMap` pattern |
 
@@ -187,7 +187,7 @@ Repurposed: ACES-gap batch is empty (drift = 0). Target shaders with ACES + data
 | GitHub #801 Batch 3 | ✅ Filed | — | [Issue #801](https://github.com/ford442/image_video_effects/issues/801) |
 | GitHub #800 Shader gallery | Deferred | — | [Issue #800](https://github.com/ford442/image_video_effects/issues/800) — post Batch 3 |
 | GitHub #799 WASM context | Deferred | — | [Issue #799](https://github.com/ford442/image_video_effects/issues/799) — post Batch 3 |
-| Define showcase readiness criteria | To Do | All | 12s rotation: idle beauty, mouse claim, audio response, alpha compositing |
+| Define showcase readiness criteria | ✅ Done | All | See `agents/showcase-checklist-v1.md` |
 | Update `WGSL_BUILTINS_GENERATIVE.md` | Backlog | Codex | Add Batch 2/3 chunks if new patterns emerge |
 
 ---
@@ -222,8 +222,8 @@ Kimiclaw showcase: Ethereal Silk (parallel if capacity)
 | [`claude_6_6_26.md`](swarm-tasks/claude_6_6_26.md) | Multi-pass + polish lane |
 | [`batch-3-queue.json`](swarm-tasks/batch-3-queue.json) | Machine-readable shader assignments |
 | [`WGSL_BUILTINS_GENERATIVE.md`](WGSL_BUILTINS_GENERATIVE.md) | Core standards + canonical chunks |
-| `agents/prompt-showcase-batch-1.md` | **To create** — showcase generation prompt |
-| `agents/showcase-checklist-v1.md` | **To create** — 12s rotation quality gate |
+| [`agents/prompt-showcase-batch-1.md`](prompt-showcase-batch-1.md) | Showcase generation prompt |
+| [`agents/showcase-checklist-v1.md`](showcase-checklist-v1.md) | 12s rotation quality gate |
 | [`batch-2-validation.md`](swarm-outputs/batch-2-validation.md) | Latest completed batch report |
 | [GitHub #801](https://github.com/ford442/image_video_effects/issues/801) | Batch 3 tracking issue |
 
@@ -267,7 +267,7 @@ console.log('drift:',d);
 - Batch 3C repurposed from empty ACES-gap list — drift is 0 after metadata sweep.
 - `electric-eel-storm` removed from 3A (chromatic done in Batch 2); stays in Claude 3E for LOD polish.
 - `gen-belousov-zhabotinsky` appears in both 3C (Kimiclaw chromatic) and 3D (Claude multi-pass) — Claude done; Kimiclaw adds chromatic only if missing after audit.
-- Showcase files (`prompt-showcase-batch-1.md`, `showcase-checklist-v1.md`) referenced but not yet created — added as explicit tasks.
+- Showcase files (`prompt-showcase-batch-1.md`, `showcase-checklist-v1.md`) created on 2026-06-07.
 - Performance and logical cleanliness are now explicit upgrade criteria alongside feature completeness.
 
 ---

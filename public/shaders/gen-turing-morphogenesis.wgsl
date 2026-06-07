@@ -5,6 +5,7 @@
 //    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-06-07
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -142,4 +143,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(patternDensity, 0.0, 0.0, 0.0));
+
+  // ═══ CHUNK: multi-pass state packing — persist color for `prev.rgb * persistence` feedback ═══
+  // Without this write, dataTextureC always reads zero and the persistence trail is dead code.
+  textureStore(dataTextureA, pixel, vec4<f32>(color, patternDensity));
 }

@@ -5,6 +5,7 @@
 //    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-06-07
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -93,6 +94,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var heat = prev.g;
   let flipBoost = 1.0 + bass * 2.0 + p1;
   var isAntHere = 0.0;
+  // ═══ CHUNK: multi-pass state packing — ant position/direction lives in dataTextureA, not writeTexture ═══
+  var antEncoded = vec4<f32>(0.0);
+  var isAntPixel = false;
 
   for (var a = 0; a < 3; a++) {
     let apx = a * cellSize;
@@ -116,14 +120,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if sCell.x == fcx && sCell.y == fcy { state = 1.0 - state; heat += flipBoost; }
     isAntHere += select(0.0, 1.0, sCell.x == ax && sCell.y == ay);
 
-    let isAntPixel = select(false, true, pixel.x == apx && pixel.y == 0);
-    if isAntPixel {
+    if pixel.x == apx && pixel.y == 0 {
+      isAntPixel = true;
       adir = (adir + select(3, 1, state > 0.5)) % 4;
       let nd = dirVec(adir);
       ax = (ax + nd.x + gridSize) % gridSize;
       ay = (ay + nd.y + gridSize) % gridSize;
-      textureStore(writeTexture, pixel, vec4<f32>(f32(ax) / 128.0, f32(ay) / 128.0, f32(adir) / 4.0, 1.0));
-      return;
+      antEncoded = vec4<f32>(f32(ax) / 128.0, f32(ay) / 128.0, f32(adir) / 4.0, 1.0);
     }
   }
 
@@ -143,4 +146,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(heat * 0.08 + isAntHere * 0.5, 0.0, 1.0) * depth;
   textureStore(writeTexture, pixel, applyGenerativePrimaryControls(vec4<f32>(color, alpha)));
   textureStore(writeDepthTexture, pixel, vec4<f32>(heat * 0.08, 0.0, 0.0, 0.0));
+
+  // ═══ Persistent state: cell flip-state(.r), heat(.g), ant-here(.b) everywhere;
+  //     ant position/direction encoding overrides at the 3 tracker pixels (apx, 0) ═══
+  let cellStateOut = vec4<f32>(state, heat, isAntHere, 1.0);
+  textureStore(dataTextureA, pixel, select(cellStateOut, antEncoded, isAntPixel));
 }

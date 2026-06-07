@@ -4,8 +4,9 @@
   "url": "shaders/gen-ghost-flame.wgsl",
   "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire.",
   "features": [
-    "mouse-driven",
     "audio-reactive",
+    "chromatic-aberration",
+    "mouse-driven",
     "temporal",
     "upgraded-rgba"
   ],
