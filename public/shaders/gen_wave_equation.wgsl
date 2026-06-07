@@ -4,7 +4,7 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, temporal
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,6 +27,15 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -128,7 +137,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalRGB      = mix(inputColor.rgb, generatedColor, opacity);
     let finalAlpha    = clamp(waveIntensity * opacity + energy * 0.3 + inputColor.a * 0.2, 0.0, 1.0);
 
-    let finalColor = vec4<f32>(finalRGB, finalAlpha);
+    let finalColor = vec4<f32>(acesToneMap(finalRGB * 1.1), finalAlpha);
 
     // Depth
     let depth = clamp(energy + inputDepth * 0.5, 0.0, 1.0);

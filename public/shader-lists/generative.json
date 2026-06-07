@@ -144,7 +144,12 @@
       "ray-marching",
       "mouse-control",
       "audio-reactive",
-      "temporal"
+      "temporal",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "temporal-feedback",
+      "chromatic-aberration",
+      "depth-aware"
     ],
     "params": [
       {
@@ -2490,9 +2495,12 @@
       "mouse-driven",
       "depth-aware",
       "upgraded-rgba",
+      "aces-tone-map",
       "audio-reactive",
       "temporal",
-      "simulation"
+      "simulation",
+      "hue-preserve-clamp",
+      "ign-dither"
     ],
     "tags": [
       "procedural",
@@ -4364,7 +4372,11 @@
       "depth-aware",
       "temporal-feedback",
       "procedural",
-      "cellular-automata"
+      "cellular-automata",
+      "aces-tone-map",
+      "generation-counter",
+      "hue-preserve-clamp",
+      "ign-dither"
     ],
     "tags": [
       "conway",
@@ -6133,7 +6145,12 @@
     "features": [
       "generative",
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "temporal-feedback",
+      "chromatic-aberration",
+      "depth-aware"
     ],
     "author": "AI",
     "params": [
@@ -6428,11 +6445,15 @@
       "accumulative"
     ],
     "features": [
-      "temporal",
-      "multi-pass",
-      "audio-reactive",
+      "aces-tone-map",
+      "advanced-alpha",
       "audio-driven",
-      "advanced-alpha"
+      "audio-reactive",
+      "chromatic-aberration",
+      "depth-aware",
+      "multi-pass",
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -10050,7 +10071,15 @@
       "audio-reactive",
       "mouse-driven",
       "ripple-scatter",
-      "temporal"
+      "temporal",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "temporal-feedback",
+      "trail-accumulation",
+      "chromatic-aberration",
+      "depth-aware",
+      "hue-preserve-clamp",
+      "ign-dither"
     ],
     "params": [
       {
@@ -10163,9 +10192,13 @@
       "mouse-driven",
       "depth-aware",
       "upgraded-rgba",
+      "aces-tone-map",
       "audio-reactive",
       "temporal",
-      "simulation"
+      "simulation",
+      "pressure-stub",
+      "hue-preserve-clamp",
+      "ign-dither"
     ],
     "tags": [
       "procedural",
@@ -11321,11 +11354,14 @@
     "url": "shaders/gen-percolation-threshold.wgsl",
     "description": "Site percolation on a 2D square lattice near the critical threshold p_c ≈ 0.5927. Iterative connected-component labeling with jewel-tone cluster coloring and HDR spanning-cluster bloom.",
     "features": [
-      "generative",
+      "aces-tone-map",
       "audio-reactive",
+      "chromatic-aberration",
+      "depth-aware",
+      "generative",
       "mouse-driven",
       "temporal",
-      "depth-aware"
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
@@ -12315,7 +12351,12 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "temporal-feedback",
+      "chromatic-aberration",
+      "depth-aware"
     ],
     "params": [
       {
@@ -13949,6 +13990,69 @@
     ]
   },
   {
+    "id": "gen-stable-fluids-jos-stam",
+    "name": "Stable Fluids (Jos Stam)",
+    "url": "shaders/gen-stable-fluids-jos-stam.wgsl",
+    "category": "generative",
+    "description": "Classic stable fluids solver with pressure projection. Velocity advection, force application, divergence estimation, Jacobi pressure solve, gradient subtraction, dye advection, and audio-reactive color mapping.",
+    "tags": [
+      "fluid",
+      "simulation",
+      "dye",
+      "smoke",
+      "pressure",
+      "navier-stokes",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal"
+    ],
+    "features": [
+      "generative",
+      "simulation",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "chromatic-aberration",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "viscosity",
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "curl",
+        "name": "Curl Strength",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dyeRate",
+        "name": "Dye Injection",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "colorIntensity",
+        "name": "Color Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "gen-stardust-nebula",
     "name": "Stardust Nebula",
     "url": "shaders/gen-stardust-nebula.wgsl",
@@ -14497,10 +14601,14 @@
       "music"
     ],
     "features": [
-      "temporal",
-      "motion-aware",
+      "aces-tone-map",
+      "audio-driven",
       "audio-reactive",
-      "audio-driven"
+      "chromatic-aberration",
+      "depth-aware",
+      "motion-aware",
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -14617,9 +14725,14 @@
       "music"
     ],
     "features": [
-      "generative",
+      "aces-tone-map",
       "audio-reactive",
-      "mouse-driven"
+      "chromatic-aberration",
+      "depth-aware",
+      "generative",
+      "mouse-driven",
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -15036,11 +15149,14 @@
     "url": "shaders/gen-verlet-cloth-wind.wgsl",
     "description": "Verlet integration cloth simulation with wind forces, silk/fabric shading, anisotropic specular highlights, and audio-reactive gusts.",
     "features": [
-      "generative",
+      "aces-tone-map",
       "audio-reactive",
+      "chromatic-aberration",
+      "depth-aware",
+      "generative",
       "mouse-driven",
       "temporal",
-      "depth-aware"
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
@@ -16277,7 +16393,14 @@
     "url": "shaders/gen_hyper_warp.wgsl",
     "description": "Advanced domain warping with fractal noise and reaction-diffusion feedback.",
     "features": [
-      "mouse-driven"
+      "aces-tone-map",
+      "audio-reactive",
+      "chromatic-aberration",
+      "depth-aware",
+      "generative",
+      "mouse-driven",
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
@@ -16449,10 +16572,16 @@
     "url": "shaders/gen_kimi_nebula.wgsl",
     "description": "Cosmic nebula cloud swirls with ethereal gas formations, twinkling stars, and mouse-driven stellar winds.",
     "features": [
-      "mouse-driven",
+      "aces-tone-map",
+      "audio-reactive",
+      "chromatic-aberration",
+      "cosmic",
+      "depth-aware",
       "generative",
+      "mouse-driven",
       "procedural",
-      "cosmic"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
@@ -16811,10 +16940,13 @@
     "description": "Dual-mode excitable media: Gray-Scott morphogenesis or FitzHugh-Nagumo action-potential waves with mouse/current injection and bass-triggered pulses.",
     "features": [
       "upgraded-rgba",
+      "aces-tone-map",
       "depth-aware",
       "audio-reactive",
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "hue-preserve-clamp",
+      "ign-dither"
     ],
     "tags": [
       "procedural",

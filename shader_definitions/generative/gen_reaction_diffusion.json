@@ -5,10 +5,13 @@
   "description": "Dual-mode excitable media: Gray-Scott morphogenesis or FitzHugh-Nagumo action-potential waves with mouse/current injection and bass-triggered pulses.",
   "features": [
     "upgraded-rgba",
+    "aces-tone-map",
     "depth-aware",
     "audio-reactive",
     "mouse-driven",
-    "temporal"
+    "temporal",
+    "hue-preserve-clamp",
+    "ign-dither"
   ],
   "tags": [
     "procedural",

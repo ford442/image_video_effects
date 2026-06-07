@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  atmos_volumetric_fog
 //  Category: atmospheric
-//  Features: upgraded-rgba, depth-aware, physical-transmittance, volumetric-fog
-//  Upgraded: 2026-03-22
+//  Features: upgraded-rgba, depth-aware, physical-transmittance, volumetric-fog,
+//            audio-reactive, aces-tone-map, temporal-feedback, chromatic-aberration
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -74,6 +75,15 @@ fn noise(p: vec2<f32>) -> f32 {
                mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
     var value = 0.0;
     var amplitude = 0.5;
@@ -95,19 +105,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     
     // Parameters
-    let fogDensity = u.zoom_params.x * 3.0;
+    let fogDensity = u.zoom_params.x * 3.0 * (1.0 + bass * 0.3);
     let fogHeight = u.zoom_params.y;
     let depthWeight = u.zoom_params.z;
-    let fogColorShift = u.zoom_params.w;
+    let fogColorShift = u.zoom_params.w + mids * 0.1;
     
     // Sample depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
     // Fog density based on height and noise
     let fogUV = uv * 3.0 + vec2<f32>(time * 0.02, 0.0);
-    let noiseVal = fbm(fogUV, 4);
+    let noiseVal = fbm(fogUV, 4) * (1.0 + treble * 0.2);
     let heightFog = exp(-uv.y / fogHeight);
     let density = fogDensity * heightFog * (0.5 + noiseVal * 0.5);
     
@@ -128,12 +141,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let absorptionCoeff = vec3<f32>(0.3, 0.4, 0.5);
     let transmitted = physicalTransmittance(bgSample.rgb, opticalDepth, absorptionCoeff);
     
+    // Temporal feedback
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    
     // Final color
     let alpha = calculateFogAlpha(uv, opticalDepth, density, u.zoom_params);
-    let finalColor = mix(transmitted, fogColor, alpha * 0.7);
+    var finalColor = mix(transmitted, fogColor, alpha * 0.7);
+    finalColor = mix(finalColor, prev.rgb * 0.95, 0.03 + bass * 0.01);
+    
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    finalColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
+    
+    // ACES tone map
+    finalColor = acesToneMap(finalColor * 1.1);
     
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-    
-    // Pass through depth
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 }

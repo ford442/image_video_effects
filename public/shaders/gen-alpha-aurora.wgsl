@@ -5,6 +5,7 @@
 //  Complexity: High
 //  Chunks From: previous aurora work + improved spectral layering
 //  Created: 2026-05-23
+//  Upgraded: 2026-06-06
 //  Updated: 2026-05-31
 //  By: Grok (visual flourish pass — richer color, motion, and atmospheric depth)
 // ═══════════════════════════════════════════════════════════════════
@@ -139,6 +140,15 @@ fn spectralColor(t: f32, temp: f32, audio: vec3<f32>) -> vec3<f32> {
 fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
   let k = select(release, attack, bass > prev);
   return mix(prev, bass, k);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -283,6 +293,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Store state for temporal feedback
   textureStore(dataTextureA, coord, vec4<f32>(finalColor, finalAlpha));
 
+  finalColor = acesToneMap(finalColor * 1.1);
   textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
 
   // Depth pass-through

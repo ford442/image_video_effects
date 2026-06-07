@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Magnetic Field Warp
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -71,6 +71,15 @@ fn clifford(p: vec2<f32>, a: f32, b: f32, c: f32, d: f32) -> vec2<f32> {
     return vec2<f32>(sin(a * p.y) + c * cos(a * p.x), sin(b * p.x) + d * cos(b * p.y));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
@@ -129,7 +138,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let target_alpha = clamp(0.5 + luma * 0.4 + bass * 0.25 + mids * 0.1 + treble * 0.05, 0.0, 1.0);
     let final_alpha = clamp(mix(color.a, target_alpha, energy * mix_factor), 0.0, 1.0);
 
-    let finalColor = vec4<f32>(mixed_color.rgb, final_alpha);
+    let finalColor = vec4<f32>(acesToneMap((mixed_color.rgb) * 1.1), final_alpha);
 
     textureStore(writeTexture, coords, finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);

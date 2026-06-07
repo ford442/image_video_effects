@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -98,6 +98,15 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
   return rgb + m;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dims = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -180,7 +189,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Depth: pole proximity = near (depth ~1), edges = far
   let depth = clamp(1.0 - pole_dist * 0.4, 0.0, 1.0);
 
-  let final_color = vec4<f32>(col, alpha);
+  let final_color = vec4<f32>(acesToneMap(col * 1.1), alpha);
   textureStore(writeTexture,      coord, final_color);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA,      coord, final_color);

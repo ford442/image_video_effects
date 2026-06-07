@@ -83,6 +83,15 @@ fn streamline_color(t: f32, hueShift: f32, speed: f32) -> vec3<f32> {
     return base * (0.6 + 0.4 * clamp(speed * 0.4, 0.0, 1.0));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
@@ -133,7 +142,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Alpha: strong at streamlines, fades to transparent in calm regions
     let alpha = clamp(lineGlow * 0.75 * obstMask + speedHalo * 0.25 + bass * 0.08, 0.0, 1.0);
-    let finalOut = vec4<f32>(finalRGB, alpha);
+    let finalOut = vec4<f32>(acesToneMap(finalRGB * 1.1), alpha);
 
     textureStore(writeTexture, coord, finalOut);
     textureStore(dataTextureA, coord, finalOut);

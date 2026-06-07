@@ -16,11 +16,15 @@
     "accumulative"
   ],
   "features": [
-    "temporal",
-    "multi-pass",
-    "audio-reactive",
+    "aces-tone-map",
+    "advanced-alpha",
     "audio-driven",
-    "advanced-alpha"
+    "audio-reactive",
+    "chromatic-aberration",
+    "depth-aware",
+    "multi-pass",
+    "temporal",
+    "upgraded-rgba"
   ],
   "params": [
     {

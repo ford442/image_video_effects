@@ -73,6 +73,15 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(i32(global_id.x), i32(global_id.y));
@@ -131,8 +140,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         accumulationRate
     );
     
-    textureStore(dataTextureA, coord, accumulated);
-    textureStore(writeTexture, global_id.xy, accumulated);
+    let caStr = 0.003 * (1.0 + audioOverall) + 0.001;
+    let chromaticRGB = vec3<f32>(accumulated.r + caStr, accumulated.g, accumulated.b - caStr * 0.5);
+    let finalRGB = acesToneMap(chromaticRGB * 1.1);
+    let output = vec4<f32>(finalRGB, accumulated.a);
+
+    textureStore(dataTextureA, coord, output);
+    textureStore(writeTexture, global_id.xy, output);
     
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Greenberg-Hastings Excitable Automaton
 //  Category: generative
-//  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, temporal
+//  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Medium
 //  Scientific: Greenberg-Hastings excitable media with cardinal-wave triggering, refractory cooling, and bass-driven spontaneous ignition
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -42,6 +42,15 @@ fn decodeState(v: f32, numStates: i32) -> i32 {
 
 fn loadState(coord: vec2<i32>, size: vec2<i32>, numStates: i32) -> i32 {
   return decodeState(textureLoad(dataTextureC, clampCoord(coord, size), 0).r, numStates);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -119,7 +128,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depthSignal = max(firingMask, (1.0 - refractoryProgress) * refractoryMask);
   let finalDepth = mix(inputDepth, clamp(0.16 + depthSignal * 0.72 + bloom * 0.22 + treble * 0.06, 0.0, 1.0), 0.88);
 
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+  let caStr = 0.003 * (1.0 + bass) + finalDepth * 0.001;
+  let chromaticColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
+
+  textureStore(writeTexture, coord, vec4<f32>(acesToneMap(chromaticColor * 1.1), finalAlpha));
   textureStore(dataTextureA, coord, vec4<f32>(f32(nextState) / f32(numStates), firingMask, refractoryProgress, bloom));
   textureStore(dataTextureB, coord, vec4<f32>(f32(cardFiring) / 4.0, spontaneousProb * 20.0, mouseMask, 1.0));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));

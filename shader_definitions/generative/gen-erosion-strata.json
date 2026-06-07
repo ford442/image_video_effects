@@ -20,7 +20,12 @@
   "features": [
     "generative",
     "audio-reactive",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration",
+    "depth-aware"
   ],
   "author": "AI",
   "params": [

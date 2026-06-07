@@ -14,9 +14,14 @@
     "music"
   ],
   "features": [
-    "generative",
+    "aces-tone-map",
     "audio-reactive",
-    "mouse-driven"
+    "chromatic-aberration",
+    "depth-aware",
+    "generative",
+    "mouse-driven",
+    "temporal-feedback",
+    "upgraded-rgba"
   ],
   "params": [
     {

@@ -4,7 +4,14 @@
   "url": "shaders/gen_hyper_warp.wgsl",
   "description": "Advanced domain warping with fractal noise and reaction-diffusion feedback.",
   "features": [
-    "mouse-driven"
+    "aces-tone-map",
+    "audio-reactive",
+    "chromatic-aberration",
+    "depth-aware",
+    "generative",
+    "mouse-driven",
+    "temporal",
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",

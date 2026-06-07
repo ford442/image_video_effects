@@ -4,11 +4,14 @@
   "url": "shaders/gen-verlet-cloth-wind.wgsl",
   "description": "Verlet integration cloth simulation with wind forces, silk/fabric shading, anisotropic specular highlights, and audio-reactive gusts.",
   "features": [
-    "generative",
+    "aces-tone-map",
     "audio-reactive",
+    "chromatic-aberration",
+    "depth-aware",
+    "generative",
     "mouse-driven",
     "temporal",
-    "depth-aware"
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",

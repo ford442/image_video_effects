@@ -17,7 +17,12 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
-    "temporal"
+    "temporal",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration",
+    "depth-aware"
   ],
   "params": [
     {

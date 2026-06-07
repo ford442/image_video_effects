@@ -4,7 +4,7 @@
 //  Features: generative, laser-interference, speckle, depth-aware, audio-reactive, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: holographic_interference, interference-sim, aces-tonemap
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -45,6 +45,15 @@ fn speckleNoise(uv: vec2<f32>, scale: f32) -> f32 {
   let h1 = hash12(p);
   let h2 = hash12(p + vec2(53.1, 17.3));
   return h1 * h2 * 2.0;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -128,6 +137,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Alpha: interference_contrast * speckle_coherence * depth
   let alpha = clamp(contrast * speckleCoherence * depthFactor, 0.03, 0.94);
 
+  color = acesToneMap(color * 1.1);
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(color, alpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4(color, alpha));

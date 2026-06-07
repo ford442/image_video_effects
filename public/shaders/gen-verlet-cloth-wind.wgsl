@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Verlet Cloth Wind
 //  Category: generative
-//  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware
+//  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
+//            upgraded-rgba, aces-tone-map, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-30
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -39,6 +41,15 @@ fn noise(p: vec2<f32>) -> f32 {
   let u = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash12(i), hash12(i + vec2<f32>(1.0, 0.0)), u.x),
              mix(hash12(i + vec2<f32>(0.0, 1.0)), hash12(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -117,8 +128,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let vignetteUV = uv * (1.0 - uv);
   let vignette = vignetteUV.x * vignetteUV.y * 15.0;
   color = color * clamp(vignette, 0.0, 1.0);
-  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
-  color = clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+  color = acesToneMap(color * 1.1);
   let stretch = abs(h) * 0.3;
   let density = smoothstep(-0.5, 0.5, diff);
   let alpha = clamp(density * (1.0 + stretch) * (0.5 + depth * 0.5), 0.0, 1.0);

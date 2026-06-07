@@ -1,9 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Motion Smear - Motion-aware temporal smearing
-//  Category: image
-//  Features: temporal, motion-aware, frame differencing
+//  Category: generative
+//  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
+//            upgraded-rgba, aces-tone-map, chromatic-aberration
+//  Complexity: High
 //  Created: 2026-03-22
 //  By: Agent 4A
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -72,6 +75,15 @@ fn hueShift(color: vec3<f32>, shift: f32) -> vec3<f32> {
     return vec3<f32>(color * cosAngle + cross(k, color) * sin(shift) + k * dot(k, color) * (1.0 - cosAngle));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -132,21 +144,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Use max for light-trail effect, or mix for ghosting
     var finalColor = max(smearedColor * intensityBoost, trailContribution * 0.95);
     
-    // Add subtle color shift based on trail age
+    // Add subtle color shift based on trail age (branchless)
     let trailAge = length(prevTrail.rgb);
-    if (trailAge > 0.1) {
-        finalColor = hueShift(finalColor, trailAge * 0.1);
-    }
+    let ageShift = hueShift(finalColor, trailAge * 0.1);
+    finalColor = mix(finalColor, ageShift, f32(trailAge > 0.1));
     
-    // Fade to black if very little motion
-    if (motionStrength < 0.001 && length(trailContribution) < 0.01) {
-        finalColor = finalColor * 0.99;
-    }
+    // Fade to black if very little motion (branchless)
+    let shouldFade = f32(motionStrength < 0.001 && length(trailContribution) < 0.01);
+    finalColor = mix(finalColor, finalColor * 0.99, shouldFade);
     
+    // Pass through depth early for chromatic + alpha
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
     // Vignette for alpha
     let vignette = 1.0 - length(uv - 0.5) * 0.3;
     alpha = alpha * vignette;
     
+    // Chromatic aberration + ACES
+    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    finalColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
+    finalColor = acesToneMap(finalColor * 1.1);
+
     // Store accumulated trail
     let trailOutput = vec4<f32>(finalColor, alpha);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), trailOutput);
@@ -155,6 +173,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, vec2<i32>(global_id.xy), trailOutput);
     
     // Pass through depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

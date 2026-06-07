@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  FitzHugh-Nagumo Excitable Media
 //  Category: generative
-//  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, temporal
+//  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal, hue-preserve-clamp, ign-dither
 //  Complexity: High
 //  Scientific: Dual-mode excitable media with FitzHugh-Nagumo action waves and Gray-Scott fallback kinetics
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-07
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -55,6 +55,26 @@ fn laplacian(coord: vec2<i32>, size: vec2<i32>) -> vec2<f32> {
 
 fn saturate(x: f32) -> f32 {
   return clamp(x, 0.0, 1.0);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══ CHUNK: hue-preserve-clamp (from AGENTS.md) ═══
+fn huePreserveClamp(c: vec3<f32>, maxLum: f32) -> vec3<f32> {
+  let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return c * min(1.0, maxLum / max(l, 1e-4));
+}
+
+// ═══ CHUNK: ign-dither (from AGENTS.md) ═══
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -150,7 +170,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depthSignal = mix(grayB, activator, fitzMode);
   let finalDepth = mix(inputDepth, clamp(0.22 + depthSignal * 0.65 + waveFront * 0.2, 0.0, 1.0), 0.9);
 
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+  var outCol = acesToneMap(huePreserveClamp(finalColor * 1.1, 2.0));
+  outCol += (ign(vec2<f32>(coord)) - 0.5) / 255.0;
+  textureStore(writeTexture, coord, vec4<f32>(outCol, finalAlpha));
   textureStore(dataTextureA, coord, vec4<f32>(newState, waveFront, fitzMode));
   textureStore(dataTextureB, coord, vec4<f32>(generatedColor, saturate(activity)));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));

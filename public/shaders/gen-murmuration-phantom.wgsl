@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Murmuration Phantom
 //  Category: generative
-//  Features: curl-noise, flock-density, golden-ratio-spirals, twilight-palette, audio-reactive
+//  Features: curl-noise, flock-density, golden-ratio-spirals, twilight-palette, audio-reactive,
+//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration, trail-accumulation, hue-preserve-clamp, ign-dither
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-06-07
 //  By: Kimi Code CLI
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -76,8 +78,19 @@ fn curl(p: vec2<f32>, t: f32) -> vec2<f32> {
   return vec2<f32>(ddy, -ddx);
 }
 
-fn aces(c: vec3<f32>) -> vec3<f32> {
-  return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══ CHUNK: hue-preserve-clamp (from AGENTS.md) ═══
+fn huePreserveClamp(c: vec3<f32>, maxLum: f32) -> vec3<f32> {
+  let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return c * min(1.0, maxLum / max(l, 1e-4));
+}
+
+// ═══ CHUNK: ign-dither (from AGENTS.md) ═══
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -140,9 +153,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let shadow = 1.0 - smoothstep(0.0, 0.5, density);
   col = mix(col, col * vec3<f32>(0.6, 0.7, 1.0), shadow * 0.5);
   col += vec3<f32>(0.8, 0.7, 0.9) * scatter * 0.5;
-  col = aces(col * 1.2);
-  let alpha = clamp(density * 1.5 + edge * 0.8 + abs(scatter) * 0.3, 0.0, 1.0);
+  // ═══ CHUNK: trail-accumulation — blend current density into persistent trail ═══
+  let prevTrail = textureSampleLevel(dataTextureC, u_sampler, (vec2<f32>(coord) + 0.5) / u.config.zw, 0.0);
+  let trailDecay = 0.93 - bass * 0.04;
+  let trailDensity = max(density, prevTrail.a * trailDecay);
+  col = mix(col, prevTrail.rgb * 0.92, 0.05 + bass * 0.01);
+
+  let caStr = 0.003 * (1.0 + bass) + density * 0.001;
+  col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+  var outCol = acesToneMap(huePreserveClamp(col * 1.2, 2.5));
+  outCol += (ign(vec2<f32>(coord)) - 0.5) / 255.0;
+  let alpha = clamp(trailDensity * 1.5 + edge * 0.8 + abs(scatter) * 0.3, 0.0, 1.0);
   let a = clamp(alpha, 0.0, 1.0);
-  textureStore(writeTexture, coord, vec4<f32>(col * a, a));
+  textureStore(writeTexture, coord, vec4<f32>(outCol * a, a));
   textureStore(writeDepthTexture, coord, vec4<f32>(density * 0.5, 0.0, 0.0, 0.0));
+  // State: current frame color+density for trail feedback
+  textureStore(dataTextureA, coord, vec4<f32>(outCol, trailDensity));
+  // Trail: accumulated density map for next-frame read
+  textureStore(dataTextureB, coord, vec4<f32>(density, edge, scatter, trailDensity));
 }

@@ -1,0 +1,63 @@
+{
+  "id": "gen-stable-fluids-jos-stam",
+  "name": "Stable Fluids (Jos Stam)",
+  "url": "shaders/gen-stable-fluids-jos-stam.wgsl",
+  "category": "generative",
+  "description": "Classic stable fluids solver with pressure projection. Velocity advection, force application, divergence estimation, Jacobi pressure solve, gradient subtraction, dye advection, and audio-reactive color mapping.",
+  "tags": [
+    "fluid",
+    "simulation",
+    "dye",
+    "smoke",
+    "pressure",
+    "navier-stokes",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal"
+  ],
+  "features": [
+    "generative",
+    "simulation",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "chromatic-aberration",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "curl",
+      "name": "Curl Strength",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "dyeRate",
+      "name": "Dye Injection",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "colorIntensity",
+      "name": "Color Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}

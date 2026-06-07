@@ -98,6 +98,15 @@ fn env_smooth(prev: f32, val: f32, attack: f32, release: f32) -> f32 {
   return mix(prev, val, k);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
@@ -248,7 +257,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   alpha = clamp(alpha, 0.05, 0.95);
 
-  let outCol = vec4<f32>(col, alpha);
+  let outCol = vec4<f32>(acesToneMap(col * 1.1), alpha);
   textureStore(writeTexture, gid.xy, outCol);
   textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(depthNorm, normal.x, normal.y, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depthNorm, 0.0, 0.0, 0.0));

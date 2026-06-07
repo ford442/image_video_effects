@@ -7,9 +7,13 @@
     "mouse-driven",
     "depth-aware",
     "upgraded-rgba",
+    "aces-tone-map",
     "audio-reactive",
     "temporal",
-    "simulation"
+    "simulation",
+    "pressure-stub",
+    "hue-preserve-clamp",
+    "ign-dither"
   ],
   "tags": [
     "procedural",

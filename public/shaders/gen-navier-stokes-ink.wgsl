@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Navier-Stokes Ink - 2D fluid simulation with ink injection
 //  Category: generative
-//  Features: upgraded-rgba, depth-aware, audio-reactive, temporal, mouse-driven
+//  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, temporal, mouse-driven, pressure-stub, hue-preserve-clamp, ign-dither
 //  Complexity: High
 //  Created: 2026-05-30
+//  Upgraded: 2026-06-07
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -30,6 +31,17 @@ struct Uniforms {
 fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══ CHUNK: hue-preserve-clamp (from AGENTS.md) ═══
+fn huePreserveClamp(c: vec3<f32>, maxLum: f32) -> vec3<f32> {
+  let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return c * min(1.0, maxLum / max(l, 1e-4));
+}
+
+// ═══ CHUNK: ign-dither (from AGENTS.md) ═══
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -93,7 +105,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let chromaB = newInk * (1.0 - shear * 0.3);
   col = col + vec3<f32>(chromaR * 0.15, 0.0, chromaB * 0.2) * shear;
 
-  col = acesToneMapping(col * 1.5);
+  var outCol = acesToneMapping(huePreserveClamp(col * 1.5, 2.0));
+  outCol += (ign(vec2<f32>(coord)) - 0.5) / 255.0;
 
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -101,10 +114,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let alpha = clamp(newInk * depth * 1.5 + vorticity * depth * 0.3, 0.0, 0.9);
 
-  let finalColor = mix(inputColor.rgb, col, alpha);
+  let finalColor = mix(inputColor.rgb, outCol, alpha);
   let finalAlpha = max(inputColor.a, alpha);
+
+  // ═══ CHUNK: pressure-stub — divergence-derived pressure estimate for dataB ═══
+  // One Jacobi-style pressure estimate: p ≈ -div * 0.25 (stub for multi-pass pressure solve)
+  let pressureEst = -div * 0.25;
+  let pressureGrad = vec2<f32>(
+    (ve.r - vw.r) * 0.5 - pressureEst,
+    (vn.g - vs.g) * 0.5 - pressureEst
+  );
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(newInk * depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, coord, vec4<f32>(newVel.x, newVel.y, newInk, alpha));
+  // Store pressure estimate and velocity magnitude for downstream passes
+  textureStore(dataTextureB, coord, vec4<f32>(pressureEst, pressureGrad.x, pressureGrad.y, length(newVel)));
 }

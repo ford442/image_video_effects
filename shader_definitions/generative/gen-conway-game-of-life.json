@@ -10,7 +10,11 @@
     "depth-aware",
     "temporal-feedback",
     "procedural",
-    "cellular-automata"
+    "cellular-automata",
+    "aces-tone-map",
+    "generation-counter",
+    "hue-preserve-clamp",
+    "ign-dither"
   ],
   "tags": [
     "conway",

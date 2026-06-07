@@ -2,11 +2,11 @@
 //  4D Projection Dream Weavers
 //  Category: generative
 //  Features: 4d-fractal, smooth-navigation, mouse-4d-control, audio-parameter, dream-like,
-//            temporal-persistence, chromatic-dimension-separation, bass-detail, upgraded-rgba
+//            temporal-persistence, chromatic-dimension-separation, bass-detail, upgraded-rgba, aces-tone-map
 //  Complexity: High
 //  Chunks From: 4D noise projection techniques
 //  Created: 2026-05-31
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -36,7 +36,7 @@ fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
   let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
   let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(controlled, color.a);
+  return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
 }
 
 
@@ -65,6 +65,15 @@ fn noise4D(p: vec4<f32>) -> f32 {
         mix(mix(e, f2, u.x), mix(g, h, u.x), u.y),
         u.z
     );
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)

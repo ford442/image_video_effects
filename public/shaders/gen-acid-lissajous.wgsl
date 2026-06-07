@@ -2,10 +2,10 @@
 //  Acid Lissajous
 //  Category: generative
 //  Features: lissajous-curves, audio-frequency, mouse-phase, neon-trails, depth-motion,
-//            hypnotic-pattern, mouse-orbit, chromatic-strands, bass-strand-count, upgraded-rgba
+//            hypnotic-pattern, mouse-orbit, chromatic-strands, bass-strand-count, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
 //  Updated: 2026-05-31
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════
 //  Lissajous figures drawn as glowing neon tubes with acid-trip
@@ -49,6 +49,15 @@ fn strandGlow(d: f32, radius: f32) -> f32 {
   let core  = smoothstep(radius, 0.0, d);
   let bloom = smoothstep(radius * 4.0, 0.0, d) * 0.35;
   return core + bloom;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -122,6 +131,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = clamp(totalWeight * 0.4, 0.0, 1.0);
   let alpha = clamp(length(totalColor) + bass * 0.05, 0.0, 1.0);
 
+  totalColor = acesToneMap(totalColor * 1.1);
   textureStore(writeTexture,      coord, vec4<f32>(totalColor, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA,      coord, vec4<f32>(totalColor, alpha));

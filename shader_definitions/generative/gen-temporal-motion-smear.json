@@ -13,10 +13,14 @@
     "music"
   ],
   "features": [
-    "temporal",
-    "motion-aware",
+    "aces-tone-map",
+    "audio-driven",
     "audio-reactive",
-    "audio-driven"
+    "chromatic-aberration",
+    "depth-aware",
+    "motion-aware",
+    "temporal",
+    "upgraded-rgba"
   ],
   "params": [
     {

@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Percolation Threshold
 //  Category: generative
-//  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware
+//  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
+//            upgraded-rgba, aces-tone-map, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-30
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +33,15 @@ fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
   p3 = p3 + dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -123,11 +134,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color = sat * bloomAmt + vec3<f32>(0.3, 0.2, 0.5) * bloomAmt * 0.5;
   }
   color = color + vec3<f32>(0.5, 0.3, 0.8) * f32(edgeCount) * 0.12;
-  let ca = smoothstep(0.0, 1.0, f32(edgeCount)) * 0.08;
+  let ca = smoothstep(0.0, 1.0, f32(edgeCount)) * 0.08 * (1.0 + bass * 0.5);
   color = vec3<f32>(color.r + ca, color.g, color.b - ca);
   color = color + hash12(uv * 500.0 + time) * grainAmt;
-  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
-  color = clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+
+  color = acesToneMap(color * 1.1);
   let clusterProxy = 1.0 - f32(edgeCount) * 0.22;
   let alpha = clamp(clusterProxy * select(1.0, 2.2, isSpanning) * (0.4 + depth * 0.6), 0.0, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));

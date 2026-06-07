@@ -14,7 +14,12 @@
     "ray-marching",
     "mouse-control",
     "audio-reactive",
-    "temporal"
+    "temporal",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration",
+    "depth-aware"
   ],
   "params": [
     {

@@ -2,9 +2,9 @@
 //  Generative Psy Swirls
 //  Category: generative
 //  Features: audio-reactive, mouse-interactive, psychedelic, chromatic, temporal-layer-memory,
-//            upgraded-rgba, chromatic-hue-separation, audio-twist
+//            upgraded-rgba, aces-tone-map, chromatic-hue-separation, audio-twist
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -51,6 +51,15 @@ fn layeredSwirlLayer(uv: vec2<f32>, time: f32, twist: f32, freq: f32, offset: ve
     let val = arm * distRipple;
     let hue = fract(d * 0.5 + time * 0.1);
     return hsv2rgb(vec3<f32>(hue, 0.8, val));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -113,6 +122,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let alpha = clamp(length(color) * 0.8 + bass * 0.05, 0.0, 1.0);
 
+    color = acesToneMap(color * 1.1);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

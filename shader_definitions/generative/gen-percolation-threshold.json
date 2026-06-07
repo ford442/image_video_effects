@@ -2,13 +2,16 @@
   "id": "gen-percolation-threshold",
   "name": "Percolation Threshold",
   "url": "shaders/gen-percolation-threshold.wgsl",
-  "description": "Site percolation on a 2D square lattice near the critical threshold p_c ≈ 0.5927. Iterative connected-component labeling with jewel-tone cluster coloring and HDR spanning-cluster bloom.",
+  "description": "Site percolation on a 2D square lattice near the critical threshold p_c \u2248 0.5927. Iterative connected-component labeling with jewel-tone cluster coloring and HDR spanning-cluster bloom.",
   "features": [
-    "generative",
+    "aces-tone-map",
     "audio-reactive",
+    "chromatic-aberration",
+    "depth-aware",
+    "generative",
     "mouse-driven",
     "temporal",
-    "depth-aware"
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",

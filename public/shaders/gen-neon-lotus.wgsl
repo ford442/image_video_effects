@@ -4,6 +4,7 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-30
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -55,6 +56,15 @@ fn petalSdf(r: f32, theta: f32, phase: f32, bloom: f32) -> f32 {
   // petal: r ~ cos(theta/2) * bloom
   let petalR = bloom * 0.5 * max(0.0, cos(theta * 0.5 + phase));
   return r - petalR;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -144,7 +154,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Depth
   let depth = clamp(1.0 - r * 0.6, 0.0, 1.0);
 
-  let finalColor = vec4<f32>(col, alpha);
+  let finalColor = vec4<f32>(acesToneMap(col * 1.1), alpha);
   textureStore(writeTexture,      coord, finalColor);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA,      coord, finalColor);

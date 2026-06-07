@@ -5,6 +5,7 @@
 //            descartes-theorem, audio-reactive, mouse-driven, aces-tonemap, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-30
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -37,6 +38,7 @@ fn circle_inv(p: vec2<f32>, c: vec2<f32>, r: f32) -> vec2<f32> {
 fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
+
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -122,6 +124,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let alpha = density * clamp(invCount / 8.0, 0.0, 1.0) * (0.7 + bass * 0.3);
   let depth = clamp(1.0 - minDist * 2.0, 0.0, 1.0);
 
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+  color = aces_tonemap(color * 2.0);
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
   textureStore(dataTextureA, coord, vec4<f32>(color, alpha));

@@ -1,20 +1,9 @@
-# coral-growth — New Generative Shader Notes
+# coral-growth — Batch 2 Upgrade Notes
 
-## Overview
-Procedural coral branching using cell-based generation with animated growth.
+## Changes Made
+- Added temporal feedback: read dataTextureC, blend with prev.rgb * 0.92
+- Added chromatic aberration: R/B channel shift by bass + glow
+- dataTextureA write already present, now writes blended color
 
-## Algorithm
-- Screen divided into cells
-- Each cell contains 2-5 branch origins
-- Branches grow along random direction with sub-branching
-- Growth animated via fract(time * speed)
-- Sub-branches fork at 50% length
-
-## Wow Factor
-- Coral literally grows before your eyes
-- Each cell generates unique branching patterns
-
-## Risks
-- Branch loop up to 5 iterations per cell
-- Line distance calculation per branch segment
-- Growth animation resets abruptly (fract-based)
+## Validation
+- naga: ✅ pass
