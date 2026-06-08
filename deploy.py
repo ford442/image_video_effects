@@ -40,6 +40,10 @@ DEPLOY_FOLDER: str = ""  # override remote target folder; empty = use PROJECT_NA
 # Optional deploy token (recommended for security).
 # Set via environment: export DEPLOY_TOKEN="your_long_token_from_vps_env"
 DEPLOY_TOKEN: Optional[str] = "6de44dca5425348f2e2ef9456fc820bfe56a5ace68bddeb6da4a1c2a9d9cadc0"
+
+# Optional deploy target: "test" (default → test.1ink.us) or "go" (→ go.1ink.us)
+# Set via environment: export DEPLOY_TARGET=go
+DEPLOY_TARGET: str = os.getenv("DEPLOY_TARGET", "test")
 # ============================================================
 
 
@@ -77,7 +81,7 @@ def deploy_bundle(build_path: Path) -> bool:
         response = requests.post(
             url,
             files={"bundle": ("build.zip", zip_bytes, "application/zip")},
-            data={"target_folder": target_folder},
+            data={"target_folder": target_folder, "target_site": DEPLOY_TARGET},
             headers=headers,
             timeout=300,
         )
