@@ -1,0 +1,60 @@
+{
+  "id": "gen-resonant-quantum-obsidian-scarab-engine",
+  "name": "Resonant Quantum-Obsidian Scarab-Engine",
+  "url": "shaders/gen-resonant-quantum-obsidian-scarab-engine.wgsl",
+  "description": "A hyper-organic biomechanical engine constructed from sleek, interlocking plates of liquid obsidian and glowing quantum circuitry that functions like a colossal scarab breathing and reacting to acoustic energy.",
+  "tags": [
+    "biomechanical",
+    "fractal",
+    "obsidian",
+    "audio-reactive",
+    "quantum"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Exoskeleton Complexity",
+      "default": 4.0,
+      "min": 1.0,
+      "max": 10.0,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Plasma Intensity",
+      "default": 1.5,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.05,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Obsidian Reflectivity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Core Pulse Rate",
+      "default": 2.0,
+      "min": 0.1,
+      "max": 10.0,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    },
+    {
+      "id": "param5",
+      "name": "Quantum Dust Density",
+      "default": 50.0,
+      "min": 10.0,
+      "max": 200.0,
+      "step": 1.0,
+      "mapping": "zoom_config.w"
+    }
+  ]
+}

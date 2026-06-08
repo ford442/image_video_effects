@@ -1,12 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Hyperbolic Crystal Symbiosis v2
+//  Hyperbolic Crystal Symbiosis v3 — Interactivist Upgrade
 //  Category: generative
 //  Features: poincare-disk, geodesic-voronoi, gray-scott,
-//            iridescent-facets, audio-driven, mouse-warp
-//  Complexity: Very High
-//  Chunks From: hyperbolic geometry + reaction-diffusion + ACES tm
-//  Created: 2026-05-31
-//  By: 4-Agent Upgrade Swarm
+//            iridescent-facets, bass-envelope, gravity-seeds,
+//            shockwave-disrupt, depth-aware, luma-spawn
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -36,13 +33,17 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+    let k = select(release, attack, bass > prev);
+    return mix(prev, bass, k);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = x * (2.51 * x + 0.03);
   let b = x * (2.43 * x + 0.59) + 0.14;
   return clamp(a / max(b, vec3<f32>(0.001)), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Poincaré disk model: Euclidean point to hyperbolic metric
 fn poincareMetric(uv: vec2<f32>, center: vec2<f32>) -> f32 {
   let d = uv - center;
   let r2 = dot(d, d);
@@ -50,7 +51,6 @@ fn poincareMetric(uv: vec2<f32>, center: vec2<f32>) -> f32 {
   return atanh(r) * 2.0;
 }
 
-// Geodesic distance between two points in Poincaré disk
 fn hyperbolicDist(a: vec2<f32>, b: vec2<f32>, center: vec2<f32>) -> f32 {
   let da = a - center;
   let db = b - center;
@@ -72,14 +72,25 @@ fn iridescentFacet(theta: f32, boundary: f32) -> vec3<f32> {
   ) * (0.6 + boundary * 0.8);
 }
 
+fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
+    let d = wellPos - pos;
+    let dist2 = dot(d, d) + 0.01;
+    return normalize(d) * strength / dist2;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
   let uv = vec2<f32>(gid.xy) / res;
   let time = u.config.x * 0.35;
-  let bass = plasmaBuffer[0].x;
+
+  // Audio envelope
+  let bassRaw = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
+  let prevEnv = extraBuffer[0];
+  let bass = bass_env(prevEnv, bassRaw, 0.8, 0.15);
+
   let mouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
   let p1 = u.zoom_params.x;
@@ -93,9 +104,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let isEuclidean = curvature < 0.15;
   let isHyperbolic = curvature > 0.65;
 
+  // Mouse gravity pulls seeds
+  let gWell = gravityWell(uv, mouse, 0.05 + mouseDown * 0.15);
+
   let seeds = array<vec2<f32>, 5>(
-    vec2<f32>(0.3, 0.35), vec2<f32>(0.7, 0.3), vec2<f32>(0.5, 0.7),
-    vec2<f32>(0.2, 0.65), vec2<f32>(0.8, 0.6)
+    vec2<f32>(0.3, 0.35) + gWell * 0.1,
+    vec2<f32>(0.7, 0.3) + gWell * 0.08,
+    vec2<f32>(0.5, 0.7) + gWell * 0.12,
+    vec2<f32>(0.2, 0.65) + gWell * 0.06,
+    vec2<f32>(0.8, 0.6) + gWell * 0.09
   );
 
   var minDist = 999.0;
@@ -132,8 +149,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let K = 0.056 + p3 * 0.02;
   let uv2 = uField * vField * vField;
 
-  let newU = clamp(uField + Du * lapU - uv2 + F * (1.0 - uField), 0.0, 1.0);
-  let newV = clamp(vField + Dv * lapV + uv2 - (F + K) * vField, 0.0, 1.0);
+  // Shockwave disrupts Gray-Scott on click
+  let clickDist = length(uv - mouse);
+  let shockwave = mouseDown * exp(-clickDist * clickDist * 200.0);
+  let disrupt = shockwave * 0.5;
+
+  let newU = clamp(uField + Du * lapU - uv2 + F * (1.0 - uField) + disrupt, 0.0, 1.0);
+  let newV = clamp(vField + Dv * lapV + uv2 - (F + K) * vField - disrupt * 0.3, 0.0, 1.0);
 
   textureStore(dataTextureA, gid.xy, vec4<f32>(newU, newV, prev.r, 0.0));
 
@@ -145,10 +167,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let shade = domainCol * (0.4 + depth * 0.6 + crystalPurity * 0.5);
   let sparkle = hash12(uv * 200.0 + time * 3.0) * edge * treble * 1.5;
   let bloom = triple * vec3<f32>(1.0, 0.9, 0.7) * 2.0;
-  let tone = acesToneMap((shade + irid + bloom + vec3<f32>(sparkle)) * (0.85 + p1 * 0.25));
 
-  let alpha = clamp(centrality * 0.7 + crystalPurity * 0.5 + depth * 0.3 + edge * 0.4, 0.0, 1.0);
+  // Video luma spawn at facet edges
+  let video = textureLoad(readTexture, vec2<i32>(gid.xy), 0);
+  let luma = dot(video.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let spawn = smoothstep(0.7, 0.95, luma) * edge * 0.6;
+  let tone = acesToneMap((shade + irid + bloom + vec3<f32>(sparkle) + video.rgb * spawn) * (0.85 + p1 * 0.25 + bass * 0.15));
 
-  textureStore(writeTexture, gid.xy, vec4<f32>(tone * alpha, alpha));
+  // Depth-aware compositing
+  let z = textureLoad(readDepthTexture, gid.xy, 0).r;
+  let fog = 1.0 - exp(-z * p3 * 2.0);
+  let depthAware = mix(tone, tone * 0.6, fog * 0.5);
+
+  // Alpha encodes interaction intensity + edge activity
+  let mouseProx = smoothstep(0.3, 0.0, clickDist);
+  let alpha = clamp(centrality * 0.7 + crystalPurity * 0.5 + depth * 0.3 + edge * 0.4 + mouseProx * 0.3 + spawn, 0.0, 1.0);
+
+  textureStore(writeTexture, gid.xy, vec4<f32>(depthAware * alpha, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(crystalPurity * depth * 0.7, 0.0, 0.0, 0.0));
+
+  // Persist envelope globally (only thread 0,0 writes)
+  if (gid.x == 0u && gid.y == 0u) {
+    extraBuffer[0] = bass;
+  }
 }

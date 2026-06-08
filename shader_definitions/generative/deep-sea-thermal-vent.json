@@ -10,7 +10,9 @@
     "chromatic-dispersion",
     "hydrothermal-plumes",
     "bioluminescence",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal"
   ],
   "params": [
     {

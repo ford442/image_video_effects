@@ -18,7 +18,9 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
-    "semantic-alpha"
+    "semantic-alpha",
+    "upgraded-rgba",
+    "temporal"
   ],
   "params": [
     {
