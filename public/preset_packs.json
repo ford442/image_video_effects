@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "packs": [
+    {
+      "id": "liquid-dreams",
+      "name": "Liquid Dreams",
+      "description": "Molten chrome flowing into a rainbow oil slick.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          { "shaderId": "liquid-metal" },
+          { "shaderId": "liquid-rainbow", "params": { "zoomParam1": 0.35 } },
+          { "shaderId": "liquid-oil-iridescence" }
+        ]
+      }
+    },
+    {
+      "id": "cosmic-drift",
+      "name": "Cosmic Drift",
+      "description": "Deep-space flow fields layered with a gyroid nebula.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          { "shaderId": "cosmic-flow" },
+          { "shaderId": "nebula-gyroid", "params": { "zoomParam2": 0.7 } }
+        ]
+      }
+    },
+    {
+      "id": "crystal-cathedral",
+      "name": "Crystal Cathedral",
+      "description": "Faceted refractions shattering into prismatic shards.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          { "shaderId": "crystal-facets" },
+          { "shaderId": "crystalline-shatter", "params": { "zoomParam1": 0.6, "zoomParam3": 0.4 } }
+        ]
+      }
+    },
+    {
+      "id": "kaleido-glitch",
+      "name": "Kaleido Glitch",
+      "description": "Fractal kaleidoscope symmetry torn apart by pixel-sort glitches.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          { "shaderId": "fractal-kaleidoscope" },
+          { "shaderId": "glitch-pixel-sort", "params": { "zoomParam1": 0.25 } }
+        ]
+      }
+    },
+    {
+      "id": "aurora-hologram",
+      "name": "Aurora Hologram",
+      "description": "Iridescent aurora curtains projected through a holographic prism.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          { "shaderId": "aurora-borealis-iridescence" },
+          { "shaderId": "holographic-prism", "params": { "lightStrength": 1.4 } }
+        ]
+      }
+    },
+    {
+      "id": "neon-mosaic-pulse",
+      "name": "Neon Mosaic Pulse",
+      "description": "A pulsing neon stream revealed through shifting mosaic tiles.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          { "shaderId": "neon-pulse-stream" },
+          { "shaderId": "mosaic-reveal", "params": { "zoomParam1": 0.45, "zoomParam2": 0.55 } }
+        ]
+      }
+    },
+    {
+      "id": "lattice-inferno",
+      "name": "Lattice Inferno",
+      "description": "Quantum neon lattices burning through volumetric fire and smoke.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          { "shaderId": "neon-quantum-lattice" },
+          { "shaderId": "fire-smoke-volumetric-fog", "params": { "ambient": 0.35 } }
+        ]
+      }
+    },
+    {
+      "id": "tensor-vortex-trip",
+      "name": "Tensor Vortex Trip",
+      "description": "A three-layer warp: liquid tensor vortex into cosmic flow into crystal facets.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          { "shaderId": "liquid-tensor-vortex", "params": { "zoomParam1": 0.7 } },
+          { "shaderId": "cosmic-flow" },
+          { "shaderId": "crystal-facets", "params": { "lightStrength": 1.2 } }
+        ]
+      }
+    }
+  ]
+}

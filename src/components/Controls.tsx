@@ -12,6 +12,8 @@ import { LiveStreamPanel } from './LiveStreamPanel';
 import { loadVJHistory, clearVJHistory, VJHistoryEntry } from '../services/vjHistory';
 import { VJPreset, loadPresets, deletePreset } from '../services/vjPresets';
 import { RendererSwitcher } from './RendererSwitcher';
+import { PresetPackGallery } from './PresetPackGallery';
+import type { SharedChain } from '../services/layerChainShare';
 import '../styles/gold-glass-theme.css';
 
 // --- Types for Coordinate System ---
@@ -107,6 +109,9 @@ interface ControlsProps {
     onSwitchRenderer?: (type: 'webgpu' | 'wasm' | 'js') => Promise<void>;
     // Storage Browser Props
     onOpenStorageBrowser?: () => void;
+    // Multi-Slot Chain Sharing Props
+    onCopyChainShareLink?: () => void;
+    onApplySharedChain?: (chain: SharedChain) => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -168,7 +173,9 @@ const Controls: React.FC<ControlsProps> = ({
     onOpenShaderScanner,
     activeRendererType = 'webgpu',
     onSwitchRenderer,
-    onOpenStorageBrowser
+    onOpenStorageBrowser,
+    onCopyChainShareLink,
+    onApplySharedChain
 }) => {
     // --- Coordinate System State ---
     const [showCoordinateBrowser, setShowCoordinateBrowser] = useState(false);
@@ -190,6 +197,9 @@ const Controls: React.FC<ControlsProps> = ({
     // --- Presets State ---
     const [presets, setPresets] = useState<VJPreset[]>(() => loadPresets());
     const [presetsOpen, setPresetsOpen] = useState(false);
+
+    // --- Preset Pack Gallery State ---
+    const [presetPacksOpen, setPresetPacksOpen] = useState(false);
     const [presetName, setPresetName] = useState('');
     const [autoTransitionOpen, setAutoTransitionOpen] = useState(false);
     const [autoTransitionEnabled, setAutoTransitionEnabled] = useState(false);
@@ -1335,9 +1345,28 @@ const Controls: React.FC<ControlsProps> = ({
                         )}
                     </div>
 
+                    {/* Multi-Slot Chain Sharing */}
+                    {onCopyChainShareLink && (
+                        <button
+                            className="gold-outline-btn"
+                            style={{ width: '100%', marginTop: '10px' }}
+                            onClick={onCopyChainShareLink}
+                            title="Copy a link that restores this entire shader chain"
+                        >
+                            🔗 Copy Chain Share Link
+                        </button>
+                    )}
+                    {onApplySharedChain && (
+                        <PresetPackGallery
+                            open={presetPacksOpen}
+                            onToggle={() => setPresetPacksOpen(o => !o)}
+                            onApplyPack={(chain: SharedChain) => onApplySharedChain(chain)}
+                        />
+                    )}
+
                 </>
             )}
-            
+
             {inputSource === 'video' && (
                 <div className="control-group glass-panel" style={{marginTop: '10px', padding: '12px'}}>
                      <div className="gold-section-header" style={{fontSize: '12px', marginTop: '0'}}>Select Video</div>

@@ -21,6 +21,7 @@ import {
 import { fetchContentManifest, LoadedContent } from './services/contentLoader';
 import { VideoSegment, pickRandomSegment, hydrateDurations } from './services/videoSegmentManager';
 import { savePreset } from './services/vjPresets';
+import { SharedChain, encodeChain, decodeChain, buildSharedChain, expandSharedChain, MAX_SHARED_SLOTS } from './services/layerChainShare';
 import { useAudioAnalyzer } from './hooks';
 import './style.css';
 
@@ -1508,6 +1509,80 @@ function MainApp() {
         restoreStateFromHash();
     }, [restoreStateFromHash]);
 
+    // --- Multi-Slot Chain Sharing ---
+    const SHARE_CHAIN_PARAM = 'chain';
+
+    /** Applies a decoded chain to the live slot state, skipping unknown shader ids. */
+    const applySharedChain = useCallback((chain: SharedChain) => {
+        const { modes: sharedModes, slotParams: sharedParams } = expandSharedChain(chain);
+        const known = availableModesRef.current;
+
+        sharedModes.forEach((shaderId, index) => {
+            if (index >= MAX_SHARED_SLOTS) return;
+
+            if (!shaderId || shaderId === 'none') {
+                setMode(index, 'none');
+                return;
+            }
+
+            const exists = known.length === 0 || known.some(m => m.id === shaderId);
+            if (!exists) {
+                console.warn(`[layerChainShare] skipping unknown shader id "${shaderId}" for slot ${index}`);
+                return;
+            }
+
+            setMode(index, shaderId as RenderMode);
+            updateSlotParam(index, sharedParams[index]);
+        });
+
+        setStatus('🔗 Shared chain loaded!');
+    }, [setMode, updateSlotParam]);
+
+    /** Builds a compact, URL-safe link encoding the entire active chain. */
+    const generateChainShareLink = useCallback(() => {
+        const chain = buildSharedChain(modes, slotParams);
+        const encoded = encodeChain(chain);
+        const url = new URL(window.location.href);
+        url.search = '';
+        url.hash = '';
+        url.searchParams.set(SHARE_CHAIN_PARAM, encoded);
+        return url.toString();
+    }, [modes, slotParams]);
+
+    /** Copies the current chain's share link to the clipboard. */
+    const copyChainShareLink = useCallback(async () => {
+        try {
+            const link = generateChainShareLink();
+            await navigator.clipboard.writeText(link);
+            setStatus('🔗 Chain share link copied to clipboard!');
+        } catch (e) {
+            console.error('Failed to copy chain share link:', e);
+            setStatus('❌ Failed to copy share link');
+        }
+    }, [generateChainShareLink]);
+
+    // Hydrate the active chain from a `?chain=` share link on first load, then
+    // strip the param so a refresh doesn't re-clobber the user's edits.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        const encoded = params.get(SHARE_CHAIN_PARAM);
+        if (!encoded) return;
+
+        const chain = decodeChain(encoded);
+        if (!chain) {
+            console.warn('[layerChainShare] ignoring invalid chain share link');
+        } else {
+            applySharedChain(chain);
+        }
+
+        params.delete(SHARE_CHAIN_PARAM);
+        const newSearch = params.toString();
+        const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`;
+        window.history.replaceState(null, '', newUrl);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const stopRecording = useCallback(() => {
         if (recordingTimerRef.current) {
             clearInterval(recordingTimerRef.current);
@@ -1815,6 +1890,9 @@ function MainApp() {
                         onSwitchRenderer={handleSwitchRenderer}
                         // Storage Browser props
                         onOpenStorageBrowser={() => setShowStorageBrowser(true)}
+                        // Multi-Slot Chain Sharing props
+                        onCopyChainShareLink={copyChainShareLink}
+                        onApplySharedChain={applySharedChain}
                     />
                 </aside>
                 <main className="canvas-container">
