@@ -2,7 +2,7 @@
   {
     "id": "hybrid-chromatic-liquid",
     "name": "Hybrid Chromatic Liquid",
-    "url": "shaders/hybrid-chromatic-liquid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hybrid-chromatic-liquid.wgsl",
     "description": "Fluid-like distortion with RGB channel separation flowing along a noise-generated flow field. Audio reactivity pulses dot size and ink density with the music.",
     "features": [
       "mouse-driven",
@@ -73,7 +73,7 @@
   {
     "id": "hybrid-cyber-organic",
     "name": "Hybrid Cyber-Organic",
-    "url": "shaders/hybrid-cyber-organic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hybrid-cyber-organic.wgsl",
     "description": "Digital circuit traces that grow organically with neon glow, combining hexagonal grid structures with cellular growth patterns",
     "features": [
       "hybrid",
@@ -136,7 +136,7 @@
   {
     "id": "hybrid-fractal-feedback",
     "name": "Hybrid Fractal Feedback",
-    "url": "shaders/hybrid-fractal-feedback.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hybrid-fractal-feedback.wgsl",
     "description": "Julia set fractal with feedback trails and per-channel temporal delay creating RGB separation trails",
     "features": [
       "hybrid",
@@ -199,7 +199,7 @@
   {
     "id": "hybrid-magnetic-field",
     "name": "Hybrid Magnetic Field",
-    "url": "shaders/hybrid-magnetic-field.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hybrid-magnetic-field.wgsl",
     "description": "Magnetic field line visualization with flowing particles and FBM-varied field distortion. Audio reactivity makes field lines pulse and glow with the beat.",
     "features": [
       "hybrid",
@@ -273,7 +273,7 @@
   {
     "id": "hybrid-noise-kaleidoscope",
     "name": "Hybrid Noise Kaleidoscope",
-    "url": "shaders/hybrid-noise-kaleidoscope.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hybrid-noise-kaleidoscope.wgsl",
     "description": "Domain-warped FBM noise fed through kaleidoscope symmetry with dynamic hue shifting and RGB channel splits",
     "features": [
       "hybrid",
@@ -339,7 +339,7 @@
   {
     "id": "hybrid-particle-fluid",
     "name": "Hybrid Particle Fluid",
-    "url": "shaders/hybrid-particle-fluid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hybrid-particle-fluid.wgsl",
     "description": "Particles that move like fluid with glowing trails, combining particle advection with curl noise velocity field",
     "features": [
       "hybrid",
@@ -402,7 +402,7 @@
   {
     "id": "hybrid-reaction-diffusion-glass",
     "name": "Hybrid Reaction-Diffusion Glass",
-    "url": "shaders/hybrid-reaction-diffusion-glass.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hybrid-reaction-diffusion-glass.wgsl",
     "description": "Turing patterns (reaction-diffusion) refracted through depth-aware glass distortion",
     "features": [
       "hybrid",
@@ -466,7 +466,7 @@
   {
     "id": "hybrid-sdf-plasma",
     "name": "Hybrid SDF Plasma Field",
-    "url": "shaders/hybrid-sdf-plasma.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hybrid-sdf-plasma.wgsl",
     "description": "Raymarched SDF scene with plasma noise displacement and dynamic palette-based coloring",
     "features": [
       "hybrid",
@@ -530,7 +530,7 @@
   {
     "id": "hybrid-spectral-sorting",
     "name": "Hybrid Spectral Sorting",
-    "url": "shaders/hybrid-spectral-sorting.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hybrid-spectral-sorting.wgsl",
     "description": "Audio-reactive pixel sorting with frequency-based color shifts and displacement based on spectral analysis",
     "features": [
       "mouse-driven",
@@ -601,7 +601,7 @@
   {
     "id": "hybrid-voronoi-glass",
     "name": "Hybrid Voronoi Glass",
-    "url": "shaders/hybrid-voronoi-glass.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hybrid-voronoi-glass.wgsl",
     "description": "Voronoi diagram rendered as glass blocks with chromatic dispersion and physically-inspired refraction",
     "features": [
       "mouse-driven",
@@ -669,7 +669,7 @@
   {
     "id": "ripple-bloom",
     "name": "Ripple Bloom",
-    "url": "shaders/ripple-bloom.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ripple-bloom.wgsl",
     "category": "hybrid",
     "description": "Huygens wavelet ripple simulation with frequency dispersion, chromatic dispersion on crests, HDR bloom on constructive interference, subsurface scattering in troughs, and ACES tone mapping. Bass drives ripple frequency, mouse drops stones, depth controls water depth.",
     "tags": [

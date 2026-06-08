@@ -287,7 +287,7 @@ function MainApp() {
     // --- State: Generative Showcase ---
     const [generativeShowcaseActive, setGenerativeShowcaseActive] = useState(false);
     const [generativeShowcaseLocked, setGenerativeShowcaseLocked] = useState(false);
-    const [generativeShowcaseDelay, setGenerativeShowcaseDelay] = useState(12);
+    const [generativeShowcaseDelay] = useState(12);
     const generativeShowcaseTimerRef = useRef<NodeJS.Timeout | null>(null);
 
     // --- State: Audio-Reactive Params ---
@@ -295,7 +295,7 @@ function MainApp() {
     const [audioReactiveAmount, setAudioReactiveAmount] = useState(0.8); // master 0-1 mix
 
     // --- Audio Analyzer Hook ---
-    const { startAudio: startAudioAnalyzer, stopAudio: stopAudioAnalyzer, getAudioData: getAudioAnalyzerData, isActive: isAudioAnalyzerActive } = useAudioAnalyzer();
+    const { startAudio: startAudioAnalyzer, stopAudio: stopAudioAnalyzer, getAudioData: getAudioAnalyzerData } = useAudioAnalyzer();
 
     // --- Refs for audio-reactive param smoothing ---
     const audioParamSmoothedRef = useRef<[number, number, number, number]>([0.5, 0.5, 0.5, 0.5]);
@@ -1304,7 +1304,7 @@ function MainApp() {
             updateSlotParam(0, modulated);
             rendererRef.current?.updateSlotParams(modulated, 0);
         }
-    }, [audioReactiveParams, audioReactiveAmount, modes, availableModes, updateSlotParam]);
+    }, [audioReactiveParams, audioReactiveAmount, modes, availableModes, updateSlotParam, getAudioAnalyzerData]);
 
     // Animation-frame callback for audio-reactive params (runs every frame)
     useEffect(() => {
@@ -1327,7 +1327,7 @@ function MainApp() {
         } else {
             stopAudioAnalyzer();
         }
-    }, [audioReactiveParams]);
+    }, [audioReactiveParams, startAudioAnalyzer, stopAudioAnalyzer]);
 
     // --- Keyboard shortcuts: Generative Showcase & Audio-Reactive ---
     useEffect(() => {
