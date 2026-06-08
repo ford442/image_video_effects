@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field as dc_field
 from pathlib import Path
 from typing import Dict, List, Optional, Protocol, runtime_checkable
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 import io
 import subprocess
@@ -22,7 +22,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Query, Body, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import StreamingResponse, PlainTextResponse, HTMLResponse, JSONResponse
+from fastapi.responses import StreamingResponse, PlainTextResponse, HTMLResponse, JSONResponse, RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, Field
 from aiocache import Cache
@@ -97,6 +97,27 @@ RATE_LIMIT_REQUESTS = int(os.environ.get("RATE_LIMIT_REQUESTS", "120"))
 RATE_LIMIT_WINDOW = int(os.environ.get("RATE_LIMIT_WINDOW", "60"))
 RATE_LIMIT_PATHS = [path.strip() for path in os.environ.get("RATE_LIMIT_PATHS", "/api").split(",") if path.strip()]
 RATE_LIMIT_IP_HEADER = os.environ.get("RATE_LIMIT_IP_HEADER", "X-Forwarded-For")
+
+# --- MEDIA STREAMING CONFIGURATION ---
+# GCS V4 signed URL TTL: default 1 h, max 7 days (604800 s per GCS spec).
+# Set GCS_SIGNED_URL_EXPIRATION_SECONDS in the environment to override.
+GCS_SIGNED_URL_MAX_SECONDS = 604800
+GCS_SIGNED_URL_EXPIRATION_SECONDS: int = min(
+    int(os.environ.get("GCS_SIGNED_URL_EXPIRATION_SECONDS", "3600")),
+    GCS_SIGNED_URL_MAX_SECONDS,
+)
+# Maximum concurrent proxy streams when the signed-URL path is unavailable.
+# Keeps the anyio/asyncio thread pool from saturating on small VPS hosts.
+# Set MEDIA_STREAM_MAX_CONCURRENT in the environment to override.
+MEDIA_STREAM_MAX_CONCURRENT: int = int(os.environ.get("MEDIA_STREAM_MAX_CONCURRENT", "10"))
+
+# Set to True in lifespan when service-account JSON (with a private key) is
+# available; V4 URL signing requires it. ADC credentials (Compute Engine, etc.)
+# lack a private key and fall back to the hardened proxy path.
+_has_signing_creds: bool = False
+# Semaphore that caps concurrent proxy-stream threads (used only on the fallback
+# proxy path). Initialised in lifespan once MEDIA_STREAM_MAX_CONCURRENT is known.
+_media_semaphore: Optional[asyncio.Semaphore] = None
 
 
 def _create_cache_backend():
@@ -328,11 +349,15 @@ def _list_ftp_files_sync() -> list:
 # --- LIFESPAN ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global gcs_client, bucket
+    global gcs_client, bucket, _has_signing_creds, _media_semaphore
     try:
         gcs_client = get_gcs_client()
         bucket = gcs_client.bucket(BUCKET_NAME)
         print(f"--- GCS CONNECTED: {BUCKET_NAME} ---")
+
+        # V4 URL signing requires a service-account private key. The SA-JSON
+        # path always has one; the bare ADC path may not.
+        _has_signing_creds = bool(CREDENTIALS_JSON)
 
         # Seed shaders if index is empty
         shader_config = STORAGE_MAP["shader"]
@@ -349,6 +374,9 @@ async def lifespan(app: FastAPI):
             print(f"!!! SHADER SEEDING FAILED: {e}")
     except Exception as e:
         print(f"!!! GCS CONNECTION FAILED: {e}")
+
+    # Initialise proxy concurrency semaphore (caps fallback proxy threads).
+    _media_semaphore = asyncio.Semaphore(MEDIA_STREAM_MAX_CONCURRENT)
 
     # Start periodic intent TTL cleanup task
     async def _intent_cleanup_loop():
@@ -2317,8 +2345,97 @@ async def update_music_metadata(music_id: str, payload: SampleMetaUpdatePayload)
 
 # ========================= IMAGES =========================
 
+# ---------------------------------------------------------------------------
+# Media streaming helpers (shared by image and video endpoints)
+# ---------------------------------------------------------------------------
+
+def _parse_range_header(range_header: str, total_size: int) -> Optional[tuple[int, int]]:
+    """Parse a 'bytes=start-end' Range header.
+
+    Returns (start, end) integers (inclusive, 0-based) or None if the header
+    is absent, malformed, or unsatisfiable.  ``end`` may be ``total_size - 1``
+    when not specified by the client.
+    """
+    if not range_header or not range_header.startswith("bytes="):
+        return None
+    try:
+        byte_range = range_header[6:]
+        start_str, _, end_str = byte_range.partition("-")
+        start = int(start_str) if start_str else 0
+        end = int(end_str) if end_str else total_size - 1
+        if start < 0 or end >= total_size or start > end:
+            return None
+        return start, end
+    except (ValueError, AttributeError):
+        return None
+
+
+async def _proxy_media_response(
+    blob,
+    media_type: str,
+    filename: str,
+    range_header: Optional[str],
+) -> StreamingResponse:
+    """Hardened proxy fallback: download blob bytes in a bounded thread, return
+    a StreamingResponse (200) or partial-content response (206 for Range requests).
+
+    Uses ``_media_semaphore`` to cap concurrent proxy threads so a small VPS
+    cannot be overwhelmed.  The GCS client's built-in ``DEFAULT_RETRY`` is
+    applied to the download, so transient auth/network hiccups are retried
+    automatically without hand-rolled refresh logic.
+    """
+    from google.cloud.storage.retry import DEFAULT_RETRY
+
+    blob_size = blob.size  # may be None if metadata not loaded
+
+    range_parsed = None
+    if range_header and blob_size is not None:
+        range_parsed = _parse_range_header(range_header, blob_size)
+
+    async with _media_semaphore:
+        if range_parsed is not None:
+            start, end = range_parsed
+            # GCS download_as_bytes end is *exclusive*
+            data = await run_io(
+                blob.download_as_bytes,
+                start=start,
+                end=end + 1,
+                retry=DEFAULT_RETRY,
+            )
+        else:
+            data = await run_io(blob.download_as_bytes, retry=DEFAULT_RETRY)
+
+    if range_parsed is not None:
+        start, end = range_parsed
+        content_length = end - start + 1
+        headers = {
+            "Content-Disposition": f'inline; filename="{filename}"',
+            "Accept-Ranges": "bytes",
+            "Content-Range": f"bytes {start}-{end}/{blob_size}",
+            "Content-Length": str(content_length),
+            "Cache-Control": "private, max-age=0",
+        }
+        return StreamingResponse(
+            iter([data]),
+            status_code=206,
+            media_type=media_type,
+            headers=headers,
+        )
+
+    headers = {
+        "Content-Disposition": f'inline; filename="{filename}"',
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "private, max-age=0",
+    }
+    return StreamingResponse(
+        iter([data]),
+        media_type=media_type,
+        headers=headers,
+    )
+
+
 @app.get("/api/images/{image_id}")
-async def get_image_file(image_id: str):
+async def get_image_file(image_id: str, request: Request):
     config = STORAGE_MAP["image"]
     idx = await run_io(_read_json_sync, config["index"])
     entry = next((i for i in idx if i["id"] == image_id), None)
@@ -2330,11 +2447,26 @@ async def get_image_file(image_id: str):
     if not await run_io(blob.exists):
         raise HTTPException(404, "File missing")
 
-    def iterfile():
-        with blob.open("rb") as f:
-            while chunk := f.read(1024 * 1024):
-                yield chunk
+    # --- Primary path: 302 redirect to a V4 signed GCS URL ---
+    # This removes media bytes from the VPS entirely and eliminates per-stream
+    # thread-pool pressure.  Requires a service-account private key.
+    if _has_signing_creds:
+        try:
+            signed_url = await run_io(
+                blob.generate_signed_url,
+                version="v4",
+                expiration=timedelta(seconds=GCS_SIGNED_URL_EXPIRATION_SECONDS),
+                method="GET",
+            )
+            return RedirectResponse(
+                url=signed_url,
+                status_code=302,
+                headers={"Cache-Control": "private, max-age=0"},
+            )
+        except Exception as exc:
+            logging.error("Signed-URL generation failed for image %s: %s; falling back to proxy", image_id, exc)
 
+    # --- Fallback path: hardened proxy (ADC or signing failure) ---
     lower_name = entry['filename'].lower()
     if lower_name.endswith('.png'):
         media_type = 'image/png'
@@ -2347,10 +2479,11 @@ async def get_image_file(image_id: str):
     else:
         media_type = 'application/octet-stream'
 
-    return StreamingResponse(
-        iterfile(),
+    return await _proxy_media_response(
+        blob,
         media_type=media_type,
-        headers={"Content-Disposition": f'inline; filename="{entry["name"]}"'}
+        filename=entry["name"],
+        range_header=request.headers.get("Range"),
     )
 
 @app.put("/api/images/{image_id}")
@@ -2396,7 +2529,7 @@ async def update_image_metadata(image_id: str, payload: SampleMetaUpdatePayload)
 # ========================= VIDEOS =========================
 
 @app.get("/api/videos/{video_id}")
-async def get_video_file(video_id: str):
+async def get_video_file(video_id: str, request: Request):
     config = STORAGE_MAP["video"]
     idx = await run_io(_read_json_sync, config["index"])
     entry = next((i for i in idx if i["id"] == video_id), None)
@@ -2408,11 +2541,24 @@ async def get_video_file(video_id: str):
     if not await run_io(blob.exists):
         raise HTTPException(404, "File missing")
 
-    def iterfile():
-        with blob.open("rb") as f:
-            while chunk := f.read(1024 * 1024):
-                yield chunk
+    # --- Primary path: 302 redirect to a V4 signed GCS URL ---
+    if _has_signing_creds:
+        try:
+            signed_url = await run_io(
+                blob.generate_signed_url,
+                version="v4",
+                expiration=timedelta(seconds=GCS_SIGNED_URL_EXPIRATION_SECONDS),
+                method="GET",
+            )
+            return RedirectResponse(
+                url=signed_url,
+                status_code=302,
+                headers={"Cache-Control": "private, max-age=0"},
+            )
+        except Exception as exc:
+            logging.error("Signed-URL generation failed for video %s: %s; falling back to proxy", video_id, exc)
 
+    # --- Fallback path: hardened proxy (ADC or signing failure) ---
     lower_name = entry['filename'].lower()
     if lower_name.endswith('.mp4'):
         media_type = 'video/mp4'
@@ -2423,10 +2569,11 @@ async def get_video_file(video_id: str):
     else:
         media_type = 'application/octet-stream'
 
-    return StreamingResponse(
-        iterfile(),
+    return await _proxy_media_response(
+        blob,
         media_type=media_type,
-        headers={"Content-Disposition": f'inline; filename="{entry["name"]}"'}
+        filename=entry["name"],
+        range_header=request.headers.get("Range"),
     )
 
 @app.put("/api/videos/{video_id}")
