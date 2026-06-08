@@ -64,8 +64,8 @@ os.environ.setdefault("GCP_BUCKET_NAME", "test-bucket")
 import storage_manager.app as app_module
 from storage_manager.app import (
     GCS_SIGNED_URL_EXPIRATION_SECONDS,
+    GCS_SIGNED_URL_MAX_SECONDS,
     MEDIA_STREAM_MAX_CONCURRENT,
-    _GCS_SIGNED_URL_MAX_SECONDS,
     app,
 )
 
@@ -239,7 +239,7 @@ class TestConfiguration:
 
     def test_expiration_clamped_to_max(self):
         """Expiration is capped at 604800 s regardless of env setting."""
-        assert GCS_SIGNED_URL_EXPIRATION_SECONDS <= _GCS_SIGNED_URL_MAX_SECONDS
+        assert GCS_SIGNED_URL_EXPIRATION_SECONDS <= GCS_SIGNED_URL_MAX_SECONDS
 
     def test_default_max_concurrent_is_10(self):
         assert MEDIA_STREAM_MAX_CONCURRENT == int(
@@ -280,8 +280,6 @@ class TestImageSignedRedirect:
         assert resp.headers["cache-control"] == "private, max-age=0"
 
     def test_generate_signed_url_called_with_correct_args(self, client_signed):
-        from datetime import timedelta as td
-
         c = client_signed
         blob = _make_image_blob()
         _configure_for_image(app_module.bucket, blob)
@@ -289,11 +287,9 @@ class TestImageSignedRedirect:
         c.get("/api/images/img-001", follow_redirects=False)
 
         blob.generate_signed_url.assert_called_once()
-        call_kwargs = blob.generate_signed_url.call_args
-        assert call_kwargs.kwargs.get("version") == "v4" or (
-            len(call_kwargs.args) > 0 and "v4" in str(call_kwargs.args)
-        )
-        assert call_kwargs.kwargs.get("method") == "GET"
+        call_kwargs = blob.generate_signed_url.call_args.kwargs
+        assert call_kwargs.get("version") == "v4"
+        assert call_kwargs.get("method") == "GET"
 
 
 # ---------------------------------------------------------------------------

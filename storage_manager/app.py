@@ -101,10 +101,10 @@ RATE_LIMIT_IP_HEADER = os.environ.get("RATE_LIMIT_IP_HEADER", "X-Forwarded-For")
 # --- MEDIA STREAMING CONFIGURATION ---
 # GCS V4 signed URL TTL: default 1 h, max 7 days (604800 s per GCS spec).
 # Set GCS_SIGNED_URL_EXPIRATION_SECONDS in the environment to override.
-_GCS_SIGNED_URL_MAX_SECONDS = 604800
+GCS_SIGNED_URL_MAX_SECONDS = 604800
 GCS_SIGNED_URL_EXPIRATION_SECONDS: int = min(
     int(os.environ.get("GCS_SIGNED_URL_EXPIRATION_SECONDS", "3600")),
-    _GCS_SIGNED_URL_MAX_SECONDS,
+    GCS_SIGNED_URL_MAX_SECONDS,
 )
 # Maximum concurrent proxy streams when the signed-URL path is unavailable.
 # Keeps the anyio/asyncio thread pool from saturating on small VPS hosts.
@@ -2349,7 +2349,7 @@ async def update_music_metadata(music_id: str, payload: SampleMetaUpdatePayload)
 # Media streaming helpers (shared by image and video endpoints)
 # ---------------------------------------------------------------------------
 
-def _parse_range_header(range_header: str, total_size: int) -> Optional[tuple]:
+def _parse_range_header(range_header: str, total_size: int) -> Optional[tuple[int, int]]:
     """Parse a 'bytes=start-end' Range header.
 
     Returns (start, end) integers (inclusive, 0-based) or None if the header
@@ -2464,7 +2464,7 @@ async def get_image_file(image_id: str, request: Request):
                 headers={"Cache-Control": "private, max-age=0"},
             )
         except Exception as exc:
-            logging.warning("Signed-URL generation failed for image %s: %s; falling back to proxy", image_id, exc)
+            logging.error("Signed-URL generation failed for image %s: %s; falling back to proxy", image_id, exc)
 
     # --- Fallback path: hardened proxy (ADC or signing failure) ---
     lower_name = entry['filename'].lower()
@@ -2556,7 +2556,7 @@ async def get_video_file(video_id: str, request: Request):
                 headers={"Cache-Control": "private, max-age=0"},
             )
         except Exception as exc:
-            logging.warning("Signed-URL generation failed for video %s: %s; falling back to proxy", video_id, exc)
+            logging.error("Signed-URL generation failed for video %s: %s; falling back to proxy", video_id, exc)
 
     # --- Fallback path: hardened proxy (ADC or signing failure) ---
     lower_name = entry['filename'].lower()
