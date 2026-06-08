@@ -640,6 +640,13 @@
       "added": "2026-06-06T15:23:53.271172",
       "status": "completed",
       "completed_at": "2026-06-07T08:03:28.527857"
+    },
+    {
+      "filename": "2026-06-07_prismatic-cyber-auroral-manta-swarm.md",
+      "title": "Prismatic Cyber-Auroral Manta-Swarm",
+      "added": "2026-06-07T15:33:14.275573",
+      "status": "completed",
+      "completed_at": "2026-06-08T07:42:17.908374"
     }
   ],
   "rejected": [],
@@ -919,11 +926,6 @@
       "filename": "2026-06-06_resonant-quantum-obsidian-scarab-engine.md",
       "title": "Resonant Quantum-Obsidian Scarab-Engine",
       "added": "2026-06-06T15:23:53.271172"
-    },
-    {
-      "filename": "2026-06-07_prismatic-cyber-auroral-manta-swarm.md",
-      "title": "Prismatic Cyber-Auroral Manta-Swarm",
-      "added": "2026-06-07T15:33:14.275573"
     }
   ],
   "in_progress": null
