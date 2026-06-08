@@ -5949,6 +5949,71 @@ To help organize prompts, please use tags from the following categories:
 - **Notes:** Excellent for testing large-scale structures made of highly scattering, incredibly low-density translucent materials (aerogel) under harsh cosmic lighting.
 
 
+### Suggestion: Italian Futurism Volcanic Eruption
+- **Date:** 2026-12-31
+- **Prompt:** "A chaotic, dynamic scene of a massive volcanic eruption depicted in the harsh, fragmented style of Italian Futurism. The erupting volcano and flying debris are deconstructed into aggressive, jagged diagonal lines and overlapping geometric planes radiating outward to capture the immense speed and mechanical energy of the explosion. The lighting is dramatic and directional, casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, aggressive, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion and violent speed."
+- **Negative prompt:** "calm, horizontal, photorealistic, soft curves, gentle, natural water, peaceful, realistic lava"
+- **Tags:** abstract, art, italian futurism, speed, dynamic, volcano
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, fiery oranges, stark black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_futurism-volcano.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to convey a cataclysmic natural event.
+
+### Suggestion: Ashcan School Mother of Pearl Beehive
+- **Date:** 2026-12-31
+- **Prompt:** "A bustling, gritty early 20th-century street scene depicted in the Ashcan School art style, but the central focus is a massive, shimmering Mother of Pearl beehive attached to a brick tenement building. The subject features working-class pedestrians ignoring the fantastical structure. The lighting is overcast and realistic, casting soft, murky shadows that highlight the dirt and texture of the urban environment, contrasting with the iridescent, pearlescent glow of the nacre beehive. The mood is authentic, raw, and surreal. Captured with an eye-level, documentary-style perspective, emphasizing the unglamorous reality of the city juxtaposed with the ethereal hive."
+- **Negative prompt:** "modern, bright, cheerful, clean, sci-fi, highly saturated, glossy, 3d render, anime, natural forest"
+- **Tags:** art, city, historical, ashcan school, gritty, surreal, mother of pearl
+- **Style / Reference:** Ashcan School painting, George Bellows inspired, thick brushstrokes, surrealism
+- **Composition:** eye-level, crowded street, naturalistic framing, off-center subject
+- **Color palette:** muted browns, dark greys, dull reds, pearlescent whites, soft pinks and baby blues
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261231_ashcan-nacre-beehive.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing gritty, unidealized urban scenes blended with highly iridescent, surreal organic structures.
+
+### Suggestion: Graphene Bioluminescent Reef
+- **Date:** 2026-12-31
+- **Prompt:** "A breathtaking, ultra-wide underwater landscape showcasing a sprawling coral reef constructed entirely from light-absorbing, matte black graphene. The dark, geometric graphene structures are heavily populated by intensely glowing, bioluminescent flora in vivid neon cyan and magenta. The lighting is entirely diegetic, radiating from the luminescent plants and reflecting off tiny, silver-scaled fish, while the graphene remains pitch black. The mood is alien, beautiful, and deeply mysterious. Captured with a 14mm ultra-wide lens to emphasize the vast, sweeping scale of the dark, glowing ecosystem."
+- **Negative prompt:** "sunlight, daylight, bright surface, natural coral, sand, murky water, low resolution"
+- **Tags:** underwater, sci-fi, landscape, graphene, bioluminescent
+- **Style / Reference:** cinematic deep-sea exploration, high-contrast digital art
+- **Composition:** wide landscape, deep perspective, rule of thirds
+- **Color palette:** matte pitch black, neon cyan, vibrant magenta, bright silver
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_graphene-reef-2.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to contrast intensely bright emissive materials against completely light-absorbing, matte geometric structures.
+
+### Suggestion: Cinematic Aerogel Tsunami
+- **Date:** 2026-12-31
+- **Prompt:** "A massive, towering tsunami wave frozen in time, constructed entirely from weightless, translucent blue aerogel. The delicate, porous subject curves gracefully, catching bright, ethereal sunlight that scatters inside the low-density aerogel to create a mesmerizing internal glow and millions of soft refractions. The ocean below is dark and moody, contrasting with the luminous, ghost-like wave. The sky is clear and bright, providing stark, cinematic lighting. The mood is surreal, majestic, and terrifying. Captured with a low camera angle and wide lens to emphasize the towering height of the ghostly wave."
+- **Negative prompt:** "water, liquid, splash, foam, ordinary, realistic ocean, dark sky, heavy, solid ice"
+- **Tags:** fantasy, nature, surreal, ethereal, aerogel, tsunami
+- **Style / Reference:** surrealism, 3D abstract render, photorealistic lighting
+- **Composition:** imposing, low angle, wave dominating the frame
+- **Color palette:** translucent ghostly blue, pale cyan, stark white sunlight, deep ocean blue
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261231_aerogel-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for generating smooth, massive organic shapes with subsurface scattering and highly translucent, low-density materials.
+
+### Suggestion: Damascus Steel Exoplanet Core
+- **Date:** 2026-12-31
+- **Prompt:** "A colossal, surreal visualization deep within the core of a massive exoplanet, where the crushing pressure has formed an ocean of rippling, liquid Damascus steel. The subject features immense, flowing metallic waves showcasing intricate, woodgrain-like patterns of dark and light silver. The lighting is terrifyingly intense and internal, erupting from deep, glowing fissures of molten amber and white-hot energy that cast sharp, glaring highlights across the complex metallic ridges. The mood is oppressive, alien, and awe-inspiring. Captured with an extreme wide-angle 14mm lens to encompass the vast, churning scale of the planetary core."
+- **Negative prompt:** "soft, organic, earth-like, calm, daylight, water, blurry, low resolution, solid rock"
+- **Tags:** sci-fi, space, landscape, damascus steel, exoplanet
+- **Style / Reference:** cinematic sci-fi environment design, photorealistic material rendering
+- **Composition:** wide expansive view, chaotic flowing lines, deep perspective
+- **Color palette:** dark metallic grays, polished silver, blinding white-hot core, glowing amber
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_damascus-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the complex, flowing texture generation of Damascus steel mapped onto massive, churning fluid dynamics under extreme lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
