@@ -1780,8 +1780,8 @@
     "synced_at": 1780819343.953786
   },
   "gen-quasicrystal": {
-    "hash": "7a2f7e9fdcdf7675382711692e949f86",
-    "synced_at": 1780819347.1462328
+    "hash": "11f5ba0762f50eb48b58cea100aaec9a",
+    "synced_at": 1780904570.544389
   },
   "gen-vitreous-chrono-chandelier": {
     "hash": "8e0709561c8f45d4c796b85a668de6b4",
@@ -1852,8 +1852,8 @@
     "synced_at": 1779589157.580559
   },
   "gen-feedback-echo-chamber": {
-    "hash": "8255ea58c2a87668340ee88f28a8166a",
-    "synced_at": 1780819342.1695817
+    "hash": "e6af77620aab8abb99503cfb97ea447d",
+    "synced_at": 1780904570.142079
   },
   "gen-liquid-crystal-hive-mind": {
     "hash": "520fa54211e0be0499c4bcc904777d64",
@@ -1920,8 +1920,8 @@
     "synced_at": 1779589158.5006523
   },
   "cosmic-web": {
-    "hash": "e060fede018a58bb4fb02b9ae9d4068c",
-    "synced_at": 1780819180.2967336
+    "hash": "c95e21f2d3d0d58580dd535f7a31af0f",
+    "synced_at": 1780904569.6657503
   },
   "gen-dynamic-tessellation-ornate-fractal-tiles": {
     "hash": "1d9ece640c8d81ec2c04cce200820243",
@@ -3296,8 +3296,8 @@
     "synced_at": 1780819285.0412486
   },
   "spec-distance-field-text": {
-    "hash": "ea10d2384f4e04abf5b22a0fb312f484",
-    "synced_at": 1779589961.3136775
+    "hash": "cd5f30365d1e23020b1f58f374bffe50",
+    "synced_at": 1780904569.6906786
   },
   "gen-lorenz-attractor": {
     "hash": "aabfa48dead4c215d1270e2dbcca6229",
@@ -3744,8 +3744,8 @@
     "synced_at": 1780214413.440722
   },
   "sand-dunes": {
-    "hash": "11adf2eedd2303421d42c74232c5f9d9",
-    "synced_at": 1780214413.8489654
+    "hash": "2b640a52fc68f3b9814e81a6e605329b",
+    "synced_at": 1780904569.6701071
   },
   "gen-opal-circuit": {
     "hash": "a1955d6defb070c4d160f52fcd567544",
@@ -3860,8 +3860,8 @@
     "synced_at": 1780819285.173276
   },
   "supernova-core": {
-    "hash": "571247baca779218e4e01ed768df2450",
-    "synced_at": 1780214477.0227818
+    "hash": "e607bba73ba7e8e6a119cf72896e8415",
+    "synced_at": 1780904569.7740521
   },
   "spore-galaxy": {
     "hash": "ffd6cd06bc1ad8a3c0d66da7e7de2670",
@@ -3984,8 +3984,8 @@
     "synced_at": 1780819337.6560497
   },
   "hyperbolic-crystal-symbiosis": {
-    "hash": "3d789aff8d47f14471e9075923284db5",
-    "synced_at": 1780214526.8306744
+    "hash": "25b0baad01ae0acbae67e6d37e3557fc",
+    "synced_at": 1780904570.144744
   },
   "phase-memory-weave": {
     "hash": "8504020f76df745641817bb5d9070044",
@@ -4128,16 +4128,16 @@
     "synced_at": 1780819345.8851438
   },
   "gen-ifs-fractal-flame": {
-    "hash": "72d05f5aad9b2dc7db4ccc8b1bee58ba",
-    "synced_at": 1780214554.75357
+    "hash": "d6c6b02430152ecdb675c4ce04d3d2c9",
+    "synced_at": 1780904570.1680114
   },
   "electric-eel-storm": {
     "hash": "80bb51d8ea8a7b000edc4f8197f00b94",
     "synced_at": 1780819346.414384
   },
   "aurora-curtain": {
-    "hash": "37aaf7182e503153b1b6509fc61ad537",
-    "synced_at": 1780819346.3071532
+    "hash": "68c12377d08a9c9cc58715f3e3e0aa49",
+    "synced_at": 1780904570.190962
   },
   "gen-conway-game-of-life": {
     "hash": "dd4afa7ae441298515732f6cb8d961cb",
@@ -4412,8 +4412,8 @@
     "synced_at": 1780819328.062993
   },
   "gen-resonant-quantum-obsidian-scarab-engine": {
-    "hash": "71ea018c65c69c976703752abff58163",
-    "synced_at": 1780819335.7252173
+    "hash": "af37de05049aea737af4f3b6053aa17f",
+    "synced_at": 1780904569.690917
   },
   "molten-gold": {
     "hash": "b854c9f7ff6c674d51e7e2a503e0cbc3",
@@ -4422,5 +4422,9 @@
   "gen-ethereal-silk-veil": {
     "hash": "f8bb51ed1a4bf98d61ca849eea57b680",
     "synced_at": 1780819341.1303947
+  },
+  "gen-prismatic-cyber-auroral-manta-swarm": {
+    "hash": "916b4f4d64983b9fb183dc9f02d3147b",
+    "synced_at": 1780904570.2888303
   }
 }

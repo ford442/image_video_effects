@@ -21,7 +21,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
     
     - name: Install dependencies
@@ -29,6 +29,8 @@ jobs:
     
     - name: Setup Emscripten SDK
       uses: mymindstorm/setup-emsdk@v14
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         version: latest
         actions-cache-folder: 'emsdk-cache'
@@ -84,7 +86,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
     
     - name: Install dependencies
@@ -129,7 +131,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
     
     - name: Install dependencies
@@ -137,6 +139,8 @@ jobs:
     
     - name: Setup Emscripten SDK
       uses: mymindstorm/setup-emsdk@v14
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         version: latest
         actions-cache-folder: 'emsdk-cache'
@@ -174,7 +178,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
         cache: 'npm'
     
     - name: Install dependencies
