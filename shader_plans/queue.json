@@ -647,6 +647,13 @@
       "added": "2026-06-07T15:33:14.275573",
       "status": "completed",
       "completed_at": "2026-06-08T07:42:17.908374"
+    },
+    {
+      "filename": "2026-06-08_luminescent-quantum-glass-phoenix-egg.md",
+      "title": "Luminescent Quantum-Glass Phoenix-Egg",
+      "added": "2026-06-08T15:22:03.386466",
+      "status": "completed",
+      "completed_at": "2026-06-09T07:55:38.051585"
     }
   ],
   "rejected": [],
@@ -931,11 +938,6 @@
       "filename": "2026-06-07_prismatic-cyber-auroral-manta-swarm.md",
       "title": "Prismatic Cyber-Auroral Manta-Swarm",
       "added": "2026-06-07T15:33:14.275573"
-    },
-    {
-      "filename": "2026-06-08_luminescent-quantum-glass-phoenix-egg.md",
-      "title": "Luminescent Quantum-Glass Phoenix-Egg",
-      "added": "2026-06-08T15:22:03.386466"
     }
   ],
   "in_progress": null
