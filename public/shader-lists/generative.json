@@ -134,6 +134,7 @@
     "url": "shaders/atmos_volumetric_fog.wgsl",
     "description": "Volumetric fog with ray marching, Mie/Rayleigh scattering, height-based density, god rays, and mouse-controlled light source",
     "tags": [
+      "generative",
       "volumetric",
       "fog",
       "god-rays",
@@ -189,7 +190,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.7
+    "target_rating": 4.7,
+    "category": "generative"
   },
   {
     "id": "audio_geometric_pulse",
@@ -197,6 +199,7 @@
     "url": "shaders/audio_geometric_pulse.wgsl",
     "description": "Audio-reactive geometric patterns with kaleidoscope symmetry, shape morphing, neon glow, and frequency band visualization",
     "tags": [
+      "generative",
       "geometric",
       "audio",
       "kaleidoscope",
@@ -247,7 +250,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.6
+    "target_rating": 4.6,
+    "category": "generative"
   },
   {
     "id": "aurora-borealis-loom",
@@ -382,6 +386,7 @@
     "url": "shaders/bio_lenia_continuous.wgsl",
     "description": "Continuous cellular automata (Lenia) with smooth growth functions, multiple kernel radii, and biological emergence patterns",
     "tags": [
+      "generative",
       "lenia",
       "cellular-automata",
       "biological",
@@ -432,7 +437,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.7
+    "target_rating": 4.7,
+    "category": "generative"
   },
   {
     "id": "gen-bioluminescent-abyss",
@@ -1189,7 +1195,7 @@
     "name": "Emergent Calligraphic Weave",
     "url": "shaders/emergent-calligraphic-weave.wgsl",
     "category": "generative",
-    "description": "Sumi-e ink wash simulation with pressure-sensitive Bézier brush strokes, ink viscosity flow, paper absorption capillary action, and dry-brush texture. Audio drives brush speed and splatter; mouse acts as the brush with pressure from click duration. Depth scales paper grain.",
+    "description": "Sumi-e ink wash simulation with pressure-sensitive B\u00e9zier brush strokes, ink viscosity flow, paper absorption capillary action, and dry-brush texture. Audio drives brush speed and splatter; mouse acts as the brush with pressure from click duration. Depth scales paper grain.",
     "features": [
       "stroke-based",
       "brush-dynamics",
@@ -1267,6 +1273,7 @@
     "url": "shaders/fire_smoke_volumetric.wgsl",
     "description": "Volumetric fire and smoke simulation with chromatic temperature gradients (R hot to B cool), temporal smoke persistence via dataTextureC, audio-driven turbulence enhancement, physical transmittance, and depth-layered alpha.",
     "tags": [
+      "generative",
       "fire",
       "smoke",
       "volumetric",
@@ -1324,7 +1331,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.7
+    "target_rating": 4.7,
+    "category": "generative"
   },
   {
     "id": "fractal-ice-palace",
@@ -1691,6 +1699,10 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
+    ],
+    "category": "generative",
+    "tags": [
+      "generative"
     ]
   },
   {
@@ -3176,7 +3188,7 @@
     "name": "Celestial Aether-Seraphim Wings",
     "url": "shaders/gen-celestial-aether-seraphim-wings.wgsl",
     "category": "generative",
-    "description": "A majestic hyper-dimensional array of fractal wings enriched with aerodynamic lift physics. Angle of attack α from mouse Y drives C_L=2πα (thin airfoil). Stall at ~15° creates turbulent breakdown. Bass drives flapping frequency via damped oscillation. Temporal feedback, chromatic aberration, and ACES tone mapping.",
+    "description": "A majestic hyper-dimensional array of fractal wings enriched with aerodynamic lift physics. Angle of attack \u03b1 from mouse Y drives C_L=2\u03c0\u03b1 (thin airfoil). Stall at ~15\u00b0 creates turbulent breakdown. Bass drives flapping frequency via damped oscillation. Temporal feedback, chromatic aberration, and ACES tone mapping.",
     "tags": [
       "wings",
       "angelic",
@@ -5675,7 +5687,7 @@
     "name": "Dragon Curve",
     "url": "shaders/gen-dragon-curve.wgsl",
     "category": "generative",
-    "description": "Heighway dragon curve — a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon line with iteration-depth coloring from red to violet. Audio drives fold depth, mouse zooms into detail, and depth controls line thickness perspective.",
+    "description": "Heighway dragon curve \u2014 a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon line with iteration-depth coloring from red to violet. Audio drives fold depth, mouse zooms into detail, and depth controls line thickness perspective.",
     "features": [
       "procedural",
       "fractal",
@@ -6152,7 +6164,7 @@
     "name": "Emergent Script Gardens",
     "url": "shaders/gen-emergent-script-gardens.wgsl",
     "category": "generative",
-    "description": "Interacting ink-like and neon strokes follow golden-ratio phyllotaxis (137.5°) to self-organize into alien symbolic gardens. Bass drives growth iteration count. Mouse interaction plants dense stroke seeds with φ-boosted intensity. Temporal feedback creates organic overgrowth trails. ACES tonemapped with chromatic aberration.",
+    "description": "Interacting ink-like and neon strokes follow golden-ratio phyllotaxis (137.5\u00b0) to self-organize into alien symbolic gardens. Bass drives growth iteration count. Mouse interaction plants dense stroke seeds with \u03c6-boosted intensity. Temporal feedback creates organic overgrowth trails. ACES tonemapped with chromatic aberration.",
     "tags": [
       "generative",
       "calligraphy",
@@ -7146,7 +7158,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Number of gravity wells (maps to 1–6).",
+        "description": "Number of gravity wells (maps to 1\u20136).",
         "mapping": "zoom_params.x"
       },
       {
@@ -7156,7 +7168,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Mass of each gravity well — controls bending strength.",
+        "description": "Mass of each gravity well \u2014 controls bending strength.",
         "mapping": "zoom_params.y"
       },
       {
@@ -8127,7 +8139,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Number of sides in the fundamental tile (maps to p=3–8).",
+        "description": "Number of sides in the fundamental tile (maps to p=3\u20138).",
         "mapping": "zoom_params.x"
       },
       {
@@ -8157,7 +8169,7 @@
         "max": 1,
         "default": 0.7,
         "step": 0.01,
-        "description": "Brightness of the glow near the Poincaré disk boundary.",
+        "description": "Brightness of the glow near the Poincar\u00e9 disk boundary.",
         "mapping": "zoom_params.w"
       }
     ]
@@ -8378,7 +8390,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Maximum iteration count (maps to 20–80).",
+        "description": "Maximum iteration count (maps to 20\u201380).",
         "mapping": "zoom_params.x"
       },
       {
@@ -8408,7 +8420,7 @@
         "max": 1,
         "default": 0.3,
         "step": 0.01,
-        "description": "Escape radius — lower values create more intricate boundaries.",
+        "description": "Escape radius \u2014 lower values create more intricate boundaries.",
         "mapping": "zoom_params.w"
       }
     ]
@@ -10342,7 +10354,7 @@
     "name": "Murmuration Phantom",
     "url": "shaders/gen-murmuration-phantom.wgsl",
     "category": "generative",
-    "description": "Starling murmuration simulation — thousands of dark birds flowing in organic, ever-changing shapes against a twilight sky. The flock morphs between coherent structures driven by a curl noise flow field, with individual birds only visible as subtle silver glints at the edges. Bass drives flock density, mids morph between swarm shapes, treble adds edge glints, and mouse creates predator disturbance.",
+    "description": "Starling murmuration simulation \u2014 thousands of dark birds flowing in organic, ever-changing shapes against a twilight sky. The flock morphs between coherent structures driven by a curl noise flow field, with individual birds only visible as subtle silver glints at the edges. Bass drives flock density, mids morph between swarm shapes, treble adds edge glints, and mouse creates predator disturbance.",
     "tags": [
       "murmuration",
       "flock",
@@ -13486,7 +13498,7 @@
         "max": 1,
         "default": 0.4,
         "step": 0.01,
-        "description": "Number of quantum particles (maps to 1–8).",
+        "description": "Number of quantum particles (maps to 1\u20138).",
         "mapping": "zoom_params.x"
       },
       {
@@ -13825,7 +13837,7 @@
     "name": "Recursive Ancestral Terrains",
     "url": "shaders/gen-recursive-ancestral-terrains.wgsl",
     "category": "generative",
-    "description": "Fractal landscape generator where terrain features carry genetic parameters from parent generations. The mouse position locally selects which ancestral lineage is expressed, creating alien mountain ranges with evolutionary history. Audio controls mutation rate and generational blending. Upgraded with golden ratio φ persistence, fractal dimension roughness control (Koch D=1.2619 to Sierpinski D=1.585), bass-driven erosion, mouse river carving, temporal sediment layers, ACES tone mapping, and chromatic aberration.",
+    "description": "Fractal landscape generator where terrain features carry genetic parameters from parent generations. The mouse position locally selects which ancestral lineage is expressed, creating alien mountain ranges with evolutionary history. Audio controls mutation rate and generational blending. Upgraded with golden ratio \u03c6 persistence, fractal dimension roughness control (Koch D=1.2619 to Sierpinski D=1.585), bass-driven erosion, mouse river carving, temporal sediment layers, ACES tone mapping, and chromatic aberration.",
     "tags": [
       "generative",
       "fractal",
@@ -17376,7 +17388,7 @@
     "params": [
       {
         "id": "param1",
-        "name": "Sigma (σ)",
+        "name": "Sigma (\u03c3)",
         "default": 0.45,
         "min": 0,
         "max": 1,
@@ -17385,7 +17397,7 @@
       },
       {
         "id": "param2",
-        "name": "Rho (ρ)",
+        "name": "Rho (\u03c1)",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -17394,7 +17406,7 @@
       },
       {
         "id": "param3",
-        "name": "Beta (β)",
+        "name": "Beta (\u03b2)",
         "default": 0.4,
         "min": 0,
         "max": 1,
@@ -18115,7 +18127,7 @@
     "name": "Hyperbolic Crystal Symbiosis",
     "url": "shaders/hyperbolic-crystal-symbiosis.wgsl",
     "category": "generative",
-    "description": "Voronoi crystal facets on a true Poincaré disk with geodesic distance and Gray-Scott reaction-diffusion. Iridescent thin-film coloring on facet edges with HDR bloom at triple junctions. Bass drives crystal growth, mids morph between hyperbolic/parabolic/Euclidean curvature, treble adds sparkle. Mouse warps the disk center.",
+    "description": "Voronoi crystal facets on a true Poincar\u00e9 disk with geodesic distance and Gray-Scott reaction-diffusion. Iridescent thin-film coloring on facet edges with HDR bloom at triple junctions. Bass drives crystal growth, mids morph between hyperbolic/parabolic/Euclidean curvature, treble adds sparkle. Mouse warps the disk center.",
     "features": [
       "poincare-disk",
       "geodesic-voronoi",
@@ -18184,6 +18196,7 @@
     "url": "shaders/interactive_neural_swarm.wgsl",
     "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns",
     "tags": [
+      "generative",
       "neural",
       "network",
       "swarm",
@@ -18236,7 +18249,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.8
+    "target_rating": 4.8,
+    "category": "generative"
   },
   {
     "id": "kimi_flock_symphony",
@@ -18533,6 +18547,7 @@
     "url": "shaders/liquid_crystal_birefringence.wgsl",
     "description": "Liquid crystal optical effects with birefringent double refraction, twisted nematic polarization rotation, and Schlieren texture",
     "tags": [
+      "generative",
       "interactive",
       "cursor",
       "liquid-crystal",
@@ -18587,7 +18602,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.7
+    "target_rating": 4.7,
+    "category": "generative"
   },
   {
     "id": "liquid_magnetic_ferro",
@@ -18595,6 +18611,7 @@
     "url": "shaders/liquid_magnetic_ferro.wgsl",
     "description": "Interactive ferrofluid simulation with magnetic field lines, Rosensweig instability spike formation, and metallic iridescent rendering",
     "tags": [
+      "generative",
       "ferrofluid",
       "magnetic",
       "liquid",
@@ -18645,7 +18662,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.7
+    "target_rating": 4.7,
+    "category": "generative"
   },
   {
     "id": "magnetic-flux-garden",
@@ -19933,6 +19951,7 @@
     "url": "shaders/spec-analytic-noise-flow.wgsl",
     "description": "Perlin noise with analytic derivatives for ultra-smooth flow fields. Gradient computed alongside noise value in single evaluation, eliminating finite-difference jitter for perfectly parallel streamlines.",
     "tags": [
+      "generative",
       "analytic-derivatives",
       "flow-field",
       "noise",
@@ -19987,7 +20006,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.6
+    "target_rating": 4.6,
+    "category": "generative"
   },
   {
     "id": "spec-distance-field-text",
@@ -19995,6 +20015,7 @@
     "url": "shaders/spec-distance-field-text.wgsl",
     "description": "SDF-based procedural glyph overlay. Generates abstract runes and symbols as signed distance fields with infinitely smooth scaling, glowing edges, drop shadows, and chromatic cycling.",
     "tags": [
+      "generative",
       "SDF",
       "distance-field",
       "procedural-text",
@@ -20045,7 +20066,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.5
+    "target_rating": 4.5,
+    "category": "generative"
   },
   {
     "id": "spec-quaternion-julia",
@@ -20053,6 +20075,7 @@
     "url": "shaders/spec-quaternion-julia.wgsl",
     "description": "4D quaternion Julia set raymarched in real-time. The 4th dimension animates over time creating organic morphing fractal forms with orbit-trap coloring and physically-based lighting.",
     "tags": [
+      "generative",
       "quaternion",
       "julia",
       "fractal",
@@ -20105,7 +20128,8 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.9
+    "target_rating": 4.9,
+    "category": "generative"
   },
   {
     "id": "spore-galaxy",
@@ -20680,6 +20704,7 @@
     "url": "shaders/wolfram-data-demo.wgsl",
     "description": "Demonstrates scientific constants and mathematical functions from Wolfram Alpha. Features phyllotaxis patterns, Airy disk diffraction, Fibonacci spirals, and atmospheric scattering using real physical data.",
     "tags": [
+      "generative",
       "wolfram",
       "scientific",
       "mathematical",
@@ -20736,6 +20761,7 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "category": "generative"
   }
 ]

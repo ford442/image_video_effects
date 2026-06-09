@@ -1059,12 +1059,16 @@ function MainApp() {
     // --- Roulette / Chaos Mode Functions ---
     const getRandomShader = useCallback((): ShaderEntry | null => {
         if (availableModes.length === 0) return null;
-        // Filter out 'none', generative shaders, and ensure valid shader entries.
-        // Generative shaders are excluded from randomization because they ignore
-        // input textures and break chained effects.
-        const validShaders = availableModes.filter(
-            s => s.id && s.id !== 'none' && s.category !== 'generative'
-        );
+        // Only include effect shaders that process input textures.
+        // Exclude generative/simulation shaders (they render their own content and block the canvas).
+        // Also filter by tags in case a shader is miscategorized by the API (e.g., category:"none" fallback).
+        const EXCLUDED_CATEGORIES = new Set(['generative', 'simulation']);
+        const validShaders = availableModes.filter(s => {
+            if (!s.id || s.id === 'none') return false;
+            if (EXCLUDED_CATEGORIES.has(s.category)) return false;
+            if (s.tags?.includes('generative') || s.tags?.includes('simulation')) return false;
+            return true;
+        });
         if (validShaders.length === 0) return null;
         const randomIndex = Math.floor(Math.random() * validShaders.length);
         return validShaders[randomIndex];
