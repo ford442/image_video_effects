@@ -6014,6 +6014,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ideal for evaluating the complex, flowing texture generation of Damascus steel mapped onto massive, churning fluid dynamics under extreme lighting.
 
+### Suggestion: Quantum Glass Bonsai Tree
+- **Date:** 2024-05-18
+- **Prompt:** "A serene, hyper-dimensional bonsai tree woven entirely from shimmering quantum hard-light and refractive quantum glass. The bonsai rests on a floating pedestal of dark obsidian in a volumetric dark-matter void. The lighting is soft, ethereal, and internally glowing, highlighting the branching structures that continuously fracture and self-assemble. The mood is tranquil, probabilistic, and magical. Captured with a 50mm portrait lens, featuring a shallow depth of field and beautiful glowing bokeh."
+- **Negative prompt:** "organic, wood, leaves, soil, dirt, bright sunlight, harsh shadows, low resolution, blurry"
+- **Tags:** sci-fi, surreal, bonsai, quantum, ethereal
+- **Style / Reference:** hyper-detailed 3D render, holographic projection, magical realism
+- **Composition:** centered subject, eye-level, shallow depth of field
+- **Color palette:** glowing cyan, iridescent pink, deep obsidian black, ethereal white
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20240518_quantum-bonsai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating glass refraction, internal glow, and complex branching structures.
+
+### Suggestion: Neon-Plasma Biomechanical Scarab
+- **Date:** 2024-05-18
+- **Prompt:** "A hyper-organic, biomechanical scarab beetle constructed from sleek, interlocking plates of liquid obsidian and glowing quantum circuitry. The scarab is perched on a massive, glowing neon-pink lotus flower. The lighting features intense neon pink and toxic green rim lights against a dark metallic environment, showcasing the pulsating plasma-spores emitting from the beetle's joints. The mood is intense, alien, and cybernetic. Captured with a macro 90mm lens focusing on the intricate glowing nodes and creeping metallic tendrils."
+- **Negative prompt:** "natural beetle, organic, daytime, sunlight, flat lighting, lowres, soft, simple"
+- **Tags:** cyberpunk, biomechanical, scarab, macro, glowing
+- **Style / Reference:** dark sci-fi, photorealistic macro photography, biopunk concept art
+- **Composition:** macro close-up, shallow depth of field, rule of thirds
+- **Color palette:** neon pink, toxic green, glossy pitch black, glowing amber
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20240518_neon-scarab.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing complex normal maps, emissive textures, and high contrast lighting.
+
+### Suggestion: Holographic Art Nouveau Library
+- **Date:** 2024-05-18
+- **Prompt:** "An exquisite, wide-angle interior shot of a majestic Art Nouveau library where the sweeping curves, whiplash lines, and elegant arches are formed entirely from glowing, translucent holographic data streams. The floating bookshelves are filled with luminescent, floating data-crystals. The lighting is magical and completely diegetic, emitting soft neon blues and pulsing gold from the holograms against the dark void. The mood is romantic, intellectual, and cyber-ethereal. Captured with a 14mm wide-angle lens, utilizing deep focus to capture the immense scale and elegant organic curves."
+- **Negative prompt:** "wood, stone, straight lines, brutalist, daylight, bright, messy, modern"
+- **Tags:** cyberpunk, architecture, interior, holographic, art nouveau
+- **Style / Reference:** holographic architectural visualization, cyber-ethereal concept art
+- **Composition:** sweeping curves leading the eye, symmetrical balance, wide expansive view
+- **Color palette:** ethereal glowing blue, rich warm gold, deep cosmic black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240518_holographic-library.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the AI's ability to naturally form specific architectural styles (Art Nouveau curves) out of glowing, non-solid holographic materials.
+
+### Suggestion: Bioluminescent Deep-Sea Train
+- **Date:** 2024-05-18
+- **Prompt:** "A majestic, heavily armored steampunk train traveling along tracks laid across the deep ocean floor. The train is covered in overgrown, glowing bioluminescent coral and glowing anemones in vivid neon cyan and magenta. The lighting is entirely diegetic, radiating from the train's intense amber headlights cutting through the murky water and the luminescent marine life growing on its hull. The mood is mysterious, adventurous, and alien. Captured with a wide-angle perspective from the ocean floor, showcasing the crushing depth and scale of the dark, glowing machine."
+- **Negative prompt:** "surface, daylight, sky, modern train, clean metal, realistic fish, dry"
+- **Tags:** underwater, steampunk, vehicle, bioluminescent, deep-sea
+- **Style / Reference:** cinematic deep-sea exploration, steampunk concept art
+- **Composition:** dynamic angled profile, leading lines from tracks, wide shot
+- **Color palette:** deep ocean black, glowing amber, neon cyan, vibrant magenta
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20240518_bioluminescent-train.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for evaluating the combination of heavy, rusty steampunk machinery with intense, colorful bioluminescent organic growth.
+
+### Suggestion: Ethereal Chrono-Crystal Cavern
+- **Date:** 2024-05-18
+- **Prompt:** "A vast subterranean cavern filled with colossal, floating geometric crystals made of refractive chrono-glass. Inside the giant transparent crystals, frozen moments of time are visible—like suspended water droplets and frozen lightning. A glowing underground river weaves through the geometric structures, reflecting their faceted colors. The lighting is ethereal and internal, emanating from the glowing crystals and the liquid silver river. The mood is magical, untouched, and serene. Captured with a deep depth of field to capture the endless frozen reflections and the dynamic flow of the cavern."
+- **Negative prompt:** "ordinary rock, daylight, sunlight, dirt, organic plants, people, blurry, flat lighting"
+- **Tags:** fantasy, landscape, crystal, ethereal, subterranean
+- **Style / Reference:** fantasy environment design, photorealistic 3D render, surreal landscape
+- **Composition:** wide landscape, deep perspective, river creating a leading line
+- **Color palette:** iridescent purple and green, glowing cyan, liquid silver, dark cavern shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240518_chrono-crystal-cavern.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating sharp geometric rendering, complex refractions, and floating, gravity-defying structures.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
