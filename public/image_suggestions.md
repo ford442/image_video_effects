@@ -6079,6 +6079,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ideal for evaluating sharp geometric rendering, complex refractions, and floating, gravity-defying structures.
 
+### Suggestion: Brass Bioluminescent Reef
+- **Date:** 2024-05-18
+- **Prompt:** "A sprawling underwater bioluminescent reef completely constructed out of polished brass. The organic shapes of the coral are replicated in intricate metallic details. The reef glows with neon cyan and magenta from within, illuminating the pitch-black deep sea. The mood is mysterious and industrial. Captured with a macro 100mm lens, highlighting the contrast between the glowing light and the metallic reflections."
+- **Negative prompt:** "daylight, natural coral, soft, organic, lowres, blurry"
+- **Tags:** underwater, steampunk, brass, bioluminescent, macro
+- **Style / Reference:** photorealistic, macro product photography, steampunk aesthetic
+- **Composition:** close-up, rule of thirds, shallow depth of field
+- **Color palette:** polished brass, neon cyan, glowing magenta, pitch black
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240518_brass-reef.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing metallic reflections combined with intense emissive lighting in a dark environment.
+
+### Suggestion: Tweed Fireworks
+- **Date:** 2024-05-18
+- **Prompt:** "A night sky filled with exploding fireworks that are unexpectedly made of brightly colored, woven tweed fabric. The explosions freeze in mid-air, showing intricate herringbone patterns unravelling into the dark sky. The lighting is soft and cinematic, highlighting the fibrous texture of the wool. The mood is surreal, festive, and tactile. Captured with a wide 24mm lens to show the scale of the explosions against the night sky."
+- **Negative prompt:** "bright daylight, smooth, glowing plasma, realistic fireworks, fire, blurry"
+- **Tags:** surreal, macro, fabric, fireworks, night
+- **Style / Reference:** photorealistic material swap, surreal photography
+- **Composition:** wide angle, expansive sky, dynamic explosions
+- **Color palette:** vibrant reds, blues, and yellows (tweed threads), deep night sky
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240518_tweed-fireworks.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the generation of complex woven fabric textures applied to dynamic, explosive shapes.
+
+### Suggestion: Mother of Pearl Volcanic Eruption
+- **Date:** 2024-05-18
+- **Prompt:** "An epic landscape showing a cataclysmic volcanic eruption where the erupting magma is a thick, glowing liquid Mother of Pearl. The molten nacre flows down the mountainside, glowing with intense pearlescent pinks, blues, and silvers. The sky is dark with ash, creating a stark contrast to the brilliant, iridescent lava. The mood is awe-inspiring, beautiful, and terrifying. Captured with a wide-angle lens from a safe distance, showing the scale of the destruction."
+- **Negative prompt:** "red lava, orange magma, daylight, calm, peaceful, low contrast"
+- **Tags:** fantasy, landscape, volcanic, iridescent, mother of pearl
+- **Style / Reference:** fantasy environment design, surreal disaster concept art
+- **Composition:** wide landscape, low horizon, imposing volcano
+- **Color palette:** pearlescent pink, glowing blue, silver, pitch black ash
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240518_nacre-volcano.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing flowing liquid textures combined with iridescent thin-film interference effects.
+
+### Suggestion: Italian Futurism Tsunami
+- **Date:** 2024-05-18
+- **Prompt:** "A towering tsunami wave crashing into a coastline, depicted in the energetic, fragmented style of Italian Futurism. The wave is deconstructed into aggressive diagonal lines and overlapping geometric planes that convey speed and overwhelming mechanical force. The lighting is harsh and directional, creating jagged shadows. The mood is dynamic, chaotic, and powerful. Captured with a tilted perspective to emphasize motion."
+- **Negative prompt:** "realistic water, soft curves, calm, peaceful, photography, smooth"
+- **Tags:** abstract, art, italian futurism, tsunami, dynamic
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** deep ocean blue, stark white foam, harsh greys, jagged black shadows
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240518_futurism-tsunami.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply geometric abstraction to convey the kinetic energy of fluid dynamics.
+
+### Suggestion: Ashcan School Exoplanet Core
+- **Date:** 2024-05-18
+- **Prompt:** "A gritty, unidealized visualization of the churning core of an exoplanet, rendered in the muted, painterly style of the Ashcan School. The extreme pressure and heat are represented by thick, rough brushstrokes and murky, industrial colors. The lighting is dull and oppressive, casting heavy shadows that highlight the chaotic, physical nature of the core. The mood is melancholic, heavy, and raw. Captured with a straightforward, unglamorous perspective."
+- **Negative prompt:** "clean, bright, glowing neon, highly saturated, 3d render, photorealistic"
+- **Tags:** art, ashcan school, sci-fi, core, gritty
+- **Style / Reference:** Ashcan School painting, heavy brushstrokes, muted palette
+- **Composition:** dense, chaotic, lack of deep perspective
+- **Color palette:** murky browns, dark ochre, dull reds, heavy greys
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20240518_ashcan-core.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of extreme sci-fi concepts with a historical, gritty, and muted painting style.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
