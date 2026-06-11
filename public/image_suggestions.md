@@ -6144,6 +6144,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the blending of extreme sci-fi concepts with a historical, gritty, and muted painting style.
 
+### Suggestion: Zero-Gravity Glass-Blown Anglerfish
+- **Date:** 2026-12-31
+- **Prompt:** "A delicate, highly detailed macro photograph of an anglerfish sculpted entirely from translucent, colorful blown glass, floating weightlessly in a zero-gravity chamber. The glass subject is illuminated from within its lure by a tiny, glowing LED. The lighting is studio-quality, casting soft, colorful caustics through the glass onto the metallic walls of the chamber. The mood is fragile, alien, and surreal. Captured with a 100mm macro lens, sharp focus on the glass teeth, shallow depth of field."
+- **Negative prompt:** "organic, flesh, water, deep sea, murky, flat lighting, messy"
+- **Tags:** macro, surreal, glass, still-life, sci-fi
+- **Style / Reference:** macro product photography, glass art
+- **Composition:** close-up, rule of thirds
+- **Color palette:** translucent electric blue, vibrant orange, glowing warm white, metallic grey
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261231_glass-anglerfish.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the rendering of complex glass refractions and colorful caustics under studio lighting.
+
+### Suggestion: Subway Car Terrarium Oasis
+- **Date:** 2026-12-31
+- **Prompt:** "A wide-angle, highly detailed interior shot of a rusty, abandoned subway car that has been completely overtaken by a lush, thriving terrarium ecosystem. The subject features overgrown ferns, hanging moss, and blooming bioluminescent orchids bursting through the broken windows. The lighting is moody and cinematic, with shafts of warm golden hour sunlight piercing through the canopy outside and highlighting the floating dust motes. The mood is post-apocalyptic, serene, and reclaimed by nature. Captured with a 24mm wide-angle lens, leading lines drawing the eye down the aisle of the car."
+- **Negative prompt:** "clean, new, people, modern, bright overhead lights, sterile"
+- **Tags:** post-apocalyptic, nature, interior, overgrown, serene
+- **Style / Reference:** cinematic environment concept art, photorealistic
+- **Composition:** wide-angle, one-point perspective, leading lines
+- **Color palette:** rusted orange, lush green, warm golden sunlight, subtle glowing magenta
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_subway-terrarium.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing the contrast between industrial decay and lush organic growth with volumetric lighting.
+
+### Suggestion: Clockwork Samurai Under Neon Blossoms
+- **Date:** 2026-12-31
+- **Prompt:** "A cinematic, medium shot of a cybernetic samurai constructed from intricate, polished brass clockwork and porcelain armor plating, kneeling in quiet meditation. The subject rests beneath a holographic cherry blossom tree with softly glowing, neon pink petals falling around them. The lighting is moody and atmospheric, contrasting the warm reflection of the brass with the cool, ethereal glow of the neon petals. The mood is tranquil, contemplative, and retro-futuristic. Captured with a 50mm lens, soft bokeh blurring the dark, rainy cyberpunk alley in the background."
+- **Negative prompt:** "flesh, human face, bright daylight, sunny, cluttered, messy"
+- **Tags:** cyberpunk, steampunk, samurai, neon, serene
+- **Style / Reference:** photorealistic character portrait, neo-noir
+- **Composition:** medium shot, centered subject, eye-level
+- **Color palette:** polished brass, pristine white, glowing neon pink, deep shadowy blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_clockwork-samurai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for blending steampunk brass materials with cyberpunk neon aesthetics and soft background bokeh.
+
+### Suggestion: Glacial Gothic Cathedral
+- **Date:** 2026-12-31
+- **Prompt:** "A breathtaking, wide-angle landscape of a colossal iceberg drifting in a dark, freezing ocean, naturally carved by the elements into the unmistakable shape of a towering Gothic cathedral. The icy subject features immense, jagged spires and hollow archways. The lighting is dramatic and ethereal, with the cold, pale light of a full moon illuminating the translucent blue ice from behind, creating a glowing subsurface scattering effect. The mood is majestic, desolate, and silent. Captured with a 14mm ultra-wide lens from a low angle on the water's surface."
+- **Negative prompt:** "warm, tropical, sunny, stone, brick, people, modern ships, blurry"
+- **Tags:** landscape, surreal, ice, architecture, gothic
+- **Style / Reference:** surreal landscape photography, fantasy environment
+- **Composition:** low angle, towering silhouette, wide expansive ocean
+- **Color palette:** deep ocean blue, pale moonlight white, translucent glacial cyan
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_glacial-cathedral.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating subsurface scattering on massive ice structures and dramatic backlighting.
+
+### Suggestion: Origami Spaceship in Paper Asteroid Field
+- **Date:** 2026-12-31
+- **Prompt:** "A whimsical, macro shot of a sleek, futuristic spaceship folded meticulously from metallic silver origami paper, navigating through a dense asteroid field composed of crumpled balls of brown parchment and newspaper. The subject trails a glowing blue exhaust flame made of tissue paper. The lighting is dramatic studio lighting, casting sharp shadows that highlight the crisp folds of the origami and the rough textures of the crumpled paper. The mood is playful, imaginative, and highly textured. Captured with a macro lens, shallow depth of field to isolate the spaceship against the paper cosmos."
+- **Negative prompt:** "real space, stars, metal, plastic, photorealistic cosmos, blurry, soft edges"
+- **Tags:** macro, whimsical, origami, space, papercraft
+- **Style / Reference:** macro papercraft photography, studio lighting
+- **Composition:** rule of thirds, dynamic diagonal movement
+- **Color palette:** metallic silver, aged parchment brown, glowing blue, stark white
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261231_origami-spaceship.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the generation of sharp geometric paper folds contrasting with messy, crumpled textures under controlled studio lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
