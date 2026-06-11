@@ -1,0 +1,52 @@
+{
+  "id": "gen-astral-silk-chrono-weaver-arachnid",
+  "name": "Astral-Silk Chrono-Weaver Arachnid",
+  "url": "shaders/gen-astral-silk-chrono-weaver-arachnid.wgsl",
+  "description": "A majestic, biomechanical celestial arachnid suspended in a deep cosmic void, continuously weaving an intricate, glowing fractal web of 'astral silk' out of raw quantum time-fluid, heavily reacting to bass frequencies by sending shockwaves of light through its geometric threads.",
+  "tags": [
+    "organic",
+    "quantum",
+    "arachnid",
+    "fractal",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Web Glow",
+      "defaultValue": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Arachnid Activity",
+      "defaultValue": 1.0,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Silk Refraction",
+      "defaultValue": 1.5,
+      "min": 1.0,
+      "max": 3.0,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Shockwave Intensity",
+      "defaultValue": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "category": "generative"
+}
