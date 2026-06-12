@@ -6209,6 +6209,71 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Tests the generation of sharp geometric paper folds contrasting with messy, crumpled textures under controlled studio lighting.
 
+### Suggestion: Aerogel Geometric City at Sunset
+- **Date:** 2026-12-31
+- **Prompt:** "A breathtaking, wide-angle view of a futuristic, geometric city constructed entirely from massive, floating blocks of weightless, translucent blue aerogel. The central subject, the city, is suspended high above a dense layer of white clouds at sunset. The lighting is brilliant golden-hour sunlight, piercing through the porous aerogel structures, creating millions of soft, internal refractions and a glowing, ghostly blue aura around the buildings mixed with orange hues. The mood is utopian, silent, and airy. Captured with a wide 24mm lens to emphasize the massive, floating scale."
+- **Negative prompt:** "solid glass, concrete, metal, dark, gritty, cyberpunk, night"
+- **Tags:** sci-fi, architecture, aerogel, city, floating, sunset
+- **Style / Reference:** utopian architectural visualization, photorealistic 3D render
+- **Composition:** wide expansive view, towering geometric forms, cloud floor
+- **Color palette:** ghostly aerogel blue, golden orange sunlight, pure white clouds
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_aerogel-city-sunset.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing large-scale structures made of highly scattering, incredibly low-density translucent materials under warm sunlight.
+
+### Suggestion: Damascus Steel Pocket Watch
+- **Date:** 2026-12-31
+- **Prompt:** "A hyper-detailed, dramatic macro still life of an antique pocket watch where the intricately carved gears and casing are forged entirely from beautiful, rippled Damascus steel. The heavy metallic subjects are incredibly detailed with flowing, dark and light grey wave patterns. The lighting is moody and cinematic, featuring a single, warm overhead spotlight that casts sharp specular highlights on the polished metal ridges and deep, rich shadows between the pieces. The mood is intellectual, tense, and masterful. Captured with a 100mm macro lens, incredibly shallow depth of field focusing solely on the central gear."
+- **Negative prompt:** "wood, plastic, flat lighting, blurry, wide angle, messy room"
+- **Tags:** still-life, macro, metal, damascus steel, watch
+- **Style / Reference:** photorealistic product photography, highly detailed macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** dark metallic greys, warm golden highlight, deep shadow black
+- **Aspect ratio:** 1:1
+- **Reference images:** `public/images/suggestions/20261231_damascus-watch.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for evaluating the complex, flowing texture generation of Damascus steel under intense, focused macro lighting.
+
+### Suggestion: Italian Futurism Asteroid Mining
+- **Date:** 2026-12-31
+- **Prompt:** "A chaotic, dynamic scene of a sprawling mining base on a tumbling asteroid, depicted in the harsh, fragmented style of Italian Futurism. The subject features aggressive, jagged diagonal lines and overlapping geometric planes radiating outward to capture the immense speed and mechanical energy. The lighting is dramatic and directional, casting stark, jagged shadows that enhance the dynamic, splintered geometry of the composition. The mood is energetic, aggressive, and overpowering. Captured with a dynamic, tilted perspective to emphasize raw motion."
+- **Negative prompt:** "calm, horizontal, photorealistic, soft curves, gentle, natural water"
+- **Tags:** abstract, art, italian futurism, space, dynamic
+- **Style / Reference:** Italian Futurism art movement, Umberto Boccioni inspired
+- **Composition:** dynamic diagonals, fragmented planes, tilted angle
+- **Color palette:** steel greys, harsh rusted reds, stark black, cold cosmic blue
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20261231_futurism-asteroid.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Challenges the model to apply the aggressive, dynamic abstraction of Italian Futurism to convey extreme mechanical action in space.
+
+### Suggestion: Biopunk Bioluminescent Forest
+- **Date:** 2026-12-31
+- **Prompt:** "An ultra-detailed, macro shot of a sprawling biopunk bioluminescent forest floor. The organic subject is fused with glowing, fleshy cybernetic tubes and pulsating neon sacs. The lighting is exclusively from the bioluminescence, casting sickly toxic greens and vibrant magentas against the pitch-black shadows. The mood is alien, toxic, and dangerously beautiful. Captured with a macro 100mm lens, razor-thin depth of field focusing on a single dripping, glowing pod."
+- **Negative prompt:** "daylight, sun, bright, dry, smooth plastic, clean metal, realistic animals"
+- **Tags:** macro, nature, biopunk, glowing, forest
+- **Style / Reference:** biopunk concept art, photorealistic dark macro
+- **Composition:** extreme close-up, rule of thirds, shallow depth of field
+- **Color palette:** toxic neon green, vibrant magenta, deep black
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261231_biopunk-forest.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Tests the blending of extreme macro details with fleshy cybernetic biopunk elements and intense neon emission.
+
+### Suggestion: Tweed Samurai Armor
+- **Date:** 2026-12-31
+- **Prompt:** "A highly detailed, surreal fashion portrait of a samurai wearing a fully functional armor set tailored entirely from classic, brown herringbone tweed fabric. The subject stands in a misty, ancient bamboo forest. The lighting is soft and diffused, catching the soft, fibrous texture of the tweed catching the soft sunlight. The mood is absurd, humorous, and highly fashionable. Captured with a 50mm portrait lens, eye-level perspective."
+- **Negative prompt:** "shiny plastic, metal armor, hard lighting, clear sky, atmospheric haze"
+- **Tags:** surreal, fashion, samurai, tweed, portrait
+- **Style / Reference:** surreal fashion photography, hyper-detailed material swap
+- **Composition:** centered portrait, rule of thirds, soft background bokeh
+- **Color palette:** earthy brown tweed, muted greens, stark white highlights, soft grey mist
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20261231_tweed-samurai.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Ideal for evaluating the generation of complex, soft, woven micro-textures (tweed) placed in an environment with soft, diffused lighting.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
