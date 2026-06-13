@@ -6274,6 +6274,58 @@ To help organize prompts, please use tags from the following categories:
 - **License / Attribution:** CC0
 - **Notes:** Ideal for evaluating the generation of complex, soft, woven micro-textures (tweed) placed in an environment with soft, diffused lighting.
 
+### Suggestion: Neon Cyber-Lotus Garden
+- **Date:** 2026-06-15
+- **Prompt:** "A vibrant, luminescent garden of metallic lotus flowers blooming in a dark, wet cyberpunk alleyway. The scene is illuminated by intense neon pink and cyan rim lighting, casting deep dramatic shadows. Photorealistic macro shot, wide aperture with cinematic depth of field, rain droplets glistening on the chrome petals."
+- **Negative prompt:** "daylight, sun, natural, flat lighting, low resolution, blurry"
+- **Tags:** cyberpunk, neon, macro, nature, metallic
+- **Style / Reference:** photorealistic, macro photography
+- **Composition:** macro shot, cinematic depth of field
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing bloom, wet-reflection, and highly saturated metallic shaders.
+
+### Suggestion: Bio-Luminescent Deep Sea Trench
+- **Date:** 2026-06-15
+- **Prompt:** "A majestic and eerie view inside a deep sea trench, completely devoid of sunlight. Swarms of bio-luminescent, semi-transparent jellyfish float past towering, jagged obsidian rock formations. A glowing blue and green volumetric fog fills the water. Shot from a low angle looking up, dramatic underwater lighting."
+- **Negative prompt:** "shallow water, bright sun, colorful coral, humans, submarines"
+- **Tags:** underwater, bio-luminescent, dark, mysterious
+- **Style / Reference:** photorealistic, underwater photography
+- **Composition:** low angle looking up
+- **License / Attribution:** CC0
+- **Notes:** Excellent for volumetric fog, particle systems, and dark, moody atmospheric effects.
+
+### Suggestion: Clockwork Celestial Astrolabe
+- **Date:** 2026-06-15
+- **Prompt:** "A colossal, intricate, golden astrolabe operating in a vast, star-filled cosmic void. The device features thousands of interlocking, glowing gears and hovering crystal lenses that refract starlight. Golden hour directional lighting catches the polished brass surfaces. Highly detailed, 8k resolution, wide-angle perspective."
+- **Negative prompt:** "earth, ground, simple, modern, matte, plastic"
+- **Tags:** space, steampunk, mechanical, intricate
+- **Style / Reference:** 3D render, highly detailed, steampunk
+- **Composition:** wide-angle perspective
+- **License / Attribution:** CC0
+- **Notes:** Good for testing complex geometry, metallic reflections, and lens refraction shaders.
+
+### Suggestion: Crystal Cavern of Whispers
+- **Date:** 2026-06-15
+- **Prompt:** "An immense subterranean cavern entirely composed of massive, glowing amethyst and quartz crystals. Ethereal, wispy light rays bounce off the faceted surfaces, creating a multi-colored prismatic glow. Soft, ambient, moody lighting. Cinematic ultra-wide shot showing the grand scale of the cave."
+- **Negative prompt:** "dark, scary, realistic rocks, dirt, muddy"
+- **Tags:** crystal, cavern, fantasy, ethereal, prismatic
+- **Style / Reference:** fantasy illustration, cinematic lighting
+- **Composition:** ultra-wide shot
+- **License / Attribution:** CC0
+- **Notes:** Ideal for testing multi-bounce light refractions, caustics, and god-rays.
+
+### Suggestion: Quantum Fracture Monolith
+- **Date:** 2026-06-15
+- **Prompt:** "A towering, obsidian monolith floating in a stark white void, actively shattering into thousands of geometric, glowing shards of energy. High contrast stark lighting. The core of the monolith radiates a blinding, pure white light. Hyper-realistic render, sharp focus, dramatic perspective."
+- **Negative prompt:** "background, environment, soft, blurry, low contrast"
+- **Tags:** abstract, geometric, fracture, stark, dramatic
+- **Style / Reference:** abstract 3D render, hyper-realistic
+- **Composition:** dramatic perspective
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing fragmentation physics, stark contrast, and intense glow effects.
+
+
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
