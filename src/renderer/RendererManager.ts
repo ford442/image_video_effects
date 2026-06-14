@@ -47,6 +47,10 @@ export function getRendererTypeFromURL(): RendererType | null {
 
 export class RendererManager {
   private currentRenderer: Renderer | null = null;
+  // Retained even when switchRenderer('wasm') fails and falls back, so
+  // getDiagnostics().wasm can still surface *why* WASM init failed
+  // (e.g. surface-creation/adapter-limits errors recorded in adapterInfo).
+  private lastFailedWasmRenderer: WASMRenderer | null = null;
   private config: RendererConfig;
   private canvas: HTMLCanvasElement | null = null;
   private metrics: RendererMetrics = {
@@ -122,6 +126,7 @@ export class RendererManager {
       this.currentRenderer?.destroy();
       this.currentRenderer = renderer;
       this.metrics.isWASM  = type === 'wasm';
+      if (type === 'wasm') this.lastFailedWasmRenderer = null;
 
       if (video) renderer.setVideo(video);
       this.startMetricsCollection();
@@ -129,6 +134,9 @@ export class RendererManager {
       // If initialization failed, discard the new renderer.
       // The previous renderer (if any) is still active.
       console.warn(`[RendererManager] switchRenderer('${type}') failed — keeping previous renderer`);
+      if (renderer instanceof WASMRenderer) {
+        this.lastFailedWasmRenderer = renderer;
+      }
     }
 
     return success;
@@ -356,6 +364,16 @@ export class RendererManager {
           initialized: (this.currentRenderer as any).initialized ?? false,
           fps: (this.currentRenderer as any).getFPS?.() ?? 0,
         },
+        ...(this.lastFailedWasmRenderer
+          ? { wasm: this.lastFailedWasmRenderer.getDiagnostics() }
+          : {}),
+      };
+    }
+
+    if (this.lastFailedWasmRenderer) {
+      return {
+        ...baseDiagnostics,
+        wasm: this.lastFailedWasmRenderer.getDiagnostics(),
       };
     }
 

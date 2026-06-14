@@ -33,6 +33,7 @@ export function setInputSource(
 export function addRipple(x: number, y: number): void;
 export function clearRipples(): void;
 export function getFPS(): number;
+export function getAdapterSummary(): string;
 export function isInitialized(): boolean;
 export function uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
 export function uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
@@ -93,6 +94,7 @@ export interface WasmRenderer {
   addRipple(x: number, y: number): void;
   clearRipples(): void;
   getFPS(): number;
+  getAdapterSummary(): string;
   isInitialized(): boolean;
   uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
   uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;

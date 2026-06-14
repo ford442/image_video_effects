@@ -2,7 +2,7 @@
   "id": "quantum-ripples",
   "name": "Quantum Ripples",
   "url": "shaders/quantum-ripples.wgsl",
-  "description": "Mouse-driven quantum interference waves with FBM turbulence, multi-source superposition, and audio reactivity.",
+  "description": "Mouse-driven quantum interference waves with domain-warped FBM, divergence-free curl turbulence, temporal feedback, depth-aware chromatic aberration and audio reactivity.",
   "params": [
     {
       "id": "waveFreq",
@@ -36,13 +36,18 @@
   "features": [
     "mouse-driven",
     "interactive",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal-feedback",
+    "depth-aware",
+    "chromatic-aberration"
   ],
   "tags": [
     "filter",
     "image-processing",
     "waves",
     "interference",
-    "turbulence"
+    "turbulence",
+    "domain-warp",
+    "curl-noise"
   ]
 }

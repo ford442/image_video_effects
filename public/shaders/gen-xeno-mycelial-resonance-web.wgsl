@@ -1,6 +1,11 @@
 // ----------------------------------------------------------------
 // Xeno-Mycelial Resonance-Web
 // Category: generative
+// Features: raymarched, mouse-driven, audio-reactive, depth-aware,
+//           upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
+// Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
+// Upgraded: 2026-06-14
+// By: Claude Code Batch 3B
 // ----------------------------------------------------------------
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -38,6 +43,10 @@ const TAU: f32 = 6.28318530717958647692;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 // --- SHADER LOGIC ---
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // PRNG and Noise
 fn hash(p: vec3<f32>) -> f32 {
@@ -169,10 +178,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = mix(col, vec3<f32>(0.01, 0.0, 0.02), 1.0 - exp(-0.15 * t));
     }
 
+    // ═══ CHUNK: temporal-feedback (dataTextureC → dataTextureA) ═══
+    let prev = textureLoad(dataTextureC, coords, 0);
+    col = mix(col, prev.rgb * 0.92, 0.05 + bass * 0.01);
+
+    // ═══ CHUNK: chromatic-aberration ═══
+    let caStr = 0.003 * (1.0 + bass) + glow * 0.001;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+    col = acesToneMap(col * 1.2);
+
     // Alpha: ray hit + bioluminescent glow drives ethereal compositing weight
     let lumaOut = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(hit * (0.4 + glow * 0.4) + lumaOut * 0.2 + 0.05, 0.0, 1.0);
-    textureStore(writeTexture, coords, applyGenerativePrimaryControls(vec4<f32>(col, alpha)));
+    let finalCol = applyGenerativePrimaryControls(vec4<f32>(col, alpha));
+    textureStore(writeTexture, coords, finalCol);
+    textureStore(dataTextureA, coords, finalCol);
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(coords) / res, 0.0).r;

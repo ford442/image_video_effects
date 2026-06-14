@@ -2,7 +2,7 @@
   "id": "chrono-slit-scan",
   "name": "Chrono Slit Scan",
   "url": "shaders/chrono-slit-scan.wgsl",
-  "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, and audio-reactive speed modulation.",
+  "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, audio-reactive speed modulation, and depth-aware width scaling.",
   "params": [
     {
       "id": "slitCount",
@@ -39,7 +39,8 @@
     "fbm-warp",
     "sdf-composition",
     "upgraded-rgba",
-    "multi-slit"
+    "multi-slit",
+    "depth-aware"
   ],
   "tags": [
     "filter",

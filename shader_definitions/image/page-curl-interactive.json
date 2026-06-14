@@ -7,9 +7,12 @@
     "audio-reactive",
     "temporal",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "aces-tone-map",
+    "chromatic-aberration",
+    "oklab-mix"
   ],
-  "description": "Interactive page curl with audio-reactive RGB chromatic split on the curl face, click shockwaves, depth-aware shadows, and temporal feedback trails.",
+  "description": "Interactive page curl with warm/cool 3-point studio lighting on the curl face, OkLab color blending, ACES tone mapping, click shockwaves, depth-aware shadows, chromatic aberration, and temporal feedback trails.",
   "params": [
     {
       "id": "param1",
@@ -47,6 +50,9 @@
     "audio-reactive",
     "temporal",
     "curl",
-    "chromatic"
+    "chromatic",
+    "aces",
+    "oklab",
+    "lighting"
   ]
 }

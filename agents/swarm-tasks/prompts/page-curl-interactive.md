@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: page-curl-interactive
-- **Agent Role**: Interactivist
+- **Agent Role**: Visualist
 - **Current Size**: 3284 bytes
-- **Target Line Count**: ~120 lines
+- **Target Line Count**: ~180 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -41,7 +41,13 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
-// --- PAGE CURL INTERACTIVE ---
+// ═══════════════════════════════════════════════════════════════════
+//  Page Curl Interactive
+//  Category: image
+//  Features: upgraded-rgba, mouse-driven, audio-reactive, temporal, depth-aware
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -57,74 +63,120 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+  var v = 0.0;
+  var a = 0.5;
+  var pp = p;
+  for (var i = 0; i < octaves; i = i + 1) {
+    let n = sin(dot(pp, vec2<f32>(127.1, 311.7)));
+    let h = fract(n * 43758.5453);
+    v = v + a * h;
+    pp = pp * 2.03 + vec2<f32>(1.7, 9.2);
+    a = a * 0.5;
+  }
+  return v;
+}
+
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+  let res = u.config.zw;
+  if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
+  let uv    = vec2<f32>(global_id.xy) / res;
+  let coord = vec2<i32>(global_id.xy);
+  let time  = u.config.x;
 
-    // Mouse sets the curl position
-    var mouse = u.zoom_config.yz;
-    let shadowStrength = u.zoom_params.y;
+  // params: x=CurlRadiusScale(0–0.35), y=ShadowStrength, z=FeedbackAmount, w=DepthInfluence
+  let curlRadius      = max(0.03, u.zoom_params.x * 0.35);
+  let shadowIntensity = u.zoom_params.y;
+  let feedbackAmt     = u.zoom_params.z;
+  let depthInfluence  = u.zoom_params.w;
 
-    // Curl Calculation
-    // We assume a vertical curl moving from right to left, controlled by Mouse X.
-    // Mouse Y controls the curl radius.
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    let rollX = mouse.x;
-    let radius = max(0.05, mouse.y * 0.3);
+  let EPSILON = 0.001;
 
-    var col = vec4<f32>(0.0, 0.0, 0.0, 1.0);
+  // Bass snaps the radius on strong beats
+  let snap   = 1.0 + bass * 0.4 * step(0.6, bass);
+  let mouse  = u.zoom_config.yz;
+  let curlX  = clamp(mouse.x, 0.05, 0.95);
+  let dx     = uv.x - curlX;
+  let radius = curlRadius * snap;
 
-    if (uv.x < rollX) {
-        // Flat page area
-        col = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-        // Shadow cast by the curl
-        let distToRoll = rollX - uv.x;
-        if (distToRoll < radius) {
-            let shadow = smoothstep(radius, 0.0, distToRoll); // 0 at radius, 1 at roll
-            col = col * (1.0 - shadow * 0.4 * shadowStrength);
-        }
-    } else {
-        // Curled area
-        let dx = uv.x - rollX;
-        if (dx < radius) {
-            // Backside visible (Cylindrical projection)
-            // x_screen = r * sin(theta) -> theta = asin(x_screen/r)
-            // arc_len = r * theta
-            let theta = asin(clamp(dx/radius, -1.0, 1.0));
-            let arcLen = radius * theta;
+  // ── Click shockwaves (branchless) ────────────────────────────────
+  var shockDisp = 0.0;
+  let rippleCount = u32(u.config.y);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp    = u.ripples[i];
+    let rDist = length(uv - rp.xy);
+    let rAge  = time - rp.z;
+    let rRad  = rAge * 0.45;
+    let rBand = abs(rDist - rRad);
+    let isActive = select(0.0, 1.0, rBand < 0.04 && rAge >= 0.0 && rAge < 1.2);
+    let decay  = clamp(1.0 - rAge / 1.2, 0.0, 1.0);
+    shockDisp += isActive * decay * 0.025 * sin(rDist * 40.0 - rAge * 12.0);
+  }
 
-            let sourceUvX = rollX + arcLen;
+  // ── Zone 1: Front page (dx < 0) ──────────────────────────────────
+  let frontSampUV = clamp(uv + vec2<f32>(shockDisp, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let frontColor  = textureSampleLevel(readTexture, u_sampler, frontSampUV, 0.0);
+  // Depth-aware shadow: deeper foreground pixels cast stronger shadow toward fold
+  let frontShadow = (1.0 - smoothstep(0.0, max(radius, EPSILON), -dx)) * 0.5
+                    * shadowIntensity * (1.0 + depth * depthInfluence);
+  let frontRGB    = frontColor.rgb * (1.0 - frontShadow);
+  let frontAlpha  = clamp(frontColor.a * (1.0 - frontShadow * 0.4), 0.0, 1.0);
+  let frontResult = vec4<f32>(frontRGB, frontAlpha);
 
-            if (sourceUvX <= 1.0) {
-                let backColor = textureSampleLevel(readTexture, u_sampler, vec2<f32>(sourceUvX, uv.y), 0.0);
-                col = backColor * 0.6; // Darker backside
+  // ── Zone 2: Curl cylinder (0 ≤ dx < radius) ──────────────────────
+  let theta   = asin(clamp(dx / max(radius, EPSILON), -1.0, 1.0));
+  let srcX    = clamp(curlX + radius * theta, 0.0, 1.0);
+  let srcUV   = vec2<f32>(srcX, uv.y);
+  let paperNoise = fbm(srcUV * 40.0 + vec2<f32>(time * 0.01, 0.0), 3) * 0.15;
+  // Chromatic split on the curl face — mids driven
+  let chromaOff = mids * 0.01;
+  let curlR = textureSampleLevel(readTexture, u_sampler,
+    clamp(srcUV + vec2<f32>(chromaOff, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let curlG = textureSampleLevel(readTexture, u_sampler, srcUV, 0.0).g;
+  let curlB = textureSampleLevel(readTexture, u_sampler,
+    clamp(srcUV - vec2<f32>(chromaOff, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let curlBack   = vec3<f32>(curlR, curlG, curlB) * 0.55 + vec3<f32>(paperNoise);
+  let normalZ    = cos(theta);
+  let highlight  = pow(normalZ, 3.0) * 0.25 * (1.0 + treble * 0.3);
+  let foldShadow = smoothstep(0.0, radius * 0.3, dx) * shadowIntensity;
+  let curlAlpha  = clamp(mix(0.5, 1.0, 1.0 - foldShadow), 0.0, 1.0);
+  let curlResult = vec4<f32>(curlBack + vec3<f32>(highlight), curlAlpha);
 
-                // Highlight on the curve
-                let normalZ = cos(theta);
-                col += vec4<f32>(pow(normalZ, 4.0) * 0.3);
-            } else {
-                col = vec4<f32>(0.1, 0.1, 0.1, 1.0); // Off page (Background)
-            }
-        } else {
-            col = vec4<f32>(0.05); // Background beyond the curl
-        }
-    }
+  // ── Zone 3: Background (dx ≥ radius) ─────────────────────────────
+  let bgResult = vec4<f32>(0.05, 0.05, 0.05, 0.4);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), col);
+  // ── Blend zones (branchless) ─────────────────────────────────────
+  let isFront = dx < 0.0;
+  let isCurl  = dx >= 0.0 && dx < radius;
+  var col = select(bgResult, curlResult, isCurl);
+  col     = select(col, frontResult, isFront);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // ── Temporal feedback from previous frame ─────────────────────────
+  let prev    = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  // Less feedback on front page, more on curl/bg for trailing glow
+  let fbBlend = feedbackAmt * 0.25 * (1.0 - select(0.0, 0.7, isFront));
+  let finalCol = mix(col, prev, fbBlend);
+
+  textureStore(writeTexture,      coord, vec4<f32>(finalCol.rgb, col.a));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA,      coord, vec4<f32>(finalCol.rgb, col.a));
 }
 
 ```
@@ -134,141 +186,221 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 {
   "id": "page-curl-interactive",
   "name": "Page Curl Interactive",
-  "category": "image",
   "url": "shaders/page-curl-interactive.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "depth-aware",
+    "upgraded-rgba"
   ],
-  "description": "Interactive page curl effect. Drag from the right to curl the page.",
+  "description": "Interactive page curl with audio-reactive RGB chromatic split on the curl face, click shockwaves, depth-aware shadows, and temporal feedback trails.",
   "params": [
     {
       "id": "param1",
       "name": "Curl Radius",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "param2",
       "name": "Shadow Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "param3",
-      "name": "Unused",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "name": "Feedback Amount",
+      "default": 0,
+      "min": 0,
+      "max": 1
     },
     {
       "id": "param4",
-      "name": "Unused",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "name": "Depth Influence",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
     }
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "interactive",
+    "audio-reactive",
+    "temporal",
+    "curl",
+    "chromatic"
   ]
 }
+
 ```
 
 ---
 
 ## Agent Specialization
-# Agent Role: The Interactivist
+# Agent Role: The Visualist
 
 ## Identity
-You are **The Interactivist**, a shader architect focused on input reactivity, feedback loops, and emergent behavior.
+You are **The Visualist**, a shader architect focused on color science, lighting, and emotional impact. You make shaders visually stunning.
 
 ## Upgrade Toolkit
 
-### Mouse Interaction
-- Position tracking → Gravity wells / attractors
-- Click events → Spawn bursts / shockwaves
-- Velocity tracking → Motion blur trails
-- Multi-touch → Multi-agent systems
+### Color Science
+- SRGB → Linear workflow with proper gamma (`pow(c, 2.2)` in, `pow(c, 1/2.2)` out)
+- Clamped colors → HDR with values >1.0 before tone mapping
+- Static palettes → Dynamic temperature shifting
+- Solid fills → Subsurface scattering glow
+- Flat shading → Fresnel rim lighting
 
-### Audio Reactivity
-- Bass pulse → Scale/brightness modulation
-- Mid frequencies → Pattern morphing speed
-- Treble → Sparkle/additive particles
-- FFT buckets → Multi-band color splitting
-
-### Video Feedback
-- Static overlay → Optical flow distortion
-- Fixed transparency → Alpha blending based on depth
-- Simple masking → Luma-keyed particle spawn
-- Direct color → Motion-vector advection
-
-### Depth Integration
-- 2D effects → Parallax depth separation
-- Uniform blur → Depth-of-field bokeh
-- Flat shading → Ambient occlusion darkening
-- Screen space → Volumetric depth fog
-
-### Feedback Loops
-- Single pass → Temporal accumulation
-- Static state → Ping-pong buffer feedback (dataTextureA ↔ dataTextureB)
-- Linear time → Recursive subdivision
-- Fixed camera → Smooth follow with lag
-- Direct value → Exponential smoothing: `smoothed = mix(smoothed, target, 0.05)`
-
-### Emergent Dynamics Patterns
+#### OkLab — Perceptually Uniform Color Space (use for smooth gradients / mixing)
 ```wgsl
-// Spring-damper for smooth mouse follow (prevents jitter)
-fn spring(current: vec2<f32>, target: vec2<f32>, velocity: ptr<function,vec2<f32>>, k: f32, damping: f32, dt: f32) -> vec2<f32> {
-    let force = (target - current) * k - *velocity * damping;
-    *velocity = *velocity + force * dt;
-    return current + *velocity * dt;
+fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
+    let l = 0.4122214708*c.r + 0.5363325363*c.g + 0.0514459929*c.b;
+    let m = 0.2119034982*c.r + 0.6806995451*c.g + 0.1073969566*c.b;
+    let s = 0.0883024619*c.r + 0.2817188376*c.g + 0.6299787005*c.b;
+    let l_ = pow(l, 1.0/3.0); let m_ = pow(m, 1.0/3.0); let s_ = pow(s, 1.0/3.0);
+    return vec3<f32>(0.2104542553*l_+0.7936177850*m_-0.0040720468*s_,
+                     1.9779984951*l_-2.4285922050*m_+0.4505937099*s_,
+                     0.0259040371*l_+0.7827717662*m_-0.8086757660*s_);
 }
-
-// Attractor / gravity well (mouse as gravitational source)
-fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
-    let d = wellPos - pos;
-    let dist2 = dot(d, d) + 0.01;  // avoid singularity
-    return normalize(d) * strength / dist2;
+fn oklab_to_linear_srgb(c: vec3<f32>) -> vec3<f32> {
+    let l_ = c.x+0.3963377774*c.y+0.2158037573*c.z;
+    let m_ = c.x-0.1055613458*c.y-0.0638541728*c.z;
+    let s_ = c.x-0.0894841775*c.y-1.2914855480*c.z;
+    let l = l_*l_*l_; let m = m_*m_*m_; let s = s_*s_*s_;
+    return vec3<f32>(4.0767416621*l-3.3077115913*m+0.2309699292*s,
+                    -1.2684380046*l+2.6097574011*m-0.3413193965*s,
+                    -0.0041960863*l-0.7034186147*m+1.7076147010*s);
 }
-
-// Beat-reactive pulse with decay
-fn beatPulse(bass: f32, decay: f32, time: f32) -> f32 {
-    return bass * exp(-decay * fract(time * 2.0));  // 2Hz beat assumption
+// Mix colors in OkLab (avoids the grey mud in mid-tones)
+fn mixOkLab(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
+    return oklab_to_linear_srgb(mix(linear_srgb_to_oklab(a), linear_srgb_to_oklab(b), t));
 }
 ```
 
-### Audio Binding Reference
-```
-plasmaBuffer[0].x = bass    (20–250 Hz)
-plasmaBuffer[0].y = mids    (250–4000 Hz)
-plasmaBuffer[0].z = treble  (4000–20000 Hz)
-plasmaBuffer[0].w = overall RMS amplitude
+#### Blackbody / Color Temperature
+```wgsl
+// Temperature in Kelvin → approximate RGB (1000K–40000K)
+fn blackbodyRGB(T: f32) -> vec3<f32> {
+    let t = clamp(T, 1000.0, 40000.0) / 100.0;
+    var r = 0.0; var g = 0.0; var b = 0.0;
+    if (t <= 66.0) { r = 1.0; }
+    else { r = clamp(329.698727446 * pow(t - 60.0, -0.1332047592) / 255.0, 0.0, 1.0); }
+    if (t <= 66.0) { g = clamp((99.4708025861 * log(t) - 161.1195681661) / 255.0, 0.0, 1.0); }
+    else { g = clamp(288.1221695283 * pow(t - 60.0, -0.0755148492) / 255.0, 0.0, 1.0); }
+    if (t >= 66.0) { b = 1.0; }
+    else if (t <= 19.0) { b = 0.0; }
+    else { b = clamp((138.5177312231 * log(t - 10.0) - 305.0447927307) / 255.0, 0.0, 1.0); }
+    return vec3<f32>(r, g, b);
+}
 ```
 
-Reactive patterns:
-- Bass → scale, brightness pulse, warp radius
-- Mids → rotation speed, color shift, pattern morphing
-- Treble → sparkle particles, grain, edge sharpness
-- RMS → overall opacity, global scale breathing
+#### Cosine Palette (Inigo Quilez) — fast procedural gradients
+```wgsl
+fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
+    return a + b * cos(6.28318 * (c * t + d));
+}
+// Example fire: palette(t, (0.5,0.5,0.5),(0.5,0.5,0.5),(1,1,0.5),(0,0.1,0.2))
+// Example ice:  palette(t, (0.5,0.5,0.5),(0.5,0.5,0.5),(1,1,1),(0,0.33,0.67))
+```
+
+### Lighting Techniques
+- Single light → 3-point studio lighting (key + fill + rim, different color temps)
+- Diffuse only → Specular via GGX distribution + Fresnel-Schlick
+- Hard shadows → Soft penumbra: `smoothstep(penumbra, 0.0, shadowDist)`
+- Local lighting → Volumetric god rays (ray march toward light source)
+- Flat surface → Iridescent thin-film: `sin(d * freq + hue_offset) * fresnel`
+
+### Atmosphere
+- Clear → Volumetric fog: `exp(-density * dist)` (Beer-Lambert)
+- Sharp → Bokeh depth of field (hexagonal aperture SDF)
+- Static → Animated caustics: FBM of sinusoids, `sin(fbm(p)*8 + t)`
+- Clean → Rayleigh scattering: blue-bias sky, `pow(lambda, -4.0)` wavelength dependence
+- Mie scattering for haze: `(1-g²) / pow(1+g²-2g*cosθ, 1.5)`, g≈0.76 for aerosols
+
+### Color Grading
+- Raw output → ACES tone mapped (apply last, after all HDR work)
+- Static → Audio-reactive temperature (`blackbodyRGB(3000 + bass * 4000)`)
+- Monochrome → Split-tone: shadows in complementary hue, highlights warm
+- Natural → Iridescent thin-film: wavelength-dependent phase shift
+- Flat mix → OkLab interpolation (prevents muddy mid-tone blending)
+
+### Tonemap & Dither Stack (kimi-cli reference snippets)
+
+Always process in this order: accumulate HDR → hue-preserve clamp → ACES tonemap → dither → premultiplied write.
+
+#### 1. Hue-preserving HDR clamp (prevents desaturation on bright highlights)
+```wgsl
+fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
+    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let s = min(1.0, max_lum / max(l, 1e-4));
+    return c * s;
+}
+```
+Apply after additive accumulation, before ACES. Beats `min(c, 1.0)` which desaturates to white.
+
+#### 2. ACES filmic tonemap (drop-in, no LUT required)
+```wgsl
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+```
+Pair with sRGB gamma `pow(c, vec3<f32>(1.0/2.2))` on write if the display is sRGB.
+
+#### 3. Interleaved-gradient (IGN) blue-noise dither (kills 8-bit banding)
+```wgsl
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+// before textureStore:
+let dither = (ign(vec2<f32>(gid.xy)) - 0.5) / 255.0;
+let outRGB = aces(hdr) + vec3<f32>(dither);
+```
+Cheaper than a blue-noise texture lookup and visually identical at 8-bit precision.
+
+#### Premultiplied-alpha writeback — tactic #12 (correct compositing in the slot chain)
+```wgsl
+let a = clamp(alpha, 0.0, 1.0);
+textureStore(writeTexture, gid.xy, vec4<f32>(rgb * a, a));
+```
+The renderer expects premultiplied output downstream of slot 1. Straight alpha causes dark fringes after the next slot's blur/blend.
+
+## RGBA Channel Strategy
+
+**Alpha = bloom weight** is the most useful convention for generative shaders:
+```wgsl
+let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+let bloomWeight = pow(max(0.0, luma - 0.6), 2.0) * 3.0;  // only bright areas
+textureStore(writeTexture, coord, vec4<f32>(color, bloomWeight));
+```
+
+Other useful alpha encodings:
+- `alpha = depth` — for depth-aware compositing in the next slot
+- `alpha = effectStrength` — transparent where effect is absent (compositing-friendly)
+- `alpha = fresnel` — glass/water reflectance mask
+
+**Do NOT output `vec4(color, 1.0)` unless the shader is a pure background layer.**
 
 ## Quality Checklist
-- [ ] Mouse affects at least 2 parameters
-- [ ] Audio drives at least 1 visual element (with decay, not raw value)
-- [ ] Video input influences the effect
-- [ ] Temporal feedback creates trails/smoothing
-- [ ] Emergent behavior (not 1:1 input mapping)
-- [ ] Alpha encodes interaction intensity or trail age
+- [ ] HDR values exceed 1.0 in highlights before tone mapping
+- [ ] At least 2 light sources with different color temperatures
+- [ ] `hue_preserve_clamp` applied before ACES to avoid highlight desaturation
+- [ ] ACES tone mapping applied as the final step
+- [ ] IGN dither added before `textureStore` to kill 8-bit banding
+- [ ] Atmospheric depth (fog/haze/dust via Beer-Lambert or Rayleigh)
+- [ ] Color gradients use OkLab mixing to avoid muddy transitions
+- [ ] Alpha channel encodes bloom weight or compositing info
+- [ ] Premultiplied-alpha writeback (`vec4(rgb * a, a)`) when alpha < 1
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it alive and reactive.
+- Keep the original "soul" of the shader while making it visually stunning.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
 - Do NOT modify the 13-binding header or the Uniforms struct.
-- `plasmaBuffer[0].x` = bass, `.y` = mids, `.z` = treble. Use them.
-- `u.zoom_config.yz` = mouse position (0-1). `u.zoom_config.w` = mouse down.
-- **Alpha must carry semantic meaning** — trail age, interaction intensity, or depth mask.
+- **Alpha must carry semantic meaning** — bloom weight, depth, or Fresnel reflectance.
 
 ## Performance Constraint
 This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
@@ -280,7 +412,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 120 lines (±20%).
+4. Ensure the upgraded shader is roughly 180 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

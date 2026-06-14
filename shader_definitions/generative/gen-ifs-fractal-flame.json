@@ -3,7 +3,7 @@
   "name": "IFS Fractal Flame",
   "url": "shaders/gen-ifs-fractal-flame.wgsl",
   "category": "generative",
-  "description": "Iterated Function System fractal flame with probabilistic affine transforms, non-linear variations, and flame palette rendering. Features HDR bloom, chromatic aberration, and audio-reactive morphing.",
+  "description": "Iterated Function System fractal flame with probabilistic affine transforms, non-linear variations, and flame palette rendering. Features organic fbm drift, temporal accumulation trails, HDR bloom, chromatic aberration, and audio-reactive morphing.",
   "tags": [
     "fractal",
     "flame",
@@ -17,7 +17,8 @@
     "audio-reactive",
     "mouse-driven",
     "temporal",
-    "depth-aware"
+    "depth-aware",
+    "organic-drift"
   ],
   "params": [
     {

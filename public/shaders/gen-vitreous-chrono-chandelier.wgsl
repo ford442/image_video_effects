@@ -1,7 +1,13 @@
-// ----------------------------------------------------------------
-// Vitreous Chrono-Chandelier
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Vitreous Chrono-Chandelier
+//  Category: generative
+//  Features: raymarched, mouse-driven, audio-reactive,
+//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
+//  Complexity: High
+//  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
+//  Upgraded: 2026-06-14
+//  By: Claude Code Batch 3B
+// ═══════════════════════════════════════════════════════════════════
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -24,6 +30,10 @@ struct Uniforms {
     zoom_params: vec4<f32>,  // x=Shatter Threshold, y=Chime Density, z=Refraction Index, w=Transmission
     ripples: array<vec4<f32>, 50>,
 };
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
     var q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -168,9 +178,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     colR = clamp(colR, 0.0, 1.0);
     colG = clamp(colG, 0.0, 1.0);
     colB = clamp(colB, 0.0, 1.0);
+    var col = vec3<f32>(colR, colG, colB);
+
+    let coord = vec2<i32>(id.xy);
+
+    // ═══ CHUNK: temporal-feedback (dataTextureC → dataTextureA) ═══
+    let prev = textureLoad(dataTextureC, coord, 0);
+    col = mix(col, prev.rgb * 0.92, 0.05 + audioBass * 0.01);
+
+    // ═══ CHUNK: chromatic-aberration ═══
+    let caStr = 0.003 * (1.0 + audioBass) + fresnel.r * 0.002;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+    col = acesToneMap(col * 1.2);
+
     let alpha = clamp(fresnel.r * 0.8 + 0.2, 0.0, 1.0);
     let uv01 = fragCoord / res;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(colR, colG, colB, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
 }

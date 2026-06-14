@@ -2,19 +2,30 @@
   "id": "spec-distance-field-text",
   "name": "Distance Field Text",
   "url": "shaders/spec-distance-field-text.wgsl",
-  "description": "SDF-based procedural glyph overlay. Generates abstract runes and symbols as signed distance fields with infinitely smooth scaling, glowing edges, drop shadows, and chromatic cycling.",
+  "description": "SDF-based procedural glyph overlay with audio-reactive domain warp, depth-aware shadows, temporal feedback trails, ACES tone mapping, and chromatic aberration. Generates abstract runes and symbols as signed distance fields with smooth scaling, glowing edges, and chromatic cycling.",
   "tags": [
     "SDF",
     "distance-field",
     "procedural-text",
     "glyph",
     "overlay",
-    "runes"
+    "runes",
+    "audio-reactive",
+    "depth-aware",
+    "temporal-feedback",
+    "ACES",
+    "chromatic-aberration",
+    "HDR"
   ],
   "features": [
     "SDF",
     "procedural-text",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "temporal-feedback",
+    "ACES-tone-map",
+    "chromatic-aberration"
   ],
   "params": [
     {

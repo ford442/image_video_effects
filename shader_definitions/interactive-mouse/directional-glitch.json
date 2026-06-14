@@ -2,7 +2,7 @@
   "id": "directional-glitch",
   "name": "Directional Glitch",
   "url": "shaders/directional-glitch.wgsl",
-  "description": "Glitch artifacts radiate from the mouse position with audio-reactive displacement.",
+  "description": "FBM domain-warped, curl-noise-driven glitch artifacts radiate from the mouse with chromatic aberration, depth-aware masking, and temporal feedback.",
   "params": [
     {
       "id": "intensity",
@@ -49,6 +49,9 @@
     "mouse-driven",
     "glitch",
     "audio-reactive",
+    "temporal-feedback",
+    "chromatic-aberration",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "tags": [
@@ -56,6 +59,8 @@
     "image-processing",
     "glitch",
     "interactive",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal-feedback",
+    "chromatic-aberration"
   ]
 }

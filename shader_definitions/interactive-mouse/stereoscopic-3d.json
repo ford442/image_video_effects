@@ -2,7 +2,7 @@
   "id": "stereoscopic-3d",
   "name": "Stereoscopic 3D",
   "url": "shaders/stereoscopic-3d.wgsl",
-  "description": "Interactive Anaglyph 3D effect. Mouse X/Y controls convergence bias and focal plane with spring-damped smoothing. Audio bass drives smoothed separation pulse and glitch amplitude. Temporal feedback creates ghost trails from previous intensity.",
+  "description": "Interactive anaglyph 3D effect. Mouse X/Y controls convergence bias and focal plane with spring-damped smoothing. Audio bass drives a smoothed separation pulse and glitch amplitude. Depth-aware pass-through and temporal state feedback create ghost trails and slot-chain-ready output.",
   "params": [
     {
       "id": "separation",
@@ -37,7 +37,8 @@
     "mouse-driven",
     "audio-reactive",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "depth-aware"
   ],
   "tags": [
     "mouse-driven",
@@ -47,6 +48,8 @@
     "3d",
     "temporal",
     "feedback",
-    "trails"
+    "trails",
+    "depth-aware",
+    "16x16-workgroup"
   ]
 }

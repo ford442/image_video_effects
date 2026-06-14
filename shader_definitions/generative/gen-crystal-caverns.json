@@ -22,7 +22,11 @@
     "mouse-driven",
     "physical-transmission",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration"
   ],
   "author": "ford442",
   "params": [

@@ -2822,7 +2822,7 @@
     "id": "mosaic-reveal",
     "name": "Mosaic Reveal",
     "url": "shaders/mosaic-reveal.wgsl",
-    "description": "Mosaic reveal with hexagonal/square grid options, flood-fill reveal animation from mouse, edge glow, and audio-reactive pulse.",
+    "description": "Mosaic reveal with hexagonal/square grids, flood-fill reveal from the mouse, OkLab perceptual blending, audio-reactive blackbody rim glow, temporal trails, and ACES tone mapping.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
@@ -2831,7 +2831,10 @@
       "mouse-driven",
       "hex-grid",
       "flood-fill-reveal",
-      "audio-reactive"
+      "audio-reactive",
+      "oklab-mixing",
+      "temporal-feedback",
+      "aces-tone-map"
     ],
     "params": [
       {

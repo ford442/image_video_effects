@@ -18,7 +18,11 @@
     "animated",
     "audio-reactive",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "aces-tone-map",
+    "chromatic-aberration",
+    "neon-glow",
+    "anti-moire"
   ],
   "params": [
     {

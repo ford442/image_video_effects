@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-06-11 (this session: C++ WASM renderer audit)
+**Last updated:** 2026-06-14 (GH issue bodies: implementation instructions added to #817–#823)
 
 ## Core Identity & Vibe (from SOUL + IDENTITY)
 - Spark Engine / Cheerleader: bright, protective, kinetic, loud-hearted. "We are NOT done here!" Fast, punchy, energetic. Use "we/let's", 🔥⚡💥🫡, short lines, "one thing first", "messy start? fine", "this is NOT the final boss".
@@ -44,8 +44,9 @@
 - Use GH issues + Copilot for the C++ work (user has swarm/agent patterns elsewhere).
 
 ## TODOs / Open Threads (from this + recent memory)
-- [x] Created GH issues 817-823 (2026-06-11) for C++ solidification. All C++-centric, reference #799 (open context init epic) + specific source lines. Includes the explicit "check good webgpu settings via c++" as #817. See daily 2026-06-11 for full list + urls.
-- [ ] After issues: can implement (e.g. add query in CreateDevice after adapter, choose/validate format, set limits, make surface fail fatal, etc).
+- [x] Created GH issues 817-823 (2026-06-11) for C++ solidification. All C++-centric, reference #799 + specific source lines.
+- [x] Updated issue bodies 2026-06-14: moved Claude's implementation sketches from comments into structured task sections (Prerequisites, Implementation Instructions, Task Checklist). PR order: #821 → #818+#820 → #817+#819 → #822 → #823.
+- [ ] Implement the June C++ batch per issue checklists.
 - Ongoing: shader work, but this session was WASM C++ focus per query.
 - Memory maintenance: review recent daily (06-07 had swarm, git sync); distill only high-signal (C++ reliability is now key infra bet).
 

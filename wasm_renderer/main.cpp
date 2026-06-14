@@ -176,6 +176,13 @@ float getFPS() {
     return g_renderer ? g_renderer->GetFPS() : 0.0f;
 }
 
+// Human-readable adapter/device/limits/format summary, built during
+// CreateDevice(). Returns an empty string if not yet initialized.
+EMSCRIPTEN_KEEPALIVE
+const char* getAdapterSummary() {
+    return g_renderer ? g_renderer->GetAdapterSummary().c_str() : "";
+}
+
 // ─── Phase 2: Canvas resize ───────────────────────────────────────────────────
 
 // Resize the canvas and recreate all size-dependent GPU resources.

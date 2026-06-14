@@ -4,7 +4,7 @@
 - **Shader ID**: scanline-wave
 - **Agent Role**: Visualist
 - **Current Size**: 3315 bytes
-- **Target Line Count**: ~115 lines
+- **Target Line Count**: ~180 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -42,11 +42,13 @@ struct Uniforms {
 ## Current WGSL Source
 ```wgsl
 // ═══════════════════════════════════════════════════════════════════
-//  Scanline Wave - Sine wave distortion effect
-//  Category: distortion
-//  Features: upgraded-rgba, depth-aware, mouse-driven, wave-distortion
-//  Upgraded: 2026-03-22
-//  By: Agent 1A - Alpha Channel Specialist
+//  Scanline Wave
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, temporal-persistence, chromatic-CRT, upgraded-rgba
+//  Complexity: High
+//  Chunks From: scanline-wave, bass_env, temporal-feedback
+//  Created: 2024-01-01
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -64,58 +66,74 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
+fn bass_env(bass: f32, mids: f32) -> f32 {
+  return 1.0 + bass * 0.5 + mids * 0.2;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let coord = vec2<i32>(global_id.xy);
-    var mousePos = u.zoom_config.yz;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
+    let mouse = u.zoom_config.yz;
+    let isMouseDown = u.zoom_config.w;
 
-    // Params
-    let freq = mix(10.0, 200.0, u.zoom_params.x);
-    let amp = u.zoom_params.y * 0.1;
-    let speed = (u.zoom_params.z - 0.5) * 20.0;
-    let mouse_influence = u.zoom_params.w;
-
-    // Calculate wave
-    var wave = sin(uv.y * freq + time * speed) * amp;
-
-    // Influence
-    if (mouse_influence > 0.0) {
-        let distY = abs(uv.y - mousePos.y);
-        let influence = smoothstep(0.5, 0.0, distY);
-        wave *= mix(1.0, influence, mouse_influence);
-    }
-
-    let finalUV = vec2(uv.x + wave, uv.y);
-
-    let color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).rgb;
-    
-    // Calculate alpha based on effect strength and luminance
-    let effectStrength = abs(wave) / (amp + 0.001);
-    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let alpha = mix(0.7, 1.0, luma);
-    
-    // Effect intensity modulates alpha
-    let effectAlpha = mix(0.8, 1.0, smoothstep(0.0, 0.5, effectStrength));
-    let depthAlpha = mix(0.6, 1.0, depth);
-    let finalAlpha = (alpha + effectAlpha + depthAlpha) / 3.0;
 
-    // Output RGBA
-    textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
+    let waveAmount = u.zoom_params.x * bass_env(bass, mids);
+    let lineCount = mix(50.0, 300.0, u.zoom_params.y);
+    let persistence = u.zoom_params.z;
+    let rollSpeed = u.zoom_params.w;
 
-    // Output depth
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let lineIdx = floor(uv.y * lineCount);
+    let lineCenter = (lineIdx + 0.5) / lineCount;
+    let linePhase = lineCenter * 6.28318 + time * rollSpeed * 2.0;
+
+    // Scanline offset with bass-driven amplitude
+    let offset = sin(linePhase) * waveAmount * 0.02 * (1.0 + bass * 0.5);
+    let waveUV = clamp(uv + vec2<f32>(offset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+
+    let base = textureSampleLevel(readTexture, u_sampler, waveUV, 0.0);
+
+    // Temporal persistence: previous scanline state bleeds forward
+    let history = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+    let decay = persistence * 0.85 + 0.1;
+    let trail = mix(history * decay, base, 0.15 + isMouseDown * 0.2);
+
+    // Chromatic CRT aberration per scanline
+    let chromaShift = waveAmount * 0.005 * (1.0 + treble);
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(waveUV + vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(waveUV - vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    let crtColor = vec4<f32>(r, base.g, b, base.a);
+
+    // Scanline intensity modulation
+    let scanline = sin(uv.y * lineCount * 3.14159) * 0.5 + 0.5;
+    let scanlineDark = mix(1.0, 0.7, scanline * waveAmount);
+
+    // Audio roll: bass shifts entire field vertically
+    let rollOffset = fract(uv.y + bass * 0.05) - uv.y;
+    let rolledUV = clamp(uv + vec2<f32>(0.0, rollOffset), vec2<f32>(0.0), vec2<f32>(1.0));
+    let rolled = textureSampleLevel(readTexture, u_sampler, rolledUV, 0.0);
+    let mixed = mix(crtColor, rolled, bass * 0.3);
+
+    let finalRGB = mixed.rgb * scanlineDark;
+    let alpha = clamp(mixed.a + waveAmount * 0.2 + bass * 0.05, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 
 ```
@@ -126,46 +144,55 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "scanline-wave",
   "name": "Scanline Wave",
   "url": "shaders/scanline-wave.wgsl",
-  "category": "interactive-mouse",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal-persistence",
+    "chromatic-CRT",
+    "upgraded-rgba"
   ],
-  "description": "Applies a sine-wave distortion to horizontal scanlines, with frequency and amplitude controlled by the mouse.",
+  "description": "Temporal scanline persistence with chromatic CRT aberration and audio roll. Each scanline undulates with bass-driven amplitude; previous frames decay into the signal. Treble adds per-scanline chromatic shift, bass rolls the entire field vertically.",
   "params": [
     {
-      "id": "frequency",
-      "name": "Frequency",
+      "id": "waveAmount",
+      "name": "Wave Amount",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
-      "id": "amplitude",
-      "name": "Amplitude",
+      "id": "lineCount",
+      "name": "Line Count",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
-      "id": "speed",
-      "name": "Wave Speed",
+      "id": "persistence",
+      "name": "Persistence",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
-      "id": "mouse_influence",
-      "name": "Mouse Influence",
+      "id": "rollSpeed",
+      "name": "Roll Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "tags": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "distortion",
+    "scanlines",
+    "CRT",
+    "temporal",
+    "chromatic"
   ]
 }
+
 ```
 
 ---
@@ -258,6 +285,47 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
 - Natural → Iridescent thin-film: wavelength-dependent phase shift
 - Flat mix → OkLab interpolation (prevents muddy mid-tone blending)
 
+### Tonemap & Dither Stack (kimi-cli reference snippets)
+
+Always process in this order: accumulate HDR → hue-preserve clamp → ACES tonemap → dither → premultiplied write.
+
+#### 1. Hue-preserving HDR clamp (prevents desaturation on bright highlights)
+```wgsl
+fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
+    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let s = min(1.0, max_lum / max(l, 1e-4));
+    return c * s;
+}
+```
+Apply after additive accumulation, before ACES. Beats `min(c, 1.0)` which desaturates to white.
+
+#### 2. ACES filmic tonemap (drop-in, no LUT required)
+```wgsl
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+```
+Pair with sRGB gamma `pow(c, vec3<f32>(1.0/2.2))` on write if the display is sRGB.
+
+#### 3. Interleaved-gradient (IGN) blue-noise dither (kills 8-bit banding)
+```wgsl
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+// before textureStore:
+let dither = (ign(vec2<f32>(gid.xy)) - 0.5) / 255.0;
+let outRGB = aces(hdr) + vec3<f32>(dither);
+```
+Cheaper than a blue-noise texture lookup and visually identical at 8-bit precision.
+
+#### Premultiplied-alpha writeback — tactic #12 (correct compositing in the slot chain)
+```wgsl
+let a = clamp(alpha, 0.0, 1.0);
+textureStore(writeTexture, gid.xy, vec4<f32>(rgb * a, a));
+```
+The renderer expects premultiplied output downstream of slot 1. Straight alpha causes dark fringes after the next slot's blur/blend.
+
 ## RGBA Channel Strategy
 
 **Alpha = bloom weight** is the most useful convention for generative shaders:
@@ -277,10 +345,13 @@ Other useful alpha encodings:
 ## Quality Checklist
 - [ ] HDR values exceed 1.0 in highlights before tone mapping
 - [ ] At least 2 light sources with different color temperatures
+- [ ] `hue_preserve_clamp` applied before ACES to avoid highlight desaturation
 - [ ] ACES tone mapping applied as the final step
+- [ ] IGN dither added before `textureStore` to kill 8-bit banding
 - [ ] Atmospheric depth (fog/haze/dust via Beer-Lambert or Rayleigh)
 - [ ] Color gradients use OkLab mixing to avoid muddy transitions
 - [ ] Alpha channel encodes bloom weight or compositing info
+- [ ] Premultiplied-alpha writeback (`vec4(rgb * a, a)`) when alpha < 1
 
 ## Output Rules
 - Keep the original "soul" of the shader while making it visually stunning.
@@ -298,7 +369,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 115 lines (±20%).
+4. Ensure the upgraded shader is roughly 180 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

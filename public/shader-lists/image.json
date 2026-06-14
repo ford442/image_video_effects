@@ -284,7 +284,7 @@
     "id": "chrono-slit-scan",
     "name": "Chrono Slit Scan",
     "url": "shaders/chrono-slit-scan.wgsl",
-    "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, and audio-reactive speed modulation.",
+    "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, audio-reactive speed modulation, and depth-aware width scaling.",
     "params": [
       {
         "id": "slitCount",
@@ -321,7 +321,8 @@
       "fbm-warp",
       "sdf-composition",
       "upgraded-rgba",
-      "multi-slit"
+      "multi-slit",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -1762,7 +1763,7 @@
     "id": "digital-lens",
     "name": "Digital Lens",
     "url": "shaders/digital-lens.wgsl",
-    "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, lens breathing driven by bass, ACES tone mapping, and film grain.",
+    "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, mouse gravity-well focus, attack/release bass envelope, temporal feedback trails, ACES tone mapping, and film grain.",
     "params": [
       {
         "id": "distortion",
@@ -1800,7 +1801,8 @@
       "upgraded-rgba",
       "barrel-distortion",
       "chromatic-dispersion",
-      "anamorphic"
+      "anamorphic",
+      "temporal-feedback"
     ],
     "tags": [
       "filter",
@@ -1809,7 +1811,9 @@
       "digital",
       "chromatic",
       "audio-reactive",
-      "anamorphic"
+      "anamorphic",
+      "temporal-feedback",
+      "gravity-well"
     ]
   },
   {
@@ -2990,9 +2994,12 @@
       "audio-reactive",
       "temporal",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "aces-tone-map",
+      "chromatic-aberration",
+      "oklab-mix"
     ],
-    "description": "Interactive page curl with audio-reactive RGB chromatic split on the curl face, click shockwaves, depth-aware shadows, and temporal feedback trails.",
+    "description": "Interactive page curl with warm/cool 3-point studio lighting on the curl face, OkLab color blending, ACES tone mapping, click shockwaves, depth-aware shadows, chromatic aberration, and temporal feedback trails.",
     "params": [
       {
         "id": "param1",
@@ -3030,7 +3037,10 @@
       "audio-reactive",
       "temporal",
       "curl",
-      "chromatic"
+      "chromatic",
+      "aces",
+      "oklab",
+      "lighting"
     ]
   },
   {

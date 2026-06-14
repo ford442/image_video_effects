@@ -396,19 +396,23 @@
     "id": "pixel-depth-sort",
     "name": "Pixel Depth Sort",
     "url": "shaders/pixel-depth-sort.wgsl",
-    "description": "Directional pixel sorting by depth with mouse-following sort angle, chromatic aberration at boundaries, bass-driven sort length, and depth-layered alpha.",
+    "description": "Directional pixel sorting by depth with mouse-following sort angle, chromatic aberration at boundaries, bass-driven sort length, depth-layered alpha, temporal feedback, and ACES tone mapping.",
     "features": [
       "upgraded-rgba",
       "mouse-driven",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "temporal-feedback",
+      "aces-tone-map",
+      "branchless-sort"
     ],
     "tags": [
       "filter",
       "depth-aware",
       "pixel-sort",
       "chromatic-aberration",
-      "audio-reactive"
+      "audio-reactive",
+      "optimized"
     ],
     "params": [
       {

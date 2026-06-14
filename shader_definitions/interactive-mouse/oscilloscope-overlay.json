@@ -2,7 +2,7 @@
   "id": "oscilloscope-overlay",
   "name": "Oscilloscope Overlay",
   "url": "shaders/oscilloscope-overlay.wgsl",
-  "description": "Overlays a real-time luminance waveform of the image scanline at the mouse cursor's vertical position.",
+  "description": "Overlays a real-time luminance waveform of the image scanline at the mouse cursor's vertical position, now with audio-reactive color temperature, HDR tone mapping, and IGN dithering.",
   "params": [
     {
       "id": "amplitude",
@@ -35,10 +35,17 @@
   ],
   "features": [
     "mouse-driven",
-    "overlay"
+    "overlay",
+    "audio-reactive",
+    "hdr",
+    "aces-tone-map",
+    "color-temperature",
+    "dither"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "overlay",
+    "audio-reactive"
   ]
 }

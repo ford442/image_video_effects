@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Bitonic Pixel Sort — Algorithmist Upgrade (May 2026 Batch D)
+//  Bitonic Pixel Sort — Algorithmist Upgrade (Jun 2026 Batch F)
 //  Category: simulation
-//  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, multi-ripple
+//  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven,
+//            multi-ripple, domain-warp, quasi-random, temporal-feedback,
+//            aces-tone-map, chromatic-aberration, kaleidoscope, voronoi-ridges
 //  Complexity: High
-//  Chunks: FBM curl noise, SDF smooth union, true bitonic sort
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -26,61 +27,87 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+
 var<workgroup> sKey: array<f32, 256>;
 var<workgroup> sCol: array<vec4<f32>, 256>;
 
-fn hash22(p: vec2<f32>) -> vec2<f32> {
-  let n = sin(dot(p, vec2<f32>(127.1, 311.7)));
-  return fract(vec2<f32>(n, n * 43758.5453));
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
-fn vnoise(p: vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p); let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash22(i).x, hash22(i + vec2<f32>(1.0, 0.0)).x, u.x),
-             mix(hash22(i + vec2<f32>(0.0, 1.0)).x, hash22(i + vec2<f32>(1.0, 1.0)).x, u.x), u.y);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
 
-fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-  var s = 0.0;
-  var a = 0.5;
-  var pp = p;
-  for (var i: i32 = 0; i < octaves; i = i + 1) {
-    s = s + a * vnoise(pp);
-    pp = pp * 2.0 + vec2<f32>(3.1, 1.7);
-    a = a * 0.5;
-  }
+fn fbm(p: vec2<f32>, oct: i32) -> f32 {
+  var s = 0.0; var a = 0.5; var f = 1.0;
+  for (var i: i32 = 0; i < oct; i = i + 1) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; }
   return s;
 }
 
-fn curl2D(p: vec2<f32>) -> vec2<f32> {
-  let e = 0.01;
-  let n = vnoise(p);
-  let dx = vnoise(p + vec2<f32>(e, 0.0)) - n;
-  let dy = vnoise(p + vec2<f32>(0.0, e)) - n;
-  return vec2<f32>(-dy, dx) / e;
+fn domainWarp(p: vec2<f32>, strength: f32, oct: i32) -> vec2<f32> {
+  let q = vec2<f32>(fbm(p, oct), fbm(p + vec2<f32>(5.2, 1.3), oct));
+  return p + strength * q;
 }
 
-fn fbmCurl(p: vec2<f32>, octaves: i32) -> vec2<f32> {
-  var v = vec2<f32>(0.0);
-  var a = 0.5;
-  var pp = p;
-  for (var i: i32 = 0; i < octaves; i = i + 1) {
-    v = v + a * curl2D(pp);
-    pp = pp * 2.0 + vec2<f32>(3.1, 1.7);
-    a = a * 0.5;
+fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
+  let r = length(uv);
+  var a = atan2(uv.y, uv.x);
+  let seg = TAU / max(segs, 1.0);
+  a = abs(((a % seg) + seg) % seg - seg * 0.5);
+  return vec2<f32>(cos(a), sin(a)) * r;
+}
+
+fn voronoiF2minusF1(p: vec2<f32>) -> f32 {
+  var F1 = 1e9; var F2 = 1e9;
+  let ip = floor(p);
+  for (var i: i32 = -2; i <= 2; i = i + 1) {
+    for (var j: i32 = -2; j <= 2; j = j + 1) {
+      let n = ip + vec2<f32>(f32(i), f32(j));
+      let d = length(p - n - hash21(n));
+      if (d < F1) { F2 = F1; F1 = d; } else if (d < F2) { F2 = d; }
+    }
   }
-  return v;
+  return F2 - F1;
+}
+
+fn halton(i: u32, base: u32) -> f32 {
+  var f = 1.0; var r = 0.0; var idx = i;
+  loop { if (idx == 0u) { break; }
+    f = f / f32(base); r = r + f * f32(idx % base); idx = idx / base;
+  }
+  return r;
 }
 
 fn smin(a: f32, b: f32, k: f32) -> f32 {
-  let h = max(k - abs(a - b), 0.0) / k;
-  return min(a, b) - h * h * k * 0.25;
+  let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-fn rgbToLuma(c: vec3<f32>) -> f32 {
-  return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+fn luma(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn chromaticAberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
+  let center = vec2<f32>(0.5);
+  let delta = uv - center;
+  let lenSq = max(dot(delta, delta), 0.000001);
+  let dir = delta * inverseSqrt(lenSq);
+  let offset = dir * max(amount, 0.0);
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  return vec3<f32>(r, g, b);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -90,13 +117,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
   let li = lid.y * 16u + lid.x;
   let gx = wgid.x * 16u + lid.x;
   let gy = wgid.y * 16u + lid.y;
-  let x = i32(gx);
-  let y = i32(gy);
+  let x = i32(gx); let y = i32(gy);
   let uv = vec2<f32>(f32(gx), f32(gy)) / u.config.zw;
   let time = u.config.x;
 
-  let resX = u32(u.config.z);
-  let resY = u32(u.config.w);
+  let resX = u32(u.config.z); let resY = u32(u.config.w);
   let inBounds = gx < resX && gy < resY;
 
   let sortMix = u.zoom_params.x;
@@ -105,12 +130,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
   let octaves = max(i32(u.zoom_params.w * 6.0), 1);
 
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
   let bassMod = 1.0 + bass * 0.3;
 
+  let kSegs = 3.0 + floor(u.zoom_params.w * 7.0);
+  let kUV = kaleido((uv - vec2<f32>(0.5)) * (2.0 + u.zoom_params.w * 4.0), kSegs) + vec2<f32>(0.5);
   let scale = 2.0 + u.zoom_params.w * 10.0;
-  let speed = 0.2 + u.zoom_params.y * 0.3;
-  let warp = fbmCurl(uv * scale + time * speed, octaves) * (0.02 + u.zoom_params.w * 0.03);
-  let warpedUV = uv + warp;
+  let warp = domainWarp(kUV * scale + time * 0.15, 0.25 + bass * 0.1, octaves);
+  let warpedUV = clamp(mix(kUV, warp, 0.2 + u.zoom_params.w * 0.2), vec2<f32>(0.0), vec2<f32>(1.0));
 
   let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
   var d = distance(uv, mouse) - (0.1 + u.zoom_params.w * 0.2);
@@ -126,14 +153,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
   }
   let mask = 1.0 - smoothstep(-0.05, 0.05, d);
 
+  let depth = textureLoad(readDepthTexture, vec2<i32>(x, y), 0).r;
+  let prev = textureLoad(dataTextureC, vec2<i32>(x, y), 0);
+
   var p: vec4<f32>;
   var key: f32;
   if (inBounds) {
     p = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
-    let lum = rgbToLuma(p.rgb);
+    let lum = luma(p.rgb);
     let n = fbm(uv * 8.0 + time * 0.1, octaves);
-    key = lum * (1.0 - noiseMix) + n * noiseMix;
-    key = key + f32(li) * 0.00001;
+    let v = voronoiF2minusF1(uv * 6.0 + time * 0.05);
+    let jitter = (halton((li + u32(time * 60.0)) % 64u, 2u) - 0.5) * 0.002;
+    key = lum * (1.0 - noiseMix) + (n * 0.7 + v * 0.3) * noiseMix + depth * 0.1 + jitter;
   } else {
     p = vec4<f32>(0.0);
     key = select(-1.0, 2.0, sortDir > 0.5);
@@ -153,11 +184,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
       let asc = select(bit != 0u, bit == 0u, globalAsc);
       let swap = select(a > b, a < b, asc);
       if (swap && partner > li) {
-        sKey[li] = b;
-        sKey[partner] = a;
+        sKey[li] = b; sKey[partner] = a;
         let ca = sCol[li];
-        sCol[li] = sCol[partner];
-        sCol[partner] = ca;
+        sCol[li] = sCol[partner]; sCol[partner] = ca;
       }
       workgroupBarrier();
     }
@@ -167,10 +196,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
     let sorted = sCol[li];
     let effectiveMix = sortMix * mask * bassMod;
     let finalRgb = mix(p.rgb, sorted.rgb, effectiveMix);
-    let alpha = mix(p.a, smoothstep(0.0, 0.3, rgbToLuma(sorted.rgb)), effectiveMix);
-    textureStore(writeTexture, vec2<i32>(x, y), vec4<f32>(finalRgb, alpha));
+    let tone = acesToneMap(finalRgb * (0.9 + mids * 0.2));
+    let caStr = 0.003 * (1.0 + bass) + 0.001 * distance(uv, vec2<f32>(0.5));
+    let color = mix(tone, chromaticAberration(uv, caStr), 0.25 * effectiveMix);
+    let alpha = mix(p.a, smoothstep(0.0, 0.3, luma(sorted.rgb)), effectiveMix);
+    textureStore(writeTexture, vec2<i32>(x, y), vec4<f32>(color, alpha));
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(x, y), vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+    let decay = 0.96 - u.zoom_params.w * 0.03;
+    let feedback = mix(prev.rgb * decay, color, 0.15 + bass * 0.05);
+    textureStore(dataTextureA, vec2<i32>(x, y), vec4<f32>(feedback, alpha));
   }
 }

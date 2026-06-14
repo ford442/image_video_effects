@@ -3,7 +3,7 @@
   "name": "Sierpinski Tetrahedron",
   "url": "shaders/gen-sierpinski-tetrahedron.wgsl",
   "category": "generative",
-  "description": "3D Sierpinski tetrahedron rendered as a 2D projection with orbit trap coloring. Jewel-tone palette with metallic sheen, HDR specular highlights, and audio-reactive recursion depth.",
+  "description": "3D Sierpinski tetrahedron rendered as a 2D projection with multi-orbit trap coloring (vertex, edge, shell). Domain-warped FBM distorts the view, jewel-tone palette with metallic sheen, HDR specular highlights, and audio-reactive recursion depth.",
   "tags": [
     "fractal",
     "sierpinski",
@@ -17,7 +17,9 @@
     "audio-reactive",
     "mouse-driven",
     "temporal",
-    "depth-aware"
+    "depth-aware",
+    "domain-warping",
+    "multi-orbit-trap"
   ],
   "params": [
     {

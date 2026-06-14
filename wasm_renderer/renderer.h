@@ -256,6 +256,11 @@ public:
     int GetCanvasWidth()  const { return canvasWidth_; }
     int GetCanvasHeight() const { return canvasHeight_; }
 
+    // Human-readable summary of the chosen adapter/device: vendor, architecture,
+    // limits validation results, enabled features, and negotiated surface format.
+    // Populated during CreateDevice(). Empty string if not yet initialized.
+    const std::string& GetAdapterSummary() const { return adapterSummary_; }
+
     // ═══════════════════════════════════════════════════════════════════════════
     // PHASE 2: FRAME CAPTURE (async GPU readback for screenshots / recording)
     // ═══════════════════════════════════════════════════════════════════════════
@@ -318,6 +323,10 @@ private:
     WGPUDeviceHandle   device_;
     WGPUQueueHandle    queue_;
     WGPUTextureFormat  surfaceFormat_ = WGPUTextureFormat_Undefined;
+
+    // Adapter/device/limits/format summary, built during CreateDevice().
+    // See GetAdapterSummary().
+    std::string adapterSummary_;
 
     // Compute pipeline (single shared layout for all compute shaders)
     WGPUBindGroupLayoutHandle computeBindGroupLayout_;

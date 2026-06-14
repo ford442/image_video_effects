@@ -2,12 +2,19 @@
   "id": "elastic-chromatic",
   "name": "Elastic Chromatic",
   "url": "shaders/elastic-chromatic.wgsl",
-  "description": "Elastic chromatic aberration with Lissajous-based secondary source oscillating around mouse, bass-driven spring constant, and effect-masked alpha.",
+  "description": "Elastic chromatic aberration with radial RGB shift, per-channel temporal lag, Lissajous mouse source, depth-aware audio reactivity, split-tone blackbody grading, ACES tone mapping and IGN dither.",
   "features": [
     "mouse-driven",
     "depth-aware",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "chromatic-aberration",
+    "temporal-feedback",
+    "split-tone",
+    "blackbody-temperature",
+    "aces-tone-map",
+    "ign-dither",
+    "premultiplied-alpha"
   ],
   "params": [
     {
@@ -57,6 +64,9 @@
     "lag",
     "elastic",
     "lissajous",
-    "mouse-driven"
+    "mouse-driven",
+    "hdr",
+    "dither",
+    "split-tone"
   ]
 }

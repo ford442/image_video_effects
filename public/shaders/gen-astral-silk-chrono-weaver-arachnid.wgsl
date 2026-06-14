@@ -1,7 +1,13 @@
-// ----------------------------------------------------------------
-// Astral-Silk Chrono-Weaver Arachnid
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Astral-Silk Chrono-Weaver Arachnid
+//  Category: generative
+//  Features: raymarched, mouse-driven, audio-reactive,
+//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
+//  Complexity: High
+//  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
+//  Upgraded: 2026-06-14
+//  By: Claude Code Batch 3B
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -64,6 +70,10 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     return c.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dim = textureDimensions(writeTexture);
@@ -79,6 +89,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let thick = u.zoom_params.z;
     let coreInt = u.zoom_params.w;
 
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     var ro = vec3<f32>(0.0, 0.0, 5.5);
     var rd = normalize(vec3<f32>(uv, -1.0));
 
@@ -90,7 +104,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rd = vec3<f32>(rd.x*rotY[0][0]+rd.z*rotY[1][0], rd.y, rd.x*rotY[0][1]+rd.z*rotY[1][1]);
 
     // === Animated leg & thread positions (chrono-weaving motion) ===
-    let legPhase = time * chrono * 0.6;
+    let legPhase = time * chrono * 0.6 * (1.0 + bass * 0.4);
     let legSpread = 1.8 + sin(time * 0.3) * 0.2;
     let legLift = sin(legPhase) * 0.6 * (0.5 + chrono*0.5);
 
@@ -130,7 +144,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Silk emissive shading + chrono pulse
         let hue = u.zoom_params.x;
         let pulse = 0.6 + 0.4 * sin(time * 3.5 * chrono + length(pHit) * 4.0);
-        let silkCol = hsv2rgb(vec3<f32>(hue + fbm(pHit * 1.5) * 0.15, 0.75, 1.0)) * (1.2 + pulse * 0.8) * coreInt;
+        let silkCol = hsv2rgb(vec3<f32>(hue + fbm(pHit * 1.5) * 0.15, 0.75, 1.0)) * (1.2 + pulse * 0.8) * coreInt * (1.0 + mids * 0.3);
 
         // Fresnel rim on body
         let n = normalize(pHit); // cheap normal
@@ -152,15 +166,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let threadA = vec3<f32>(0.0, 0.2, 0.0);
         let threadB = vec3<f32>(sin(ang) * 3.5, -1.5 + cos(ang * 0.6) * 1.2, cos(ang) * 3.5);
         let td = sdCapsule(ro + rd * t * 0.6, threadA, threadB, 0.025 + thick * 0.035);
-        let threadGlow = exp(-td * (28.0 - thick * 12.0)) * 0.9;
+        let threadGlow = exp(-td * (28.0 - thick * 12.0)) * 0.9 * (1.0 + treble * 0.5);
         let hue = u.zoom_params.x;
         let threadCol = hsv2rgb(vec3<f32>(hue + f32(s) * 0.07, 0.85, 1.0));
         col += threadCol * threadGlow * (0.7 + 0.3 * sin(time * 4.0 * chrono + f32(s)));
     }
 
-    // Tonemap + gamma
-    col = col / (col + vec3<f32>(1.0));
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    let coord = vec2<i32>(global_id.xy);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    // ═══ CHUNK: temporal-feedback (dataTextureC → dataTextureA) ═══
+    let prev = textureLoad(dataTextureC, coord, 0);
+    col = mix(col, prev.rgb * 0.92, 0.05 + bass * 0.01);
+
+    // ═══ CHUNK: chromatic-aberration ═══
+    let caStr = 0.003 * (1.0 + bass) + coreInt * 0.001;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+    col = acesToneMap(col * 1.2);
+
+    let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(lum * 1.4 + 0.05, 0.0, 1.0);
+
+    textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+    let depthVal = clamp(t / 12.0, 0.0, 1.0);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
 }

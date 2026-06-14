@@ -6,6 +6,7 @@ import { VideoRecord } from '../syncTypes';
 import shaderCoordinates from '../shader_coordinates.json';
 import { ShaderMegaMenu } from './ShaderMegaMenu';
 import type { ShaderMegaMenuOption } from './ShaderMegaMenu';
+import { ShaderGallery } from './ShaderGallery';
 import { ShaderStarRating } from './ShaderStarRating';
 import { useShaderRatings } from '../services/ShaderRatingIntegration';
 import { LiveStreamPanel } from './LiveStreamPanel';
@@ -179,6 +180,7 @@ const Controls: React.FC<ControlsProps> = ({
 }) => {
     // --- Coordinate System State ---
     const [showCoordinateBrowser, setShowCoordinateBrowser] = useState(false);
+    const [galleryOpenFor, setGalleryOpenFor] = useState<number | 'generative' | null>(null);
     const [typedNumber, setTypedNumber] = useState('');
     const [showNumberOverlay, setShowNumberOverlay] = useState(false);
     const numberTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -854,17 +856,38 @@ const Controls: React.FC<ControlsProps> = ({
                                 </span>
                             )}
                         </div>
-                        <ShaderMegaMenu
-                            options={slotMenuOptions}
-                            value={modes[i]}
-                            onChange={(id) => setMode(i, id as RenderMode)}
-                            includeNone={true}
-                            onClick={(e) => e.stopPropagation()}
-                        />
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                            <div style={{ flex: 1 }}>
+                                <ShaderMegaMenu
+                                    options={slotMenuOptions}
+                                    value={modes[i]}
+                                    onChange={(id) => setMode(i, id as RenderMode)}
+                                    includeNone={true}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </div>
+                            <button
+                                className="gold-badge"
+                                title="Browse shader thumbnails"
+                                onClick={(e) => { e.stopPropagation(); setGalleryOpenFor(i); }}
+                                style={{ cursor: 'pointer', fontSize: '13px', padding: '6px 8px' }}
+                            >
+                                🖼️
+                            </button>
+                        </div>
                     </div>
                     );
                 })}
             </div>
+
+            {galleryOpenFor !== null && typeof galleryOpenFor === 'number' && (
+                <ShaderGallery
+                    options={slotMenuOptions}
+                    value={modes[galleryOpenFor]}
+                    onSelect={(id) => { setMode(galleryOpenFor, id as RenderMode); setGalleryOpenFor(null); }}
+                    onClose={() => setGalleryOpenFor(null)}
+                />
+            )}
 
             {/* --- Slot Parameter Controls --- */}
             <div className="gold-section-header">
@@ -1465,16 +1488,37 @@ const Controls: React.FC<ControlsProps> = ({
             {inputSource === 'generative' && activeGenerativeShader && setActiveGenerativeShader && (
                 <div className="control-group glass-panel" style={{marginTop: '10px', padding: '12px'}}>
                      <div className="gold-section-header" style={{fontSize: '12px', marginTop: '0'}}>Generative Shader</div>
-                     <ShaderMegaMenu
-                        options={generativeMenuOptions}
-                        value={activeGenerativeShader}
-                        onChange={setActiveGenerativeShader}
-                        includeNone={false}
-                     />
+                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                         <div style={{ flex: 1 }}>
+                             <ShaderMegaMenu
+                                options={generativeMenuOptions}
+                                value={activeGenerativeShader}
+                                onChange={setActiveGenerativeShader}
+                                includeNone={false}
+                             />
+                         </div>
+                         <button
+                            className="gold-badge"
+                            title="Browse shader thumbnails"
+                            onClick={() => setGalleryOpenFor('generative')}
+                            style={{ cursor: 'pointer', fontSize: '13px', padding: '6px 8px' }}
+                         >
+                            🖼️
+                         </button>
+                     </div>
                      <div style={{fontSize: '11px', color: '#a0a0b0', fontStyle: 'italic', padding: '8px 0 0 0'}}>
                          Move mouse to interact. Click/Drag for more effects.
                      </div>
                 </div>
+            )}
+
+            {galleryOpenFor === 'generative' && (
+                <ShaderGallery
+                    options={generativeMenuOptions}
+                    value={activeGenerativeShader}
+                    onSelect={(id) => { setActiveGenerativeShader?.(id); setGalleryOpenFor(null); }}
+                    onClose={() => setGalleryOpenFor(null)}
+                />
             )}
 
             {/* --- Live Stream Section --- */}

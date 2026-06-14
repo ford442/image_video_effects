@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: elastic-chromatic
-- **Agent Role**: Optimizer
+- **Agent Role**: Visualist
 - **Current Size**: 3089 bytes
-- **Target Line Count**: ~130 lines
+- **Target Line Count**: ~180 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -41,7 +41,16 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Elastic Chromatic — May 2026 Batch D Upgrade
+//  Category: distortion
+//  Features: mouse-driven, depth-aware, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: elastic-chromatic (original)
+//  Created: 2026-04-25
+//  Upgraded: 2026-05-23
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -57,67 +66,88 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=LagRed, y=LagBlue, z=MouseInfluence, w=Unused
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+const MAX_LAG: f32 = 0.995;
+
+fn mouse_influence(uv: vec2<f32>, mouse: vec2<f32>, aspect: f32, strength: f32) -> f32 {
+    let d = distance((uv - mouse) * vec2<f32>(aspect, 1.0), vec2<f32>(0.0));
+    return smoothstep(0.5, 0.0, d) * strength;
+}
+
+fn ema(current: f32, history: f32, lag: f32) -> f32 {
+    return mix(current, history, lag);
+}
+
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
+    let time = u.config.x;
+    let mouse = u.zoom_config.yz;
 
-    // Params
-    // High lag value = slow update = more ghosting
-    let baseLagR = u.zoom_params.x; // 0..1
-    let baseLagB = u.zoom_params.y; // 0..1
-    let mouseInfluence = u.zoom_params.z;
+    // Audio: bass drives elastic spring constant, mids drives Lissajous speed, treble adds sparkle
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    // Mouse influence
-    var mouse = u.zoom_config.yz;
-    let dist = distance((uv - mouse) * vec2<f32>(aspect, 1.0), vec2<f32>(0.0));
+    // Parameters: x=Elasticity, y=Chromatic Scale, z=Lissajous Ratio, w=Damping
+    let elasticity = mix(0.1, 1.0, u.zoom_params.x) * (1.0 + bass * 0.5);
+    let chromaticScale = mix(0.0, 1.0, u.zoom_params.y);
+    let lissajousRatio = mix(0.5, 2.0, u.zoom_params.z);
+    let damping = mix(0.1, 0.9, u.zoom_params.w);
 
-    // Increase lag near mouse? Or decrease?
-    // Let's make mouse *slow down* time (increase lag).
-    // range: 0 to 1
-    let influence = smoothstep(0.5, 0.0, dist) * mouseInfluence;
+    // Lissajous-based secondary chromatic source oscillating around mouse
+    // mids modulate oscillation frequency for richer audio coupling
+    let lissFreqX = 1.0 + mids * 0.3;
+    let lissFreqY = lissajousRatio + mids * 0.2;
+    let lissAmp = chromaticScale * 0.08;
+    let lissPos = mouse + vec2<f32>(
+        lissAmp * sin(time * lissFreqX * 2.0 * (1.0 + elasticity)),
+        lissAmp * sin(time * lissFreqY * 2.0 * (1.0 + elasticity))
+    );
 
-    // Effective lag
-    // If lag is 1.0, we never update (freeze). If 0.0, instant update.
-    let lagR = clamp(baseLagR + influence, 0.0, 0.99);
-    let lagB = clamp(baseLagB + influence * 0.5, 0.0, 0.99);
-
-    // Read History (Previous Frame)
-    let history = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-    // history.r = Old Red
-    // history.b = Old Blue
-    // history.g = Old Green (but we usually don't lag green, to keep structure)
-
-    // Read Current Input
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let curr = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let history = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
 
-    // Update Channels
-    // New = History * Lag + Curr * (1 - Lag)
-    // This is an exponential moving average (EMA)
+    // Mouse proximity influence
+    let influence = mouse_influence(uv, mouse, aspect, elasticity);
 
-    let newR = mix(curr.r, history.r, lagR);
-    let newB = mix(curr.b, history.b, lagB);
-    let newG = curr.g; // Green is instant (anchor)
+    // Lissajous proximity influence
+    let distLiss = distance(uv, lissPos);
+    let lissInfluence = smoothstep(0.4, 0.0, distLiss) * chromaticScale;
 
-    let finalColor = vec4<f32>(newR, newG, newB, 1.0);
+    // Depth-aware modulation
+    let depthMod = (1.0 - depth) * 0.35;
 
-    // Output for display
+    // Effective lag per channel with damping
+    let lagR = clamp(elasticity + influence + depthMod + lissInfluence, 0.0, MAX_LAG) * damping;
+    let lagB = clamp(elasticity * 0.8 + influence * 0.5 + depthMod * 0.5 + lissInfluence * 0.7, 0.0, MAX_LAG) * damping;
+    let lagG = clamp(elasticity * 0.6 + influence * 0.3, 0.0, MAX_LAG) * damping;
+
+    // Chromatic exponential moving average
+    let outR = ema(curr.r, history.r, lagR);
+    let outG = ema(curr.g, history.g, lagG);
+    let outB = ema(curr.b, history.b, lagB);
+
+    // Effect-mask alpha: stronger aberration = higher alpha at edges; treble adds sparkle
+    let aberration = abs(lagR - lagB) + lissInfluence;
+    let edgeBoost = smoothstep(0.0, 0.3, aberration + treble * 0.1);
+    let alpha = clamp(mix(curr.a * 0.75, curr.a, edgeBoost) + treble * 0.05, 0.0, 1.0);
+
+    let finalColor = vec4<f32>(outR, outG, outB, alpha);
+
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-
-    // Output for history
     textureStore(dataTextureA, global_id.xy, finalColor);
-
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 
 ```
@@ -128,98 +158,233 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "elastic-chromatic",
   "name": "Elastic Chromatic",
   "url": "shaders/elastic-chromatic.wgsl",
-  "category": "image",
-  "description": "Simulates color channel lag (ghosting) that responds to mouse proximity.",
+  "description": "Elastic chromatic aberration with Lissajous-based secondary source oscillating around mouse, bass-driven spring constant, and effect-masked alpha.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "depth-aware",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
-      "id": "lagR",
-      "name": "Red Lag",
-      "default": 0.8,
-      "min": 0.0,
-      "max": 0.99
-    },
-    {
-      "id": "lagB",
-      "name": "Blue Lag",
-      "default": 0.6,
-      "min": 0.0,
-      "max": 0.99
-    },
-    {
-      "id": "influence",
-      "name": "Mouse Drag",
+      "id": "elasticity",
+      "name": "Elasticity",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Elastic spring constant for chromatic lag"
     },
     {
-      "id": "unused",
-      "name": "Unused",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "id": "chromatic_scale",
+      "name": "Chromatic Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Scale of chromatic separation"
+    },
+    {
+      "id": "lissajous_ratio",
+      "name": "Lissajous Ratio",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Frequency ratio for Lissajous oscillation"
+    },
+    {
+      "id": "damping",
+      "name": "Damping",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Damping factor for elastic lag"
     }
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "chromatic",
+    "lag",
+    "elastic",
+    "lissajous",
+    "mouse-driven"
   ]
 }
+
 ```
 
 ---
 
 ## Agent Specialization
-# Agent Role: The Optimizer
+# Agent Role: The Visualist
 
 ## Identity
-You are **The Optimizer**, a shader architect focused on performance, elegance, and pipeline integration.
+You are **The Visualist**, a shader architect focused on color science, lighting, and emotional impact. You make shaders visually stunning.
 
 ## Upgrade Toolkit
 
-### Performance Techniques
-- Brute force → Early exit conditions
-- Full resolution → Quarter-res blur + full-res combine
-- Per-pixel noise → Blue noise sampling
-- Redundant texture samples → Bilinear LOD
-- Nested loops → Unrolled small kernels
+### Color Science
+- SRGB → Linear workflow with proper gamma (`pow(c, 2.2)` in, `pow(c, 1/2.2)` out)
+- Clamped colors → HDR with values >1.0 before tone mapping
+- Static palettes → Dynamic temperature shifting
+- Solid fills → Subsurface scattering glow
+- Flat shading → Fresnel rim lighting
 
-### Code Elegance
-- Magic numbers → Named constants
-- Duplicated code → Helper functions
-- Long functions → Logical sections with comments
-- Hard-coded params → Uniform-based tuning
-- GPU-unfriendly ops → Precomputed lookups
+#### OkLab — Perceptually Uniform Color Space (use for smooth gradients / mixing)
+```wgsl
+fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
+    let l = 0.4122214708*c.r + 0.5363325363*c.g + 0.0514459929*c.b;
+    let m = 0.2119034982*c.r + 0.6806995451*c.g + 0.1073969566*c.b;
+    let s = 0.0883024619*c.r + 0.2817188376*c.g + 0.6299787005*c.b;
+    let l_ = pow(l, 1.0/3.0); let m_ = pow(m, 1.0/3.0); let s_ = pow(s, 1.0/3.0);
+    return vec3<f32>(0.2104542553*l_+0.7936177850*m_-0.0040720468*s_,
+                     1.9779984951*l_-2.4285922050*m_+0.4505937099*s_,
+                     0.0259040371*l_+0.7827717662*m_-0.8086757660*s_);
+}
+fn oklab_to_linear_srgb(c: vec3<f32>) -> vec3<f32> {
+    let l_ = c.x+0.3963377774*c.y+0.2158037573*c.z;
+    let m_ = c.x-0.1055613458*c.y-0.0638541728*c.z;
+    let s_ = c.x-0.0894841775*c.y-1.2914855480*c.z;
+    let l = l_*l_*l_; let m = m_*m_*m_; let s = s_*s_*s_;
+    return vec3<f32>(4.0767416621*l-3.3077115913*m+0.2309699292*s,
+                    -1.2684380046*l+2.6097574011*m-0.3413193965*s,
+                    -0.0041960863*l-0.7034186147*m+1.7076147010*s);
+}
+// Mix colors in OkLab (avoids the grey mud in mid-tones)
+fn mixOkLab(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
+    return oklab_to_linear_srgb(mix(linear_srgb_to_oklab(a), linear_srgb_to_oklab(b), t));
+}
+```
 
-### Pipeline Integration
-- Standalone → Designed for slot chaining
-- No feedback → Uses dataTextureA/B for state
-- LDR only → HDR output ready for tone map
-- Single pass → Multi-pass decomposition hint
-- Fixed quality → Level-of-detail scaling
+#### Blackbody / Color Temperature
+```wgsl
+// Temperature in Kelvin → approximate RGB (1000K–40000K)
+fn blackbodyRGB(T: f32) -> vec3<f32> {
+    let t = clamp(T, 1000.0, 40000.0) / 100.0;
+    var r = 0.0; var g = 0.0; var b = 0.0;
+    if (t <= 66.0) { r = 1.0; }
+    else { r = clamp(329.698727446 * pow(t - 60.0, -0.1332047592) / 255.0, 0.0, 1.0); }
+    if (t <= 66.0) { g = clamp((99.4708025861 * log(t) - 161.1195681661) / 255.0, 0.0, 1.0); }
+    else { g = clamp(288.1221695283 * pow(t - 60.0, -0.0755148492) / 255.0, 0.0, 1.0); }
+    if (t >= 66.0) { b = 1.0; }
+    else if (t <= 19.0) { b = 0.0; }
+    else { b = clamp((138.5177312231 * log(t - 10.0) - 305.0447927307) / 255.0, 0.0, 1.0); }
+    return vec3<f32>(r, g, b);
+}
+```
 
-### Post-Process Ready
-- Expose bloom threshold metadata
-- Tag as "expects pp-tone-map" if HDR
-- Document slot recommendations
-- Provide quality presets (low/medium/high)
+#### Cosine Palette (Inigo Quilez) — fast procedural gradients
+```wgsl
+fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
+    return a + b * cos(6.28318 * (c * t + d));
+}
+// Example fire: palette(t, (0.5,0.5,0.5),(0.5,0.5,0.5),(1,1,0.5),(0,0.1,0.2))
+// Example ice:  palette(t, (0.5,0.5,0.5),(0.5,0.5,0.5),(1,1,1),(0,0.33,0.67))
+```
+
+### Lighting Techniques
+- Single light → 3-point studio lighting (key + fill + rim, different color temps)
+- Diffuse only → Specular via GGX distribution + Fresnel-Schlick
+- Hard shadows → Soft penumbra: `smoothstep(penumbra, 0.0, shadowDist)`
+- Local lighting → Volumetric god rays (ray march toward light source)
+- Flat surface → Iridescent thin-film: `sin(d * freq + hue_offset) * fresnel`
+
+### Atmosphere
+- Clear → Volumetric fog: `exp(-density * dist)` (Beer-Lambert)
+- Sharp → Bokeh depth of field (hexagonal aperture SDF)
+- Static → Animated caustics: FBM of sinusoids, `sin(fbm(p)*8 + t)`
+- Clean → Rayleigh scattering: blue-bias sky, `pow(lambda, -4.0)` wavelength dependence
+- Mie scattering for haze: `(1-g²) / pow(1+g²-2g*cosθ, 1.5)`, g≈0.76 for aerosols
+
+### Color Grading
+- Raw output → ACES tone mapped (apply last, after all HDR work)
+- Static → Audio-reactive temperature (`blackbodyRGB(3000 + bass * 4000)`)
+- Monochrome → Split-tone: shadows in complementary hue, highlights warm
+- Natural → Iridescent thin-film: wavelength-dependent phase shift
+- Flat mix → OkLab interpolation (prevents muddy mid-tone blending)
+
+### Tonemap & Dither Stack (kimi-cli reference snippets)
+
+Always process in this order: accumulate HDR → hue-preserve clamp → ACES tonemap → dither → premultiplied write.
+
+#### 1. Hue-preserving HDR clamp (prevents desaturation on bright highlights)
+```wgsl
+fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
+    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let s = min(1.0, max_lum / max(l, 1e-4));
+    return c * s;
+}
+```
+Apply after additive accumulation, before ACES. Beats `min(c, 1.0)` which desaturates to white.
+
+#### 2. ACES filmic tonemap (drop-in, no LUT required)
+```wgsl
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+```
+Pair with sRGB gamma `pow(c, vec3<f32>(1.0/2.2))` on write if the display is sRGB.
+
+#### 3. Interleaved-gradient (IGN) blue-noise dither (kills 8-bit banding)
+```wgsl
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+// before textureStore:
+let dither = (ign(vec2<f32>(gid.xy)) - 0.5) / 255.0;
+let outRGB = aces(hdr) + vec3<f32>(dither);
+```
+Cheaper than a blue-noise texture lookup and visually identical at 8-bit precision.
+
+#### Premultiplied-alpha writeback — tactic #12 (correct compositing in the slot chain)
+```wgsl
+let a = clamp(alpha, 0.0, 1.0);
+textureStore(writeTexture, gid.xy, vec4<f32>(rgb * a, a));
+```
+The renderer expects premultiplied output downstream of slot 1. Straight alpha causes dark fringes after the next slot's blur/blend.
+
+## RGBA Channel Strategy
+
+**Alpha = bloom weight** is the most useful convention for generative shaders:
+```wgsl
+let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+let bloomWeight = pow(max(0.0, luma - 0.6), 2.0) * 3.0;  // only bright areas
+textureStore(writeTexture, coord, vec4<f32>(color, bloomWeight));
+```
+
+Other useful alpha encodings:
+- `alpha = depth` — for depth-aware compositing in the next slot
+- `alpha = effectStrength` — transparent where effect is absent (compositing-friendly)
+- `alpha = fresnel` — glass/water reflectance mask
+
+**Do NOT output `vec4(color, 1.0)` unless the shader is a pure background layer.**
 
 ## Quality Checklist
-- [ ] No per-pixel branching on uniforms
-- [ ] Texture samples minimized (caching used)
-- [ ] Workgroup size optimized (16x16 for Pixelocity)
-- [ ] Early exit for sky/background pixels
-- [ ] LOD quality scaling based on frame time
+- [ ] HDR values exceed 1.0 in highlights before tone mapping
+- [ ] At least 2 light sources with different color temperatures
+- [ ] `hue_preserve_clamp` applied before ACES to avoid highlight desaturation
+- [ ] ACES tone mapping applied as the final step
+- [ ] IGN dither added before `textureStore` to kill 8-bit banding
+- [ ] Atmospheric depth (fog/haze/dust via Beer-Lambert or Rayleigh)
+- [ ] Color gradients use OkLab mixing to avoid muddy transitions
+- [ ] Alpha channel encodes bloom weight or compositing info
+- [ ] Premultiplied-alpha writeback (`vec4(rgb * a, a)`) when alpha < 1
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it production-ready.
+- Keep the original "soul" of the shader while making it visually stunning.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
 - Do NOT modify the 13-binding header or the Uniforms struct.
-- Preserve or enhance RGBA channel usage.
-- Add JSON params if new tunable values are introduced (max 4 params mapped to zoom_params).
+- **Alpha must carry semantic meaning** — bloom weight, depth, or Fresnel reflectance.
+
+## Performance Constraint
+This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
 
 
 ---
@@ -228,7 +393,7 @@ You are **The Optimizer**, a shader architect focused on performance, elegance, 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 130 lines (±20%).
+4. Ensure the upgraded shader is roughly 180 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

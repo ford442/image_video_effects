@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: temporal-rgb-smear
-- **Agent Role**: Interactivist
+- **Agent Role**: Algorithmist
 - **Current Size**: 3065 bytes
-- **Target Line Count**: ~130 lines
+- **Target Line Count**: ~180 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -41,7 +41,16 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Temporal RGB Smear — May 2026 Batch D Upgrade
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Complexity: Medium
+//  Chunks From: temporal-rgb-smear (original)
+//  Created: 2026-05-02
+//  Upgraded: 2026-05-10
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -55,64 +64,86 @@ struct Uniforms {
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=GreenLag, y=BlueLag, z=Feedback, w=unused
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
   let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
+  let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
+  let mouse = u.zoom_config.yz;
 
-  // Params
-  // x: Green Channel Lag (0.0 - 1.0)
-  // y: Blue Channel Lag (0.0 - 1.0)
-  // z: Feedback amount (0.0 - 0.99)
-  let greenLag = mix(0.1, 0.95, u.zoom_params.x);
-  let blueLag = mix(0.2, 0.98, u.zoom_params.y);
-  let feedback = u.zoom_params.z;
+  // Audio input
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Mouse influence - reduce lag near mouse
-  var mouse = u.zoom_config.yz;
-  let dist = distance(uv, mouse);
-  let mouseFactor = smoothstep(0.0, mix(0.1, 0.6, u.zoom_params.w), dist); // 0 near mouse, 1 far
+  // Parameters: x=Smear Length, y=Smear Decay, z=Chromatic Split, w=Turbulence
+  let smearLength = mix(0.01, 0.25, u.zoom_params.x);
+  let smearDecay = mix(0.3, 0.98, u.zoom_params.y);
+  let chromaticSplit = mix(0.0, 0.05, u.zoom_params.z) * (1.0 + mids * 0.5);
+  let turbulence = u.zoom_params.w;
 
-  // Modulate lag with mouse
-  let gLag = greenLag * (0.5 + 0.5 * mouseFactor);
-  let bLag = blueLag * (0.5 + 0.5 * mouseFactor);
-
-  // Read current frame
-  let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-  // Read history (R=GreenHistory, G=BlueHistory)
-  let history = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-
-  // Calculate new history values
-  // We want: NewHistory = mix(Current, OldHistory, Lag)
-  let newGreenHistory = mix(current.g, history.r, gLag);
-  let newBlueHistory = mix(current.b, history.g, bLag);
-
-  // Output color
-  // R = Instant
-  // G = Green History
-  // B = Blue History
-  let outputColor = vec4<f32>(current.r, newGreenHistory, newBlueHistory, current.a);
-
-  // Store new history
-  // Store G history in R, B history in G
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(newGreenHistory, newBlueHistory, 0.0, 1.0));
-
-  // Write to screen
-  textureStore(writeTexture, vec2<i32>(global_id.xy), outputColor);
-
-  // Pass through depth
+  // Depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthFactor = mix(1.0, 0.3, depth);
+
+  // Directional smear: estimate motion from dataTextureC gradients
+  let texel = vec2<f32>(1.0) / resolution;
+  let hC = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+  let hR = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
+  let hL = textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0).r;
+  let hU = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r;
+  let hD = textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(0.0, texel.y), 0.0).r;
+  let gradX = (hR - hL) * 0.5;
+  let gradY = (hU - hD) * 0.5;
+  let motionDir = normalize(vec2<f32>(gradX, gradY) + vec2<f32>(0.0001));
+
+  // Time-based offset blended with estimated motion
+  let timeAngle = time * 0.5 + turbulence * 6.2831;
+  let timeDir = vec2<f32>(cos(timeAngle), sin(timeAngle));
+  let motionStrength = length(vec2<f32>(gradX, gradY));
+  let smearDir = mix(timeDir, motionDir, smoothstep(0.0, 0.05, motionStrength));
+
+  let len = smearLength * (1.0 + bass * 0.3) * depthFactor;
+
+  // Chromatic samples along smear direction, split modulated by mids
+  let offR = uv + smearDir * len * (1.0 + chromaticSplit);
+  let offG = uv + smearDir * len;
+  let offB = uv + smearDir * len * (1.0 - chromaticSplit);
+
+  let colR = textureSampleLevel(readTexture, u_sampler, offR, 0.0).r;
+  let colG = textureSampleLevel(readTexture, u_sampler, offG, 0.0).g;
+  let colB = textureSampleLevel(readTexture, u_sampler, offB, 0.0).b;
+
+  // Temporal accumulation from history
+  let history = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  let fb = smearDecay * (1.0 + bass * 0.15);
+
+  let accR = mix(colR, history.r, fb * 0.5);
+  let accG = mix(colG, history.g, fb * 0.45);
+  let accB = mix(colB, history.b, fb * 0.5);
+
+  // Treble sparkle near mouse
+  let sparkle = treble * 0.2 * smoothstep(0.3, 0.0, distance(uv, mouse));
+
+  let outColor = vec3<f32>(accR + sparkle, accG, accB);
+
+  // Accumulative alpha — trails fade over time
+  let trailAlpha = mix(0.5, 0.95, smearDecay) * mix(0.7, 1.0, 1.0 - depth * 0.3);
+
+  // Store history for next frame
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(outColor, trailAlpha));
+
+  textureStore(writeTexture, global_id.xy, vec4<f32>(outColor, trailAlpha));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 
@@ -123,57 +154,64 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 {
   "id": "temporal-rgb-smear",
   "name": "Temporal RGB Smear",
-  "category": "image",
   "url": "shaders/temporal-rgb-smear.wgsl",
-  "description": "Separates RGB channels in time. Red is instant, Green and Blue trail behind with variable lag.",
+  "description": "Directional RGB smear with time-based offset, chromatic split modulated by mids, temporal feedback decay, and accumulative trail alpha.",
   "params": [
     {
-      "id": "green_lag",
-      "name": "Green Lag",
+      "id": "smear_length",
+      "name": "Smear Length",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
-      "description": "Lag amount for the green channel"
+      "description": "Length of the directional smear"
     },
     {
-      "id": "blue_lag",
-      "name": "Blue Lag",
-      "default": 0.8,
-      "min": 0.0,
-      "max": 1.0,
+      "id": "smear_decay",
+      "name": "Smear Decay",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
-      "description": "Lag amount for the blue channel"
+      "description": "Temporal feedback decay amount"
     },
     {
-      "id": "feedback",
-      "name": "Feedback",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 0.99,
+      "id": "chromatic_split",
+      "name": "Chromatic Split",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
-      "description": "Feedback amount for temporal smearing"
+      "description": "RGB channel separation along smear direction"
     },
     {
-      "id": "mouse_influence",
-      "name": "Mouse Influence Radius",
-      "default": 0.5,
-      "min": 0.1,
-      "max": 0.6,
+      "id": "turbulence",
+      "name": "Turbulence",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Radius of mouse influence on lag reduction"
+      "description": "Time-based directional turbulence"
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "audio-reactive",
+    "interactive",
+    "temporal",
+    "feedback",
+    "chromatic"
   ]
 }
 
@@ -182,57 +220,213 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 ---
 
 ## Agent Specialization
-# Agent Role: The Interactivist
+# Agent Role: The Algorithmist
 
 ## Identity
-You are **The Interactivist**, a shader architect focused on input reactivity, feedback loops, and emergent behavior.
+You are **The Algorithmist**, a specialized shader architect focused on advanced mathematical techniques, simulation depth, and algorithmic sophistication.
+
+## Mathematical Constants (use these in WGSL)
+
+```wgsl
+const PI     = 3.14159265358979323846;
+const TAU    = 6.28318530717958647692;   // 2π
+const PHI    = 1.61803398874989484820;   // golden ratio
+const SQRT2  = 1.41421356237309504880;
+const SQRT3  = 1.73205080756887729352;
+const E      = 2.71828182845904523536;
+const LN2    = 0.69314718055994530941;
+const INV_PI = 0.31830988618379067154;   // 1/π
+```
+
+### Physical Equations Reference
+
+| Equation | WGSL form | Use case |
+|----------|-----------|----------|
+| Gaussian bell curve | `exp(-0.5 * x*x / (s*s))` | Kernels, bloom falloff |
+| Planck blackbody | `1.0 / (exp(hv_kT / lambda) - 1.0)` | Star/fire color temperature |
+| Beer-Lambert | `exp(-density * distance)` | Fog, absorption, volume |
+| Henyey-Greenstein | `(1-g²) / pow(1+g²-2g·cosθ, 1.5)` | Volumetric light scattering |
+| Fresnel-Schlick | `F0 + (1-F0)*pow(1-cosθ, 5)` | Reflectance at grazing angles |
+| Logistic growth | `1.0 / (1.0 + exp(-k*(x-x0)))` | Sigmoid activation, liveness |
+| Euler identity | `vec2(cos(θ), sin(θ))` | Complex rotation |
+| Schwarzschild | `1.0 - 2.0*M / r` | Gravitational lensing |
 
 ## Upgrade Toolkit
 
-### Mouse Interaction
-- Position tracking → Gravity wells / attractors
-- Click events → Spawn bursts / shockwaves
-- Velocity tracking → Motion blur trails
-- Multi-touch → Multi-agent systems
+### Noise Upgrades
+- Value noise → FBM domain warping (double-warp for max turbulence)
+- Perlin → Curl noise (divergence-free, use for fluid velocity fields)
+  ```wgsl
+  fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
+      let eps = 0.001;
+      let nx = fbm(p + vec2<f32>(0.0, eps), 4) - fbm(p - vec2<f32>(0.0, eps), 4);
+      let ny = fbm(p + vec2<f32>(eps, 0.0), 4) - fbm(p - vec2<f32>(eps, 0.0), 4);
+      return vec2<f32>(nx, -ny) / (2.0 * eps);
+  }
+  ```
+- Value noise → Worley/Voronoi F2-F1 (cellular ridges, veins, cracks)
+  ```wgsl
+  fn voronoiF2minusF1(p: vec2<f32>) -> f32 {
+      // returns ridge value – great for mountain ranges, skin
+      var F1 = 1e9; var F2 = 1e9;
+      let ip = floor(p);
+      for (var i = -2; i <= 2; i++) { for (var j = -2; j <= 2; j++) {
+          let n = ip + vec2<f32>(f32(i), f32(j));
+          let d = length(p - n - hash21(n));
+          if (d < F1) { F2 = F1; F1 = d; } else if (d < F2) { F2 = d; }
+      }}
+      return F2 - F1;
+  }
+  ```
+- Static → Temporal coherent noise (seed with `floor(t/period)`, lerp between seeds)
 
-### Audio Reactivity
-- Bass pulse → Scale/brightness modulation
-- Mid frequencies → Pattern morphing speed
-- Treble → Sparkle/additive particles
-- FFT buckets → Multi-band color splitting
+#### Domain-warped FBM (organic flow, two-octave warp)
+```wgsl
+fn fbm(p: vec2<f32>) -> f32 {
+    var a = 0.5; var s = 0.0; var q = p;
+    for (var i = 0; i < 5; i = i + 1) {
+        s = s + a * valueNoise(q);
+        q = q * 2.02; a = a * 0.5;
+    }
+    return s;
+}
+fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
+    let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)),
+                      fbm(p + vec2<f32>(5.2, 1.3)));
+    let r = vec2<f32>(fbm(p + 4.0*q + vec2<f32>(1.7, 9.2)),
+                      fbm(p + 4.0*q + vec2<f32>(8.3, 2.8)));
+    return fbm(p + 4.0*r);
+}
+```
+Strictly better than single-octave noise for "alive" generative shaders. Pass `u.config.x` as `t`.
 
-### Video Feedback
-- Static overlay → Optical flow distortion
-- Fixed transparency → Alpha blending based on depth
-- Simple masking → Luma-keyed particle spawn
-- Direct color → Motion-vector advection
+#### Polar kaleidoscope fold
+```wgsl
+fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
+    let r = length(uv);
+    var a = atan2(uv.y, uv.x);
+    let seg = 6.2831853 / max(segs, 1.0);
+    a = abs(((a % seg) + seg) % seg - seg * 0.5);
+    return vec2<f32>(cos(a), sin(a)) * r;
+}
+```
+Cheap, branch-light fold that gives instant symmetry. Pair with `warpedFBM` or SDF sampling.
 
-### Depth Integration
-- 2D effects → Parallax depth separation
-- Uniform blur → Depth-of-field bokeh
-- Flat shading → Ambient occlusion darkening
-- Screen space → Volumetric depth fog
+### Quasi-Random Sampling (better than pseudo-random)
+```wgsl
+// Halton sequence – base 2 and 3, ideal for AA / Monte Carlo
+fn halton(i: u32, base: u32) -> f32 {
+    var f = 1.0; var r = 0.0; var idx = i;
+    loop { if (idx == 0u) { break; }
+        f = f / f32(base);
+        r = r + f * f32(idx % base);
+        idx = idx / base;
+    }
+    return r;
+}
+// Gold noise – low discrepancy on 2D
+fn goldNoise(uv: vec2<f32>, seed: f32) -> f32 {
+    return fract(tan(distance(uv * PHI, uv) * seed) * uv.x);
+}
+```
 
-### Feedback Loops
-- Single pass → Temporal accumulation
-- Static state → Ping-pong buffer feedback
-- Linear time → Recursive subdivision
-- Fixed camera → Smooth follow with lag
+### Simulation Upgrades
+- Basic ripples → Gray-Scott reaction-diffusion (uses ping-pong dataTexture)
+- Particle clouds → Lenia continuous cellular automata
+- Smoke → Navier-Stokes + divergence projection (2-pass)
+- Static → Turing pattern generators (activator-inhibitor)
+- Dots → Physarum / slime-mold (agent trails in dataTextureA)
+- Particles → Verlet integration: `pos_new = 2*pos - pos_old + accel * dt²`
+
+### SDF Upgrades
+- Single primitive → Composition with `smin` (smooth union k=0.2)
+- 2D circles → 3D raymarched scenes (64-step march with shadow rays)
+- Static → Animated morphing fields (`mix(sdf_a, sdf_b, smoothstep(0,1,t))`)
+- Solid → Subsurface scattering: `exp(-thickness / scatterDist) * albedo`
+- New primitives: capsule, hexagonal prism, torus knot, Möbius strip SDF
+
+#### Smooth-min SDF union (`smin`) — round seams between primitives
+```wgsl
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = clamp(0.5 + 0.5*(b - a)/k, 0.0, 1.0);
+    return mix(b, a, h) - k*h*(1.0 - h);
+}
+```
+`k ≈ 0.1–0.3` of the smaller primitive radius. Replaces hard `min()` for organic blob unions.
+
+#### Anti-aliased SDF / line via `fwidth` (no MSAA needed in compute)
+```wgsl
+fn aa_step(edge: f32, x: f32) -> f32 {
+    let w = max(fwidth(x), 1e-4);
+    return smoothstep(edge - w, edge + w, x);
+}
+```
+Use wherever a hard `step()` would produce shimmering edges — kaleidoscope folds, SDF contours, grid lines.
+
+### Fractal Upgrades
+- Basic Mandelbrot → Burning Ship (`abs(z)` before squaring)
+- 2D fractals → 4D quaternion Julia sets (project down via `q.xy`)
+- Static zoom → Smooth exponential zoom (`exp(t * zoom_speed)`)
+- Single orbit → Multi-orbit trap accumulation (min distance to line/circle/point)
+- Complex dynamics: Newton's method `z - f(z)/f'(z)` for root basins
+
+### Strange Attractors
+```wgsl
+// Clifford attractor – vary a,b,c,d for wildly different forms
+fn clifford(p: vec2<f32>, a: f32, b: f32, c: f32, d: f32) -> vec2<f32> {
+    return vec2<f32>(sin(a*p.y) + c*cos(a*p.x),
+                     sin(b*p.x) + d*cos(b*p.y));
+}
+// Lorenz (2D projection of 3D attractor)
+fn lorenz_step(p: vec3<f32>, dt: f32) -> vec3<f32> {
+    let sigma = 10.0; let rho = 28.0; let beta = 8.0/3.0;
+    let dp = vec3<f32>(sigma*(p.y-p.x), p.x*(rho-p.z)-p.y, p.x*p.y-beta*p.z);
+    return p + dp * dt;
+}
+```
+
+### Complex Number Math
+```wgsl
+fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> { return vec2<f32>(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x); }
+fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    let d = dot(b, b);
+    return vec2<f32>(dot(a,b), a.y*b.x - a.x*b.y) / max(d, 1e-6);
+}
+// Möbius transform: (az+b)/(cz+d)
+fn mobius(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) -> vec2<f32> {
+    return cdiv(cmul(a, z) + b, cmul(c, z) + d);
+}
+```
+
+## RGBA Semantic Encoding (choose the right strategy)
+
+| Strategy | R | G | B | A | Best for |
+|----------|---|---|---|---|----------|
+| Luminance alpha | color.r | color.g | color.b | `dot(rgb, vec3(0.299, 0.587, 0.114))` | General blending |
+| Bloom mask | color.r | color.g | color.b | `max(0, luma - 0.7) * 3.0` | HDR glow pass |
+| Material data | color.r | color.g | color.b | material_id / 255.0 | Multi-material shaders |
+| Life/energy | density | age | species | energy | Simulation shaders |
+| Depth + color | color.r | color.g | color.b | linearized depth | Compositing |
+
+**Never output `vec4(rgb, 1.0)` — that discards compositing potential entirely.**
 
 ## Quality Checklist
-- [ ] Mouse affects at least 2 parameters
-- [ ] Audio drives at least 1 visual element
-- [ ] Video input influences the effect
-- [ ] Temporal feedback creates trails/smoothing
-- [ ] Emergent behavior (not 1:1 input mapping)
+- [ ] At least 2 advanced algorithms integrated
+- [ ] Mathematical constants from the table above used (no magic numbers)
+- [ ] Temporal coherence (smooth frame-to-frame transitions)
+- [ ] Divergence-free velocity fields where applicable
+- [ ] Multi-scale detail (macro + micro structures)
+- [ ] Alpha channel carries semantic meaning (not hardcoded 1.0)
+- [ ] No divisions by zero (add `+ 0.001` guard)
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it alive and reactive.
+- Keep the original "soul" of the shader while elevating it mathematically.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
 - Do NOT modify the 13-binding header or the Uniforms struct.
-- `plasmaBuffer[0].x` = bass, `.y` = mids, `.z` = treble. Use them.
-- `u.zoom_config.yz` = mouse position (0-1). `u.zoom_config.w` = mouse down.
-- Preserve or enhance RGBA channel usage.
+- **Alpha must encode something useful** — bloom weight, depth, energy, or compositing mask.
+
+## Performance Constraint
+This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. Prefer quasi-random (Halton/gold noise) over pseudo-random for sampling loops — same cost, better results. If adding features, keep total line count within the target specified in the task metadata.
 
 
 ---
@@ -241,7 +435,7 @@ You are **The Interactivist**, a shader architect focused on input reactivity, f
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 130 lines (±20%).
+4. Ensure the upgraded shader is roughly 180 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

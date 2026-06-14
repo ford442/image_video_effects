@@ -16,7 +16,11 @@
     "raymarched",
     "audio-reactive",
     "mouse-driven",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration"
   ],
   "params": [
     {

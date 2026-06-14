@@ -387,6 +387,23 @@ export function getFPS() {
 }
 
 /**
+ * Get a human-readable summary of the chosen WebGPU adapter/device:
+ * vendor, architecture, limits validation results, enabled features,
+ * and negotiated surface format. Empty string if not yet initialized.
+ *
+ * Deliberately does NOT require state.initialized: when initWasmRenderer()
+ * returns 0 (e.g. insufficient limits or surface creation failure),
+ * g_renderer still exists and adapterSummary_ holds the failure reason —
+ * this lets diagnostics surface *why* init failed.
+ * @returns {string}
+ */
+export function getAdapterSummary() {
+  if (!wasmModule) return '';
+
+  return wasmModule.ccall('getAdapterSummary', 'string', [], []);
+}
+
+/**
  * Check if renderer is initialized.
  * @returns {boolean}
  */
@@ -719,6 +736,7 @@ const wasmBridge = {
   addRipple,
   clearRipples,
   getFPS,
+  getAdapterSummary,
   isInitialized,
   uploadImageData,
   uploadVideoFrame,

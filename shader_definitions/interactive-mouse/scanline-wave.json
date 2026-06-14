@@ -7,9 +7,13 @@
     "audio-reactive",
     "temporal-persistence",
     "chromatic-CRT",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "HDR-color-grading",
+    "ACES-tone-map",
+    "IGN-dither",
+    "premultiplied-alpha"
   ],
-  "description": "Temporal scanline persistence with chromatic CRT aberration and audio roll. Each scanline undulates with bass-driven amplitude; previous frames decay into the signal. Treble adds per-scanline chromatic shift, bass rolls the entire field vertically.",
+  "description": "Temporal scanline persistence with chromatic CRT aberration, audio roll, and HDR color grading. Each scanline undulates with bass-driven amplitude; mouse proximity boosts local distortion. Treble adds per-scanline chromatic shift, bass rolls the entire field vertically, and blackbody color temperature shifts the mood. ACES tone mapping, hue-preserving HDR clamp, and IGN dither finish the image.",
   "params": [
     {
       "id": "waveAmount",
@@ -47,6 +51,9 @@
     "scanlines",
     "CRT",
     "temporal",
-    "chromatic"
+    "chromatic",
+    "HDR",
+    "ACES",
+    "dither"
   ]
 }

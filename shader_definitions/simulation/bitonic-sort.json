@@ -2,13 +2,20 @@
   "id": "bitonic-sort",
   "name": "Bitonic Pixel Sort",
   "url": "shaders/bitonic-sort.wgsl",
-  "description": "Workgroup bitonic pixel sort with FBM-enhanced sort keys, bass-reactive mixing, and semantic luminance-key alpha.",
+  "description": "Workgroup bitonic pixel sort with polar kaleidoscope symmetry, Voronoi ridge sort keys, domain-warped FBM, Halton quasi-random jitter, depth-aware weighting, ACES tone mapping, chromatic aberration, bass-reactive mixing, and temporal feedback.",
   "features": [
     "upgraded-rgba",
     "depth-aware",
     "audio-reactive",
     "mouse-driven",
-    "multi-ripple"
+    "multi-ripple",
+    "domain-warp",
+    "quasi-random",
+    "temporal-feedback",
+    "aces-tone-map",
+    "chromatic-aberration",
+    "kaleidoscope",
+    "voronoi-ridges"
   ],
   "tags": [
     "simulation",

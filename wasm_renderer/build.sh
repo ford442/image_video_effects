@@ -64,6 +64,7 @@ _clearRipples,\
 _setTime,\
 _setZoomParams,\
 _getFPS,\
+_getAdapterSummary,\
 _isRendererInitialized,\
 _loadImageData,\
 _uploadVideoFrame,\

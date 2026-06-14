@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: digital-lens
-- **Agent Role**: Optimizer
+- **Agent Role**: Interactivist
 - **Current Size**: 3238 bytes
-- **Target Line Count**: ~140 lines
+- **Target Line Count**: ~180 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -41,7 +41,17 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Digital Lens v2
+//  Category: image
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
+//            barrel-distortion, chromatic-dispersion, anamorphic
+//  Complexity: High
+//  Created: 2026-05-10
+//  Upgraded: 2026-05-30
+//  Chunks From: brown-conrady, aces-tonemap, film-grain
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -55,72 +65,111 @@ struct Uniforms {
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BlockSize, y=Radius, z=GridOpacity, w=ColorTint
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = vec3<f32>(2.51);
+  let b = vec3<f32>(0.03);
+  let c = vec3<f32>(2.43);
+  let d = vec3<f32>(0.59);
+  let e = vec3<f32>(0.14);
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  var pp = fract(p * vec2<f32>(0.1031, 0.1030));
+  pp = pp + dot(pp, pp.yx + 33.33);
+  return fract((pp.xx + pp.yx) * vec2<f32>(0.437585, 0.237585));
+}
+
+// Brown-Conrady lens distortion model
+fn brownConrady(p: vec2<f32>, k1: f32, k2: f32, p1: f32, p2: f32) -> vec2<f32> {
+  let r2 = dot(p, p);
+  let r4 = r2 * r2;
+  let radial = 1.0 + k1 * r2 + k2 * r4;
+  let tangentialX = 2.0 * p1 * p.x * p.y + p2 * (r2 + 2.0 * p.x * p.x);
+  let tangentialY = p1 * (r2 + 2.0 * p.y * p.y) + 2.0 * p2 * p.x * p.y;
+  return vec2<f32>(p.x * radial + tangentialX, p.y * radial + tangentialY);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
-    // Params
-    let block_size = max(2.0, u.zoom_params.x * 50.0 + 2.0); // 2 to 52 pixels
-    let radius = u.zoom_params.y * 0.4 + 0.05;
-    let grid_opacity = u.zoom_params.z;
-    let tint_strength = u.zoom_params.w;
+  let resolution = u.config.zw;
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let aspect = resolution.x / resolution.y;
+  let time = u.config.x;
 
-    // Mouse
-    var mouse = u.zoom_config.yz;
-    let aspect = resolution.x / resolution.y;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
-    let dist = length(dist_vec);
+  // Bass drives lens breathing amplitude
+  let breathe = bass * u.zoom_params.w * 0.3;
+  let k1 = (u.zoom_params.x - 0.5) * 2.0 * (1.0 + breathe);
+  let k2 = k1 * k1 * 0.5;
+  let dispersion = u.zoom_params.y * 0.04 * (1.0 + mids * 0.8);
+  let anamorphicSqueeze = u.zoom_params.z;
 
-    // Smooth circle mask
-    let mask = 1.0 - smoothstep(radius, radius + 0.05, dist);
+  // Mouse controls focus point
+  let focusPoint = u.zoom_config.yz;
+  let focusOffset = (focusPoint - 0.5) * 0.06;
 
-    var color: vec4<f32>;
+  // Depth controls chromatic separation
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthSep = (1.0 - depth) * 0.5 + 0.5;
 
-    if (mask > 0.001) {
-        // Inside digital lens: Pixelate
-        let blocks = resolution / block_size;
-        let uv_quantized = floor(uv * blocks) / blocks + (0.5 / blocks);
+  // Centered normalized coords
+  let center = vec2<f32>(0.5, 0.5);
+  var p = (uv - center) * vec2<f32>(aspect, 1.0);
 
-        let pixelated = textureSampleLevel(readTexture, non_filtering_sampler, uv_quantized, 0.0);
-        let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // Anamorphic squeeze
+  p.x = p.x * (1.0 + anamorphicSqueeze * 0.3);
 
-        // Grid lines
-        let uv_pixel = uv * resolution;
-        let grid_x = step(block_size - 1.0, uv_pixel.x % block_size);
-        let grid_y = step(block_size - 1.0, uv_pixel.y % block_size);
-        let grid_line = max(grid_x, grid_y);
+  // Apply Brown-Conrady distortion
+  let distortedP = brownConrady(p, k1, k2, k1 * 0.05, k1 * 0.03);
+  let sampleCenter = center + distortedP / vec2<f32>(aspect, 1.0) + focusOffset;
 
-        var lens_color = pixelated;
+  // Chromatic aberration per RGB channel with different refractive indices
+  let r = length(p);
+  let radial = select(vec2<f32>(0.0), p / max(r, 0.0001), r > 0.0001);
+  let radialUV = radial / vec2<f32>(aspect, 1.0);
 
-        // Green matrix tint
-        let tint = vec4<f32>(0.0, 1.0, 0.2, 1.0);
-        lens_color = mix(lens_color, lens_color * tint * 1.5, tint_strength);
+  let rDisp = dispersion * 1.4 * depthSep * (1.0 + r * 1.5);
+  let gDisp = dispersion * 0.7 * depthSep * r;
+  let bDisp = dispersion * 1.1 * depthSep * (1.0 + r * 0.8);
 
-        // Add grid
-        lens_color = mix(lens_color, vec4<f32>(0.0, 0.0, 0.0, 1.0), grid_line * grid_opacity);
+  let rUV = clamp(sampleCenter + radialUV * rDisp, vec2<f32>(0.0), vec2<f32>(1.0));
+  let gUV = clamp(sampleCenter + radialUV * gDisp, vec2<f32>(0.0), vec2<f32>(1.0));
+  let bUV = clamp(sampleCenter - radialUV * bDisp, vec2<f32>(0.0), vec2<f32>(1.0));
 
-        // Mix based on mask edge (soft transition)
-        color = mix(original, lens_color, mask);
+  var color = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b
+  );
 
-    } else {
-        color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    }
+  // Film grain
+  let grain = hash22(uv * 800.0 + time * 60.0).x - 0.5;
+  color += grain * 0.03 * (1.0 + treble * 0.5);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  // ACES tone mapping
+  color = acesToneMap(color * 1.1);
+
+  // Alpha: distortion_strength × chromatic_separation × depth
+  let distStrength = abs(k1) * 0.5 + 0.3;
+  let chromSep = dispersion * depthSep * 2.0;
+  let alpha = clamp(distStrength * chromSep * (0.3 + depth * 0.7), 0.0, 1.0);
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 
 ```
@@ -131,98 +180,171 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "digital-lens",
   "name": "Digital Lens",
   "url": "shaders/digital-lens.wgsl",
-  "category": "image",
-  "description": "A lens that pixelates the image and adds a digital grid under the cursor.",
+  "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, lens breathing driven by bass, ACES tone mapping, and film grain.",
   "params": [
     {
-      "id": "block",
-      "name": "Pixel Size",
+      "id": "distortion",
+      "name": "Distortion",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
-      "id": "radius",
-      "name": "Lens Radius",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "id": "dispersion",
+      "name": "Dispersion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1
     },
     {
-      "id": "grid",
-      "name": "Grid Opacity",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "id": "vignette",
+      "name": "Vignette",
+      "default": 0.4,
+      "min": 0,
+      "max": 1
     },
     {
-      "id": "tint",
-      "name": "Matrix Tint",
-      "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "id": "focus",
+      "name": "Focus Point",
+      "default": 0.2,
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "barrel-distortion",
+    "chromatic-dispersion",
+    "anamorphic"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "lens",
+    "digital",
+    "chromatic",
+    "audio-reactive",
+    "anamorphic"
   ]
 }
+
 ```
 
 ---
 
 ## Agent Specialization
-# Agent Role: The Optimizer
+# Agent Role: The Interactivist
 
 ## Identity
-You are **The Optimizer**, a shader architect focused on performance, elegance, and pipeline integration.
+You are **The Interactivist**, a shader architect focused on input reactivity, feedback loops, and emergent behavior.
 
 ## Upgrade Toolkit
 
-### Performance Techniques
-- Brute force → Early exit conditions
-- Full resolution → Quarter-res blur + full-res combine
-- Per-pixel noise → Blue noise sampling
-- Redundant texture samples → Bilinear LOD
-- Nested loops → Unrolled small kernels
+### Mouse Interaction
+- Position tracking → Gravity wells / attractors
+- Click events → Spawn bursts / shockwaves
+- Velocity tracking → Motion blur trails
+- Multi-touch → Multi-agent systems
 
-### Code Elegance
-- Magic numbers → Named constants
-- Duplicated code → Helper functions
-- Long functions → Logical sections with comments
-- Hard-coded params → Uniform-based tuning
-- GPU-unfriendly ops → Precomputed lookups
+### Audio Reactivity
+- Bass pulse → Scale/brightness modulation
+- Mid frequencies → Pattern morphing speed
+- Treble → Sparkle/additive particles
+- FFT buckets → Multi-band color splitting
 
-### Pipeline Integration
-- Standalone → Designed for slot chaining
-- No feedback → Uses dataTextureA/B for state
-- LDR only → HDR output ready for tone map
-- Single pass → Multi-pass decomposition hint
-- Fixed quality → Level-of-detail scaling
+### Video Feedback
+- Static overlay → Optical flow distortion
+- Fixed transparency → Alpha blending based on depth
+- Simple masking → Luma-keyed particle spawn
+- Direct color → Motion-vector advection
 
-### Post-Process Ready
-- Expose bloom threshold metadata
-- Tag as "expects pp-tone-map" if HDR
-- Document slot recommendations
-- Provide quality presets (low/medium/high)
+### Depth Integration
+- 2D effects → Parallax depth separation
+- Uniform blur → Depth-of-field bokeh
+- Flat shading → Ambient occlusion darkening
+- Screen space → Volumetric depth fog
+
+#### Depth-aware compositing for slot-2/3 effects
+```wgsl
+let z   = textureLoad(readDepthTexture, gid.xy, 0).r;
+let fog = 1.0 - exp(-z * u.zoom_params.z);   // exponential depth fog
+let out = mix(srcColor, fxColor, fog);        // effect strengthens with depth
+```
+Keeps foreground subjects crisp while letting the effect "breathe" in the background — essential when this shader runs in slot 2 or 3 of the chain.
+
+### Feedback Loops
+- Single pass → Temporal accumulation
+- Static state → Ping-pong buffer feedback (dataTextureA ↔ dataTextureB)
+- Linear time → Recursive subdivision
+- Fixed camera → Smooth follow with lag
+- Direct value → Exponential smoothing: `smoothed = mix(smoothed, target, 0.05)`
+
+### Emergent Dynamics Patterns
+```wgsl
+// Spring-damper for smooth mouse follow (prevents jitter)
+fn spring(current: vec2<f32>, target: vec2<f32>, velocity: ptr<function,vec2<f32>>, k: f32, damping: f32, dt: f32) -> vec2<f32> {
+    let force = (target - current) * k - *velocity * damping;
+    *velocity = *velocity + force * dt;
+    return current + *velocity * dt;
+}
+
+// Attractor / gravity well (mouse as gravitational source)
+fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
+    let d = wellPos - pos;
+    let dist2 = dot(d, d) + 0.01;  // avoid singularity
+    return normalize(d) * strength / dist2;
+}
+
+// Beat-reactive pulse with decay
+fn beatPulse(bass: f32, decay: f32, time: f32) -> f32 {
+    return bass * exp(-decay * fract(time * 2.0));  // 2Hz beat assumption
+}
+```
+
+### Audio Binding Reference
+```
+plasmaBuffer[0].x = bass    (20–250 Hz)
+plasmaBuffer[0].y = mids    (250–4000 Hz)
+plasmaBuffer[0].z = treble  (4000–20000 Hz)
+plasmaBuffer[0].w = overall RMS amplitude
+```
+
+#### Attack/release audio envelope (preferred over raw `plasmaBuffer[0].x`)
+```wgsl
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+    let k = select(release, attack, bass > prev);
+    return mix(prev, bass, k);
+}
+```
+Store previous value in `dataTextureA.r` across frames. Eliminates the "strobe every frame" look that raw `plasmaBuffer[0].x` produces. Typical values: `attack = 0.8`, `release = 0.15`.
+
+Reactive patterns:
+- Bass → scale, brightness pulse, warp radius
+- Mids → rotation speed, color shift, pattern morphing
+- Treble → sparkle particles, grain, edge sharpness
+- RMS → overall opacity, global scale breathing
 
 ## Quality Checklist
-- [ ] No per-pixel branching on uniforms
-- [ ] Texture samples minimized (caching used)
-- [ ] Workgroup size optimized (16x16 for Pixelocity)
-- [ ] Early exit for sky/background pixels
-- [ ] LOD quality scaling based on frame time
+- [ ] Mouse affects at least 2 parameters
+- [ ] Audio drives at least 1 visual element (use `bass_env` decay, not raw `plasmaBuffer[0].x`)
+- [ ] Video input influences the effect
+- [ ] Temporal feedback creates trails/smoothing
+- [ ] Emergent behavior (not 1:1 input mapping)
+- [ ] Alpha encodes interaction intensity or trail age
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it production-ready.
+- Keep the original "soul" of the shader while making it alive and reactive.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
 - Do NOT modify the 13-binding header or the Uniforms struct.
-- Preserve or enhance RGBA channel usage.
-- Add JSON params if new tunable values are introduced (max 4 params mapped to zoom_params).
+- `plasmaBuffer[0].x` = bass, `.y` = mids, `.z` = treble. Use them.
+- `u.zoom_config.yz` = mouse position (0-1). `u.zoom_config.w` = mouse down.
+- **Alpha must carry semantic meaning** — trail age, interaction intensity, or depth mask.
+
+## Performance Constraint
+This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
 
 
 ---
@@ -231,7 +353,7 @@ You are **The Optimizer**, a shader architect focused on performance, elegance, 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 140 lines (±20%).
+4. Ensure the upgraded shader is roughly 180 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

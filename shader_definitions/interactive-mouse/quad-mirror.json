@@ -2,7 +2,7 @@
   "id": "quad-mirror",
   "name": "Quad Mirror",
   "url": "shaders/quad-mirror.wgsl",
-  "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, and audio-reactive seam shimmer.",
+  "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, audio-reactive seam shimmer, chromatic aberration, ACES tone mapping, and temporal feedback trails.",
   "params": [
     {
       "id": "hOffset",
@@ -38,7 +38,12 @@
     "geometry",
     "upgraded-rgba",
     "fbm-domain-warp",
-    "audio-reactive"
+    "audio-reactive",
+    "seam-warp",
+    "chromatic-aberration",
+    "aces-tone-map",
+    "temporal-feedback",
+    "depth-aware"
   ],
   "tags": [
     "filter",
@@ -46,6 +51,9 @@
     "kaleidoscope",
     "mirror",
     "geometric",
-    "audio-reactive"
+    "audio-reactive",
+    "post-processing",
+    "tone-map",
+    "temporal"
   ]
 }

@@ -1,6 +1,11 @@
 // ----------------------------------------------------------------
 // Kinetic Neo-Brutalist Megastructure
 // Category: generative
+// Features: raymarched, mouse-driven, audio-reactive, depth-aware,
+//           upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
+// Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
+// Upgraded: 2026-06-14
+// By: Claude Code Batch 3B
 // ----------------------------------------------------------------
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
@@ -24,6 +29,10 @@ struct Uniforms {
     zoom_params: vec4<f32>,  // x=Block Density, y=Repulsion Radius, z=Neon Intensity, w=Travel Speed
     ripples: array<vec4<f32>, 50>,
 };
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn smin(a: f32, b: f32, k: f32) -> f32 {
     let h = max(k - abs(a - b), 0.0) / k;
@@ -131,6 +140,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = vec2<i32>(i32(u.config.z), i32(u.config.w));
     if (coords.x >= dims.x || coords.y >= dims.y) { return; }
     let uv = (vec2<f32>(coords) - 0.5 * vec2<f32>(dims)) / f32(dims.y);
+    let bass = plasmaBuffer[0].x;
     let ro = vec3<f32>(0.0, 0.0, -10.0 + u.config.x * u.zoom_params.w);
     let rd = normalize(vec3<f32>(uv, 1.0));
     var t = 0.0;
@@ -165,14 +175,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let specular = numerator / denominator;
         let diffuse = vec3<f32>(0.3, 0.32, 0.35) * NdotL * (vec3<f32>(1.0) - F);
         let baseColor = diffuse + specular;
-        let neonCol = vec3<f32>(0.0, 1.0, 0.8) * step(0.5, neon) * (0.5 + 0.5 * sin(u.config.y * 10.0));
-        col = baseColor * u.zoom_params.x + neonCol * u.zoom_params.z;
+        let neonCol = vec3<f32>(0.0, 1.0, 0.8) * step(0.5, neon) * (0.5 + 0.5 * sin(u.config.x * 4.0 + bass * 6.0));
+        col = baseColor * u.zoom_params.x + neonCol * u.zoom_params.z * (1.0 + bass);
         let fog = volumetricFog(ro, rd, t);
         col = col * fog.a + fog.rgb;
         alpha = mat_id;
     }
+
+    // ═══ CHUNK: temporal-feedback (dataTextureC → dataTextureA) ═══
+    let prev = textureLoad(dataTextureC, coords, 0);
+    col = mix(col, prev.rgb * 0.92, 0.05 + bass * 0.01);
+
+    // ═══ CHUNK: chromatic-aberration ═══
+    let caStr = 0.003 * (1.0 + bass) + u.zoom_params.z * 0.001;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+    col = acesToneMap(col * 1.2);
+
     let uv01 = vec2<f32>(coords) / vec2<f32>(dims);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(writeTexture, coords, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, coords, vec4<f32>(col, alpha));
 }

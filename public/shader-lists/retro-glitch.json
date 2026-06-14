@@ -159,7 +159,7 @@
     "id": "crt-magnet",
     "name": "CRT Magnet",
     "url": "shaders/crt-magnet.wgsl",
-    "description": "Simulates a CRT monitor with degaussing magnetic distortion near the mouse using unified displacement fields and alpha translucency blending. Features spring-damper mouse tracking, bass-driven magnet pulse via audio envelope, curl-noise field lines, barrel distortion, and bloom.",
+    "description": "Optimized CRT monitor degaussing magnetic distortion near the mouse. Uses canonical fbm/curl noise, unified audio-envelope and spring-damped mouse state, branchless aperture grille, hex-bloom, beam-purity RGB separation, and ACES tone mapping with semantic alpha blending.",
     "params": [
       {
         "id": "magnet_strength",
@@ -194,7 +194,8 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
@@ -1144,7 +1145,7 @@
     "id": "phosphor-decay",
     "name": "Phosphor Decay",
     "url": "shaders/phosphor-decay.wgsl",
-    "description": "CRT phosphor persistence with per-channel decay rates, color bloom, shadow mask, scan-line blanking, depth haze, and bass-reactive bloom burst.",
+    "description": "CRT phosphor persistence with per-channel decay, OkLab-blended trails, audio-reactive bloom, shadow mask, scan-line blanking, depth haze, blackbody temperature grading, and IGN-dithered premultiplied output.",
     "params": [
       {
         "id": "decay_rate",
@@ -1189,7 +1190,10 @@
       "crt",
       "tone-mapped",
       "phosphor",
-      "bloom"
+      "bloom",
+      "oklab",
+      "blackbody",
+      "dithered"
     ]
   },
   {
@@ -1754,12 +1758,17 @@
     "id": "waveform-glitch",
     "name": "Waveform Glitch",
     "url": "shaders/waveform-glitch.wgsl",
-    "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, temporal feedback persistence, and alpha-channel translucency blending. Alpha encodes waveform displacement magnitude * block corruption intensity.",
+    "description": "VHS waveform glitch driven by a Clifford strange attractor, domain-warped FBM, divergence-free curl flow, Voronoi F2-F1 ridge corruption, YUV chroma noise, CRT shadow mask, and temporal feedback persistence. Alpha encodes waveform displacement magnitude * block corruption intensity.",
     "features": [
       "temporal",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "clifford-attractor",
+      "domain-warped-fbm",
+      "curl-flow",
+      "voronoi-ridge-corruption",
+      "yuv-chroma-noise"
     ],
     "params": [
       {
@@ -1810,7 +1819,9 @@
       "datamosh",
       "noise",
       "fractal",
-      "crt"
+      "crt",
+      "attractor",
+      "chroma"
     ]
   },
   {

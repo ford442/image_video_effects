@@ -10,6 +10,15 @@
     "audio-reactive",
     "quantum"
   ],
+  "features": [
+    "raymarched",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration"
+  ],
   "params": [
     {
       "id": "param1",

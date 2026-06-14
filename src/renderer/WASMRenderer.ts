@@ -15,6 +15,7 @@ export interface WASMDiagnostics {
   lastErrorTime: string | null;
   fps: number;
   hasModule: boolean;
+  adapterInfo: string;
 }
 
 export class WASMRenderer implements Renderer {
@@ -92,6 +93,7 @@ export class WASMRenderer implements Renderer {
       lastErrorTime: this.lastErrorTime > 0 ? new Date(this.lastErrorTime).toISOString() : null,
       fps: (WasmBridge && WasmBridge.getFPS?.()) ?? 0,
       hasModule: !!WasmBridge,
+      adapterInfo: (WasmBridge && WasmBridge.getAdapterSummary?.()) ?? '',
     };
   }
 

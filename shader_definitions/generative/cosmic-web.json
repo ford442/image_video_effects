@@ -2,7 +2,7 @@
   "id": "cosmic-web",
   "name": "Cosmic Web Filament",
   "url": "shaders/cosmic-web.wgsl",
-  "description": "Simulates the large-scale structure of the universe with dark matter filaments and voids. Mouse acts as a gravity well.",
+  "description": "Simulates the large-scale structure of the universe with dark matter filaments and voids. Mouse acts as a gravity well; audio and depth drive intensity and color shifts.",
   "tags": [
     "space",
     "procedural",
@@ -13,7 +13,11 @@
   ],
   "features": [
     "mouse-driven",
-    "temporal"
+    "temporal",
+    "audio-reactive",
+    "depth-aware",
+    "aces-tone-map",
+    "chromatic-aberration"
   ],
   "params": [
     {

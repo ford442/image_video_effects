@@ -3,8 +3,8 @@
 ## Metadata
 - **Shader ID**: quad-mirror
 - **Agent Role**: Optimizer
-- **Current Size**: 2933 bytes
-- **Target Line Count**: ~123 lines
+- **Current Size**: 3256 bytes
+- **Target Line Count**: ~180 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -48,6 +48,7 @@ struct Uniforms {
 //            audio-reactive, seam-warp
 //  Complexity: Medium
 //  Created: 2026-05-10
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -105,13 +106,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse = u.zoom_config.yz;
   let time = u.config.x;
 
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
   // Parameters
   let hOffset = (u.zoom_params.x - 0.5) * 0.4;
   let vOffset = (u.zoom_params.y - 0.5) * 0.4;
   let seamWarpAmt = u.zoom_params.z * 0.05;
-  let rotation = u.zoom_params.w * TAU + time * 0.1;
+  // Bass boosts rotation speed for beat-locked spin
+  let rotation = u.zoom_params.w * TAU + time * 0.1 * (1.0 + bass * 0.3);
 
   // Treble → seam warp shimmer
   let warpShimmer = seamWarpAmt * (1.0 + treble * 0.5);
@@ -143,10 +147,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let seamAlphaReduction = warpShimmer * nearSeam * 2.0;
   color.a = max(0.3, color.a - seamAlphaReduction);
 
+  // Mids → saturation boost for audio-reactive colour pop
+  let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let satBoost = 1.0 + mids * 0.4;
+  color = vec4<f32>(mix(vec3<f32>(luma), color.rgb, satBoost), color.a);
+
   textureStore(writeTexture, px, color);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, px, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, px, color);
 }
 
 ```
@@ -157,36 +167,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "quad-mirror",
   "name": "Quad Mirror",
   "url": "shaders/quad-mirror.wgsl",
-  "category": "geometric",
   "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, and audio-reactive seam shimmer.",
   "params": [
     {
       "id": "hOffset",
       "name": "H Mirror Offset",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "vOffset",
       "name": "V Mirror Offset",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "seamWarp",
       "name": "Seam Warp",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "rotation",
       "name": "Rotation",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
@@ -318,7 +327,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 123 lines (±20%).
+4. Ensure the upgraded shader is roughly 180 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

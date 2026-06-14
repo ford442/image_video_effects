@@ -3,7 +3,7 @@
   "name": "Sand Dunes",
   "category": "generative",
   "url": "shaders/sand-dunes.wgsl",
-  "description": "Bagnold dune physics with anisotropic fBm, separation bubbles at crests, and ripple superposition on slip faces. Desert palette with subsurface scattering and HDR saltation sparkles. Audio drives wind migration and treble sparkles. Mouse creates wind shadows. Depth controls atmospheric haze.",
+  "description": "Bagnold dune physics with domain-warped anisotropic fBm, GGX sun glints on grain faces, Rayleigh-Mie atmospheric haze, and temporal sand-drift feedback. Separation bubbles at crests, ripple superposition on slip faces, OkLab desert palette, subsurface scattering and HDR saltation sparkles. Audio drives wind migration, treble sparkles and temporal blend. Mouse creates wind shadows. Depth controls atmospheric haze.",
   "features": [
     "audio-reactive",
     "generative",
@@ -11,6 +11,10 @@
     "anisotropic-fbm",
     "wind-erosion",
     "separation-bubble",
+    "domain-warp",
+    "ggx-specular",
+    "rayleigh-mie-sky",
+    "temporal-feedback",
     "upgraded-rgba",
     "depth-aware"
   ],
@@ -58,6 +62,9 @@
     "audio-reactive",
     "nature",
     "bagnold",
-    "physics"
+    "physics",
+    "domain-warp",
+    "ggx",
+    "atmospheric"
   ]
 }
