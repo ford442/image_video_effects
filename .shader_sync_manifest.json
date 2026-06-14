@@ -4436,7 +4436,11 @@
     "synced_at": 1781141444.3240783
   },
   "gen-quantum-chrome-serpent-ouroboros": {
-    "hash": "d3540b74719163adef2079be0df37f97",
-    "synced_at": 1781251393.5902328
+    "hash": "da3837a138d1b5209967d308a09509d0",
+    "synced_at": 1781337459.358986
+  },
+  "gen-galactic-aether-crystal-geode-core": {
+    "hash": "75c37d02f23d81832cd1f57807637b5e",
+    "synced_at": 1781337459.357161
   }
 }
