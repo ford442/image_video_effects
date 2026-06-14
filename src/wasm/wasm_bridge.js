@@ -404,6 +404,32 @@ export function getAdapterSummary() {
 }
 
 /**
+ * Get the WebGPURenderer::InitStage value identifying which stage of
+ * Initialize() failed (0=None, 8=Ready/success). 0 if no renderer exists yet.
+ *
+ * Deliberately does NOT require state.initialized — see getAdapterSummary().
+ * @returns {number}
+ */
+export function getLastInitErrorStage() {
+  if (!wasmModule) return 0;
+
+  return wasmModule.ccall('getLastInitErrorStage', 'number', [], []);
+}
+
+/**
+ * Get the human-readable reason for the last Initialize() failure. Empty
+ * string if init has not failed (or not been attempted yet).
+ *
+ * Deliberately does NOT require state.initialized — see getAdapterSummary().
+ * @returns {string}
+ */
+export function getLastInitErrorMessage() {
+  if (!wasmModule) return '';
+
+  return wasmModule.ccall('getLastInitErrorMessage', 'string', [], []);
+}
+
+/**
  * Check if renderer is initialized.
  * @returns {boolean}
  */
@@ -737,6 +763,8 @@ const wasmBridge = {
   clearRipples,
   getFPS,
   getAdapterSummary,
+  getLastInitErrorStage,
+  getLastInitErrorMessage,
   isInitialized,
   uploadImageData,
   uploadVideoFrame,

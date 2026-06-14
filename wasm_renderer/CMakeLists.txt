@@ -45,7 +45,7 @@ set(EXPORTED_FUNCTIONS
     ",_setSlotShader,_setSlotParams,_setSlotMode"
     ",_updateUniforms,_updateMousePos,_setMouseDown,_updateAudioData,_updateDepthMap"
     ",_setInputSource,_addRipple,_clearRipples,_setTime,_setZoomParams"
-    ",_getFPS,_getAdapterSummary,_isRendererInitialized,_loadImageData,_uploadVideoFrame"
+    ",_getFPS,_getAdapterSummary,_getLastInitErrorStage,_getLastInitErrorMessage,_isRendererInitialized,_loadImageData,_uploadVideoFrame"
     ",_resizeCanvas"
     ",_beginFrameCapture,_getFrameCaptureState,_readCapturedFrame,_endFrameCapture"
     ",_getCanvasWidth,_getCanvasHeight"

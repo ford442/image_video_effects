@@ -65,6 +65,8 @@ _setTime,\
 _setZoomParams,\
 _getFPS,\
 _getAdapterSummary,\
+_getLastInitErrorStage,\
+_getLastInitErrorMessage,\
 _isRendererInitialized,\
 _loadImageData,\
 _uploadVideoFrame,\

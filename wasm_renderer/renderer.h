@@ -261,6 +261,15 @@ public:
     // Populated during CreateDevice(). Empty string if not yet initialized.
     const std::string& GetAdapterSummary() const { return adapterSummary_; }
 
+    // ── Structured init-failure diagnostics ─────────────────────────────────
+    // Identifies which stage of Initialize() failed. Stays InitStage::None
+    // before the first Initialize() call and InitStage::Ready after success.
+    enum class InitStage : int {
+        None = 0, Instance, Adapter, Device, Surface, Resources, BindGroups, Pipeline, Ready
+    };
+    int GetLastInitErrorStage() const { return static_cast<int>(failedStage_); }
+    const std::string& GetLastInitErrorMessage() const { return lastError_; }
+
     // ═══════════════════════════════════════════════════════════════════════════
     // PHASE 2: FRAME CAPTURE (async GPU readback for screenshots / recording)
     // ═══════════════════════════════════════════════════════════════════════════
@@ -285,9 +294,9 @@ private:
     // ═══════════════════════════════════════════════════════════════════════════
     bool CreateDevice();
     bool CreateResources();
-    void CreateBindGroupLayout();
-    void CreateBindGroups();
-    void CreateRenderPipeline();
+    bool CreateBindGroupLayout();
+    bool CreateBindGroups();
+    bool CreateRenderPipeline();
     void CreateRenderBindGroup();
     void ConfigureSurface();
     void PresentToSurface();
@@ -327,6 +336,21 @@ private:
     // Adapter/device/limits/format summary, built during CreateDevice().
     // See GetAdapterSummary().
     std::string adapterSummary_;
+
+    // Structured init-failure diagnostics. Reset at the start of each
+    // Initialize() call; failedStage_ becomes InitStage::Ready on success.
+    InitStage failedStage_ = InitStage::None;
+    std::string lastError_;
+
+    // Set by the device-lost callback; checked by Render() and other public
+    // methods so they become safe no-ops instead of issuing commands against
+    // a lost device.
+    bool deviceLost_ = false;
+
+    // Consecutive PresentToSurface() failures (bad GetCurrentTexture status).
+    // Logged for the first few failures, then suppressed; reset on success
+    // or canvas resize.
+    int presentFailureCount_ = 0;
 
     // Compute pipeline (single shared layout for all compute shaders)
     WGPUBindGroupLayoutHandle computeBindGroupLayout_;

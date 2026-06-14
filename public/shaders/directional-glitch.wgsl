@@ -2,7 +2,8 @@
 //  Directional Glitch
 //  Category: interactive-mouse
 //  Features: mouse-driven, glitch, audio-reactive, temporal-feedback,
-//            chromatic-aberration, depth-aware, hdr, tonemapped
+//            chromatic-aberration, depth-aware, hdr, tonemapped,
+//            curl-noise, domain-warp, voronoi-ridges
 //  Complexity: Medium
 //  Created: 2026-05-10
 //  Upgraded: 2026-06-14
@@ -73,6 +74,29 @@ fn curl2D(p: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(nx, -ny) / (2.0 * eps);
 }
 
+// ── Cellular ridges (Voronoi F2-F1) for multi-scale glitch bands ──
+fn voronoiEdges(p: vec2<f32>) -> f32 {
+    var F1: f32 = 999999.0;
+    var F2: f32 = 999999.0;
+    let ip = floor(p);
+    for (var i: i32 = -1; i <= 1; i = i + 1) {
+        for (var j: i32 = -1; j <= 1; j = j + 1) {
+            let n = ip + vec2<f32>(f32(i), f32(j));
+            let d = length(p - n - hash21(n));
+            if (d < F1) { F2 = F1; F1 = d; } else if (d < F2) { F2 = d; }
+        }
+    }
+    return F2 - F1;
+}
+
+// Temporally coherent hash for sparkling blocks
+fn temporalHash(p: vec2<f32>, time: f32) -> f32 {
+    let seed = floor(time * 8.0);
+    let n1 = hash21(p + vec2<f32>(seed));
+    let n2 = hash21(p + vec2<f32>(seed + 1.0));
+    return mix(n1, n2, fract(time * 8.0));
+}
+
 // ── Color / tone mapping ──────────────────────────────────────────
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -139,11 +163,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let curl = curl2D(uv01 * 6.0 + mouse * 2.0 + vec2<f32>(time * 0.1));
     let dir = normalize(mix(radial, curl, 0.35 * intensity) + vec2<f32>(0.0001));
 
-    // Domain-warped FBM drives the glitch blocks
+    // Domain-warped FBM + Voronoi ridges drive the glitch blocks
     let noiseScale = 8.0 + scatter * 64.0;
     let warp = domainWarp(uv01 * noiseScale + vec2<f32>(time * 0.3), intensity * 0.5, 3);
     let field = fbm(warp + bass * 0.5, 4);
-    let glitchMask = step(1.0 - scatter * 0.7, field);
+    let cells = voronoiEdges(uv01 * noiseScale * 0.5 + vec2<f32>(time * 0.2));
+    let trigger = field + cells * 0.4 * intensity;
+    let glitchMask = step(1.0 - scatter * 0.6, trigger);
 
     let disp = glitchMask * intensity * mask * (0.04 + bass * 0.03);
     let caAmount = disp * 3.0 + depth * 0.001 + bass * 0.001;
@@ -152,10 +178,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aberrated = chromaticAberration(uv01, caAmount);
     var glitch = aberrated * (1.0 + disp * 12.0);
 
-    // Audio-reactive blackbody color and sparkle
-    let temp = mix(2200.0, 14000.0, clamp(bass * 0.7 + field * 0.4, 0.0, 1.0));
+    // Audio-reactive blackbody color and temporally coherent sparkle
+    let temp = mix(2200.0, 14000.0, clamp(bass * 0.7 + trigger * 0.4, 0.0, 1.0));
     glitch *= blackbodyRGB(temp);
-    let spark = hash21(uv01 * 300.0 + vec2<f32>(time * 15.0));
+    let spark = temporalHash(uv01 * 120.0 + mouse * 20.0, time);
     glitch += vec3<f32>(spark * mask * intensity * 0.5 * (1.0 + bass));
 
     // Blend with original based on glitch strength

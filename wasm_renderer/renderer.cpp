@@ -190,33 +190,68 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
     if (canvasSelector && *canvasSelector) {
         canvasSelector_ = canvasSelector;
     }
-    
+
+    failedStage_ = InitStage::None;
+    lastError_.clear();
+
     // ARCH: [Low] Using printf for logging. Consider abstracting behind
     // a Logger interface to allow different output targets (console, file, etc.)
     printf("🚀 Pixelocity WASM Renderer initializing...\n");
     printf("   Canvas: %dx%d\n", canvasWidth_, canvasHeight_);
 
     if (!CreateDevice()) {
+        // CreateDevice() sets failedStage_/lastError_ at its specific failure
+        // point; fall back to a generic message if it somehow didn't.
+        if (failedStage_ == InitStage::None) failedStage_ = InitStage::Device;
+        if (lastError_.empty()) lastError_ = "CreateDevice() failed: see console for details";
         printf("❌ Failed to create WebGPU device\n");
+        Shutdown();
         return false;
     }
 
     if (!CreateResources()) {
+        failedStage_ = InitStage::Resources;
+        lastError_ = "CreateResources() failed: see console for details";
         printf("❌ Failed to create resources\n");
+        Shutdown();
         return false;
     }
 
-    CreateBindGroupLayout();
-    CreateRenderPipeline();
-    CreateBindGroups();
+    if (!CreateBindGroupLayout()) {
+        failedStage_ = InitStage::BindGroups;
+        lastError_ = "CreateBindGroupLayout() failed: see console for details";
+        printf("❌ Failed to create bind group layout\n");
+        Shutdown();
+        return false;
+    }
+
+    if (!CreateRenderPipeline()) {
+        failedStage_ = InitStage::Pipeline;
+        lastError_ = "CreateRenderPipeline() failed: see console for details";
+        printf("❌ Failed to create render pipeline\n");
+        Shutdown();
+        return false;
+    }
+
+    if (!CreateBindGroups()) {
+        failedStage_ = InitStage::BindGroups;
+        lastError_ = "CreateBindGroups() failed: see console for details";
+        printf("❌ Failed to create bind groups\n");
+        Shutdown();
+        return false;
+    }
 
     initialized_ = true;
+    failedStage_ = InitStage::Ready;
     printf("✅ WebGPU Renderer initialized successfully\n");
     return true;
 }
 
 void WebGPURenderer::Shutdown() {
-    if (!initialized_) return;
+    // No early-return on !initialized_: Shutdown() must also clean up after a
+    // failed Initialize() (e.g. CreateDevice() succeeded but CreateResources()
+    // failed). All .reset() calls below are null-safe, so running this on a
+    // partially-initialized (or already-shutdown) renderer is harmless.
 
     // Cancel any in-progress frame capture before releasing the readback buffer.
     if (readbackBuffer_.get() && captureState_ == CaptureState::Pending) {
@@ -264,6 +299,8 @@ void WebGPURenderer::Shutdown() {
     instance_.reset();
 
     initialized_ = false;
+    deviceLost_ = false;
+    presentFailureCount_ = 0;
     printf("🛑 WebGPU Renderer shutdown\n");
 }
 
@@ -275,6 +312,8 @@ bool WebGPURenderer::CreateDevice() {
 
     if (!instance_) {
         printf("❌ Failed to create WebGPU instance\n");
+        failedStage_ = InitStage::Instance;
+        lastError_ = "Failed to create WebGPU instance (wgpuCreateInstance returned null)";
         return false;
     }
 
@@ -368,6 +407,9 @@ bool WebGPURenderer::CreateDevice() {
         printf("❌ Failed to get WebGPU adapter after all fallback attempts.\n");
         printf("   This commonly happens on Windows with Chrome/Edge when using emdawnwebgpu.\n");
         printf("   The JS WebGPU renderer is unaffected. Consider using ?renderer=webgpu or the UI toggle.\n");
+        failedStage_ = InitStage::Adapter;
+        lastError_ = "Failed to obtain a WebGPU adapter after all fallback attempts "
+                      "(HighPerformance/Undefined/LowPower/forceFallbackAdapter)";
         return false;
     }
 
@@ -449,6 +491,8 @@ bool WebGPURenderer::CreateDevice() {
         printf("   This adapter/browser combination is too weak to run the WASM renderer.\n");
         printf("   Consider ?renderer=webgpu (JS renderer) or a different GPU/browser.\n");
         adapterSummary_ = "INSUFFICIENT adapter limits — see console for details";
+        failedStage_ = InitStage::Adapter;
+        lastError_ = adapterSummary_;
         wgpuAdapterInfoFreeMembers(adapterInfo);
         return false;
     }
@@ -518,8 +562,11 @@ bool WebGPURenderer::CreateDevice() {
             }
             printf("[WebGPU] Device lost (%s): %.*s\n", reasonStr,
                    static_cast<int>(message.length), message.data ? message.data : "");
+            if (auto* self = static_cast<WebGPURenderer*>(userdata1)) {
+                self->deviceLost_ = true;
+            }
         },
-        nullptr, nullptr
+        this, nullptr
     };
 
     // ── Uncaptured-error callback ────────────────────────────────────────────
@@ -569,6 +616,8 @@ bool WebGPURenderer::CreateDevice() {
 
     if (!device_) {
         printf("❌ Failed to get WebGPU device after adapter was obtained.\n");
+        failedStage_ = InitStage::Device;
+        lastError_ = "Failed to obtain a WebGPU device from the adapter (wgpuAdapterRequestDevice failed)";
         return false;
     }
 
@@ -625,6 +674,8 @@ bool WebGPURenderer::CreateDevice() {
             adapterSummary_ = "Surface creation failed for canvas '";
             adapterSummary_ += canvasSelector_;
             adapterSummary_ += "'";
+            failedStage_ = InitStage::Surface;
+            lastError_ = adapterSummary_;
             return false;
         }
         surface_.reset(reinterpret_cast<WGPUSurface>(surfHandle));
@@ -781,7 +832,7 @@ bool WebGPURenderer::CreateResources() {
     return true;
 }
 
-void WebGPURenderer::CreateBindGroupLayout() {
+bool WebGPURenderer::CreateBindGroupLayout() {
     // 13 fixed bindings matching the universal compute shader layout.
     // See AGENTS.md "Shader Bindings (IMMUTABLE)" for the authoritative list.
     static constexpr uint32_t BINDING_COUNT = 13;
@@ -868,6 +919,10 @@ void WebGPURenderer::CreateBindGroupLayout() {
     layoutDesc.entries = entries;
 
     computeBindGroupLayout_.reset(wgpuDeviceCreateBindGroupLayout(device_.get(), &layoutDesc));
+    if (!computeBindGroupLayout_.get()) {
+        printf("❌ Failed to create compute bind group layout\n");
+        return false;
+    }
 
     // Create pipeline layout
     WGPUBindGroupLayout rawLayout = computeBindGroupLayout_.get();
@@ -878,9 +933,14 @@ void WebGPURenderer::CreateBindGroupLayout() {
     pipelineLayoutDesc.bindGroupLayouts = &rawLayout;
 
     computePipelineLayout_.reset(wgpuDeviceCreatePipelineLayout(device_.get(), &pipelineLayoutDesc));
+    if (!computePipelineLayout_.get()) {
+        printf("❌ Failed to create compute pipeline layout\n");
+        return false;
+    }
+    return true;
 }
 
-void WebGPURenderer::CreateRenderPipeline() {
+bool WebGPURenderer::CreateRenderPipeline() {
     // Simple vertex shader for full-screen quad
     const char* vertexShaderCode = R"(
         @vertex
@@ -976,10 +1036,15 @@ void WebGPURenderer::CreateRenderPipeline() {
 
     renderPipeline_.reset(wgpuDeviceCreateRenderPipeline(device_.get(), &pipelineDesc));
     // vertexModule and fragmentModule are released automatically via RAII
+    if (!renderPipeline_.get()) {
+        printf("❌ Failed to create render pipeline\n");
+        return false;
+    }
+    return true;
 }
 
-void WebGPURenderer::CreateBindGroups() {
-    if (!writeTexture_.get() || !uniformBuffer_.get()) return;
+bool WebGPURenderer::CreateBindGroups() {
+    if (!writeTexture_.get() || !uniformBuffer_.get()) return false;
 
     static constexpr uint32_t BINDING_COUNT = 13;
     WGPUTextureViewDescriptor viewDesc = {};
@@ -1057,8 +1122,18 @@ void WebGPURenderer::CreateBindGroups() {
         }
     }
 
+    if (!computeBindGroup_.get()) {
+        printf("❌ Failed to create compute bind group\n");
+        return false;
+    }
+
     // Create the render bind group used for surface presentation.
     CreateRenderBindGroup();
+    if (!renderBindGroup_.get()) {
+        printf("❌ Failed to create render bind group\n");
+        return false;
+    }
+    return true;
 }
 
 // ─── Render bind group for surface presentation ───────────────────────────────
@@ -1149,8 +1224,17 @@ void WebGPURenderer::PresentToSurface() {
 #endif
     if (!ok) {
         if (surfaceTex.texture) wgpuTextureRelease(surfaceTex.texture);
+        presentFailureCount_++;
+        if (presentFailureCount_ <= 5) {
+            printf("⚠️  PresentToSurface: GetCurrentTexture failed (status=%d), attempt %d\n",
+                   (int)surfaceTex.status, presentFailureCount_);
+            if (presentFailureCount_ == 5) {
+                printf("⚠️  PresentToSurface: suppressing further failure logs until next success or resize\n");
+            }
+        }
         return;
     }
+    presentFailureCount_ = 0;
 
     // Create a view of the swap-chain texture to use as the render attachment.
     WGPUTextureView surfaceView = wgpuTextureCreateView(surfaceTex.texture, nullptr);
@@ -1195,7 +1279,7 @@ void WebGPURenderer::PresentToSurface() {
 }
 
 bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
-    if (!device_.get()) return false;
+    if (!device_.get() || deviceLost_) return false;
 
     // Check if already loaded
     if (shaders_.find(id) != shaders_.end()) {
@@ -1648,7 +1732,7 @@ void WebGPURenderer::RecreateTextures() {
 void WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
     if (newWidth <= 0 || newHeight <= 0) return;
     if (newWidth == canvasWidth_ && newHeight == canvasHeight_) return;
-    if (!initialized_) return;
+    if (!initialized_ || deviceLost_) return;
 
     printf("🔄 Resizing canvas: %dx%d → %dx%d\n",
            canvasWidth_, canvasHeight_, newWidth, newHeight);
@@ -1672,6 +1756,9 @@ void WebGPURenderer::ResizeCanvas(int newWidth, int newHeight) {
         readbackBytesPerRow_ = 0;
     }
     captureState_ = CaptureState::Idle;
+
+    // A resize gives presentation a fresh start at the new size.
+    presentFailureCount_ = 0;
 
     printf("✅ Canvas resized successfully\n");
 }
@@ -1802,7 +1889,7 @@ static void CopyTex(WGPUCommandEncoder enc,
 }
 
 void WebGPURenderer::Render() {
-    if (!initialized_) return;
+    if (!initialized_ || deviceLost_) return;
 
     // Upload all per-frame global uniforms (time, mouse, ripples, audio).
     UpdateUniformBuffer();
@@ -1951,7 +2038,7 @@ void WebGPURenderer::Present() {
 
 void WebGPURenderer::BeginFrameCapture() {
     if (captureState_ == CaptureState::Pending) return;  // already in flight
-    if (!initialized_ || !writeTexture_.get() || !queue_.get() || !device_.get()) {
+    if (!initialized_ || deviceLost_ || !writeTexture_.get() || !queue_.get() || !device_.get()) {
         captureState_ = CaptureState::Error;
         return;
     }

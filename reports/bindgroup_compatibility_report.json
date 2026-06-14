@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-14T08:40:55.300095",
+  "timestamp": "2026-06-14T22:09:09.901409",
   "total_shaders": 1224,
   "compatible_count": 1214,
   "incompatible_count": 6,
@@ -2444,7 +2444,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -3851,6 +3852,7 @@
       "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
+        "dataTextureA",
         "writeTexture",
         "writeDepthTexture"
       ],
@@ -3861,8 +3863,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -4102,8 +4104,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -5382,8 +5384,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -6366,8 +6368,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -6721,8 +6723,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -7367,6 +7369,7 @@
       "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
+        "dataTextureA",
         "writeTexture",
         "writeDepthTexture"
       ],
@@ -7676,8 +7679,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -8203,9 +8206,9 @@
       "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
-        "writeTexture",
         "dataTextureA",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "writeTexture"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -8214,8 +8217,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -10232,7 +10235,9 @@
       "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
-        "writeTexture"
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -10379,7 +10384,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -11352,7 +11358,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -11678,7 +11685,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -13460,7 +13468,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeDepthTexture",
-        "writeTexture"
+        "writeTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -15483,7 +15492,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -16073,7 +16083,9 @@
       "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
-        "writeTexture"
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -17121,7 +17133,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeDepthTexture",
-        "writeTexture"
+        "writeTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -17360,6 +17373,7 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
+        "dataTextureA",
         "writeDepthTexture"
       ],
       "uniforms_struct": {
@@ -21025,7 +21039,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -21034,8 +21049,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -23819,6 +23834,9 @@
       "texture_store_targets": [
         "writeTexture",
         "writeDepthTexture",
+        "dataTextureA",
+        "writeTexture",
+        "writeDepthTexture",
         "dataTextureA"
       ],
       "uniforms_struct": {
@@ -23828,8 +23846,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -24739,7 +24757,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -24748,8 +24767,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -26845,8 +26864,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -27323,8 +27342,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -27578,6 +27597,10 @@
       "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
+        "dataTextureA",
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA",
         "writeTexture",
         "writeDepthTexture"
       ],
@@ -27588,8 +27611,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -27795,21 +27818,6 @@
         "dataTextureB",
         "dataTextureB",
         "writeTexture",
-        "writeDepthTexture",
-        "dataTextureB",
-        "dataTextureB",
-        "writeTexture",
-        "writeDepthTexture",
-        "dataTextureB",
-        "dataTextureB",
-        "writeTexture",
-        "writeDepthTexture",
-        "dataTextureB",
-        "dataTextureB",
-        "writeTexture",
-        "writeDepthTexture",
-        "dataTextureB",
-        "writeTexture",
         "writeDepthTexture"
       ],
       "uniforms_struct": {
@@ -27819,8 +27827,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -28019,7 +28027,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -28028,8 +28037,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -28358,8 +28367,10 @@
       "texture_store_targets": [
         "writeTexture",
         "writeDepthTexture",
+        "dataTextureA",
         "writeTexture",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -28368,8 +28379,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -28398,8 +28409,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -29050,8 +29061,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -29459,6 +29470,7 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
+        "dataTextureA",
         "writeDepthTexture"
       ],
       "uniforms_struct": {
@@ -30964,8 +30976,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -31107,6 +31119,9 @@
       "texture_store_targets": [
         "writeTexture",
         "dataTextureA",
+        "writeDepthTexture",
+        "writeTexture",
+        "dataTextureA",
         "writeDepthTexture"
       ],
       "uniforms_struct": {
@@ -31116,8 +31131,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -33704,7 +33719,9 @@
       "texture_store_targets": [
         "writeTexture",
         "writeDepthTexture",
+        "dataTextureA",
         "writeTexture",
+        "dataTextureA",
         "writeDepthTexture"
       ],
       "uniforms_struct": {
@@ -33733,8 +33750,8 @@
       "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
-        "writeTexture",
         "dataTextureA",
+        "writeTexture",
         "writeDepthTexture"
       ],
       "uniforms_struct": {
@@ -33744,8 +33761,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -34325,8 +34342,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -34566,8 +34583,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -34735,6 +34752,7 @@
       "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
+        "dataTextureA",
         "writeTexture",
         "writeDepthTexture"
       ],
@@ -34745,8 +34763,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -36182,8 +36200,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -36382,8 +36400,7 @@
       "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
-        "writeTexture",
-        "writeDepthTexture",
+        "dataTextureA",
         "writeTexture",
         "writeDepthTexture"
       ],
