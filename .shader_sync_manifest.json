@@ -4440,7 +4440,11 @@
     "synced_at": 1781337459.358986
   },
   "gen-galactic-aether-crystal-geode-core": {
-    "hash": "75c37d02f23d81832cd1f57807637b5e",
-    "synced_at": 1781337459.357161
+    "hash": "7c7dc32e5e6799bcea42c080c4d2c83c",
+    "synced_at": 1781424042.8323567
+  },
+  "gen-quantum-fluorescent-nebula-anemone": {
+    "hash": "fc93516bb307c218a9767cf24b382231",
+    "synced_at": 1781424042.7255056
   }
 }
