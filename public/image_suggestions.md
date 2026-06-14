@@ -6326,6 +6326,71 @@ To help organize prompts, please use tags from the following categories:
 
 
 
+### Suggestion: Bioluminescent Deep Sea Station
+- **Date:** 2026-06-16
+- **Prompt:** "A photorealistic, highly detailed wide shot of an advanced deep sea research station submerged in the abyssal zone. The station features glowing bioluminescent flora integrated into its sleek, metallic hull. Dramatic lighting from the station's searchlights pierces through the dark, murky water, illuminating alien-like sea creatures. The mood is mysterious and isolated. Captured with a 14mm ultra-wide lens, showing immense scale."
+- **Negative prompt:** "daylight, surface, bright, lowres, text, watermark, cartoonish, shallow depth of field"
+- **Tags:** sci-fi, underwater, bioluminescent, deep-sea, photorealism
+- **Style / Reference:** Photorealistic, cinematic lighting
+- **Composition:** Wide shot, showing the scale of the station against the vast darkness
+- **Color palette:** Deep blues, neon greens, piercing white lights
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260616_deep-sea-station.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Good for testing water distortion, caustics, and volumetric lighting in murky environments.
+
+### Suggestion: Steampunk Airship in a Storm
+- **Date:** 2026-06-16
+- **Prompt:** "A cinematic, action-packed medium shot of a massive steampunk airship navigating through a fierce thunderstorm. The airship has polished brass and copper details, gigantic turning gears, and tattered canvas sails. Lightning strikes illuminate the dark, roiling storm clouds in the background, casting harsh shadows across the ship's deck. Raindrops are visible splashing against the camera lens. The mood is tense and epic. Shot with a 50mm lens, fast shutter speed."
+- **Negative prompt:** "calm, sunny, modern, planes, jet engines, low detail, blurry"
+- **Tags:** steampunk, airship, storm, cinematic, action
+- **Style / Reference:** Cinematic, realistic fantasy, dramatic weather
+- **Composition:** Medium shot, dynamic angle tilted slightly upwards
+- **Color palette:** Gunmetal grey, dark stormy blues, bright flashes of yellow/white lightning, warm copper tones
+- **Aspect ratio:** 21:9
+- **Reference images:** `public/images/suggestions/20260616_steampunk-airship.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Useful for testing particle effects like rain, dramatic lightning flashes, and metallic reflections under harsh lighting.
+
+### Suggestion: Cybernetic Zen Garden
+- **Date:** 2026-06-16
+- **Prompt:** "A serene, high-angle close-up of a cybernetic Zen garden in a futuristic metropolis. Instead of sand, the ground is made of perfectly raked, glowing fiber-optic cables. Smooth, polished obsidian stones rest peacefully among metallic bonsai trees with luminescent holographic leaves. Soft, diffused ambient lighting from neon signs in the distant background gently illuminates the scene. The mood is tranquil yet futuristic. Shot with an 85mm macro lens, shallow depth of field."
+- **Negative prompt:** "messy, chaotic, daylight, natural sand, real plants, lowres, overexposed"
+- **Tags:** cyberpunk, zen-garden, futuristic, peaceful, macro
+- **Style / Reference:** Cyberpunk, macro photography, hyper-detailed
+- **Composition:** High-angle close-up, rule of thirds, shallow depth of field focusing on an obsidian stone
+- **Color palette:** Dark obsidian, neon pinks and cyan glows, soft purples
+- **Aspect ratio:** 4:5
+- **Reference images:** `public/images/suggestions/20260616_cyber-zen-garden.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Excellent for testing glowing lines, depth of field effects, and glossy surface reflections.
+
+### Suggestion: Temporal Fractured Cityscape
+- **Date:** 2026-06-16
+- **Prompt:** "A surreal, wide-angle landscape of a futuristic cityscape being torn apart by a temporal anomaly. Skyscrapers are fracturing into geometric shards, with pieces frozen in mid-air. The sky is a swirling vortex of clashing times of day—golden hour on the left, midnight starry sky on the right. Volumetric god-rays pierce through the shattered buildings. The mood is chaotic and mind-bending. Captured with a 24mm tilt-shift lens, creating a sense of disjointed reality."
+- **Negative prompt:** "normal city, boring, flat, lowres, ugly, standard sky"
+- **Tags:** surreal, sci-fi, time-fracture, cityscape, mind-bending
+- **Style / Reference:** Surrealist sci-fi, highly detailed, dramatic lighting
+- **Composition:** Wide-angle landscape, chaotic but balanced, leading lines drawing the eye to the vortex
+- **Color palette:** Vibrant clashing colors, golden sunset oranges mixed with deep night blues and purples
+- **Aspect ratio:** 16:9
+- **Reference images:** `public/images/suggestions/20260616_temporal-cityscape.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Perfect for testing complex geometry fracturing, multiple lighting sources, and chaotic volumetric effects.
+
+### Suggestion: Magical Library at Midnight
+- **Date:** 2026-06-16
+- **Prompt:** "A highly detailed interior shot of a vast, magical library at midnight. Towering mahogany bookshelves are filled with ancient, glowing grimoires. Floating candles cast a warm, flickering light across the dusty air. In the center, a magical tome is open on a lectern, emitting a soft blue ethereal mist that swirls towards the vaulted ceiling. The mood is mystical and quiet. Shot with a 35mm lens from a low angle to emphasize the height of the bookshelves."
+- **Negative prompt:** "modern, bright daylight, empty, sterile, clean, lowres, bad lighting"
+- **Tags:** fantasy, library, magic, interior, glowing
+- **Style / Reference:** Fantasy illustration, atmospheric lighting, detailed interior
+- **Composition:** Low angle, symmetrical composition leading to the central glowing tome
+- **Color palette:** Warm candlelit oranges, deep wood browns, ethereal cyan and blue magic glows
+- **Aspect ratio:** 3:2
+- **Reference images:** `public/images/suggestions/20260616_magical-library.jpg`
+- **License / Attribution:** CC0
+- **Notes:** Great for testing warm/cool lighting contrast, volumetric dust and mist, and detailed texture maps.
+
 ## Attribution & legal
 
 - Always record the **License / Attribution** for reference images and any artist references. Confirm you have the rights to store and use included images.
