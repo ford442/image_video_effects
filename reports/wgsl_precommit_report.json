@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-06-14T07:08:16.977739",
+  "naga_bin": "/root/.cargo/bin/naga",
+  "total": 1,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 1,
+  "results": [
+    {
+      "file": "public/shaders/_template_canonical_compute.wgsl",
+      "skipped": true,
+      "skip_reason": "template file",
+      "naga_ok": null,
+      "naga_error": null,
+      "bindgroup_status": null,
+      "bindgroup_errors": [],
+      "ok": true
+    }
+  ]
+}

@@ -167,6 +167,37 @@ jobs:
         path: playwright-report/
         retention-days: 30
 
+  wgsl-precommit-gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install naga CLI
+      run: |
+        rustup update stable
+        cargo install naga-cli
+    
+    - name: Run WGSL pre-commit gate on changed files
+      run: python3 scripts/wgsl_precommit_gate.py --base origin/main
+    
+    - name: Upload gate report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: wgsl-precommit-report
+        path: reports/wgsl_precommit_report.json
+        retention-days: 30
+
   lint:
     runs-on: ubuntu-latest
     permissions:

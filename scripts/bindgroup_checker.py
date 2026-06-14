@@ -45,6 +45,7 @@ EXPECTED_UNIFORMS_FIELDS = {
 # Known special files
 TEMPLATE_FILES = [
     "_hash_library.wgsl",
+    "_template_canonical_compute.wgsl",
     "_template_shared_memory.wgsl",
     "_template_workgroup_atomics.wgsl",
     "gen_capabilities.wgsl",
