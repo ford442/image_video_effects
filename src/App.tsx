@@ -21,6 +21,10 @@ import {
 import { fetchContentManifest, LoadedContent } from './services/contentLoader';
 import { VideoSegment, pickRandomSegment, hydrateDurations } from './services/videoSegmentManager';
 import { savePreset } from './services/vjPresets';
+import { saveMyVjSet } from './services/myVjSets';
+import { mapVJStackToSharedChain } from './services/vjToSharedChain';
+import { buildCatalog } from './services/shaderCatalog';
+import { mapOrderedParamsToSlotParams } from './utils/shaderParamMapping';
 import { SharedChain, encodeChain, decodeChain, buildSharedChain, expandSharedChain, MAX_SHARED_SLOTS } from './services/layerChainShare';
 import { useAudioAnalyzer } from './hooks';
 import './style.css';
@@ -276,6 +280,9 @@ function MainApp() {
     const [recordingCountdown, setRecordingCountdown] = useState(8);
     const [showShareModal, setShowShareModal] = useState(false);
     const [shareableLink, setShareableLink] = useState('');
+    // Vibe prompt shown alongside the link in the share modal (VJ-set shares
+    // only). It is intentionally NOT embedded in the `?chain=` link.
+    const [shareVibeText, setShareVibeText] = useState('');
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -383,15 +390,7 @@ function MainApp() {
         const shaderEntry = availableModesRef.current.find(m => m.id === shaderId);
         if (!shaderEntry || !shaderEntry.params) return {};
 
-        const updates: Partial<SlotParams> = {};
-        for (const [key, value] of Object.entries(slotParamsUpdates)) {
-            const paramIndex = shaderEntry.params.findIndex(p => p.id === key);
-            if (paramIndex === 0) updates.zoomParam1 = value;
-            else if (paramIndex === 1) updates.zoomParam2 = value;
-            else if (paramIndex === 2) updates.zoomParam3 = value;
-            else if (paramIndex === 3) updates.zoomParam4 = value;
-        }
-        return updates;
+        return mapOrderedParamsToSlotParams(slotParamsUpdates, shaderEntry.params.map(p => p.id));
     }, []);
 
     const handleApplyParamsDirect = useCallback((paramsList: Record<string, number>[]) => {
@@ -882,6 +881,49 @@ function MainApp() {
         if (shaderIds.length === 0 || params.length === 0) return;
         savePreset(name, shaderIds, params);
     }, [aiVj]);
+
+    /**
+     * Encode the live AI VJ stack into a `?chain=` share link via the existing
+     * share modal. The vibe prompt is shown alongside the link (not in the URL).
+     * Returns the encoded chain string (for "Save as My VJ Set"), or '' on failure.
+     */
+    const buildVjChainString = useCallback(async (): Promise<string> => {
+        if (!aiVj) return '';
+        const shaderIds = aiVj.getActiveShaderIds();
+        const params = aiVj.getCurrentParams();
+        if (shaderIds.length === 0) return '';
+        const catalog = await buildCatalog();
+        const knownIds = new Set(catalog.map(s => s.id));
+        // Generic-defaults compaction (no per-shader lookup) so the app's
+        // load-time decode path reproduces the same zoomParam1-4 values.
+        const chain = mapVJStackToSharedChain(shaderIds, params, catalog, knownIds);
+        return encodeChain(chain);
+    }, [aiVj]);
+
+    const handleShareVjSet = useCallback(async () => {
+        const encoded = await buildVjChainString();
+        if (!encoded) {
+            setStatus('❌ No active VJ stack to share');
+            return;
+        }
+        const url = new URL(window.location.href);
+        url.search = '';
+        url.hash = '';
+        url.searchParams.set('chain', encoded);
+        setShareableLink(url.toString());
+        setShareVibeText(aiVj?.getLastVibeText() ?? '');
+        setShowShareModal(true);
+    }, [buildVjChainString, aiVj]);
+
+    const handleSaveVjSet = useCallback(async (name: string) => {
+        const encoded = await buildVjChainString();
+        if (!encoded) {
+            setStatus('❌ No active VJ stack to save');
+            return;
+        }
+        saveMyVjSet(name, aiVj?.getLastVibeText() ?? '', encoded);
+        setStatus(`💾 Saved VJ set "${name}"`);
+    }, [buildVjChainString, aiVj]);
 
     const startAutoTransition = useCallback(async (config: AutoTransitionConfig) => {
         if (!aiVj) return false;
@@ -1651,6 +1693,7 @@ function MainApp() {
                 // Generate shareable link
                 const link = generateShareableLink();
                 setShareableLink(link);
+                setShareVibeText('');
                 setShowShareModal(true);
                 
                 setStatus('✅ Recording saved! Download started.');
@@ -1862,6 +1905,8 @@ function MainApp() {
                         onUpdateStack={handleUpdateStack} onUpdateParams={handleUpdateParams}
                         onRandomizeParams={handleRandomizeParams}
                         onSavePreset={handleSavePreset}
+                        onShareVjSet={handleShareVjSet}
+                        onSaveVjSet={handleSaveVjSet}
                         onStartAutoTransition={startAutoTransition}
                         onStopAutoTransition={stopAutoTransition}
                         isWebcamActive={isWebcamActive}
@@ -2020,10 +2065,28 @@ function MainApp() {
                         <button className="share-modal-close" onClick={() => setShowShareModal(false)}>×</button>
                         
                         <div className="share-modal-header">
-                            <h2>🎉 Clip Recorded!</h2>
-                            <p>Your video has been downloaded. Share your creation!</p>
+                            <h2>{shareVibeText ? '🎛️ Share Your VJ Set!' : '🎉 Clip Recorded!'}</h2>
+                            <p>{shareVibeText
+                                ? 'Anyone who opens this link gets your exact shader stack.'
+                                : 'Your video has been downloaded. Share your creation!'}</p>
                         </div>
-                        
+
+                        {shareVibeText && (
+                            <div className="share-link-section">
+                                <label>Vibe Prompt:</label>
+                                <div style={{
+                                    fontStyle: 'italic',
+                                    color: '#d0d0e0',
+                                    background: 'rgba(20, 20, 30, 0.6)',
+                                    border: '1px solid rgba(255, 215, 0, 0.15)',
+                                    borderRadius: '6px',
+                                    padding: '8px 10px',
+                                }}>
+                                    “{shareVibeText}”
+                                </div>
+                            </div>
+                        )}
+
                         <div className="share-link-section">
                             <label>Shareable Link:</label>
                             <div className="share-link-input-group">

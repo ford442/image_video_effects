@@ -12,8 +12,10 @@ import { useShaderRatings } from '../services/ShaderRatingIntegration';
 import { LiveStreamPanel } from './LiveStreamPanel';
 import { loadVJHistory, clearVJHistory, VJHistoryEntry } from '../services/vjHistory';
 import { VJPreset, loadPresets, deletePreset } from '../services/vjPresets';
+import { MyVjSet, loadMyVjSets, deleteMyVjSet } from '../services/myVjSets';
 import { RendererSwitcher } from './RendererSwitcher';
 import { PresetPackGallery } from './PresetPackGallery';
+import { decodeChain } from '../services/layerChainShare';
 import type { SharedChain } from '../services/layerChainShare';
 import '../styles/gold-glass-theme.css';
 
@@ -73,6 +75,10 @@ interface ControlsProps {
     onUpdateParams?: (params: Record<string, number>[]) => void;
     onRandomizeParams?: () => void;
     onSavePreset?: (name: string) => void;
+    /** Share the live AI VJ stack as a `?chain=` link (opens the share modal). */
+    onShareVjSet?: () => void;
+    /** Persist the live AI VJ stack as a named "My VJ Set" in localStorage. */
+    onSaveVjSet?: (name: string) => void;
     onStartAutoTransition?: (config: AutoTransitionConfig) => Promise<boolean> | boolean;
     onStopAutoTransition?: () => void;
     // Webcam Props
@@ -145,6 +151,8 @@ const Controls: React.FC<ControlsProps> = ({
     onUpdateParams,
     onRandomizeParams,
     onSavePreset,
+    onShareVjSet,
+    onSaveVjSet,
     onStartAutoTransition,
     onStopAutoTransition,
     isWebcamActive = false,
@@ -199,6 +207,11 @@ const Controls: React.FC<ControlsProps> = ({
     // --- Presets State ---
     const [presets, setPresets] = useState<VJPreset[]>(() => loadPresets());
     const [presetsOpen, setPresetsOpen] = useState(false);
+
+    // --- My VJ Sets State ---
+    const [myVjSets, setMyVjSets] = useState<MyVjSet[]>(() => loadMyVjSets());
+    const [myVjSetsOpen, setMyVjSetsOpen] = useState(false);
+    const [vjSetName, setVjSetName] = useState('');
 
     // --- Preset Pack Gallery State ---
     const [presetPacksOpen, setPresetPacksOpen] = useState(false);
@@ -1157,6 +1170,115 @@ const Controls: React.FC<ControlsProps> = ({
                                     Save Preset
                                 </button>
                             </div>
+
+                            {/* Share / save the live VJ stack as a shareable chain */}
+                            {(onShareVjSet || onSaveVjSet) && (
+                                <div style={{display: 'flex', gap: '8px', marginTop: '10px'}}>
+                                    {onShareVjSet && (
+                                        <button
+                                            className="gold-outline-btn"
+                                            onClick={() => onShareVjSet()}
+                                            disabled={!activeShaderIds || activeShaderIds.length === 0}
+                                            title="Create a shareable link for the current VJ stack"
+                                            style={{flex: 1}}
+                                        >
+                                            🔗 Share this VJ set
+                                        </button>
+                                    )}
+                                    {onSaveVjSet && (
+                                        <button
+                                            className="gold-outline-btn"
+                                            onClick={() => {
+                                                if (!vjSetName.trim()) return;
+                                                onSaveVjSet(vjSetName.trim());
+                                                setMyVjSets(loadMyVjSets());
+                                                setVjSetName('');
+                                            }}
+                                            disabled={!vjSetName.trim() || !activeShaderIds || activeShaderIds.length === 0}
+                                            title="Save the current VJ stack to My VJ Sets"
+                                            style={{flex: 1}}
+                                        >
+                                            💾 Save as My VJ Set
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                            {onSaveVjSet && (
+                                <div style={{display: 'flex', gap: '8px', marginTop: '8px'}}>
+                                    <input
+                                        type="text"
+                                        className="glass-input"
+                                        placeholder="My VJ set name…"
+                                        value={vjSetName}
+                                        onChange={(e) => setVjSetName(e.target.value)}
+                                        style={{flex: 1}}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* My VJ Sets */}
+                    {onApplySharedChain && (
+                        <div className="control-group glass-panel" style={{padding: '12px', marginTop: '10px'}}>
+                            <div
+                                className="gold-section-header"
+                                style={{fontSize: '12px', marginTop: '0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer'}}
+                                onClick={() => {
+                                    setMyVjSetsOpen(o => !o);
+                                    if (!myVjSetsOpen) setMyVjSets(loadMyVjSets());
+                                }}
+                            >
+                                <span>My VJ Sets</span>
+                                <span style={{transform: myVjSetsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s'}}>▼</span>
+                            </div>
+                            {myVjSetsOpen && (
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', maxHeight: '300px', overflowY: 'auto'}}>
+                                    {myVjSets.length === 0 && (
+                                        <div style={{fontSize: '12px', color: '#a0a0b0', fontStyle: 'italic', textAlign: 'center'}}>
+                                            No saved sets yet
+                                        </div>
+                                    )}
+                                    {myVjSets.map(set => {
+                                        const vibeDisplay = set.vibePrompt
+                                            ? (set.vibePrompt.length > 60 ? set.vibePrompt.slice(0, 60) + '…' : set.vibePrompt)
+                                            : '(no vibe prompt)';
+                                        return (
+                                            <div key={set.id} style={{
+                                                background: 'rgba(20, 20, 30, 0.6)',
+                                                border: '1px solid rgba(255, 215, 0, 0.1)',
+                                                borderRadius: '6px',
+                                                padding: '8px',
+                                            }}>
+                                                <div style={{fontSize: '12px', fontWeight: 600, color: '#ffd700'}}>{set.name}</div>
+                                                <div style={{fontSize: '11px', color: '#a0a0b0', fontStyle: 'italic', margin: '4px 0'}}>{vibeDisplay}</div>
+                                                <div style={{display: 'flex', gap: '6px', marginTop: '6px'}}>
+                                                    <button
+                                                        className="gold-outline-btn"
+                                                        style={{fontSize: '11px', padding: '4px 10px', flex: 1}}
+                                                        onClick={() => {
+                                                            const chain = decodeChain(set.chainString);
+                                                            if (chain) onApplySharedChain(chain);
+                                                        }}
+                                                    >
+                                                        Load
+                                                    </button>
+                                                    <button
+                                                        className="gold-outline-btn"
+                                                        style={{fontSize: '11px', padding: '4px 10px'}}
+                                                        onClick={() => {
+                                                            deleteMyVjSet(set.id);
+                                                            setMyVjSets(loadMyVjSets());
+                                                        }}
+                                                    >
+                                                        🗑
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
 
