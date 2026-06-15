@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Polar Warp Interactive
 //  Category: interactive-mouse
-//  Features: mouse-driven, upgraded-rgba, audio-reactive, depth-aware, multi-ripple
+//  Features: mouse-driven, upgraded-rgba, audio-reactive, depth-aware, multi-ripple,
+//            temporal-feedback, chromatic-aberration, aces-tone-map
 //  Complexity: Medium
-//  Upgraded: bass-driven warp, spiral component, ripple bursts, semantic alpha
+//  Upgraded: bass envelope smoothing, mouse-velocity trails, feedback blend,
+//            chromatic aberration, ACES tone mapping, semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,84 +29,136 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265;
-const TAU: f32 = 6.2831853;
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
 const EPS: f32 = 1e-3;
 
-@compute @workgroup_size(8, 8, 1)
+fn hash21(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p); let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
+               mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+fn fbm(p: vec2<f32>, oct: i32) -> f32 {
+    var s = 0.0; var a = 0.5; var f = 1.0;
+    for (var i: i32 = 0; i < oct; i = i + 1) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; }
+    return s;
+}
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn luma(rgb: vec3<f32>) -> f32 {
+    return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+    let k = select(release, attack, bass > prev);
+    return mix(prev, bass, k);
+}
+fn rippleAngle(uv: vec2<f32>, aspect: f32, time: f32, rp: vec4<f32>, decay: f32) -> f32 {
+    let age = time - rp.z;
+    if (age <= 0.0 || age >= 3.0) { return 0.0; }
+    let rd = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+    return sin(rd * 30.0 - age * 10.0) * exp(-age * decay * 3.0) * 0.1 * rp.w;
+}
+fn chromaticShift(uv: vec2<f32>, amount: f32) -> vec3<f32> {
+    let center = vec2<f32>(0.5);
+    let dir = normalize((uv - center) + vec2<f32>(0.001));
+    let offset = dir * max(amount, 0.0);
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    return vec3<f32>(r, g, b);
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let res = u.config.zw;
-    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
-    let gid = vec2<i32>(global_id.xy);
-    let uv = vec2<f32>(global_id.xy) / res;
+    let pixel = vec2<i32>(global_id.xy);
+    let res = vec2<f32>(u.config.zw);
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+
+    let uv = vec2<f32>(pixel) / res;
     let aspect = res.x / res.y;
     let time = u.config.x;
 
     let mouseRaw = u.zoom_config.yz;
     let mouse = select(mouseRaw, vec2<f32>(0.5), mouseRaw.x < 0.0);
 
-    let bass = plasmaBuffer[0].x;
-    let bassPulse = 1.0 + bass * 0.4;
+    let bassRaw = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
-    let warpStrength = u.zoom_params.x * bassPulse;
-    let spiralAmount = u.zoom_params.y * 5.0;
+    // Temporal state read-back: smoothed bass envelope + previous mouse position
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    let bassSmooth = bass_env(prev.r, bassRaw, 0.8, 0.15);
+    let mouseVel = mouse - prev.gb;
+    let mouseSpeed = length(mouseVel);
+
+    // Mouse now modulates warp, spiral and trail blend; bassSmooth drives pulse
+    let warpStrength = u.zoom_params.x * (1.0 + bassSmooth * 0.5);
+    let spiralAmount = u.zoom_params.y * 5.0 * (1.0 + mouseSpeed * 2.0);
     let rippleDecay = u.zoom_params.z;
-    let pinchExpand = u.zoom_params.w;
+    let pinchExpand = u.zoom_params.w * (1.0 + bassSmooth * 0.3);
 
     var diff = uv - mouse;
     diff.x *= aspect;
-
     let radius = length(diff);
     let angle = atan2(diff.y, diff.x);
 
-    // Early exit: hide center singularity
+    // Hide the polar singularity and still commit state for this pixel
     if (radius < EPS) {
-        textureStore(writeTexture, gid, vec4<f32>(0.0));
-        textureStore(writeDepthTexture, gid, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+        textureStore(writeTexture, pixel, vec4<f32>(0.0));
+        textureStore(writeDepthTexture, pixel, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+        textureStore(dataTextureA, pixel, vec4<f32>(bassSmooth, mouse.x, mouse.y, mouseSpeed));
         return;
     }
 
-    // Polar distortion
+    // Polar distortion: radius warped by Param1 + pinch from Param4
     let zoom = 0.1 + warpStrength * 2.0;
     let r_new = pow(radius, 1.0 / zoom) - pinchExpand;
-    var a_new = angle + radius * spiralAmount;
+    var a_new = angle + radius * spiralAmount + time * 0.1;
 
     // Click-triggered ripple bursts from u.ripples
     for (var i: i32 = 0; i < 50; i = i + 1) {
-        let rp = u.ripples[i];
-        if (rp.z > 0.0) {
-            let age = time - rp.z;
-            if (age > 0.0 && age < 3.0) {
-                let rd = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
-                let rippleWave = sin(rd * 30.0 - age * 10.0) * exp(-age * rippleDecay * 3.0);
-                a_new = a_new + rippleWave * 0.1 * rp.w;
-            }
-        }
+        a_new += rippleAngle(uv, aspect, time, u.ripples[i], rippleDecay);
     }
 
-    // Map polar back to UV space with time rotation
-    let tunnel_u = (a_new / PI) * 2.0 + time * 0.1;
+    // Map polar coordinates back into UV space with mirrored-repeat edges
+    let tunnel_u = (a_new / PI) * 2.0;
     let tunnel_v = 1.0 / (r_new + EPS);
-
-    // Mirrored-repeat UV sampling for seamless edges
     let fuv = fract(vec2<f32>(tunnel_u, tunnel_v));
     let sampleUV = abs(fuv * 2.0 - 1.0);
 
-    // Single texture sample
-    let col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    // Organic drift driven by treble + mouse motion vector
+    let drift = vec2<f32>(
+        fbm(sampleUV * 8.0 + time * 0.1, 2),
+        fbm(sampleUV * 8.0 + time * 0.13 + 5.0, 2)
+    ) * (0.01 + treble * 0.02) + mouseVel * 0.25;
 
-    // Radial fade at the singularity
-    let fade = smoothstep(0.0, 0.1, radius);
+    // Chromatic aberration scaled by bass envelope and mouse velocity
+    let caStr = 0.003 * (1.0 + bassSmooth) + mouseSpeed * 0.02;
+    var col = chromaticShift(clamp(sampleUV + drift, vec2<f32>(0.0), vec2<f32>(1.0)), caStr);
 
-    // Depth-aware fade
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    // Depth-aware compositing and radial fade around the singularity
+    let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let depthFade = mix(0.7, 1.0, depth);
-
-    // Semantic alpha: reduce at extreme warp distortion
+    let fade = smoothstep(0.0, 0.1, radius);
     let warpDistort = abs(r_new - radius) + abs(a_new - angle);
-    let alpha = mix(col.a, 0.85, smoothstep(0.5, 1.5, warpDistort));
-    let finalAlpha = alpha * fade * depthFade;
 
-    textureStore(writeTexture, gid, vec4<f32>(col.rgb * fade * depthFade, finalAlpha));
-    textureStore(writeDepthTexture, gid, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // ACES tone map with audio-reactive exposure boost
+    col = acesToneMap(col * (0.9 + mids * 0.2 + bassSmooth * 0.15) * depthFade);
+
+    // Temporal feedback trail: previous frame bleeds through, increased by motion
+    let trailDecay = 0.94 - treble * 0.02;
+    let trailMix = 0.25 + mouseSpeed * 0.5;
+    col = mix(prev.rgb * trailDecay, col, trailMix);
+
+    // Semantic alpha encodes interaction intensity + distortion + depth
+    let alpha = mix(luma(col), 0.85, smoothstep(0.5, 1.5, warpDistort)) * fade * depthFade * (0.7 + mouseSpeed * 2.0);
+
+    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(bassSmooth, mouse.x, mouse.y, alpha));
 }

@@ -2,7 +2,7 @@
   "id": "directional-glitch",
   "name": "Directional Glitch",
   "url": "shaders/directional-glitch.wgsl",
-  "description": "Glitch artifacts radiate from the mouse position with audio-reactive displacement.",
+  "description": "Voronoi-ridge and FBM domain-warped glitch bands radiate from the mouse, driven by curl-noise displacement, chromatic aberration, depth-aware masking, and temporal feedback.",
   "params": [
     {
       "id": "intensity",
@@ -49,6 +49,12 @@
     "mouse-driven",
     "glitch",
     "audio-reactive",
+    "temporal-feedback",
+    "chromatic-aberration",
+    "depth-aware",
+    "curl-noise",
+    "domain-warp",
+    "voronoi-ridges",
     "upgraded-rgba"
   ],
   "tags": [
@@ -56,6 +62,11 @@
     "image-processing",
     "glitch",
     "interactive",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal-feedback",
+    "chromatic-aberration",
+    "curl-noise",
+    "voronoi",
+    "multi-scale"
   ]
 }

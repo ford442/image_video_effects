@@ -2,7 +2,7 @@
   "id": "echo-ripple",
   "name": "Echo Ripple",
   "url": "shaders/echo-ripple.wgsl",
-  "description": "Mouse movement creates expanding ripples that echo and persist in time. Audio reactivity drives ripple amplitude and color splitting, while depth-aware parallax separates foreground and background distortion.",
+  "description": "Mouse movement and click history spawn expanding ripples that echo through time. Audio-reactive envelopes smooth bass pulses, depth-aware parallax separates foreground from background, and chromatic aberration plus ACES tone mapping give the feedback loop a modern, saturated look.",
   "params": [
     {
       "id": "freq",
@@ -37,7 +37,10 @@
     "mouse-driven",
     "temporal-persistence",
     "audio-reactive",
+    "audio-envelope",
     "depth-aware",
+    "chromatic-aberration",
+    "aces-tone-mapping",
     "upgraded-rgba"
   ],
   "tags": [

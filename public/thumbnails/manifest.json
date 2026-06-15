@@ -1,0 +1,3462 @@
+{
+  "4d-projection-dream-weavers": {
+    "thumbnail_url": "thumbnails/4d-projection-dream-weavers.png",
+    "generated_at": "2026-06-14T06:41:20.517Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.6,
+      0.5
+    ]
+  },
+  "acoustic-string-theory": {
+    "thumbnail_url": "thumbnails/acoustic-string-theory.png",
+    "generated_at": "2026-06-14T06:41:20.684Z",
+    "params_snapshot": [
+      0.46,
+      0.48,
+      0.42,
+      0.5
+    ]
+  },
+  "atmos_volumetric_fog": {
+    "thumbnail_url": "thumbnails/atmos_volumetric_fog.png",
+    "generated_at": "2026-06-14T06:41:20.796Z",
+    "params_snapshot": [
+      0.3,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "audio_geometric_pulse": {
+    "thumbnail_url": "thumbnails/audio_geometric_pulse.png",
+    "generated_at": "2026-06-14T06:41:20.941Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.4
+    ]
+  },
+  "aurora-borealis-loom": {
+    "thumbnail_url": "thumbnails/aurora-borealis-loom.png",
+    "generated_at": "2026-06-14T06:41:21.129Z",
+    "params_snapshot": [
+      0.4,
+      0.3,
+      0.5,
+      0.4
+    ]
+  },
+  "aurora-curtain": {
+    "thumbnail_url": "thumbnails/aurora-curtain.png",
+    "generated_at": "2026-06-14T06:41:21.423Z",
+    "params_snapshot": [
+      0.4,
+      0.4,
+      0.5,
+      0.3
+    ]
+  },
+  "bio_lenia_continuous": {
+    "thumbnail_url": "thumbnails/bio_lenia_continuous.png",
+    "generated_at": "2026-06-14T06:41:21.704Z",
+    "params_snapshot": [
+      0.3,
+      0.4,
+      0.2,
+      0.3
+    ]
+  },
+  "gen-bioluminescent-abyss": {
+    "thumbnail_url": "thumbnails/gen-bioluminescent-abyss.png",
+    "generated_at": "2026-06-14T06:41:22.672Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.8,
+      0.5
+    ]
+  },
+  "bioluminescent-bloom": {
+    "thumbnail_url": "thumbnails/bioluminescent-bloom.png",
+    "generated_at": "2026-06-14T06:41:22.848Z",
+    "params_snapshot": [
+      0.4,
+      0.4,
+      0.5,
+      0.5
+    ]
+  },
+  "bubble-chamber": {
+    "thumbnail_url": "thumbnails/bubble-chamber.png",
+    "generated_at": "2026-06-14T06:41:23.030Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "chromatic-ghost-tunnel": {
+    "thumbnail_url": "thumbnails/chromatic-ghost-tunnel.png",
+    "generated_at": "2026-06-14T06:41:23.244Z",
+    "params_snapshot": [
+      0.5,
+      0.3,
+      0.5,
+      0.4
+    ]
+  },
+  "chrono-voronoi-mycelium": {
+    "thumbnail_url": "thumbnails/chrono-voronoi-mycelium.png",
+    "generated_at": "2026-06-14T06:41:23.399Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.4,
+      0.5
+    ]
+  },
+  "coral-growth": {
+    "thumbnail_url": "thumbnails/coral-growth.png",
+    "generated_at": "2026-06-14T06:41:23.513Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.3,
+      0.3
+    ]
+  },
+  "cosmic-jellyfish": {
+    "thumbnail_url": "thumbnails/cosmic-jellyfish.png",
+    "generated_at": "2026-06-14T06:41:23.737Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0,
+      1
+    ]
+  },
+  "cosmic-web": {
+    "thumbnail_url": "thumbnails/cosmic-web.png",
+    "generated_at": "2026-06-14T06:41:23.885Z",
+    "params_snapshot": [
+      0.5,
+      1,
+      0.2,
+      0
+    ]
+  },
+  "crystalline-fracture": {
+    "thumbnail_url": "thumbnails/crystalline-fracture.png",
+    "generated_at": "2026-06-14T06:41:24.033Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.3,
+      0.2
+    ]
+  },
+  "crystalline-veins": {
+    "thumbnail_url": "thumbnails/crystalline-veins.png",
+    "generated_at": "2026-06-14T06:41:24.607Z",
+    "params_snapshot": [
+      0.3,
+      0.5,
+      0.4,
+      0.5
+    ]
+  },
+  "deep-sea-thermal-vent": {
+    "thumbnail_url": "thumbnails/deep-sea-thermal-vent.png",
+    "generated_at": "2026-06-14T06:41:24.822Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.6,
+      0.5
+    ]
+  },
+  "electric-eel-storm": {
+    "thumbnail_url": "thumbnails/electric-eel-storm.png",
+    "generated_at": "2026-06-14T06:41:25.090Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.5,
+      0.3
+    ]
+  },
+  "emergent-calligraphic-weave": {
+    "thumbnail_url": "thumbnails/emergent-calligraphic-weave.png",
+    "generated_at": "2026-06-14T06:41:25.233Z",
+    "params_snapshot": [
+      0.5,
+      0.6,
+      0.5,
+      0.3
+    ]
+  },
+  "fire_smoke_volumetric": {
+    "thumbnail_url": "thumbnails/fire_smoke_volumetric.png",
+    "generated_at": "2026-06-14T06:41:25.330Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "fractal-ice-palace": {
+    "thumbnail_url": "thumbnails/fractal-ice-palace.png",
+    "generated_at": "2026-06-14T06:41:27.208Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-3d-sierpinski-chaos": {
+    "thumbnail_url": "thumbnails/gen-3d-sierpinski-chaos.png",
+    "generated_at": "2026-06-14T06:41:27.790Z",
+    "params_snapshot": [
+      0.6,
+      0.25,
+      0.5,
+      0
+    ]
+  },
+  "gen-4d-projection-dream-weavers": {
+    "thumbnail_url": "thumbnails/gen-4d-projection-dream-weavers.png",
+    "generated_at": "2026-06-14T06:41:28.008Z",
+    "params_snapshot": [
+      0.4,
+      0.4,
+      0.3,
+      0.4
+    ]
+  },
+  "gen-abyssal-chrono-coral": {
+    "thumbnail_url": "thumbnails/gen-abyssal-chrono-coral.png",
+    "generated_at": "2026-06-14T06:41:28.954Z",
+    "params_snapshot": [
+      0.5,
+      4,
+      1,
+      0.2
+    ]
+  },
+  "gen-abyssal-leviathan-scales": {
+    "thumbnail_url": "thumbnails/gen-abyssal-leviathan-scales.png",
+    "generated_at": "2026-06-14T06:41:29.855Z",
+    "params_snapshot": [
+      5,
+      1,
+      1,
+      2
+    ]
+  },
+  "gen-acid-lissajous": {
+    "thumbnail_url": "thumbnails/gen-acid-lissajous.png",
+    "generated_at": "2026-06-14T06:41:30.149Z",
+    "params_snapshot": [
+      0.35,
+      0.45,
+      0.5,
+      0.3
+    ]
+  },
+  "gen-alien-flora": {
+    "thumbnail_url": "thumbnails/gen-alien-flora.png",
+    "generated_at": "2026-06-14T06:41:30.408Z",
+    "params_snapshot": [
+      0.5,
+      1,
+      1.5,
+      0
+    ]
+  },
+  "gen-alpha-aurora": {
+    "thumbnail_url": "thumbnails/gen-alpha-aurora.png",
+    "generated_at": "2026-06-14T06:41:31.871Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-aperiodic-monotile": {
+    "thumbnail_url": "thumbnails/gen-aperiodic-monotile.png",
+    "generated_at": "2026-06-14T06:41:31.982Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.5
+    ]
+  },
+  "gen-apollonian-gasket": {
+    "thumbnail_url": "thumbnails/gen-apollonian-gasket.png",
+    "generated_at": "2026-06-14T06:41:32.280Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-art-deco-sky": {
+    "thumbnail_url": "thumbnails/gen-art-deco-sky.png",
+    "generated_at": "2026-06-14T06:41:32.890Z",
+    "params_snapshot": [
+      0.5,
+      1,
+      1,
+      0.5
+    ]
+  },
+  "gen-astral-silk-chrono-weaver-arachnid": {
+    "thumbnail_url": "thumbnails/gen-astral-silk-chrono-weaver-arachnid.png",
+    "generated_at": "2026-06-14T06:41:33.206Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-astro-kinetic-chrono-orrery": {
+    "thumbnail_url": "thumbnails/gen-astro-kinetic-chrono-orrery.png",
+    "generated_at": "2026-06-14T06:41:33.508Z",
+    "params_snapshot": [
+      4,
+      1,
+      1,
+      0.5
+    ]
+  },
+  "gen-audio-spirograph": {
+    "thumbnail_url": "thumbnails/gen-audio-spirograph.png",
+    "generated_at": "2026-06-14T06:41:33.638Z",
+    "params_snapshot": [
+      0.5,
+      0.6,
+      0.7,
+      0.3
+    ]
+  },
+  "gen-audiovisual-mandelbulb-raymarcher": {
+    "thumbnail_url": "thumbnails/gen-audiovisual-mandelbulb-raymarcher.png",
+    "generated_at": "2026-06-14T06:41:33.901Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.4
+    ]
+  },
+  "gen-aurora-borealis-synthesis": {
+    "thumbnail_url": "thumbnails/gen-aurora-borealis-synthesis.png",
+    "generated_at": "2026-06-14T06:41:34.318Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-aurora-silk": {
+    "thumbnail_url": "thumbnails/gen-aurora-silk.png",
+    "generated_at": "2026-06-14T06:41:34.426Z",
+    "params_snapshot": [
+      0.52,
+      0.44,
+      0.48,
+      0.63
+    ]
+  },
+  "gen-auroral-ferrofluid-monolith": {
+    "thumbnail_url": "thumbnails/gen-auroral-ferrofluid-monolith.png",
+    "generated_at": "2026-06-14T06:41:35.160Z",
+    "params_snapshot": [
+      0.5,
+      0.8,
+      0.3,
+      0.9
+    ]
+  },
+  "gen-barnsley-fern": {
+    "thumbnail_url": "thumbnails/gen-barnsley-fern.png",
+    "generated_at": "2026-06-14T06:41:35.650Z",
+    "params_snapshot": [
+      0.5,
+      0.3,
+      0.5,
+      0.2
+    ]
+  },
+  "gen-belousov-zhabotinsky": {
+    "thumbnail_url": "thumbnails/gen-belousov-zhabotinsky.png",
+    "generated_at": "2026-06-14T06:41:35.886Z",
+    "params_snapshot": [
+      0.4,
+      0.3,
+      0.25,
+      0.2
+    ]
+  },
+  "gen-bifurcation-diagram": {
+    "thumbnail_url": "thumbnails/gen-bifurcation-diagram.png",
+    "generated_at": "2026-06-14T06:41:36.105Z",
+    "params_snapshot": [
+      0.5,
+      0.1,
+      0.6,
+      0
+    ]
+  },
+  "gen-bio-luminescent-jelly": {
+    "thumbnail_url": "thumbnails/gen-bio-luminescent-jelly.png",
+    "generated_at": "2026-06-14T06:41:36.417Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-bioluminescent-aether-jellyfish-swarm": {
+    "thumbnail_url": "thumbnails/gen-bioluminescent-aether-jellyfish-swarm.png",
+    "generated_at": "2026-06-14T06:41:37.024Z",
+    "params_snapshot": [
+      10,
+      1,
+      2,
+      5
+    ]
+  },
+  "gen-bioluminescent-aether-pulsar": {
+    "thumbnail_url": "thumbnails/gen-bioluminescent-aether-pulsar.png",
+    "generated_at": "2026-06-14T06:41:37.260Z",
+    "params_snapshot": [
+      0.5,
+      0.8,
+      0.5,
+      0
+    ]
+  },
+  "gen-bioluminescent-reaction-diffusion": {
+    "thumbnail_url": "thumbnails/gen-bioluminescent-reaction-diffusion.png",
+    "generated_at": "2026-06-14T06:41:37.401Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-biomechanical-hive": {
+    "thumbnail_url": "thumbnails/gen-biomechanical-hive.png",
+    "generated_at": "2026-06-14T06:41:37.754Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0
+    ]
+  },
+  "gen-bioreactor-bloom": {
+    "thumbnail_url": "thumbnails/gen-bioreactor-bloom.png",
+    "generated_at": "2026-06-14T06:41:37.924Z",
+    "params_snapshot": [
+      0.45,
+      0.35,
+      0.5,
+      0.28
+    ]
+  },
+  "gen-bismuth-crystal-citadel": {
+    "thumbnail_url": "thumbnails/gen-bismuth-crystal-citadel.png",
+    "generated_at": "2026-06-14T06:41:38.329Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.8,
+      1
+    ]
+  },
+  "gen-brutalist-monument": {
+    "thumbnail_url": "thumbnails/gen-brutalist-monument.png",
+    "generated_at": "2026-06-14T06:41:38.640Z",
+    "params_snapshot": [
+      0.2,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-buddhabrot-aura": {
+    "thumbnail_url": "thumbnails/gen-buddhabrot-aura.png",
+    "generated_at": "2026-06-14T06:41:38.789Z",
+    "params_snapshot": [
+      0.6,
+      0.7,
+      0.5,
+      0.65
+    ]
+  },
+  "gen-celestial-aether-seraphim-wings": {
+    "thumbnail_url": "thumbnails/gen-celestial-aether-seraphim-wings.png",
+    "generated_at": "2026-06-14T06:41:39.038Z",
+    "params_snapshot": [
+      1,
+      0.2,
+      0.2,
+      1
+    ]
+  },
+  "gen-celestial-forge": {
+    "thumbnail_url": "thumbnails/gen-celestial-forge.png",
+    "generated_at": "2026-06-14T06:41:40.063Z",
+    "params_snapshot": [
+      1,
+      0.5,
+      1,
+      1
+    ]
+  },
+  "gen-celestial-glass-tornado": {
+    "thumbnail_url": "thumbnails/gen-celestial-glass-tornado.png",
+    "generated_at": "2026-06-14T06:41:40.356Z",
+    "params_snapshot": [
+      1,
+      0.5,
+      0.2,
+      1
+    ]
+  },
+  "gen-celestial-nanite-swarm-nebula": {
+    "thumbnail_url": "thumbnails/gen-celestial-nanite-swarm-nebula.png",
+    "generated_at": "2026-06-14T06:41:41.015Z",
+    "params_snapshot": [
+      0.5,
+      0.3,
+      0.2,
+      0.7
+    ]
+  },
+  "gen-celestial-prism-orchid": {
+    "thumbnail_url": "thumbnails/gen-celestial-prism-orchid.png",
+    "generated_at": "2026-06-14T06:41:42.669Z",
+    "params_snapshot": [
+      1.5,
+      1.2,
+      2,
+      0.5
+    ]
+  },
+  "gen-celestial-quantum-glass-dragonfly": {
+    "thumbnail_url": "thumbnails/gen-celestial-quantum-glass-dragonfly.png",
+    "generated_at": "2026-06-14T06:41:43.936Z",
+    "params_snapshot": [
+      1.5,
+      3,
+      1.45,
+      2
+    ]
+  },
+  "gen-celestial-weave": {
+    "thumbnail_url": "thumbnails/gen-celestial-weave.png",
+    "generated_at": "2026-06-14T06:41:44.032Z",
+    "params_snapshot": [
+      0.46,
+      0.4,
+      0.55,
+      0.3
+    ]
+  },
+  "gen-celestial-yggdrasil-matrix": {
+    "thumbnail_url": "thumbnails/gen-celestial-yggdrasil-matrix.png",
+    "generated_at": "2026-06-14T06:41:44.190Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-cellular-automata-tapestry": {
+    "thumbnail_url": "thumbnails/gen-cellular-automata-tapestry.png",
+    "generated_at": "2026-06-14T06:41:44.326Z",
+    "params_snapshot": [
+      1,
+      0.5,
+      0.055,
+      0.062
+    ]
+  },
+  "gen-chaos-game-ifs": {
+    "thumbnail_url": "thumbnails/gen-chaos-game-ifs.png",
+    "generated_at": "2026-06-14T06:41:44.482Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.5
+    ]
+  },
+  "gen-chromatic-acid-drip": {
+    "thumbnail_url": "thumbnails/gen-chromatic-acid-drip.png",
+    "generated_at": "2026-06-14T06:41:45.094Z",
+    "params_snapshot": [
+      0.65,
+      0.4,
+      0.4,
+      0
+    ]
+  },
+  "gen-chromatic-metamorphosis": {
+    "thumbnail_url": "thumbnails/gen-chromatic-metamorphosis.png",
+    "generated_at": "2026-06-14T06:41:45.690Z",
+    "params_snapshot": [
+      0.4,
+      0.4,
+      0.35,
+      0.5
+    ]
+  },
+  "gen-chromatic-singularity-loom": {
+    "thumbnail_url": "thumbnails/gen-chromatic-singularity-loom.png",
+    "generated_at": "2026-06-14T06:41:45.816Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-chromodynamic-plasma-collider": {
+    "thumbnail_url": "thumbnails/gen-chromodynamic-plasma-collider.png",
+    "generated_at": "2026-06-14T06:41:45.921Z",
+    "params_snapshot": [
+      15,
+      5,
+      1,
+      0.5
+    ]
+  },
+  "gen-chrono-mycelial-tapestry": {
+    "thumbnail_url": "thumbnails/gen-chrono-mycelial-tapestry.png",
+    "generated_at": "2026-06-14T06:41:47.091Z",
+    "params_snapshot": [
+      0.6,
+      0.7,
+      0.5,
+      0.7
+    ]
+  },
+  "gen-chrono-voronoi-mycelium": {
+    "thumbnail_url": "thumbnails/gen-chrono-voronoi-mycelium.png",
+    "generated_at": "2026-06-14T06:41:47.279Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.6,
+      0.5
+    ]
+  },
+  "gen-chronodynamic-aether-weaver-automata": {
+    "thumbnail_url": "thumbnails/gen-chronodynamic-aether-weaver-automata.png",
+    "generated_at": "2026-06-14T06:41:47.437Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-chronos-labyrinth": {
+    "thumbnail_url": "thumbnails/gen-chronos-labyrinth.png",
+    "generated_at": "2026-06-14T06:41:48.811Z",
+    "params_snapshot": [
+      1,
+      0.5,
+      0.8,
+      0.5
+    ]
+  },
+  "gen-conway-game-of-life": {
+    "thumbnail_url": "thumbnails/gen-conway-game-of-life.png",
+    "generated_at": "2026-06-14T06:41:48.926Z",
+    "params_snapshot": [
+      0.3,
+      0.2,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-coral-reef-colony": {
+    "thumbnail_url": "thumbnails/gen-coral-reef-colony.png",
+    "generated_at": "2026-06-14T06:41:49.067Z",
+    "params_snapshot": [
+      0.65,
+      0.55,
+      0.5,
+      0.6
+    ]
+  },
+  "gen-cosmic-clockwork-dyson-sphere": {
+    "thumbnail_url": "thumbnails/gen-cosmic-clockwork-dyson-sphere.png",
+    "generated_at": "2026-06-14T06:41:49.319Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-cosmic-slime-mold": {
+    "thumbnail_url": "thumbnails/gen-cosmic-slime-mold.png",
+    "generated_at": "2026-06-14T06:41:49.682Z",
+    "params_snapshot": [
+      0.8,
+      0.3,
+      0.5,
+      0
+    ]
+  },
+  "gen-cosmic-web-filament": {
+    "thumbnail_url": "thumbnails/gen-cosmic-web-filament.png",
+    "generated_at": "2026-06-14T06:41:50.188Z",
+    "params_snapshot": [
+      0.33,
+      0.4,
+      0.25,
+      0
+    ]
+  },
+  "gen-crystal-caverns": {
+    "thumbnail_url": "thumbnails/gen-crystal-caverns.png",
+    "generated_at": "2026-06-14T06:41:50.397Z",
+    "params_snapshot": [
+      0.25,
+      0.5,
+      0.4,
+      0.5
+    ]
+  },
+  "gen-crystal-lattice-growth": {
+    "thumbnail_url": "thumbnails/gen-crystal-lattice-growth.png",
+    "generated_at": "2026-06-14T06:41:50.514Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.6,
+      0.4
+    ]
+  },
+  "gen-crystalline-chrono-dyson": {
+    "thumbnail_url": "thumbnails/gen-crystalline-chrono-dyson.png",
+    "generated_at": "2026-06-14T06:41:50.653Z",
+    "params_snapshot": [
+      4,
+      1.5,
+      1,
+      50
+    ]
+  },
+  "gen-crystalline-mandala-bloom": {
+    "thumbnail_url": "thumbnails/gen-crystalline-mandala-bloom.png",
+    "generated_at": "2026-06-14T06:41:50.756Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.5,
+      0
+    ]
+  },
+  "gen-cyber-terminal": {
+    "thumbnail_url": "thumbnails/gen-cyber-terminal.png",
+    "generated_at": "2026-06-14T06:41:50.894Z",
+    "params_snapshot": [
+      1,
+      0.8,
+      1,
+      0.5
+    ]
+  },
+  "gen-cybernetic-ferro-coral": {
+    "thumbnail_url": "thumbnails/gen-cybernetic-ferro-coral.png",
+    "generated_at": "2026-06-14T06:41:52.211Z",
+    "params_snapshot": [
+      0.5,
+      1,
+      1.5,
+      1
+    ]
+  },
+  "gen-cybernetic-liquid-chrome-engine": {
+    "thumbnail_url": "thumbnails/gen-cybernetic-liquid-chrome-engine.png",
+    "generated_at": "2026-06-14T06:41:52.522Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-cycloid-bloom": {
+    "thumbnail_url": "thumbnails/gen-cycloid-bloom.png",
+    "generated_at": "2026-06-14T06:41:52.882Z",
+    "params_snapshot": [
+      0.35,
+      0.3,
+      0.5,
+      0.4
+    ]
+  },
+  "gen-cymatic-plasma-mandalas": {
+    "thumbnail_url": "thumbnails/gen-cymatic-plasma-mandalas.png",
+    "generated_at": "2026-06-14T06:41:53.029Z",
+    "params_snapshot": [
+      6,
+      2,
+      10,
+      1
+    ]
+  },
+  "gen-de-jong-attractor": {
+    "thumbnail_url": "thumbnails/gen-de-jong-attractor.png",
+    "generated_at": "2026-06-14T06:41:53.345Z",
+    "params_snapshot": [
+      0.4,
+      0.4,
+      0.3,
+      0.5
+    ]
+  },
+  "gen-depth-refracted-liquid-stained-glass": {
+    "thumbnail_url": "thumbnails/gen-depth-refracted-liquid-stained-glass.png",
+    "generated_at": "2026-06-14T06:41:53.447Z",
+    "params_snapshot": [
+      0.5,
+      0.3,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-dla-copper-deposition": {
+    "thumbnail_url": "thumbnails/gen-dla-copper-deposition.png",
+    "generated_at": "2026-06-14T06:41:53.886Z",
+    "params_snapshot": [
+      0.5,
+      0.35,
+      0.4,
+      0.5
+    ]
+  },
+  "gen-dmt-fractal-zoom": {
+    "thumbnail_url": "thumbnails/gen-dmt-fractal-zoom.png",
+    "generated_at": "2026-06-14T06:41:54.181Z",
+    "params_snapshot": [
+      0.6,
+      0.25,
+      0.3,
+      0
+    ]
+  },
+  "gen-dragon-curve": {
+    "thumbnail_url": "thumbnails/gen-dragon-curve.png",
+    "generated_at": "2026-06-14T06:41:54.452Z",
+    "params_snapshot": [
+      0.2,
+      0.5,
+      0.3,
+      0.2
+    ]
+  },
+  "gen-dynamic-tessellation-ornate-fractal-tiles": {
+    "thumbnail_url": "thumbnails/gen-dynamic-tessellation-ornate-fractal-tiles.png",
+    "generated_at": "2026-06-14T06:41:54.591Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-echo-dunes": {
+    "thumbnail_url": "thumbnails/gen-echo-dunes.png",
+    "generated_at": "2026-06-14T06:41:54.686Z",
+    "params_snapshot": [
+      0.42,
+      0.44,
+      0.38,
+      0.4
+    ]
+  },
+  "gen-eldritch-quantum-fractal-eye": {
+    "thumbnail_url": "thumbnails/gen-eldritch-quantum-fractal-eye.png",
+    "generated_at": "2026-06-14T06:41:54.813Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-eldritch-tesseract-hive-mind": {
+    "thumbnail_url": "thumbnails/gen-eldritch-tesseract-hive-mind.png",
+    "generated_at": "2026-06-14T06:41:55.101Z",
+    "params_snapshot": [
+      0.5,
+      1,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-electric-kaleidoscope-storm": {
+    "thumbnail_url": "thumbnails/gen-electric-kaleidoscope-storm.png",
+    "generated_at": "2026-06-14T06:41:55.413Z",
+    "params_snapshot": [
+      0.75,
+      0.4,
+      0.5,
+      0
+    ]
+  },
+  "gen-emergent-calligraphic-ecosystems": {
+    "thumbnail_url": "thumbnails/gen-emergent-calligraphic-ecosystems.png",
+    "generated_at": "2026-06-14T06:41:55.620Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0
+    ]
+  },
+  "gen-emergent-script-gardens": {
+    "thumbnail_url": "thumbnails/gen-emergent-script-gardens.png",
+    "generated_at": "2026-06-14T06:41:56.049Z",
+    "params_snapshot": [
+      0.55,
+      0.45,
+      0.5,
+      0.65
+    ]
+  },
+  "gen-erosion-strata": {
+    "thumbnail_url": "thumbnails/gen-erosion-strata.png",
+    "generated_at": "2026-06-14T06:41:56.297Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.4,
+      0.3
+    ]
+  },
+  "gen-ethereal-anemone-bloom": {
+    "thumbnail_url": "thumbnails/gen-ethereal-anemone-bloom.png",
+    "generated_at": "2026-06-14T06:41:57.102Z",
+    "params_snapshot": [
+      1,
+      0.5,
+      2,
+      0.8
+    ]
+  },
+  "gen-ethereal-aurora-ghost-orchid": {
+    "thumbnail_url": "thumbnails/gen-ethereal-aurora-ghost-orchid.png",
+    "generated_at": "2026-06-14T06:41:57.482Z",
+    "params_snapshot": [
+      3,
+      2,
+      1.5,
+      5
+    ]
+  },
+  "gen-ethereal-quantum-medusa": {
+    "thumbnail_url": "thumbnails/gen-ethereal-quantum-medusa.png",
+    "generated_at": "2026-06-14T06:41:57.656Z",
+    "params_snapshot": [
+      1,
+      2,
+      1,
+      0.5
+    ]
+  },
+  "gen-ethereal-silk-veil": {
+    "thumbnail_url": "thumbnails/gen-ethereal-silk-veil.png",
+    "generated_at": "2026-06-14T06:41:57.779Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-evolutionary-cellular-gardens": {
+    "thumbnail_url": "thumbnails/gen-evolutionary-cellular-gardens.png",
+    "generated_at": "2026-06-14T06:41:58.041Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.5,
+      0.4
+    ]
+  },
+  "gen-feedback-echo-chamber": {
+    "thumbnail_url": "thumbnails/gen-feedback-echo-chamber.png",
+    "generated_at": "2026-06-14T06:41:58.206Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.4,
+      0.3
+    ]
+  },
+  "gen-fourier-epicycles": {
+    "thumbnail_url": "thumbnails/gen-fourier-epicycles.png",
+    "generated_at": "2026-06-14T06:41:58.481Z",
+    "params_snapshot": [
+      0.3,
+      0.4,
+      0.5,
+      0.65
+    ]
+  },
+  "gen-fractal-bioluminescence-spore-network": {
+    "thumbnail_url": "thumbnails/gen-fractal-bioluminescence-spore-network.png",
+    "generated_at": "2026-06-14T06:41:58.860Z",
+    "params_snapshot": [
+      0.5,
+      4,
+      1.2,
+      0.8
+    ]
+  },
+  "gen-fractal-clockwork": {
+    "thumbnail_url": "thumbnails/gen-fractal-clockwork.png",
+    "generated_at": "2026-06-14T06:41:59.020Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.2,
+      0
+    ]
+  },
+  "gen-fractal-ember-lattice": {
+    "thumbnail_url": "thumbnails/gen-fractal-ember-lattice.png",
+    "generated_at": "2026-06-14T06:41:59.167Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-fractured-monolith": {
+    "thumbnail_url": "thumbnails/gen-fractured-monolith.png",
+    "generated_at": "2026-06-14T06:41:59.728Z",
+    "params_snapshot": [
+      0.3,
+      1,
+      1,
+      0.5
+    ]
+  },
+  "gen-galactic-aether-crystal-geode-core": {
+    "thumbnail_url": "thumbnails/gen-galactic-aether-crystal-geode-core.png",
+    "generated_at": "2026-06-14T06:42:01.707Z",
+    "params_snapshot": [
+      1,
+      1.5,
+      5,
+      0.5
+    ]
+  },
+  "gen-ghost-flame": {
+    "thumbnail_url": "thumbnails/gen-ghost-flame.png",
+    "generated_at": "2026-06-14T06:42:02.000Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-glacial-aether-quantum-cavern": {
+    "thumbnail_url": "thumbnails/gen-glacial-aether-quantum-cavern.png",
+    "generated_at": "2026-06-14T06:42:02.176Z",
+    "params_snapshot": [
+      0.5,
+      0.8,
+      0.2,
+      1.5
+    ]
+  },
+  "gen-gravitational-strain": {
+    "thumbnail_url": "thumbnails/gen-gravitational-strain.png",
+    "generated_at": "2026-06-14T06:42:02.778Z",
+    "params_snapshot": [
+      0.4,
+      0.4,
+      0.4,
+      0.4
+    ]
+  },
+  "gen-gravito-phononic-accretion": {
+    "thumbnail_url": "thumbnails/gen-gravito-phononic-accretion.png",
+    "generated_at": "2026-06-14T06:42:03.023Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.4,
+      0.5
+    ]
+  },
+  "gen-graviton-plasma-lotus": {
+    "thumbnail_url": "thumbnails/gen-graviton-plasma-lotus.png",
+    "generated_at": "2026-06-14T06:42:03.229Z",
+    "params_snapshot": [
+      1,
+      1,
+      1,
+      0.5
+    ]
+  },
+  "gen-holographic-bismuth-core-reactor": {
+    "thumbnail_url": "thumbnails/gen-holographic-bismuth-core-reactor.png",
+    "generated_at": "2026-06-14T06:42:03.683Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-holographic-data-core": {
+    "thumbnail_url": "thumbnails/gen-holographic-data-core.png",
+    "generated_at": "2026-06-14T06:42:04.556Z",
+    "params_snapshot": [
+      1,
+      2,
+      1,
+      0.2
+    ]
+  },
+  "gen-holographic-lens-flare-matrix": {
+    "thumbnail_url": "thumbnails/gen-holographic-lens-flare-matrix.png",
+    "generated_at": "2026-06-14T06:42:04.680Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-holographic-membrane": {
+    "thumbnail_url": "thumbnails/gen-holographic-membrane.png",
+    "generated_at": "2026-06-14T06:42:04.858Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-holographic-plasma-geode": {
+    "thumbnail_url": "thumbnails/gen-holographic-plasma-geode.png",
+    "generated_at": "2026-06-14T06:42:05.353Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0,
+      0.2
+    ]
+  },
+  "gen-holographic-rainbow-surface": {
+    "thumbnail_url": "thumbnails/gen-holographic-rainbow-surface.png",
+    "generated_at": "2026-06-14T06:42:05.895Z",
+    "params_snapshot": [
+      0.6,
+      0.35,
+      0.3,
+      0
+    ]
+  },
+  "gen-hopf-fibration-fiber-bundle": {
+    "thumbnail_url": "thumbnails/gen-hopf-fibration-fiber-bundle.png",
+    "generated_at": "2026-06-14T06:42:07.562Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-hyper-dimensional-tesseract-labyrinth": {
+    "thumbnail_url": "thumbnails/gen-hyper-dimensional-tesseract-labyrinth.png",
+    "generated_at": "2026-06-14T06:42:08.028Z",
+    "params_snapshot": [
+      1,
+      2,
+      1,
+      2
+    ]
+  },
+  "gen-hyper-labyrinth": {
+    "thumbnail_url": "thumbnails/gen-hyper-labyrinth.png",
+    "generated_at": "2026-06-14T06:42:08.276Z",
+    "params_snapshot": [
+      0.5,
+      0.3,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-hyper-rainbow-vortex": {
+    "thumbnail_url": "thumbnails/gen-hyper-rainbow-vortex.png",
+    "generated_at": "2026-06-14T06:42:08.548Z",
+    "params_snapshot": [
+      0.7,
+      0.4,
+      0.5,
+      0
+    ]
+  },
+  "gen-hyper-refractive-rain-matrix": {
+    "thumbnail_url": "thumbnails/gen-hyper-refractive-rain-matrix.png",
+    "generated_at": "2026-06-14T06:42:09.131Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-hyperbolic-crystal-symbiosis": {
+    "thumbnail_url": "thumbnails/gen-hyperbolic-crystal-symbiosis.png",
+    "generated_at": "2026-06-14T06:42:09.310Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.5,
+      0.3
+    ]
+  },
+  "gen-hyperbolic-tessellation": {
+    "thumbnail_url": "thumbnails/gen-hyperbolic-tessellation.png",
+    "generated_at": "2026-06-14T06:42:09.538Z",
+    "params_snapshot": [
+      0.4,
+      0.2,
+      0.5,
+      0.7
+    ]
+  },
+  "gen-hyperbolic-tree": {
+    "thumbnail_url": "thumbnails/gen-hyperbolic-tree.png",
+    "generated_at": "2026-06-14T06:42:09.693Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.5
+    ]
+  },
+  "gen-hypnotic-vortex-tunnel": {
+    "thumbnail_url": "thumbnails/gen-hypnotic-vortex-tunnel.png",
+    "generated_at": "2026-06-14T06:42:09.846Z",
+    "params_snapshot": [
+      0.4,
+      0.3,
+      0.4,
+      0.3
+    ]
+  },
+  "gen-ifs-fractal-flame": {
+    "thumbnail_url": "thumbnails/gen-ifs-fractal-flame.png",
+    "generated_at": "2026-06-14T06:42:10.079Z",
+    "params_snapshot": [
+      0.35,
+      0.5,
+      0.5,
+      0.3
+    ]
+  },
+  "gen-inverse-mandelbrot": {
+    "thumbnail_url": "thumbnails/gen-inverse-mandelbrot.png",
+    "generated_at": "2026-06-14T06:42:10.382Z",
+    "params_snapshot": [
+      0.4,
+      0.3,
+      0,
+      0.3
+    ]
+  },
+  "gen-islamic-star-rose": {
+    "thumbnail_url": "thumbnails/gen-islamic-star-rose.png",
+    "generated_at": "2026-06-14T06:42:10.540Z",
+    "params_snapshot": [
+      0.5,
+      0.15,
+      0.5,
+      0
+    ]
+  },
+  "gen-isometric-city": {
+    "thumbnail_url": "thumbnails/gen-isometric-city.png",
+    "generated_at": "2026-06-14T06:42:10.706Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-kinetic-neo-brutalist-megastructure": {
+    "thumbnail_url": "thumbnails/gen-kinetic-neo-brutalist-megastructure.png",
+    "generated_at": "2026-06-14T06:42:11.081Z",
+    "params_snapshot": [
+      1,
+      3,
+      1,
+      1
+    ]
+  },
+  "gen-klein-bottle-walk": {
+    "thumbnail_url": "thumbnails/gen-klein-bottle-walk.png",
+    "generated_at": "2026-06-14T06:42:11.203Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-koch-snowflake-storm": {
+    "thumbnail_url": "thumbnails/gen-koch-snowflake-storm.png",
+    "generated_at": "2026-06-14T06:42:11.325Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-kryonic-quantum-aether-fractal-core": {
+    "thumbnail_url": "thumbnails/gen-kryonic-quantum-aether-fractal-core.png",
+    "generated_at": "2026-06-14T06:42:11.707Z",
+    "params_snapshot": [
+      1.5,
+      0.5,
+      1,
+      0.2
+    ]
+  },
+  "gen-langton-ant": {
+    "thumbnail_url": "thumbnails/gen-langton-ant.png",
+    "generated_at": "2026-06-14T06:42:11.878Z",
+    "params_snapshot": [
+      0.3,
+      0.2,
+      0.5,
+      0.3
+    ]
+  },
+  "gen-lenia-2": {
+    "thumbnail_url": "thumbnails/gen-lenia-2.png",
+    "generated_at": "2026-06-14T06:42:12.222Z",
+    "params_snapshot": [
+      0.5,
+      0.2,
+      0.33,
+      0.4
+    ]
+  },
+  "gen-lichen-reaction-diffusion": {
+    "thumbnail_url": "thumbnails/gen-lichen-reaction-diffusion.png",
+    "generated_at": "2026-06-14T06:42:12.490Z",
+    "params_snapshot": [
+      0.5,
+      0.2,
+      0.4,
+      0
+    ]
+  },
+  "gen-lichtenberg-storm": {
+    "thumbnail_url": "thumbnails/gen-lichtenberg-storm.png",
+    "generated_at": "2026-06-14T06:42:12.997Z",
+    "params_snapshot": [
+      0.5,
+      0.6,
+      0.4,
+      0.7
+    ]
+  },
+  "gen-liquid-crystal-hive-mind": {
+    "thumbnail_url": "thumbnails/gen-liquid-crystal-hive-mind.png",
+    "generated_at": "2026-06-14T06:42:15.192Z",
+    "params_snapshot": [
+      1,
+      2.5,
+      1,
+      0.5
+    ]
+  },
+  "gen-liquid-neon-cyber-metropolis": {
+    "thumbnail_url": "thumbnails/gen-liquid-neon-cyber-metropolis.png",
+    "generated_at": "2026-06-14T06:42:15.741Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-liquid-rainbow-glass": {
+    "thumbnail_url": "thumbnails/gen-liquid-rainbow-glass.png",
+    "generated_at": "2026-06-14T06:42:16.404Z",
+    "params_snapshot": [
+      0.65,
+      0.3,
+      0.45,
+      0
+    ]
+  },
+  "gen-lorenz-attractor": {
+    "thumbnail_url": "thumbnails/gen-lorenz-attractor.png",
+    "generated_at": "2026-06-14T06:42:16.515Z",
+    "params_snapshot": [
+      0.5,
+      0.35,
+      0.25,
+      0.5
+    ]
+  },
+  "gen-luminescent-chrono-fluid-astrolabe": {
+    "thumbnail_url": "thumbnails/gen-luminescent-chrono-fluid-astrolabe.png",
+    "generated_at": "2026-06-14T06:42:16.734Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-luminescent-quantum-glass-phoenix-egg": {
+    "thumbnail_url": "thumbnails/gen-luminescent-quantum-glass-phoenix-egg.png",
+    "generated_at": "2026-06-14T06:42:17.161Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-luminous-cauldron": {
+    "thumbnail_url": "thumbnails/gen-luminous-cauldron.png",
+    "generated_at": "2026-06-14T06:42:17.274Z",
+    "params_snapshot": [
+      0.48,
+      0.44,
+      0.35,
+      0.52
+    ]
+  },
+  "gen-luminous-fluid-chladni-resonator": {
+    "thumbnail_url": "thumbnails/gen-luminous-fluid-chladni-resonator.png",
+    "generated_at": "2026-06-14T06:42:17.475Z",
+    "params_snapshot": [
+      3,
+      5,
+      0.5,
+      1.5
+    ]
+  },
+  "gen-magnetic-dipole-field": {
+    "thumbnail_url": "thumbnails/gen-magnetic-dipole-field.png",
+    "generated_at": "2026-06-14T06:42:17.728Z",
+    "params_snapshot": [
+      0.5,
+      0.35,
+      0.4,
+      0
+    ]
+  },
+  "gen-magnetic-ferrofluid": {
+    "thumbnail_url": "thumbnails/gen-magnetic-ferrofluid.png",
+    "generated_at": "2026-06-14T06:42:17.860Z",
+    "params_snapshot": [
+      0.5,
+      0.3,
+      1,
+      0.2
+    ]
+  },
+  "gen-magnetic-field-lines": {
+    "thumbnail_url": "thumbnails/gen-magnetic-field-lines.png",
+    "generated_at": "2026-06-14T06:42:18.348Z",
+    "params_snapshot": [
+      0.6,
+      0.7,
+      0.2,
+      0.7
+    ]
+  },
+  "gen-magnetic-field-warp": {
+    "thumbnail_url": "thumbnails/gen-magnetic-field-warp.png",
+    "generated_at": "2026-06-14T06:42:18.899Z",
+    "params_snapshot": [
+      0.5,
+      0.3,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-magnetic-kelp": {
+    "thumbnail_url": "thumbnails/gen-magnetic-kelp.png",
+    "generated_at": "2026-06-14T06:42:19.173Z",
+    "params_snapshot": [
+      0.44,
+      0.47,
+      0.4,
+      0.52
+    ]
+  },
+  "gen-magnetic-storm": {
+    "thumbnail_url": "thumbnails/gen-magnetic-storm.png",
+    "generated_at": "2026-06-14T06:42:19.377Z",
+    "params_snapshot": [
+      0.4,
+      0.3,
+      0.4,
+      0.4
+    ]
+  },
+  "gen-mandelbox-explorer": {
+    "thumbnail_url": "thumbnails/gen-mandelbox-explorer.png",
+    "generated_at": "2026-06-14T06:42:19.503Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.6
+    ]
+  },
+  "gen-metaball-soft-body": {
+    "thumbnail_url": "thumbnails/gen-metaball-soft-body.png",
+    "generated_at": "2026-06-14T06:42:19.643Z",
+    "params_snapshot": [
+      0.5,
+      0.3,
+      0.2,
+      0.5
+    ]
+  },
+  "gen-micro-cosmos": {
+    "thumbnail_url": "thumbnails/gen-micro-cosmos.png",
+    "generated_at": "2026-06-14T06:42:19.806Z",
+    "params_snapshot": [
+      0.5,
+      0.3,
+      1,
+      0
+    ]
+  },
+  "gen-minimal-surface-soap-iridescence": {
+    "thumbnail_url": "thumbnails/gen-minimal-surface-soap-iridescence.png",
+    "generated_at": "2026-06-14T06:42:19.911Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.5
+    ]
+  },
+  "gen-molten-planetary-core": {
+    "thumbnail_url": "thumbnails/gen-molten-planetary-core.png",
+    "generated_at": "2026-06-14T06:42:20.077Z",
+    "params_snapshot": [
+      0.3,
+      0.5,
+      0.4,
+      0.4
+    ]
+  },
+  "gen-multi-scale-evolutionary-cellular-gardens": {
+    "thumbnail_url": "thumbnails/gen-multi-scale-evolutionary-cellular-gardens.png",
+    "generated_at": "2026-06-14T06:42:20.247Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.4,
+      0.5
+    ]
+  },
+  "gen-murmuration-phantom": {
+    "thumbnail_url": "thumbnails/gen-murmuration-phantom.png",
+    "generated_at": "2026-06-14T06:42:20.962Z",
+    "params_snapshot": [
+      0.6,
+      0.3,
+      0.5,
+      0.7
+    ]
+  },
+  "gen-mycelium-network": {
+    "thumbnail_url": "thumbnails/gen-mycelium-network.png",
+    "generated_at": "2026-06-14T06:42:21.287Z",
+    "params_snapshot": [
+      0.6,
+      0.5,
+      0.7,
+      0.8
+    ]
+  },
+  "gen-navier-stokes-ink": {
+    "thumbnail_url": "thumbnails/gen-navier-stokes-ink.png",
+    "generated_at": "2026-06-14T06:42:21.460Z",
+    "params_snapshot": [
+      0.4,
+      0.35,
+      0.3,
+      0.5
+    ]
+  },
+  "gen-nebula-light-trail-swarm": {
+    "thumbnail_url": "thumbnails/gen-nebula-light-trail-swarm.png",
+    "generated_at": "2026-06-14T06:42:21.605Z",
+    "params_snapshot": [
+      0.6,
+      0.5,
+      0.4,
+      0.3
+    ]
+  },
+  "gen-nebular-chrono-astrolabe": {
+    "thumbnail_url": "thumbnails/gen-nebular-chrono-astrolabe.png",
+    "generated_at": "2026-06-14T06:42:21.783Z",
+    "params_snapshot": [
+      1,
+      2,
+      1,
+      0.5
+    ]
+  },
+  "gen-neon-acid-geometry": {
+    "thumbnail_url": "thumbnails/gen-neon-acid-geometry.png",
+    "generated_at": "2026-06-14T06:42:22.626Z",
+    "params_snapshot": [
+      0.7,
+      0.4,
+      0.6,
+      0
+    ]
+  },
+  "gen-neon-cyber-mandala": {
+    "thumbnail_url": "thumbnails/gen-neon-cyber-mandala.png",
+    "generated_at": "2026-06-14T06:42:23.077Z",
+    "params_snapshot": [
+      0.7,
+      0.25,
+      0.4,
+      0
+    ]
+  },
+  "gen-neon-lotus": {
+    "thumbnail_url": "thumbnails/gen-neon-lotus.png",
+    "generated_at": "2026-06-14T06:42:23.236Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.3,
+      0.4
+    ]
+  },
+  "gen-neon-neural-network": {
+    "thumbnail_url": "thumbnails/gen-neon-neural-network.png",
+    "generated_at": "2026-06-14T06:42:24.096Z",
+    "params_snapshot": [
+      0.7,
+      0.4,
+      0.5,
+      0
+    ]
+  },
+  "gen-neon-plasma-biomechanical-hive": {
+    "thumbnail_url": "thumbnails/gen-neon-plasma-biomechanical-hive.png",
+    "generated_at": "2026-06-14T06:42:25.703Z",
+    "params_snapshot": [
+      1,
+      2,
+      0.5,
+      1.5
+    ]
+  },
+  "gen-neon-snowfall": {
+    "thumbnail_url": "thumbnails/gen-neon-snowfall.png",
+    "generated_at": "2026-06-14T06:42:25.816Z",
+    "params_snapshot": [
+      0.5,
+      0.42,
+      0.56,
+      0.33
+    ]
+  },
+  "gen-neon-tropical-paradise": {
+    "thumbnail_url": "thumbnails/gen-neon-tropical-paradise.png",
+    "generated_at": "2026-06-14T06:42:26.320Z",
+    "params_snapshot": [
+      0.6,
+      0.35,
+      0.5,
+      0
+    ]
+  },
+  "gen-neural-bioluminescence-matrix": {
+    "thumbnail_url": "thumbnails/gen-neural-bioluminescence-matrix.png",
+    "generated_at": "2026-06-14T06:42:27.776Z",
+    "params_snapshot": [
+      1,
+      1,
+      1,
+      2
+    ]
+  },
+  "gen-neural-fractal": {
+    "thumbnail_url": "thumbnails/gen-neural-fractal.png",
+    "generated_at": "2026-06-14T06:42:28.079Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.3
+    ]
+  },
+  "gen-neural-network-glow-synaptic-pulse": {
+    "thumbnail_url": "thumbnails/gen-neural-network-glow-synaptic-pulse.png",
+    "generated_at": "2026-06-14T06:42:28.425Z",
+    "params_snapshot": [
+      0.5,
+      1,
+      0.93,
+      0.5
+    ]
+  },
+  "gen-neuro-cosmos": {
+    "thumbnail_url": "thumbnails/gen-neuro-cosmos.png",
+    "generated_at": "2026-06-14T06:42:28.661Z",
+    "params_snapshot": [
+      1,
+      1,
+      0.5,
+      0.1
+    ]
+  },
+  "gen-neuro-kinetic-bloom": {
+    "thumbnail_url": "thumbnails/gen-neuro-kinetic-bloom.png",
+    "generated_at": "2026-06-14T06:42:29.008Z",
+    "params_snapshot": [
+      1,
+      3,
+      1,
+      0
+    ]
+  },
+  "gen-neuro-kinetic-liquid-gold-lotus": {
+    "thumbnail_url": "thumbnails/gen-neuro-kinetic-liquid-gold-lotus.png",
+    "generated_at": "2026-06-14T06:42:30.058Z",
+    "params_snapshot": [
+      1,
+      0.5,
+      0.8,
+      0.5
+    ]
+  },
+  "gen-newton-fractal": {
+    "thumbnail_url": "thumbnails/gen-newton-fractal.png",
+    "generated_at": "2026-06-14T06:42:30.358Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.6
+    ]
+  },
+  "gen-obsidian-echo-chamber": {
+    "thumbnail_url": "thumbnails/gen-obsidian-echo-chamber.png",
+    "generated_at": "2026-06-14T06:42:30.651Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-opal-circuit": {
+    "thumbnail_url": "thumbnails/gen-opal-circuit.png",
+    "generated_at": "2026-06-14T06:42:30.751Z",
+    "params_snapshot": [
+      0.43,
+      0.45,
+      0.5,
+      0.48
+    ]
+  },
+  "gen-percolation-threshold": {
+    "thumbnail_url": "thumbnails/gen-percolation-threshold.png",
+    "generated_at": "2026-06-14T06:42:30.959Z",
+    "params_snapshot": [
+      0.5,
+      0,
+      0.6,
+      0.4
+    ]
+  },
+  "gen-phase-transition-memory-weave": {
+    "thumbnail_url": "thumbnails/gen-phase-transition-memory-weave.png",
+    "generated_at": "2026-06-14T06:42:31.196Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.4,
+      0.3
+    ]
+  },
+  "gen-photonic-crystal-brain": {
+    "thumbnail_url": "thumbnails/gen-photonic-crystal-brain.png",
+    "generated_at": "2026-06-14T06:42:31.656Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-phyllotaxis-galaxy-spiral": {
+    "thumbnail_url": "thumbnails/gen-phyllotaxis-galaxy-spiral.png",
+    "generated_at": "2026-06-14T06:42:32.279Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.5
+    ]
+  },
+  "gen-physarum-sacred-geometry": {
+    "thumbnail_url": "thumbnails/gen-physarum-sacred-geometry.png",
+    "generated_at": "2026-06-14T06:42:32.565Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-plasma-mandala": {
+    "thumbnail_url": "thumbnails/gen-plasma-mandala.png",
+    "generated_at": "2026-06-14T06:42:32.701Z",
+    "params_snapshot": [
+      0.5,
+      0.3,
+      0.4,
+      0.5
+    ]
+  },
+  "gen-plasma-psychedelic-wormhole": {
+    "thumbnail_url": "thumbnails/gen-plasma-psychedelic-wormhole.png",
+    "generated_at": "2026-06-14T06:42:32.870Z",
+    "params_snapshot": [
+      0.8,
+      0.35,
+      0.5,
+      0
+    ]
+  },
+  "gen-polar-rainbow-explosion": {
+    "thumbnail_url": "thumbnails/gen-polar-rainbow-explosion.png",
+    "generated_at": "2026-06-14T06:42:33.382Z",
+    "params_snapshot": [
+      0.75,
+      0.35,
+      0.5,
+      0
+    ]
+  },
+  "gen-prism-tide": {
+    "thumbnail_url": "thumbnails/gen-prism-tide.png",
+    "generated_at": "2026-06-14T06:42:33.491Z",
+    "params_snapshot": [
+      0.44,
+      0.38,
+      0.47,
+      0.58
+    ]
+  },
+  "gen-prismatic-aether-loom": {
+    "thumbnail_url": "thumbnails/gen-prismatic-aether-loom.png",
+    "generated_at": "2026-06-14T06:42:33.893Z",
+    "params_snapshot": [
+      10,
+      3,
+      0.5,
+      1
+    ]
+  },
+  "gen-prismatic-bismuth-lattice": {
+    "thumbnail_url": "thumbnails/gen-prismatic-bismuth-lattice.png",
+    "generated_at": "2026-06-14T06:42:34.315Z",
+    "params_snapshot": [
+      3,
+      0.5,
+      1,
+      0.2
+    ]
+  },
+  "gen-prismatic-crystal-growth": {
+    "thumbnail_url": "thumbnails/gen-prismatic-crystal-growth.png",
+    "generated_at": "2026-06-14T06:42:34.754Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-prismatic-cyber-auroral-manta-swarm": {
+    "thumbnail_url": "thumbnails/gen-prismatic-cyber-auroral-manta-swarm.png",
+    "generated_at": "2026-06-14T06:42:36.080Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-prismatic-fractal-dunes": {
+    "thumbnail_url": "thumbnails/gen-prismatic-fractal-dunes.png",
+    "generated_at": "2026-06-14T06:42:37.050Z",
+    "params_snapshot": [
+      5,
+      1.5,
+      2,
+      1
+    ]
+  },
+  "gen-prismatic-ion-cascade": {
+    "thumbnail_url": "thumbnails/gen-prismatic-ion-cascade.png",
+    "generated_at": "2026-06-14T06:42:37.181Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.4,
+      0.35
+    ]
+  },
+  "gen-prismatic-void-weaver-ouroboros": {
+    "thumbnail_url": "thumbnails/gen-prismatic-void-weaver-ouroboros.png",
+    "generated_at": "2026-06-14T06:42:37.505Z",
+    "params_snapshot": [
+      5,
+      0.8,
+      1.5,
+      0.5
+    ]
+  },
+  "gen-protocell-division": {
+    "thumbnail_url": "thumbnails/gen-protocell-division.png",
+    "generated_at": "2026-06-14T06:42:37.715Z",
+    "params_snapshot": [
+      0.5,
+      0.6,
+      0.7,
+      0.4
+    ]
+  },
+  "gen-psychedelic-layered-time-stamps": {
+    "thumbnail_url": "thumbnails/gen-psychedelic-layered-time-stamps.png",
+    "generated_at": "2026-06-14T06:42:37.884Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-psychedelic-moire-flower": {
+    "thumbnail_url": "thumbnails/gen-psychedelic-moire-flower.png",
+    "generated_at": "2026-06-14T06:42:38.510Z",
+    "params_snapshot": [
+      0.7,
+      0.4,
+      0.5,
+      0
+    ]
+  },
+  "gen-psychedelic-time-warp-kaleidoscope": {
+    "thumbnail_url": "thumbnails/gen-psychedelic-time-warp-kaleidoscope.png",
+    "generated_at": "2026-06-14T06:42:38.710Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-quantum-aether-origami": {
+    "thumbnail_url": "thumbnails/gen-quantum-aether-origami.png",
+    "generated_at": "2026-06-14T06:42:38.945Z",
+    "params_snapshot": [
+      5,
+      1.5,
+      1,
+      0.5
+    ]
+  },
+  "gen-quantum-chrome-serpent-ouroboros": {
+    "thumbnail_url": "thumbnails/gen-quantum-chrome-serpent-ouroboros.png",
+    "generated_at": "2026-06-14T06:42:39.229Z",
+    "params_snapshot": [
+      1.5,
+      1,
+      2,
+      1.2
+    ]
+  },
+  "gen-quantum-entangled-ferrofluid-engine": {
+    "thumbnail_url": "thumbnails/gen-quantum-entangled-ferrofluid-engine.png",
+    "generated_at": "2026-06-14T06:42:40.896Z",
+    "params_snapshot": [
+      1,
+      0.5,
+      1,
+      1
+    ]
+  },
+  "gen-quantum-fluorescent-aether-moth-swarm": {
+    "thumbnail_url": "thumbnails/gen-quantum-fluorescent-aether-moth-swarm.png",
+    "generated_at": "2026-06-14T06:42:41.578Z",
+    "params_snapshot": [
+      1,
+      0.5,
+      2,
+      1
+    ]
+  },
+  "gen-quantum-foam-alpha": {
+    "thumbnail_url": "thumbnails/gen-quantum-foam-alpha.png",
+    "generated_at": "2026-06-14T06:42:41.911Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-quantum-foam": {
+    "thumbnail_url": "thumbnails/gen-quantum-foam.png",
+    "generated_at": "2026-06-14T06:42:42.254Z",
+    "params_snapshot": [
+      0.4,
+      0.4,
+      0.6,
+      0.3
+    ]
+  },
+  "gen-quantum-mycelium": {
+    "thumbnail_url": "thumbnails/gen-quantum-mycelium.png",
+    "generated_at": "2026-06-14T06:42:42.916Z",
+    "params_snapshot": [
+      1.5,
+      0.8,
+      2,
+      0.5
+    ]
+  },
+  "gen-quantum-neural-lace": {
+    "thumbnail_url": "thumbnails/gen-quantum-neural-lace.png",
+    "generated_at": "2026-06-14T06:42:43.060Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.2,
+      0.6
+    ]
+  },
+  "gen-quantum-pollen": {
+    "thumbnail_url": "thumbnails/gen-quantum-pollen.png",
+    "generated_at": "2026-06-14T06:42:43.200Z",
+    "params_snapshot": [
+      0.5,
+      0.42,
+      0.56,
+      0.4
+    ]
+  },
+  "gen-quantum-superposition": {
+    "thumbnail_url": "thumbnails/gen-quantum-superposition.png",
+    "generated_at": "2026-06-14T06:42:43.647Z",
+    "params_snapshot": [
+      0.4,
+      0.3,
+      0.35,
+      0.5
+    ]
+  },
+  "gen-quasicrystal": {
+    "thumbnail_url": "thumbnails/gen-quasicrystal.png",
+    "generated_at": "2026-06-14T06:42:43.799Z",
+    "params_snapshot": [
+      0,
+      0.6,
+      0.4,
+      0.5
+    ]
+  },
+  "gen-radiant-chrono-glass-nautilus": {
+    "thumbnail_url": "thumbnails/gen-radiant-chrono-glass-nautilus.png",
+    "generated_at": "2026-06-14T06:42:44.022Z",
+    "params_snapshot": [
+      0.5,
+      1.5,
+      1.33,
+      0.8
+    ]
+  },
+  "gen-radiant-quantum-crystalline-forge": {
+    "thumbnail_url": "thumbnails/gen-radiant-quantum-crystalline-forge.png",
+    "generated_at": "2026-06-14T06:42:44.314Z",
+    "params_snapshot": [
+      0.5,
+      1,
+      0.8,
+      0.5
+    ]
+  },
+  "gen-rainbow-firefly-dance": {
+    "thumbnail_url": "thumbnails/gen-rainbow-firefly-dance.png",
+    "generated_at": "2026-06-14T06:42:44.820Z",
+    "params_snapshot": [
+      0.7,
+      0.4,
+      0.5,
+      0
+    ]
+  },
+  "gen-raptor-mini": {
+    "thumbnail_url": "thumbnails/gen-raptor-mini.png",
+    "generated_at": "2026-06-14T06:42:44.979Z",
+    "params_snapshot": [
+      0.8,
+      3,
+      1.2,
+      0.3
+    ]
+  },
+  "gen-recursive-ancestral-terrains": {
+    "thumbnail_url": "thumbnails/gen-recursive-ancestral-terrains.png",
+    "generated_at": "2026-06-14T06:42:45.176Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.5,
+      0.4
+    ]
+  },
+  "gen-rgb-diffraction": {
+    "thumbnail_url": "thumbnails/gen-rgb-diffraction.png",
+    "generated_at": "2026-06-14T06:42:45.329Z",
+    "params_snapshot": [
+      0.35,
+      0.4,
+      0.4,
+      0.5
+    ]
+  },
+  "gen-sentient-aether-flora-biosphere": {
+    "thumbnail_url": "thumbnails/gen-sentient-aether-flora-biosphere.png",
+    "generated_at": "2026-06-14T06:42:45.516Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-showcase-crystalline-pulse": {
+    "thumbnail_url": "thumbnails/gen-showcase-crystalline-pulse.png",
+    "generated_at": "2026-06-14T06:42:45.700Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-showcase-kinetic-bloom": {
+    "thumbnail_url": "thumbnails/gen-showcase-kinetic-bloom.png",
+    "generated_at": "2026-06-14T06:42:45.814Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-showcase-nebula-core": {
+    "thumbnail_url": "thumbnails/gen-showcase-nebula-core.png",
+    "generated_at": "2026-06-14T06:42:46.043Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-sierpinski-tetrahedron": {
+    "thumbnail_url": "thumbnails/gen-sierpinski-tetrahedron.png",
+    "generated_at": "2026-06-14T06:42:46.248Z",
+    "params_snapshot": [
+      0.45,
+      0.3,
+      0.4,
+      0.25
+    ]
+  },
+  "gen-silica-tsunami": {
+    "thumbnail_url": "thumbnails/gen-silica-tsunami.png",
+    "generated_at": "2026-06-14T06:42:46.421Z",
+    "params_snapshot": [
+      2,
+      0.8,
+      1,
+      1.5
+    ]
+  },
+  "gen-singularity-forge": {
+    "thumbnail_url": "thumbnails/gen-singularity-forge.png",
+    "generated_at": "2026-06-14T06:42:46.850Z",
+    "params_snapshot": [
+      1,
+      0.5,
+      1,
+      1
+    ]
+  },
+  "gen-solar-wind-ribbons": {
+    "thumbnail_url": "thumbnails/gen-solar-wind-ribbons.png",
+    "generated_at": "2026-06-14T06:42:47.031Z",
+    "params_snapshot": [
+      0.4,
+      0.3,
+      0.3,
+      0.4
+    ]
+  },
+  "gen-sonoluminescent-chrono-geode-matrix": {
+    "thumbnail_url": "thumbnails/gen-sonoluminescent-chrono-geode-matrix.png",
+    "generated_at": "2026-06-14T06:42:47.391Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-spectral-ferrofluid": {
+    "thumbnail_url": "thumbnails/gen-spectral-ferrofluid.png",
+    "generated_at": "2026-06-14T06:42:47.640Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-stable-fluids-jos-stam": {
+    "thumbnail_url": "thumbnails/gen-stable-fluids-jos-stam.png",
+    "generated_at": "2026-06-14T06:42:47.821Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-stardust-nebula": {
+    "thumbnail_url": "thumbnails/gen-stardust-nebula.png",
+    "generated_at": "2026-06-14T06:42:48.362Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.4,
+      0.3
+    ]
+  },
+  "gen-stellar-plasma-ouroboros": {
+    "thumbnail_url": "thumbnails/gen-stellar-plasma-ouroboros.png",
+    "generated_at": "2026-06-14T06:42:48.781Z",
+    "params_snapshot": [
+      10,
+      2,
+      0.5,
+      1
+    ]
+  },
+  "gen-stellar-web-loom": {
+    "thumbnail_url": "thumbnails/gen-stellar-web-loom.png",
+    "generated_at": "2026-06-14T06:42:49.573Z",
+    "params_snapshot": [
+      2,
+      1,
+      3,
+      1
+    ]
+  },
+  "gen-strange-field-flow": {
+    "thumbnail_url": "thumbnails/gen-strange-field-flow.png",
+    "generated_at": "2026-06-14T06:42:49.693Z",
+    "params_snapshot": [
+      0.3,
+      0.5,
+      0.45,
+      0.55
+    ]
+  },
+  "gen-string-theory": {
+    "thumbnail_url": "thumbnails/gen-string-theory.png",
+    "generated_at": "2026-06-14T06:42:50.028Z",
+    "params_snapshot": [
+      0.5,
+      0.6,
+      0.85,
+      0.5
+    ]
+  },
+  "gen-superfluid-quantum-foam": {
+    "thumbnail_url": "thumbnails/gen-superfluid-quantum-foam.png",
+    "generated_at": "2026-06-14T06:42:50.338Z",
+    "params_snapshot": [
+      0.5,
+      4,
+      1,
+      0.5
+    ]
+  },
+  "gen-supernova-remnant": {
+    "thumbnail_url": "thumbnails/gen-supernova-remnant.png",
+    "generated_at": "2026-06-14T06:42:50.679Z",
+    "params_snapshot": [
+      0.7,
+      0.6,
+      0.5,
+      1
+    ]
+  },
+  "gen-symbiotic-chrono-mycelium-engine": {
+    "thumbnail_url": "thumbnails/gen-symbiotic-chrono-mycelium-engine.png",
+    "generated_at": "2026-06-14T06:42:51.027Z",
+    "params_snapshot": [
+      3,
+      2,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-symbiotic-light-networks": {
+    "thumbnail_url": "thumbnails/gen-symbiotic-light-networks.png",
+    "generated_at": "2026-06-14T06:42:51.519Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.4,
+      0.3
+    ]
+  },
+  "gen-temporal-motion-smear": {
+    "thumbnail_url": "thumbnails/gen-temporal-motion-smear.png",
+    "generated_at": "2026-06-14T06:42:51.655Z",
+    "params_snapshot": [
+      0.85,
+      0.6,
+      0.7,
+      0.8
+    ]
+  },
+  "gen-thermal-rainbow-topography": {
+    "thumbnail_url": "thumbnails/gen-thermal-rainbow-topography.png",
+    "generated_at": "2026-06-14T06:42:55.741Z",
+    "params_snapshot": [
+      0.6,
+      0.3,
+      0.4,
+      0
+    ]
+  },
+  "gen-topological-acoustic-knots": {
+    "thumbnail_url": "thumbnails/gen-topological-acoustic-knots.png",
+    "generated_at": "2026-06-14T06:42:55.987Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-topological-phase-weave": {
+    "thumbnail_url": "thumbnails/gen-topological-phase-weave.png",
+    "generated_at": "2026-06-14T06:42:56.286Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.7
+    ]
+  },
+  "gen-topology-flow": {
+    "thumbnail_url": "thumbnails/gen-topology-flow.png",
+    "generated_at": "2026-06-14T06:43:12.327Z",
+    "params_snapshot": [
+      0.5,
+      0.6,
+      0.5,
+      0.8
+    ]
+  },
+  "gen-torus-knot-rainbow": {
+    "thumbnail_url": "thumbnails/gen-torus-knot-rainbow.png",
+    "generated_at": "2026-06-14T06:43:12.947Z",
+    "params_snapshot": [
+      0.3,
+      0.25,
+      0.33,
+      0.5
+    ]
+  },
+  "gen-translucent-nebula": {
+    "thumbnail_url": "thumbnails/gen-translucent-nebula.png",
+    "generated_at": "2026-06-14T06:43:13.283Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-turing-morphogenesis": {
+    "thumbnail_url": "thumbnails/gen-turing-morphogenesis.png",
+    "generated_at": "2026-06-14T06:43:13.530Z",
+    "params_snapshot": [
+      0.4,
+      0.3,
+      0.5,
+      0
+    ]
+  },
+  "gen-velocity-bloom": {
+    "thumbnail_url": "thumbnails/gen-velocity-bloom.png",
+    "generated_at": "2026-06-14T06:43:13.840Z",
+    "params_snapshot": [
+      0.3,
+      0.7,
+      0.5,
+      0.85
+    ]
+  },
+  "gen-verlet-cloth-wind": {
+    "thumbnail_url": "thumbnails/gen-verlet-cloth-wind.png",
+    "generated_at": "2026-06-14T06:43:14.006Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.55,
+      0.6
+    ]
+  },
+  "gen-vitreous-chrono-chandelier": {
+    "thumbnail_url": "thumbnails/gen-vitreous-chrono-chandelier.png",
+    "generated_at": "2026-06-14T06:43:14.274Z",
+    "params_snapshot": [
+      0.5,
+      4,
+      1.3,
+      0.5
+    ]
+  },
+  "gen-volcanic-ink": {
+    "thumbnail_url": "thumbnails/gen-volcanic-ink.png",
+    "generated_at": "2026-06-14T06:43:14.419Z",
+    "params_snapshot": [
+      0.48,
+      0.44,
+      0.34,
+      0.52
+    ]
+  },
+  "gen-von-karman-vortex": {
+    "thumbnail_url": "thumbnails/gen-von-karman-vortex.png",
+    "generated_at": "2026-06-14T06:43:14.622Z",
+    "params_snapshot": [
+      0.4,
+      0.4,
+      0.5,
+      0
+    ]
+  },
+  "gen-voronoi-crystal": {
+    "thumbnail_url": "thumbnails/gen-voronoi-crystal.png",
+    "generated_at": "2026-06-14T06:43:14.728Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.7
+    ]
+  },
+  "gen-vortex-cathedral": {
+    "thumbnail_url": "thumbnails/gen-vortex-cathedral.png",
+    "generated_at": "2026-06-14T06:43:14.839Z",
+    "params_snapshot": [
+      0.46,
+      0.43,
+      0.35,
+      0.44
+    ]
+  },
+  "gen-worley-cellular-noise": {
+    "thumbnail_url": "thumbnails/gen-worley-cellular-noise.png",
+    "generated_at": "2026-06-14T06:43:14.968Z",
+    "params_snapshot": [
+      0.4,
+      0.25,
+      0.3,
+      0.5
+    ]
+  },
+  "gen-xeno-botanical-synth-flora": {
+    "thumbnail_url": "thumbnails/gen-xeno-botanical-synth-flora.png",
+    "generated_at": "2026-06-14T06:43:15.074Z",
+    "params_snapshot": [
+      2,
+      1.5,
+      0.8,
+      0.5
+    ]
+  },
+  "gen-xeno-mycelial-resonance-web": {
+    "thumbnail_url": "thumbnails/gen-xeno-mycelial-resonance-web.png",
+    "generated_at": "2026-06-14T06:43:15.234Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "gen-zeta-function-landscape": {
+    "thumbnail_url": "thumbnails/gen-zeta-function-landscape.png",
+    "generated_at": "2026-06-14T06:43:15.428Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.5
+    ]
+  },
+  "gen_mandelbulb_3d": {
+    "thumbnail_url": "thumbnails/gen_mandelbulb_3d.png",
+    "generated_at": "2026-06-14T06:43:15.780Z",
+    "params_snapshot": [
+      0.5,
+      0.3,
+      0.2,
+      0.5
+    ]
+  },
+  "gen_quantum_foam": {
+    "thumbnail_url": "thumbnails/gen_quantum_foam.png",
+    "generated_at": "2026-06-14T06:43:16.168Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.3
+    ]
+  },
+  "generative-psy-swirls": {
+    "thumbnail_url": "thumbnails/generative-psy-swirls.png",
+    "generated_at": "2026-06-14T06:43:16.319Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "generative-turing-veins": {
+    "thumbnail_url": "thumbnails/generative-turing-veins.png",
+    "generated_at": "2026-06-14T06:43:16.506Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.65
+    ]
+  },
+  "gravito-phononic-accretion": {
+    "thumbnail_url": "thumbnails/gravito-phononic-accretion.png",
+    "generated_at": "2026-06-14T06:43:16.697Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.3,
+      0.5
+    ]
+  },
+  "holographic-crystal": {
+    "thumbnail_url": "thumbnails/holographic-crystal.png",
+    "generated_at": "2026-06-14T06:43:16.861Z",
+    "params_snapshot": [
+      0.46,
+      0.35,
+      0.5,
+      0.42
+    ]
+  },
+  "holographic_interference": {
+    "thumbnail_url": "thumbnails/holographic_interference.png",
+    "generated_at": "2026-06-14T06:43:17.001Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.7,
+      0.3
+    ]
+  },
+  "hyperbolic-crystal-symbiosis": {
+    "thumbnail_url": "thumbnails/hyperbolic-crystal-symbiosis.png",
+    "generated_at": "2026-06-14T06:43:17.290Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.4,
+      0.6
+    ]
+  },
+  "interactive_neural_swarm": {
+    "thumbnail_url": "thumbnails/interactive_neural_swarm.png",
+    "generated_at": "2026-06-14T06:43:18.112Z",
+    "params_snapshot": [
+      0.3,
+      0.5,
+      0.3,
+      0.5
+    ]
+  },
+  "kimi_flock_symphony": {
+    "thumbnail_url": "thumbnails/kimi_flock_symphony.png",
+    "generated_at": "2026-06-14T06:43:27.399Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0,
+      0.5
+    ]
+  },
+  "lava-lamp-blobs": {
+    "thumbnail_url": "thumbnails/lava-lamp-blobs.png",
+    "generated_at": "2026-06-14T06:43:27.609Z",
+    "params_snapshot": [
+      0.4,
+      0.35,
+      0.38,
+      0.52
+    ]
+  },
+  "liquid_crystal_birefringence": {
+    "thumbnail_url": "thumbnails/liquid_crystal_birefringence.png",
+    "generated_at": "2026-06-14T06:43:27.703Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.2
+    ]
+  },
+  "liquid_magnetic_ferro": {
+    "thumbnail_url": "thumbnails/liquid_magnetic_ferro.png",
+    "generated_at": "2026-06-14T06:43:27.813Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.3,
+      0.5
+    ]
+  },
+  "magnetic-flux-garden": {
+    "thumbnail_url": "thumbnails/magnetic-flux-garden.png",
+    "generated_at": "2026-06-14T06:43:27.953Z",
+    "params_snapshot": [
+      0.44,
+      0.48,
+      0.35,
+      0.42
+    ]
+  },
+  "molten-gold": {
+    "thumbnail_url": "thumbnails/molten-gold.png",
+    "generated_at": "2026-06-14T06:43:27.988Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "morphogenic-resonance": {
+    "thumbnail_url": "thumbnails/morphogenic-resonance.png",
+    "generated_at": "2026-06-14T06:43:28.263Z",
+    "params_snapshot": [
+      0.4,
+      0.3,
+      0.5,
+      0.2
+    ]
+  },
+  "multi-scale-evolutionary-cellular-gardens": {
+    "thumbnail_url": "thumbnails/multi-scale-evolutionary-cellular-gardens.png",
+    "generated_at": "2026-06-14T06:43:28.413Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.4,
+      0.5
+    ]
+  },
+  "mycelium-network": {
+    "thumbnail_url": "thumbnails/mycelium-network.png",
+    "generated_at": "2026-06-14T06:43:28.546Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.4,
+      0.5
+    ]
+  },
+  "nebula-gyroid": {
+    "thumbnail_url": "thumbnails/nebula-gyroid.png",
+    "generated_at": "2026-06-14T06:43:28.686Z",
+    "params_snapshot": [
+      0.5,
+      0.7,
+      0.3,
+      0.5
+    ]
+  },
+  "neon-fern-garden": {
+    "thumbnail_url": "thumbnails/neon-fern-garden.png",
+    "generated_at": "2026-06-14T06:43:29.113Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "neural-mandala": {
+    "thumbnail_url": "thumbnails/neural-mandala.png",
+    "generated_at": "2026-06-14T06:43:29.563Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.4,
+      0.5
+    ]
+  },
+  "neural-synapse-web": {
+    "thumbnail_url": "thumbnails/neural-synapse-web.png",
+    "generated_at": "2026-06-14T06:43:29.748Z",
+    "params_snapshot": [
+      0.46,
+      0.42,
+      0.4,
+      0.5
+    ]
+  },
+  "phase-memory-weave": {
+    "thumbnail_url": "thumbnails/phase-memory-weave.png",
+    "generated_at": "2026-06-14T06:43:29.879Z",
+    "params_snapshot": [
+      0.5,
+      0.6,
+      0.3,
+      0.5
+    ]
+  },
+  "phosphorescent-jellyfish": {
+    "thumbnail_url": "thumbnails/phosphorescent-jellyfish.png",
+    "generated_at": "2026-06-14T06:43:30.019Z",
+    "params_snapshot": [
+      0.3,
+      0.5,
+      0.9,
+      0.7
+    ]
+  },
+  "plasma-jet-stream": {
+    "thumbnail_url": "thumbnails/plasma-jet-stream.png",
+    "generated_at": "2026-06-14T06:43:30.229Z",
+    "params_snapshot": [
+      0.44,
+      0.48,
+      0.38,
+      0.35
+    ]
+  },
+  "plasma-orb": {
+    "thumbnail_url": "thumbnails/plasma-orb.png",
+    "generated_at": "2026-06-14T06:43:30.337Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.5,
+      0.6
+    ]
+  },
+  "quantum-foam-lattice": {
+    "thumbnail_url": "thumbnails/quantum-foam-lattice.png",
+    "generated_at": "2026-06-14T06:43:30.648Z",
+    "params_snapshot": [
+      0.35,
+      0.5,
+      0.4,
+      0.6
+    ]
+  },
+  "recursive-ancestral-terrains": {
+    "thumbnail_url": "thumbnails/recursive-ancestral-terrains.png",
+    "generated_at": "2026-06-14T06:43:30.754Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.5,
+      0.6
+    ]
+  },
+  "retro_phosphor_dream": {
+    "thumbnail_url": "thumbnails/retro_phosphor_dream.png",
+    "generated_at": "2026-06-14T06:43:30.836Z",
+    "params_snapshot": [
+      0.3,
+      0.3,
+      0.4,
+      0.2
+    ]
+  },
+  "sacred-geometry-torus": {
+    "thumbnail_url": "thumbnails/sacred-geometry-torus.png",
+    "generated_at": "2026-06-14T06:43:31.017Z",
+    "params_snapshot": [
+      0.46,
+      0.4,
+      0.52,
+      0.5
+    ]
+  },
+  "sand-dunes": {
+    "thumbnail_url": "thumbnails/sand-dunes.png",
+    "generated_at": "2026-06-14T06:43:31.492Z",
+    "params_snapshot": [
+      0.4,
+      0.3,
+      0.3,
+      0.5
+    ]
+  },
+  "solar-flare-cascade": {
+    "thumbnail_url": "thumbnails/solar-flare-cascade.png",
+    "generated_at": "2026-06-14T06:43:31.646Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "spec-analytic-noise-flow": {
+    "thumbnail_url": "thumbnails/spec-analytic-noise-flow.png",
+    "generated_at": "2026-06-14T06:43:31.799Z",
+    "params_snapshot": [
+      0.3,
+      0.4,
+      0.3,
+      0.5
+    ]
+  },
+  "spec-distance-field-text": {
+    "thumbnail_url": "thumbnails/spec-distance-field-text.png",
+    "generated_at": "2026-06-14T06:43:31.928Z",
+    "params_snapshot": [
+      0.3,
+      0.3,
+      0.4,
+      0.7
+    ]
+  },
+  "spec-quaternion-julia": {
+    "thumbnail_url": "thumbnails/spec-quaternion-julia.png",
+    "generated_at": "2026-06-14T06:43:32.145Z",
+    "params_snapshot": [
+      0.4,
+      0.3,
+      0.5,
+      0.5
+    ]
+  },
+  "spore-galaxy": {
+    "thumbnail_url": "thumbnails/spore-galaxy.png",
+    "generated_at": "2026-06-14T06:43:32.368Z",
+    "params_snapshot": [
+      0.44,
+      0.42,
+      0.5,
+      0.38
+    ]
+  },
+  "stellar-plasma": {
+    "thumbnail_url": "thumbnails/stellar-plasma.png",
+    "generated_at": "2026-06-14T06:43:32.523Z",
+    "params_snapshot": [
+      0,
+      0.2,
+      0.3,
+      0.5
+    ]
+  },
+  "supernova-core": {
+    "thumbnail_url": "thumbnails/supernova-core.png",
+    "generated_at": "2026-06-14T06:43:32.977Z",
+    "params_snapshot": [
+      0.3,
+      0.5,
+      0.4,
+      0.2
+    ]
+  },
+  "supernova-remnant": {
+    "thumbnail_url": "thumbnails/supernova-remnant.png",
+    "generated_at": "2026-06-14T06:43:33.159Z",
+    "params_snapshot": [
+      0.5,
+      0.4,
+      0.6,
+      0.5
+    ]
+  },
+  "symbiotic-light-propagation-networks": {
+    "thumbnail_url": "thumbnails/symbiotic-light-propagation-networks.png",
+    "generated_at": "2026-06-14T06:43:33.269Z",
+    "params_snapshot": [
+      0.5,
+      0.6,
+      0.5,
+      0.5
+    ]
+  },
+  "topological-acoustic-knots": {
+    "thumbnail_url": "thumbnails/topological-acoustic-knots.png",
+    "generated_at": "2026-06-14T06:43:33.601Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.4,
+      0.6
+    ]
+  },
+  "tornado-vortex": {
+    "thumbnail_url": "thumbnails/tornado-vortex.png",
+    "generated_at": "2026-06-14T06:43:33.821Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.4,
+      0.3
+    ]
+  },
+  "volumetric-cloud-nebula": {
+    "thumbnail_url": "thumbnails/volumetric-cloud-nebula.png",
+    "generated_at": "2026-06-14T06:43:34.624Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "wolfram-data-demo": {
+    "thumbnail_url": "thumbnails/wolfram-data-demo.png",
+    "generated_at": "2026-06-14T06:43:34.819Z",
+    "params_snapshot": [
+      0,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "alpha-depth-fog-volumetric": {
+    "thumbnail_url": "thumbnails/alpha-depth-fog-volumetric.png",
+    "generated_at": "2026-06-14T06:43:34.916Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "alpha-hdr-bloom-chain": {
+    "thumbnail_url": "thumbnails/alpha-hdr-bloom-chain.png",
+    "generated_at": "2026-06-14T06:43:35.023Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "alpha-luminance-history": {
+    "thumbnail_url": "thumbnails/alpha-luminance-history.png",
+    "generated_at": "2026-06-14T06:43:35.117Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "alpha-multi-layer-glass": {
+    "thumbnail_url": "thumbnails/alpha-multi-layer-glass.png",
+    "generated_at": "2026-06-14T06:43:35.252Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "alpha-spectral-decompose": {
+    "thumbnail_url": "thumbnails/alpha-spectral-decompose.png",
+    "generated_at": "2026-06-14T06:43:35.386Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "anaglyph-3d": {
+    "thumbnail_url": "thumbnails/anaglyph-3d.png",
+    "generated_at": "2026-06-14T06:43:35.469Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "anamorphic-caustic-flare": {
+    "thumbnail_url": "thumbnails/anamorphic-caustic-flare.png",
+    "generated_at": "2026-06-14T06:43:35.564Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "ascii-shockwave": {
+    "thumbnail_url": "thumbnails/ascii-shockwave.png",
+    "generated_at": "2026-06-14T06:43:35.624Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "breathing-kaleidoscope": {
+    "thumbnail_url": "thumbnails/breathing-kaleidoscope.png",
+    "generated_at": "2026-06-14T06:43:35.730Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "chroma-vortex": {
+    "thumbnail_url": "thumbnails/chroma-vortex.png",
+    "generated_at": "2026-06-14T06:43:35.805Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "chromatic-focus-interactive": {
+    "thumbnail_url": "thumbnails/chromatic-focus-interactive.png",
+    "generated_at": "2026-06-14T06:43:35.885Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "cross-spec-alpha-spectral-bloom": {
+    "thumbnail_url": "thumbnails/cross-spec-alpha-spectral-bloom.png",
+    "generated_at": "2026-06-14T06:43:36.010Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "crt-clear-zone": {
+    "thumbnail_url": "thumbnails/crt-clear-zone.png",
+    "generated_at": "2026-06-14T06:43:36.152Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "cyber-grid-pulse": {
+    "thumbnail_url": "thumbnails/cyber-grid-pulse.png",
+    "generated_at": "2026-06-14T06:43:36.235Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "cyber-physical-portal": {
+    "thumbnail_url": "thumbnails/cyber-physical-portal.png",
+    "generated_at": "2026-06-14T06:43:36.387Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "cyber-scan": {
+    "thumbnail_url": "thumbnails/cyber-scan.png",
+    "generated_at": "2026-06-14T06:43:36.481Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "data-scanner": {
+    "thumbnail_url": "thumbnails/data-scanner.png",
+    "generated_at": "2026-06-14T06:43:36.680Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "elastic-chromatic": {
+    "thumbnail_url": "thumbnails/elastic-chromatic.png",
+    "generated_at": "2026-06-14T06:43:37.029Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "electric-contours": {
+    "thumbnail_url": "thumbnails/electric-contours.png",
+    "generated_at": "2026-06-14T06:43:37.283Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "glitch-pixel-sort": {
+    "thumbnail_url": "thumbnails/glitch-pixel-sort.png",
+    "generated_at": "2026-06-14T06:43:37.635Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "hex-circuit": {
+    "thumbnail_url": "thumbnails/hex-circuit.png",
+    "generated_at": "2026-06-14T06:43:37.789Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "holographic-flicker": {
+    "thumbnail_url": "thumbnails/holographic-flicker.png",
+    "generated_at": "2026-06-14T06:43:37.898Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "holographic-projection-gpt52": {
+    "thumbnail_url": "thumbnails/holographic-projection-gpt52.png",
+    "generated_at": "2026-06-14T06:43:38.049Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "holographic-projection": {
+    "thumbnail_url": "thumbnails/holographic-projection.png",
+    "generated_at": "2026-06-14T06:43:38.168Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "holographic-sticker": {
+    "thumbnail_url": "thumbnails/holographic-sticker.png",
+    "generated_at": "2026-06-14T06:43:38.271Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "hyper-space-jump": {
+    "thumbnail_url": "thumbnails/hyper-space-jump.png",
+    "generated_at": "2026-06-14T06:43:38.397Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "interactive-fresnel": {
+    "thumbnail_url": "thumbnails/interactive-fresnel.png",
+    "generated_at": "2026-06-14T06:43:38.510Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "interactive-pcb-traces": {
+    "thumbnail_url": "thumbnails/interactive-pcb-traces.png",
+    "generated_at": "2026-06-14T06:43:38.582Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "luma-smear-interactive": {
+    "thumbnail_url": "thumbnails/luma-smear-interactive.png",
+    "generated_at": "2026-06-14T06:43:38.738Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "neon-edge-glow": {
+    "thumbnail_url": "thumbnails/neon-edge-glow.png",
+    "generated_at": "2026-06-14T06:43:38.922Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "neon-edge-pulse": {
+    "thumbnail_url": "thumbnails/neon-edge-pulse.png",
+    "generated_at": "2026-06-14T06:43:39.107Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "neon-edge-reveal": {
+    "thumbnail_url": "thumbnails/neon-edge-reveal.png",
+    "generated_at": "2026-06-14T06:43:39.220Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "neon-topology": {
+    "thumbnail_url": "thumbnails/neon-topology.png",
+    "generated_at": "2026-06-14T06:43:39.312Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "phantom-lag": {
+    "thumbnail_url": "thumbnails/phantom-lag.png",
+    "generated_at": "2026-06-14T06:43:39.483Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "pixel-sorter": {
+    "thumbnail_url": "thumbnails/pixel-sorter.png",
+    "generated_at": "2026-06-14T06:43:39.697Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "quantum-field-visualizer": {
+    "thumbnail_url": "thumbnails/quantum-field-visualizer.png",
+    "generated_at": "2026-06-14T06:43:39.811Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "quantum-ghost": {
+    "thumbnail_url": "thumbnails/quantum-ghost.png",
+    "generated_at": "2026-06-14T06:43:39.963Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "rgb-distance-split": {
+    "thumbnail_url": "thumbnails/rgb-distance-split.png",
+    "generated_at": "2026-06-14T06:43:40.082Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "rgb-topology": {
+    "thumbnail_url": "thumbnails/rgb-topology.png",
+    "generated_at": "2026-06-14T06:43:40.235Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "signal-modulation": {
+    "thumbnail_url": "thumbnails/signal-modulation.png",
+    "generated_at": "2026-06-14T06:43:40.435Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "spectral-rain": {
+    "thumbnail_url": "thumbnails/spectral-rain.png",
+    "generated_at": "2026-06-14T06:43:40.654Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "temporal-rgb-smear": {
+    "thumbnail_url": "thumbnails/temporal-rgb-smear.png",
+    "generated_at": "2026-06-14T06:43:40.932Z",
+    "params_snapshot": [
+      0.5,
+      0.7,
+      0.5,
+      0.3
+    ]
+  },
+  "time-slit-scan": {
+    "thumbnail_url": "thumbnails/time-slit-scan.png",
+    "generated_at": "2026-06-14T06:43:41.058Z",
+    "params_snapshot": [
+      0,
+      0,
+      0.3,
+      0.2
+    ]
+  },
+  "voxel-grid": {
+    "thumbnail_url": "thumbnails/voxel-grid.png",
+    "generated_at": "2026-06-14T06:43:41.319Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "zipper-reveal": {
+    "thumbnail_url": "thumbnails/zipper-reveal.png",
+    "generated_at": "2026-06-14T06:43:41.453Z",
+    "params_snapshot": [
+      0.3,
+      0.02,
+      0,
+      0.5
+    ]
+  }
+}

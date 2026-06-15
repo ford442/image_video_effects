@@ -8,7 +8,11 @@
     "interactive",
     "mouse-reactive",
     "temporal",
-    "procedural"
+    "procedural",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration"
   ],
   "tags": [
     "psychedelic",

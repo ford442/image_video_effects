@@ -4,7 +4,7 @@
 - **Shader ID**: quantum-ripples
 - **Agent Role**: Algorithmist
 - **Current Size**: 3331 bytes
-- **Target Line Count**: ~120 lines
+- **Target Line Count**: ~180 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -41,91 +41,118 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
-// ---------------------------------------------------------------
-//  Quantum Ripples – Mouse-driven wave simulation
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Quantum Ripples
+//  Category: image
+//  Features: mouse-driven, interactive, audio-reactive
+//  Complexity: Medium
+//  Upgraded: 2026-05-23
+//  upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  zoom_config: vec4<f32>,       // x=time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,       // x=Freq, y=Speed, z=Amp, w=Color
-  ripples:     array<vec4<f32>, 50>,
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
 };
+
+const TAU = 6.28318530717958647692;
+const PHI = 1.61803398874989484820;
+
+// ═══ CHUNK: hash21 ═══
+fn hash21(p: vec2<f32>) -> f32 {
+  let q = fract(p * vec2<f32>(127.1, 311.7));
+  return fract(dot(q, vec2<f32>(269.5, 183.3)));
+}
+
+// ═══ CHUNK: fbm2 ═══
+fn fbm2(p: vec2<f32>, t: f32) -> f32 {
+  var v = 0.0;
+  var a = 0.5;
+  var x = p;
+  for (var i = 0; i < 4; i = i + 1) {
+    v += a * sin(dot(x, vec2<f32>(1.2, 0.7)) * TAU + t * PHI);
+    x = x * 2.03 + vec2<f32>(1.7, 3.1);
+    a *= 0.5;
+  }
+  return v;
+}
+
+// ═══ CHUNK: waveField ═══
+// Returns displacement vector from a wave source with FBM turbulence
+fn waveField(uv: vec2<f32>, center: vec2<f32>, aspect: f32, t: f32,
+             freq: f32, spd: f32, turb: f32) -> vec2<f32> {
+  let dx = (uv.x - center.x) * aspect;
+  let dy = uv.y - center.y;
+  let d = sqrt(dx * dx + dy * dy);
+  let dir = select(normalize(vec2<f32>(dx, dy)), vec2<f32>(0.0, 0.0), d < 0.001);
+  let warp = fbm2(uv * 3.0 + dir * 2.0, t * 0.3) * turb;
+  let phase = d * freq - t * spd + warp;
+  let harmonic = sin(phase * PHI + TAU * 0.25) * 0.5;
+  let w = (sin(phase) + harmonic) * exp(-d * 3.0) * 0.666;
+  return dir * w;
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    let resolution = u.config.zw;
-    var uv = vec2<f32>(gid.xy) / resolution;
-    let time = u.config.x;
+  let res = u.config.zw;
+  let uv = vec2<f32>(gid.xy) / res;
+  let t = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let aspect = res.x / res.y;
 
-    // Mouse Interaction
-    var mousePos = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w; // 1.0 if down
+  let freq = u.zoom_params.x * 24.0 + 2.0;
+  let spd  = u.zoom_params.y * 6.0;
+  let amp  = u.zoom_params.z * 0.12;
+  let csh  = u.zoom_params.w;
 
-    // Params
-    let freq = u.zoom_params.x * 20.0 + 2.0; // 2 to 22
-    let speed = u.zoom_params.y * 5.0;       // 0 to 5
-    let amp = u.zoom_params.z * 0.1;         // 0 to 0.1
-    let colorShift = u.zoom_params.w;
+  var disp = waveField(uv, mouse, aspect, t, freq, spd, 0.5);
 
-    // Calculate distance from mouse, corrected for aspect ratio
-    let aspect = resolution.x / resolution.y;
-    let dx = (uv.x - mousePos.x) * aspect;
-    let dy = uv.y - mousePos.y;
-    let dist = sqrt(dx*dx + dy*dy);
+  // Superpose ripple sources (max 8 for performance)
+  let rippleCount = u32(u.config.y);
+  for (var i = 0u; i < min(rippleCount, 8u); i = i + 1u) {
+    let rp = u.ripples[i];
+    let age = t - rp.z;
+    let rf = freq * (1.0 + hash21(rp.xy) * 0.3);
+    disp += waveField(uv, rp.xy, aspect, t, rf, spd * 0.7, 0.25) *
+            exp(-age * 2.0) * 0.5;
+  }
 
-    // Wave calculation
-    // Continuous waves radiating from mouse
-    let wave = sin(dist * freq - time * speed);
-    let waveFalloff = 1.0 / (1.0 + dist * 5.0); // Decay with distance
+  let activeAmp = select(1.0, 2.0, u.zoom_config.w > 0.5);
+  disp *= amp * activeAmp;
 
-    // Displacement
-    var dir = normalize(vec2<f32>(dx, dy));
-    // If very close to center, dir might be NaN, but dist is small so displacement small.
-    // Safe normalize:
-    let safeDir = select(dir, vec2<f32>(0.0, 0.0), dist < 0.001);
+  let srcUV = uv - disp;
+  let color = textureSampleLevel(readTexture, u_sampler, srcUV, 0.0);
 
-    let displacement = safeDir * wave * amp * waveFalloff;
+  let energy = length(disp) / (amp * activeAmp + 0.001);
+  var out = color.rgb;
+  let shift = energy * csh * sin(t * 0.5) * 0.3;
+  out.r += shift;
+  out.b -= shift;
 
-    // Boost effect if mouse is down
-    let activeAmp = select(1.0, 2.0, mouseDown > 0.5);
-    let finalDisplacement = displacement * activeAmp;
+  let audio = plasmaBuffer[0].x;
+  out += vec3<f32>(energy * audio * 0.15);
 
-    let srcUV = uv - finalDisplacement;
+  let effectIntensity = energy * (0.5 + audio * 0.5);
+  let finalAlpha = mix(color.a, 1.0, effectIntensity * 0.7);
+  textureStore(writeTexture, gid.xy, vec4<f32>(out, finalAlpha));
 
-    // Sample texture
-    let color = textureSampleLevel(readTexture, u_sampler, srcUV, 0.0);
-
-    // Color shift based on wave
-    var outCol = color.rgb;
-    if (colorShift > 0.0) {
-        let shift = wave * colorShift * waveFalloff;
-        outCol.r += shift;
-        outCol.b -= shift;
-    }
-
-    // Store
-    textureStore(writeTexture, gid.xy, vec4<f32>(outCol, 1.0));
-
-    // Passthrough depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }
 
 ```
@@ -136,47 +163,51 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   "id": "quantum-ripples",
   "name": "Quantum Ripples",
   "url": "shaders/quantum-ripples.wgsl",
-  "category": "image",
-  "description": "Mouse-driven quantum interference waves that displace the image.",
+  "description": "Mouse-driven quantum interference waves with FBM turbulence, multi-source superposition, and audio reactivity.",
   "params": [
     {
       "id": "waveFreq",
       "name": "Wave Freq",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "waveSpeed",
       "name": "Propagate Speed",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "distortionStr",
       "name": "Distortion",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "colorShift",
       "name": "Color Shift",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   ],
   "features": [
     "mouse-driven",
-    "interactive"
+    "interactive",
+    "audio-reactive"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "waves",
+    "interference",
+    "turbulence"
   ]
 }
+
 ```
 
 ---
@@ -242,6 +273,38 @@ const INV_PI = 0.31830988618379067154;   // 1/π
   ```
 - Static → Temporal coherent noise (seed with `floor(t/period)`, lerp between seeds)
 
+#### Domain-warped FBM (organic flow, two-octave warp)
+```wgsl
+fn fbm(p: vec2<f32>) -> f32 {
+    var a = 0.5; var s = 0.0; var q = p;
+    for (var i = 0; i < 5; i = i + 1) {
+        s = s + a * valueNoise(q);
+        q = q * 2.02; a = a * 0.5;
+    }
+    return s;
+}
+fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
+    let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)),
+                      fbm(p + vec2<f32>(5.2, 1.3)));
+    let r = vec2<f32>(fbm(p + 4.0*q + vec2<f32>(1.7, 9.2)),
+                      fbm(p + 4.0*q + vec2<f32>(8.3, 2.8)));
+    return fbm(p + 4.0*r);
+}
+```
+Strictly better than single-octave noise for "alive" generative shaders. Pass `u.config.x` as `t`.
+
+#### Polar kaleidoscope fold
+```wgsl
+fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
+    let r = length(uv);
+    var a = atan2(uv.y, uv.x);
+    let seg = 6.2831853 / max(segs, 1.0);
+    a = abs(((a % seg) + seg) % seg - seg * 0.5);
+    return vec2<f32>(cos(a), sin(a)) * r;
+}
+```
+Cheap, branch-light fold that gives instant symmetry. Pair with `warpedFBM` or SDF sampling.
+
 ### Quasi-Random Sampling (better than pseudo-random)
 ```wgsl
 // Halton sequence – base 2 and 3, ideal for AA / Monte Carlo
@@ -274,6 +337,24 @@ fn goldNoise(uv: vec2<f32>, seed: f32) -> f32 {
 - Static → Animated morphing fields (`mix(sdf_a, sdf_b, smoothstep(0,1,t))`)
 - Solid → Subsurface scattering: `exp(-thickness / scatterDist) * albedo`
 - New primitives: capsule, hexagonal prism, torus knot, Möbius strip SDF
+
+#### Smooth-min SDF union (`smin`) — round seams between primitives
+```wgsl
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = clamp(0.5 + 0.5*(b - a)/k, 0.0, 1.0);
+    return mix(b, a, h) - k*h*(1.0 - h);
+}
+```
+`k ≈ 0.1–0.3` of the smaller primitive radius. Replaces hard `min()` for organic blob unions.
+
+#### Anti-aliased SDF / line via `fwidth` (no MSAA needed in compute)
+```wgsl
+fn aa_step(edge: f32, x: f32) -> f32 {
+    let w = max(fwidth(x), 1e-4);
+    return smoothstep(edge - w, edge + w, x);
+}
+```
+Use wherever a hard `step()` would produce shimmering edges — kaleidoscope folds, SDF contours, grid lines.
 
 ### Fractal Upgrades
 - Basic Mandelbrot → Burning Ship (`abs(z)` before squaring)
@@ -347,7 +428,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 120 lines (±20%).
+4. Ensure the upgraded shader is roughly 180 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

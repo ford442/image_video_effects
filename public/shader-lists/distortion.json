@@ -2678,7 +2678,10 @@
       "depth-aware",
       "upgraded-rgba",
       "archimedean-spiral",
-      "chromatic-dispersion"
+      "chromatic-dispersion",
+      "domain-warp",
+      "kaleidoscope",
+      "mobius-lens"
     ],
     "params": [
       {
@@ -2720,7 +2723,10 @@
       "dof",
       "audio-reactive",
       "depth-aware",
-      "interactive"
+      "interactive",
+      "domain-warp",
+      "kaleidoscope",
+      "mobius"
     ]
   },
   {

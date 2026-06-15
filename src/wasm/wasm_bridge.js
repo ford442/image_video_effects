@@ -387,6 +387,49 @@ export function getFPS() {
 }
 
 /**
+ * Get a human-readable summary of the chosen WebGPU adapter/device:
+ * vendor, architecture, limits validation results, enabled features,
+ * and negotiated surface format. Empty string if not yet initialized.
+ *
+ * Deliberately does NOT require state.initialized: when initWasmRenderer()
+ * returns 0 (e.g. insufficient limits or surface creation failure),
+ * g_renderer still exists and adapterSummary_ holds the failure reason —
+ * this lets diagnostics surface *why* init failed.
+ * @returns {string}
+ */
+export function getAdapterSummary() {
+  if (!wasmModule) return '';
+
+  return wasmModule.ccall('getAdapterSummary', 'string', [], []);
+}
+
+/**
+ * Get the WebGPURenderer::InitStage value identifying which stage of
+ * Initialize() failed (0=None, 8=Ready/success). 0 if no renderer exists yet.
+ *
+ * Deliberately does NOT require state.initialized — see getAdapterSummary().
+ * @returns {number}
+ */
+export function getLastInitErrorStage() {
+  if (!wasmModule) return 0;
+
+  return wasmModule.ccall('getLastInitErrorStage', 'number', [], []);
+}
+
+/**
+ * Get the human-readable reason for the last Initialize() failure. Empty
+ * string if init has not failed (or not been attempted yet).
+ *
+ * Deliberately does NOT require state.initialized — see getAdapterSummary().
+ * @returns {string}
+ */
+export function getLastInitErrorMessage() {
+  if (!wasmModule) return '';
+
+  return wasmModule.ccall('getLastInitErrorMessage', 'string', [], []);
+}
+
+/**
  * Check if renderer is initialized.
  * @returns {boolean}
  */
@@ -719,6 +762,9 @@ const wasmBridge = {
   addRipple,
   clearRipples,
   getFPS,
+  getAdapterSummary,
+  getLastInitErrorStage,
+  getLastInitErrorMessage,
   isInitialized,
   uploadImageData,
   uploadVideoFrame,

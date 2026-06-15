@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Directional Glitch
 //  Category: interactive-mouse
-//  Features: mouse-driven, glitch, audio-reactive, hdr, tonemapped, upgraded-rgba
+//  Features: mouse-driven, glitch, audio-reactive, temporal-feedback,
+//            chromatic-aberration, depth-aware, hdr, tonemapped,
+//            curl-noise, domain-warp, voronoi-ridges
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-14
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,28 +30,81 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
-    let l = 0.4122214708*c.r + 0.5363325363*c.g + 0.0514459929*c.b;
-    let m = 0.2119034982*c.r + 0.6806995451*c.g + 0.1073969566*c.b;
-    let s = 0.0883024619*c.r + 0.2817188376*c.g + 0.6299787005*c.b;
-    let l_ = pow(l, 1.0/3.0); let m_ = pow(m, 1.0/3.0); let s_ = pow(s, 1.0/3.0);
-    return vec3<f32>(0.2104542553*l_+0.7936177850*m_-0.0040720468*s_,
-                     1.9779984951*l_-2.4285922050*m_+0.4505937099*s_,
-                     0.0259040371*l_+0.7827717662*m_-0.8086757660*s_);
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+const PHI: f32 = 1.61803398875;
+
+// ── Canonical hash / noise ────────────────────────────────────────
+fn hash21(p: vec2<f32>) -> f32 {
+    let h = dot(p, vec2<f32>(127.1, 311.7));
+    return fract(sin(h) * 43758.5453123);
 }
 
-fn oklab_to_linear_srgb(c: vec3<f32>) -> vec3<f32> {
-    let l_ = c.x+0.3963377774*c.y+0.2158037573*c.z;
-    let m_ = c.x-0.1055613458*c.y-0.0638541728*c.z;
-    let s_ = c.x-0.0894841775*c.y-1.2914855480*c.z;
-    let l = l_*l_*l_; let m = m_*m_*m_; let s = s_*s_*s_;
-    return vec3<f32>(4.0767416621*l-3.3077115913*m+0.2309699292*s,
-                    -1.2684380046*l+2.6097574011*m-0.3413193965*s,
-                    -0.0041960863*l-0.7034186147*m+1.7076147010*s);
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+    );
 }
 
-fn mixOkLab(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
-    return oklab_to_linear_srgb(mix(linear_srgb_to_oklab(a), linear_srgb_to_oklab(b), t));
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+    var sum = 0.0; var amp = 0.5; var freq = 1.0;
+    for (var i = 0; i < octaves; i++) {
+        sum += amp * valueNoise(p * freq);
+        freq *= 2.0;
+        amp *= 0.5;
+    }
+    return sum;
+}
+
+fn domainWarp(p: vec2<f32>, strength: f32, octaves: i32) -> vec2<f32> {
+    let q = vec2<f32>(fbm(p, octaves), fbm(p + vec2<f32>(5.2, 1.3), octaves));
+    return p + strength * q;
+}
+
+// Divergence-free velocity field for organic glitch drift
+fn curl2D(p: vec2<f32>) -> vec2<f32> {
+    let eps = 0.001;
+    let nx = fbm(p + vec2<f32>(0.0, eps), 3) - fbm(p - vec2<f32>(0.0, eps), 3);
+    let ny = fbm(p + vec2<f32>(eps, 0.0), 3) - fbm(p - vec2<f32>(eps, 0.0), 3);
+    return vec2<f32>(nx, -ny) / (2.0 * eps);
+}
+
+// ── Cellular ridges (Voronoi F2-F1) for multi-scale glitch bands ──
+fn voronoiEdges(p: vec2<f32>) -> f32 {
+    var F1: f32 = 999999.0;
+    var F2: f32 = 999999.0;
+    let ip = floor(p);
+    for (var i: i32 = -1; i <= 1; i = i + 1) {
+        for (var j: i32 = -1; j <= 1; j = j + 1) {
+            let n = ip + vec2<f32>(f32(i), f32(j));
+            let d = length(p - n - hash21(n));
+            if (d < F1) { F2 = F1; F1 = d; } else if (d < F2) { F2 = d; }
+        }
+    }
+    return F2 - F1;
+}
+
+// Temporally coherent hash for sparkling blocks
+fn temporalHash(p: vec2<f32>, time: f32) -> f32 {
+    let seed = floor(time * 8.0);
+    let n1 = hash21(p + vec2<f32>(seed));
+    let n2 = hash21(p + vec2<f32>(seed + 1.0));
+    return mix(n1, n2, fract(time * 8.0));
+}
+
+// ── Color / tone mapping ──────────────────────────────────────────
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn luma(rgb: vec3<f32>) -> f32 {
+    return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
 fn blackbodyRGB(T: f32) -> vec3<f32> {
@@ -64,82 +119,86 @@ fn blackbodyRGB(T: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b);
 }
 
-fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
-    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
-    return c * min(1.0, max_lum / max(l, 1e-4));
+fn chromaticAberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
+    let center = vec2<f32>(0.5);
+    let delta = uv - center;
+    let lenSq = max(dot(delta, delta), 0.000001);
+    let dir = delta * inverseSqrt(lenSq);
+    let offset = dir * max(amount, 0.0);
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    return vec3<f32>(r, g, b);
 }
 
-fn aces(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
-    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
-fn ign(p: vec2<f32>) -> f32 {
-    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
-}
-
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let pixel = vec2<i32>(global_id.xy);
+    let res = u.config.zw;
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / max(resolution.y, 1.0);
+    let uv01 = vec2<f32>(pixel) / res;
     let time = u.config.x;
     let mouse = u.zoom_config.yz;
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
-    let audio_mod = 1.0 + bass * 0.5;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
     let intensity = u.zoom_params.x;
     let radius = u.zoom_params.y;
     let scatter = u.zoom_params.z;
     let angle_bias = u.zoom_params.w;
 
-    let uv_c = vec2<f32>(uv.x * aspect, uv.y);
+    // Mouse-distance mask with depth awareness
+    let aspect = res.x / max(res.y, 1.0);
+    let uv_c = vec2<f32>(uv01.x * aspect, uv01.y);
     let mouse_c = vec2<f32>(mouse.x * aspect, mouse.y);
     let dist = distance(uv_c, mouse_c);
+    let mask = smoothstep(radius, 0.0, dist) * (0.5 + 0.5 * clamp(depth, 0.0, 1.0));
 
-    let angle = atan2(uv.y - mouse.y, uv.x - mouse.x) + angle_bias * 6.28;
+    // Directional + divergence-free displacement
+    let angle = atan2(uv01.y - mouse.y, uv01.x - mouse.x) + angle_bias * TAU;
+    let radial = vec2<f32>(cos(angle), sin(angle));
+    let curl = curl2D(uv01 * 6.0 + mouse * 2.0 + vec2<f32>(time * 0.1));
+    let dir = normalize(mix(radial, curl, 0.35 * intensity) + vec2<f32>(0.0001));
 
-    let block_id = floor(uv * 50.0);
-    let noise = fract(sin(dot(block_id, vec2<f32>(12.9898, 78.233) + time)) * 43758.5453);
+    // Domain-warped FBM + Voronoi ridges drive the glitch blocks
+    let noiseScale = 8.0 + scatter * 64.0;
+    let warp = domainWarp(uv01 * noiseScale + vec2<f32>(time * 0.3), intensity * 0.5, 3);
+    let field = fbm(warp + bass * 0.5, 4);
+    let cells = voronoiEdges(uv01 * noiseScale * 0.5 + vec2<f32>(time * 0.2));
+    let trigger = field + cells * 0.4 * intensity;
+    let glitchMask = step(1.0 - scatter * 0.6, trigger);
 
-    let mask = smoothstep(radius, 0.0, dist);
-    let is_glitch = step(1.0 - scatter, noise);
+    let disp = glitchMask * intensity * mask * (0.04 + bass * 0.03);
+    let caAmount = disp * 3.0 + depth * 0.001 + bass * 0.001;
 
-    let disp = is_glitch * intensity * mask * 0.1 * audio_mod;
-    let shift = vec2<f32>(cos(angle), sin(angle)) * disp;
+    // Sample input with chromatic separation along the displacement vector
+    let aberrated = chromaticAberration(uv01, caAmount);
+    var glitch = aberrated * (1.0 + disp * 12.0);
 
-    let sr = textureSampleLevel(readTexture, u_sampler, clamp(uv - shift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let sg = textureSampleLevel(readTexture, u_sampler, clamp(uv - shift * 1.5, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let sb = textureSampleLevel(readTexture, u_sampler, clamp(uv - shift * 2.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    var glitch = vec3<f32>(sr.r, sg.g, sb.b) * (1.0 + disp * 12.0);
+    // Audio-reactive blackbody color and temporally coherent sparkle
+    let temp = mix(2200.0, 14000.0, clamp(bass * 0.7 + trigger * 0.4, 0.0, 1.0));
+    glitch *= blackbodyRGB(temp);
+    let spark = temporalHash(uv01 * 120.0 + mouse * 20.0, time);
+    glitch += vec3<f32>(spark * mask * intensity * 0.5 * (1.0 + bass));
 
-    let temp = mix(2200.0, 14000.0, clamp(bass * 0.7 + noise * 0.4, 0.0, 1.0));
-    glitch = glitch * blackbodyRGB(temp);
+    // Blend with original based on glitch strength
+    let original = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb;
+    let mixFactor = clamp(mask * glitchMask * intensity, 0.0, 1.0);
+    var color = mix(original, glitch, mixFactor);
 
-    let spark = fract(sin(dot(uv * time, vec2<f32>(12.9898, 78.233))) * 43758.5453);
-    glitch = glitch + vec3<f32>(spark * mask * intensity * 0.6 * audio_mod);
+    // Temporal feedback trail
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    let decay = 0.97 - intensity * 0.03;
+    color = mix(prev.rgb * decay, color, 0.2 + bass * 0.1);
 
-    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let mixFactor = mask * is_glitch * intensity;
-    var color = mixOkLab(original, glitch, mixFactor);
+    // Tone map and semantic alpha
+    color = acesToneMap(color * (0.9 + mids * 0.25));
+    let alpha = clamp(mixFactor * (0.8 + depth * 0.25) + bass * 0.05, 0.15, 0.95);
 
-    color = hue_preserve_clamp(color, 3.0);
-    color = aces(color);
-    let dither = (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
-    color = color + vec3<f32>(dither);
-
-    let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let alpha = clamp(mix(1.0, 0.35 + 0.65 * luma, mixFactor), 0.3, 1.0);
-    let a = clamp(alpha, 0.0, 1.0);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, a));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(color, a));
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 //  Stellar Plasma - Endless procedural cosmic nebula (OPTIMIZED)
 //  Category: generative
-//  Features: generative, procedural, loops, audio-reactivity
+//  Features: generative, procedural, loops, audio-reactivity,
+//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //
 //  OPTIMIZATIONS APPLIED:
 //  - Precomputed noise hash values
@@ -10,6 +11,9 @@
 //  - Cached rotation matrix
 //  - Early exit for distant regions
 //  Author: Gemini 3.1 Pro Vertex (optimized)
+//  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
+//  Upgraded: 2026-06-14
+//  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -76,6 +80,10 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
     return v;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // Hue shift function
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32> {
     let k = vec3<f32>(0.57735, 0.57735, 0.57735);
@@ -104,6 +112,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (dist > 3.0) {
         textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 1.0));
         textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+        textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 1.0));
         return;
     }
 
@@ -113,10 +122,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scale = mix(1.0, 4.0, u.zoom_params.z);
     let mouse_influence = u.zoom_params.w;
     
-    // OPTIMIZATION: Audio reactivity hooks (from config.yzw)
-    let audioLow = u.config.y;
-    let audioMid = u.config.z;
-    let audioHigh = u.config.w;
+    // OPTIMIZATION: Audio reactivity hooks (bass/mid/treble from plasmaBuffer)
+    let audioLow = plasmaBuffer[0].x;
+    let audioMid = plasmaBuffer[0].y;
+    let audioHigh = plasmaBuffer[0].z;
     let audioReactivity = 1.0 + audioMid * 0.3;
 
     let time = u.config.x * speed * audioReactivity;
@@ -173,9 +182,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glowIntensity = 1.0 + audioMid * 0.5;
     color = (f * f * f + 0.6 * f * f + 0.5 * f) * color * glowIntensity;
 
-    // Output final color
-    let final_color = vec4<f32>(color, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
+    let coord = vec2<i32>(global_id.xy);
+
+    // ═══ CHUNK: temporal-feedback (dataTextureC → dataTextureA) ═══
+    let prev = textureLoad(dataTextureC, coord, 0);
+    color = mix(color, prev.rgb * 0.92, 0.05 + audioLow * 0.01);
+
+    // ═══ CHUNK: chromatic-aberration ═══
+    let caStr = 0.003 * (1.0 + audioLow) + glowIntensity * 0.001;
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+    color = acesToneMap(color * 1.2);
+
+    // Output final color with semantic alpha
+    let lumaOut = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(lumaOut * 0.8 + 0.1, 0.0, 1.0);
+    let final_color = vec4<f32>(color, alpha);
+    textureStore(writeTexture, coord, final_color);
+    textureStore(dataTextureA, coord, final_color);
 
     // Write empty depth
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));

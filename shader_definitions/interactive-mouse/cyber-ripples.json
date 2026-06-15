@@ -2,7 +2,7 @@
   "id": "cyber-ripples",
   "name": "Cyber Ripples",
   "url": "shaders/cyber-ripples.wgsl",
-  "description": "Digital ripples with chromatic aberration and pixelation emanating from cursor. Audio-reactive bass boost.",
+  "description": "Interactive cursor-driven ripples with click shockwaves, audio-reactive bass envelope, temporal feedback trails, depth-aware compositing, and ACES tone mapping.",
   "params": [
     {
       "id": "speed",
@@ -38,11 +38,17 @@
     "wave",
     "neon",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "temporal-feedback",
+    "depth-aware",
+    "click-shockwave",
+    "aces-tone-map"
   ],
   "tags": [
     "filter",
     "image-processing",
-    "audio-reactive"
+    "audio-reactive",
+    "interactive",
+    "feedback"
   ]
 }

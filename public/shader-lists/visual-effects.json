@@ -920,12 +920,19 @@
     "id": "elastic-chromatic",
     "name": "Elastic Chromatic",
     "url": "shaders/elastic-chromatic.wgsl",
-    "description": "Elastic chromatic aberration with Lissajous-based secondary source oscillating around mouse, bass-driven spring constant, and effect-masked alpha.",
+    "description": "Elastic chromatic aberration with radial RGB shift, per-channel temporal lag, Lissajous mouse source, depth-aware audio reactivity, split-tone blackbody grading, ACES tone mapping and IGN dither.",
     "features": [
       "mouse-driven",
       "depth-aware",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "chromatic-aberration",
+      "temporal-feedback",
+      "split-tone",
+      "blackbody-temperature",
+      "aces-tone-map",
+      "ign-dither",
+      "premultiplied-alpha"
     ],
     "params": [
       {
@@ -975,7 +982,10 @@
       "lag",
       "elastic",
       "lissajous",
-      "mouse-driven"
+      "mouse-driven",
+      "hdr",
+      "dither",
+      "split-tone"
     ]
   },
   {
@@ -2199,7 +2209,7 @@
     "id": "temporal-rgb-smear",
     "name": "Temporal RGB Smear",
     "url": "shaders/temporal-rgb-smear.wgsl",
-    "description": "Directional RGB smear with time-based offset, chromatic split modulated by mids, temporal feedback decay, and accumulative trail alpha.",
+    "description": "Directional RGB smear with curl-noise velocity field, domain-warped drift, Halton-jittered chromatic sampling, temporal feedback decay, ACES tone mapping, and semantic trail alpha.",
     "params": [
       {
         "id": "smear_length",
@@ -2239,14 +2249,18 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Time-based directional turbulence"
+        "description": "Strength of curl-noise and domain-warp turbulence"
       }
     ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "temporal",
-      "upgraded-rgba"
+      "depth-aware",
+      "curl-noise",
+      "domain-warp",
+      "aces-tone-mapping",
+      "semantic-alpha"
     ],
     "tags": [
       "filter",
@@ -2255,7 +2269,11 @@
       "interactive",
       "temporal",
       "feedback",
-      "chromatic"
+      "chromatic",
+      "curl-noise",
+      "domain-warp",
+      "depth-aware",
+      "tone-mapping"
     ]
   },
   {
@@ -2319,7 +2337,14 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "domain-warp",
+      "curl-noise",
+      "temporal-feedback",
+      "depth-aware",
+      "aces-tone-map",
+      "chromatic-aberration",
+      "semantic-alpha"
     ],
     "params": [
       {

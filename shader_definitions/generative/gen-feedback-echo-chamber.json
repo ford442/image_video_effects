@@ -2,7 +2,7 @@
   "id": "gen-feedback-echo-chamber",
   "name": "Feedback Echo Chamber",
   "url": "shaders/gen-feedback-echo-chamber.wgsl",
-  "description": "Multi-layer temporal echo with feedback decay, creating ghost images of previous frames fading into depth with color grading per layer",
+  "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending",
   "tags": [
     "temporal",
     "echo",
@@ -13,7 +13,9 @@
     "music",
     "reactive",
     "alpha",
-    "accumulative"
+    "accumulative",
+    "mouse-reactive",
+    "shockwave"
   ],
   "features": [
     "aces-tone-map",
@@ -22,7 +24,12 @@
     "audio-reactive",
     "chromatic-aberration",
     "depth-aware",
+    "domain-warp",
+    "gravity-well",
+    "mouse-reactive",
     "multi-pass",
+    "psychedelic-palette",
+    "shockwave",
     "temporal",
     "upgraded-rgba"
   ],

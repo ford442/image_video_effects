@@ -630,7 +630,7 @@
     "id": "chromatic-mosaic-projector",
     "name": "Chromatic Mosaic Projector",
     "url": "shaders/chromatic-mosaic-projector.wgsl",
-    "description": "Animated Voronoi cell mosaic with per-cell chromatic aberration, mouse gravity wells, and audio-reactive cell pulsing.",
+    "description": "Animated Voronoi cell mosaic with per-cell chromatic aberration, mouse gravity wells, audio-reactive cell pulsing, HDR ACES tone mapping, temporal trails, and dynamic blackbody color temperature.",
     "params": [
       {
         "id": "cellSize",
@@ -666,7 +666,12 @@
       "audio-reactive",
       "upgraded-rgba",
       "voronoi",
-      "chromatic-dispersion"
+      "chromatic-dispersion",
+      "aces-tone-map",
+      "ign-dither",
+      "temporal-feedback",
+      "color-temperature",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -675,7 +680,9 @@
       "chromatic",
       "voronoi",
       "audio-reactive",
-      "interactive"
+      "interactive",
+      "hdr",
+      "temperature"
     ]
   },
   {
@@ -1583,7 +1590,7 @@
     "id": "cyber-ripples",
     "name": "Cyber Ripples",
     "url": "shaders/cyber-ripples.wgsl",
-    "description": "Digital ripples with chromatic aberration and pixelation emanating from cursor. Audio-reactive bass boost.",
+    "description": "Interactive cursor-driven ripples with click shockwaves, audio-reactive bass envelope, temporal feedback trails, depth-aware compositing, and ACES tone mapping.",
     "params": [
       {
         "id": "speed",
@@ -1619,12 +1626,18 @@
       "wave",
       "neon",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "temporal-feedback",
+      "depth-aware",
+      "click-shockwave",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
       "image-processing",
-      "audio-reactive"
+      "audio-reactive",
+      "interactive",
+      "feedback"
     ]
   },
   {
@@ -2084,7 +2097,7 @@
     "id": "directional-glitch",
     "name": "Directional Glitch",
     "url": "shaders/directional-glitch.wgsl",
-    "description": "Glitch artifacts radiate from the mouse position with audio-reactive displacement.",
+    "description": "Voronoi-ridge and FBM domain-warped glitch bands radiate from the mouse, driven by curl-noise displacement, chromatic aberration, depth-aware masking, and temporal feedback.",
     "params": [
       {
         "id": "intensity",
@@ -2131,6 +2144,12 @@
       "mouse-driven",
       "glitch",
       "audio-reactive",
+      "temporal-feedback",
+      "chromatic-aberration",
+      "depth-aware",
+      "curl-noise",
+      "domain-warp",
+      "voronoi-ridges",
       "upgraded-rgba"
     ],
     "tags": [
@@ -2138,7 +2157,12 @@
       "image-processing",
       "glitch",
       "interactive",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal-feedback",
+      "chromatic-aberration",
+      "curl-noise",
+      "voronoi",
+      "multi-scale"
     ]
   },
   {
@@ -2245,7 +2269,7 @@
     "id": "echo-ripple",
     "name": "Echo Ripple",
     "url": "shaders/echo-ripple.wgsl",
-    "description": "Mouse movement creates expanding ripples that echo and persist in time. Audio reactivity drives ripple amplitude and color splitting, while depth-aware parallax separates foreground and background distortion.",
+    "description": "Mouse movement and click history spawn expanding ripples that echo through time. Audio-reactive envelopes smooth bass pulses, depth-aware parallax separates foreground from background, and chromatic aberration plus ACES tone mapping give the feedback loop a modern, saturated look.",
     "params": [
       {
         "id": "freq",
@@ -2280,7 +2304,10 @@
       "mouse-driven",
       "temporal-persistence",
       "audio-reactive",
+      "audio-envelope",
       "depth-aware",
+      "chromatic-aberration",
+      "aces-tone-mapping",
       "upgraded-rgba"
     ],
     "tags": [
@@ -3974,7 +4001,7 @@
     "id": "interactive-magnetic-ripple",
     "name": "Magnetic Ripple",
     "url": "shaders/interactive-magnetic-ripple.wgsl",
-    "description": "Magnetic field distortion with curl-noise field lines, all 50 ripple point accumulation, FBM domain warping, chromatic split, and glow-alpha at ripple peaks.",
+    "description": "Magnetic field distortion with curl-noise field lines, click-burst shockwaves, all 50 ripple point accumulation, FBM domain warping, depth-aware compositing, temporal motion trails, chromatic split, and glow-alpha at ripple peaks.",
     "params": [
       {
         "id": "ripple_freq",
@@ -4009,6 +4036,11 @@
       "mouse-driven",
       "distortion",
       "audio-reactive",
+      "depth-aware",
+      "temporal-feedback",
+      "motion-trails",
+      "chromatic-aberration",
+      "aces-tone-map",
       "upgraded-rgba"
     ],
     "tags": [
@@ -5248,7 +5280,7 @@
     "id": "magnetic-interference",
     "name": "Magnetic Interference",
     "url": "shaders/magnetic-interference.wgsl",
-    "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, audio-reactive bass envelope, and temporal feedback smearing.",
+    "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, audio-reactive bass envelope, temporal feedback smearing, depth-aware compositing, chromatic aberration, and mouse-velocity trail drag.",
     "params": [
       {
         "id": "strength",
@@ -5283,7 +5315,12 @@
       "mouse-driven",
       "audio-reactive",
       "ripple-integration",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "depth-aware",
+      "chromatic-aberration",
+      "aces-tone-map",
+      "temporal-feedback",
+      "velocity-trails"
     ],
     "tags": [
       "filter",
@@ -6689,9 +6726,9 @@
   },
   {
     "id": "neon-cursor-trace",
-    "name": "Particle Physics Trace",
+    "name": "Neon Cursor Trace",
     "url": "shaders/neon-cursor-trace.wgsl",
-    "description": "Spring-mass cursor physics with persistent phosphor trails, electric arc jitter, audio-reactive particle spawning, and multi-point neon glow along a velocity-smoothed trajectory.",
+    "description": "Spring-mass cursor physics with persistent phosphor trails, gravity-well mouse attraction, click-burst particle spawning, depth-aware compositing, and ACES tone-mapped neon glow.",
     "params": [
       {
         "id": "intensity",
@@ -6727,12 +6764,16 @@
       "temporal-persistence",
       "audio-reactive",
       "spring-physics",
+      "gravity-well",
+      "click-burst",
       "phosphor-decay",
       "electric-arc",
       "multi-point-trail",
       "particle-spawn",
       "velocity-smear",
-      "ripple-spark"
+      "ripple-spark",
+      "depth-aware",
+      "aces-tone-map"
     ],
     "tags": [
       "filter",
@@ -7348,7 +7389,7 @@
     "id": "oscilloscope-overlay",
     "name": "Oscilloscope Overlay",
     "url": "shaders/oscilloscope-overlay.wgsl",
-    "description": "Overlays a real-time luminance waveform of the image scanline at the mouse cursor's vertical position.",
+    "description": "Overlays a real-time luminance waveform of the image scanline at the mouse cursor's vertical position, now with audio-reactive color temperature, HDR tone mapping, and IGN dithering.",
     "params": [
       {
         "id": "amplitude",
@@ -7381,11 +7422,18 @@
     ],
     "features": [
       "mouse-driven",
-      "overlay"
+      "overlay",
+      "audio-reactive",
+      "hdr",
+      "aces-tone-map",
+      "color-temperature",
+      "dither"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "overlay",
+      "audio-reactive"
     ]
   },
   {
@@ -8005,11 +8053,14 @@
     "id": "pixel-stretch-cross",
     "name": "Pixel Stretch Cross",
     "url": "shaders/pixel-stretch-cross.wgsl",
-    "description": "Multi-direction pixel stretch using Fibonacci disk sampling, depth-aware attenuation, bass-driven magnitude, and effect-masked alpha transparency.",
+    "description": "Multi-direction pixel stretch using Fibonacci disk sampling, mouse gravity well, depth-aware attenuation, bass-envelope magnitude, click shockwaves, temporal trails, and effect-masked alpha.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
+      "temporal-feedback",
+      "click-shockwave",
+      "aces-tone-map",
       "upgraded-rgba"
     ],
     "params": [
@@ -8048,7 +8099,8 @@
       "fibonacci",
       "depth-aware",
       "stretch",
-      "distortion"
+      "distortion",
+      "interactive-mouse"
     ]
   },
   {
@@ -8102,13 +8154,16 @@
     "id": "polar-warp-interactive",
     "name": "Polar Warp",
     "url": "shaders/polar-warp-interactive.wgsl",
-    "description": "Maps the image to polar coordinates centered on the mouse with bass-driven warp strength, spiral twist, click-triggered ripple bursts, and depth-aware fading.",
+    "description": "Maps the image to polar coordinates centered on the mouse with bass-envelope warp strength, velocity-driven spiral twist, click-triggered ripple bursts, chromatic aberration, temporal feedback trails, ACES tone mapping, and depth-aware fading.",
     "features": [
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
       "depth-aware",
-      "multi-ripple"
+      "multi-ripple",
+      "temporal-feedback",
+      "chromatic-aberration",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -8150,7 +8205,8 @@
       "interactive",
       "polar",
       "warp",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal-feedback"
     ]
   },
   {
@@ -8341,7 +8397,7 @@
     "id": "quad-mirror",
     "name": "Quad Mirror",
     "url": "shaders/quad-mirror.wgsl",
-    "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, and audio-reactive seam shimmer.",
+    "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, audio-reactive seam shimmer, chromatic aberration, ACES tone mapping, and temporal feedback trails.",
     "params": [
       {
         "id": "hOffset",
@@ -8377,7 +8433,12 @@
       "geometry",
       "upgraded-rgba",
       "fbm-domain-warp",
-      "audio-reactive"
+      "audio-reactive",
+      "seam-warp",
+      "chromatic-aberration",
+      "aces-tone-map",
+      "temporal-feedback",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -8385,7 +8446,10 @@
       "kaleidoscope",
       "mirror",
       "geometric",
-      "audio-reactive"
+      "audio-reactive",
+      "post-processing",
+      "tone-map",
+      "temporal"
     ]
   },
   {
@@ -8582,7 +8646,7 @@
     "id": "quantum-ripples",
     "name": "Quantum Ripples",
     "url": "shaders/quantum-ripples.wgsl",
-    "description": "Mouse-driven quantum interference waves with FBM turbulence, multi-source superposition, and audio reactivity.",
+    "description": "Mouse-driven quantum interference waves with domain-warped FBM, divergence-free curl turbulence, temporal feedback, depth-aware chromatic aberration and audio reactivity.",
     "params": [
       {
         "id": "waveFreq",
@@ -8616,14 +8680,19 @@
     "features": [
       "mouse-driven",
       "interactive",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal-feedback",
+      "depth-aware",
+      "chromatic-aberration"
     ],
     "tags": [
       "filter",
       "image-processing",
       "waves",
       "interference",
-      "turbulence"
+      "turbulence",
+      "domain-warp",
+      "curl-noise"
     ]
   },
   {
@@ -9484,7 +9553,7 @@
     "id": "scanline-sorting",
     "name": "Scanline Sorting",
     "url": "shaders/scanline-sorting.wgsl",
-    "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse. Reacts to audio bass for intensified sorting.",
+    "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse. Reacts to audio bass for intensified sorting, applies ACES tone mapping, and uses an early-exit path for inactive pixels.",
     "params": [
       {
         "id": "thresh",
@@ -9523,7 +9592,12 @@
       "mouse-driven",
       "sorting",
       "audio-reactive",
-      "upgraded-rgba"
+      "palette-mapped",
+      "chromatic-edge",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "early-exit",
+      "branchless"
     ],
     "tags": [
       "filter",
@@ -9599,9 +9673,13 @@
       "audio-reactive",
       "temporal-persistence",
       "chromatic-CRT",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "HDR-color-grading",
+      "ACES-tone-map",
+      "IGN-dither",
+      "premultiplied-alpha"
     ],
-    "description": "Temporal scanline persistence with chromatic CRT aberration and audio roll. Each scanline undulates with bass-driven amplitude; previous frames decay into the signal. Treble adds per-scanline chromatic shift, bass rolls the entire field vertically.",
+    "description": "Temporal scanline persistence with chromatic CRT aberration, audio roll, and HDR color grading. Each scanline undulates with bass-driven amplitude; mouse proximity boosts local distortion. Treble adds per-scanline chromatic shift, bass rolls the entire field vertically, and blackbody color temperature shifts the mood. ACES tone mapping, hue-preserving HDR clamp, and IGN dither finish the image.",
     "params": [
       {
         "id": "waveAmount",
@@ -9639,7 +9717,10 @@
       "scanlines",
       "CRT",
       "temporal",
-      "chromatic"
+      "chromatic",
+      "HDR",
+      "ACES",
+      "dither"
     ]
   },
   {
@@ -10127,9 +10208,14 @@
       "mouse-driven",
       "audio-reactive",
       "temporal",
+      "depth-aware",
+      "oklab",
+      "chromatic-aberration",
+      "aces-tone-mapped",
+      "premultiplied-alpha",
       "upgraded-rgba"
     ],
-    "description": "Reveals a spectral dimension where you paint with the mouse. Reacts to audio bass.",
+    "description": "Paints a spectral blackbody flame that follows the mouse, blended in OkLab and split-toned. Audio bass inflates the brush and bloom, while chromatic separation and depth diffusion add atmosphere.",
     "params": [
       {
         "id": "brush-size",
@@ -10140,7 +10226,7 @@
       },
       {
         "id": "spectral-shift",
-        "name": "Spectral Shift",
+        "name": "Spectral Temperature",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -10163,7 +10249,8 @@
     "tags": [
       "filter",
       "image-processing",
-      "audio-reactive"
+      "audio-reactive",
+      "mouse-driven"
     ]
   },
   {
@@ -10422,7 +10509,7 @@
     "id": "stereoscopic-3d",
     "name": "Stereoscopic 3D",
     "url": "shaders/stereoscopic-3d.wgsl",
-    "description": "Interactive Anaglyph 3D effect. Mouse X/Y controls convergence bias and focal plane with spring-damped smoothing. Audio bass drives smoothed separation pulse and glitch amplitude. Temporal feedback creates ghost trails from previous intensity.",
+    "description": "Interactive anaglyph 3D effect. Mouse X/Y controls convergence bias and focal plane with spring-damped smoothing. Audio bass drives a smoothed separation pulse and glitch amplitude. Depth-aware pass-through and temporal state feedback create ghost trails and slot-chain-ready output.",
     "params": [
       {
         "id": "separation",
@@ -10457,7 +10544,8 @@
       "mouse-driven",
       "audio-reactive",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "depth-aware"
     ],
     "tags": [
       "mouse-driven",
@@ -10467,7 +10555,9 @@
       "3d",
       "temporal",
       "feedback",
-      "trails"
+      "trails",
+      "depth-aware",
+      "16x16-workgroup"
     ]
   },
   {

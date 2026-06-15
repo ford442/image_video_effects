@@ -5,18 +5,23 @@ Provides an alternative to the JavaScript WebGPU renderer with potential perform
 
 ## Current Status
 
-✅ **Core Implementation Complete**
+✅ **Core Implementation Complete** (compute + present pipeline)
 - WebGPU device initialization
 - Universal bind group layout (matches all 587+ shaders)
 - Texture management (ping-pong, depth, data A/B/C)
 - Uniform buffer management
 - Shader loading and pipeline caching
 - Ping-pong texture copying for feedback effects
-
-🚧 **In Progress**
-- Surface/render pass integration
+- Surface/render pass integration (`PresentToSurface`, see `renderer.cpp`)
 - Image loading from JS
 - TypeScript integration
+
+⚠️ **See [Current known reliability caveats](#current-known-reliability-caveats-june-2026)
+below** — the compute + present pipeline above is implemented, and the June
+2026 reliability pass (#817/#818/#819/#820/#822) has hardened the
+init/format/limits handshake around it. **#821 (bridge sync) is still
+partial** — read the caveats section before assuming the dev-copy
+`wasm_renderer/wasm_bridge.js` matches the app-facing bridge.
 
 ## Architecture
 
@@ -315,6 +320,38 @@ Quick smoke test:
 - Ensure Emscripten environment is sourced: `source /opt/emsdk/emsdk_env.sh`
 - Verify CMake version: `cmake --version` (need 3.20+)
 
+## Current known reliability caveats (June 2026)
+
+The compute + present pipeline described above is real and working
+(`Render()` → `PresentToSurface()` in `renderer.cpp`). The June 2026 work
+(tracked under [#799](https://github.com/ford442/image_video_effects/issues/799),
+roadmap comment [here](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584))
+hardened the init/format/limits handshake around it. **#818, #820, #817,
+#819, and #822 have landed**; **#821 is partial**:
+
+- **#818 — Format negotiation** ✅: surface/pipeline format is now negotiated
+  via `getPreferredCanvasFormat()` instead of hardcoded `BGRA8Unorm`.
+- **#820 — Fatal surface failure** ✅: surface-creation failure is now a fatal
+  init error instead of leaving the renderer half-initialized.
+- **#817 / #819 — Adapter & limits** ✅: adapter info/limits are now queried
+  and logged, with explicit `requiredLimits`/validation at device creation.
+- **#822 — Init error paths** ✅: `Initialize()` now has unified error paths
+  with RAII cleanup (`Shutdown()`) on every failure, plus structured
+  diagnostics (`getLastInitErrorStage()` / `getLastInitErrorMessage()`)
+  surfaced to JS via `WASMRenderer.getDiagnostics()`.
+- **#821 — Bridge sync** 🔶 **partial**: `src/wasm/wasm_bridge.js` (the copy
+  actually imported by the app via `WASMRenderer.ts`) now exports the new
+  #817/#822 diagnostics, but it still differs from the dev/reference copy
+  `wasm_renderer/wasm_bridge.js` by ~190 lines (each has helpers/diagnostics
+  the other lacks). Full reconciliation is still open and is the last item in
+  this June 2026 reliability pass.
+
+Current per-issue status is tracked in the
+[C++ Solidification Tracking table](../WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06)
+in `WASM_RENDERER_GAP_ANALYSIS.md`. See also
+[`STATUS.md`](STATUS.md#remaining-work--reliability-june-2026) for the
+dependency-ordered PR sequence.
+
 ## Roadmap
 
 - [x] WebGPU device initialization
@@ -334,8 +371,15 @@ Quick smoke test:
 - [x] Video recording
 - [x] RAII resource management
 - [x] Error handling and validation
+- [ ] Bridge sync between `src/wasm/` and `wasm_renderer/` (#821, partial — app-facing copy has new diagnostics, ~190-line diff remains)
+- [x] Surface/pipeline format negotiation via `getPreferredCanvasFormat()` (#818)
+- [x] Fatal surface-creation failure handling (#820)
+- [x] Adapter info/limits query + logging (#817)
+- [x] Explicit `requiredLimits` + early validation (#819)
+- [x] Unified init error paths + structured diagnostics (#822)
 - [ ] Formal performance benchmarks vs JS renderer
 - [ ] Full automated test suite
+- [ ] Live-browser smoke test of June 2026 reliability fixes (`build.sh` doesn't run in this sandbox)
 
 See [`STATUS.md`](STATUS.md) for the authoritative current-state document.
 

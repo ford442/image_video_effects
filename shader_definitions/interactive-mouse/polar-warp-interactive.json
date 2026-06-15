@@ -2,13 +2,16 @@
   "id": "polar-warp-interactive",
   "name": "Polar Warp",
   "url": "shaders/polar-warp-interactive.wgsl",
-  "description": "Maps the image to polar coordinates centered on the mouse with bass-driven warp strength, spiral twist, click-triggered ripple bursts, and depth-aware fading.",
+  "description": "Maps the image to polar coordinates centered on the mouse with bass-envelope warp strength, velocity-driven spiral twist, click-triggered ripple bursts, chromatic aberration, temporal feedback trails, ACES tone mapping, and depth-aware fading.",
   "features": [
     "mouse-driven",
     "upgraded-rgba",
     "audio-reactive",
     "depth-aware",
-    "multi-ripple"
+    "multi-ripple",
+    "temporal-feedback",
+    "chromatic-aberration",
+    "aces-tone-map"
   ],
   "params": [
     {
@@ -50,6 +53,7 @@
     "interactive",
     "polar",
     "warp",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal-feedback"
   ]
 }

@@ -1,0 +1,199 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   ShaderGallery — thumbnail grid picker (Gold & Dark Tinted Glass theme)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+.shader-gallery-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.shader-gallery-modal {
+  width: 100%;
+  max-width: 1200px;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(145deg, rgba(25, 25, 30, 0.97) 0%, rgba(15, 15, 20, 0.98) 100%);
+  border: 1px solid var(--glass-border, rgba(255, 215, 0, 0.15));
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.shader-gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--glass-border, rgba(255, 215, 0, 0.15));
+}
+
+.shader-gallery-header h3 {
+  margin: 0;
+  color: var(--text-gold, #FFD700);
+  font-size: 16px;
+  letter-spacing: 0.5px;
+}
+
+.shader-gallery-close {
+  background: transparent;
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  color: var(--text-primary, #f0f0f5);
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.shader-gallery-close:hover {
+  border-color: var(--gold-primary, #FFD700);
+  color: var(--gold-primary, #FFD700);
+  background: rgba(255, 215, 0, 0.08);
+}
+
+.shader-gallery-filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.08);
+  flex-wrap: wrap;
+}
+
+.shader-gallery-search,
+.shader-gallery-category {
+  background: rgba(10, 10, 12, 0.7);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  color: var(--text-primary, #f0f0f5);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.shader-gallery-search {
+  flex: 1;
+  min-width: 160px;
+}
+
+.shader-gallery-search:focus,
+.shader-gallery-category:focus {
+  outline: none;
+  border-color: var(--gold-primary, #FFD700);
+}
+
+.shader-gallery-count {
+  color: var(--text-secondary, #a0a0b0);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.shader-gallery-grid {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 18px;
+  align-content: flex-start;
+}
+
+.shader-gallery-empty {
+  width: 100%;
+  text-align: center;
+  color: var(--text-muted, #606070);
+  padding: 60px 0;
+}
+
+.shader-gallery-card {
+  display: flex;
+  flex-direction: column;
+  width: 150px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 215, 0, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.shader-gallery-card:hover {
+  border-color: var(--gold-primary, #FFD700);
+  box-shadow: 0 4px 18px rgba(255, 215, 0, 0.25);
+  transform: translateY(-2px);
+}
+
+.shader-gallery-card.selected {
+  border-color: var(--gold-primary, #FFD700);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.4);
+}
+
+.shader-gallery-thumb-wrap {
+  position: relative;
+  width: 100%;
+  background: #0a0a0c;
+}
+
+.shader-gallery-thumb-wrap::before {
+  content: '';
+  display: block;
+  padding-top: 100%;
+}
+
+.shader-gallery-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.shader-gallery-thumb-placeholder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--text-muted, #606070);
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.04), rgba(0, 0, 0, 0.2));
+}
+
+.shader-gallery-stars-overlay {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.shader-gallery-name {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--text-primary, #f0f0f5);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shader-gallery-sentinel {
+  width: 100%;
+  height: 1px;
+}

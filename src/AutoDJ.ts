@@ -467,6 +467,11 @@ Your Selection:
     return this.currentParams.map((p) => ({ ...p }));
   }
 
+  /** The most recent user vibe prompt that produced the active stack ('' if none). */
+  public getLastVibeText(): string {
+    return this.lastVibeText;
+  }
+
   public async startAutoTransition(config: AutoTransitionConfig): Promise<boolean> {
     if (this.activeShaderIds.length === 0) return false;
     this.stopAutoTransition();

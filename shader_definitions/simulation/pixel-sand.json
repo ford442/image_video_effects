@@ -2,13 +2,17 @@
   "id": "pixel-sand",
   "name": "Pixel Sand",
   "url": "shaders/pixel-sand.wgsl",
-  "description": "Falling granular automata with curl noise force fields, height-field weight physics, mouse gravity wells, audio-reactive spawn, depth shading, and bounce.",
+  "description": "Falling granular automata with blackbody-warm spawn colors, OkLab video-to-sand blending, curl-noise force fields, height-field physics, mouse gravity wells, audio-reactive motion, depth shading, ACES tone mapping, and IGN dither.",
   "features": [
     "upgraded-rgba",
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
-    "temporal"
+    "temporal",
+    "aces-tone-map",
+    "blackbody-warmth",
+    "oklab-mix",
+    "ign-dither"
   ],
   "tags": [
     "sand",
@@ -18,7 +22,10 @@
     "audio-reactive",
     "particles",
     "simulation",
-    "curl-noise"
+    "curl-noise",
+    "blackbody",
+    "oklab",
+    "dither"
   ],
   "params": [
     {

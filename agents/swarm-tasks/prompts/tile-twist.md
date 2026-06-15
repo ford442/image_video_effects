@@ -4,7 +4,7 @@
 - **Shader ID**: tile-twist
 - **Agent Role**: Algorithmist
 - **Current Size**: 3267 bytes
-- **Target Line Count**: ~115 lines
+- **Target Line Count**: ~180 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -41,7 +41,12 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Tile Twist
+//  Category: distortion
+//  Features: upgraded-rgba, mouse-driven, audio-reactive
+//  Complexity: Medium
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -49,76 +54,127 @@ struct Uniforms {
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+const PI = 3.141592653589793;
+const TAU = 6.283185307179586;
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  let n = sin(dot(p, vec2<f32>(127.1, 311.7)));
+  return fract(vec2<f32>(n, n * 1.618033988749895)) * 2.0 - 1.0;
+}
+
+fn hash12(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+
+fn vnoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash22(i).x, hash22(i + vec2<f32>(1.0, 0.0)).x, u.x),
+    mix(hash22(i + vec2<f32>(0.0, 1.0)).x, hash22(i + vec2<f32>(1.0, 1.0)).x, u.x),
+    u.y
+  );
+}
+
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+  var v = 0.0;
+  var a = 0.5;
+  var pp = p;
+  for (var i = 0; i < octaves; i = i + 1) {
+    v = v + a * vnoise(pp);
+    pp = pp * 2.03;
+    a = a * 0.5;
+  }
+  return v;
+}
+
+fn sdRoundBox(p: vec2<f32>, b: vec2<f32>, r: f32) -> f32 {
+  let q = abs(p) - b + r;
+  return length(max(q, vec2<f32>(0.0))) + min(max(q.x, q.y), 0.0) - r;
+}
+
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
-  var uv = vec2<f32>(global_id.xy) / resolution;
+  let uv = vec2<f32>(global_id.xy) / resolution;
   let aspect = resolution.x / resolution.y;
-  var mouse = u.zoom_config.yz;
+  let time = u.config.x;
 
-  // Params
-  let tileSizeParam = max(0.01, u.zoom_params.x); // 0.0 to 1.0
-  let tileSizeY = 0.05 + tileSizeParam * 0.15; // Range 0.05 to 0.2
-  let tileSizeX = tileSizeY / aspect; // Square tiles
+  let twistAngle = u.zoom_params.x * TAU;
+  let tileSizeParam = max(0.01, u.zoom_params.y);
+  let lissajousRatio = u.zoom_params.z * 3.0 + 1.0;
+  let turbulence = u.zoom_params.w;
 
-  let rotationStrength = u.zoom_params.y * 6.28; // Full circle range
-  let influenceRadius = u.zoom_params.z; // 0 to 1
+  let mids = plasmaBuffer[0].y;
+  let oscillationSpeed = 1.0 + mids * 2.0;
 
-  // Grid calculations
-  let tileGrid = vec2<f32>(1.0/tileSizeX, 1.0/tileSizeY);
-  let tileIndex = floor(uv * tileGrid);
-  let tileCenterUV = (tileIndex + 0.5) / tileGrid;
+  // Aspect-correct tile grid
+  let n = 2.0 + tileSizeParam * 18.0;
+  let tSize = vec2<f32>(1.0 / (n * aspect), 1.0 / n);
+  let grid = uv / tSize;
+  let tIdx = floor(grid);
+  let tFrac = fract(grid) - 0.5;
 
-  // Distance from tile center to mouse (aspect corrected)
-  let diff = tileCenterUV - mouse;
-  let dist = length(diff * vec2<f32>(aspect, 1.0));
+  // Hash-based tile identity
+  let tileHash = hash12(tIdx);
 
-  // Rotation angle based on distance
-  let angle = (1.0 - smoothstep(0.0, influenceRadius, dist)) * rotationStrength;
+  // FBM turbulence for organic distortion
+  let warp = vec2<f32>(
+    fbm(uv * 5.0 + time * 0.1, 3),
+    fbm(uv * 5.0 + vec2<f32>(5.2, 1.3) + time * 0.1, 3)
+  ) * 0.12 * turbulence;
+  let wuv = uv + warp;
 
-  // Rotate pixel relative to tile center
-  let relUV = uv - tileCenterUV;
+  // Hash-jittered tile center
+  let jitter = hash22(tIdx) * 0.3;
+  let tCenter = (tIdx + 0.5 + jitter) * tSize;
 
-  // Correct aspect for rotation to keep square shape
-  let relUV_corr = vec2<f32>(relUV.x * aspect, relUV.y);
+  // Lissajous oscillation on rotation angle
+  let lissA = sin(time * oscillationSpeed * lissajousRatio + tileHash * TAU);
+  let lissB = sin(time * oscillationSpeed + tileHash * TAU * 0.7);
+  let lissajousAngle = atan2(lissB, lissA) * 0.5;
 
-  let cosA = cos(angle);
-  let sinA = sin(angle);
+  // Twist proportional to hash(tile_id) * zoom_params
+  let tileTwist = tileHash * twistAngle * (1.0 + turbulence);
+  let angle = lissajousAngle + tileTwist;
 
-  let rotated_corr = vec2<f32>(
-    relUV_corr.x * cosA - relUV_corr.y * sinA,
-    relUV_corr.x * sinA + relUV_corr.y * cosA
-  );
+  // Rotate pixel around jittered tile center
+  let rel = wuv - tCenter;
+  let relA = vec2<f32>(rel.x * aspect, rel.y);
+  let ca = cos(angle);
+  let sa = sin(angle);
+  let rotA = vec2<f32>(relA.x * ca - relA.y * sa, relA.x * sa + relA.y * ca);
+  let rotUV = vec2<f32>(rotA.x / aspect, rotA.y) + tCenter;
 
-  // Restore aspect
-  let rotatedUV = vec2<f32>(rotated_corr.x / aspect, rotated_corr.y);
+  // SDF rounded tile edge for alpha compositing mask
+  let dEdge = sdRoundBox(tFrac, vec2<f32>(0.48), 0.15);
+  let edgeMask = 1.0 - smoothstep(-0.02, 0.02, dEdge);
 
-  let finalUV = tileCenterUV + rotatedUV;
+  let src = textureSampleLevel(readTexture, u_sampler, rotUV, 0.0);
+  let alpha = src.a * mix(0.6, 1.0, edgeMask);
 
-  // Edge clamping? Texture sampler usually clamps or repeats.
-  // For twist effect, we might want to clamp to tile?
-  // Or just let it sample neighbors (cooler).
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  let color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(src.rgb, alpha));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 
 ```
@@ -129,50 +185,56 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "tile-twist",
   "name": "Tile Twist",
   "url": "shaders/tile-twist.wgsl",
-  "category": "image",
-  "description": "Grid tiles twist and rotate based on mouse proximity.",
+  "description": "Grid tiles twist and rotate based on mouse proximity, enhanced with FBM domain warping, hash-jittered organic tiling, and SDF edge masking.",
   "params": [
     {
       "id": "tileSize",
       "name": "Tile Size",
       "default": 0.2,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "twist",
       "name": "Twist Amount",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "radius",
       "name": "Influence Radius",
       "default": 0.3,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     {
       "id": "edge_smoothness",
       "name": "Edge Smoothness",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0,
+      "min": 0,
+      "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Smoothness of tile edges"
+      "description": "SDF edge softness for tile boundary alpha mask"
     }
   ],
   "features": [
     "mouse-driven",
-    "geometry"
+    "geometry",
+    "temporal",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "organic",
+    "abstract"
   ]
 }
+
 ```
 
 ---
@@ -238,6 +300,38 @@ const INV_PI = 0.31830988618379067154;   // 1/π
   ```
 - Static → Temporal coherent noise (seed with `floor(t/period)`, lerp between seeds)
 
+#### Domain-warped FBM (organic flow, two-octave warp)
+```wgsl
+fn fbm(p: vec2<f32>) -> f32 {
+    var a = 0.5; var s = 0.0; var q = p;
+    for (var i = 0; i < 5; i = i + 1) {
+        s = s + a * valueNoise(q);
+        q = q * 2.02; a = a * 0.5;
+    }
+    return s;
+}
+fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
+    let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)),
+                      fbm(p + vec2<f32>(5.2, 1.3)));
+    let r = vec2<f32>(fbm(p + 4.0*q + vec2<f32>(1.7, 9.2)),
+                      fbm(p + 4.0*q + vec2<f32>(8.3, 2.8)));
+    return fbm(p + 4.0*r);
+}
+```
+Strictly better than single-octave noise for "alive" generative shaders. Pass `u.config.x` as `t`.
+
+#### Polar kaleidoscope fold
+```wgsl
+fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
+    let r = length(uv);
+    var a = atan2(uv.y, uv.x);
+    let seg = 6.2831853 / max(segs, 1.0);
+    a = abs(((a % seg) + seg) % seg - seg * 0.5);
+    return vec2<f32>(cos(a), sin(a)) * r;
+}
+```
+Cheap, branch-light fold that gives instant symmetry. Pair with `warpedFBM` or SDF sampling.
+
 ### Quasi-Random Sampling (better than pseudo-random)
 ```wgsl
 // Halton sequence – base 2 and 3, ideal for AA / Monte Carlo
@@ -270,6 +364,24 @@ fn goldNoise(uv: vec2<f32>, seed: f32) -> f32 {
 - Static → Animated morphing fields (`mix(sdf_a, sdf_b, smoothstep(0,1,t))`)
 - Solid → Subsurface scattering: `exp(-thickness / scatterDist) * albedo`
 - New primitives: capsule, hexagonal prism, torus knot, Möbius strip SDF
+
+#### Smooth-min SDF union (`smin`) — round seams between primitives
+```wgsl
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = clamp(0.5 + 0.5*(b - a)/k, 0.0, 1.0);
+    return mix(b, a, h) - k*h*(1.0 - h);
+}
+```
+`k ≈ 0.1–0.3` of the smaller primitive radius. Replaces hard `min()` for organic blob unions.
+
+#### Anti-aliased SDF / line via `fwidth` (no MSAA needed in compute)
+```wgsl
+fn aa_step(edge: f32, x: f32) -> f32 {
+    let w = max(fwidth(x), 1e-4);
+    return smoothstep(edge - w, edge + w, x);
+}
+```
+Use wherever a hard `step()` would produce shimmering edges — kaleidoscope folds, SDF contours, grid lines.
 
 ### Fractal Upgrades
 - Basic Mandelbrot → Burning Ship (`abs(z)` before squaring)
@@ -343,7 +455,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 115 lines (±20%).
+4. Ensure the upgraded shader is roughly 180 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

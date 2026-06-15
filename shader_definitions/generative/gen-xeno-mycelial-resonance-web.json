@@ -13,6 +13,16 @@
     "audio-reactive",
     "raymarching"
   ],
+  "features": [
+    "raymarched",
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration"
+  ],
   "sliders": [
     {
       "name": "Network Density",

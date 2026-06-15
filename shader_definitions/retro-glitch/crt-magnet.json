@@ -2,7 +2,7 @@
   "id": "crt-magnet",
   "name": "CRT Magnet",
   "url": "shaders/crt-magnet.wgsl",
-  "description": "Simulates a CRT monitor with degaussing magnetic distortion near the mouse using unified displacement fields and alpha translucency blending. Features spring-damper mouse tracking, bass-driven magnet pulse via audio envelope, curl-noise field lines, barrel distortion, and bloom.",
+  "description": "Optimized CRT monitor degaussing magnetic distortion near the mouse. Uses canonical fbm/curl noise, unified audio-envelope and spring-damped mouse state, branchless aperture grille, hex-bloom, beam-purity RGB separation, and ACES tone mapping with semantic alpha blending.",
   "params": [
     {
       "id": "magnet_strength",
@@ -37,7 +37,8 @@
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "aces-tone-map"
   ],
   "tags": [
     "filter",

@@ -2822,7 +2822,7 @@
     "id": "mosaic-reveal",
     "name": "Mosaic Reveal",
     "url": "shaders/mosaic-reveal.wgsl",
-    "description": "Mosaic reveal with hexagonal/square grid options, flood-fill reveal animation from mouse, edge glow, and audio-reactive pulse.",
+    "description": "Mosaic reveal with hexagonal/square grids, flood-fill reveal from the mouse, OkLab perceptual blending, audio-reactive blackbody rim glow, temporal trails, and ACES tone mapping.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
@@ -2831,7 +2831,10 @@
       "mouse-driven",
       "hex-grid",
       "flood-fill-reveal",
-      "audio-reactive"
+      "audio-reactive",
+      "oklab-mixing",
+      "temporal-feedback",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -3635,12 +3638,14 @@
     "id": "polka-dot-reveal",
     "name": "Polka Dot Reveal",
     "url": "shaders/polka-dot-reveal.wgsl",
-    "description": "Interactive halftone effect with spring-damped mouse follow, attack/release audio envelope driving dot radius and saturation, and temporal feedback trails where alpha encodes trail age and interaction intensity.",
+    "description": "Optimized interactive halftone effect with 16x16 workgroups, spring-damped mouse follow, attack/release audio envelope, depth-aware dot radius, per-cell hash jitter to reduce banding, and temporal feedback trails where alpha encodes trail age and interaction intensity.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "depth-aware",
+      "optimized"
     ],
     "tags": [
       "filter",
@@ -3648,7 +3653,8 @@
       "halftone",
       "audio-reactive",
       "temporal",
-      "trails"
+      "trails",
+      "depth-aware"
     ],
     "params": [
       {

@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Psychedelic Moiré Flower
 //  Category: generative
-//  Features: moire, flower, psychedelic, audio-reactive, mouse-interactive, semantic-alpha, aces-tone-mapping, chromatic-aberration, temporal-feedback, depth-aware
+//  Features: moire, flower, psychedelic, audio-reactive, mouse-interactive, semantic-alpha, depth-aware,
+//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: Medium-High
 //  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Updated: 2026-06-14
+//  By: Kimi Agent (Bright batch), Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -180,4 +181,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = gFull.a * patternDensity * depth;
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(patternDensity));
+    textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
 }

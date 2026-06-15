@@ -176,6 +176,28 @@ float getFPS() {
     return g_renderer ? g_renderer->GetFPS() : 0.0f;
 }
 
+// Human-readable adapter/device/limits/format summary, built during
+// CreateDevice(). Returns an empty string if not yet initialized.
+EMSCRIPTEN_KEEPALIVE
+const char* getAdapterSummary() {
+    return g_renderer ? g_renderer->GetAdapterSummary().c_str() : "";
+}
+
+// Which Initialize() stage failed (see WebGPURenderer::InitStage), or
+// InitStage::Ready (8) on success, or InitStage::None (0) before any
+// Initialize() attempt / if no renderer exists yet.
+EMSCRIPTEN_KEEPALIVE
+int getLastInitErrorStage() {
+    return g_renderer ? g_renderer->GetLastInitErrorStage() : 0;
+}
+
+// Human-readable reason for the last Initialize() failure. Empty string if
+// init has not failed (or not been attempted yet).
+EMSCRIPTEN_KEEPALIVE
+const char* getLastInitErrorMessage() {
+    return g_renderer ? g_renderer->GetLastInitErrorMessage().c_str() : "";
+}
+
 // ─── Phase 2: Canvas resize ───────────────────────────────────────────────────
 
 // Resize the canvas and recreate all size-dependent GPU resources.

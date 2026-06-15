@@ -4,7 +4,7 @@
 - **Shader ID**: waveform-glitch
 - **Agent Role**: Algorithmist
 - **Current Size**: 3117 bytes
-- **Target Line Count**: ~140 lines
+- **Target Line Count**: ~180 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -44,10 +44,14 @@ struct Uniforms {
 // ═══════════════════════════════════════════════════════════════════
 //  Waveform Glitch
 //  Category: retro-glitch
-//  Features: temporal
-//  Complexity: High
-//  Created: 2026-04-25
+//  Features: glitch, waveform, retro, audio-sweep, rgb-tear, scanline, depth-jitter
+//  Complexity: Medium
+//  Updated: 2026-05-31
+//  By: Grok (visual flourish — richer scanline motion, audio-reactive tearing, atmospheric jitter)
 // ═══════════════════════════════════════════════════════════════════
+//  Upgraded: 2026-05-30
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -63,128 +67,211 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
 // ── Hash & Noise ─────────────────────────────────────────────
 fn hash21(p: vec2<f32>) -> f32 {
-  let h = dot(p, vec2<f32>(127.1, 311.7));
-  return fract(sin(h) * 43758.5453123);
+  var p3 = fract(vec3(p.x, p.y, p.x) * vec3(0.1031, 0.1030, 0.0973));
+  p3 = p3 + dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
 }
-fn hash11(p: f32) -> f32 {
-  return fract(sin(p * 12.9898) * 43758.5453);
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453);
 }
+
 fn valueNoise(p: vec2<f32>) -> f32 {
   let i = floor(p);
   let f = fract(p);
-  let a = hash21(i);
-  let b = hash21(i + vec2<f32>(1.0, 0.0));
-  let c = hash21(i + vec2<f32>(0.0, 1.0));
-  let d = hash21(i + vec2<f32>(1.0, 1.0));
   let u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  return mix(mix(hash21(i), hash21(i + vec2(1.0, 0.0)), u.x),
+             mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x), u.y);
 }
+
 fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-  var sum = 0.0;
-  var amp = 0.5;
-  var freq = 1.0;
-  for (var i = 0; i < octaves; i = i + 1) {
-    sum = sum + amp * valueNoise(p * freq);
-    freq = freq * 2.0;
-    amp = amp * 0.5;
+  var s = 0.0;
+  var a = 0.5;
+  var f = 1.0;
+  for (var i = 0; i < octaves; i = i + 1) { s = s + a * valueNoise(p * f); f = f * 2.0; a = a * 0.5; }
+  return s;
+}
+
+fn dwfBm(p: vec2<f32>, time: f32) -> f32 {
+  let q = vec2(fbm(p + vec2(0.0, 0.0), 3), fbm(p + vec2(5.2, 1.3), 3));
+  let r = vec2(fbm(p + 4.0 * q + vec2(1.7, 9.2) + time * 0.15, 3), fbm(p + 4.0 * q + vec2(8.3, 2.8) + time * 0.126, 3));
+  return fbm(p + 4.0 * r, 4);
+}
+
+fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
+  let e = 0.01;
+  let n = valueNoise(p + time * 0.1);
+  let nx = valueNoise(p + vec2(e, 0.0) + time * 0.1);
+  let ny = valueNoise(p + vec2(0.0, e) + time * 0.1);
+  return vec2((ny - n) / e, -(nx - n) / e);
+}
+
+fn worleyNoise(p: vec2<f32>, time: f32) -> f32 {
+  let n = floor(p);
+  let f = fract(p);
+  var d = 1.0;
+  for (var y = -1; y <= 1; y = y + 1) {
+    for (var x = -1; x <= 1; x = x + 1) {
+      let g = vec2(f32(x), f32(y));
+      let o = hash22(n + g);
+      d = min(d, dot(g + o * (sin(time * 0.5 + o * 6.2831) * 0.3 + 0.5) - f, g + o * (sin(time * 0.5 + o * 6.2831) * 0.3 + 0.5) - f));
+    }
   }
-  return sum;
+  return sqrt(d);
 }
 
-// ── Color Utilities ──────────────────────────────────────────
-fn rgbToLuma(rgb: vec3<f32>) -> f32 {
-  return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-}
-fn rgbToYuv(rgb: vec3<f32>) -> vec3<f32> {
-  let y = 0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b;
-  let u = -0.14713 * rgb.r - 0.28886 * rgb.g + 0.436 * rgb.b;
-  let v = 0.615 * rgb.r - 0.51499 * rgb.g - 0.10001 * rgb.b;
-  return vec3<f32>(y, u, v);
-}
-fn yuvToRgb(yuv: vec3<f32>) -> vec3<f32> {
-  let r = yuv.x + 1.13983 * yuv.z;
-  let g = yuv.x - 0.39465 * yuv.y - 0.58060 * yuv.z;
-  let b = yuv.x + 2.03211 * yuv.y;
-  return vec3<f32>(r, g, b);
-}
-fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
-  let c = hsv.z * hsv.y;
-  let h = hsv.x * 6.0;
-  let x = c * (1.0 - abs(fract(h) * 2.0 - 1.0));
-  var rgb = vec3<f32>(0.0);
-  if (h < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
-  else if (h < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
-  else if (h < 3.0) { rgb = vec3<f32>(0.0, c, x); }
-  else if (h < 4.0) { rgb = vec3<f32>(0.0, x, c); }
-  else if (h < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
-  else              { rgb = vec3<f32>(c, 0.0, x); }
-  return rgb + vec3<f32>(hsv.z - c);
+// ── Structure Tensor / Optical Flow ──────────────────────────
+fn sampleLuma(uv: vec2<f32>) -> f32 {
+  return dot(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb, vec3(0.2126, 0.7152, 0.0722));
 }
 
-// ── Waveform & Glitch Functions ──────────────────────────────
-fn sawtoothWave(x: f32) -> f32 {
-  return fract(x);
+fn opticalFlow(uv: vec2<f32>, dt: f32, res: vec2<f32>) -> vec2<f32> {
+  let px = 1.0 / res;
+  let l = sampleLuma(uv);
+  let lx = sampleLuma(uv + vec2(px.x, 0.0)) - l;
+  let ly = sampleLuma(uv + vec2(0.0, px.y)) - l;
+  let lt = l - sampleLuma(uv - dt * 0.01);
+  return -vec2(lx * lt, ly * lt) / (lx * lx + ly * ly + 0.0001);
 }
+
+// ── Bayer Dither ─────────────────────────────────────────────
+fn bayer4x4(p: vec2<i32>) -> f32 {
+  let m = array<i32, 16>(0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
+  return f32(m[(p.x & 3) + ((p.y & 3) << 2)]) / 16.0 - 0.5;
+}
+
+// ── Harmonic Oscillators ─────────────────────────────────────
+fn coupledHarmonics(uv: vec2<f32>, time: f32, p1: f32, p2: f32) -> f32 {
+  let w1 = sin(uv.x * 12.0 + time * 2.1 + p1 * 6.28) * cos(uv.y * 8.0 - time * 1.3);
+  let w2 = sin(uv.x * 7.0 - time * 1.7 + p2 * 6.28) * cos(uv.y * 15.0 + time * 2.5);
+  return w1 * w2 * 0.5 + 0.5;
+}
+
+// ── VHS & Glitch ─────────────────────────────────────────────
 fn vhsTracking(uv: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
-  let jitter = sin(time * 30.0 + uv.y * 1000.0) * intensity * 0.02;
-  let roll = sin(time * 0.2) * intensity * 0.005;
-  return uv + vec2<f32>(jitter, roll);
+  let warp = dwfBm(vec2(uv.y * 8.0, time * 0.3), time);
+  return uv + vec2(sin(time * 30.0 + uv.y * 1000.0 + warp * 6.28) * intensity * 0.02,
+                   sin(time * 0.2 + warp * 3.14) * intensity * 0.005);
 }
+
 fn blockCorruption(uv: vec2<f32>, blockSize: f32, intensity: f32, time: f32) -> vec2<f32> {
   let blockId = floor(uv / blockSize);
-  let rnd = hash21(blockId + vec2<f32>(time * 0.1, 7.31));
-  let offset = (rnd - 0.5) * intensity * blockSize;
-  return uv + vec2<f32>(offset, 0.0);
+  let cell = worleyNoise(blockId * 3.0 + vec2(time * 0.1, 7.31), time);
+  let rnd = hash21(blockId + vec2(time * 0.05, 7.31));
+  return uv + vec2((rnd - 0.5) * intensity * blockSize * (1.0 + smoothstep(0.0, 0.3, cell) * 2.0), 0.0);
 }
-fn datamoshDisp(uv: vec2<f32>, time: f32, smearScale: f32) -> vec2<f32> {
-  let n = fbm(uv * 12.0 + time * 2.0, 3);
-  let grad = vec2<f32>(
-    valueNoise(uv + vec2<f32>(0.001, 0.0)) - valueNoise(uv - vec2<f32>(0.001, 0.0)),
-    valueNoise(uv + vec2<f32>(0.0, 0.001)) - valueNoise(uv - vec2<f32>(0.0, 0.001))
-  );
-  let gradLen = length(grad);
-  let dir = select(vec2<f32>(0.0), grad / gradLen, gradLen > 0.0001);
-  return uv + dir * n * smearScale * 0.05;
+
+fn datamoshDisp(uv: vec2<f32>, time: f32, smearScale: f32, flow: vec2<f32>) -> vec2<f32> {
+  return uv + curlNoise(uv * 4.0 + time * 0.3, time) * dwfBm(uv * 6.0 + time * 0.5, time) * smearScale * 0.08 + flow * smearScale * 0.5;
+}
+
+// ── Spectral & Grain ─────────────────────────────────────────
+fn wavelengthToRGB(w: f32) -> vec3<f32> {
+  return 0.5 + 0.5 * cos(vec3(w, w + 2.09, w + 4.18));
+}
+
+fn filmGrain(uv: vec2<f32>, time: f32) -> f32 {
+  return (hash21(uv * 137.0 + floor(time * 24.0)) - 0.5) * 0.06;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
-  let uv = vec2<f32>(global_id.xy) / vec2<f32>(u.config.z, u.config.w);
+
+  let uv = vec2<f32>(global_id.xy) / u.config.zw;
   let time = u.config.x;
-
-  let vhsJitter = u.zoom_params.x;
-  let intensity = u.zoom_params.y;
-  let smearScale = u.zoom_params.z;
-  let flickerSpeed = 2.0 + u.zoom_params.w * 20.0;
-
-  var warped = vhsTracking(uv, time, vhsJitter);
-  warped = blockCorruption(warped, 0.08, intensity, time);
-  warped = datamoshDisp(warped, time, smearScale);
-  warped = clamp(warped, vec2<f32>(0.0), vec2<f32>(1.0));
-
-  let glitchStrength = clamp(length(warped - uv) * 10.0, 0.0, 1.0);
-
-  let cR = textureSampleLevel(readTexture, u_sampler, warped + vec2<f32>(0.003 * intensity, 0.0), 0.0);
-  let cG = textureSampleLevel(readTexture, u_sampler, warped, 0.0);
-  let cB = textureSampleLevel(readTexture, u_sampler, warped - vec2<f32>(0.003 * intensity, 0.0), 0.0);
-
-  let flicker = 0.8 + 0.2 * sawtoothWave(time * flickerSpeed);
-  let col = vec3<f32>(cR.r, cG.g, cB.b) * flicker;
-  let alpha = cG.a * (1.0 - glitchStrength * 0.5);
-
-  textureStore(writeTexture, global_id.xy, vec4<f32>(col, alpha));
-
+  let res = u.config.zw;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let waveIntensity = u.zoom_params.x * (1.0 + bass * 0.8);
+  let vhsIntensity = u.zoom_params.y * (1.0 + mids * 0.5);
+  let blockGlitchSize = mix(0.02, 0.16, u.zoom_params.z);
+  let shadowMaskAmount = u.zoom_params.w;
+
+  let mousePos = u.zoom_config.yz;
+  let mouseVel = vec2(u.zoom_config.x - fract(u.zoom_config.x * 0.97), 0.0);
+  let mouseZone = exp(-length(uv - mousePos) * 6.0) * (1.0 + u.zoom_config.w);
+
+  let frameIdx = u32(floor(time * 60.0)) % 4u;
+  extraBuffer[frameIdx] = bass;
+  let transient = max(bass - extraBuffer[(frameIdx + 3u) % 4u], 0.0) * 4.0;
+
+  let depthScale = mix(1.0, 0.3, depth);
+  let glitchAmt = vhsIntensity * depthScale * (1.0 + mouseZone * 2.0 + transient * 3.0);
+
+  let flow = opticalFlow(uv, 0.016, res);
+  let flowMag = length(flow);
+
+  if (glitchAmt < 0.02 && flowMag < 0.005 && transient < 0.05) {
+    let pristine = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    textureStore(writeTexture, global_id.xy, vec4(pristine, 0.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));
+    return;
+  }
+
+  var warped = vhsTracking(uv, time, glitchAmt);
+  warped = blockCorruption(warped, blockGlitchSize, glitchAmt, time);
+  warped = datamoshDisp(warped, time, waveIntensity * depthScale, flow + mouseVel);
+  warped = clamp(warped, vec2(0.0), vec2(1.0));
+
+  let glitchMag = length(warped - uv);
+  let blockCorrup = smoothstep(0.0, blockGlitchSize, glitchMag);
+
+  let prevFrame = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  let persist = mix(prevFrame.rgb * vec3(exp(-0.016 * 12.0), exp(-0.016 * 8.0), exp(-0.016 * 5.0)), vec3(0.0), 0.85);
+
+  let scanQ = floor(uv.y * 240.0) / 240.0;
+  let quant = step(0.5, hash21(vec2(scanQ, floor(time * 8.0)))) * 0.06 * vhsIntensity;
+
+  let displacedUV = clamp(warped + vec2(quant, 0.0), vec2(0.0), vec2(1.0));
+  let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+
+  let edge = abs(flow.x) + abs(flow.y);
+  let bleedR = textureSampleLevel(readTexture, u_sampler, displacedUV + vec2(edge * 0.008, 0.0), 0.0).r;
+  let bleedB = textureSampleLevel(readTexture, u_sampler, displacedUV - vec2(edge * 0.008, 0.0), 0.0).b;
+  var col = vec3(mix(baseColor.r, bleedR, glitchMag * 0.5), baseColor.g, mix(baseColor.b, bleedB, glitchMag * 0.5));
+
+  let inBand = step(0.92, uv.y);
+  let bandNoise = hash21(vec2(uv.x * 100.0, time * 30.0)) * inBand * vhsIntensity * (0.3 + treble * 0.4);
+  let flicker = 0.8 + 0.2 * fract(time * 2.0 + bandNoise * 10.0);
+  col = col * flicker;
+
+  let luma = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  let crush = floor(luma * 16.0 * (1.0 + vhsIntensity * 2.0)) / (16.0 * (1.0 + vhsIntensity * 2.0));
+  col = mix(col, col * (crush / max(luma, 0.001)), glitchMag * 1.6);
+
+  let shadowMask = 0.85 + 0.15 * step(0.33, fract(uv.x * res.x / 3.0));
+  col = col * mix(1.0, shadowMask, shadowMaskAmount);
+  col = col + vec3(bandNoise * 0.5, bandNoise * 0.3, bandNoise * 0.1);
+
+  let harm = coupledHarmonics(uv, time, u.zoom_params.x, u.zoom_params.y);
+  col = mix(col, col * wavelengthToRGB(time * 0.4 + harm * 3.14), glitchMag * 0.3);
+  col = mix(col, persist, 0.12);
+
+  let bloom = max(luma - 0.6, 0.0) * 0.4;
+  col = col + vec3(bloom * 1.1, bloom * 0.7, bloom * 0.5);
+  col = col + filmGrain(uv, time);
+  col = col + bayer4x4(vec2<i32>(global_id.xy)) * 0.015;
+
+  let spectralTint = wavelengthToRGB(time * 0.4 + glitchMag * 20.0);
+  col = mix(col, col * spectralTint, glitchMag * 2.0);
+
+  let alpha = clamp(glitchMag * 5.0 * blockCorrup * (1.0 + transient) * (1.0 + mouseZone), 0.0, 1.0);
+
+  textureStore(writeTexture, global_id.xy, vec4(col, alpha));
+  textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));
 }
 
 ```
@@ -195,50 +282,63 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "waveform-glitch",
   "name": "Waveform Glitch",
   "url": "shaders/waveform-glitch.wgsl",
-  "category": "retro-glitch",
-  "description": "VHS tracking jitter, block corruption, and datamoshing-style motion smear with wave-displaced RGB channels.",
+  "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, temporal feedback persistence, and alpha-channel translucency blending. Alpha encodes waveform displacement magnitude * block corruption intensity.",
   "features": [
-    "temporal"
+    "temporal",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {
-      "id": "vhsJitter",
-      "name": "VHS Jitter",
+      "id": "wave_intensity",
+      "name": "Wave Intensity",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Base wave intensity, spiked by bass"
     },
     {
-      "id": "intensity",
-      "name": "Block Intensity",
+      "id": "vhs_intensity",
+      "name": "VHS Intensity",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "VHS tracking jitter and block corruption intensity"
     },
     {
-      "id": "smearScale",
-      "name": "Smear Scale",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "flickerSpeed",
-      "name": "Flicker Speed",
+      "id": "block_glitch_size",
+      "name": "Block Glitch Size",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Size of block corruption cells"
+    },
+    {
+      "id": "shadow_mask",
+      "name": "Shadow Mask",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "CRT shadow mask intensity"
     }
   ],
   "tags": [
     "glitch",
     "retro",
     "vhs",
-    "datamosh"
+    "datamosh",
+    "noise",
+    "fractal",
+    "crt"
   ]
 }
 
@@ -252,43 +352,208 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 ## Identity
 You are **The Algorithmist**, a specialized shader architect focused on advanced mathematical techniques, simulation depth, and algorithmic sophistication.
 
+## Mathematical Constants (use these in WGSL)
+
+```wgsl
+const PI     = 3.14159265358979323846;
+const TAU    = 6.28318530717958647692;   // 2π
+const PHI    = 1.61803398874989484820;   // golden ratio
+const SQRT2  = 1.41421356237309504880;
+const SQRT3  = 1.73205080756887729352;
+const E      = 2.71828182845904523536;
+const LN2    = 0.69314718055994530941;
+const INV_PI = 0.31830988618379067154;   // 1/π
+```
+
+### Physical Equations Reference
+
+| Equation | WGSL form | Use case |
+|----------|-----------|----------|
+| Gaussian bell curve | `exp(-0.5 * x*x / (s*s))` | Kernels, bloom falloff |
+| Planck blackbody | `1.0 / (exp(hv_kT / lambda) - 1.0)` | Star/fire color temperature |
+| Beer-Lambert | `exp(-density * distance)` | Fog, absorption, volume |
+| Henyey-Greenstein | `(1-g²) / pow(1+g²-2g·cosθ, 1.5)` | Volumetric light scattering |
+| Fresnel-Schlick | `F0 + (1-F0)*pow(1-cosθ, 5)` | Reflectance at grazing angles |
+| Logistic growth | `1.0 / (1.0 + exp(-k*(x-x0)))` | Sigmoid activation, liveness |
+| Euler identity | `vec2(cos(θ), sin(θ))` | Complex rotation |
+| Schwarzschild | `1.0 - 2.0*M / r` | Gravitational lensing |
+
 ## Upgrade Toolkit
 
 ### Noise Upgrades
-- Simplex → FBM domain warping
-- Value noise → Curl noise (divergence-free)
-- Perlin → Worley noise (cellular/Voronoi)
-- Static → Temporal coherent noise
+- Value noise → FBM domain warping (double-warp for max turbulence)
+- Perlin → Curl noise (divergence-free, use for fluid velocity fields)
+  ```wgsl
+  fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
+      let eps = 0.001;
+      let nx = fbm(p + vec2<f32>(0.0, eps), 4) - fbm(p - vec2<f32>(0.0, eps), 4);
+      let ny = fbm(p + vec2<f32>(eps, 0.0), 4) - fbm(p - vec2<f32>(eps, 0.0), 4);
+      return vec2<f32>(nx, -ny) / (2.0 * eps);
+  }
+  ```
+- Value noise → Worley/Voronoi F2-F1 (cellular ridges, veins, cracks)
+  ```wgsl
+  fn voronoiF2minusF1(p: vec2<f32>) -> f32 {
+      // returns ridge value – great for mountain ranges, skin
+      var F1 = 1e9; var F2 = 1e9;
+      let ip = floor(p);
+      for (var i = -2; i <= 2; i++) { for (var j = -2; j <= 2; j++) {
+          let n = ip + vec2<f32>(f32(i), f32(j));
+          let d = length(p - n - hash21(n));
+          if (d < F1) { F2 = F1; F1 = d; } else if (d < F2) { F2 = d; }
+      }}
+      return F2 - F1;
+  }
+  ```
+- Static → Temporal coherent noise (seed with `floor(t/period)`, lerp between seeds)
+
+#### Domain-warped FBM (organic flow, two-octave warp)
+```wgsl
+fn fbm(p: vec2<f32>) -> f32 {
+    var a = 0.5; var s = 0.0; var q = p;
+    for (var i = 0; i < 5; i = i + 1) {
+        s = s + a * valueNoise(q);
+        q = q * 2.02; a = a * 0.5;
+    }
+    return s;
+}
+fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
+    let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t)),
+                      fbm(p + vec2<f32>(5.2, 1.3)));
+    let r = vec2<f32>(fbm(p + 4.0*q + vec2<f32>(1.7, 9.2)),
+                      fbm(p + 4.0*q + vec2<f32>(8.3, 2.8)));
+    return fbm(p + 4.0*r);
+}
+```
+Strictly better than single-octave noise for "alive" generative shaders. Pass `u.config.x` as `t`.
+
+#### Polar kaleidoscope fold
+```wgsl
+fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
+    let r = length(uv);
+    var a = atan2(uv.y, uv.x);
+    let seg = 6.2831853 / max(segs, 1.0);
+    a = abs(((a % seg) + seg) % seg - seg * 0.5);
+    return vec2<f32>(cos(a), sin(a)) * r;
+}
+```
+Cheap, branch-light fold that gives instant symmetry. Pair with `warpedFBM` or SDF sampling.
+
+### Quasi-Random Sampling (better than pseudo-random)
+```wgsl
+// Halton sequence – base 2 and 3, ideal for AA / Monte Carlo
+fn halton(i: u32, base: u32) -> f32 {
+    var f = 1.0; var r = 0.0; var idx = i;
+    loop { if (idx == 0u) { break; }
+        f = f / f32(base);
+        r = r + f * f32(idx % base);
+        idx = idx / base;
+    }
+    return r;
+}
+// Gold noise – low discrepancy on 2D
+fn goldNoise(uv: vec2<f32>, seed: f32) -> f32 {
+    return fract(tan(distance(uv * PHI, uv) * seed) * uv.x);
+}
+```
 
 ### Simulation Upgrades
-- Basic ripples → Gray-Scott reaction-diffusion
+- Basic ripples → Gray-Scott reaction-diffusion (uses ping-pong dataTexture)
 - Particle clouds → Lenia continuous cellular automata
-- Smoke puffs → Navier-Stokes fluid approximations
-- Static patterns → Turing pattern generators
+- Smoke → Navier-Stokes + divergence projection (2-pass)
+- Static → Turing pattern generators (activator-inhibitor)
+- Dots → Physarum / slime-mold (agent trails in dataTextureA)
+- Particles → Verlet integration: `pos_new = 2*pos - pos_old + accel * dt²`
 
 ### SDF Upgrades
-- Single primitive → Composition with smooth unions
-- 2D circles → 3D raymarched scenes
-- Static shapes → Animated morphing fields
-- Solid colors → Subsurface scattering approximations
+- Single primitive → Composition with `smin` (smooth union k=0.2)
+- 2D circles → 3D raymarched scenes (64-step march with shadow rays)
+- Static → Animated morphing fields (`mix(sdf_a, sdf_b, smoothstep(0,1,t))`)
+- Solid → Subsurface scattering: `exp(-thickness / scatterDist) * albedo`
+- New primitives: capsule, hexagonal prism, torus knot, Möbius strip SDF
+
+#### Smooth-min SDF union (`smin`) — round seams between primitives
+```wgsl
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = clamp(0.5 + 0.5*(b - a)/k, 0.0, 1.0);
+    return mix(b, a, h) - k*h*(1.0 - h);
+}
+```
+`k ≈ 0.1–0.3` of the smaller primitive radius. Replaces hard `min()` for organic blob unions.
+
+#### Anti-aliased SDF / line via `fwidth` (no MSAA needed in compute)
+```wgsl
+fn aa_step(edge: f32, x: f32) -> f32 {
+    let w = max(fwidth(x), 1e-4);
+    return smoothstep(edge - w, edge + w, x);
+}
+```
+Use wherever a hard `step()` would produce shimmering edges — kaleidoscope folds, SDF contours, grid lines.
 
 ### Fractal Upgrades
-- Basic Mandelbrot → Burning Ship / Phoenix hybrids
-- 2D fractals → 4D quaternion Julia sets
-- Static zoom → Smooth exponential zoom
-- Single orbit → Multi-orbit accumulation
+- Basic Mandelbrot → Burning Ship (`abs(z)` before squaring)
+- 2D fractals → 4D quaternion Julia sets (project down via `q.xy`)
+- Static zoom → Smooth exponential zoom (`exp(t * zoom_speed)`)
+- Single orbit → Multi-orbit trap accumulation (min distance to line/circle/point)
+- Complex dynamics: Newton's method `z - f(z)/f'(z)` for root basins
+
+### Strange Attractors
+```wgsl
+// Clifford attractor – vary a,b,c,d for wildly different forms
+fn clifford(p: vec2<f32>, a: f32, b: f32, c: f32, d: f32) -> vec2<f32> {
+    return vec2<f32>(sin(a*p.y) + c*cos(a*p.x),
+                     sin(b*p.x) + d*cos(b*p.y));
+}
+// Lorenz (2D projection of 3D attractor)
+fn lorenz_step(p: vec3<f32>, dt: f32) -> vec3<f32> {
+    let sigma = 10.0; let rho = 28.0; let beta = 8.0/3.0;
+    let dp = vec3<f32>(sigma*(p.y-p.x), p.x*(rho-p.z)-p.y, p.x*p.y-beta*p.z);
+    return p + dp * dt;
+}
+```
+
+### Complex Number Math
+```wgsl
+fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> { return vec2<f32>(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x); }
+fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    let d = dot(b, b);
+    return vec2<f32>(dot(a,b), a.y*b.x - a.x*b.y) / max(d, 1e-6);
+}
+// Möbius transform: (az+b)/(cz+d)
+fn mobius(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) -> vec2<f32> {
+    return cdiv(cmul(a, z) + b, cmul(c, z) + d);
+}
+```
+
+## RGBA Semantic Encoding (choose the right strategy)
+
+| Strategy | R | G | B | A | Best for |
+|----------|---|---|---|---|----------|
+| Luminance alpha | color.r | color.g | color.b | `dot(rgb, vec3(0.299, 0.587, 0.114))` | General blending |
+| Bloom mask | color.r | color.g | color.b | `max(0, luma - 0.7) * 3.0` | HDR glow pass |
+| Material data | color.r | color.g | color.b | material_id / 255.0 | Multi-material shaders |
+| Life/energy | density | age | species | energy | Simulation shaders |
+| Depth + color | color.r | color.g | color.b | linearized depth | Compositing |
+
+**Never output `vec4(rgb, 1.0)` — that discards compositing potential entirely.**
 
 ## Quality Checklist
 - [ ] At least 2 advanced algorithms integrated
-- [ ] Temporal coherence (smooth frame-to-frame)
+- [ ] Mathematical constants from the table above used (no magic numbers)
+- [ ] Temporal coherence (smooth frame-to-frame transitions)
 - [ ] Divergence-free velocity fields where applicable
 - [ ] Multi-scale detail (macro + micro structures)
+- [ ] Alpha channel carries semantic meaning (not hardcoded 1.0)
+- [ ] No divisions by zero (add `+ 0.001` guard)
 
 ## Output Rules
 - Keep the original "soul" of the shader while elevating it mathematically.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
 - Do NOT modify the 13-binding header or the Uniforms struct.
-- Preserve or enhance RGBA channel usage (do not force alpha = 1.0 unless justified).
+- **Alpha must encode something useful** — bloom weight, depth, energy, or compositing mask.
+
+## Performance Constraint
+This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. Prefer quasi-random (Halton/gold noise) over pseudo-random for sampling loops — same cost, better results. If adding features, keep total line count within the target specified in the task metadata.
 
 
 ---
@@ -297,7 +562,7 @@ You are **The Algorithmist**, a specialized shader architect focused on advanced
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 140 lines (±20%).
+4. Ensure the upgraded shader is roughly 180 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

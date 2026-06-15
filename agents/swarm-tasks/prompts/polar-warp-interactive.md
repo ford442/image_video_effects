@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: polar-warp-interactive
-- **Agent Role**: Optimizer
+- **Agent Role**: Interactivist
 - **Current Size**: 3287 bytes
-- **Target Line Count**: ~115 lines
+- **Target Line Count**: ~180 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -41,6 +41,14 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
+// ═══════════════════════════════════════════════════════════════════
+//  Polar Warp Interactive
+//  Category: interactive-mouse
+//  Features: mouse-driven, upgraded-rgba, audio-reactive, depth-aware, multi-ripple
+//  Complexity: Medium
+//  Upgraded: bass-driven warp, spiral component, ripple bursts, semantic alpha
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -62,81 +70,86 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Polar Warp Interactive
-// Param 1: Zoom
-// Param 2: Spiral Twist
-// Param 3: Repeats
-// Param 4: Radial Offset
+const PI: f32 = 3.14159265;
+const TAU: f32 = 6.2831853;
+const EPS: f32 = 1e-3;
 
-fn get_mouse() -> vec2<f32> {
-    var mouse = u.zoom_config.yz;
-    if (mouse.x < 0.0) { return vec2<f32>(0.5, 0.5); }
-    return mouse;
-}
-
-@compute @workgroup_size(16, 16, 1)
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+    let res = u.config.zw;
+    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) { return; }
+    let gid = vec2<i32>(global_id.xy);
+    let uv = vec2<f32>(global_id.xy) / res;
+    let aspect = res.x / res.y;
+    let time = u.config.x;
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let aspect = resolution.x / resolution.y;
-    var mouse = get_mouse();
+    let mouseRaw = u.zoom_config.yz;
+    let mouse = select(mouseRaw, vec2<f32>(0.5), mouseRaw.x < 0.0);
 
-    // Center coordinates on mouse
-    // Adjust for aspect to keep circular symmetry
+    let bass = plasmaBuffer[0].x;
+    let bassPulse = 1.0 + bass * 0.4;
+
+    let warpStrength = u.zoom_params.x * bassPulse;
+    let spiralAmount = u.zoom_params.y * 5.0;
+    let rippleDecay = u.zoom_params.z;
+    let pinchExpand = u.zoom_params.w;
+
     var diff = uv - mouse;
     diff.x *= aspect;
 
-    // To Polar
-    var radius = length(diff);
-    var angle = atan2(diff.y, diff.x);
+    let radius = length(diff);
+    let angle = atan2(diff.y, diff.x);
 
-    let zoom = 0.1 + u.zoom_params.x * 2.0; // Avoid division by zero
-    let spiral = u.zoom_params.y * 5.0;
-    let repeats = max(1.0, u.zoom_params.z);
-    let offset = u.zoom_params.w;
+    // Early exit: hide center singularity
+    if (radius < EPS) {
+        textureStore(writeTexture, gid, vec4<f32>(0.0));
+        textureStore(writeDepthTexture, gid, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+        return;
+    }
 
-    // Distort Polar
-    // New Radius mapping
-    var r_new = pow(radius, 1.0/zoom);
-    r_new = r_new - offset;
+    // Polar distortion
+    let zoom = 0.1 + warpStrength * 2.0;
+    let r_new = pow(radius, 1.0 / zoom) - pinchExpand;
+    var a_new = angle + radius * spiralAmount;
 
-    // Spiral: add angle based on radius
-    angle = angle + (radius * spiral);
+    // Click-triggered ripple bursts from u.ripples
+    for (var i: i32 = 0; i < 50; i = i + 1) {
+        let rp = u.ripples[i];
+        if (rp.z > 0.0) {
+            let age = time - rp.z;
+            if (age > 0.0 && age < 3.0) {
+                let rd = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+                let rippleWave = sin(rd * 30.0 - age * 10.0) * exp(-age * rippleDecay * 3.0);
+                a_new = a_new + rippleWave * 0.1 * rp.w;
+            }
+        }
+    }
 
-    // Repeat texture radially
-    // We map polar (r, theta) back to Cartesian (u, v) for texture lookup?
-    // Actually, "Polar Warp" usually means mapping the image *as if* it were polar.
-    // Standard effect: UV.x = angle, UV.y = radius
-    // Let's implement the tunnel effect:
+    // Map polar back to UV space with time rotation
+    let tunnel_u = (a_new / PI) * 2.0 + time * 0.1;
+    let tunnel_v = 1.0 / (r_new + EPS);
 
-    let tunnel_u = (angle / 3.14159265) * repeats + u.config.x * 0.1; // Rotate over time
-    let tunnel_v = 1.0 / (r_new + 0.001); // Perspective
+    // Mirrored-repeat UV sampling for seamless edges
+    let fuv = fract(vec2<f32>(tunnel_u, tunnel_v));
+    let sampleUV = abs(fuv * 2.0 - 1.0);
 
-    // Let's try a different approach: Coordinate Remapping
-    // Map (r, theta) back to (x, y) but distorted.
+    // Single texture sample
+    let col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
-    let distorted_uv = vec2<f32>(
-        tunnel_u,
-        tunnel_v
-    );
-
-    // Wrap UVs
-    let final_uv = fract(distorted_uv);
-
-    // Use mirrored repeat for smoother edges
-    let mirror_uv = abs(final_uv * 2.0 - 1.0); // 0..1..0 triangle wave
-    // Actually fract is fine for tunnel.
-
-    let col = textureSampleLevel(readTexture, u_sampler, final_uv, 0.0);
-
-    // Fade out center singularity
+    // Radial fade at the singularity
     let fade = smoothstep(0.0, 0.1, radius);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), col * fade);
+    // Depth-aware fade
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthFade = mix(0.7, 1.0, depth);
+
+    // Semantic alpha: reduce at extreme warp distortion
+    let warpDistort = abs(r_new - radius) + abs(a_new - angle);
+    let alpha = mix(col.a, 0.85, smoothstep(0.5, 1.5, warpDistort));
+    let finalAlpha = alpha * fade * depthFade;
+
+    textureStore(writeTexture, gid, vec4<f32>(col.rgb * fade * depthFade, finalAlpha));
+    textureStore(writeDepthTexture, gid, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 
 ```
@@ -147,127 +160,169 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "polar-warp-interactive",
   "name": "Polar Warp",
   "url": "shaders/polar-warp-interactive.wgsl",
-  "category": "image",
-  "description": "Maps the image to polar coordinates centered on the mouse, creating a tunnel or funhouse mirror effect.",
+  "description": "Maps the image to polar coordinates centered on the mouse with bass-driven warp strength, spiral twist, click-triggered ripple bursts, and depth-aware fading.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "audio-reactive",
+    "depth-aware",
+    "multi-ripple"
   ],
   "params": [
     {
-      "id": "zoom",
-      "name": "Zoom",
+      "id": "param1",
+      "name": "Warp Strength",
       "default": 0.5,
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1,
+      "step": 0.01
     },
     {
-      "id": "spiral",
-      "name": "Spiral Twist",
-      "default": 0.0,
-      "min": -1.0,
-      "max": 1.0
+      "id": "param2",
+      "name": "Spiral Amount",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
     },
     {
-      "id": "repeats",
-      "name": "Repeats",
-      "default": 1.0,
-      "min": 1.0,
-      "max": 5.0
+      "id": "param3",
+      "name": "Ripple Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
     },
     {
-      "id": "offset",
-      "name": "Radial Offset",
-      "default": 0.0,
-      "min": 0.0,
-      "max": 1.0
+      "id": "param4",
+      "name": "Pinch/Expand",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
     }
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "interactive",
+    "polar",
+    "warp",
+    "audio-reactive"
   ]
 }
+
 ```
 
 ---
 
 ## Agent Specialization
-# Agent Role: The Optimizer
+# Agent Role: The Interactivist
 
 ## Identity
-You are **The Optimizer**, a shader architect focused on performance, elegance, and pipeline integration.
+You are **The Interactivist**, a shader architect focused on input reactivity, feedback loops, and emergent behavior.
 
 ## Upgrade Toolkit
 
-### Performance Techniques
-- Brute force → Early exit conditions
-- Full resolution → Quarter-res blur + full-res combine
-- Per-pixel pseudo-random → **Blue noise or Halton sequence** (same cost, less banding)
-- Redundant texture samples → Bilinear LOD
-- Nested loops → Unrolled small kernels
-- Expensive trig → Precomputed or polynomial approximations:
-  ```wgsl
-  // Fast atan2 approximation (max error ~0.0015 rad)
-  fn fast_atan2(y: f32, x: f32) -> f32 {
-      let a = min(abs(x), abs(y)) / (max(abs(x), abs(y)) + 1e-6);
-      let s = a * a;
-      var r = ((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a;
-      if (abs(y) > abs(x)) { r = 1.5707963 - r; }
-      if (x < 0.0) { r = 3.1415927 - r; }
-      if (y < 0.0) { r = -r; }
-      return r;
-  }
-  // Fast exp approximation
-  fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
-  ```
+### Mouse Interaction
+- Position tracking → Gravity wells / attractors
+- Click events → Spawn bursts / shockwaves
+- Velocity tracking → Motion blur trails
+- Multi-touch → Multi-agent systems
 
-### Workgroup Shared Memory (tiling pattern for blur/filter kernels)
+### Audio Reactivity
+- Bass pulse → Scale/brightness modulation
+- Mid frequencies → Pattern morphing speed
+- Treble → Sparkle/additive particles
+- FFT buckets → Multi-band color splitting
+
+### Video Feedback
+- Static overlay → Optical flow distortion
+- Fixed transparency → Alpha blending based on depth
+- Simple masking → Luma-keyed particle spawn
+- Direct color → Motion-vector advection
+
+### Depth Integration
+- 2D effects → Parallax depth separation
+- Uniform blur → Depth-of-field bokeh
+- Flat shading → Ambient occlusion darkening
+- Screen space → Volumetric depth fog
+
+#### Depth-aware compositing for slot-2/3 effects
 ```wgsl
-var<workgroup> tile: array<array<vec4<f32>, 18>, 18>; // 16x16 + 1px border
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>,
-        @builtin(local_invocation_id) lid: vec3<u32>) {
-    // Load tile including borders, then sync
-    tile[lid.y+1][lid.x+1] = textureSampleLevel(readTexture, u_sampler,
-        vec2<f32>(gid.xy) / vec2<f32>(u.config.zw), 0.0);
-    workgroupBarrier();
-    // All accesses to tile[] now L1-cached — no global texture reads in hot loop
+let z   = textureLoad(readDepthTexture, gid.xy, 0).r;
+let fog = 1.0 - exp(-z * u.zoom_params.z);   // exponential depth fog
+let out = mix(srcColor, fxColor, fog);        // effect strengthens with depth
+```
+Keeps foreground subjects crisp while letting the effect "breathe" in the background — essential when this shader runs in slot 2 or 3 of the chain.
+
+### Feedback Loops
+- Single pass → Temporal accumulation
+- Static state → Ping-pong buffer feedback (dataTextureA ↔ dataTextureB)
+- Linear time → Recursive subdivision
+- Fixed camera → Smooth follow with lag
+- Direct value → Exponential smoothing: `smoothed = mix(smoothed, target, 0.05)`
+
+### Emergent Dynamics Patterns
+```wgsl
+// Spring-damper for smooth mouse follow (prevents jitter)
+fn spring(current: vec2<f32>, target: vec2<f32>, velocity: ptr<function,vec2<f32>>, k: f32, damping: f32, dt: f32) -> vec2<f32> {
+    let force = (target - current) * k - *velocity * damping;
+    *velocity = *velocity + force * dt;
+    return current + *velocity * dt;
+}
+
+// Attractor / gravity well (mouse as gravitational source)
+fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
+    let d = wellPos - pos;
+    let dist2 = dot(d, d) + 0.01;  // avoid singularity
+    return normalize(d) * strength / dist2;
+}
+
+// Beat-reactive pulse with decay
+fn beatPulse(bass: f32, decay: f32, time: f32) -> f32 {
+    return bass * exp(-decay * fract(time * 2.0));  // 2Hz beat assumption
 }
 ```
 
-### Code Elegance
-- Magic numbers → Named constants (see Algorithmist for PI/TAU/PHI/etc.)
-- Duplicated code → Helper functions
-- Long functions → Logical sections with comments
-- Hard-coded params → Uniform-based tuning via `zoom_params`
-- GPU-unfriendly ops → Precomputed lookups
+### Audio Binding Reference
+```
+plasmaBuffer[0].x = bass    (20–250 Hz)
+plasmaBuffer[0].y = mids    (250–4000 Hz)
+plasmaBuffer[0].z = treble  (4000–20000 Hz)
+plasmaBuffer[0].w = overall RMS amplitude
+```
 
-### Pipeline Integration
-- Standalone → Designed for slot chaining
-- No feedback → Uses dataTextureA/B for state
-- LDR only → HDR output ready for tone map
-- Single pass → Multi-pass decomposition hint
-- Fixed quality → Level-of-detail scaling
+#### Attack/release audio envelope (preferred over raw `plasmaBuffer[0].x`)
+```wgsl
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+    let k = select(release, attack, bass > prev);
+    return mix(prev, bass, k);
+}
+```
+Store previous value in `dataTextureA.r` across frames. Eliminates the "strobe every frame" look that raw `plasmaBuffer[0].x` produces. Typical values: `attack = 0.8`, `release = 0.15`.
 
-### Post-Process Ready
-- Expose bloom threshold via alpha channel (`alpha = bloom_weight`)
-- Tag as "expects pp-tone-map" if HDR
-- Document slot recommendations
-- Provide quality presets (low/medium/high)
+Reactive patterns:
+- Bass → scale, brightness pulse, warp radius
+- Mids → rotation speed, color shift, pattern morphing
+- Treble → sparkle particles, grain, edge sharpness
+- RMS → overall opacity, global scale breathing
 
 ## Quality Checklist
-- [ ] No per-pixel branching on uniforms
-- [ ] Texture samples minimized (caching used)
-- [ ] Workgroup size optimized (16x16 for Pixelocity)
-- [ ] Early exit for sky/background pixels
-- [ ] LOD quality scaling based on frame time
+- [ ] Mouse affects at least 2 parameters
+- [ ] Audio drives at least 1 visual element (use `bass_env` decay, not raw `plasmaBuffer[0].x`)
+- [ ] Video input influences the effect
+- [ ] Temporal feedback creates trails/smoothing
+- [ ] Emergent behavior (not 1:1 input mapping)
+- [ ] Alpha encodes interaction intensity or trail age
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it production-ready.
+- Keep the original "soul" of the shader while making it alive and reactive.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
 - Do NOT modify the 13-binding header or the Uniforms struct.
-- Preserve or enhance RGBA channel usage.
-- Add JSON params if new tunable values are introduced (max 4 params mapped to zoom_params).
+- `plasmaBuffer[0].x` = bass, `.y` = mids, `.z` = treble. Use them.
+- `u.zoom_config.yz` = mouse position (0-1). `u.zoom_config.w` = mouse down.
+- **Alpha must carry semantic meaning** — trail age, interaction intensity, or depth mask.
 
 ## Performance Constraint
 This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
@@ -279,7 +334,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 115 lines (±20%).
+4. Ensure the upgraded shader is roughly 180 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

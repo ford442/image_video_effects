@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: polka-dot-reveal
-- **Agent Role**: Interactivist
+- **Agent Role**: Optimizer
 - **Current Size**: 3362 bytes
-- **Target Line Count**: ~134 lines
+- **Target Line Count**: ~180 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -44,10 +44,10 @@ struct Uniforms {
 // ═══════════════════════════════════════════════════════════════════
 //  Polka Dot Reveal
 //  Category: artistic
-//  Features: mouse-driven, audio-reactive
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  By: Shader Upgrade Swarm Phase A
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -65,79 +65,93 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(16, 16, 1)
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+    let k = select(release, attack, bass > prev);
+    return mix(prev, bass, k);
+}
+
+@compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    var mouse = u.zoom_config.yz;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let mouse = u.zoom_config.yz;
     let time = u.config.x;
+    let mouseDown = u.zoom_config.w > 0.5;
 
-    // Parameters
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
     let intensity = clamp(u.zoom_params.x, 0.0, 1.0);
     let speed = clamp(u.zoom_params.y, 0.0, 1.0);
     let scale = clamp(u.zoom_params.z, 0.01, 1.0);
     let detail = clamp(u.zoom_params.w, 0.01, 1.0);
 
-    // Audio reactivity — bass drives dot radius
-    let bass = plasmaBuffer[0].x;
+    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let prevBass = prev.r;
+    let prevMouse = prev.gb;
+    let prevAlpha = prev.a;
 
-    // Calculate distance influence
+    let bass_smooth = bass_env(prevBass, bass, 0.8, 0.15);
+
+    let smoothMouse = mix(prevMouse, mouse, 0.12);
+    let mouseVel = length(mouse - smoothMouse);
+
     let aspect = resolution.x / resolution.y;
-    let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
+    let mAspect = vec2<f32>(smoothMouse.x * aspect, smoothMouse.y);
+    let uvAspect = vec2<f32>(uv.x * aspect, uv.y);
+    let dist = distance(uvAspect, mAspect);
 
-    // Map distance to grid density using Scale param
     let densityMin = mix(10.0, 40.0, scale);
     let densityMax = mix(80.0, 250.0, scale);
-    let density = mix(densityMax, densityMin, smoothstep(0.0, 0.8, dist));
+    let revealRadius = 0.7 + mouseVel * 3.0;
+    let density = mix(densityMax, densityMin, smoothstep(0.0, revealRadius, dist));
 
     let grid_uv = floor(uv * density) / density;
     let cell_center = grid_uv + (0.5 / density);
 
-    // Sample color at cell center
     let color = textureSampleLevel(readTexture, u_sampler, cell_center, 0.0);
     let lum = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    // Determine dot radius based on luminance and audio
-    let max_radius = 0.5;
-    let audioBoost = 1.0 + bass * 0.4;
-    let radius = lum * max_radius * audioBoost;
+    let audioBoost = 1.0 + bass_smooth * 0.5 + mids * 0.2;
+    let clickBoost = select(1.0, 1.4, mouseDown);
+    let radius = lum * 0.5 * audioBoost * clickBoost;
 
-    // Subtle radius pulse from Speed param
-    let pulse = 1.0 + sin(time * (0.5 + speed * 2.0)) * 0.05 * speed;
+    let pulse = 1.0 + sin(time * (0.5 + speed * 2.0)) * 0.06 * speed;
     let animated_radius = radius * pulse;
 
-    // Local UV in cell [0, 1]
     let local_uv = fract(uv * density);
     let dist_to_center = distance(local_uv, vec2<f32>(0.5));
 
-    // Anti-aliasing width adjusted by density and Detail param
     let aa = mix(0.03, 0.15, detail) * density / 50.0;
     let circle = 1.0 - smoothstep(animated_radius - aa, animated_radius + aa, dist_to_center);
 
-    // Meaningful alpha: brighter dots are more opaque, scaled by intensity
-    let dotAlpha = mix(0.2, 1.0, lum) * intensity;
-    let dotColor = vec4<f32>(color.rgb, dotAlpha);
+    let trailDecay = mix(0.72, 0.96, intensity);
+    let trailAlpha = prevAlpha * trailDecay;
+    let dotAlpha = max(mix(0.2, 1.0, lum) * intensity * (1.0 + bass_smooth * 0.2), trailAlpha);
 
-    // Transparent background where there is no dot
+    let satBoost = 1.0 + bass_smooth * 0.3 + treble * 0.1;
+    let dotColor = vec4<f32>(color.rgb * satBoost, dotAlpha);
+
     var final_color = mix(vec4<f32>(0.0, 0.0, 0.0, 0.0), dotColor, circle);
 
-    // Randomization-safety clamps
+    let interaction = clamp(bass_smooth * 0.5 + mouseVel * 2.0 + treble * 0.1, 0.0, 1.0);
+    final_color.a = clamp(final_color.a + interaction * 0.25, 0.0, 1.0);
     final_color = clamp(final_color, vec4<f32>(0.0), vec4<f32>(1.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
+    let state = vec4<f32>(bass_smooth, smoothMouse.x, smoothMouse.y, final_color.a);
 
-    // Pass depth through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), state);
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
 
@@ -149,17 +163,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "polka-dot-reveal",
   "name": "Polka Dot Reveal",
   "url": "shaders/polka-dot-reveal.wgsl",
-  "category": "artistic",
-  "description": "Interactive halftone effect where mouse proximity increases the dot density, revealing more detail. Now with audio-reactive dot sizing and parameter-driven density, speed, and detail.",
+  "description": "Interactive halftone effect with spring-damped mouse follow, attack/release audio envelope driving dot radius and saturation, and temporal feedback trails where alpha encodes trail age and interaction intensity.",
   "features": [
     "mouse-driven",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
     "image-processing",
     "halftone",
-    "audio-reactive"
+    "audio-reactive",
+    "temporal",
+    "trails"
   ],
   "params": [
     {
@@ -202,112 +219,102 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 ---
 
 ## Agent Specialization
-# Agent Role: The Interactivist
+# Agent Role: The Optimizer
 
 ## Identity
-You are **The Interactivist**, a shader architect focused on input reactivity, feedback loops, and emergent behavior.
+You are **The Optimizer**, a shader architect focused on performance, elegance, and pipeline integration.
 
 ## Upgrade Toolkit
 
-### Mouse Interaction
-- Position tracking → Gravity wells / attractors
-- Click events → Spawn bursts / shockwaves
-- Velocity tracking → Motion blur trails
-- Multi-touch → Multi-agent systems
+### Performance Techniques
+- Brute force → Early exit conditions
+- Full resolution → Quarter-res blur + full-res combine
+- Per-pixel pseudo-random → **Blue noise or Halton sequence** (same cost, less banding)
+- Redundant texture samples → Bilinear LOD
+- Nested loops → Unrolled small kernels
+- Expensive trig → Precomputed or polynomial approximations:
+  ```wgsl
+  // Fast atan2 approximation (max error ~0.0015 rad)
+  fn fast_atan2(y: f32, x: f32) -> f32 {
+      let a = min(abs(x), abs(y)) / (max(abs(x), abs(y)) + 1e-6);
+      let s = a * a;
+      var r = ((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a;
+      if (abs(y) > abs(x)) { r = 1.5707963 - r; }
+      if (x < 0.0) { r = 3.1415927 - r; }
+      if (y < 0.0) { r = -r; }
+      return r;
+  }
+  // Fast exp approximation
+  fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
+  ```
 
-### Audio Reactivity
-- Bass pulse → Scale/brightness modulation
-- Mid frequencies → Pattern morphing speed
-- Treble → Sparkle/additive particles
-- FFT buckets → Multi-band color splitting
-
-### Video Feedback
-- Static overlay → Optical flow distortion
-- Fixed transparency → Alpha blending based on depth
-- Simple masking → Luma-keyed particle spawn
-- Direct color → Motion-vector advection
-
-### Depth Integration
-- 2D effects → Parallax depth separation
-- Uniform blur → Depth-of-field bokeh
-- Flat shading → Ambient occlusion darkening
-- Screen space → Volumetric depth fog
-
-#### Depth-aware compositing for slot-2/3 effects
+#### 7-tap hex bokeh kernel (perceptually equals 19-tap circular at lower cost)
 ```wgsl
-let z   = textureLoad(readDepthTexture, gid.xy, 0).r;
-let fog = 1.0 - exp(-z * u.zoom_params.z);   // exponential depth fog
-let out = mix(srcColor, fxColor, fog);        // effect strengthens with depth
+const HEX_TAPS = array<vec2<f32>, 7>(
+    vec2<f32>( 0.0,  0.0),
+    vec2<f32>( 1.0,  0.0), vec2<f32>( 0.5,  0.866),
+    vec2<f32>(-0.5,  0.866), vec2<f32>(-1.0,  0.0),
+    vec2<f32>(-0.5, -0.866), vec2<f32>( 0.5, -0.866),
+);
 ```
-Keeps foreground subjects crisp while letting the effect "breathe" in the background — essential when this shader runs in slot 2 or 3 of the chain.
+Use for radial-blur, DOF, and glow shaders. Scale each tap by `radius / res` before sampling `readTexture`.
 
-### Feedback Loops
-- Single pass → Temporal accumulation
-- Static state → Ping-pong buffer feedback (dataTextureA ↔ dataTextureB)
-- Linear time → Recursive subdivision
-- Fixed camera → Smooth follow with lag
-- Direct value → Exponential smoothing: `smoothed = mix(smoothed, target, 0.05)`
-
-### Emergent Dynamics Patterns
+#### Anti-moiré LOD bias for procedural noise
 ```wgsl
-// Spring-damper for smooth mouse follow (prevents jitter)
-fn spring(current: vec2<f32>, target: vec2<f32>, velocity: ptr<function,vec2<f32>>, k: f32, damping: f32, dt: f32) -> vec2<f32> {
-    let force = (target - current) * k - *velocity * damping;
-    *velocity = *velocity + force * dt;
-    return current + *velocity * dt;
-}
-
-// Attractor / gravity well (mouse as gravitational source)
-fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
-    let d = wellPos - pos;
-    let dist2 = dot(d, d) + 0.01;  // avoid singularity
-    return normalize(d) * strength / dist2;
-}
-
-// Beat-reactive pulse with decay
-fn beatPulse(bass: f32, decay: f32, time: f32) -> f32 {
-    return bass * exp(-decay * fract(time * 2.0));  // 2Hz beat assumption
-}
+let lod = clamp(log2(max(fwidth(uv).x, fwidth(uv).y) * cell_freq), 0.0, 4.0);
+let p = uv * (cell_freq * exp2(-lod));
 ```
+Kills the shimmer that plagues high-frequency procedural patterns (fractal / kaleidoscope shaders) when zoomed out. `cell_freq` is the base tile frequency.
 
-### Audio Binding Reference
-```
-plasmaBuffer[0].x = bass    (20–250 Hz)
-plasmaBuffer[0].y = mids    (250–4000 Hz)
-plasmaBuffer[0].z = treble  (4000–20000 Hz)
-plasmaBuffer[0].w = overall RMS amplitude
-```
-
-#### Attack/release audio envelope (preferred over raw `plasmaBuffer[0].x`)
+### Workgroup Shared Memory (tiling pattern for blur/filter kernels)
 ```wgsl
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-    let k = select(release, attack, bass > prev);
-    return mix(prev, bass, k);
+var<workgroup> tile: array<array<vec4<f32>, 18>, 18>; // 16x16 + 1px border
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>,
+        @builtin(local_invocation_id) lid: vec3<u32>) {
+    // Load tile including borders, then sync
+    tile[lid.y+1][lid.x+1] = textureSampleLevel(readTexture, u_sampler,
+        vec2<f32>(gid.xy) / vec2<f32>(u.config.zw), 0.0);
+    workgroupBarrier();
+    // All accesses to tile[] now L1-cached — no global texture reads in hot loop
 }
 ```
-Store previous value in `dataTextureA.r` across frames. Eliminates the "strobe every frame" look that raw `plasmaBuffer[0].x` produces. Typical values: `attack = 0.8`, `release = 0.15`.
 
-Reactive patterns:
-- Bass → scale, brightness pulse, warp radius
-- Mids → rotation speed, color shift, pattern morphing
-- Treble → sparkle particles, grain, edge sharpness
-- RMS → overall opacity, global scale breathing
+### Code Elegance
+- Magic numbers → Named constants (see Algorithmist for PI/TAU/PHI/etc.)
+- Duplicated code → Helper functions
+- Long functions → Logical sections with comments
+- Hard-coded params → Uniform-based tuning via `zoom_params`
+- GPU-unfriendly ops → Precomputed lookups
+
+### Pipeline Integration
+- Standalone → Designed for slot chaining
+- No feedback → Uses dataTextureA/B for state
+- LDR only → HDR output ready for tone map
+- Single pass → Multi-pass decomposition hint
+- Fixed quality → Level-of-detail scaling
+
+### Post-Process Ready
+- Expose bloom threshold via alpha channel (`alpha = bloom_weight`)
+- Tag as "expects pp-tone-map" if HDR
+- Document slot recommendations
+- Provide quality presets (low/medium/high)
 
 ## Quality Checklist
-- [ ] Mouse affects at least 2 parameters
-- [ ] Audio drives at least 1 visual element (use `bass_env` decay, not raw `plasmaBuffer[0].x`)
-- [ ] Video input influences the effect
-- [ ] Temporal feedback creates trails/smoothing
-- [ ] Emergent behavior (not 1:1 input mapping)
-- [ ] Alpha encodes interaction intensity or trail age
+- [ ] No per-pixel branching on uniforms
+- [ ] Texture samples minimized (caching used)
+- [ ] Workgroup size optimized (16x16 for Pixelocity)
+- [ ] Early exit for sky/background pixels
+- [ ] LOD quality scaling based on frame time
+- [ ] Anti-moiré LOD bias applied for high-frequency procedural patterns
+- [ ] Hex bokeh kernel used in place of naive circular sampling where applicable
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it alive and reactive.
+- Keep the original "soul" of the shader while making it production-ready.
 - Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
 - Do NOT modify the 13-binding header or the Uniforms struct.
-- `plasmaBuffer[0].x` = bass, `.y` = mids, `.z` = treble. Use them.
-- `u.zoom_config.yz` = mouse position (0-1). `u.zoom_config.w` = mouse down.
-- **Alpha must carry semantic meaning** — trail age, interaction intensity, or depth mask.
+- Preserve or enhance RGBA channel usage.
+- Add JSON params if new tunable values are introduced (max 4 params mapped to zoom_params).
 
 ## Performance Constraint
 This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
@@ -319,7 +326,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 134 lines (±20%).
+4. Ensure the upgraded shader is roughly 180 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

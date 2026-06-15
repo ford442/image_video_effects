@@ -15,6 +15,11 @@ export interface WASMDiagnostics {
   lastErrorTime: string | null;
   fps: number;
   hasModule: boolean;
+  adapterInfo: string;
+  /** WebGPURenderer::InitStage of the last Initialize() attempt (0=None, 8=Ready). */
+  failedStage: number;
+  /** Human-readable reason for the last Initialize() failure, or '' if none. */
+  lastInitError: string;
 }
 
 export class WASMRenderer implements Renderer {
@@ -92,6 +97,9 @@ export class WASMRenderer implements Renderer {
       lastErrorTime: this.lastErrorTime > 0 ? new Date(this.lastErrorTime).toISOString() : null,
       fps: (WasmBridge && WasmBridge.getFPS?.()) ?? 0,
       hasModule: !!WasmBridge,
+      adapterInfo: (WasmBridge && WasmBridge.getAdapterSummary?.()) ?? '',
+      failedStage: (WasmBridge && WasmBridge.getLastInitErrorStage?.()) ?? 0,
+      lastInitError: (WasmBridge && WasmBridge.getLastInitErrorMessage?.()) ?? '',
     };
   }
 

@@ -1,14 +1,15 @@
-// ═══════════════════════════════════════════════════════════════════
-//  gen-quasicrystal  [OPTIMIZED]
+// ═══ gen-quasicrystal ═══════════════════════════════════════════════
 //  Category: generative
-//  Features: quasicrystal, aperiodic tiling, projection method,
-//            audio-reactive, hdr, slot-chain, anti-moire
-//  Upgraded: 2026-06-07 by The Optimizer
+//  Features: quasicrystal, n-fold symmetry, projection-method,
+//            audio-reactive, temporal-feedback, anti-moire, neon-glow,
+//            chromatic-aberration, aces-tone-map, semantic-alpha,
+//            slot-chain
+//  Upgraded: 2026-06-14 by The Optimizer
 // ═══════════════════════════════════════════════════════════════════
-//  Penrose tiling-inspired patterns with n-fold symmetry.
-//  Optimizations: branchless metallicColor, frequency clamping for
-//  anti-moiré at high patternDensity, named constants, reduced
-//  trig redundancy, bloom-weight alpha, dataTextureA/B chaining.
+//  Penrose tiling-inspired aperiodic patterns. Upgrades: canonical
+//  13-binding header, bounds guard, resolution-aware LOD anti-moiré,
+//  temporal feedback via dataTextureC, neon glow, generative CA, and
+//  ACES tone mapping with semantic alpha for slot-chain compositing.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -26,21 +27,50 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265;
-const TAU: f32 = 6.2831853;
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+
+// ── Core helpers ──────────────────────────────────────────────────
+fn luma(rgb: vec3<f32>) -> f32 {
+    return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
 
 fn rot2(a: f32) -> mat2x2<f32> {
-    let s = sin(a);
-    let c = cos(a);
+    let c = cos(a); let s = sin(a);
     return mat2x2<f32>(c, -s, s, c);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn neonGlow(color: vec3<f32>, intensity: f32) -> vec3<f32> {
+    let safeColor = max(color, vec3<f32>(0.0));
+    let lum = luma(safeColor);
+    let glowMask = smoothstep(0.22, 1.0, lum);
+    let chroma = normalize(safeColor + vec3<f32>(0.001)) * max(lum, 0.18);
+    let bloom = (safeColor * safeColor + chroma) * glowMask * max(intensity, 0.0);
+    return safeColor + bloom;
+}
+
+fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32) -> vec3<f32> {
+    let angle = atan2(uv.y - 0.5, uv.x - 0.5);
+    let shift = vec2<f32>(cos(angle), sin(angle)) * strength;
+    return vec3<f32>(
+        color.r * (1.0 + shift.x * 0.8),
+        color.g,
+        color.b * (1.0 - shift.y * 0.5)
+    );
+}
+
+// ── Quasicrystal ──────────────────────────────────────────────────
 fn quasicrystal(uv: vec2<f32>, n: i32, t: f32, angle: f32) -> f32 {
     var value = 0.0;
     let invN = 1.0 / f32(n);
@@ -51,7 +81,7 @@ fn quasicrystal(uv: vec2<f32>, n: i32, t: f32, angle: f32) -> f32 {
     return value * invN;
 }
 
-// Branchless tri-color metallic cycle (replaces 3-way if-ladder)
+// Branchless tri-color metallic cycle
 fn metallicColor(pattern: f32, t: f32) -> vec3<f32> {
     let gold   = vec3<f32>(1.0, 0.84, 0.0);
     let silver = vec3<f32>(0.75, 0.75, 0.75);
@@ -67,33 +97,39 @@ fn metallicColor(pattern: f32, t: f32) -> vec3<f32> {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let t = u.config.x;
-    let bass = plasmaBuffer[0].x;
+    let pixel = vec2<i32>(global_id.xy);
+    let res   = vec2<f32>(u.config.zw);
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-    let symmetry = i32(mix(5.0, 13.0, u.zoom_params.x));
-    let patternDensity = mix(3.0, 15.0, u.zoom_params.y);
+    let uv01  = vec2<f32>(pixel) / res;
+    let uv    = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
+    let time  = u.config.x;
+    let bass  = plasmaBuffer[0].x;
+    let mids  = plasmaBuffer[0].y;
+    let depthIn = textureLoad(readDepthTexture, pixel, 0).r;
+    let prev  = textureLoad(dataTextureC, pixel, 0);
+
+    let symmetry   = i32(mix(5.0, 13.0, u.zoom_params.x));
+    let density    = mix(3.0, 15.0, u.zoom_params.y);
     let colorCycle = u.zoom_params.z;
-    let projAngle = mix(0.0, TAU, u.zoom_params.w);
+    let projAngle  = mix(0.0, TAU, u.zoom_params.w);
 
-    let aspect = resolution.x / resolution.y;
-    var p = (uv - 0.5) * vec2<f32>(aspect, 1.0) * patternDensity;
-    p = rot2(t * 0.05 + projAngle) * p;
+    // Anti-moiré: scale pattern coordinate at extreme densities
+    let densityScale = mix(1.0, 0.65, smoothstep(8.0, 14.0, density));
+    let shimmerFreq  = mix(10.0, 6.0, smoothstep(8.0, 14.0, density));
 
-    // Anti-moiré: clamp wave frequency at extreme densities
-    let freq = mix(10.0, 6.0, smoothstep(8.0, 14.0, patternDensity));
+    var p = uv * density * densityScale;
+    p = rot2(time * 0.05 + projAngle) * p;
 
-    // Primary quasicrystal layer
-    let qc = quasicrystal(p, symmetry, t * 0.2, projAngle);
+    // Primary + secondary quasicrystal layers
+    let qc = quasicrystal(p, symmetry, time * 0.2, projAngle);
     let pattern = smoothstep(-0.2, 0.2, qc);
 
-    // Secondary detail layer
-    let qc2 = quasicrystal(p * 1.5 + 0.5, symmetry, t * 0.15, projAngle + 0.1);
+    let qc2 = quasicrystal(p * 1.5 + 0.5, symmetry, time * 0.15, projAngle + 0.1);
     let pattern2 = smoothstep(-0.1, 0.1, qc2);
 
     // Metallic base with audio reactivity
-    var col = metallicColor(qc + qc2, t * colorCycle) * (1.0 + bass * 0.3);
+    var col = metallicColor(qc + qc2, time * colorCycle) * (1.0 + bass * 0.3);
 
     // Gem accents — compact branchless palette
     let gemLocations = fract(qc * 5.0 + qc2 * 3.0);
@@ -111,23 +147,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += vec3<f32>(1.0, 0.95, 0.8) * edgeMask * 0.4;
 
     // Subtle shimmer
-    let shimmer = sin(p.x * freq * 2.0 + t) * sin(p.y * freq * 2.0 + t * 1.3);
+    let shimmer = sin(p.x * shimmerFreq * 2.0 + time) * sin(p.y * shimmerFreq * 2.0 + time * 1.3);
     col += vec3<f32>(0.02) * shimmer;
 
     // Vignette
-    col *= 1.0 - length(uv - 0.5) * 0.5;
+    col *= 1.0 - length(uv01 - 0.5) * 0.5;
 
-    // Depth
+    // Post-process: neon glow, generative chromatic aberration, ACES
+    col = neonGlow(col, 0.35 + mids * 0.25);
+    let caStr = 0.003 * (1.0 + bass) + depthIn * 0.001;
+    col = genChromaticShift(col, uv01, caStr);
+    col = acesToneMap(col * (0.9 + mids * 0.2));
+
+    // Temporal feedback via dataTextureC
+    let decay = 0.96;
+    let trail = mix(prev.rgb * decay, col, 0.25 + bass * 0.1);
+
+    // Depth-aware semantic alpha
     let depth = pattern * 0.5 + pattern2 * 0.3;
+    let bloom = smoothstep(0.5, 1.2, luma(col));
+    let alpha = clamp(luma(trail) * 1.2 + depth * 0.2, 0.25, 0.95);
 
-    // HDR bloom weight in alpha, premultiplied
-    let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let bloom = smoothstep(0.5, 1.2, luma);
-    let alpha = clamp(luma * 0.7 + 0.2 + bloom, 0.0, 1.0);
-    let outColor = vec4<f32>(col * alpha, alpha);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
-    textureStore(dataTextureB, vec2<i32>(global_id.xy), vec4<f32>(col, bloom));
+    textureStore(writeTexture, pixel, vec4<f32>(trail, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(trail, alpha));
+    textureStore(dataTextureB, pixel, vec4<f32>(col, bloom));
 }

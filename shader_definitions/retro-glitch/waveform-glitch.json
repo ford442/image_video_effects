@@ -2,12 +2,17 @@
   "id": "waveform-glitch",
   "name": "Waveform Glitch",
   "url": "shaders/waveform-glitch.wgsl",
-  "description": "VHS waveform glitch with head-switching noise band, CRT shadow mask, bass-driven wave intensity, temporal feedback persistence, and alpha-channel translucency blending. Alpha encodes waveform displacement magnitude * block corruption intensity.",
+  "description": "VHS waveform glitch driven by a Clifford strange attractor, domain-warped FBM, divergence-free curl flow, Voronoi F2-F1 ridge corruption, YUV chroma noise, CRT shadow mask, and temporal feedback persistence. Alpha encodes waveform displacement magnitude * block corruption intensity.",
   "features": [
     "temporal",
     "audio-reactive",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "clifford-attractor",
+    "domain-warped-fbm",
+    "curl-flow",
+    "voronoi-ridge-corruption",
+    "yuv-chroma-noise"
   ],
   "params": [
     {
@@ -58,6 +63,8 @@
     "datamosh",
     "noise",
     "fractal",
-    "crt"
+    "crt",
+    "attractor",
+    "chroma"
   ]
 }

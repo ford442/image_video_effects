@@ -3,7 +3,11 @@
 //  Category: generative
 //  Description: 3D Mandelbulb fractal raymarched with video texture mapping
 //               and audio-reactive geometry mutation.
-//  Features: raymarched, audio-reactive, mouse-driven, depth-aware
+//  Features: raymarched, audio-reactive, mouse-driven, depth-aware,
+//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
+//  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
+//  Upgraded: 2026-06-14
+//  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -67,6 +71,10 @@ fn calcNormal(p: vec3<f32>, power: f32, iterations: i32) -> vec3<f32> {
         mandelbulbDE(p + e.yxy, power, iterations) - mandelbulbDE(p - e.yxy, power, iterations),
         mandelbulbDE(p + e.yyx, power, iterations) - mandelbulbDE(p - e.yyx, power, iterations)
     ));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -165,12 +173,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         }
     }
 
-    col = clamp(col, vec3<f32>(0.0), vec3<f32>(2.0));
+    let coord = vec2<i32>(id.xy);
+
+    // ═══ CHUNK: temporal-feedback (dataTextureC → dataTextureA) ═══
+    let prev = textureLoad(dataTextureC, coord, 0);
+    col = mix(col, prev.rgb * 0.92, 0.05 + bass * 0.01);
+
+    // ═══ CHUNK: chromatic-aberration ═══
+    let caStr = 0.003 * (1.0 + bass) + glowStrength * 0.001;
+    col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
+
+    col = acesToneMap(col * 1.3);
 
     let _luma_mb = dot(clamp(col, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(0.299, 0.587, 0.114));
     let _alpha_mb = clamp(_luma_mb * 0.7 + 0.2, 0.0, 1.0);
     textureStore(writeTexture, id.xy, vec4<f32>(col, _alpha_mb));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(col, _alpha_mb));
 }
 
 fn hash(p: vec2<f32>) -> f32 {

@@ -5,7 +5,14 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "domain-warp",
+    "curl-noise",
+    "temporal-feedback",
+    "depth-aware",
+    "aces-tone-map",
+    "chromatic-aberration",
+    "semantic-alpha"
   ],
   "params": [
     {

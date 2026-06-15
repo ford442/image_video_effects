@@ -2,7 +2,7 @@
   "id": "chromatic-mosaic-projector",
   "name": "Chromatic Mosaic Projector",
   "url": "shaders/chromatic-mosaic-projector.wgsl",
-  "description": "Animated Voronoi cell mosaic with per-cell chromatic aberration, mouse gravity wells, and audio-reactive cell pulsing.",
+  "description": "Animated Voronoi cell mosaic with per-cell chromatic aberration, mouse gravity wells, audio-reactive cell pulsing, HDR ACES tone mapping, temporal trails, and dynamic blackbody color temperature.",
   "params": [
     {
       "id": "cellSize",
@@ -38,7 +38,12 @@
     "audio-reactive",
     "upgraded-rgba",
     "voronoi",
-    "chromatic-dispersion"
+    "chromatic-dispersion",
+    "aces-tone-map",
+    "ign-dither",
+    "temporal-feedback",
+    "color-temperature",
+    "depth-aware"
   ],
   "tags": [
     "filter",
@@ -47,6 +52,8 @@
     "chromatic",
     "voronoi",
     "audio-reactive",
-    "interactive"
+    "interactive",
+    "hdr",
+    "temperature"
   ]
 }
