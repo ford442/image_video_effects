@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-06-15T14:34:02.548695",
+  "naga_bin": "/home/jules/.cargo/bin/naga",
+  "total": 1,
+  "passed": 1,
+  "failed": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "file": "public/shaders/gen-astro-mechanical-quantum-furnace-engine.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "ok": true
+    }
+  ]
+}

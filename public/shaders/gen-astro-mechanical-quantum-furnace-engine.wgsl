@@ -114,8 +114,12 @@ fn map(p: vec3<f32>, time: f32, audio: f32, gearComplexity: f32, mouseXY: vec2<f
 
     // KIFS Fractal Gears
     var q = pos;
-    q.xz = rot(time * 0.2) * q.xz;
-    q.xy = rot(time * 0.15) * q.xy;
+    let new_xz1 = rot(time * 0.2) * vec2<f32>(q.x, q.z);
+    q.x = new_xz1.x;
+    q.z = new_xz1.y;
+    let new_xy = rot(time * 0.15) * vec2<f32>(q.x, q.y);
+    q.x = new_xy.x;
+    q.y = new_xy.y;
 
     let iterations = i32(mix(2.0, 6.0, gearComplexity));
     var scale = 1.0;
@@ -130,7 +134,9 @@ fn map(p: vec3<f32>, time: f32, audio: f32, gearComplexity: f32, mouseXY: vec2<f
         scale *= 1.4;
 
         // Twist KIFS
-        q.xz = rot(0.2) * q.xz;
+        let new_xz2 = rot(0.2) * vec2<f32>(q.x, q.z);
+        q.x = new_xz2.x;
+        q.z = new_xz2.y;
     }
 
     var dGears = sdTorus(q, vec2<f32>(3.0, 0.5)) / scale;
