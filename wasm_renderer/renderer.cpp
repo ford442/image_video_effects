@@ -545,9 +545,8 @@ bool WebGPURenderer::CreateDevice() {
     // Logs the reason so developers know why rendering stopped.
     deviceDesc.deviceLostCallbackInfo = WGPUDeviceLostCallbackInfo{
         nullptr,
-        WGPUCallbackMode_AllowSpontaneous,
         [](WGPUDevice const* /*device*/, WGPUDeviceLostReason reason,
-           WGPUStringView message, void* /*userdata1*/, void* /*userdata2*/) {
+           WGPUStringView message, void* userdata1, void* /*userdata2*/) {
             const char* reasonStr = "Unknown";
             switch (reason) {
                 case WGPUDeviceLostReason_Unknown:     reasonStr = "Unknown";     break;
