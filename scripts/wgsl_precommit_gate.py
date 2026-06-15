@@ -37,7 +37,12 @@ from bindgroup_checker import parse_shader, TEMPLATE_FILES  # noqa: E402
 
 
 PROJECT_ROOT = _SCRIPTS_DIR.parent
-NAGA_BIN = Path("/root/.cargo/bin/naga")
+import shutil
+_naga_path = shutil.which("naga")
+if _naga_path:
+    NAGA_BIN = Path(_naga_path)
+else:
+    NAGA_BIN = Path.home() / ".cargo" / "bin" / "naga"
 REPORT_PATH = PROJECT_ROOT / "reports" / "wgsl_precommit_report.json"
 
 # Patterns that identify non-compute shaders the gate should ignore.
@@ -247,7 +252,7 @@ def main() -> int:
         print("No changed .wgsl files to check.")
         return 0
 
-    if not NAGA_BIN.exists():
+    if not NAGA_BIN.exists() and not shutil.which("naga"):
         print(
             f"ERROR: naga not found at {NAGA_BIN}. Install with: cargo install naga-cli",
             file=sys.stderr,
