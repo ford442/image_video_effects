@@ -1,8 +1,10 @@
 // ----------------------------------------------------------------
 // Quantum-Fluorescent Nebula-Anemone
 // Category: generative
+// Organic quantum-nebula with fluorescent anemone tentacles.
+// Mouse/clicks create disturbance that makes tentacles reach + pulse.
 // ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,219 +18,153 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
+    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    zoom_params: vec4<f32>,  // x=Tentacle Reach, y=Fluorescence, z=Nebula Density, w=Quantum Freq
     ripples: array<vec4<f32>, 50>,
 };
 
-fn hash3(p: vec3<f32>) -> vec3<f32> {
-    var q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
-    q += dot(q, q.yxz + 33.33);
-    return fract((q.xxy + q.yxx) * q.zyx);
+fn hash(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
-fn hash13(p3: vec3<f32>) -> f32 {
-    var p = fract(p3 * 0.1031);
-    p += dot(p, p.zyx + 31.32);
-    return fract((p.x + p.y) * p.z);
+fn hash3(p: vec3<f32>) -> f32 {
+    var p3 = fract(p * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
-fn rot2(a: f32) -> mat2x2<f32> {
+fn noise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let a = hash(i);
+    let b = hash(i + vec2<f32>(1.0, 0.0));
+    let c = hash(i + vec2<f32>(0.0, 1.0));
+    let d = hash(i + vec2<f32>(1.0, 1.0));
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+fn fbm(p: vec2<f32>) -> f32 {
+    var value = 0.0;
+    var amp = 0.5;
+    var freq = 1.0;
+    for (var i = 0; i < 6; i++) {
+        value += amp * noise(p * freq);
+        amp *= 0.5;
+        freq *= 2.0;
+    }
+    return value;
+}
+
+fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     let c = cos(a);
     return mat2x2<f32>(c, -s, s, c);
 }
 
-fn sdSphere(p: vec3<f32>, s: f32) -> f32 {
-    return length(p) - s;
-}
-
-fn sdCappedCylinder(p: vec3<f32>, h: f32, r: f32) -> f32 {
-  let d = abs(vec2<f32>(length(p.xz),p.y)) - vec2<f32>(h,r);
-  return min(max(d.x,d.y),0.0) + length(max(d,vec2<f32>(0.0)));
-}
-
-fn fbm(p_in: vec3<f32>) -> f32 {
-    var p = p_in;
-    var f = 0.0;
-    var amp = 0.5;
-    for(var i = 0; i < 4; i++) {
-        f += amp * hash13(p);
-        p *= 2.0;
-        amp *= 0.5;
-    }
-    return f;
-}
-
-fn smax(a: f32, b: f32, k: f32) -> f32 {
-    let h = clamp(0.5 + 0.5*(a-b)/k, 0.0, 1.0);
-    return mix(b, a, h) + k*h*(1.0-h);
-}
-
-fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = max(k - abs(a-b), 0.0) / k;
-    return min(a, b) - h*h*h*k*(1.0/6.0);
-}
-
-fn map(p: vec3<f32>) -> f32 {
-    let time = u.config.x;
-    let audio = u.config.y;
-    let tentacle_density = u.zoom_params.y; // 0.0 to 1.0
-    let mouse_y = u.zoom_config.y;
-    let mouse_z = u.zoom_config.z;
-
-    var pos = p;
-
-    // Localized gravity well (mouse interaction)
-    // Map mouse range
-    let mPos = vec3<f32>(0.0, mouse_y * 10.0 - 5.0, mouse_z * 10.0 - 5.0);
-    let distToMouse = length(pos - mPos);
-    if(distToMouse < 4.0) {
-        let pull = 1.0 - (distToMouse / 4.0);
-        pos = mix(pos, mPos, pull * 0.3 * (1.0 + audio*2.0));
-    }
-
-    // Central Sphere Anemone Body
-    var d = sdSphere(pos, 1.5 + audio * 0.5);
-
-    // Tentacles (radial repetition)
-    let num_tentacles = f32(10 + i32(tentacle_density * 40.0));
-    let angle_step = 6.2831853 / num_tentacles;
-
-    // Twist domain
-    let a = atan2(pos.z, pos.x);
-    let r = length(pos.xz);
-
-    // Convert back to polar repetition domain
-    let a_mod = a - angle_step * floor(a / angle_step) - angle_step * 0.5;
-
-    // Reprojected local pos
-    var tPos = vec3<f32>(r * cos(a_mod), pos.y, r * sin(a_mod));
-
-    // Translate out
-    tPos.x -= 1.5;
-
-    // Domain warp twisting motion
-    let freq = 1.5 + audio * 3.0;
-    let amp = 0.5 + audio;
-
-    tPos.y += sin(tPos.x * freq - time * 2.0) * amp;
-    tPos.z += cos(tPos.x * freq * 0.8 + time * 1.5) * amp;
-
-    // Tapering cylinder
-    let h = 3.0 + fbm(pos * 0.5) * 2.0;
-    let r_tentacle = 0.3 * (1.0 - clamp(tPos.x / h, 0.0, 1.0));
-
-    let dt = sdCappedCylinder(vec3<f32>(tPos.x - h * 0.5, tPos.y, tPos.z), h * 0.5, r_tentacle);
-
-    d = smin(d, dt, 0.8);
-
-    // Small noise displacement on surface
-    d -= fbm(pos * 4.0 + time) * 0.1 * (1.0 + audio);
-
-    return d;
-}
-
-fn getNormal(p: vec3<f32>) -> vec3<f32> {
-    let e = vec2<f32>(0.001, 0.0);
-    return normalize(vec3<f32>(
-        map(p + e.xyy) - map(p - e.xyy),
-        map(p + e.yxy) - map(p - e.yxy),
-        map(p + e.yyx) - map(p - e.yyx)
-    ));
-}
-
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let dims = textureDimensions(writeTexture);
-    let id = vec2<f32>(f32(global_id.x), f32(global_id.y));
-
-    if (global_id.x >= dims.x || global_id.y >= dims.y) {
-        return;
-    }
-
-    let res = vec2<f32>(f32(dims.x), f32(dims.y));
-    var uv = (id - 0.5 * res) / res.y;
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let size = vec2<f32>(u.config.z, u.config.w);
+    let uv = vec2<f32>(gid.xy) / size;
+    if (gid.x >= u32(size.x) || gid.y >= u32(size.y)) { return; }
 
     let time = u.config.x;
-    let audio = u.config.y;
+    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    let tentacleReach = u.zoom_params.x;
+    let fluorescence = u.zoom_params.y;
+    let nebulaDensity = u.zoom_params.z;
+    let quantumFreq = u.zoom_params.w;
 
-    let fl_intensity = u.zoom_params.x;
-    let audio_reactivity = u.zoom_params.z;
-    let nebula_density = u.zoom_params.w;
+    // Read previous frame
+    var col = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Camera
-    let ro = vec3<f32>(cos(time * 0.2) * 8.0, sin(time * 0.1) * 3.0, sin(time * 0.2) * 8.0);
-    let ta = vec3<f32>(0.0, 0.0, 0.0);
+    // === Nebula Base (volumetric clouds) ===
+    var p = uv * 6.0 - 3.0;
+    p += vec2<f32>(sin(time * 0.15), cos(time * 0.2)) * 0.8;
 
-    let ww = normalize(ta - ro);
-    let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
-    let vv = normalize(cross(uu, ww));
+    let nebula = fbm(p * 1.2 + time * vec2<f32>(0.1, 0.15)) * nebulaDensity;
+    let nebula2 = fbm(p * 2.4 - time * vec2<f32>(0.2, 0.1)) * (nebulaDensity * 0.6);
 
-    let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
+    // === Quantum Interference Field ===
+    let qWave = sin(length(p) * quantumFreq + time * 6.0) *
+                cos(p.x * quantumFreq * 1.3 - time * 4.0) *
+                sin(p.y * quantumFreq * 0.8 + time * 5.0);
+    let quantum = (qWave * 0.5 + 0.5) * 0.8;
 
-    // Raymarching
-    var dO = 0.0;
-    var dS = 0.0;
-    var p = vec3<f32>(0.0);
+    // === Fluorescent Anemone Tentacles ===
+    var anemone = 0.0;
+    var tentacleColor = vec3<f32>(0.0);
 
-    for(var i=0; i<100; i++) {
-        p = ro + rd * dO;
-        dS = map(p);
-        if(dS < 0.001 || dO > 20.0) { break; }
-        dO += dS * 0.7; // slight step reduction for domain warping
+    for (var i = 0; i < 18; i++) {
+        let angle = f32(i) * 3.14159 * 2.0 / 18.0 + time * 0.35;
+        let tentacleP = rot(angle) * p;
+
+        // Tentacle shape with sway
+        let sway = sin(time * 3.0 + f32(i) * 1.7) * 0.4;
+        let dist = length(tentacleP + vec2<f32>(sway, 0.0)) - 1.6;
+
+        // Reach toward mouse
+        let mouseDir = normalize(mouse - uv);
+        let reach = tentacleReach * 0.8;
+        let mouseInfluence = max(0.0, 1.0 - length(uv - mouse) * 3.5) * reach;
+
+        let tent = exp(-dist * dist * (3.5 - mouseInfluence * 1.2));
+        anemone += tent * 0.75;
+
+        // Fluorescent color per tentacle
+        let hueShift = f32(i) * 0.07 + time * 0.4;
+        let tentColor = vec3<f32>(
+            sin(hueShift) * 0.5 + 0.5,
+            sin(hueShift + 2.1) * 0.5 + 0.5,
+            sin(hueShift + 4.2) * 0.5 + 0.5
+        );
+        tentacleColor += tentColor * tent * fluorescence;
     }
 
-    var col = vec3<f32>(0.0);
-
-    // Nebula Background (Volumetric rendering integration)
-    var nebula = vec3<f32>(0.0);
-    var dO_nebula = 0.0;
-    for(var j=0; j<40; j++) {
-        let p_neb = ro + rd * dO_nebula;
-        let den = fbm(p_neb * 0.3 + time * 0.1);
-        if(den > 0.4) {
-            let n_col = mix(vec3<f32>(0.1, 0.0, 0.3), vec3<f32>(0.0, 0.5, 0.5), den);
-            nebula += n_col * 0.02 * nebula_density * (1.0 + audio * audio_reactivity);
+    // === Ripple Interaction (tentacles react) ===
+    var rippleInfluence = 0.0;
+    for (var i = 0; i < 20; i++) {
+        let r = u.ripples[i];
+        let d = length(uv - r.xy);
+        if (d < 0.35) {
+            rippleInfluence += (0.35 - d) * r.z * 2.5;
         }
-        dO_nebula += 0.5;
     }
 
-    col += nebula;
+    // === Final Composition ===
+    var finalColor = col * 0.88; // gentle persistence
 
-    if(dO < 20.0) {
-        let n = getNormal(p);
-        let l = normalize(vec3<f32>(2.0, 5.0, 3.0));
+    // Nebula glow
+    finalColor += vec4<f32>(nebula * vec3<f32>(0.4, 0.2, 0.9), 1.0) * 0.55;
+    finalColor += vec4<f32>(nebula2 * vec3<f32>(0.6, 0.3, 1.0), 1.0) * 0.4;
 
-        let diff = max(dot(n, l), 0.0);
-        let amb = 0.2;
+    // Quantum sparkles
+    finalColor += vec4<f32>(quantum * vec3<f32>(1.0, 0.8, 1.5), 1.0) * 0.35;
 
-        // Quantum-fluorescent bioluminescence (Subsurface approximation)
-        var sss = 0.0;
-        for(var s=1; s<5; s++) {
-            let dist = f32(s) * 0.2;
-            let sp = p + n * dist;
-            sss += max(0.0, dist - map(sp)) / dist;
-        }
-        sss *= 0.1;
+    // Anemone tentacles + fluorescence
+    finalColor += vec4<f32>(tentacleColor, 1.0) * 0.85;
+    finalColor += vec4<f32>(anemone * vec3<f32>(0.9, 0.5, 1.6), 1.0) * 0.7;
 
-        // Color maps zoom_params.x to neon gradient
-        let neon_color = mix(vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), fl_intensity);
-        let base_color = mix(vec3<f32>(0.05, 0.0, 0.1), neon_color, audio * audio_reactivity);
+    // Mouse attraction glow
+    let mouseDist = length(uv - mouse);
+    let mouseGlow = exp(-mouseDist * 12.0) * 1.2;
+    finalColor += vec4<f32>(1.0, 0.4, 1.8, 1.0) * mouseGlow * fluorescence;
 
-        col = base_color * (diff + amb) + neon_color * sss * 2.0 * fl_intensity;
+    // Ripple boost
+    finalColor += vec4<f32>(0.6, 0.2, 1.4, 1.0) * rippleInfluence * 0.6;
 
-        // Fog
-        col = mix(col, nebula, 1.0 - exp(-0.02 * dO * dO));
-    }
+    // Gentle chromatic aberration on edges
+    finalColor.r += 0.015 * sin(time * 2.0 + uv.y * 30.0);
+    finalColor.b += 0.015 * cos(time * 2.3 + uv.x * 30.0);
 
-    // Tone mapping
-    col = col / (1.0 + col);
-    col = pow(col, vec3<f32>(0.4545));
+    finalColor = clamp(finalColor, vec4<f32>(0.0), vec4<f32>(1.8));
+    finalColor = pow(finalColor, vec4<f32>(0.92)); // slight gamma lift for glow
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    textureStore(writeTexture, gid.xy, finalColor);
 }

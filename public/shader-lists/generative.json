@@ -13370,63 +13370,6 @@
     "url": "shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl"
   },
   {
-    "id": "gen-quantum-fluorescent-nebula-anemone",
-    "name": "Quantum-Fluorescent Nebula-Anemone",
-    "url": "shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
-    "description": "A hyper-organic, glowing cosmic sea-anemone suspended in a volumetric deep-space nebula, whose translucent quantum tentacles ripple and mathematically divide in perfect sync with ambient acoustic frequencies.",
-    "tags": [
-      "organic",
-      "nebula",
-      "quantum",
-      "particles",
-      "audio-reactive"
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-driven",
-      "audio-reactive"
-    ],
-    "category": "generative",
-    "params": [
-      {
-        "id": "fluorescenceIntensity",
-        "name": "Fluorescence Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x"
-      },
-      {
-        "id": "tentacleDensity",
-        "name": "Tentacle Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y"
-      },
-      {
-        "id": "audioReactivity",
-        "name": "Audio Reactivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z"
-      },
-      {
-        "id": "nebulaDensity",
-        "name": "Nebula Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w"
-      }
-    ]
-  },
-  {
     "id": "gen-quantum-foam-alpha",
     "name": "Quantum Foam Alpha",
     "url": "shaders/gen-quantum-foam-alpha.wgsl",
@@ -20997,6 +20940,63 @@
       {
         "id": "param4",
         "name": "Temperature / Blend",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
+    "id": "gen-quantum-fluorescent-nebula-anemone",
+    "name": "Quantum-Fluorescent Nebula-Anemone",
+    "url": "shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
+    "category": "generative",
+    "description": "A hyper-organic, glowing cosmic sea-anemone suspended in a volumetric deep-space nebula, whose translucent quantum tentacles ripple and mathematically divide in perfect sync with ambient acoustic frequencies.",
+    "tags": [
+      "organic",
+      "nebula",
+      "quantum",
+      "particles",
+      "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "fluorescenceIntensity",
+        "name": "Fluorescence Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "tentacleDensity",
+        "name": "Tentacle Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "audioReactivity",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "nebulaDensity",
+        "name": "Nebula Density",
         "default": 0.5,
         "min": 0,
         "max": 1,
