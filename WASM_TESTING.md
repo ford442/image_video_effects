@@ -15,15 +15,34 @@ that it works end-to-end.
    # This produces public/wasm/pixelocity_wasm.{js,wasm}
    ```
 
-   The build script also copies `wasm_bridge.js` into `public/wasm/`.
-   If you skip this step the WASM renderer will fail to initialise and the app
-   falls back to the TypeScript WebGPU renderer automatically.
+   The build script also copies `wasm_bridge.js` into `public/wasm/` and
+   `src/wasm/`. If you skip this step the WASM renderer will fail to initialise
+   and the app falls back to the TypeScript WebGPU renderer automatically.
 
-2. Start the development server:
+---
+
+2. **Start the development server:**
 
    ```bash
    npm start
    ```
+
+---
+
+## Current known reliability caveats (June 2026)
+
+The C++ renderer has a **real compute + present pipeline** (`Render()` →
+`PresentToSurface()`). The June 2026 reliability pass ([#799](https://github.com/ford442/image_video_effects/issues/799),
+[roadmap](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584))
+hardened init/format/limits (#817–#822 ✅). A new contributor picking up WASM
+work should read:
+
+- [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) — accurate gap analysis + tracking table
+- [`wasm_renderer/STATUS.md`](./wasm_renderer/STATUS.md) — implementation status + remaining glue work
+
+**Not yet done:** `RendererManager` WASM forwarding, `setInputSource` wiring,
+live-browser verification on edge GPUs. These are separate from the #817–#822
+C++ reliability batch.
 
 ---
 
@@ -100,7 +119,12 @@ console.log(diagnostics);
     "errorCount": 0,
     "lastErrorTime": null,
     "fps": 60,
-    "hasModule": true
+    "hasModule": true,
+    "failedStage": 8,
+    "failedStageName": "Ready",
+    "lastInitError": "",
+    "lastLoadError": null,
+    "adapterInfo": "vendor=... | surfaceFormat=rgba8unorm"
   }
 }
 ```
@@ -121,9 +145,18 @@ console.log(bridgeDiag);
   "errorCount": 0,
   "lastErrorTime": null,
   "fps": 59.8,
-  "hasModule": true
+  "hasModule": true,
+  "failedStage": 8,
+  "failedStageName": "Ready",
+  "lastInitError": "",
+  "lastLoadError": null,
+  "initTime": "245ms",
+  "adapterInfo": "..."
 }
 ```
+
+On init failure, check `failedStageName` (e.g. `"Adapter"`, `"Surface"`) and
+`lastLoadError` / `lastInitError` for the C++ reason — no more generic Dawn guesses.
 
 ---
 
@@ -272,14 +305,13 @@ These metrics can be used to detect performance regressions.
 
 ---
 
-## Known Limitations (May 2026)
+## Known Limitations (June 2026)
 
-- The WASM binary is **not committed** to the repository. You must build it locally
-  with Emscripten before testing.
-- Automated Playwright tests require a successful WASM build. If the build fails in CI,
-  E2E tests will be skipped (see `test-wasm-e2e` job conditions).
-- Performance benchmarks vs the TypeScript WebGPU renderer can be extracted from test logs
-  but are not yet automatically compared or reported as pass/fail thresholds.
+- The WASM binary may not be committed; build locally with Emscripten before testing.
+- `build.sh` exits 0 when `emcc` is missing — run `npm run wasm:build` on a machine with emsdk for a real build.
+- Automated Playwright tests require a successful WASM build.
+- `RendererManager` does not forward all slot/param APIs to WASM yet (see GAP analysis §3.2).
+- Performance benchmarks vs the TypeScript renderer are not yet automated.
 
 ---
 

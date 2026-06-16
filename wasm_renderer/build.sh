@@ -105,9 +105,11 @@ emcc -std=c++20 -O2 \
     -o "$BUILD_DIR/pixelocity_wasm.js"
 
 # Copy output to public folder (repo-relative path)
-PUBLIC_WASM="$SCRIPT_DIR/../public/wasm"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PUBLIC_WASM="$REPO_ROOT/public/wasm"
 mkdir -p "$PUBLIC_WASM"
 cp "$BUILD_DIR/pixelocity_wasm.js" "$BUILD_DIR/pixelocity_wasm.wasm" "$PUBLIC_WASM/"
 cp "$SCRIPT_DIR/wasm_bridge.js" "$PUBLIC_WASM/"
+cp "$SCRIPT_DIR/wasm_bridge.js" "$REPO_ROOT/src/wasm/wasm_bridge.js"
 
-echo "✅ WASM build complete! Output in public/wasm/"
+echo "✅ WASM build complete! Output in public/wasm/ and src/wasm/"

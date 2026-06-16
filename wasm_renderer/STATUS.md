@@ -13,11 +13,11 @@ an early-development snapshot and should **not** be treated as authoritative.
 
 > **Note on "Phase 3 Complete":** this refers to the compute + present pipeline
 > (shaders run, output reaches the canvas via `PresentToSurface`). It does
-> **not** mean the renderer is fully hardened — see
-> [Remaining Work / Reliability](#remaining-work--reliability-june-2026) below
-> for the init/format/limits handshake issues tracked for June 2026, and the
-> [C++ Solidification Tracking table](../WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06)
-> in `WASM_RENDERER_GAP_ANALYSIS.md` for current status.
+> **not** mean end-to-end usability is done — see
+> [Remaining Work / Reliability](#remaining-work--reliability-june-2026) for
+> integration glue, live-browser verification, and the
+> [C++ Solidification Tracking](#c-solidification-tracking-2026-06) table
+> (init/format/limits handshake hardened in #817–#822).
 
 ### What Is Implemented
 
@@ -41,17 +41,18 @@ an early-development snapshot and should **not** be treated as authoritative.
 | RAII resource management | ✅ Complete |
 | Error handling & validation | ✅ Complete (init error paths, structured diagnostics — #822) |
 | TypeScript wrapper (`WASMRenderer.ts`) | ✅ Complete |
-| `wasm_bridge.js` / `.d.ts` glue | ✅ Complete for the app-facing copy (`src/wasm/wasm_bridge.js`, incl. #822 diagnostics exports); 🔶 `wasm_renderer/wasm_bridge.js` dev copy still ~190 lines out of sync — #821 |
+| `wasm_bridge.js` / `.d.ts` glue | ✅ Complete — canonical `wasm_renderer/wasm_bridge.js` synced to `src/wasm/` + `public/wasm/` (#821 ✅) |
 
 ### What Is Not Yet Done
 
 | Item | Notes |
 |------|-------|
-| #821 — full `wasm_bridge.js` sync | `wasm_renderer/wasm_bridge.js` (dev copy) and `src/wasm/wasm_bridge.js` (app-facing) still differ; each has exports/diagnostics the other lacks |
-| Build artefacts in `public/wasm/` | Requires Emscripten SDK; not committed to repo |
-| Full parity test suite | See [`WASM_TESTING.md`](../WASM_TESTING.md) for manual test plan |
+| `RendererManager` WASM forwarding | `setSlotShader`, `updateSlotParams` not forwarded to WASM — see GAP §3.2 |
+| `setInputSource` app wiring | Never called from App/WebGPUCanvas — generative mode unreachable for WASM |
+| Build artefacts in `public/wasm/` | Requires Emscripten SDK locally; `build.sh` exits 0 without `emcc` |
+| Full parity test suite | See [`WASM_TESTING.md`](../WASM_TESTING.md) |
 | Performance benchmarking vs JS renderer | Not yet formally measured |
-| Live verification of June 2026 reliability fixes | #817/#818/#819/#820/#822 landed in code; needs a real-browser smoke test once `build.sh` runs outside the sandbox (see `WASM_SMOKE_TEST.md`) |
+| Live verification on edge GPUs | June 2026 reliability fixes need real-browser smoke (`WASM_SMOKE_TEST.md`) |
 
 ---
 
@@ -77,13 +78,25 @@ Original dependency-ordered PR sequence for this body of work:
 4. **#822** — Unified init error paths, RAII cleanup on every failure, structured diagnostics
 5. **#823** — This documentation refresh
 
-**Current status:** #818, #820, #817, #819, and #822 have landed (verified in
-`renderer.cpp`). **#821 is partial** — the app-facing bridge has the new
-diagnostics exports, but the two `wasm_bridge.js` copies still differ by
-~190 lines, so full sync is still open. #823 (this doc pass) is in progress.
+**Current status:** #817–#822 have landed (verified in `renderer.cpp` and
+byte-identical bridge copies). #823 (this doc pass) is complete. Remaining work
+is integration glue and live-browser verification — see
+[`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md) §3.2–3.4.
 
-See [`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md) for the
-full before/after analysis and current per-issue status.
+### C++ Solidification Tracking (2026-06)
+
+| Issue | Status | Description |
+|-------|--------|-------------|
+| [#821](https://github.com/ford442/image_video_effects/issues/821) | ✅ | Bridge sync |
+| [#818](https://github.com/ford442/image_video_effects/issues/818) | ✅ | Format negotiation (`getPreferredCanvasFormat()`) |
+| [#820](https://github.com/ford442/image_video_effects/issues/820) | ✅ | Fatal surface creation |
+| [#817](https://github.com/ford442/image_video_effects/issues/817) | ✅ | Adapter query/log |
+| [#819](https://github.com/ford442/image_video_effects/issues/819) | ✅ | `requiredLimits` validation |
+| [#822](https://github.com/ford442/image_video_effects/issues/822) | ✅ | Init hardening + structured diagnostics |
+| [#823](https://github.com/ford442/image_video_effects/issues/823) | ✅ | WASM docs refresh |
+
+Full line references and context:
+[`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06).
 
 ---
 
@@ -116,5 +129,5 @@ window.__rendererManager?.switchRenderer('wasm');
 ```bash
 cd wasm_renderer
 ./build.sh        # requires Emscripten SDK (emsdk)
-# outputs: public/wasm/pixelocity_wasm.{js,wasm}
+# outputs: public/wasm/pixelocity_wasm.{js,wasm} + synced wasm_bridge.js in public/wasm/ and src/wasm/
 ```

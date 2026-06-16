@@ -16,12 +16,11 @@ Provides an alternative to the JavaScript WebGPU renderer with potential perform
 - Image loading from JS
 - TypeScript integration
 
-⚠️ **See [Current known reliability caveats](#current-known-reliability-caveats-june-2026)
-below** — the compute + present pipeline above is implemented, and the June
-2026 reliability pass (#817/#818/#819/#820/#822) has hardened the
-init/format/limits handshake around it. **#821 (bridge sync) is still
-partial** — read the caveats section before assuming the dev-copy
-`wasm_renderer/wasm_bridge.js` matches the app-facing bridge.
+⚠️ **Reliability caveats (June 2026)** — see
+[Current known reliability caveats](#current-known-reliability-caveats-june-2026).
+The compute + present pipeline is implemented; init/format/limits handshake
+was hardened in #817–#822. Remaining gaps are integration glue and live-browser
+verification, not missing presentation code.
 
 ## Architecture
 
@@ -216,17 +215,23 @@ window.__rendererManager?.getDiagnostics()
 ```json
 {
   "rendererType": "wasm",
-  "metrics": { "fps": 60, "isWASM": true, ... },
   "wasm": {
     "initialized": true,
-    "initAttempts": 1,
-    "errorCount": 0,
-    "lastErrorTime": null,
+    "failedStage": 8,
+    "failedStageName": "Ready",
+    "lastInitError": "",
+    "lastLoadError": null,
+    "adapterInfo": "vendor=...",
+    "loadErrorCount": 0,
+    "initTime": "125ms",
     "fps": 60,
     "hasModule": true
   }
 }
 ```
+
+On failure: `failedStageName` names the C++ stage (`Adapter`, `Surface`, etc.);
+`lastLoadError` includes `[StageName] message` from the bridge.
 
 ### WASM Bridge Diagnostics
 
@@ -322,35 +327,32 @@ Quick smoke test:
 
 ## Current known reliability caveats (June 2026)
 
-The compute + present pipeline described above is real and working
-(`Render()` → `PresentToSurface()` in `renderer.cpp`). The June 2026 work
-(tracked under [#799](https://github.com/ford442/image_video_effects/issues/799),
-roadmap comment [here](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584))
-hardened the init/format/limits handshake around it. **#818, #820, #817,
-#819, and #822 have landed**; **#821 is partial**:
+The compute + present pipeline is real (`Render()` → `PresentToSurface()` in
+`renderer.cpp:1725`; acquire/render-pass/blit at `:924-1000`). The June 2026
+C++ reliability pass ([#799](https://github.com/ford442/image_video_effects/issues/799),
+[roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584))
+hardened the init/format/limits handshake:
 
-- **#818 — Format negotiation** ✅: surface/pipeline format is now negotiated
-  via `getPreferredCanvasFormat()` instead of hardcoded `BGRA8Unorm`.
-- **#820 — Fatal surface failure** ✅: surface-creation failure is now a fatal
-  init error instead of leaving the renderer half-initialized.
-- **#817 / #819 — Adapter & limits** ✅: adapter info/limits are now queried
-  and logged, with explicit `requiredLimits`/validation at device creation.
-- **#822 — Init error paths** ✅: `Initialize()` now has unified error paths
-  with RAII cleanup (`Shutdown()`) on every failure, plus structured
-  diagnostics (`getLastInitErrorStage()` / `getLastInitErrorMessage()`)
-  surfaced to JS via `WASMRenderer.getDiagnostics()`.
-- **#821 — Bridge sync** 🔶 **partial**: `src/wasm/wasm_bridge.js` (the copy
-  actually imported by the app via `WASMRenderer.ts`) now exports the new
-  #817/#822 diagnostics, but it still differs from the dev/reference copy
-  `wasm_renderer/wasm_bridge.js` by ~190 lines (each has helpers/diagnostics
-  the other lacks). Full reconciliation is still open and is the last item in
-  this June 2026 reliability pass.
+| Issue | Status | What it fixed |
+|-------|--------|---------------|
+| [#821](https://github.com/ford442/image_video_effects/issues/821) | ✅ | Bridge sync — `wasm_renderer/wasm_bridge.js` → `src/wasm/` + `public/wasm/` |
+| [#818](https://github.com/ford442/image_video_effects/issues/818) | ✅ | `getPreferredCanvasFormat()` instead of hardcoded BGRA |
+| [#820](https://github.com/ford442/image_video_effects/issues/820) | ✅ | Fatal surface-creation failure |
+| [#817](https://github.com/ford442/image_video_effects/issues/817) | ✅ | Adapter info/limits query + logging |
+| [#819](https://github.com/ford442/image_video_effects/issues/819) | ✅ | Explicit `requiredLimits` + early validation |
+| [#822](https://github.com/ford442/image_video_effects/issues/822) | ✅ | Unified init errors, RAII cleanup, `getLastInitErrorStage`/`Message` → JS |
 
-Current per-issue status is tracked in the
-[C++ Solidification Tracking table](../WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06)
-in `WASM_RENDERER_GAP_ANALYSIS.md`. See also
-[`STATUS.md`](STATUS.md#remaining-work--reliability-june-2026) for the
-dependency-ordered PR sequence.
+**Still open (not #817–#822):**
+
+- `RendererManager` does not forward slot/param changes to WASM
+- App never calls `setInputSource` — generative mode unreachable for WASM
+- `build.sh` exits 0 when `emcc` is missing (silent skip on machines without emsdk)
+- Live-browser smoke on edge GPUs not yet formally verified
+
+Full tracking:
+[C++ Solidification Tracking](../WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06)
+in `WASM_RENDERER_GAP_ANALYSIS.md`. PR sequence and status:
+[`STATUS.md`](STATUS.md#remaining-work--reliability-june-2026).
 
 ## Roadmap
 
@@ -371,12 +373,9 @@ dependency-ordered PR sequence.
 - [x] Video recording
 - [x] RAII resource management
 - [x] Error handling and validation
-- [ ] Bridge sync between `src/wasm/` and `wasm_renderer/` (#821, partial — app-facing copy has new diagnostics, ~190-line diff remains)
-- [x] Surface/pipeline format negotiation via `getPreferredCanvasFormat()` (#818)
-- [x] Fatal surface-creation failure handling (#820)
-- [x] Adapter info/limits query + logging (#817)
-- [x] Explicit `requiredLimits` + early validation (#819)
+- [x] Init/format/limits handshake (#817–#820: adapter, limits, format, fatal surface)
 - [x] Unified init error paths + structured diagnostics (#822)
+- [x] Bridge sync `src/wasm/` ↔ `wasm_renderer/` (#821)
 - [ ] Formal performance benchmarks vs JS renderer
 - [ ] Full automated test suite
 - [ ] Live-browser smoke test of June 2026 reliability fixes (`build.sh` doesn't run in this sandbox)

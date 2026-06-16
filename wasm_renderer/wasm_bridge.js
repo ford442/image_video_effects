@@ -1,3 +1,4 @@
+// SOURCE OF TRUTH — copied to src/wasm/ and public/wasm/ by build.sh. Edit here only.
 /**
  * Pixelocity WASM Renderer Bridge
  *
@@ -31,11 +32,59 @@ const state = {
   initEndTime: 0,
 };
 
+/** Maps WebGPURenderer::InitStage (C++) to a readable name. */
+const INIT_STAGE_NAMES = {
+  0: 'None',
+  1: 'Instance',
+  2: 'Adapter',
+  3: 'Device',
+  4: 'Surface',
+  5: 'Resources',
+  6: 'BindGroups',
+  7: 'Pipeline',
+  8: 'Ready',
+};
+
+/**
+ * Read structured init-failure diagnostics exported from C++ (main.cpp).
+ * Safe to call before or after init — returns empty defaults when unavailable.
+ */
+function readCppInitDiagnostics() {
+  if (!wasmModule || typeof wasmModule.ccall !== 'function') {
+    return { stage: 0, stageName: 'None', message: '', adapterSummary: '' };
+  }
+
+  const stage = wasmModule.ccall('getLastInitErrorStage', 'number', [], []) ?? 0;
+  const message = wasmModule.ccall('getLastInitErrorMessage', 'string', [], []) ?? '';
+  const adapterSummary = wasmModule.ccall('getAdapterSummary', 'string', [], []) ?? '';
+
+  return {
+    stage,
+    stageName: INIT_STAGE_NAMES[stage] ?? `Stage${stage}`,
+    message,
+    adapterSummary,
+  };
+}
+
+/**
+ * Build a human-readable init failure string from C++ stage + message.
+ */
+function formatCppInitFailure(cpp = readCppInitDiagnostics()) {
+  if (cpp.message) {
+    return `[${cpp.stageName}] ${cpp.message}`;
+  }
+  if (cpp.stage > 0 && cpp.stage < 8) {
+    return `C++ initWasmRenderer failed at stage ${cpp.stageName} (no detailed message)`;
+  }
+  return 'C++ initWasmRenderer returned 0';
+}
+
 /**
  * Get diagnostic information about WASM bridge status
  * @returns {Object} Diagnostic data
  */
 export function getDiagnostics() {
+  const cpp = readCppInitDiagnostics();
   return {
     initialized: state.initialized,
     hasModule: wasmModule !== null,
@@ -46,6 +95,10 @@ export function getDiagnostics() {
     lastLoadError: state.lastLoadError,
     initTime: state.initEndTime > 0 ? `${state.initEndTime - state.initStartTime}ms` : 'pending',
     loadPath: canvas ? `${window.location.origin}/wasm/` : 'not available',
+    failedStage: cpp.stage,
+    failedStageName: cpp.stageName,
+    lastInitError: cpp.message,
+    adapterInfo: cpp.adapterSummary,
   };
 }
 
@@ -168,10 +221,12 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
     state.initEndTime = performance.now();
 
     if (!result) {
-      const error = 'C++ initWasmRenderer returned 0 (likely Dawn adapter/device creation failed inside WASM). ' +
-                    'This is a known issue on some Windows + Chrome/Edge configurations with emdawnwebgpu. ' +
-                    'The JS WebGPU renderer is unaffected. Try forcing it via ?renderer=webgpu or the UI toggle.';
+      const cpp = readCppInitDiagnostics();
+      const error = formatCppInitFailure(cpp);
       console.error('[WASM]', error);
+      if (cpp.adapterSummary) {
+        console.error('[WASM] Adapter summary:', cpp.adapterSummary);
+      }
       state.lastLoadError = error;
       state.loadErrorCount++;
       resolve(false);
@@ -402,7 +457,7 @@ export function updateDepthMap(float32Data, width, height) {
  */
 export function setInputSource(source) {
   if (!state.initialized || !wasmModule) return;
-  const sourceMap = { none: 0, image: 1, video: 2, webcam: 3, generative: 4 };
+  const sourceMap = { none: 0, image: 1, video: 2, webcam: 3, generative: 4, live: 2 };
   const sourceInt = typeof source === 'string'
     ? (sourceMap[source] ?? 0)
     : source;
@@ -439,6 +494,35 @@ export function getFPS() {
   if (!state.initialized || !wasmModule) return 0;
 
   return wasmModule.ccall('getFPS', 'number', [], []);
+}
+
+/**
+ * Human-readable adapter/device/limits summary from C++ CreateDevice().
+ * Empty string if the renderer has not attempted initialization yet.
+ * @returns {string}
+ */
+export function getAdapterSummary() {
+  if (!wasmModule) return '';
+  return wasmModule.ccall('getAdapterSummary', 'string', [], []);
+}
+
+/**
+ * Which Initialize() stage failed (see InitStage in renderer.h).
+ * Returns 8 (Ready) on success, 0 before any init attempt.
+ * @returns {number}
+ */
+export function getLastInitErrorStage() {
+  if (!wasmModule) return 0;
+  return wasmModule.ccall('getLastInitErrorStage', 'number', [], []);
+}
+
+/**
+ * Human-readable reason for the last Initialize() failure.
+ * @returns {string}
+ */
+export function getLastInitErrorMessage() {
+  if (!wasmModule) return '';
+  return wasmModule.ccall('getLastInitErrorMessage', 'string', [], []);
 }
 
 /**
@@ -757,6 +841,7 @@ export async function recordAndDownload(
 
 // Default export
 const wasmBridge = {
+  getDiagnostics,
   initWasmRenderer,
   shutdownWasmRenderer,
   loadShader,
@@ -773,6 +858,9 @@ const wasmBridge = {
   addRipple,
   clearRipples,
   getFPS,
+  getAdapterSummary,
+  getLastInitErrorStage,
+  getLastInitErrorMessage,
   isInitialized,
   uploadImageData,
   uploadVideoFrame,

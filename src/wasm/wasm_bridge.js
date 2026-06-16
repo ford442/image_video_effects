@@ -1,3 +1,4 @@
+// SOURCE OF TRUTH — copied to src/wasm/ and public/wasm/ by build.sh. Edit here only.
 /**
  * Pixelocity WASM Renderer Bridge
  *
@@ -23,8 +24,83 @@ const state = {
   mouseY: 0.5,
   mouseDown: false,
   zoomParams: [0.5, 0.5, 0.5, 0.5],
-  ripples: []
+  ripples: [],
+  // Diagnostic tracking
+  loadErrorCount: 0,
+  lastLoadError: null,
+  initStartTime: 0,
+  initEndTime: 0,
 };
+
+/** Maps WebGPURenderer::InitStage (C++) to a readable name. */
+const INIT_STAGE_NAMES = {
+  0: 'None',
+  1: 'Instance',
+  2: 'Adapter',
+  3: 'Device',
+  4: 'Surface',
+  5: 'Resources',
+  6: 'BindGroups',
+  7: 'Pipeline',
+  8: 'Ready',
+};
+
+/**
+ * Read structured init-failure diagnostics exported from C++ (main.cpp).
+ * Safe to call before or after init — returns empty defaults when unavailable.
+ */
+function readCppInitDiagnostics() {
+  if (!wasmModule || typeof wasmModule.ccall !== 'function') {
+    return { stage: 0, stageName: 'None', message: '', adapterSummary: '' };
+  }
+
+  const stage = wasmModule.ccall('getLastInitErrorStage', 'number', [], []) ?? 0;
+  const message = wasmModule.ccall('getLastInitErrorMessage', 'string', [], []) ?? '';
+  const adapterSummary = wasmModule.ccall('getAdapterSummary', 'string', [], []) ?? '';
+
+  return {
+    stage,
+    stageName: INIT_STAGE_NAMES[stage] ?? `Stage${stage}`,
+    message,
+    adapterSummary,
+  };
+}
+
+/**
+ * Build a human-readable init failure string from C++ stage + message.
+ */
+function formatCppInitFailure(cpp = readCppInitDiagnostics()) {
+  if (cpp.message) {
+    return `[${cpp.stageName}] ${cpp.message}`;
+  }
+  if (cpp.stage > 0 && cpp.stage < 8) {
+    return `C++ initWasmRenderer failed at stage ${cpp.stageName} (no detailed message)`;
+  }
+  return 'C++ initWasmRenderer returned 0';
+}
+
+/**
+ * Get diagnostic information about WASM bridge status
+ * @returns {Object} Diagnostic data
+ */
+export function getDiagnostics() {
+  const cpp = readCppInitDiagnostics();
+  return {
+    initialized: state.initialized,
+    hasModule: wasmModule !== null,
+    hasCanvas: canvas !== null,
+    moduleHasCCall: wasmModule ? typeof wasmModule.ccall === 'function' : false,
+    canvasResolution: state.canvasWidth > 0 ? `${state.canvasWidth}x${state.canvasHeight}` : 'unset',
+    loadErrorCount: state.loadErrorCount,
+    lastLoadError: state.lastLoadError,
+    initTime: state.initEndTime > 0 ? `${state.initEndTime - state.initStartTime}ms` : 'pending',
+    loadPath: canvas ? `${window.location.origin}/wasm/` : 'not available',
+    failedStage: cpp.stage,
+    failedStageName: cpp.stageName,
+    lastInitError: cpp.message,
+    adapterInfo: cpp.adapterSummary,
+  };
+}
 
 /**
  * Initialize the WASM renderer
@@ -33,13 +109,14 @@ const state = {
  */
 export async function initWasmRenderer(canvasElement) {
   if (state.initialized) {
-    console.warn('WASM renderer already initialized');
+    console.warn('[WASM] Renderer already initialized');
     return true;
   }
 
   canvas = canvasElement;
   state.canvasWidth = canvas.width || 2048;
   state.canvasHeight = canvas.height || 2048;
+  state.initStartTime = performance.now();
 
   return new Promise((resolve) => {
     const pathname = window.location.pathname;
@@ -50,6 +127,7 @@ export async function initWasmRenderer(canvasElement) {
     const wasmBinaryPath = basePath + '/wasm/pixelocity_wasm.wasm';
 
     console.log('[WASM] Loading from:', wasmJsPath);
+    console.log('[WASM] Canvas size:', `${state.canvasWidth}x${state.canvasHeight}`);
 
     if (window.PixelocityWASM) {
       initializeModule(window.PixelocityWASM, wasmBinaryPath, resolve);
@@ -62,7 +140,10 @@ export async function initWasmRenderer(canvasElement) {
 
     script.onload = () => {
       if (!window.PixelocityWASM) {
-        console.error('[WASM] PixelocityWASM not found on window after script load');
+        const error = 'PixelocityWASM not found on window after script load (stub module?)';
+        console.error('[WASM]', error);
+        state.lastLoadError = error;
+        state.loadErrorCount++;
         resolve(false);
         return;
       }
@@ -70,7 +151,10 @@ export async function initWasmRenderer(canvasElement) {
     };
 
     script.onerror = (err) => {
-      console.error('[WASM] Failed to load script:', err);
+      const error = `Failed to load WASM script: ${err}`;
+      console.error('[WASM]', error);
+      state.lastLoadError = error;
+      state.loadErrorCount++;
       resolve(false);
     };
 
@@ -83,19 +167,38 @@ export async function initWasmRenderer(canvasElement) {
  */
 async function initializeModule(factory, wasmBinaryPath, resolve) {
   try {
+    console.log('[WASM] Creating module from factory...');
     wasmModule = await factory({
       locateFile: (path) => {
         if (path.endsWith('.wasm')) return wasmBinaryPath;
         return path;
+      },
+      onAbort: (msg) => {
+        console.error('[WASM] Module aborted:', msg);
+        state.lastLoadError = `Module abort: ${msg}`;
+        state.loadErrorCount++;
       }
     });
 
-    if (typeof wasmModule.ccall !== 'function') {
-      console.warn('[WASM] Module loaded but ccall unavailable — stub build detected. Upload a real emcc binary to public/wasm/.');
+    if (!wasmModule) {
+      const error = 'Module factory returned null';
+      console.error('[WASM]', error);
+      state.lastLoadError = error;
+      state.loadErrorCount++;
       resolve(false);
       return;
     }
 
+    if (typeof wasmModule.ccall !== 'function') {
+      const error = 'Module loaded but ccall unavailable — stub build detected (missing Emscripten binaries)';
+      console.warn('[WASM]', error);
+      state.lastLoadError = error;
+      state.loadErrorCount++;
+      resolve(false);
+      return;
+    }
+
+    console.log('[WASM] Calling initWasmRenderer(', state.canvasWidth, ',', state.canvasHeight, ')');
     // Use { async: true } so ccall returns a Promise that resolves after the
     // Asyncify-suspended C++ function completes.  Without this, ccall returns 0
     // immediately when WASM suspends inside wgpuInstanceWaitAny (waiting for the
@@ -115,17 +218,30 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
       { async: true }
     );
 
+    state.initEndTime = performance.now();
+
     if (!result) {
-      console.error('[WASM] Failed to initialize WASM renderer (C++ returned 0)');
+      const cpp = readCppInitDiagnostics();
+      const error = formatCppInitFailure(cpp);
+      console.error('[WASM]', error);
+      if (cpp.adapterSummary) {
+        console.error('[WASM] Adapter summary:', cpp.adapterSummary);
+      }
+      state.lastLoadError = error;
+      state.loadErrorCount++;
       resolve(false);
       return;
     }
 
     state.initialized = true;
-    console.log('✅ WASM Renderer initialized');
+    console.log('[WASM] ✅ Initialization complete in', state.initEndTime - state.initStartTime, 'ms');
     resolve(true);
   } catch (err) {
-    console.error('[WASM] Failed to initialize module:', err);
+    const error = `Module initialization exception: ${err instanceof Error ? err.message : String(err)}`;
+    console.error('[WASM]', error);
+    state.lastLoadError = error;
+    state.loadErrorCount++;
+    state.initEndTime = performance.now();
     resolve(false);
   }
 }
@@ -136,10 +252,15 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
 export function shutdownWasmRenderer() {
   if (!state.initialized || !wasmModule) return;
 
-  wasmModule.ccall('shutdownWasmRenderer', null, [], []);
+  try {
+    wasmModule.ccall('shutdownWasmRenderer', null, [], []);
+    console.log('[WASM] Shutdown complete');
+  } catch (err) {
+    console.error('[WASM] Shutdown error:', err);
+  }
+
   wasmModule = null;
   state.initialized = false;
-  console.log('🛑 WASM Renderer shutdown');
 }
 
 /**
@@ -150,7 +271,7 @@ export function shutdownWasmRenderer() {
  */
 export function loadShader(id, wgslCode) {
   if (!state.initialized || !wasmModule) {
-    console.error('Renderer not initialized');
+    console.error('[WASM] Renderer not initialized');
     return false;
   }
 
@@ -290,16 +411,6 @@ export function updateMousePos(x, y) {
 }
 
 /**
- * Update mouse button pressed state.
- * @param {boolean} down - true when button is pressed
- */
-export function setMouseDown(down) {
-  if (!state.initialized || !wasmModule) return;
-  state.mouseDown = down;
-  wasmModule.ccall('setMouseDown', null, ['number'], [down ? 1 : 0]);
-}
-
-/**
  * Update audio frequency bands (0-1 normalized).
  * @param {number} bass
  * @param {number} mid
@@ -343,7 +454,6 @@ export function updateDepthMap(float32Data, width, height) {
  *   2 or 'video'      - video / webcam frames
  *   3 or 'webcam'     - webcam (same as video in WASM)
  *   4 or 'generative' - procedural, no input required
- *   5 or 'live'       - live HLS stream (treated as video frames)
  */
 export function setInputSource(source) {
   if (!state.initialized || !wasmModule) return;
@@ -387,45 +497,31 @@ export function getFPS() {
 }
 
 /**
- * Get a human-readable summary of the chosen WebGPU adapter/device:
- * vendor, architecture, limits validation results, enabled features,
- * and negotiated surface format. Empty string if not yet initialized.
- *
- * Deliberately does NOT require state.initialized: when initWasmRenderer()
- * returns 0 (e.g. insufficient limits or surface creation failure),
- * g_renderer still exists and adapterSummary_ holds the failure reason —
- * this lets diagnostics surface *why* init failed.
+ * Human-readable adapter/device/limits summary from C++ CreateDevice().
+ * Empty string if the renderer has not attempted initialization yet.
  * @returns {string}
  */
 export function getAdapterSummary() {
   if (!wasmModule) return '';
-
   return wasmModule.ccall('getAdapterSummary', 'string', [], []);
 }
 
 /**
- * Get the WebGPURenderer::InitStage value identifying which stage of
- * Initialize() failed (0=None, 8=Ready/success). 0 if no renderer exists yet.
- *
- * Deliberately does NOT require state.initialized — see getAdapterSummary().
+ * Which Initialize() stage failed (see InitStage in renderer.h).
+ * Returns 8 (Ready) on success, 0 before any init attempt.
  * @returns {number}
  */
 export function getLastInitErrorStage() {
   if (!wasmModule) return 0;
-
   return wasmModule.ccall('getLastInitErrorStage', 'number', [], []);
 }
 
 /**
- * Get the human-readable reason for the last Initialize() failure. Empty
- * string if init has not failed (or not been attempted yet).
- *
- * Deliberately does NOT require state.initialized — see getAdapterSummary().
+ * Human-readable reason for the last Initialize() failure.
  * @returns {string}
  */
 export function getLastInitErrorMessage() {
   if (!wasmModule) return '';
-
   return wasmModule.ccall('getLastInitErrorMessage', 'string', [], []);
 }
 
@@ -745,6 +841,7 @@ export async function recordAndDownload(
 
 // Default export
 const wasmBridge = {
+  getDiagnostics,
   initWasmRenderer,
   shutdownWasmRenderer,
   loadShader,
@@ -755,7 +852,6 @@ const wasmBridge = {
   setSlotMode,
   updateUniforms,
   updateMousePos,
-  setMouseDown,
   updateAudioData,
   updateDepthMap,
   setInputSource,
@@ -768,6 +864,7 @@ const wasmBridge = {
   isInitialized,
   uploadImageData,
   uploadVideoFrame,
+  // Phase 2
   resizeCanvas,
   captureFrame,
   takeScreenshot,

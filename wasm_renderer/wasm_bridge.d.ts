@@ -2,6 +2,28 @@
  * Pixelocity WASM Renderer TypeScript Definitions
  */
 
+/** Diagnostic snapshot from the JS bridge layer (load/init tracking). */
+export interface WasmBridgeDiagnostics {
+  initialized: boolean;
+  hasModule: boolean;
+  hasCanvas: boolean;
+  moduleHasCCall: boolean;
+  canvasResolution: string;
+  loadErrorCount: number;
+  lastLoadError: string | null;
+  initTime: string;
+  loadPath: string;
+  /** WebGPURenderer::InitStage from C++ (0=None, 8=Ready). */
+  failedStage: number;
+  failedStageName: string;
+  /** Human-readable C++ init failure message. */
+  lastInitError: string;
+  /** Adapter/device/limits summary from C++ CreateDevice(). */
+  adapterInfo: string;
+}
+
+export function getDiagnostics(): WasmBridgeDiagnostics;
+
 export function initWasmRenderer(canvas: HTMLCanvasElement): Promise<boolean>;
 export function shutdownWasmRenderer(): void;
 export function loadShader(id: string, wgslCode: string): boolean;
@@ -24,11 +46,14 @@ export function updateMousePos(x: number, y: number): void;
 export function updateAudioData(bass: number, mid: number, treble: number): void;
 export function updateDepthMap(data: Float32Array, width: number, height: number): void;
 export function setInputSource(
-  source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative'
+  source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative' | 'live'
 ): void;
 export function addRipple(x: number, y: number): void;
 export function clearRipples(): void;
 export function getFPS(): number;
+export function getAdapterSummary(): string;
+export function getLastInitErrorStage(): number;
+export function getLastInitErrorMessage(): string;
 export function isInitialized(): boolean;
 export function uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
 export function uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
@@ -98,6 +123,7 @@ export function recordAndDownload(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface WasmRenderer {
+  getDiagnostics(): WasmBridgeDiagnostics;
   initWasmRenderer(canvas: HTMLCanvasElement): Promise<boolean>;
   shutdownWasmRenderer(): void;
   loadShader(id: string, wgslCode: string): boolean;
@@ -116,10 +142,13 @@ export interface WasmRenderer {
   updateMousePos(x: number, y: number): void;
   updateAudioData(bass: number, mid: number, treble: number): void;
   updateDepthMap(data: Float32Array, width: number, height: number): void;
-  setInputSource(source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative'): void;
+  setInputSource(source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative' | 'live'): void;
   addRipple(x: number, y: number): void;
   clearRipples(): void;
   getFPS(): number;
+  getAdapterSummary(): string;
+  getLastInitErrorStage(): number;
+  getLastInitErrorMessage(): string;
   isInitialized(): boolean;
   uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
   uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;

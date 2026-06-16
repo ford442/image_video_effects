@@ -134,6 +134,49 @@ artifacts.forEach(artifact => {
   console.log('');
 });
 
+/**
+ * Fail if canonical wasm_renderer bridge copies drift from src/wasm/ (dev import path).
+ */
+function checkBridgeSkew() {
+  const pairs = [
+    ['wasm_renderer/wasm_bridge.js', 'src/wasm/wasm_bridge.js'],
+    ['wasm_renderer/wasm_bridge.d.ts', 'src/wasm/wasm_bridge.d.ts'],
+  ];
+
+  for (const [canonicalRel, copyRel] of pairs) {
+    const canonicalPath = path.resolve(canonicalRel);
+    const copyPath = path.resolve(copyRel);
+
+    if (!fs.existsSync(canonicalPath)) {
+      errors.push(`❌ ${canonicalRel}: canonical bridge file not found`);
+      allValid = false;
+      continue;
+    }
+
+    if (!fs.existsSync(copyPath)) {
+      errors.push(`❌ ${copyRel}: bridge copy missing (expected sync from ${canonicalRel})`);
+      allValid = false;
+      continue;
+    }
+
+    const canonical = fs.readFileSync(canonicalPath);
+    const copy = fs.readFileSync(copyPath);
+
+    if (!canonical.equals(copy)) {
+      errors.push(
+        `❌ Bridge skew detected (${canonicalRel} vs ${copyRel}) — run npm run wasm:build or cp wasm_renderer/wasm_bridge.js src/wasm/`
+      );
+      allValid = false;
+    } else {
+      console.log(`Bridge sync: ✅ ${copyRel} matches ${canonicalRel}`);
+    }
+  }
+
+  console.log('');
+}
+
+checkBridgeSkew();
+
 // Summary
 console.log('=== Validation Summary ===\n');
 

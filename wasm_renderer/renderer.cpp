@@ -218,24 +218,24 @@ bool WebGPURenderer::Initialize(int canvasWidth, int canvasHeight,
     }
 
     if (!CreateBindGroupLayout()) {
-        failedStage_ = InitStage::BindGroups;
-        lastError_ = "CreateBindGroupLayout() failed: see console for details";
+        if (failedStage_ == InitStage::None) failedStage_ = InitStage::BindGroups;
+        if (lastError_.empty()) lastError_ = "CreateBindGroupLayout() failed: see console for details";
         printf("❌ Failed to create bind group layout\n");
         Shutdown();
         return false;
     }
 
     if (!CreateRenderPipeline()) {
-        failedStage_ = InitStage::Pipeline;
-        lastError_ = "CreateRenderPipeline() failed: see console for details";
+        if (failedStage_ == InitStage::None) failedStage_ = InitStage::Pipeline;
+        if (lastError_.empty()) lastError_ = "CreateRenderPipeline() failed: see console for details";
         printf("❌ Failed to create render pipeline\n");
         Shutdown();
         return false;
     }
 
     if (!CreateBindGroups()) {
-        failedStage_ = InitStage::BindGroups;
-        lastError_ = "CreateBindGroups() failed: see console for details";
+        if (failedStage_ == InitStage::None) failedStage_ = InitStage::BindGroups;
+        if (lastError_.empty()) lastError_ = "CreateBindGroups() failed: see console for details";
         printf("❌ Failed to create bind groups\n");
         Shutdown();
         return false;
@@ -921,6 +921,7 @@ bool WebGPURenderer::CreateBindGroupLayout() {
     computeBindGroupLayout_.reset(wgpuDeviceCreateBindGroupLayout(device_.get(), &layoutDesc));
     if (!computeBindGroupLayout_.get()) {
         printf("❌ Failed to create compute bind group layout\n");
+        lastError_ = "wgpuDeviceCreateBindGroupLayout returned null";
         return false;
     }
 
@@ -935,6 +936,7 @@ bool WebGPURenderer::CreateBindGroupLayout() {
     computePipelineLayout_.reset(wgpuDeviceCreatePipelineLayout(device_.get(), &pipelineLayoutDesc));
     if (!computePipelineLayout_.get()) {
         printf("❌ Failed to create compute pipeline layout\n");
+        lastError_ = "wgpuDeviceCreatePipelineLayout returned null";
         return false;
     }
     return true;
@@ -1038,13 +1040,17 @@ bool WebGPURenderer::CreateRenderPipeline() {
     // vertexModule and fragmentModule are released automatically via RAII
     if (!renderPipeline_.get()) {
         printf("❌ Failed to create render pipeline\n");
+        lastError_ = "wgpuDeviceCreateRenderPipeline returned null";
         return false;
     }
     return true;
 }
 
 bool WebGPURenderer::CreateBindGroups() {
-    if (!writeTexture_.get() || !uniformBuffer_.get()) return false;
+    if (!writeTexture_.get() || !uniformBuffer_.get()) {
+        lastError_ = "CreateBindGroups called before textures/buffers were created";
+        return false;
+    }
 
     static constexpr uint32_t BINDING_COUNT = 13;
     WGPUTextureViewDescriptor viewDesc = {};
@@ -1124,6 +1130,7 @@ bool WebGPURenderer::CreateBindGroups() {
 
     if (!computeBindGroup_.get()) {
         printf("❌ Failed to create compute bind group\n");
+        lastError_ = "wgpuDeviceCreateBindGroup (compute) returned null";
         return false;
     }
 
@@ -1131,6 +1138,7 @@ bool WebGPURenderer::CreateBindGroups() {
     CreateRenderBindGroup();
     if (!renderBindGroup_.get()) {
         printf("❌ Failed to create render bind group\n");
+        lastError_ = "CreateRenderBindGroup failed (null render bind group)";
         return false;
     }
     return true;
@@ -1207,6 +1215,7 @@ void WebGPURenderer::ConfigureSurface() {
 
 void WebGPURenderer::PresentToSurface() {
     if (!surface_.get() || !renderPipeline_.get() || !renderBindGroup_.get()) return;
+    if (deviceLost_ || !device_.get() || !queue_.get()) return;
 
     // Acquire the current swap-chain texture.
     WGPUSurfaceTexture surfaceTex = {};
@@ -1505,7 +1514,7 @@ void WebGPURenderer::DispatchComputePass(WGPUCommandEncoder encoder,
 }
 
 void WebGPURenderer::UploadRGBA8ToReadTexture(const uint8_t* data, int width, int height) {
-    if (!queue_.get() || !readTexture_.get()) return;
+    if (!queue_.get() || !readTexture_.get() || deviceLost_) return;
 
     // Convert uint8 RGBA to float RGBA, fitting within canvas bounds.
     // Pixels outside the source image remain black.
@@ -1584,7 +1593,7 @@ void WebGPURenderer::UpdateVideoFrame(const uint8_t* data, int width, int height
 }
 
 void WebGPURenderer::UpdateDepthMap(const float* data, int width, int height) {
-    if (!queue_ || !depthTextureRead_ || !data) return;
+    if (!queue_.get() || !depthTextureRead_.get() || !data || deviceLost_) return;
 
     // Clamp copy dimensions to the texture size.
     const int dstW = canvasWidth_;
@@ -1889,7 +1898,7 @@ static void CopyTex(WGPUCommandEncoder enc,
 }
 
 void WebGPURenderer::Render() {
-    if (!initialized_ || deviceLost_) return;
+    if (!initialized_ || deviceLost_ || !device_.get() || !queue_.get()) return;
 
     // Upload all per-frame global uniforms (time, mouse, ripples, audio).
     UpdateUniformBuffer();

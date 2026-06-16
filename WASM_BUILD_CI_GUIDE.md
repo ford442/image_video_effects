@@ -32,13 +32,19 @@ source ./emsdk_env.sh
 npm run wasm:build
 ```
 
-## Build Failures Are No Longer Silent
+## Build Failures: CI vs Local
 
-**As of May 2026**, the build process has been hardened:
+**CI (hardened):** the dedicated `wasm` job installs emsdk, runs `npm run wasm:build`,
+and fails on compilation or validation errors.
 
-1. **No More Silent Skips**: The `package.json` `prebuild` and `build` scripts **no longer** suppress WASM build errors with `2>/dev/null || echo`.
-   - If `emcc` is not available, `npm run wasm:build` will **fail the build** with a clear error message.
-   - If compilation fails, the error is propagated up, not hidden.
+**Local caveat:** `wasm_renderer/build.sh` still **`exit 0` when `emcc` is missing**
+(with a warning), so `npm run build` on a machine without Emscripten can succeed
+while shipping stale committed artifacts. Run `node scripts/validate_wasm_artifacts.js`
+after local builds, or install emsdk before `npm run wasm:build`.
+
+1. **No swallowed compile errors**: `package.json` no longer wraps `wasm:build` in
+   `2>/dev/null || echo` — if `emcc` is present and compilation fails, the error
+   propagates.
 
 2. **CI Validation**: The GitHub Actions CI pipeline includes a dedicated `wasm` job that:
    - Installs the Emscripten SDK
@@ -62,6 +68,10 @@ This ensures:
   - `pixelocity_wasm.wasm` (WebAssembly binary)
   - `pixelocity_wasm.js` (Emscripten runtime glue)
   - `wasm_bridge.js` (JavaScript bridge to the C++ renderer)
+
+- **Bridge sync** (#821): `wasm_renderer/wasm_bridge.js` must match
+  `src/wasm/wasm_bridge.js` (and `.d.ts`). Skew fails validation with:
+  *"Bridge skew detected — run npm run wasm:build or cp wasm_renderer/wasm_bridge.js src/wasm/"*
 
 - **File Sizes**: Reasonable and non-empty
   - `.wasm`: 50–200 KB (should be ~96 KB)
@@ -121,10 +131,28 @@ If file sizes are outside the expected range (50–200 KB for WASM), the build m
 - Ensure no debug symbols are included
 - Verify emdawnwebgpu is being used correctly
 
+## Current known reliability caveats (June 2026)
+
+The C++ renderer has a **real compute + present pipeline** (`Render()` →
+`PresentToSurface()` in `renderer.cpp`). The June 2026 reliability batch
+([#799](https://github.com/ford442/image_video_effects/issues/799),
+[roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584))
+hardened init/format/limits ([#817](https://github.com/ford442/image_video_effects/issues/817)–[#822](https://github.com/ford442/image_video_effects/issues/822) ✅).
+
+**Still open (not #817–#822):**
+
+- `RendererManager` does not forward slot/param changes to WASM
+- App never calls `setInputSource` — generative mode unreachable for WASM
+- Local `build.sh` exits 0 without `emcc` (see above)
+- Live-browser smoke on edge GPUs not yet formally verified
+
+Tracking table:
+[`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06).
+
 ## Summary
 
 - **Build command**: `npm run wasm:build`
 - **Validation**: `node scripts/validate_wasm_artifacts.js`
 - **CI**: Dedicated `wasm` job with Emscripten setup, validation, and freshness checks
-- **Failures are now visible**: No silent skips, no swallowed errors
-- **Next steps**: See `WASM_RENDERER_GAP_ANALYSIS.md` for the roadmap to full WASM viability
+- **Local gap**: missing `emcc` is a warning + exit 0 — use validator or install emsdk
+- **Roadmap**: See [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) and [#799 roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584)

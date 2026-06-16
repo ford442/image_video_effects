@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-06-14 (GH issue bodies: implementation instructions added to #817–#823)
+**Last updated:** 2026-06-16 (WASM docs refresh #823 complete; #817–#822 verified in tree)
 
 ## Core Identity & Vibe (from SOUL + IDENTITY)
 - Spark Engine / Cheerleader: bright, protective, kinetic, loud-hearted. "We are NOT done here!" Fast, punchy, energetic. Use "we/let's", 🔥⚡💥🫡, short lines, "one thing first", "messy start? fine", "this is NOT the final boss".
@@ -20,19 +20,10 @@
 - Has presentation now (Render calls PresentToSurface at 1725).
 - JS side: wasm_bridge (newer in wasm_renderer/, stale copy in src/wasm/), WASMRenderer.ts wrapper, RendererManager forwards (now has WASM branches).
 
-**Current Reality (2026-06-11 audit):**
-- **Does NOT load reliably** (user + open #799 "harden WebGPU canvas context initialization").
-  - Root causes in C++:
-    - Format hardcode: JS_EM uses getPreferredCanvasFormat() + configure, but C++ forces BGRA8Unorm for surfaceFormat_, render colorTarget, ConfigureSurface (lines ~430,728,907). Mismatch = silent bad present or validation fail.
-    - No limits check: deviceDesc.requiredLimits=nullptr (342). Blind create of large rgba32f textures/binds. No post-adapter wgpuAdapterGetLimits + validate vs workload.
-    - Surface non-fatal: JS_Create returns 0 but CreateDevice true; init "ok" but no output.
-    - compatibleSurface=nullptr always; surface created after device via importJsSurface.
-    - Double-config (EM_JS ctx.configure + C++ wgpuSurfaceConfigure).
-    - Bridge skew: src/wasm/wasm_bridge.js (TS import source) outdated vs wasm_renderer/ (Jun 8 artifacts use new). Dev load uses wrong logic/diagnostics/async handling.
-  - Other: switch contention (no clean unconfigure), emdawn Win/Chrome fragility (known crbug, ladder helps but not enough), partial inits.
-- **What works when it loads:** compute pipeline, multi-slot, audio/depth/image/video upload, capture, resize, shader load+wg parse.
-- **Docs drift:** STATUS.md claims "Phase 3 complete" (surface even checked in old README), but GAP (May) was pessimistic (pre-present); now present exists but init is the blocker.
-- **Build:** artifacts committed (public/build/wasm), build.sh warns+exit0 no emcc, src/wasm vs renderer skew.
+- **Current Reality (2026-06-16):**
+- **Init/format/limits handshake hardened** (#817–#822 ✅ in tree). Presentation wired (`PresentToSurface` at 1725).
+- **Still not drop-in:** RendererManager WASM forwarding, setInputSource wiring, live edge-GPU verification.
+- **Build:** CI wasm job hardened; local `build.sh` still exit 0 without emcc.
 
 **User directive this session:** Solidify/complete the *C++ code*. Specifically call out that "we can check if we've chosen good webgpu settings for the context via c++" → move adapter/device/surface/limits/format decisions + validation into C++ side, expose/report.
 
@@ -46,12 +37,16 @@
 ## TODOs / Open Threads (from this + recent memory)
 - [x] Created GH issues 817-823 (2026-06-11) for C++ solidification. All C++-centric, reference #799 + specific source lines.
 - [x] Updated issue bodies 2026-06-14: moved Claude's implementation sketches from comments into structured task sections (Prerequisites, Implementation Instructions, Task Checklist). PR order: #821 → #818+#820 → #817+#819 → #822 → #823.
-- [ ] Implement the June C++ batch per issue checklists.
+- [x] Bridge skew fix (2026-06-16): `wasm_renderer/wasm_bridge.js` is SOT; build.sh copies to both paths; validate guard; `getDiagnostics()` synced.
+- [x] Unified error paths (#822, 2026-06-16): bridge merges C++ stage/message into diagnostics.
+- [x] Bridge sync (#821, 2026-06-16): canonical `wasm_renderer/wasm_bridge.js` synced to `src/wasm/` + validator guard.
+- [x] WASM docs refresh (#823, 2026-06-16): GAP_ANALYSIS, STATUS, README, WASM_*.md — presentation corrected, #817–#822 tracking table, #799 roadmap link.
+- [ ] RendererManager WASM forwarding + `setInputSource` wiring (GAP §3.2–3.3).
 - Ongoing: shader work, but this session was WASM C++ focus per query.
 - Memory maintenance: review recent daily (06-07 had swarm, git sync); distill only high-signal (C++ reliability is now key infra bet).
 
 ## Quick Refs (for continuity)
-- Key files: wasm_renderer/{renderer.cpp:242 CreateDevice, 430 hardcode, 902 Configure, 1595 Render, 1725 PresentToSurface, EM_JS~45}, wasm_renderer/wasm_bridge.js (canonical), src/wasm/wasm_bridge.js (stale, fix), src/renderer/{WASMRenderer.ts,RendererManager.ts}, WASM_RENDERER_GAP_ANALYSIS.md, wasm_renderer/STATUS.md
+- Key files: wasm_renderer/{renderer.cpp:242 CreateDevice, 658 format negotiation, 669 fatal surface, 1595 Render, 1725 PresentToSurface}, wasm_renderer/wasm_bridge.js (canonical, synced to src/wasm/), src/renderer/{WASMRenderer.ts,RendererManager.ts}, WASM_RENDERER_GAP_ANALYSIS.md, wasm_renderer/STATUS.md
 - GH: #799 (open, context init), #771 (closed windows), #736 (closed testing).
 - Build: `cd wasm_renderer && ./build.sh` (needs emsdk); `npm run wasm:build`
 - Test: `?renderer=wasm`, `window.__rendererManager?.getDiagnostics()`, switchRenderer in console.

@@ -20,6 +20,12 @@ export interface WASMDiagnostics {
   failedStage: number;
   /** Human-readable reason for the last Initialize() failure, or '' if none. */
   lastInitError: string;
+  /** InitStage name from C++ (e.g. 'Device', 'Surface'). */
+  failedStageName: string;
+  /** Bridge-layer load/init failures (from wasm_bridge.js getDiagnostics). */
+  loadErrorCount: number;
+  lastLoadError: string | null;
+  initTime: string;
 }
 
 export class WASMRenderer implements Renderer {
@@ -90,16 +96,22 @@ export class WASMRenderer implements Renderer {
    * Useful for debugging and verifying renderer health.
    */
   getDiagnostics(): WASMDiagnostics {
+    const bridge = WasmBridge.getDiagnostics?.();
+
     return {
       initialized: this.initialized,
       initAttempts: this.initAttempts,
       errorCount: this.errorCount,
       lastErrorTime: this.lastErrorTime > 0 ? new Date(this.lastErrorTime).toISOString() : null,
-      fps: (WasmBridge && WasmBridge.getFPS?.()) ?? 0,
-      hasModule: !!WasmBridge,
-      adapterInfo: (WasmBridge && WasmBridge.getAdapterSummary?.()) ?? '',
-      failedStage: (WasmBridge && WasmBridge.getLastInitErrorStage?.()) ?? 0,
-      lastInitError: (WasmBridge && WasmBridge.getLastInitErrorMessage?.()) ?? '',
+      fps: WasmBridge.getFPS?.() ?? 0,
+      hasModule: bridge?.hasModule ?? !!WasmBridge,
+      adapterInfo: bridge?.adapterInfo ?? WasmBridge.getAdapterSummary?.() ?? '',
+      failedStage: bridge?.failedStage ?? WasmBridge.getLastInitErrorStage?.() ?? 0,
+      failedStageName: bridge?.failedStageName ?? 'None',
+      lastInitError: bridge?.lastInitError ?? WasmBridge.getLastInitErrorMessage?.() ?? '',
+      loadErrorCount: bridge?.loadErrorCount ?? 0,
+      lastLoadError: bridge?.lastLoadError ?? null,
+      initTime: bridge?.initTime ?? 'pending',
     };
   }
 

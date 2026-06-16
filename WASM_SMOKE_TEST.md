@@ -31,6 +31,25 @@ This document provides manual verification steps to test that the C++ WASM rende
 
 ---
 
+## Current known reliability caveats (June 2026)
+
+Presentation **exists** — `Render()` calls `PresentToSurface()` (`renderer.cpp:1725`).
+The June 2026 C++ batch ([#799](https://github.com/ford442/image_video_effects/issues/799),
+[roadmap](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584))
+hardened init/format/limits ([#817](https://github.com/ford442/image_video_effects/issues/817)–[#822](https://github.com/ford442/image_video_effects/issues/822) ✅).
+
+When smoke tests **fail**, check structured diagnostics:
+
+```js
+const d = window.__rendererManager?.getDiagnostics()?.wasm;
+console.log(d?.failedStageName, d?.lastInitError, d?.lastLoadError, d?.adapterInfo);
+```
+
+See [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) for the
+full tracking table and remaining integration gaps.
+
+---
+
 ## Test 1: Force WASM Renderer at Startup
 
 **Objective:** Verify that the WASM renderer initializes when explicitly requested.
@@ -315,7 +334,7 @@ wasmSmokeTest().catch(err => console.error('Test error:', err));
 window.__rendererManager?.currentRenderer?.getDiagnostics?.();
 ```
 
-Look for `lastLoadError` or `lastErrorTime` in the output.
+Look for `lastLoadError`, `lastInitError`, `failedStageName`, or `lastErrorTime` in the output.
 
 ---
 
