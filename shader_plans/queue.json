@@ -688,6 +688,13 @@
       "added": "2026-06-13T15:22:08.269147",
       "completed_at": "2026-06-14T08:01:11.577449Z",
       "status": "completed"
+    },
+    {
+      "filename": "2026-06-15_ethereal-cyber-chrono-void-whale.md",
+      "title": "Ethereal Cyber-Chrono Void-Whale",
+      "added": "2026-06-15T15:39:03.587165",
+      "status": "completed",
+      "completed_at": "2026-06-16T07:58:13.747882"
     }
   ],
   "rejected": [],
@@ -997,11 +1004,6 @@
       "filename": "2026-06-14_astro-mechanical-quantum-furnace-engine.md",
       "title": "Astro-Mechanical Quantum-Furnace Engine",
       "added": "2026-06-14T15:34:23.121993"
-    },
-    {
-      "filename": "2026-06-15_ethereal-cyber-chrono-void-whale.md",
-      "title": "Ethereal Cyber-Chrono Void-Whale",
-      "added": "2026-06-15T15:39:03.587165"
     }
   ],
   "in_progress": null

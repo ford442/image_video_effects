@@ -1,0 +1,57 @@
+{
+  "id": "gen-ethereal-cyber-chrono-void-whale",
+  "name": "Ethereal Cyber-Chrono Void-Whale",
+  "url": "shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
+  "description": "A colossal, slow-moving biomechanical space leviathan swimming gracefully through a dense volumetric plasma-ocean, whose transparent cyber-skeletal ribs refract and ripple with shifting temporal energy streams.",
+  "tags": [
+    "organic",
+    "cosmic",
+    "mechanical",
+    "void",
+    "volumetric"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-driven",
+    "audio-reactive"
+  ],
+  "category": "generative",
+  "params": [
+    {
+      "id": "plasmaDensity",
+      "name": "Plasma Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "temporalGlitch",
+      "name": "Temporal Glitch",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "refractionIndex",
+      "name": "Refraction Index",
+      "default": 1.5,
+      "min": 1.0,
+      "max": 3.0,
+      "step": 0.05,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "coreBloom",
+      "name": "Core Bloom",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}
