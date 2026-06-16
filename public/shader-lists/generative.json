@@ -2195,6 +2195,59 @@
     ]
   },
   {
+    "id": "gen-astro-mechanical-quantum-furnace-engine",
+    "name": "Astro-Mechanical Quantum-Furnace Engine",
+    "url": "shaders/gen-astro-mechanical-quantum-furnace-engine.wgsl",
+    "description": "A towering, slowly rotating cosmic engine composed of interlocking brass-like fractal gears floating in a deep-space nebula, powered by an intensely glowing core of quantum particle systems that spew audio-reactive aether plasma.",
+    "category": "generative",
+    "tags": [
+      "mechanical",
+      "quantum",
+      "cosmic",
+      "particle systems",
+      "audio-reactive"
+    ],
+    "features": [],
+    "params": [
+      {
+        "id": "gearComplexity",
+        "name": "Gear Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "plasmaIntensity",
+        "name": "Plasma Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "refractionIndex",
+        "name": "Refraction Index",
+        "default": 1.3,
+        "min": 1,
+        "max": 2.5,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "emissionThreshold",
+        "name": "Emission Threshold",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "id": "gen-audio-spirograph",
     "name": "Audio Spirograph",
     "url": "shaders/gen-audio-spirograph.wgsl",
@@ -13416,6 +13469,63 @@
     "url": "shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl"
   },
   {
+    "id": "gen-quantum-fluorescent-nebula-anemone",
+    "name": "Quantum-Fluorescent Nebula-Anemone",
+    "url": "shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
+    "description": "A hyper-organic, glowing cosmic sea-anemone suspended in a volumetric deep-space nebula, whose translucent quantum tentacles ripple and mathematically divide in perfect sync with ambient acoustic frequencies.",
+    "tags": [
+      "organic",
+      "nebula",
+      "quantum",
+      "particles",
+      "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-driven",
+      "audio-reactive"
+    ],
+    "category": "generative",
+    "params": [
+      {
+        "id": "fluorescenceIntensity",
+        "name": "Fluorescence Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "tentacleDensity",
+        "name": "Tentacle Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "audioReactivity",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "nebulaDensity",
+        "name": "Nebula Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "id": "gen-quantum-foam-alpha",
     "name": "Quantum Foam Alpha",
     "url": "shaders/gen-quantum-foam-alpha.wgsl",
@@ -21049,63 +21159,6 @@
       {
         "id": "param4",
         "name": "Temperature / Blend",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.w"
-      }
-    ]
-  },
-  {
-    "id": "gen-quantum-fluorescent-nebula-anemone",
-    "name": "Quantum-Fluorescent Nebula-Anemone",
-    "url": "shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
-    "category": "generative",
-    "description": "A hyper-organic, glowing cosmic sea-anemone suspended in a volumetric deep-space nebula, whose translucent quantum tentacles ripple and mathematically divide in perfect sync with ambient acoustic frequencies.",
-    "tags": [
-      "organic",
-      "nebula",
-      "quantum",
-      "particles",
-      "audio-reactive"
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-driven",
-      "audio-reactive"
-    ],
-    "params": [
-      {
-        "id": "fluorescenceIntensity",
-        "name": "Fluorescence Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x"
-      },
-      {
-        "id": "tentacleDensity",
-        "name": "Tentacle Density",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.y"
-      },
-      {
-        "id": "audioReactivity",
-        "name": "Audio Reactivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.z"
-      },
-      {
-        "id": "nebulaDensity",
-        "name": "Nebula Density",
         "default": 0.5,
         "min": 0,
         "max": 1,

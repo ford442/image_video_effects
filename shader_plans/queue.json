@@ -108,6 +108,13 @@
       "status": "completed",
       "created_at": "2026-05-07T12:00:00Z",
       "completed_at": "2026-05-08T08:16:36.936331"
+    },
+    {
+      "filename": "2026-06-14_astro-mechanical-quantum-furnace-engine.md",
+      "title": "Astro-Mechanical Quantum-Furnace Engine",
+      "added": "2026-06-15T08:16:35.280528+00:00",
+      "status": "completed",
+      "completed_at": "2026-06-15T08:16:35.280548+00:00"
     }
   ],
   "completed": [
