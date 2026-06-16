@@ -195,8 +195,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var ro = vec3<f32>(0.0, 0.0, -8.0);
     // Orbit camera based on mouse
-    ro.yz = rot(my) * ro.yz;
-    ro.xz = rot(mx) * ro.xz;
+    let new_yz = rot(my) * ro.yz;
+    ro.y = new_yz.x;
+    ro.z = new_yz.y;
+
+    let new_xz = rot(mx) * ro.xz;
+    ro.x = new_xz.x;
+    ro.z = new_xz.y;
 
     var ta = vec3<f32>(0.0, 0.0, 0.0);
 
