@@ -4452,7 +4452,11 @@
     "synced_at": 1781596576.2799766
   },
   "gen-ethereal-cyber-chrono-void-whale": {
-    "hash": "5f705207031e58bd63eccdfafa8c14b2",
-    "synced_at": 1781596576.1651182
+    "hash": "582e495e3ee22ba527192c737a2b961b",
+    "synced_at": 1781683508.659004
+  },
+  "gen-radiant-quantum-plasma-kraken-core": {
+    "hash": "0bcf78b203f20e1ff8086c3bd2c0ad06",
+    "synced_at": 1781683508.5428264
   }
 }

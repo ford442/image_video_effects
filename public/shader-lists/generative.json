@@ -14130,6 +14130,50 @@
     ]
   },
   {
+    "id": "gen-radiant-quantum-plasma-kraken-core",
+    "name": "Radiant Quantum-Plasma Kraken-Core",
+    "description": "A majestic, hyper-organic deep-space kraken composed of swirling quantum-plasma tentacles and a blinding radiant core that pulsates violently in sync with cosmic bass drops.",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "quantum",
+      "cosmic",
+      "plasma",
+      "tentacles"
+    ],
+    "url": "shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
+    "params": [
+      {
+        "name": "Tentacle Twist",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Plasma Glow",
+        "default": 2,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Core Heat",
+        "default": 1.5,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "name": "Void Depth",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ]
+  },
+  {
     "id": "gen-rainbow-firefly-dance",
     "name": "Rainbow Firefly Dance",
     "category": "generative",
