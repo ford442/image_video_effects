@@ -702,6 +702,13 @@
       "added": "2026-06-16T15:20:48.581241",
       "status": "completed",
       "completed_at": "2026-06-17T08:05:34.723472+00:00"
+    },
+    {
+      "filename": "2026-06-17_ethereal-cyber-aurora-hummingbird-core.md",
+      "title": "Ethereal Cyber-Aurora Hummingbird-Core",
+      "added": "2026-06-17T15:33:53.664289",
+      "status": "completed",
+      "completed_at": "2026-06-18T08:06:36.537323Z"
     }
   ],
   "rejected": [],
@@ -1016,11 +1023,6 @@
       "filename": "2026-06-15_ethereal-cyber-chrono-void-whale.md",
       "title": "Ethereal Cyber-Chrono Void-Whale",
       "added": "2026-06-15T15:39:03.587165"
-    },
-    {
-      "filename": "2026-06-17_ethereal-cyber-aurora-hummingbird-core.md",
-      "title": "Ethereal Cyber-Aurora Hummingbird-Core",
-      "added": "2026-06-17T15:33:53.664289"
     }
   ],
   "in_progress": null
