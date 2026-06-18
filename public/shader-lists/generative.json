@@ -6553,6 +6553,54 @@
     ]
   },
   {
+    "name": "Ethereal Cyber-Aurora Hummingbird-Core",
+    "description": "A hyper-fast, biomechanical hummingbird woven from liquid auroral plasma and shattered quantum glass, hovering within a massive chrono-distortion flower.",
+    "category": "generative",
+    "url": "shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
+    "tags": [
+      "organic",
+      "biomechanical",
+      "aurora",
+      "plasma",
+      "quantum"
+    ],
+    "params": [
+      {
+        "name": "Flutter Speed",
+        "type": "slider",
+        "min": 0.1,
+        "max": 5,
+        "default": 1,
+        "step": 0.1
+      },
+      {
+        "name": "Aura Intensity",
+        "type": "slider",
+        "min": 0,
+        "max": 2,
+        "default": 0.5,
+        "step": 0.05
+      },
+      {
+        "name": "Pollen Density",
+        "type": "slider",
+        "min": 0,
+        "max": 3,
+        "default": 1,
+        "step": 0.1
+      },
+      {
+        "name": "Aberration",
+        "type": "slider",
+        "min": 0,
+        "max": 1,
+        "default": 0.2,
+        "step": 0.01
+      }
+    ],
+    "id": "gen-ethereal-cyber-aurora-hummingbird-core"
+  },
+  {
     "id": "gen-ethereal-cyber-chrono-void-whale",
     "name": "Ethereal Cyber-Chrono Void-Whale",
     "url": "shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",

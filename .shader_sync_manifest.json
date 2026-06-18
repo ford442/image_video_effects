@@ -4456,7 +4456,11 @@
     "synced_at": 1781683508.659004
   },
   "gen-radiant-quantum-plasma-kraken-core": {
-    "hash": "0bcf78b203f20e1ff8086c3bd2c0ad06",
-    "synced_at": 1781683508.5428264
+    "hash": "647882e32f1e605f6fc5c4673897d3ee",
+    "synced_at": 1781769839.9598155
+  },
+  "gen-ethereal-cyber-aurora-hummingbird-core": {
+    "hash": "3fc5d6549a2957ade93f15297d82c2d6",
+    "synced_at": 1781769839.9617398
   }
 }
