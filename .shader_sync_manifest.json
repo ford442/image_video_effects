@@ -4460,7 +4460,11 @@
     "synced_at": 1781769839.9598155
   },
   "gen-ethereal-cyber-aurora-hummingbird-core": {
-    "hash": "3fc5d6549a2957ade93f15297d82c2d6",
-    "synced_at": 1781769839.9617398
+    "hash": "eb2f46b9c5f04bccf13201e01af712d5",
+    "synced_at": 1781855191.0996864
+  },
+  "gen-luminescent-cyber-chrono-void-turtle": {
+    "hash": "a83cf5966daa9b846dc6ee6a4fa5744d",
+    "synced_at": 1781855190.9727998
   }
 }
