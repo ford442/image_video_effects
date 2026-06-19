@@ -33,7 +33,7 @@ fn rot(a: f32) -> mat2x2<f32> {
 
 fn hash33(p: vec3<f32>) -> vec3<f32> {
     var p3 = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
-    p3 += dot(p3, p3.yxz + 33.33);
+    p3 += vec3<f32>(dot(p3, p3.yxz + vec3<f32>(33.33)));
     return fract((p3.xxy + p3.yxx) * p3.zyx);
 }
 
@@ -102,14 +102,16 @@ fn map(p_in: vec3<f32>) -> f32 {
     // Turtle Base Shape (Ellipsoid body)
     let bodyRot = rot(sin(gTime * u.zoom_params.w) * 0.2);
     var pBody = p;
-    pBody.yz = bodyRot * pBody.yz;
-    pBody.xz = bodyRot * pBody.xz;
+    let temp_yz = bodyRot * pBody.yz;
+    pBody = vec3<f32>(pBody.x, temp_yz.x, temp_yz.y);
+    let temp_xz = bodyRot * pBody.xz;
+    pBody = vec3<f32>(temp_xz.x, pBody.y, temp_xz.y);
 
     let baseShell = sdEllipsoid(pBody, vec3<f32>(2.0, 1.0, 2.5));
 
     // Shell Complexity (Voronoi Plates)
     let complexity = u.zoom_params.x * 5.0 + 2.0;
-    let v = voronoi(pBody * complexity + gTime * 0.1);
+    let v = voronoi(pBody * complexity + vec3<f32>(gTime * 0.1));
 
     // Plate edge thickness
     let edge = v.y - v.x;
@@ -152,13 +154,15 @@ fn map(p_in: vec3<f32>) -> f32 {
     var pFinL = pBody;
     pFinL.x -= 2.2;
     pFinL.z -= 1.5;
-    pFinL.xy = rot(-0.5) * pFinL.xy;
+    let tempL_xy = rot(-0.5) * pFinL.xy;
+    pFinL = vec3<f32>(tempL_xy.x, tempL_xy.y, pFinL.z);
     let finL = sdEllipsoid(pFinL, vec3<f32>(1.2, 0.1, 0.8));
 
     var pFinR = pBody;
     pFinR.x += 2.2;
     pFinR.z -= 1.5;
-    pFinR.xy = rot(0.5) * pFinR.xy;
+    let tempR_xy = rot(0.5) * pFinR.xy;
+    pFinR = vec3<f32>(tempR_xy.x, tempR_xy.y, pFinR.z);
     let finR = sdEllipsoid(pFinR, vec3<f32>(1.2, 0.1, 0.8));
 
     var turtle = smin(shell, head, 0.5);
@@ -212,10 +216,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Slow rotation of camera
     let camRot = rot(sin(gTime * 0.1) * 0.2);
-    ro.xz = camRot * ro.xz;
-    rd.xz = camRot * rd.xz;
-    ro.yz = rot(0.2) * ro.yz;
-    rd.yz = rot(0.2) * rd.yz;
+
+    let temp_ro_xz = camRot * ro.xz;
+    ro = vec3<f32>(temp_ro_xz.x, ro.y, temp_ro_xz.y);
+    let temp_rd_xz = camRot * rd.xz;
+    rd = vec3<f32>(temp_rd_xz.x, rd.y, temp_rd_xz.y);
+
+    let rot_x = rot(0.2);
+    let temp_ro_yz = rot_x * ro.yz;
+    ro = vec3<f32>(ro.x, temp_ro_yz.x, temp_ro_yz.y);
+    let temp_rd_yz = rot_x * rd.yz;
+    rd = vec3<f32>(rd.x, temp_rd_yz.x, temp_rd_yz.y);
 
     var t = 0.0;
     var d = 0.0;
@@ -251,7 +262,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Dark Obsidian base color
         let baseColor = vec3<f32>(0.05, 0.06, 0.07);
 
-        col = baseColor * (diff * 0.8 + 0.2) + spec * 0.5;
+        col = baseColor * (diff * 0.8 + 0.2) + vec3<f32>(spec * 0.5);
 
         // Add fake subsurface scattering / ambient based on glow
         col += vec3<f32>(0.1, 0.8, 1.0) * glow * 0.5;
@@ -271,7 +282,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
          for(var i = 0u; i < 5u; i++) {
             let ripple = u.ripples[i];
             if (ripple.w > 0.0) {
-                 let rDist = length(uv - ripple.xy / dims * 2.0 + 1.0); // Rough approximation
+                 let rDist = length(uv - ripple.xy / dims * 2.0 + vec2<f32>(1.0)); // Rough approximation
                  let rWave = sin((rDist - ripple.z) * 20.0) * 0.5 + 0.5;
                  let rEnvelope = smoothstep(0.1, 0.0, abs(rDist - ripple.z));
                  col += glowColor * rWave * rEnvelope * ripple.w * 0.2;
@@ -280,7 +291,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Tone mapping
-    col = col / (1.0 + col);
+    col = col / (vec3<f32>(1.0) + col);
     // Gamma correction
     col = pow(col, vec3<f32>(1.0 / 2.2));
 
