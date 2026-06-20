@@ -1,6 +1,6 @@
 {
     "id": "gen-sentient-liquid-neon-fractal-heart",
-    "title": "Sentient Liquid-Neon Fractal-Heart",
+    "name": "Sentient Liquid-Neon Fractal-Heart",
     "description": "A hyper-organic, pulsating biomechanical heart composed entirely of intertwined, liquid-neon fractal arteries that endlessly fold inward upon themselves, beating in perfect sync with ambient cosmic acoustic frequencies.",
     "category": "generative",
     "url": "shaders/gen-sentient-liquid-neon-fractal-heart.wgsl",

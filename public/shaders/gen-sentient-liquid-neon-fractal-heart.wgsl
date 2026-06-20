@@ -81,8 +81,8 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
 
     for (var i = 0; i < iters; i++) {
         p = abs(p) - vec3<f32>(0.2, 0.1, 0.3) / scale;
-        p.xy = rot(0.5 + time * 0.1) * p.xy;
-        p.yz = rot(0.3 + sin(time * 0.2)) * p.yz;
+        var pxy = p.xy; pxy = rot(0.5 + time * 0.1) * pxy; p.x = pxy.x; p.y = pxy.y;
+        var pyz = p.yz; pyz = rot(0.3 + sin(time * 0.2)) * pyz; p.y = pyz.x; p.z = pyz.y;
         scale *= 1.5;
         let box = (max(abs(p.x), max(abs(p.y), abs(p.z))) - 0.2) / scale;
         d = smin(d, box, 0.2 / scale);
@@ -108,7 +108,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dimensions = textureDimensions(writeTexture);
     let coords = vec2<i32>(id.xy);
 
-    if (coords.x >= dimensions.x || coords.y >= dimensions.y) {
+    if (coords.x >= i32(dimensions.x) || coords.y >= i32(dimensions.y)) {
         return;
     }
 
@@ -121,8 +121,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var rd = normalize(vec3<f32>(uv, -1.0));
 
     // Subtle camera movement
-    ro.xy = rot(sin(time * 0.1) * 0.2) * ro.xy;
-    rd.xy = rot(sin(time * 0.1) * 0.2) * rd.xy;
+    var roxy = ro.xy; roxy = rot(sin(time * 0.1) * 0.2) * roxy; ro.x = roxy.x; ro.y = roxy.y;
+    var rdxy = rd.xy; rdxy = rot(sin(time * 0.1) * 0.2) * rdxy; rd.x = rdxy.x; rd.y = rdxy.y;
 
     var t = 0.0;
     var col = vec3<f32>(0.0);
