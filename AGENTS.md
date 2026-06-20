@@ -266,3 +266,19 @@ User: "Remind me every day at 9:00 PM to take my medicine."
 You: Directly create the cron job at 21:00 with no offset suggestion.
 
 </IMPORTANT_REMINDER>
+
+## Cursor Cloud specific instructions
+
+This repository is the **Pixelocity / WebGPU Shader Effects** app (Create React App + React 19 + WGSL compute shaders, with an optional C++/WASM renderer). See `README.md` and the `scripts` in `package.json` for the canonical commands. Notes below are the non-obvious things that bite you in the headless Cloud VM.
+
+### Services / commands
+- **Dev server:** `npm start` (CRA on port 3000). The `prestart` step regenerates `public/shader-lists/*.json` (with a hard-coded `--base-url=https://test.1ink.us/...`) and the unified manifest; this runs automatically. Use `BROWSER=none` to avoid CRA trying to open a browser.
+- **Unit tests:** `npx react-scripts test --watchAll=false --ci` (Jest; ~125 tests, all pass). `npm test` works too.
+- **Lint:** `npx eslint src --ext .ts,.tsx`. NOTE: lint is **non-gating** — CI runs it with `|| true`, and there are pre-existing eslint errors/warnings in test/component files. Don't treat a non-zero eslint exit as a setup failure.
+- **Build:** `npm run build` (CRA production build + `wasm:build`). Succeeds here.
+
+### Hard environment limitations in the Cloud VM (these are NOT bugs you introduced)
+- **No GPU adapter / WebGPU unavailable.** The headless VM has no Vulkan ICD, so `navigator.gpu.requestAdapter()` returns null and the app logs `webgpu.unavailable: No suitable GPU adapter found`. The app falls back to Canvas2D/JS renderer. This means **GPU shader effects cannot be visually exercised here** — the canvas renders black (a live debug overlay still updates fps + mouse coords). Validate shader/renderer code via the unit tests and the build instead, not by looking at the canvas.
+- **External media hosts are network-blocked.** Image/video manifests and assets come from `storage.noahcohn.com`, `storage.googleapis.com`, and Unsplash; outbound requests to these are reset/blocked from the VM, so "Random Image" and remote shader/media loads won't display content. Local files under `public/` (e.g. `public/thumbnails/*.png`) are same-origin and reachable.
+- **Emscripten (`emcc`) is not installed.** `wasm:build` detects this and **skips the WASM build gracefully (exit 0)**, so `npm run build` still succeeds — it just produces no `public/wasm/*` artifacts. The WASM renderer path and the Playwright smoke tests in `tests/` (which need a production build + WASM + a real GPU) are therefore not runnable in this VM.
+- **`sharp` postinstall** downloads a libvips binary from GitHub during `npm install`; this can transiently fail with `ECONNRESET`. Re-running `npm install` resolves it.
