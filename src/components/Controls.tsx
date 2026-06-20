@@ -15,8 +15,10 @@ import { VJPreset, loadPresets, deletePreset } from '../services/vjPresets';
 import { MyVjSet, loadMyVjSets, deleteMyVjSet } from '../services/myVjSets';
 import { RendererSwitcher } from './RendererSwitcher';
 import { PresetPackGallery } from './PresetPackGallery';
-import { decodeChain } from '../services/layerChainShare';
+import { decodeChain, buildSharedChain } from '../services/layerChainShare';
 import type { SharedChain } from '../services/layerChainShare';
+import { buildCatalog, CatalogShader } from '../services/shaderCatalog';
+import { VariationGrid } from './VariationGrid';
 import '../styles/gold-glass-theme.css';
 
 // --- Types for Coordinate System ---
@@ -222,6 +224,12 @@ const Controls: React.FC<ControlsProps> = ({
     const [autoTransitionIntervalMs, setAutoTransitionIntervalMs] = useState(8000);
     const [autoTransitionDurationMs, setAutoTransitionDurationMs] = useState(2000);
     const [autoTransitionMode, setAutoTransitionMode] = useState<'randomize' | 'cyclePresets'>('randomize');
+
+    // --- Chain Remix Explorer State ---
+    const [remixOpen, setRemixOpen] = useState(false);
+    const [remixCatalog, setRemixCatalog] = useState<CatalogShader[] | null>(null);
+    const [remixLoading, setRemixLoading] = useState(false);
+
     const stopAutoTransitionRef = React.useRef(onStopAutoTransition);
 
     useEffect(() => {
@@ -1502,11 +1510,68 @@ const Controls: React.FC<ControlsProps> = ({
                         </button>
                     )}
                     {onApplySharedChain && (
+                        <button
+                            className="gold-outline-btn"
+                            style={{ width: '100%', marginTop: '10px' }}
+                            onClick={async () => {
+                                setRemixOpen(true);
+                                if (!remixCatalog) {
+                                    setRemixLoading(true);
+                                    try {
+                                        const catalog = await buildCatalog();
+                                        setRemixCatalog(catalog);
+                                    } catch (e) {
+                                        console.error('[Controls] Failed to load catalog for remix:', e);
+                                    } finally {
+                                        setRemixLoading(false);
+                                    }
+                                }
+                            }}
+                            title="Generate A/B variations of the current chain"
+                        >
+                            🔀 Remix Chain
+                        </button>
+                    )}
+                    {onApplySharedChain && (
                         <PresetPackGallery
                             open={presetPacksOpen}
                             onToggle={() => setPresetPacksOpen(o => !o)}
                             onApplyPack={(chain: SharedChain) => onApplySharedChain(chain)}
                         />
+                    )}
+
+                    {remixOpen && remixCatalog && (
+                        <VariationGrid
+                            baseChain={buildSharedChain(modes, slotParams)}
+                            catalog={remixCatalog}
+                            count={6}
+                            options={{ paramJitter: true, shaderSwap: 'sameCategory' }}
+                            onAdopt={(chain: SharedChain) => {
+                                onApplySharedChain?.(chain);
+                                setRemixOpen(false);
+                            }}
+                            onClose={() => setRemixOpen(false)}
+                        />
+                    )}
+
+                    {remixOpen && !remixCatalog && (
+                        <div
+                            style={{
+                                position: 'fixed',
+                                inset: 0,
+                                background: 'rgba(0,0,0,0.85)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                zIndex: 1000,
+                            }}
+                        >
+                            <div className="glass-panel" style={{ padding: '24px', borderRadius: '12px' }}>
+                                <p style={{ color: '#FFD700', margin: 0 }}>
+                                    {remixLoading ? 'Loading shader catalog…' : 'Preparing remix explorer…'}
+                                </p>
+                            </div>
+                        </div>
                     )}
 
                 </>
