@@ -57,6 +57,7 @@ _updateUniforms,\
 _updateMousePos,\
 _setMouseDown,\
 _updateAudioData,\
+_updateAudioFrequencyBins,\
 _updateDepthMap,\
 _setInputSource,\
 _addRipple,\
@@ -64,6 +65,13 @@ _clearRipples,\
 _setTime,\
 _setZoomParams,\
 _getFPS,\
+_getSupportsDeepWorkgroup,\
+_getSlotShaderId,\
+_getSlotEnabled,\
+_getSlotMode,\
+_getGPUTimings,\
+_setRecording,\
+_isRecording,\
 _getAdapterSummary,\
 _getLastInitErrorStage,\
 _getLastInitErrorMessage,\

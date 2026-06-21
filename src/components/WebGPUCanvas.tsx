@@ -61,6 +61,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
     // Track if canvas has valid dimensions before initializing WebGPU
     const [canvasReady, setCanvasReady] = useState(false);
+    // Track when RendererManager finished init so input-source sync runs once
+    const [managerReady, setManagerReady] = useState(false);
 
     // Track if there are active interactive/mouse-driven effects
     const [hasInteractiveEffects, setHasInteractiveEffects] = useState(false);
@@ -139,9 +141,14 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 if (rendererRef && 'current' in rendererRef) {
                     (rendererRef as React.MutableRefObject<any>).current = renderer;
                 }
-                if (videoRef.current && 'setVideo' in renderer) {
-                    (renderer as any).setVideo(videoRef.current);
+                if (videoRef.current) {
+                    renderer.setVideo(videoRef.current);
                 }
+                renderer.setInputSource(inputSource);
+                if (slotParams.length > 0) {
+                    renderer.syncAllSlotParams(slotParams);
+                }
+                setManagerReady(true);
 
                 // Expose renderer on window in development mode so developers can
                 // switch renderers from the browser console, e.g.:
@@ -158,6 +165,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         })();
         return () => {
             mounted = false;
+            setManagerReady(false);
             cancelAnimationFrame(animationFrameId.current);
             renderer.destroy();
             // Remove the dev-mode console handle when the component unmounts
@@ -222,12 +230,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
 
 
-    // Sync inputSource to renderer
+    // Sync inputSource to renderer (re-run when manager becomes ready or source changes)
     useEffect(() => {
-        if (rendererRef.current) {
+        if (managerReady && rendererRef.current) {
             rendererRef.current.setInputSource(inputSource);
         }
-    }, [inputSource, rendererRef]);
+    }, [inputSource, managerReady, rendererRef]);
 
     // Check for interactive effects
     useEffect(() => {
@@ -360,14 +368,11 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         handleVideoSource();
 
         // Ensure the renderer is aware of the video element whenever source changes
-        if (rendererRef.current && videoRef.current) {
-            if ('setVideo' in rendererRef.current) {
-                console.log('[WebGPUCanvas] Passing video element to renderer');
-                (rendererRef.current as any).setVideo(videoRef.current);
-            }
+        if (managerReady && rendererRef.current && videoRef.current) {
+            rendererRef.current.setVideo(videoRef.current);
         }
 
-    }, [inputSource, selectedVideo, videoSourceUrl, setInputSource, webcamVideoElement, rendererRef, segment]);
+    }, [inputSource, selectedVideo, videoSourceUrl, setInputSource, webcamVideoElement, rendererRef, segment, managerReady]);
 
     // Handle Mute
     useEffect(() => {
@@ -416,18 +421,12 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         }
     }, [isMouseDown, rendererRef]);
 
-    // Sync slotParams to renderer (zoomParam1-4) - use active slot's params
+    // Sync slotParams to renderer — push all slots (WASM needs per-slot params)
     useEffect(() => {
-        if (rendererRef.current?.updateSlotParams && slotParams.length > 0) {
-            const params = slotParams[activeSlot] ?? slotParams[0];
-            rendererRef.current.updateSlotParams({
-                zoomParam1: params.zoomParam1,
-                zoomParam2: params.zoomParam2,
-                zoomParam3: params.zoomParam3,
-                zoomParam4: params.zoomParam4,
-            }, activeSlot);
+        if (rendererRef.current && slotParams.length > 0) {
+            rendererRef.current.syncAllSlotParams(slotParams);
         }
-    }, [slotParams, activeSlot, rendererRef]);
+    }, [slotParams, rendererRef]);
 
     // Animation Loop
     useEffect(() => {
@@ -438,16 +437,9 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 // Force square viewport to match the aspect ratio of the 2048x2048 internal buffer
                 const canvasSize = Math.min(displaySize.width, displaySize.height);
 
-                // Resolution: Use the stacking render signature from 'main'
-                // AND pass display dimensions
-
-                // Extra safety: repeatedly ensure the renderer has the video reference
-                // (in case the renderer was instantiated after the effect ran)
-                if ('setVideo' in rendererRef.current) {
-                    (rendererRef.current as any).setVideo(videoRef.current);
-                }
-
-                (rendererRef.current as any).render(
+                // Upload video frames (WASM) and satisfy WebGPUCanvas render signature
+                rendererRef.current.setVideo(videoRef.current);
+                rendererRef.current.render(
                     modes,
                     slotParams,
                     videoRef.current,
@@ -489,11 +481,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         const rect = canvas.getBoundingClientRect();
         const x = (event.clientX - rect.left) / rect.width;
         const y = (event.clientY - rect.top) / rect.height;
-        if (typeof (rendererRef.current as any).addRipplePoint === 'function') {
-            (rendererRef.current as any).addRipplePoint(x, y);
-        } else if ('addRipplePoint' in rendererRef.current) {
-            (rendererRef.current as any).addRipplePoint(x, y);
-        }
+        rendererRef.current.addRipplePoint(x, y);
     };
 
     const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {

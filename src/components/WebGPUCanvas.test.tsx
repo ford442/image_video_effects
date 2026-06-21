@@ -63,9 +63,11 @@ test('mouse down emits ripple for mouse-driven shader', () => {
             { id: 'interactive-ripple', features: ['mouse-driven'] }
         ],
         addRipplePoint: jest.fn(),
+        syncAllSlotParams: jest.fn(),
         setInputSource: jest.fn(),
-        firePlasma: jest.fn(),
+        setVideo: jest.fn(),
         render: jest.fn(),
+        firePlasma: jest.fn(),
     };
 
     const rendererRef = { current: mockRenderer } as any;

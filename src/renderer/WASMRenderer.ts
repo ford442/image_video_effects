@@ -1,9 +1,9 @@
 import { Renderer, RendererConfig } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
+import { InputSource } from './types';
 
-/** Default value for slot zoom parameters when not explicitly provided. */
-const DEFAULT_SLOT_PARAM = 0.5;
+type SlotMode = 'chained' | 'parallel';
 
 /**
  * Diagnostic information from the WASM renderer.
@@ -37,6 +37,7 @@ export class WASMRenderer implements Renderer {
   private mouseY = 0.5;
   private mouseDown = false;
   private initialized = false;
+  private inputSource: InputSource = 'image';
 
   // Offscreen canvas for extracting video/image pixel data
   private offscreenCanvas: HTMLCanvasElement | null = null;
@@ -49,6 +50,8 @@ export class WASMRenderer implements Renderer {
   private maxInitAttempts = 3;
   private consecutiveRenderErrors = 0;
   private maxRenderErrorsBeforeStopping = 10;
+  private lastFrameDataUrl = '';
+  private recording = false;
 
   constructor(config: RendererConfig) {
     this.config = config;
@@ -140,19 +143,13 @@ export class WASMRenderer implements Renderer {
 
   /**
    * Update zoom parameters for a specific slot from a SlotParams object.
-   * This is the aggregate form called by the canvas effect when UI sliders change.
-   * @param params - Named zoom parameters
-   * @param slotIndex - Slot to update (defaults to 0)
+   * Partial updates preserve unspecified params (matches TS WebGPURenderer).
    */
   updateSlotParams(
     params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number },
     slotIndex = 0
   ): void {
-    const p1 = params.zoomParam1 ?? DEFAULT_SLOT_PARAM;
-    const p2 = params.zoomParam2 ?? DEFAULT_SLOT_PARAM;
-    const p3 = params.zoomParam3 ?? DEFAULT_SLOT_PARAM;
-    const p4 = params.zoomParam4 ?? DEFAULT_SLOT_PARAM;
-    WasmBridge.setSlotParams(slotIndex, p1, p2, p3, p4);
+    WasmBridge.updateSlotParams(slotIndex, params);
   }
 
   /** Set slot execution mode: 'chained' (default) or 'parallel'. */
@@ -166,8 +163,20 @@ export class WASMRenderer implements Renderer {
   }
 
   /** Set the active input source for generative / procedural shaders. */
-  setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
+  setInputSource(source: InputSource): void {
+    this.inputSource = source;
     WasmBridge.setInputSource(source);
+  }
+
+  /** True when the current mode feeds live video frames into the C++ read texture. */
+  private usesVideoInput(): boolean {
+    return this.inputSource === 'video'
+      || this.inputSource === 'webcam'
+      || this.inputSource === 'live';
+  }
+
+  getInputSource(): InputSource {
+    return this.inputSource;
   }
 
   addRipple(x: number, y: number): void {
@@ -248,6 +257,7 @@ export class WASMRenderer implements Renderer {
   }
 
   updateVideoFrame(): void {
+    if (!this.usesVideoInput()) return;
     if (!this.video || this.video.readyState < 2) return;
 
     const w = this.video.videoWidth;
@@ -298,6 +308,43 @@ export class WASMRenderer implements Renderer {
 
   updateAudioData(bass: number, mid: number, treble: number): void {
     WasmBridge.updateAudioData(bass, mid, treble);
+  }
+
+  updateAudioFrequencyBins(bins: Float32Array): void {
+    WasmBridge.updateAudioFrequencyBins(bins);
+  }
+
+  getSupportsDeepWorkgroup(): boolean {
+    return WasmBridge.getSupportsDeepWorkgroup();
+  }
+
+  getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: SlotMode } | null {
+    if (index < 0 || index > 2) return null;
+    return WasmBridge.getSlotState(index);
+  }
+
+  getGPUTimings(): { parallelTime: number; chainedTime: number; totalTime: number; available: boolean } {
+    return WasmBridge.getGPUTimings();
+  }
+
+  /** Returns the last captured frame as a PNG data URL, or '' if none yet. */
+  getFrameImage(): string {
+    return this.lastFrameDataUrl;
+  }
+
+  /** Capture the current frame and cache it for getFrameImage(). */
+  async refreshFrameImage(): Promise<string> {
+    this.lastFrameDataUrl = await WasmBridge.captureFrameDataUrl();
+    return this.lastFrameDataUrl;
+  }
+
+  setRecording(isRecording: boolean): void {
+    this.recording = isRecording;
+    WasmBridge.setRecording(isRecording);
+  }
+
+  setRecordingMode(_mode: 'loop' | 'continuous'): void {
+    // WASM path uses MediaRecorder; mode is handled at the App layer.
   }
 
   updateMouse(x: number, y: number): void {

@@ -1,6 +1,26 @@
 // Slot execution mode for inter-shader parallelization
 type SlotMode = 'chained' | 'parallel';
 
+/** Aggregate zoom-param update (UI slider form). */
+export type SlotZoomParamsUpdate = {
+  zoomParam1?: number;
+  zoomParam2?: number;
+  zoomParam3?: number;
+  zoomParam4?: number;
+};
+
+/** Shader-slot backends (WebGPU + WASM). Canvas2D does not implement these. */
+export interface ShaderSlotRenderer {
+  loadShader(id: string, url: string): Promise<boolean>;
+  setActiveShader(id: string): void;
+  setSlotShader(index: number, id: string): void;
+  setSlotParams?(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void;
+  updateSlotParams(params: SlotZoomParamsUpdate, slotIndex?: number): void;
+  setSlotMode(index: number, mode: SlotMode): void;
+  addRipple(x: number, y: number): void;
+  clearRipples(): void;
+}
+
 // Base renderer interface
 export interface Renderer {
   init(canvas: HTMLCanvasElement): Promise<boolean>;
@@ -50,7 +70,13 @@ export interface Renderer {
   setMaskEnabled?: (enabled: boolean) => void;
   setRecording?: (isRecording: boolean) => void;
   setRecordingMode?: (mode: 'loop' | 'continuous') => void;
-  updateSlotParams?: (params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number }, slotIndex?: number) => void;
+  loadShader?: (id: string, url: string) => Promise<boolean>;
+  setActiveShader?: (id: string) => void;
+  setSlotShader?: (index: number, id: string) => void;
+  setSlotParams?: (slotIndex: number, p1: number, p2: number, p3: number, p4: number) => void;
+  updateSlotParams?: (params: SlotZoomParamsUpdate, slotIndex?: number) => void;
+  addRipple?: (x: number, y: number) => void;
+  clearRipples?: () => void;
 
   /** Optional: Return current FPS for performance comparison (used by dual-FPS toggle). */
   getFPS?: () => number;

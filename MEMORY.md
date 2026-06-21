@@ -22,7 +22,8 @@
 
 - **Current Reality (2026-06-16):**
 - **Init/format/limits handshake hardened** (#817–#822 ✅ in tree). Presentation wired (`PresentToSurface` at 1725).
-- **Still not drop-in:** RendererManager WASM forwarding, setInputSource wiring, live edge-GPU verification.
+- **Still not drop-in:** live edge-GPU verification; `setInputSource` app wiring partially done (WebGPUCanvas + resync on switch).
+- **Phase 1 glue (2026-06-20):** RendererManager duck-typed shader forwarding, `syncAllSlotParams`, `resyncShaderStack` on backend switch, normalized `ShaderSlotRenderer` API, unit tests.
 - **Build:** CI wasm job hardened; local `build.sh` still exit 0 without emcc.
 
 **User directive this session:** Solidify/complete the *C++ code*. Specifically call out that "we can check if we've chosen good webgpu settings for the context via c++" → move adapter/device/surface/limits/format decisions + validation into C++ side, expose/report.
@@ -41,7 +42,8 @@
 - [x] Unified error paths (#822, 2026-06-16): bridge merges C++ stage/message into diagnostics.
 - [x] Bridge sync (#821, 2026-06-16): canonical `wasm_renderer/wasm_bridge.js` synced to `src/wasm/` + validator guard.
 - [x] WASM docs refresh (#823, 2026-06-16): GAP_ANALYSIS, STATUS, README, WASM_*.md — presentation corrected, #817–#822 tracking table, #799 roadmap link.
-- [ ] RendererManager WASM forwarding + `setInputSource` wiring (GAP §3.2–3.3).
+- [x] RendererManager WASM forwarding + resync on switch (Phase 1, 2026-06-20).
+- [ ] App-level `setInputSource` everywhere + live edge-GPU verification.
 - Ongoing: shader work, but this session was WASM C++ focus per query.
 - Memory maintenance: review recent daily (06-07 had swarm, git sync); distill only high-signal (C++ reliability is now key infra bet).
 
