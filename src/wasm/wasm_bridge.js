@@ -919,6 +919,7 @@ export function startRecording(canvasElement, {
       const cb       = _recordResolve;
       _recordResolve = null;
       _recorder      = null;
+      setRecording(false);
       if (cb) cb(blob);
     };
 
@@ -926,6 +927,7 @@ export function startRecording(canvasElement, {
       _recorder      = null;
       _recordChunks  = [];
       _recordResolve = null;
+      setRecording(false);
       reject(new Error(`[WASM] MediaRecorder error: ${e.error?.message ?? e}`));
     };
 
@@ -948,6 +950,8 @@ export function startRecording(canvasElement, {
 export function stopRecording() {
   if (_recorder && _recorder.state === 'recording') {
     _recorder.stop();
+  } else {
+    setRecording(false);
   }
 }
 
@@ -984,15 +988,23 @@ const wasmBridge = {
   setActiveShader,
   setSlotShader,
   setSlotParams,
+  updateSlotParams,
   setSlotMode,
   updateUniforms,
   updateMousePos,
   updateAudioData,
+  updateAudioFrequencyBins,
   updateDepthMap,
   setInputSource,
   addRipple,
   clearRipples,
   getFPS,
+  getSupportsDeepWorkgroup,
+  getSlotState,
+  getGPUTimings,
+  setRecording,
+  isRecordingActive,
+  captureFrameDataUrl,
   getAdapterSummary,
   getLastInitErrorStage,
   getLastInitErrorMessage,
