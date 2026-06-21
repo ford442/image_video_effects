@@ -319,6 +319,8 @@ function MainApp() {
     const rendererRef = useRef<RendererManager | null>(null);
     const modesRef = useRef<RenderMode[]>(modes);
     const availableModesRef = useRef<ShaderEntry[]>(availableModes);
+    const slotParamsRef = useRef<SlotParams[]>(slotParams);
+    const inputSourceRef = useRef<InputSource>(inputSource);
 
     // --- Renderer backend state ---
     const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
@@ -346,6 +348,16 @@ function MainApp() {
         if (ok) {
             setActiveRendererType(type);
             setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
+
+            // Re-bind shaders + params so the new backend matches the UI state
+            if (type === 'wasm' || type === 'webgpu') {
+                await manager.resyncShaderStack({
+                    modes: modesRef.current,
+                    slotParams: slotParamsRef.current,
+                    resolveShader: (shaderId) => availableModesRef.current.find(s => s.id === shaderId),
+                    inputSource: inputSourceRef.current,
+                });
+            }
         } else {
             setStatus(`⚠️ Failed to switch to ${type} renderer — staying on ${activeRendererType}.`);
         }
@@ -384,6 +396,14 @@ function MainApp() {
     useEffect(() => {
         availableModesRef.current = availableModes;
     }, [availableModes]);
+
+    useEffect(() => {
+        slotParamsRef.current = slotParams;
+    }, [slotParams]);
+
+    useEffect(() => {
+        inputSourceRef.current = inputSource;
+    }, [inputSource]);
 
     const mapShaderParamUpdates = useCallback((slotParamsUpdates: Record<string, number>, slotIndex: number): Partial<SlotParams> => {
         const shaderId = modesRef.current[slotIndex];
@@ -936,6 +956,7 @@ function MainApp() {
     
     const onInitCanvas = useCallback(() => {
         if (rendererRef.current) {
+            setActiveRendererType(rendererRef.current.getActiveRendererType());
             if (rendererRef.current.getAvailableModes) {
                 setAvailableModes(rendererRef.current.getAvailableModes());
             }
@@ -1641,6 +1662,7 @@ function MainApp() {
 
         setIsRecording(false);
         setRecordingCountdown(8);
+        rendererRef.current?.setRecording?.(false);
     }, []);
 
     const startRecording = useCallback(async () => {
@@ -1704,6 +1726,7 @@ function MainApp() {
             
             // Start recording
             mediaRecorder.start(100); // Collect data every 100ms
+            rendererRef.current?.setRecording?.(true);
             setIsRecording(true);
             setRecordingCountdown(8);
             setStatus('🔴 Recording... 8s');

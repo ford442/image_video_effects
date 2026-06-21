@@ -1,8 +1,8 @@
-import { Renderer, RendererConfig } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer, SlotZoomParamsUpdate } from './Renderer';
 import { JSRenderer } from './JSRenderer';
 import { WASMRenderer, WASMDiagnostics } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
-import { ShaderEntry } from './types';
+import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
 
 export interface RendererMetrics {
   fps: number;
@@ -60,6 +60,9 @@ export class RendererManager {
     isWASM: false,
   };
   private onMetricsUpdate?: (metrics: RendererMetrics) => void;
+
+  /** Max shader slots shared by WebGPU and WASM backends. */
+  private static readonly SLOT_COUNT = 3;
 
   constructor(config: RendererConfig, onMetricsUpdate?: (metrics: RendererMetrics) => void) {
     this.config = config;
@@ -183,93 +186,176 @@ export class RendererManager {
     }
   }
 
+  /** True when the active backend supports WGSL shader slots (WebGPU or WASM). */
+  supportsShaderEffects(): boolean {
+    return this.getShaderBackend() !== null;
+  }
+
+  /** Returns the shader-capable backend, or null for Canvas2D fallback. */
+  private getShaderBackend(): ShaderSlotRenderer | null {
+    const r = this.currentRenderer;
+    if (!r || r instanceof JSRenderer) return null;
+    const candidate = r as ShaderSlotRenderer;
+    if (
+      typeof candidate.loadShader === 'function' &&
+      typeof candidate.setSlotShader === 'function' &&
+      typeof candidate.updateSlotParams === 'function'
+    ) {
+      return candidate;
+    }
+    return null;
+  }
+
   /**
    * Load a shader by fetching its WGSL from the given URL.
    * Works with both the TypeScript WebGPU renderer and the WASM renderer.
    * No-op when the Canvas2D fallback is active.
    */
   async loadShader(id: string, url: string): Promise<boolean> {
-    if (this.currentRenderer instanceof WebGPURenderer) {
-      return this.currentRenderer.loadShader(id, url);
+    const backend = this.getShaderBackend();
+    if (!backend) return false;
+    try {
+      return await backend.loadShader(id, url);
+    } catch (err) {
+      console.warn(`[RendererManager] loadShader("${id}") failed:`, err);
+      return false;
     }
-    if (this.currentRenderer instanceof WASMRenderer) {
-      return this.currentRenderer.loadShader(id, url);
-    }
-    return false;
   }
 
   /**
-   * Load all shaders from a shader list into the WASM renderer.
-   * Shaders are loaded concurrently.
+   * Load all shaders from a shader list into the active shader backend.
+   * Shaders are loaded concurrently. Skips entries when Canvas2D is active.
    */
   async loadShaders(shaders: ShaderEntry[]): Promise<void> {
-    await Promise.all(shaders.map(s => this.loadShader(s.id, s.url)));
+    if (!this.supportsShaderEffects()) return;
+    const results = await Promise.allSettled(
+      shaders.map(s => this.loadShader(s.id, s.url))
+    );
+    const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value)).length;
+    if (failed > 0) {
+      console.warn(`[RendererManager] loadShaders: ${failed}/${shaders.length} shader(s) failed`);
+    }
   }
 
   /** Switch to a previously loaded shader. No-op with Canvas2D fallback. */
   setActiveShader(id: string): void {
-    if (this.currentRenderer instanceof WebGPURenderer) {
-      this.currentRenderer.setActiveShader(id);
-    } else if (this.currentRenderer instanceof WASMRenderer) {
-      this.currentRenderer.setActiveShader(id);
-    }
+    this.getShaderBackend()?.setActiveShader(id);
   }
 
   /** Assign a shader to a specific slot (0-2) without clearing other slots. */
   setSlotShader(index: number, id: string): void {
-    if (this.currentRenderer instanceof WebGPURenderer) {
-      this.currentRenderer.setSlotShader(index, id);
-    } else if (this.currentRenderer instanceof WASMRenderer) {
-      this.currentRenderer.setSlotShader(index, id);
+    this.getShaderBackend()?.setSlotShader(index, id);
+  }
+
+  /**
+   * Update zoom params for one slot using the per-param form (WASM bridge API).
+   * Falls back to aggregate updateSlotParams when the backend has no setSlotParams.
+   */
+  setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void {
+    const backend = this.getShaderBackend();
+    if (!backend) return;
+    if (backend.setSlotParams) {
+      backend.setSlotParams(slotIndex, p1, p2, p3, p4);
+    } else {
+      backend.updateSlotParams(
+        { zoomParam1: p1, zoomParam2: p2, zoomParam3: p3, zoomParam4: p4 },
+        slotIndex
+      );
     }
   }
 
-  /** Update zoom params for a slot (called when UI sliders change). */
-  updateSlotParams(
-    params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number },
-    slotIndex?: number
-  ): void {
-    if (this.currentRenderer instanceof WebGPURenderer) {
-      this.currentRenderer.updateSlotParams(params);
-    } else if (this.currentRenderer instanceof WASMRenderer) {
-      this.currentRenderer.updateSlotParams(params, slotIndex);
+  /** Update zoom params for a slot (aggregate form from UI sliders). */
+  updateSlotParams(params: SlotZoomParamsUpdate, slotIndex = 0): void {
+    this.getShaderBackend()?.updateSlotParams(params, slotIndex);
+  }
+
+  /** Push all slot slider values to the active shader backend (required for WASM multi-slot). */
+  syncAllSlotParams(slotParams: SlotParams[], maxSlots = RendererManager.SLOT_COUNT): void {
+    if (!this.supportsShaderEffects() || slotParams.length === 0) return;
+    const count = Math.min(maxSlots, slotParams.length);
+    for (let i = 0; i < count; i++) {
+      const p = slotParams[i];
+      this.updateSlotParams(
+        {
+          zoomParam1: p.zoomParam1,
+          zoomParam2: p.zoomParam2,
+          zoomParam3: p.zoomParam3,
+          zoomParam4: p.zoomParam4,
+        },
+        i
+      );
     }
+  }
+
+  /**
+   * Re-load and re-bind the current shader stack after a renderer backend switch.
+   * Ensures WASM receives the same slot shaders + params the UI already selected.
+   */
+  async resyncShaderStack(options: {
+    modes: RenderMode[];
+    slotParams: SlotParams[];
+    resolveShader: (shaderId: string) => ShaderEntry | undefined;
+    inputSource?: InputSource;
+  }): Promise<void> {
+    if (!this.supportsShaderEffects()) return;
+
+    if (options.inputSource) {
+      this.setInputSource(options.inputSource);
+    }
+
+    for (let i = 0; i < Math.min(RendererManager.SLOT_COUNT, options.modes.length); i++) {
+      const mode = options.modes[i];
+      if (!mode || mode === 'none') {
+        this.setSlotShader(i, '');
+        continue;
+      }
+
+      const entry = options.resolveShader(mode);
+      if (!entry) {
+        console.warn(`[RendererManager] resyncShaderStack: no entry for "${mode}" on slot ${i}`);
+        continue;
+      }
+
+      const ok = await this.loadShader(entry.id, entry.url);
+      if (ok) {
+        this.setSlotShader(i, entry.id);
+      } else {
+        console.warn(`[RendererManager] resyncShaderStack: failed to load "${entry.id}" for slot ${i}`);
+      }
+    }
+
+    this.syncAllSlotParams(options.slotParams);
   }
 
   /** Set slot execution mode ('chained' | 'parallel'). */
   setSlotMode(index: number, mode: 'chained' | 'parallel'): void {
-    if (this.currentRenderer instanceof WebGPURenderer) {
-      this.currentRenderer.setSlotMode(index, mode);
-    } else if (this.currentRenderer instanceof WASMRenderer) {
-      this.currentRenderer.setSlotMode(index, mode);
-    }
+    this.getShaderBackend()?.setSlotMode(index, mode);
   }
 
   /** Set the active input source (generative, image, video, webcam, or live). */
-  setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
-    if (this.currentRenderer instanceof WebGPURenderer) {
-      this.currentRenderer.setInputSource(source);
-    } else if (this.currentRenderer instanceof WASMRenderer) {
-      this.currentRenderer.setInputSource(source);
-    } else if (this.currentRenderer instanceof JSRenderer) {
-      this.currentRenderer.setInputSource(source);
+  setInputSource(source: InputSource): void {
+    this.currentRenderer?.setInputSource?.(source);
+  }
+
+  /** Returns the active input source when the backend exposes it (WASM). */
+  getInputSource(): InputSource | null {
+    if (this.currentRenderer instanceof WASMRenderer) {
+      return this.currentRenderer.getInputSource();
     }
+    return null;
   }
 
   addRipple(x: number, y: number): void {
-    if (this.currentRenderer instanceof WebGPURenderer) {
-      this.currentRenderer.addRipple(x, y);
-    } else if (this.currentRenderer instanceof WASMRenderer) {
-      this.currentRenderer.addRipple(x, y);
-    }
+    this.getShaderBackend()?.addRipple(x, y);
+  }
+
+  /** Alias used by WebGPUCanvas mouse handlers (forwards to addRipple). */
+  addRipplePoint(x: number, y: number): void {
+    this.addRipple(x, y);
   }
 
   clearRipples(): void {
-    if (this.currentRenderer instanceof WebGPURenderer) {
-      this.currentRenderer.clearRipples();
-    } else if (this.currentRenderer instanceof WASMRenderer) {
-      this.currentRenderer.clearRipples();
-    }
+    this.getShaderBackend()?.clearRipples();
   }
 
   /** Load an image by URL into the active renderer's read texture. */
@@ -317,6 +403,40 @@ export class RendererManager {
   /** Forwards deep-workgroup capability query to the active renderer. */
   getSupportsDeepWorkgroup(): boolean {
     return this.currentRenderer?.getSupportsDeepWorkgroup?.() ?? false;
+  }
+
+  getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: 'chained' | 'parallel' } | null {
+    return this.currentRenderer?.getSlotState?.(index) ?? null;
+  }
+
+  getGPUTimings(): { parallelTime: number; chainedTime: number; totalTime: number; available: boolean } {
+    return this.currentRenderer?.getGPUTimings?.() ?? {
+      parallelTime: 0,
+      chainedTime: 0,
+      totalTime: 0,
+      available: false,
+    };
+  }
+
+  getFrameImage(): string {
+    return this.currentRenderer?.getFrameImage?.() ?? '';
+  }
+
+  /** Capture current frame from WASM renderer (no-op for other backends unless implemented). */
+  async refreshFrameImage(): Promise<string> {
+    const r = this.currentRenderer as WASMRenderer | null;
+    if (r && typeof (r as WASMRenderer).refreshFrameImage === 'function') {
+      return (r as WASMRenderer).refreshFrameImage();
+    }
+    return '';
+  }
+
+  setRecording(isRecording: boolean): void {
+    this.currentRenderer?.setRecording?.(isRecording);
+  }
+
+  setRecordingMode(mode: 'loop' | 'continuous'): void {
+    this.currentRenderer?.setRecordingMode?.(mode);
   }
 
   getMetrics(): RendererMetrics {
@@ -382,12 +502,12 @@ export class RendererManager {
 
   /**
    * Render method called by WebGPUCanvas animation loop.
-   * The actual rendering is handled internally by the active renderer's own loop.
-   * This method exists to satisfy the interface expected by WebGPUCanvas.
+   * WebGPU renderer drives its own loop; WASM uploads video frames here then renders internally.
    */
-  render(..._args: any[]): void {
-    // Rendering is handled internally by JSRenderer/WASMRenderer's own animation loops
-    // This method prevents "render is not a function" errors from WebGPUCanvas
+  render(..._args: unknown[]): void {
+    if (this.metrics.isWASM) {
+      this.updateVideoFrame();
+    }
   }
 
   /** Get latest FPS from the active renderer (real measured value). */

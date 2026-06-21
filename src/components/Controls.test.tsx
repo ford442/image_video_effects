@@ -177,3 +177,4 @@ test('filters slot mega-menu to non-generative or generative shaders based on ef
     expect(screen.getAllByText('Gen Orb').length).toBeGreaterThan(0);
     expect(screen.queryByText('Paint Flow')).not.toBeInTheDocument();
 });
+

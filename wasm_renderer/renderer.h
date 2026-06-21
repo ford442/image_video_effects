@@ -236,6 +236,24 @@ public:
     // audio-reactive shader conventions are satisfied.
     void SetAudioData(float bass, float mid, float treble);
 
+    // Full FFT magnitude bins (normalised 0-1). Written to extraBuffer_[5..132].
+    // count should be <= 128 (AUDIO_FFT_BINS).
+    void SetAudioFrequencyBins(const float* bins, int count);
+
+    // ── Slot / capability queries ─────────────────────────────────────────────
+    const char* GetSlotShaderId(int slotIndex) const;
+    int  GetSlotEnabled(int slotIndex) const;
+    int  GetSlotMode(int slotIndex) const;  // 0=chained, 1=parallel
+    bool GetSupportsDeepWorkgroup() const { return supportsDeepWorkgroup_; }
+
+    // CPU wall-clock timings from the last Render() call (ms). GPU timestamp
+    // queries are not available in the WASM/Dawn path; available()==false.
+    void GetGPUTimings(float* parallelMs, float* chainedMs, float* totalMs, int* available) const;
+
+    // Recording flag (used by JS MediaRecorder integration).
+    void SetRecording(bool recording);
+    bool IsRecording() const { return isRecording_; }
+
     // ═══════════════════════════════════════════════════════════════════════════
     // RENDERING
     // ═══════════════════════════════════════════════════════════════════════════
@@ -403,6 +421,20 @@ private:
     float audioBass_   = 0.0f;
     float audioMid_    = 0.0f;
     float audioTreble_ = 0.0f;
+    static constexpr int AUDIO_FFT_BINS = 128;
+    static constexpr int EXTRA_BIN_OFFSET = 5;
+    float audioFreqBins_[AUDIO_FFT_BINS] = {};
+
+    // Adapter capability (set during CreateDevice)
+    uint32_t maxComputeInvocations_ = 256;
+    bool     supportsDeepWorkgroup_ = false;
+
+    // CPU render timings from last frame (ms)
+    float lastParallelTimeMs_ = 0.0f;
+    float lastChainedTimeMs_  = 0.0f;
+    float lastTotalTimeMs_    = 0.0f;
+
+    bool isRecording_ = false;
 
     // ═══════════════════════════════════════════════════════════════════════════
     // PERSISTENT STAGING BUFFER (avoids per-frame heap allocation)
@@ -435,6 +467,8 @@ private:
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════════════
     void UploadRGBA8ToReadTexture(const uint8_t* data, int width, int height);
+    /** Zero-fill readTexture_ (generative / no-input modes). */
+    void ClearReadTexture();
 
     // ═══════════════════════════════════════════════════════════════════════════
     // STATE

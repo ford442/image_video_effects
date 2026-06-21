@@ -1227,8 +1227,22 @@ export class WebGPURenderer implements Renderer {
     }
   }
 
-  /** Update all zoom params from SlotParams (called when UI changes) */
-  updateSlotParams(params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number }): void {
+  /** Per-slot zoom params (slotIndex accepted for API parity with WASM; TS renderer uses slot 0 for uniforms). */
+  setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void {
+    if (slotIndex === 0) {
+      this.zoomParams[0] = p1;
+      this.zoomParams[1] = p2;
+      this.zoomParams[2] = p3;
+      this.zoomParams[3] = p4;
+    }
+  }
+
+  /** Update zoom params from SlotParams (called when UI changes). slotIndex ignored except for slot 0. */
+  updateSlotParams(
+    params: { zoomParam1?: number; zoomParam2?: number; zoomParam3?: number; zoomParam4?: number },
+    slotIndex = 0
+  ): void {
+    if (slotIndex !== 0) return;
     if (params.zoomParam1 !== undefined) this.zoomParams[0] = params.zoomParam1;
     if (params.zoomParam2 !== undefined) this.zoomParams[1] = params.zoomParam2;
     if (params.zoomParam3 !== undefined) this.zoomParams[2] = params.zoomParam3;

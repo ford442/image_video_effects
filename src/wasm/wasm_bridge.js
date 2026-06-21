@@ -24,7 +24,15 @@ const state = {
   mouseY: 0.5,
   mouseDown: false,
   zoomParams: [0.5, 0.5, 0.5, 0.5],
+  /** Per-slot zoom params cache for partial updateSlotParams merges */
+  slotParams: [
+    [0.5, 0.5, 0.5, 0.5],
+    [0.5, 0.5, 0.5, 0.5],
+    [0.5, 0.5, 0.5, 0.5],
+  ],
   ripples: [],
+  inputSource: 1,
+  pendingInputSource: null,
   // Diagnostic tracking
   loadErrorCount: 0,
   lastLoadError: null,
@@ -234,6 +242,12 @@ async function initializeModule(factory, wasmBinaryPath, resolve) {
     }
 
     state.initialized = true;
+    if (state.pendingInputSource != null) {
+      setInputSource(state.pendingInputSource);
+      state.pendingInputSource = null;
+    } else if (state.inputSource !== 1) {
+      setInputSource(state.inputSource);
+    }
     console.log('[WASM] ✅ Initialization complete in', state.initEndTime - state.initStartTime, 'ms');
     resolve(true);
   } catch (err) {
@@ -347,12 +361,29 @@ export function setSlotShader(slotIndex, id) {
  */
 export function setSlotParams(slotIndex, p1, p2, p3, p4) {
   if (!state.initialized || !wasmModule) return;
+  if (slotIndex >= 0 && slotIndex < state.slotParams.length) {
+    state.slotParams[slotIndex] = [p1, p2, p3, p4];
+  }
   wasmModule.ccall(
     'setSlotParams',
     null,
     ['number', 'number', 'number', 'number', 'number'],
     [slotIndex, p1, p2, p3, p4]
   );
+}
+
+/**
+ * Merge partial zoom-param updates (aggregate form from UI sliders).
+ * Only defined keys are applied; others retain their current slot values.
+ */
+export function updateSlotParams(slotIndex, params = {}) {
+  if (slotIndex < 0 || slotIndex >= state.slotParams.length) return;
+  const cur = state.slotParams[slotIndex];
+  const p1 = params.zoomParam1 ?? cur[0];
+  const p2 = params.zoomParam2 ?? cur[1];
+  const p3 = params.zoomParam3 ?? cur[2];
+  const p4 = params.zoomParam4 ?? cur[3];
+  setSlotParams(slotIndex, p1, p2, p3, p4);
 }
 
 /**
@@ -421,6 +452,104 @@ export function updateAudioData(bass, mid, treble) {
   wasmModule.ccall('updateAudioData', null, ['number', 'number', 'number'], [bass, mid, treble]);
 }
 
+/** Max FFT bins written to extraBuffer[5..132] (matches TS WebGPURenderer). */
+const AUDIO_FFT_BINS = 128;
+
+/**
+ * Upload normalised FFT magnitude bins for audio-reactive shaders.
+ * @param {Float32Array} bins - Values in [0, 1], up to 128 bins
+ */
+export function updateAudioFrequencyBins(bins) {
+  if (!state.initialized || !wasmModule || !bins) return;
+  const count = Math.min(bins.length, AUDIO_FFT_BINS);
+  const byteLen = count * 4;
+  const ptr = wasmModule._malloc(byteLen);
+  wasmModule.HEAPF32.set(bins.subarray(0, count), ptr >> 2);
+  try {
+    wasmModule.ccall('updateAudioFrequencyBins', null, ['number', 'number'], [ptr, count]);
+  } finally {
+    wasmModule._free(ptr);
+  }
+}
+
+export function getSupportsDeepWorkgroup() {
+  if (!state.initialized || !wasmModule) return false;
+  return wasmModule.ccall('getSupportsDeepWorkgroup', 'number', [], []) === 1;
+}
+
+export function getSlotState(slotIndex) {
+  if (!state.initialized || !wasmModule) {
+    return { shaderId: null, enabled: false, mode: 'chained' };
+  }
+  const id = wasmModule.ccall('getSlotShaderId', 'string', ['number'], [slotIndex]) || '';
+  const enabled = wasmModule.ccall('getSlotEnabled', 'number', ['number'], [slotIndex]) === 1;
+  const modeInt = wasmModule.ccall('getSlotMode', 'number', ['number'], [slotIndex]);
+  return {
+    shaderId: id.length > 0 ? id : null,
+    enabled,
+    mode: modeInt === 1 ? 'parallel' : 'chained',
+  };
+}
+
+/** CPU wall-clock render timings from the last frame (GPU timestamps unavailable). */
+export function getGPUTimings() {
+  if (!state.initialized || !wasmModule) {
+    return { parallelTime: 0, chainedTime: 0, totalTime: 0, available: false };
+  }
+  const ptr = wasmModule._malloc(16);
+  try {
+    wasmModule.ccall('getGPUTimings', null, ['number', 'number', 'number', 'number'], [
+      ptr, ptr + 4, ptr + 8, ptr + 12,
+    ]);
+    const parallelTime = wasmModule.getValue(ptr, 'float');
+    const chainedTime = wasmModule.getValue(ptr + 4, 'float');
+    const totalTime = wasmModule.getValue(ptr + 8, 'float');
+    const available = wasmModule.getValue(ptr + 12, 'i32') === 1;
+    return { parallelTime, chainedTime, totalTime, available };
+  } finally {
+    wasmModule._free(ptr);
+  }
+}
+
+export function setRecording(recording) {
+  if (!state.initialized || !wasmModule) return;
+  wasmModule.ccall('setRecording', null, ['number'], [recording ? 1 : 0]);
+}
+
+export function isRecordingActive() {
+  if (!state.initialized || !wasmModule) return false;
+  return wasmModule.ccall('isRecording', 'number', [], []) === 1;
+}
+
+/**
+ * Capture the current frame and return a PNG data URL (for export / sharing).
+ * Async because it uses the GPU readback path.
+ */
+export async function captureFrameDataUrl() {
+  const imageData = await captureFrame();
+  let blob;
+  if (typeof OffscreenCanvas !== 'undefined') {
+    const offscreen = new OffscreenCanvas(imageData.width, imageData.height);
+    const ctx = offscreen.getContext('2d');
+    ctx.putImageData(imageData, 0, 0);
+    blob = await offscreen.convertToBlob({ type: 'image/png' });
+  } else {
+    blob = await new Promise((resolve) => {
+      const tmp = document.createElement('canvas');
+      tmp.width = imageData.width;
+      tmp.height = imageData.height;
+      tmp.getContext('2d').putImageData(imageData, 0, 0);
+      tmp.toBlob((b) => resolve(b), 'image/png');
+    });
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 /**
  * Upload a depth map (Float32Array, one float per pixel, row-major) from the
  * AI depth estimation model.
@@ -450,17 +579,22 @@ export function updateDepthMap(float32Data, width, height) {
  * Set the active input source.
  * @param {number|string} source
  *   0 or 'none'       - no input (black placeholder)
- *   1 or 'image'      - static image
- *   2 or 'video'      - video / webcam frames
- *   3 or 'webcam'     - webcam (same as video in WASM)
- *   4 or 'generative' - procedural, no input required
+ *   1 or 'image'      - static image (uploadImageData / loadImage)
+ *   2 or 'video'      - video file or HLS live stream
+ *   3 or 'webcam'     - webcam capture (same upload path as video)
+ *   4 or 'generative' - procedural, readTexture cleared to black
+ *   'live'            - alias for video (HLS)
  */
 export function setInputSource(source) {
-  if (!state.initialized || !wasmModule) return;
+  if (!state.initialized || !wasmModule) {
+    if (typeof source === 'string') state.pendingInputSource = source;
+    return;
+  }
   const sourceMap = { none: 0, image: 1, video: 2, webcam: 3, generative: 4, live: 2 };
   const sourceInt = typeof source === 'string'
     ? (sourceMap[source] ?? 0)
     : source;
+  state.inputSource = sourceInt;
   wasmModule.ccall('setInputSource', null, ['number'], [sourceInt]);
 }
 
@@ -785,6 +919,7 @@ export function startRecording(canvasElement, {
       const cb       = _recordResolve;
       _recordResolve = null;
       _recorder      = null;
+      setRecording(false);
       if (cb) cb(blob);
     };
 
@@ -792,11 +927,13 @@ export function startRecording(canvasElement, {
       _recorder      = null;
       _recordChunks  = [];
       _recordResolve = null;
+      setRecording(false);
       reject(new Error(`[WASM] MediaRecorder error: ${e.error?.message ?? e}`));
     };
 
     // Collect data every 100 ms for low-latency chunks.
     _recorder.start(100);
+    setRecording(true);
     console.log(`[WASM] Recording started (${durationMs}ms, ${mimeType})`);
 
     // Auto-stop after requested duration.
@@ -813,6 +950,8 @@ export function startRecording(canvasElement, {
 export function stopRecording() {
   if (_recorder && _recorder.state === 'recording') {
     _recorder.stop();
+  } else {
+    setRecording(false);
   }
 }
 
@@ -849,15 +988,23 @@ const wasmBridge = {
   setActiveShader,
   setSlotShader,
   setSlotParams,
+  updateSlotParams,
   setSlotMode,
   updateUniforms,
   updateMousePos,
   updateAudioData,
+  updateAudioFrequencyBins,
   updateDepthMap,
   setInputSource,
   addRipple,
   clearRipples,
   getFPS,
+  getSupportsDeepWorkgroup,
+  getSlotState,
+  getGPUTimings,
+  setRecording,
+  isRecordingActive,
+  captureFrameDataUrl,
   getAdapterSummary,
   getLastInitErrorStage,
   getLastInitErrorMessage,

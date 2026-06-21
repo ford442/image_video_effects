@@ -94,7 +94,8 @@ void updateDepthMap(const float* data, int width, int height) {
     }
 }
 
-// Set the active input source (0=none/generative, 1=image, 2=video, 3=webcam, 4=generative).
+// Set the active input source (0=none, 1=image, 2=video, 3=webcam, 4=generative).
+// JS bridge maps 'live' → 2 (video). Generative clears readTexture_ to black.
 EMSCRIPTEN_KEEPALIVE
 void setInputSource(int source) {
     if (g_renderer) {
@@ -150,6 +151,14 @@ void updateAudioData(float bass, float mid, float treble) {
     }
 }
 
+// Upload normalised FFT magnitude bins to extraBuffer_[5..132] (max 128 bins).
+EMSCRIPTEN_KEEPALIVE
+void updateAudioFrequencyBins(const float* bins, int count) {
+    if (g_renderer && bins) {
+        g_renderer->SetAudioFrequencyBins(bins, count);
+    }
+}
+
 EMSCRIPTEN_KEEPALIVE
 void addRipple(float x, float y) {
     if (g_renderer) {
@@ -174,6 +183,47 @@ int isRendererInitialized() {
 EMSCRIPTEN_KEEPALIVE
 float getFPS() {
     return g_renderer ? g_renderer->GetFPS() : 0.0f;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int getSupportsDeepWorkgroup() {
+    return (g_renderer && g_renderer->GetSupportsDeepWorkgroup()) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+const char* getSlotShaderId(int slotIndex) {
+    return g_renderer ? g_renderer->GetSlotShaderId(slotIndex) : "";
+}
+
+EMSCRIPTEN_KEEPALIVE
+int getSlotEnabled(int slotIndex) {
+    return g_renderer ? g_renderer->GetSlotEnabled(slotIndex) : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+int getSlotMode(int slotIndex) {
+    return g_renderer ? g_renderer->GetSlotMode(slotIndex) : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void getGPUTimings(float* parallelMs, float* chainedMs, float* totalMs, int* available) {
+    if (g_renderer) {
+        g_renderer->GetGPUTimings(parallelMs, chainedMs, totalMs, available);
+    } else if (available) {
+        *available = 0;
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setRecording(int recording) {
+    if (g_renderer) {
+        g_renderer->SetRecording(recording != 0);
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE
+int isRecording() {
+    return (g_renderer && g_renderer->IsRecording()) ? 1 : 0;
 }
 
 // Human-readable adapter/device/limits/format summary, built during

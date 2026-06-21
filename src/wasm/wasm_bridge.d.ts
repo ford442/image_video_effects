@@ -22,6 +22,26 @@ export interface WasmBridgeDiagnostics {
   adapterInfo: string;
 }
 
+export interface GPUTimings {
+  parallelTime: number;
+  chainedTime: number;
+  totalTime: number;
+  available: boolean;
+}
+
+export interface SlotState {
+  shaderId: string | null;
+  enabled: boolean;
+  mode: 'chained' | 'parallel';
+}
+
+export interface SlotZoomParamsUpdate {
+  zoomParam1?: number;
+  zoomParam2?: number;
+  zoomParam3?: number;
+  zoomParam4?: number;
+}
+
 export function getDiagnostics(): WasmBridgeDiagnostics;
 
 export function initWasmRenderer(canvas: HTMLCanvasElement): Promise<boolean>;
@@ -30,9 +50,10 @@ export function loadShader(id: string, wgslCode: string): boolean;
 export function loadShaderFromURL(id: string, url: string): Promise<boolean>;
 export function setActiveShader(id: string): void;
 
-// Multi-slot shader API (Phase 1)
+// Multi-slot shader API
 export function setSlotShader(slotIndex: number, id: string): void;
 export function setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void;
+export function updateSlotParams(slotIndex: number, params: SlotZoomParamsUpdate): void;
 export function setSlotMode(slotIndex: number, mode: 0 | 1 | 'chained' | 'parallel'): void;
 
 export function updateUniforms(uniforms: {
@@ -44,6 +65,7 @@ export function updateUniforms(uniforms: {
 }): void;
 export function updateMousePos(x: number, y: number): void;
 export function updateAudioData(bass: number, mid: number, treble: number): void;
+export function updateAudioFrequencyBins(bins: Float32Array): void;
 export function updateDepthMap(data: Float32Array, width: number, height: number): void;
 export function setInputSource(
   source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative' | 'live'
@@ -51,6 +73,11 @@ export function setInputSource(
 export function addRipple(x: number, y: number): void;
 export function clearRipples(): void;
 export function getFPS(): number;
+export function getSupportsDeepWorkgroup(): boolean;
+export function getSlotState(slotIndex: number): SlotState;
+export function getGPUTimings(): GPUTimings;
+export function setRecording(recording: boolean): void;
+export function isRecordingActive(): boolean;
 export function getAdapterSummary(): string;
 export function getLastInitErrorStage(): number;
 export function getLastInitErrorMessage(): string;
@@ -58,69 +85,27 @@ export function isInitialized(): boolean;
 export function uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
 export function uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
 
-// ─── Phase 2: Canvas resizing ────────────────────────────────────────────────
-
-/**
- * Resize the rendering canvas and recreate all size-dependent GPU resources.
- * Call this whenever the display canvas dimensions change.
- */
 export function resizeCanvas(newWidth: number, newHeight: number): void;
-
-// ─── Phase 2: Frame capture / screenshots ────────────────────────────────────
-
-/**
- * Capture the current rendered frame as an ImageData object (RGBA8).
- * The capture is asynchronous (GPU readback); the Promise resolves when the
- * pixel data is available.
- */
 export function captureFrame(): Promise<ImageData>;
-
-/**
- * Take a screenshot of the current frame and trigger a PNG download.
- * @param filename - Optional download filename (default: 'screenshot.png').
- */
+export function captureFrameDataUrl(): Promise<string>;
 export function takeScreenshot(filename?: string): Promise<void>;
 
-// ─── Phase 2: Video recording ────────────────────────────────────────────────
-
 export interface RecordingOptions {
-  /** Auto-stop recording after this many milliseconds. 0 = no auto-stop. Default: 8000 */
   durationMs?: number;
-  /** Target capture frame rate. Default: 60 */
   frameRate?: number;
-  /** MediaRecorder video bit-rate in bps. Default: 8_000_000 (8 Mbps) */
   videoBitsPerSecond?: number;
 }
 
-/**
- * Start recording the canvas output to a WebM video using the browser's
- * MediaRecorder API.  Resolves with the recorded Blob when recording stops.
- *
- * @param canvasElement - The HTMLCanvasElement to capture.
- * @param options       - Optional recording parameters.
- */
 export function startRecording(
   canvasElement: HTMLCanvasElement,
   options?: RecordingOptions
 ): Promise<Blob>;
-
-/**
- * Stop an in-progress recording immediately.
- * If no recording is in progress this is a no-op.
- */
 export function stopRecording(): void;
-
-/**
- * Record the canvas for `durationMs` milliseconds, then automatically
- * download the resulting WebM file.
- */
 export function recordAndDownload(
   canvasElement: HTMLCanvasElement,
   durationMs?: number,
   filename?: string
 ): Promise<void>;
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface WasmRenderer {
   getDiagnostics(): WasmBridgeDiagnostics;
@@ -131,6 +116,7 @@ export interface WasmRenderer {
   setActiveShader(id: string): void;
   setSlotShader(slotIndex: number, id: string): void;
   setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void;
+  updateSlotParams(slotIndex: number, params: SlotZoomParamsUpdate): void;
   setSlotMode(slotIndex: number, mode: 0 | 1 | 'chained' | 'parallel'): void;
   updateUniforms(uniforms: {
     time?: number;
@@ -141,18 +127,24 @@ export interface WasmRenderer {
   }): void;
   updateMousePos(x: number, y: number): void;
   updateAudioData(bass: number, mid: number, treble: number): void;
+  updateAudioFrequencyBins(bins: Float32Array): void;
   updateDepthMap(data: Float32Array, width: number, height: number): void;
   setInputSource(source: number | 'none' | 'image' | 'video' | 'webcam' | 'generative' | 'live'): void;
   addRipple(x: number, y: number): void;
   clearRipples(): void;
   getFPS(): number;
+  getSupportsDeepWorkgroup(): boolean;
+  getSlotState(slotIndex: number): SlotState;
+  getGPUTimings(): GPUTimings;
+  setRecording(recording: boolean): void;
+  isRecordingActive(): boolean;
+  captureFrameDataUrl(): Promise<string>;
   getAdapterSummary(): string;
   getLastInitErrorStage(): number;
   getLastInitErrorMessage(): string;
   isInitialized(): boolean;
   uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
   uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
-  // Phase 2
   resizeCanvas(newWidth: number, newHeight: number): void;
   captureFrame(): Promise<ImageData>;
   takeScreenshot(filename?: string): Promise<void>;

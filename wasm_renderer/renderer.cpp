@@ -469,10 +469,14 @@ bool WebGPURenderer::CreateDevice() {
     CheckLimit("maxComputeWorkgroupSizeY",           limits.maxComputeWorkgroupSizeY,            16, limitsOk);
     CheckLimit("maxComputeInvocationsPerWorkgroup",  limits.maxComputeInvocationsPerWorkgroup,   256, limitsOk);
 
+    maxComputeInvocations_ = limits.maxComputeInvocationsPerWorkgroup;
+    supportsDeepWorkgroup_ = maxComputeInvocations_ >= 1024;
     printf("[WASM] Adapter limits: maxTex2D=%u, storageTex=%u, sampledTex=%u, computeInvocations=%u (%s)\n",
            limits.maxTextureDimension2D, limits.maxStorageTexturesPerShaderStage,
            limits.maxSampledTexturesPerShaderStage, limits.maxComputeInvocationsPerWorkgroup,
            limitsOk ? "sufficient" : "INSUFFICIENT");
+    printf("[WASM] Deep-workgroup (1024 invocations): %s\n",
+           supportsDeepWorkgroup_ ? "supported" : "NOT supported");
 
     // ── Feature checks ────────────────────────────────────────────────────
     // rgba32float storage textures (bindings 2/7/8) require float32-filterable/
@@ -1406,6 +1410,44 @@ void WebGPURenderer::SetSlotMode(int slotIndex, int mode) {
 
 void WebGPURenderer::SetInputSource(InputSource source) {
     inputSource_ = source;
+    printf("[WASM] Input source set to %d\n", static_cast<int>(source));
+    if (source == InputSource::Generative || source == InputSource::None) {
+        ClearReadTexture();
+    }
+}
+
+void WebGPURenderer::ClearReadTexture() {
+    if (!queue_.get() || !readTexture_.get() || deviceLost_) return;
+
+    const size_t floatCount = static_cast<size_t>(canvasWidth_) * canvasHeight_ * 4;
+    if (floatCount == 0) return;
+
+    if (videoStagingBuffer_.size() < floatCount) {
+        videoStagingBuffer_.assign(floatCount, 0.0f);
+    } else {
+        std::fill(videoStagingBuffer_.begin(),
+                  videoStagingBuffer_.begin() + static_cast<std::ptrdiff_t>(floatCount),
+                  0.0f);
+    }
+
+    WGPUTexelCopyTextureInfo dest = {};
+    dest.texture = readTexture_.get();
+    dest.mipLevel = 0;
+    dest.origin = {0, 0, 0};
+    dest.aspect = WGPUTextureAspect_All;
+
+    WGPUTexelCopyBufferLayout layout = {};
+    layout.offset = 0;
+    layout.bytesPerRow = static_cast<uint32_t>(canvasWidth_) * sizeof(float) * 4;
+    layout.rowsPerImage = static_cast<uint32_t>(canvasHeight_);
+
+    WGPUExtent3D extent = {};
+    extent.width = static_cast<uint32_t>(canvasWidth_);
+    extent.height = static_cast<uint32_t>(canvasHeight_);
+    extent.depthOrArrayLayers = 1;
+
+    wgpuQueueWriteTexture(queue_.get(), &dest, videoStagingBuffer_.data(),
+                          floatCount * sizeof(float), &layout, &extent);
 }
 
 // ─── CreateComputeBindGroup ───────────────────────────────────────────────────
@@ -1589,6 +1631,9 @@ void WebGPURenderer::LoadImage(const uint8_t* data, int width, int height) {
 }
 
 void WebGPURenderer::UpdateVideoFrame(const uint8_t* data, int width, int height) {
+    if (inputSource_ != InputSource::Video && inputSource_ != InputSource::Webcam) {
+        return;
+    }
     UploadRGBA8ToReadTexture(data, width, height);
 }
 
@@ -1806,6 +1851,43 @@ void WebGPURenderer::SetAudioData(float bass, float mid, float treble) {
     audioMid_    = mid;
     audioTreble_ = treble;
 }
+
+void WebGPURenderer::SetAudioFrequencyBins(const float* bins, int count) {
+    if (!bins || count <= 0) return;
+    const int n = (count < AUDIO_FFT_BINS) ? count : AUDIO_FFT_BINS;
+    for (int i = 0; i < n; ++i) {
+        audioFreqBins_[i] = bins[i];
+    }
+    for (int i = n; i < AUDIO_FFT_BINS; ++i) {
+        audioFreqBins_[i] = 0.0f;
+    }
+}
+
+const char* WebGPURenderer::GetSlotShaderId(int slotIndex) const {
+    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) return "";
+    return slots_[slotIndex].shaderId.c_str();
+}
+
+int WebGPURenderer::GetSlotEnabled(int slotIndex) const {
+    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) return 0;
+    return slots_[slotIndex].enabled ? 1 : 0;
+}
+
+int WebGPURenderer::GetSlotMode(int slotIndex) const {
+    if (slotIndex < 0 || slotIndex >= MAX_SHADER_SLOTS) return 0;
+    return (slots_[slotIndex].mode == SlotMode::Parallel) ? 1 : 0;
+}
+
+void WebGPURenderer::GetGPUTimings(float* parallelMs, float* chainedMs, float* totalMs, int* available) const {
+    if (parallelMs) *parallelMs = lastParallelTimeMs_;
+    if (chainedMs)  *chainedMs  = lastChainedTimeMs_;
+    if (totalMs)    *totalMs    = lastTotalTimeMs_;
+    if (available)  *available  = 0;  // CPU wall-clock only; no GPU timestamp queries
+}
+
+void WebGPURenderer::SetRecording(bool recording) {
+    isRecording_ = recording;
+}
 void WebGPURenderer::UpdateUniformBuffer() {
     if (!uniformBuffer_.get()) return;
 
@@ -1848,11 +1930,20 @@ void WebGPURenderer::UpdateUniformBuffer() {
 
     wgpuQueueWriteBuffer(queue_.get(), uniformBuffer_.get(), 0, uniformData.data(), uniformData.size() * sizeof(float));
 
-    // Upload audio to extraBuffer_ (binding 10).
-    // Some shaders read bass/mid/treble from the first three floats here.
+    // Upload audio + FFT bins to extraBuffer_ (binding 10).
+    // Layout matches TypeScript WebGPURenderer extraBuffer:
+    //   [0]=bass [1]=mid [2]=treble [3]=reserved [4]=historyHead [5..132]=FFT bins
     if (extraBuffer_.get()) {
-        float audioData[3] = { audioBass_, audioMid_, audioTreble_ };
-        wgpuQueueWriteBuffer(queue_.get(), extraBuffer_.get(), 0, audioData, sizeof(audioData));
+        float extraData[256] = {};
+        extraData[0] = audioBass_;
+        extraData[1] = audioMid_;
+        extraData[2] = audioTreble_;
+        extraData[3] = 0.0f;
+        extraData[4] = 0.0f;
+        for (int i = 0; i < AUDIO_FFT_BINS; ++i) {
+            extraData[EXTRA_BIN_OFFSET + i] = audioFreqBins_[i];
+        }
+        wgpuQueueWriteBuffer(queue_.get(), extraBuffer_.get(), 0, extraData, sizeof(extraData));
     }
 
     // Upload audio to plasmaBuffer_ (binding 12) as vec4(bass, mid, treble, 0).
@@ -1899,6 +1990,10 @@ static void CopyTex(WGPUCommandEncoder enc,
 
 void WebGPURenderer::Render() {
     if (!initialized_ || deviceLost_ || !device_.get() || !queue_.get()) return;
+
+    const double renderStartMs = emscripten_get_now();
+    lastParallelTimeMs_ = 0.0f;
+    lastChainedTimeMs_  = 0.0f;
 
     // Upload all per-frame global uniforms (time, mouse, ripples, audio).
     UpdateUniformBuffer();
@@ -1971,6 +2066,8 @@ void WebGPURenderer::Render() {
             // Patch per-slot zoom_params before submitting this slot's pass.
             WriteSlotParams(slots_[i].params);
 
+            const double slotStartMs = emscripten_get_now();
+
             WGPUBindGroup bg = CreateComputeBindGroup(readFrom, writeTo);
 
             WGPUCommandEncoderDescriptor encDesc = {};
@@ -1989,6 +2086,13 @@ void WebGPURenderer::Render() {
             wgpuQueueSubmit(queue_.get(), 1, &cb);
             wgpuCommandBufferRelease(cb);
             wgpuCommandEncoderRelease(enc);
+
+            const float slotMs = static_cast<float>(emscripten_get_now() - slotStartMs);
+            if (slots_[i].mode == SlotMode::Parallel) {
+                lastParallelTimeMs_ += slotMs;
+            } else {
+                lastChainedTimeMs_ += slotMs;
+            }
 
             // Update chain input for the next slot (if chained).
             chainInput = writeTo;
@@ -2028,6 +2132,8 @@ void WebGPURenderer::Render() {
 
     // Present the final composed frame to the canvas (if surface is configured).
     PresentToSurface();
+
+    lastTotalTimeMs_ = static_cast<float>(emscripten_get_now() - renderStartMs);
 
     // Update FPS counter
     frameCount_++;
