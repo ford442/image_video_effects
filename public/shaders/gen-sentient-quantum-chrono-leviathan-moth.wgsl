@@ -111,8 +111,12 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
 
     // Mouse rotation (acts as gravitational chronal anomaly)
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0;
-    p.xz = rot(mouse.x * PI) * p.xz;
-    p.yz = rot(-mouse.y * PI) * p.yz;
+    let rotXZ = rot(mouse.x * PI) * p.xz;
+p.x = rotXZ.x;
+p.z = rotXZ.y;
+    let rotYZ = rot(-mouse.y * PI) * p.yz;
+p.y = rotYZ.x;
+p.z = rotYZ.y;
 
     var dMain = 1e10;
     var matID = 0.0; // 1.0 = Body, 2.0 = Wings
@@ -134,7 +138,9 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     // Wing flapping
     let flapSpeed = 4.0 + audio * 10.0;
     let flapAngle = sin(time * flapSpeed) * 0.5 * (1.0 + audio);
-    pWings.xy = rot(flapAngle) * pWings.xy;
+    let rotXY = rot(flapAngle) * pWings.xy;
+pWings.x = rotXY.x;
+pWings.y = rotXY.y;
 
     // Wing shape (thin flat SDF with Voronoi)
     pWings.x -= wingSpan * 0.5; // Offset from body
