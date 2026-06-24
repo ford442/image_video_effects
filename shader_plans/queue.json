@@ -730,6 +730,12 @@
       "added": "2026-06-22T16:53:28.307478",
       "status": "completed",
       "completed_at": "2026-06-23T08:06:03.999951"
+    },
+    {
+      "filename": "2026-06-23_radiant-cyber-chrono-void-stag.md",
+      "title": "Radiant Cyber-Chrono Void-Stag",
+      "added": "2026-06-23T15:35:22.251064",
+      "completed_at": "2026-06-24T07:53:52.437686"
     }
   ],
   "rejected": [],
@@ -1069,11 +1075,6 @@
       "filename": "2026-06-22_sentient-quantum-chrono-leviathan-moth.md",
       "title": "Sentient Quantum-Chrono Leviathan-Moth",
       "added": "2026-06-22T16:53:28.307478"
-    },
-    {
-      "filename": "2026-06-23_radiant-cyber-chrono-void-stag.md",
-      "title": "Radiant Cyber-Chrono Void-Stag",
-      "added": "2026-06-23T15:35:22.251064"
     }
   ],
   "in_progress": null
