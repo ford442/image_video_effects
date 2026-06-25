@@ -14157,29 +14157,11 @@
   {
     "id": "gen-radiant-cyber-chrono-void-stag",
     "name": "Radiant Cyber-Chrono Void-Stag",
-    "url": "shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
     "category": "generative",
-    "description": "A majestic, colossal cybernetic space-stag gracefully leaping through an endless, volumetric deep-space nebula, its bioluminescent cyber-antlers forging crystalline pathways of temporal energy that geometrically pulse with ambient cosmic acoustics.",
-    "tags": [
-      "cosmic",
-      "stag",
-      "quantum",
-      "crystal",
-      "organic",
-      "mechanical",
-      "audio-reactive"
-    ],
-    "features": [
-      "procedural",
-      "audio-reactive",
-      "mouse-driven",
-      "volumetric",
-      "crystal",
-      "temporal"
-    ],
+    "description": "A majestic cybernetic space-stag leaping through a volumetric deep-space nebula, with bioluminescent cyber-antlers forging crystalline pathways of temporal energy.",
+    "url": "shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
     "params": [
       {
-        "id": "stagScale",
         "name": "Stag Scale",
         "default": 1,
         "min": 0.5,
@@ -14188,7 +14170,6 @@
         "mapping": "zoom_params.x"
       },
       {
-        "id": "antlerComplexity",
         "name": "Antler Complexity",
         "default": 3,
         "min": 1,
@@ -14197,7 +14178,6 @@
         "mapping": "zoom_params.y"
       },
       {
-        "id": "nebulaDensity",
         "name": "Nebula Density",
         "default": 0.5,
         "min": 0.1,
@@ -14206,7 +14186,6 @@
         "mapping": "zoom_params.z"
       },
       {
-        "id": "corePulseIntensity",
         "name": "Core Pulse Intensity",
         "default": 1,
         "min": 0,
