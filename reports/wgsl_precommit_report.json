@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-25T08:03:23.592183",
+  "timestamp": "2026-06-26T07:58:46.283073",
   "naga_bin": "/home/jules/.cargo/bin/naga",
   "total": 1,
   "passed": 1,
@@ -7,7 +7,7 @@
   "skipped": 0,
   "results": [
     {
-      "file": "public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
+      "file": "public/shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
