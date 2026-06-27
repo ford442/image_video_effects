@@ -110,7 +110,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
-    let mouseY = u.zoom_config.z * 2.0 - 1.0;
+    let mouseY = 1.0 - u.zoom_config.z * 2.0;
 
     // Raymarching setup
     var ro = vec3<f32>(0.0, 0.0, -3.0);

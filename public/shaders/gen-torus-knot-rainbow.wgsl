@@ -85,7 +85,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let qWind = knotQ + bass * 1.5;
   let R     = 0.65;
   let r     = 0.35;
-  let cam   = 3.8 + (mouse.y - 0.5) * 2.5;
+  let cam   = 3.8 + (0.5 - mouse.y) * 2.5;
 
   var glowAcc   = 0.0;
   var colorAccR = vec3<f32>(0.0);

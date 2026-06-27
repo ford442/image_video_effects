@@ -175,7 +175,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Mouse: Y controls aurora altitude, X controls color temperature offset
   let mousePos = u.zoom_config.yz;
-  let altitudeShift = (mousePos.y - 0.5) * 0.4;
+  let altitudeShift = (0.5 - mousePos.y) * 0.4;
   let tempShift = mousePos.x * 0.2;
 
   // Smooth bass for audio reactivity

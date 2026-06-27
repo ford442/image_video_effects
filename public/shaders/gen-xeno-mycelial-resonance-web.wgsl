@@ -124,7 +124,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Mouse Rotation
     let mouseX = (u.zoom_config.y - 0.5) * TAU;
-    let mouseY = (u.zoom_config.z - 0.5) * PI;
+    let mouseY = (0.5 - u.zoom_config.z) * PI;
 
     let roYZ = rot2(-mouseY) * ro.yz;
     ro.y = roYZ.x;

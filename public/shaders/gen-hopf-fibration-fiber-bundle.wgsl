@@ -77,7 +77,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var s2theta = uv.y * PI;
   if (u.zoom_config.w > 0.5) {
     s2phi += (mouse.x - 0.5) * PI * 2.0;
-    s2theta += (mouse.y - 0.5) * PI;
+    s2theta += (0.5 - mouse.y) * PI;
   }
   let rot4D = time * 0.12 * (1.0 + bass);
   let fiberCount = 40;
