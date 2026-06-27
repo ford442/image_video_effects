@@ -1,11 +1,18 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { SharedChain } from '../services/layerChainShare';
 import { CatalogShader } from '../services/shaderCatalog';
 import {
   generateChainVariations,
+  breedVariations,
   VariationOptions,
   ChainVariation,
 } from '../services/variationExplorer';
+import {
+  VariationFavorite,
+  saveFavorite,
+  loadFavorites,
+  deleteFavorite,
+} from '../services/variationFavorites';
 import '../styles/gold-glass-theme.css';
 
 export interface VariationGridProps {
@@ -33,6 +40,13 @@ function hashChain(chain: SharedChain): string {
     h |= 0;
   }
   return Math.abs(h).toString(36);
+}
+
+function generateRandomSeed(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
 function formatParams(params: Record<string, number>): string {
@@ -76,10 +90,11 @@ export const VariationGrid: React.FC<VariationGridProps> = ({
   onAdopt,
   onClose,
 }) => {
-  const [seed, setSeed] = useState<string>(
-    options.seed ?? hashChain(baseChain)
-  );
+  const [remixBaseChain, setRemixBaseChain] = useState<SharedChain>(baseChain);
+  const [seed, setSeed] = useState<string>(options.seed ?? hashChain(baseChain));
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [variationsOverride, setVariationsOverride] = useState<ChainVariation[] | null>(null);
+  const [favorites, setFavorites] = useState<VariationFavorite[]>(() => loadFavorites());
 
   const effectiveOptions = useMemo<VariationOptions>(
     () => ({
@@ -90,10 +105,20 @@ export const VariationGrid: React.FC<VariationGridProps> = ({
     [options.paramJitter, options.shaderSwap, seed]
   );
 
-  const variations = useMemo(() => {
+  const generatedVariations = useMemo(() => {
     if (!catalog || catalog.length === 0) return [];
-    return generateChainVariations(baseChain, count, catalog, effectiveOptions);
-  }, [baseChain, catalog, count, effectiveOptions]);
+    return generateChainVariations(remixBaseChain, count, catalog, effectiveOptions);
+  }, [remixBaseChain, catalog, count, effectiveOptions]);
+
+  const displayVariations = variationsOverride ?? generatedVariations;
+
+  const refreshFavorites = useCallback(() => {
+    setFavorites(loadFavorites());
+  }, []);
+
+  useEffect(() => {
+    refreshFavorites();
+  }, [refreshFavorites]);
 
   const toggleSelected = useCallback((index: number) => {
     setSelected(prev => {
@@ -108,9 +133,59 @@ export const VariationGrid: React.FC<VariationGridProps> = ({
   }, []);
 
   const handleShuffle = useCallback(() => {
-    setSeed(`${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    setSeed(generateRandomSeed());
     setSelected(new Set());
+    setVariationsOverride(null);
   }, []);
+
+  const handleReseedFromChain = useCallback(() => {
+    setRemixBaseChain(baseChain);
+    setSeed(options.seed ?? hashChain(baseChain));
+    setSelected(new Set());
+    setVariationsOverride(null);
+  }, [baseChain, options.seed]);
+
+  const handleStar = useCallback(
+    (variation: ChainVariation, index: number) => {
+      saveFavorite({
+        name: `Variation #${index + 1}`,
+        chain: variation.chain,
+        seed,
+      });
+      refreshFavorites();
+    },
+    [seed, refreshFavorites]
+  );
+
+  const handleBreed = useCallback(() => {
+    if (selected.size !== 2) return;
+    const [aIndex, bIndex] = Array.from(selected).sort((x, y) => x - y);
+    const parentA = displayVariations[aIndex]?.chain;
+    const parentB = displayVariations[bIndex]?.chain;
+    if (!parentA || !parentB) return;
+
+    const children = breedVariations(parentA, parentB, count, catalog, effectiveOptions);
+    setVariationsOverride(children);
+    setSelected(new Set());
+  }, [selected, displayVariations, count, catalog, effectiveOptions]);
+
+  const handleLoadFavorite = useCallback(
+    (favorite: VariationFavorite) => {
+      setRemixBaseChain(favorite.chain);
+      setSeed(favorite.seed ?? hashChain(favorite.chain));
+      setSelected(new Set());
+      setVariationsOverride(null);
+    },
+    []
+  );
+
+  const handleDeleteFavorite = useCallback(
+    (id: string) => {
+      deleteFavorite(id);
+      refreshFavorites();
+    },
+    [refreshFavorites]
+  );
 
   return (
     <div
@@ -162,13 +237,56 @@ export const VariationGrid: React.FC<VariationGridProps> = ({
           style={{
             display: 'flex',
             gap: '12px',
-            marginBottom: '16px',
+            marginBottom: '12px',
             flexWrap: 'wrap',
+            alignItems: 'center',
           }}
         >
-          <button className="gold-btn" onClick={handleShuffle} type="button">
-            🎲 Shuffle Variations
+          <button className="gold-btn" onClick={handleShuffle} type="button" data-testid="shuffle-variations">
+            🎲 Shuffle
           </button>
+          <button
+            className="gold-outline-btn"
+            onClick={handleReseedFromChain}
+            type="button"
+            data-testid="reseed-from-chain"
+          >
+            ↺ Reseed from chain
+          </button>
+          {selected.size === 2 && (
+            <button className="gold-btn" onClick={handleBreed} type="button" data-testid="breed-selected">
+              🧬 Breed selected
+            </button>
+          )}
+          <label
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: '#a0a0b0',
+              fontSize: '13px',
+            }}
+          >
+            Seed:
+            <input
+              type="text"
+              inputMode="numeric"
+              value={seed}
+              onChange={e => {
+                setSeed(e.target.value);
+                setVariationsOverride(null);
+              }}
+              data-testid="seed-input"
+              style={{
+                background: 'rgba(0,0,0,0.3)',
+                border: '1px solid #555',
+                borderRadius: '4px',
+                color: '#FFD700',
+                padding: '4px 8px',
+                width: '120px',
+              }}
+            />
+          </label>
           {selected.size > 0 && (
             <span style={{ color: '#a0a0b0', alignSelf: 'center' }}>
               A/B selected: {Array.from(selected).map(i => `#${i + 1}`).join(', ')}
@@ -176,7 +294,62 @@ export const VariationGrid: React.FC<VariationGridProps> = ({
           )}
         </div>
 
-        {variations.length === 0 ? (
+        {favorites.length > 0 && (
+          <div style={{ marginBottom: '16px' }} data-testid="favorites-strip">
+            <div style={{ color: '#FFD700', fontSize: '13px', marginBottom: '8px' }}>⭐ Favorites</div>
+            <div
+              style={{
+                display: 'flex',
+                gap: '8px',
+                overflowX: 'auto',
+                paddingBottom: '4px',
+              }}
+            >
+              {favorites.map(favorite => (
+                <div
+                  key={favorite.id}
+                  className="glass-panel"
+                  style={{
+                    flex: '0 0 auto',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                  data-testid={`favorite-item-${favorite.id}`}
+                >
+                  <span style={{ color: '#d0d0e0', fontSize: '12px', maxWidth: '140px' }}>
+                    {favorite.name}
+                    {favorite.seed && (
+                      <span style={{ color: '#a0a0b0' }}> (s:{favorite.seed})</span>
+                    )}
+                  </span>
+                  <button
+                    className="gold-outline-btn"
+                    style={{ fontSize: '11px', padding: '2px 8px' }}
+                    onClick={() => handleLoadFavorite(favorite)}
+                    type="button"
+                    data-testid={`load-favorite-${favorite.id}`}
+                  >
+                    Load
+                  </button>
+                  <button
+                    className="gold-outline-btn"
+                    style={{ fontSize: '11px', padding: '2px 8px' }}
+                    onClick={() => handleDeleteFavorite(favorite.id)}
+                    type="button"
+                    data-testid={`delete-favorite-${favorite.id}`}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {displayVariations.length === 0 ? (
           <div style={{ color: '#a0a0b0' }}>No variations available.</div>
         ) : (
           <div
@@ -187,7 +360,7 @@ export const VariationGrid: React.FC<VariationGridProps> = ({
               gap: '16px',
             }}
           >
-            {variations.map((variation, index) => (
+            {displayVariations.map((variation, index) => (
               <div
                 key={`${seed}-${index}`}
                 className="variation-card glass-panel"
@@ -270,6 +443,16 @@ export const VariationGrid: React.FC<VariationGridProps> = ({
                     />
                     A/B
                   </label>
+                  <button
+                    className="gold-outline-btn"
+                    style={{ fontSize: '13px' }}
+                    onClick={() => handleStar(variation, index)}
+                    aria-label={`Star variation ${index + 1}`}
+                    type="button"
+                    data-testid={`star-variation-${index}`}
+                  >
+                    ☆
+                  </button>
                   <button
                     className="gold-btn"
                     style={{ flex: 1, fontSize: '13px' }}
