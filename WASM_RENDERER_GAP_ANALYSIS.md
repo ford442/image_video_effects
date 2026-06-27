@@ -50,11 +50,9 @@ six have landed** — verified in `renderer.cpp` and the canonical bridge sync
 and the full dependency-ordered roadmap in
 [#799's tracking comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584).
 
-**Updated bottom line:** the compute pipeline and presentation path are both
-real and connected; the init/format/limits handshake is hardened (#817–#822 ✅).
-Remaining gaps are **integration glue** (`RendererManager` forwarding,
-`setInputSource` wiring), **CI/build hygiene** (§4), and **live-browser
-verification** — not missing presentation code.
+**Updated bottom line (June 2026):** compute + present + init handshake are hardened (#817–#822 ✅).
+Integration glue (#845–#847 ✅) and CI/testing (#848–#849 largely ✅) are in tree.
+**Product decision: [Tier B — experimental opt-in](./WASM_BACKEND_POLICY.md)** — TS WebGPU remains default; WASM is not production-SLA until promotion gates pass.
 
 ---
 
@@ -62,15 +60,14 @@ verification** — not missing presentation code.
 
 The C++ WASM renderer has received **significant investment** (multi-slot pipeline, depth, audio, RAII, async capture, workgroup parsing, device-lost handling) between March and May 2026. The compute core is real, compiles cleanly via Emscripten + emdawnwebgpu, and the JS bridge + TypeScript wrapper expose a rich API.
 
-**However, the WASM path is still not a viable drop-in renderer.**
+**However, the WASM path is not a production-default renderer** (see [WASM_BACKEND_POLICY.md](./WASM_BACKEND_POLICY.md)).
 
-- The renderer **initializes successfully** (WebGPU device + all textures/buffers/pipelines) and can execute the full 700+ WGSL compute shaders.
-- ~~It produces zero visible output on the canvas...~~ **(June 2026: superseded — see the update box above. `Render()` → `PresentToSurface()` is wired and presents `writeTexture_` to the canvas via a real render pass.)** The init/format/limits handshake (#817–#822) is hardened in code. Residual risk is live-browser verification on edge GPUs and the integration gaps below.
-- **Critical integration bugs** in `RendererManager` mean slot changes and parameter updates from the UI are never forwarded to the C++ side when WASM is active.
-- The app **never calls `setInputSource`** on any renderer, so generative/procedural mode support in the C++ is unreachable.
-- Build/CI hygiene is still broken: `npm run build` silently skips (or swallows hard failures from) the WASM build on machines without Emscripten.
+- The renderer **initializes successfully** on capable GPUs and can execute the full 700+ WGSL compute shaders.
+- Init/format/limits handshake (#817–#822 ✅). Integration glue (#845–#847 ✅) landed June 2026.
+- **Tier B policy:** WASM is opt-in only (`?renderer=wasm` or Controls switcher); labeled **Experimental** in UI.
+- Residual risk: live-browser verification on edge GPUs; benchmark-driven promotion decision pending.
 
-**Result:** `?renderer=wasm` has a real compute+present pipeline with a hardened init/format/limits handshake (#817–#822 ✅). Residual work is `RendererManager`/input-source glue (§3.2–3.4), CI/build hygiene (§4), and live-browser smoke tests. Fallback cascade remains **TS WebGPU → WASM → Canvas2D**.
+**Result:** Fallback cascade remains **TS WebGPU (default) → Canvas2D**. WASM is a parallel experimental path, not an automatic fallback.
 
 The old root GAP doc (pre-Phase work) was pessimistic but directionally correct on viability. `wasm_renderer/STATUS.md` and `README.md` previously overstated **reliability** with unqualified "Phase 3 complete" — now caveated; see `wasm_renderer/STATUS.md`.
 
@@ -83,14 +80,13 @@ The old root GAP doc (pre-Phase work) was pessimistic but directionally correct 
 | C++ compute engine        | Advanced (Phase 2.5–3 quality)     | Full multi-slot, depth upload, audio to both buffers, RAII, workgroup parser, async readback |
 | Presentation / output     | **Implemented** (June 2026)        | `Render()` → `PresentToSurface()` (renderer.cpp:1725), full acquire/render-pass/blit (renderer.cpp:924-1000), real `CreateRenderPipeline()` |
 | Init / format / limits handshake | **Hardened (June 2026)**     | Fatal surface (#820 ✅), `getPreferredCanvasFormat()` (#818 ✅), `requiredLimits`/validation (#817/#819 ✅), unified init errors (#822 ✅), bridge sync (#821 ✅) |
-| TS integration (manager)  | **Broken for WASM**                | `setSlotShader`, `updateSlotParams` only forward to `WebGPURenderer` |
-| App → renderer wiring     | Incomplete                         | No `setInputSource` calls; render() args ignored by WASM path |
-| Build / CI                | Fragile / misleading               | Artifacts committed; `build.sh` exits 0 without emcc; no emsdk in all CI paths |
-| Bridge sync               | **Resolved (June 2026)**           | `wasm_renderer/wasm_bridge.js` copied to `src/wasm/` + `public/wasm/` by `build.sh`; `validate_wasm_artifacts.js` fails on skew (#821 ✅) |
-| Documentation             | Updated (June 2026)                | This doc, `STATUS.md`, `README.md`, `WASM_*.md` — see #823 ✅ |
-| End-to-end usability      | Mostly unblocked on init path      | Compute + present + hardened init (#817–#822 ✅); RendererManager/input-source gaps remain |
+| TS integration (manager)  | **Functional (June 2026)**         | #845 forwarding + #846 input sources wired; Tier B — not production SLA |
+| App → renderer wiring     | **Functional (June 2026)**         | `setInputSource`, slot params via RendererManager |
+| Build / CI                | **Hardened (June 2026 Phase 2)**   | CI `wasm` job + emsdk; artifact upload; Jest + Playwright; see `ARTIFACTS.md` |
+| Product support tier      | **Tier B — Experimental**          | See [`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md) |
+| End-to-end usability      | Opt-in path on capable GPUs        | Edge GPU verification + benchmark promotion gate pending |
 
-**Bottom line:** The compute pipeline **and** the presentation path are real and wired together; the init/format/limits handshake is hardened (#817–#822 ✅). Open work is `RendererManager`/input-source glue, CI hygiene, and live-browser verification — not missing presentation code.
+**Bottom line:** C++ WASM is a **working experimental backend** under Tier B policy. TS WebGPU is production default. Promotion to Tier A requires benchmark + reliability gates in [`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md).
 
 ---
 
@@ -105,7 +101,7 @@ The old root GAP doc (pre-Phase work) was pessimistic but directionally correct 
 - **Resize**: `ResizeCanvas` / `RecreateTextures` properly releases + rebuilds all size-dependent textures (including data A/B/C, depth, ping-pongs, readback buffer).
 - **Generative placeholder**: 1×1 black `emptyTexture_` + `InputSource::Generative` path exists in C++.
 - **Bridge & TS wrapper**: `wasm_bridge.js` (public version) + `WASMRenderer.ts` expose `setSlot*`, `updateDepthMap`, `updateAudioData`, `captureFrame`, `startRecording`, `resizeCanvas`, etc. Diagnostics present.
-- **Artifacts**: `public/wasm/pixelocity_wasm.{js,wasm}` are genuine Emscripten output with correct magic and exports (not the old `Promise.resolve({})` stub). Note: `build.sh` still **exits 0** when `emcc` is missing — see §4.
+- **Artifacts**: `public/wasm/pixelocity_wasm.{js,wasm}` are genuine Emscripten output with correct magic and exports. CI rebuilds from source; `build.sh` fails without emcc unless `SKIP_WASM_BUILD=1`.
 
 ---
 
@@ -153,7 +149,7 @@ WASMRenderer implements many optionals but is missing:
 | Problem | Location | Impact |
 |---------|----------|--------|
 | `prebuild` / `build` swallow failures | `package.json:22,27` | `npm run build` succeeds while shipping stale WASM or nothing |
-| No Emscripten in CI | `.github/workflows/ci.yml` | `wasm:build` either skipped or hard-fails silently; artifacts never regenerated in PRs |
+| No Emscripten in CI | `.github/workflows/ci.yml` | **Resolved** — dedicated `wasm` job with `mymindstorm/setup-emsdk@v14` |
 | Artifacts committed | `public/wasm/`, `build/wasm/`, `wasm_renderer/build/` | Drift inevitable; 96 KB binary in git |
 | Two bridge copies | `src/wasm/` vs `wasm_renderer/` vs `public/wasm/` | **Resolved (#821):** `build.sh` copies canonical bridge to both `src/wasm/` and `public/wasm/`; validator fails on skew |
 | `build.sh` improved but still env-sensitive | `wasm_renderer/build.sh` | Hard-coded candidate paths for emsdk_env.sh |
@@ -225,11 +221,12 @@ The old stub behavior is gone (good), but the "silent degradation" problem moved
 - Audit every `(as any).foo` call site in App.tsx / WebGPUCanvas and route through the manager.
 - Call `setInputSource(...)` from the input-source change handlers (map 'generative' → 4, etc.) for both renderers.
 
-### Phase 2 — Build & CI (3–5 days)
-- Add Emscripten + emdawnwebgpu setup to a new "wasm" job or optional matrix in CI (use emsdk action or container).
-- Remove the `2>/dev/null || echo` wrappers or make `wasm:build` a required step that fails the build when artifacts are missing/stale.
-- Decide: commit artifacts (with hash manifest) **or** treat WASM as an explicit opt-in dev-only backend.
-- Sync the two `wasm_bridge.js` copies or make one the source of truth and copy in a build step.
+### Phase 2 — Build & CI ✅ (June 2026)
+- ✅ Emscripten + emdawnwebgpu in CI `wasm` job (`mymindstorm/setup-emsdk@v14`)
+- ✅ `build.sh` fails without emcc unless `SKIP_WASM_BUILD=1`
+- ✅ **CI-built, committed baseline** artifact strategy — see [`wasm_renderer/ARTIFACTS.md`](./wasm_renderer/ARTIFACTS.md)
+- ✅ Canonical `wasm_renderer/wasm_bridge.js` copied to `src/wasm/` + `public/wasm/`; validator checks all three
+- ✅ Jest WASM smoke in `wasm` job; Playwright smoke in `test-wasm-e2e`
 
 ### Phase 3 — Parity & Hardening (2–3 weeks)
 - Implement missing interface methods (`updateAudioFrequencyBins`, full recording integration using internal readback + JS encoding, `setRecording` adapter).
@@ -238,11 +235,20 @@ The old stub behavior is gone (good), but the "silent degradation" problem moved
 - Clean up per-slot submit pattern if it causes measurable overhead.
 - RAII + error handling is already good; add shader hot-reload / recompilation path.
 
-### Decision Point for Maintainers
-**Do we want WASM as a supported backend in the next 3 months?**
+### Decision Point for Maintainers — **RESOLVED: Option B (June 2026)**
 
-- **Yes** → Commit to Phase 0 + 1 immediately. The C++ core is worth finishing.
-- **No** → Remove the toggle, the `?renderer=wasm` path, the dead `wasm_renderer/` docs that claim completion, and the committed binaries. Keep the C++ as a research artifact or delete it to reduce confusion. The TS renderer is the only production path.
+**Decision:** Tier B — **opt-in experimental backend**. TypeScript WebGPU is the supported production default.
+
+Full policy, promotion gates, and demotion criteria:
+**[`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md)**
+
+| If… | Then… |
+|-----|--------|
+| Promotion gates pass (perf, parity, 4wk CI) | Promote to Tier A — equal SLA, consider default for heavy-shader cohort |
+| Benchmarks show no win / edge GPU init fails often | Demote to Tier D — hide toggle, archive `wasm_renderer/` |
+| Wins on 3–5 heavy shaders only | Revisit hybrid routing (Tier C) — separate decision |
+
+**Do not** invest in full dual-renderer SLA until promotion gates pass.
 
 ---
 
@@ -270,14 +276,16 @@ Recommended PR order (all landed as of this doc pass):
 | [#822](https://github.com/ford442/image_video_effects/issues/822) | ✅ | Unified init error paths, RAII cleanup, structured diagnostics (`getLastInitErrorStage`/`Message` → JS) |
 | [#823](https://github.com/ford442/image_video_effects/issues/823) | ✅ | WASM docs refresh (this pass) |
 
-All six C++ reliability issues (#817–#822) and the bridge sync (#821) are
-implemented in tree. **Remaining open work** (not tracked as #817–#822):
+All six C++ reliability issues (#817–#822) and integration issues #845–#847 are
+implemented in tree.
 
-- `RendererManager` WASM forwarding (§3.2)
-- `setInputSource` app wiring (§3.3)
-- Recording/screenshot integration gaps (§3.4)
-- CI/build hygiene — `build.sh` still `exit 0` when `emcc` is missing (§4)
-- Live-browser smoke verification on edge GPUs
+**Tier B (June 2026):** WASM is experimental opt-in — see [`WASM_BACKEND_POLICY.md`](../WASM_BACKEND_POLICY.md).
+
+**Remaining before Tier A promotion:**
+
+- Live-browser smoke on edge GPUs
+- Benchmark report attached to promotion issue (run `WASM_GPU_TESTS=1 npm run test:wasm:bench`)
+- Close #848 / #849 with final CI + test suite links
 
 ---
 

@@ -94,7 +94,7 @@ using WGPUShaderModuleHandle     = WGPUHandle<WGPUShaderModule,     wgpuShaderMo
 enum class SlotMode { Chained = 0, Parallel = 1 };
 
 // Input source for the renderer.  Generative shaders use a black texture.
-enum class InputSource { None = 0, Image = 1, Video = 2, Webcam = 3, Generative = 4 };
+enum class InputSource { None = 0, Image = 1, Video = 2, Webcam = 3, Generative = 4, Live = 5 };
 
 // Per-slot state: shader selection, parameters, and execution mode.
 struct ShaderSlot {
@@ -174,6 +174,9 @@ public:
     // Retrieves and logs compilation messages via wgpuShaderModuleGetCompilationInfo.
     // @workgroup_size is parsed from wgslCode for correct dispatch.
     bool LoadShader(const char* id, const char* wgslCode);
+
+    // Recompile an existing shader (or load if new). Used for dev hot-reload.
+    bool ReloadShader(const char* id, const char* wgslCode);
 
     // Set the active shader for single-shader (legacy) rendering.
     // Also enables slot 0 with this shader for backwards compatibility.

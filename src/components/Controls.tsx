@@ -107,6 +107,7 @@ interface ControlsProps {
     recordingCountdown?: number;
     onStartRecording?: () => void;
     onStopRecording?: () => void;
+    onTakeScreenshot?: () => void;
     // Live Stream Props
     liveStreamUrl?: string;
     onLiveStreamLoaded?: (url: string) => void;
@@ -178,6 +179,7 @@ const Controls: React.FC<ControlsProps> = ({
     recordingCountdown = 8,
     onStartRecording,
     onStopRecording,
+    onTakeScreenshot,
     liveStreamUrl,
     onLiveStreamLoaded,
     onExitLiveStream,
@@ -1061,6 +1063,18 @@ const Controls: React.FC<ControlsProps> = ({
                         </>
                     )}
                 </button>
+
+                {onTakeScreenshot && (
+                    <button
+                        type="button"
+                        onClick={onTakeScreenshot}
+                        className="gold-outline-btn"
+                        style={{ width: '100%', marginTop: '10px' }}
+                        disabled={isRecording}
+                    >
+                        📸 Save Screenshot
+                    </button>
+                )}
                 
                 {isRecording && (
                     <div style={{marginTop: '10px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden'}}>
@@ -1770,7 +1784,7 @@ const Controls: React.FC<ControlsProps> = ({
                                                     letterSpacing: '0.05em',
                                                 }}
                                             >
-                                                {type}
+                                                {type === 'wasm' ? 'wasm (exp)' : type}
                                             </button>
                                         ))}
                                     </div>

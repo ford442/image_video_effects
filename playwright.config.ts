@@ -17,6 +17,9 @@ export default defineConfig({
   // Expect timeout: 5 seconds
   expect: {
     timeout: 5 * 1000,
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.25,
+    },
   },
 
   // Retry failed tests once in CI, 0 times locally

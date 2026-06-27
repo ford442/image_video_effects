@@ -47,7 +47,9 @@ export function getDiagnostics(): WasmBridgeDiagnostics;
 export function initWasmRenderer(canvas: HTMLCanvasElement): Promise<boolean>;
 export function shutdownWasmRenderer(): void;
 export function loadShader(id: string, wgslCode: string): boolean;
+export function reloadShader(id: string, wgslCode: string): boolean;
 export function loadShaderFromURL(id: string, url: string): Promise<boolean>;
+export function reloadShaderFromURL(id: string, url: string): Promise<boolean>;
 export function setActiveShader(id: string): void;
 
 // Multi-slot shader API
@@ -112,7 +114,9 @@ export interface WasmRenderer {
   initWasmRenderer(canvas: HTMLCanvasElement): Promise<boolean>;
   shutdownWasmRenderer(): void;
   loadShader(id: string, wgslCode: string): boolean;
+  reloadShader(id: string, wgslCode: string): boolean;
   loadShaderFromURL(id: string, url: string): Promise<boolean>;
+  reloadShaderFromURL(id: string, url: string): Promise<boolean>;
   setActiveShader(id: string): void;
   setSlotShader(slotIndex: number, id: string): void;
   setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void;

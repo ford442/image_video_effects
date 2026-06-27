@@ -28,7 +28,7 @@
  *  13  texture_2d_array<f32> historyTexture  (HISTORY_DEPTH=8 past frames; opt-in)
  */
 
-import { Renderer, RendererConfig } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer } from './Renderer';
 import { resolveMultipassChain } from './multipassRegistry';
 import { createUniformBufferView, UniformBufferView, Ripple, UNIFORM_FLOATS, MAX_RIPPLES } from './UniformBuffer';
 import { reportError, getBrowserWarning } from './ErrorHandling';
@@ -112,7 +112,7 @@ interface ShaderSlot {
 
 // ── Renderer class ───────────────────────────────────────────────────────────
 
-export class WebGPURenderer implements Renderer {
+export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   // WebGPU core
   private device: GPUDevice | null = null;
@@ -726,6 +726,24 @@ export class WebGPURenderer implements Renderer {
     };
   }
 
+  /** Test hook: pin uniforms and render one frame. */
+  applyTestRenderState(state: {
+    time?: number;
+    mouseX?: number;
+    mouseY?: number;
+    bass?: number;
+    mid?: number;
+    treble?: number;
+  }): void {
+    if (state.time !== undefined) this.currentTime = state.time;
+    if (state.mouseX !== undefined) this.mouseX = state.mouseX;
+    if (state.mouseY !== undefined) this.mouseY = state.mouseY;
+    if (state.bass !== undefined) {
+      this.updateAudioData(state.bass, state.mid ?? 0, state.treble ?? 0);
+    }
+    this.renderFrame();
+  }
+
   // ── Shader management ──────────────────────────────────────────────────────
 
   async loadShader(id: string, url: string): Promise<boolean> {
@@ -1249,7 +1267,7 @@ export class WebGPURenderer implements Renderer {
     if (params.zoomParam4 !== undefined) this.zoomParams[3] = params.zoomParam4;
   }
 
-  /** Set the active input source (generative, image, video, webcam, or live). */
+  /** Set the active input source for generative/procedural, image, video, webcam, or live. */
   setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
     this.inputSource = source;
     
@@ -1261,6 +1279,10 @@ export class WebGPURenderer implements Renderer {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[WebGPU] Input source set to: ${source}`);
     }
+  }
+
+  getInputSource(): 'image' | 'video' | 'webcam' | 'generative' | 'live' {
+    return this.inputSource;
   }
 
   /** render() is a no-op; actual rendering is driven by the internal RAF loop. */

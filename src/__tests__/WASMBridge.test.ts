@@ -19,7 +19,9 @@ jest.mock('../wasm/wasm_bridge.js', () => {
     initWasmRenderer: jest.fn().mockResolvedValue(false),
     shutdownWasmRenderer: jest.fn(),
     loadShader: jest.fn().mockReturnValue(false),
+    reloadShader: jest.fn().mockReturnValue(false),
     loadShaderFromURL: jest.fn().mockResolvedValue(false),
+    reloadShaderFromURL: jest.fn().mockResolvedValue(false),
     setActiveShader: jest.fn(),
     setSlotShader: jest.fn(),
     setSlotParams: jest.fn(),
@@ -64,7 +66,9 @@ function makeMockBridge() {
     initWasmRenderer: jest.fn().mockResolvedValue(false),
     shutdownWasmRenderer: jest.fn(),
     loadShader: jest.fn().mockReturnValue(false),
+    reloadShader: jest.fn().mockReturnValue(false),
     loadShaderFromURL: jest.fn().mockResolvedValue(false),
+    reloadShaderFromURL: jest.fn().mockResolvedValue(false),
     setActiveShader: jest.fn(),
     setSlotShader: jest.fn(),
     setSlotParams: jest.fn(),
@@ -107,7 +111,7 @@ beforeEach(() => { b = makeMockBridge(); });
 
 describe('WASMBridge API surface', () => {
   const REQUIRED_EXPORTS = [
-    'initWasmRenderer', 'shutdownWasmRenderer', 'loadShader', 'loadShaderFromURL',
+    'initWasmRenderer', 'shutdownWasmRenderer', 'loadShader', 'reloadShader', 'loadShaderFromURL', 'reloadShaderFromURL',
     'setActiveShader', 'setSlotShader', 'setSlotParams', 'updateSlotParams', 'setSlotMode',
     'updateUniforms', 'updateMousePos', 'updateAudioData', 'updateAudioFrequencyBins',
     'updateDepthMap', 'setInputSource', 'addRipple', 'clearRipples',

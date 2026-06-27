@@ -1,4 +1,5 @@
-// SOURCE OF TRUTH — copied to src/wasm/ and public/wasm/ by build.sh. Edit here only.
+// CANONICAL WASM bridge — edit this file only.
+// build.sh copies to src/wasm/wasm_bridge.js (webpack/TS) and public/wasm/wasm_bridge.js (runtime).
 /**
  * Pixelocity WASM Renderer Bridge
  *
@@ -314,6 +315,42 @@ export function loadShader(id, wgslCode) {
 }
 
 /**
+ * Recompile a shader that was already loaded (hot-reload).
+ * @param {string} id - Shader identifier
+ * @param {string} wgslCode - WGSL source code
+ * @returns {boolean} Success status
+ */
+export function reloadShader(id, wgslCode) {
+  if (!state.initialized || !wasmModule) {
+    console.error('[WASM] Renderer not initialized');
+    return false;
+  }
+
+  const idLen = wasmModule.lengthBytesUTF8(id) + 1;
+  const idPtr = wasmModule._malloc(idLen);
+  wasmModule.stringToUTF8(id, idPtr, idLen);
+
+  const codeLen = wasmModule.lengthBytesUTF8(wgslCode) + 1;
+  const codePtr = wasmModule._malloc(codeLen);
+  wasmModule.stringToUTF8(wgslCode, codePtr, codeLen);
+
+  let result;
+  try {
+    result = wasmModule.ccall(
+      'reloadShader',
+      'number',
+      ['number', 'number'],
+      [idPtr, codePtr]
+    );
+  } finally {
+    wasmModule._free(idPtr);
+    wasmModule._free(codePtr);
+  }
+
+  return result !== 0;
+}
+
+/**
  * Set the active shader for rendering (legacy single-shader API).
  * Also enables slot 0 with this shader for backwards compatibility.
  * @param {string} id - Shader identifier
@@ -583,14 +620,14 @@ export function updateDepthMap(float32Data, width, height) {
  *   2 or 'video'      - video file or HLS live stream
  *   3 or 'webcam'     - webcam capture (same upload path as video)
  *   4 or 'generative' - procedural, readTexture cleared to black
- *   'live'            - alias for video (HLS)
+ *   5 or 'live'       - HLS live stream (same frame upload path as video)
  */
 export function setInputSource(source) {
   if (!state.initialized || !wasmModule) {
     if (typeof source === 'string') state.pendingInputSource = source;
     return;
   }
-  const sourceMap = { none: 0, image: 1, video: 2, webcam: 3, generative: 4, live: 2 };
+  const sourceMap = { none: 0, image: 1, video: 2, webcam: 3, generative: 4, live: 5 };
   const sourceInt = typeof source === 'string'
     ? (sourceMap[source] ?? 0)
     : source;
@@ -683,6 +720,30 @@ export async function loadShaderFromURL(id, url) {
     return loadShader(id, wgslCode);
   } catch (err) {
     console.error(`Failed to load shader from ${url}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Hot-reload a shader from URL (recompiles compute pipeline in C++).
+ * @param {string} id - Shader identifier
+ * @param {string} url - URL to fetch WGSL code from
+ * @returns {Promise<boolean>}
+ */
+export async function reloadShaderFromURL(id, url) {
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const wgslCode = await response.text();
+    const ok = reloadShader(id, wgslCode);
+    if (ok) {
+      console.log(`[WASM] ♻️  Hot-reloaded shader: ${id}`);
+    }
+    return ok;
+  } catch (err) {
+    console.error(`Failed to reload shader from ${url}:`, err);
     return false;
   }
 }
@@ -984,7 +1045,9 @@ const wasmBridge = {
   initWasmRenderer,
   shutdownWasmRenderer,
   loadShader,
+  reloadShader,
   loadShaderFromURL,
+  reloadShaderFromURL,
   setActiveShader,
   setSlotShader,
   setSlotParams,

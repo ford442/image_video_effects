@@ -8,6 +8,7 @@ export class JSRenderer implements Renderer {
   private image: HTMLImageElement | null = null;
   private animationId: number | null = null;
   private showDebugInfo: boolean = true;
+  private inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live' = 'image';
 
   // Sim params
   private params = {
@@ -97,6 +98,7 @@ export class JSRenderer implements Renderer {
    * @param source - The input source type: 'image', 'video', 'webcam', 'generative', or 'live'
    */
   setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
+    this.inputSource = source;
     // For generative mode, clear both image and video (will show black canvas with audio visualization)
     if (source === 'generative') {
       this.image = null;
@@ -106,6 +108,10 @@ export class JSRenderer implements Renderer {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[JSRenderer] Input source set to: ${source}`);
     }
+  }
+
+  getInputSource(): 'image' | 'video' | 'webcam' | 'generative' | 'live' {
+    return this.inputSource;
   }
 
   render = (): void => {

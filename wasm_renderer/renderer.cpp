@@ -1372,6 +1372,17 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     return true;
 }
 
+bool WebGPURenderer::ReloadShader(const char* id, const char* wgslCode) {
+    if (!device_.get() || deviceLost_ || !id || !wgslCode) return false;
+
+    auto it = shaders_.find(id);
+    if (it != shaders_.end()) {
+        printf("♻️  Reloading shader: %s\n", id);
+        shaders_.erase(it);
+    }
+    return LoadShader(id, wgslCode);
+}
+
 void WebGPURenderer::SetActiveShader(const char* id) {
     activeShaderId_ = id;
     // Also configure slot 0 for backwards compatibility with callers that
@@ -1631,7 +1642,9 @@ void WebGPURenderer::LoadImage(const uint8_t* data, int width, int height) {
 }
 
 void WebGPURenderer::UpdateVideoFrame(const uint8_t* data, int width, int height) {
-    if (inputSource_ != InputSource::Video && inputSource_ != InputSource::Webcam) {
+    if (inputSource_ != InputSource::Video &&
+        inputSource_ != InputSource::Webcam &&
+        inputSource_ != InputSource::Live) {
         return;
     }
     UploadRGBA8ToReadTexture(data, width, height);

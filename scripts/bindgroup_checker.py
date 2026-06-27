@@ -73,6 +73,52 @@ WORKGROUP_PATTERN = re.compile(
     re.MULTILINE
 )
 
+# Project convention: compute entry points must declare 3 explicit workgroup dims.
+# naga accepts 2-arg forms (Z defaults to 1); the gate enforces our convention.
+WORKGROUP_SIZE_ATTR = re.compile(r'@workgroup_size\s*\(([^)]*)\)', re.MULTILINE)
+LITERAL_TWO_INT_WORKGROUP_FIX = re.compile(
+    r'(@workgroup_size\s*\(\s*\d+\s*,\s*\d+\s*)\)',
+    re.MULTILINE,
+)
+
+def strip_wgsl_comments(src: str) -> str:
+    """Remove block and line comments so gate checks ignore commented-out attributes."""
+    src = re.sub(r'/\*.*?\*/', ' ', src, flags=re.DOTALL)
+    src = re.sub(r'//[^\n]*', ' ', src)
+    return src
+
+
+def count_workgroup_size_args(arg_list: str) -> int:
+    """Count top-level comma-separated args inside @workgroup_size(...)."""
+    return len([a for a in (x.strip() for x in arg_list.split(',')) if a])
+
+
+def check_workgroup_size_convention(content: str) -> list[dict]:
+    """
+    Return issues where @workgroup_size has fewer than 3 explicit dimensions.
+    Checks comment-stripped source so inline comments do not skew counts.
+    """
+    issues = []
+    stripped = strip_wgsl_comments(content)
+    for match in WORKGROUP_SIZE_ATTR.finditer(stripped):
+        arg_count = count_workgroup_size_args(match.group(1))
+        if arg_count < 3:
+            issues.append({
+                "match": match.group(0).strip(),
+                "arg_count": arg_count,
+                "args": match.group(1).strip(),
+            })
+    return issues
+
+
+def fix_literal_two_arg_workgroup_size(content: str) -> tuple[str, int]:
+    """
+    Auto-fix only unambiguous literal (int, int) -> (int, int, 1).
+    Does not touch override/expression/1-arg forms.
+    Returns (new_content, number_of_replacements).
+    """
+    return LITERAL_TWO_INT_WORKGROUP_FIX.subn(r'\1, 1)', content)
+
 BINDING_13_PLUS_PATTERN = re.compile(
     r'@group\(0\)\s*@binding\((1[3-9]|[2-9]\d+)\)',
     re.MULTILINE

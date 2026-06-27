@@ -302,7 +302,7 @@ function MainApp() {
     const [audioReactiveAmount, setAudioReactiveAmount] = useState(0.8); // master 0-1 mix
 
     // --- Audio Analyzer Hook ---
-    const { startAudio: startAudioAnalyzer, stopAudio: stopAudioAnalyzer, getAudioData: getAudioAnalyzerData } = useAudioAnalyzer();
+    const { startAudio: startAudioAnalyzer, stopAudio: stopAudioAnalyzer, getAudioData: getAudioAnalyzerData, getAudioBins } = useAudioAnalyzer();
 
     // --- Refs for audio-reactive param smoothing ---
     const audioParamSmoothedRef = useRef<[number, number, number, number]>([0.5, 0.5, 0.5, 0.5]);
@@ -347,7 +347,7 @@ function MainApp() {
 
         if (ok) {
             setActiveRendererType(type);
-            setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
+            setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM (experimental)' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
 
             // Re-bind shaders + params so the new backend matches the UI state
             if (type === 'wasm' || type === 'webgpu') {
@@ -404,6 +404,13 @@ function MainApp() {
     useEffect(() => {
         inputSourceRef.current = inputSource;
     }, [inputSource]);
+
+    /** Push input-source changes to the active renderer (WebGPU, WASM, or JS). */
+    const syncInputSourceToRenderer = useCallback((source: InputSource) => {
+        inputSourceRef.current = source;
+        setInputSource(source);
+        rendererRef.current?.setInputSource?.(source);
+    }, []);
 
     const mapShaderParamUpdates = useCallback((slotParamsUpdates: Record<string, number>, slotIndex: number): Partial<SlotParams> => {
         const shaderId = modesRef.current[slotIndex];
@@ -541,7 +548,7 @@ function MainApp() {
     useEffect(() => {
         if (shaderCategory === 'generative') {
             // When user selects "Procedural Generation", force input source to generative
-            setInputSource('generative');
+            syncInputSourceToRenderer('generative');
             setStatus('Switched to Generative Input');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -963,6 +970,8 @@ function MainApp() {
             // Record deep-workgroup hardware capability so we can filter shaders
             const deepWg = rendererRef.current.getSupportsDeepWorkgroup?.() ?? false;
             setSupportsDeepWorkgroup(deepWg);
+            // Ensure the active backend matches the UI input source (WASM + WebGPU).
+            rendererRef.current.setInputSource?.(inputSourceRef.current);
             setRendererReady(true);
         }
     }, []);
@@ -972,16 +981,90 @@ function MainApp() {
         if (typeof window === 'undefined') return;
         const params = new URLSearchParams(window.location.search);
         if (params.get('testMode') === '1' && rendererRef.current) {
+            const manager = rendererRef.current;
+            const loadShaderTracked = async (id: string, url: string) => {
+                const ok = await manager.loadShader(id, url) ?? false;
+                if (params.get('shaderHotReload') === '1') {
+                    import('./dev/shaderHotReload').then(({ trackShaderForHotReload }) => {
+                        trackShaderForHotReload(id, url);
+                    });
+                }
+                return ok;
+            };
             (window as any).__pixelocity__ = {
-                renderer: rendererRef.current,
+                renderer: manager,
+                getRendererType: () => manager.getActiveRendererType(),
                 setSlotShader: (index: number, id: string) => {
-                    rendererRef.current?.setSlotShader(index, id);
+                    manager.setSlotShader(index, id);
                 },
-                loadShader: async (id: string, url: string) => {
-                    return rendererRef.current?.loadShader(id, url) ?? false;
+                loadShader: loadShaderTracked,
+                reloadShader: (id: string, url: string) => manager.reloadShader(id, url),
+                setInputSource: (source: Parameters<typeof manager.setInputSource>[0]) => {
+                    manager.setInputSource(source);
                 },
+                setTestRenderState: (state: Parameters<typeof manager.applyTestRenderState>[0]) => {
+                    manager.applyTestRenderState(state);
+                },
+                captureCanvasScreenshot: async () => {
+                    const canvas = document.querySelector('canvas');
+                    if (!canvas) return null;
+                    return canvas.toDataURL('image/png');
+                },
+                runBenchmark: async (frameCount = 90) => {
+                    const samples: Array<{ fps: number; gpu: ReturnType<typeof manager.getGPUTimings> }> = [];
+                    for (let i = 0; i < frameCount; i++) {
+                        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+                        samples.push({
+                            fps: manager.getMetrics().fps,
+                            gpu: manager.getGPUTimings(),
+                        });
+                    }
+                    const totals = samples.map((s) => s.gpu.totalTime).filter((t) => t > 0);
+                    const avgTotalMs = totals.length
+                        ? totals.reduce((a, b) => a + b, 0) / totals.length
+                        : 0;
+                    return {
+                        frames: frameCount,
+                        avgFps: samples.reduce((a, s) => a + s.fps, 0) / frameCount,
+                        avgTotalMs,
+                        gpuTimingsAvailable: samples.some((s) => s.gpu.available),
+                        rendererType: manager.getActiveRendererType(),
+                        samples: samples.slice(-5),
+                    };
+                },
+                updateAudioFrequencyBins: (bins: Float32Array) => {
+                    manager.updateAudioFrequencyBins(bins);
+                },
+                getSlotState: (index: number) => manager.getSlotState(index),
+                getGPUTimings: () => manager.getGPUTimings(),
+                getSupportsDeepWorkgroup: () => manager.getSupportsDeepWorkgroup(),
+                takeScreenshot: (filename?: string) => manager.takeScreenshot(filename),
+                refreshFrameImage: () => manager.refreshFrameImage(),
+                getFrameImage: () => manager.getFrameImage(),
             };
         }
+    }, [rendererReady]);
+
+    // --- Dev shader hot-reload (?renderer=wasm&shaderHotReload=1) ---
+    useEffect(() => {
+        if (typeof window === 'undefined' || !rendererRef.current) return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('shaderHotReload') !== '1') return;
+        if (params.get('renderer') !== 'wasm') return;
+
+        let cleanup: (() => void) | undefined;
+        import('./dev/shaderHotReload').then(({ attachShaderHotReload, wrapLoadShaderForHotReload }) => {
+            const manager = rendererRef.current!;
+            const wrapped = wrapLoadShaderForHotReload(manager);
+            (window as any).__pixelocity__ = {
+                ...(window as any).__pixelocity__,
+                loadShader: wrapped,
+                reloadShader: (id: string, url: string) => manager.reloadShader(id, url),
+            };
+            cleanup = attachShaderHotReload(manager);
+            console.log('[HotReload] Enabled — edit files in public/shaders/ to reload pipelines');
+        });
+        return () => cleanup?.();
     }, [rendererReady]);
 
     // --- Webcam Handlers ---
@@ -1017,7 +1100,7 @@ function MainApp() {
             await videoElementRef.current.play();
             
             setIsWebcamActive(true);
-            setInputSource('webcam');
+            syncInputSourceToRenderer('webcam');
             setShaderCategory('image');
             setShowWebcamShaderSuggestions(true);
             setStatus('📹 Webcam active! Try fun shaders below.');
@@ -1040,7 +1123,7 @@ function MainApp() {
             videoElementRef.current.srcObject = null;
         }
         setIsWebcamActive(false);
-        setInputSource('image');
+        syncInputSourceToRenderer('image');
         setShowWebcamShaderSuggestions(false);
         setStatus('Webcam stopped');
     }, []);
@@ -1248,7 +1331,7 @@ function MainApp() {
         if (!nextShader) return;
 
         // Switch to generative input source if not already
-        setInputSource('generative');
+        syncInputSourceToRenderer('generative');
         setActiveGenerativeShader(nextShader.id);
 
         // Load the shader into slot 0
@@ -1264,15 +1347,15 @@ function MainApp() {
         });
 
         setStatus(`🎨 Generative Showcase: ${nextShader.name}`);
-    }, [getGenerativeShaders, setMode, updateSlotParam, setInputSource, setActiveGenerativeShader]);
+    }, [getGenerativeShaders, setMode, updateSlotParam, syncInputSourceToRenderer, setActiveGenerativeShader]);
 
     const startGenerativeShowcase = useCallback(() => {
         setGenerativeShowcaseLocked(false);
         setGenerativeShowcaseActive(true);
-        setInputSource('generative');
+        syncInputSourceToRenderer('generative');
         advanceGenerativeShowcase(); // First one immediately
         setStatus('🎨 Generative Showcase started! Click or press SPACE to lock the current shader.');
-    }, [advanceGenerativeShowcase, setInputSource]);
+    }, [advanceGenerativeShowcase, syncInputSourceToRenderer]);
 
     const stopGenerativeShowcase = useCallback(() => {
         setGenerativeShowcaseActive(false);
@@ -1343,6 +1426,9 @@ function MainApp() {
         if (!audioData) return;
 
         const { bass, mid, treble } = audioData;
+        manager.updateAudioData(bass, mid, treble);
+        manager.updateAudioFrequencyBins(getAudioBins());
+
         const overall = (bass + mid + treble) / 3.0;
         const amount = audioReactiveAmount;
 
@@ -1371,7 +1457,20 @@ function MainApp() {
             updateSlotParam(0, modulated);
             rendererRef.current?.updateSlotParams(modulated, 0);
         }
-    }, [audioReactiveParams, audioReactiveAmount, modes, availableModes, updateSlotParam, getAudioAnalyzerData]);
+    }, [audioReactiveParams, audioReactiveAmount, modes, availableModes, updateSlotParam, getAudioAnalyzerData, getAudioBins]);
+
+    const handleTakeScreenshot = useCallback(async () => {
+        const manager = rendererRef.current;
+        if (!manager) return;
+        try {
+            const filename = `pixelocity-${Date.now()}.png`;
+            await manager.takeScreenshot(filename);
+            setStatus(`📸 Screenshot saved (${filename})`);
+        } catch (err) {
+            console.error('Screenshot failed:', err);
+            setStatus('❌ Screenshot failed');
+        }
+    }, []);
 
     // Animation-frame callback for audio-reactive params (runs every frame)
     useEffect(() => {
@@ -1545,7 +1644,7 @@ function MainApp() {
             // Restore input source
             const source = params.get('source');
             if (source) {
-                setInputSource(source as InputSource);
+                syncInputSourceToRenderer(source as InputSource);
                 if (source === 'webcam') {
                     // Will need to trigger webcam start separately
                     setTimeout(() => startWebcam(), 1000);
@@ -1562,14 +1661,14 @@ function MainApp() {
             const gen = params.get('gen');
             if (gen) {
                 setActiveGenerativeShader(gen);
-                setInputSource('generative');
+                syncInputSourceToRenderer('generative');
             }
             
             setStatus('🎉 Shared state restored!');
         } catch (e) {
             console.error('Failed to restore state from hash:', e);
         }
-    }, [setMode, setActiveSlot, updateSlotParam, setInputSource, setActiveGenerativeShader, handleLoadImage, startWebcam]);
+    }, [setMode, setActiveSlot, updateSlotParam, syncInputSourceToRenderer, setActiveGenerativeShader, handleLoadImage, startWebcam]);
 
     // Restore state from URL hash on load
     useEffect(() => {
@@ -1821,7 +1920,7 @@ function MainApp() {
             } else if (msg.type === 'CMD_SET_SHADER_CATEGORY') {
                 setShaderCategory(msg.payload);
             } else if (msg.type === 'CMD_SET_INPUT_SOURCE') {
-                setInputSource(msg.payload);
+                syncInputSourceToRenderer(msg.payload);
             } else if (msg.type === 'CMD_SET_AUTO_CHANGE') {
                 setAutoChangeEnabled(msg.payload);
             } else if (msg.type === 'CMD_SET_AUTO_CHANGE_DELAY') {
@@ -1913,7 +2012,7 @@ function MainApp() {
                         autoChangeEnabled={autoChangeEnabled} setAutoChangeEnabled={setAutoChangeEnabled}
                         autoChangeDelay={autoChangeDelay} setAutoChangeDelay={setAutoChangeDelay}
                         onLoadModel={loadDepthModel} isModelLoaded={!!depthEstimator} availableModes={availableModes}
-                        inputSource={inputSource} setInputSource={setInputSource} videoList={videoList}
+                        inputSource={inputSource} setInputSource={syncInputSourceToRenderer} videoList={videoList}
                         selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo}
                         videoB3hdMode={videoB3hdMode} setVideoB3hdMode={setVideoB3hdMode}
                         b3hdSegmentLength={b3hdSegmentLength} setB3hdSegmentLength={setB3hdSegmentLength}
@@ -1955,6 +2054,7 @@ function MainApp() {
                         recordingCountdown={recordingCountdown}
                         onStartRecording={startRecording}
                         onStopRecording={stopRecording}
+                        onTakeScreenshot={handleTakeScreenshot}
                         // Dev Tools props
                         onOpenShaderScanner={() => setShowShaderScanner(true)}
                         // Renderer switch props
@@ -1974,7 +2074,7 @@ function MainApp() {
                         mousePosition={mousePosition} setMousePosition={setMousePosition}
                         isMouseDown={isMouseDown} setIsMouseDown={setIsMouseDown} onInit={onInitCanvas}
                         inputSource={inputSource} videoSourceUrl={videoSourceUrl}
-                        isMuted={isMuted} setInputSource={setInputSource}
+                        isMuted={isMuted} setInputSource={syncInputSourceToRenderer}
                         activeSlot={activeSlot}
                         activeGenerativeShader={activeGenerativeShader}
                         selectedVideo={selectedVideo}
@@ -2000,7 +2100,11 @@ function MainApp() {
                         {/* Current Renderer Badge (clickable for cycling) */}
                         <span
                             className={`renderer-badge renderer-badge--${activeRendererType}`}
-                            title="Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)"
+                            title={
+                                activeRendererType === 'wasm'
+                                    ? 'Experimental C++ WASM — click to cycle renderer'
+                                    : 'Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)'
+                            }
                             onClick={() => {
                                 const cycle: Record<RendererType, RendererType> = {
                                     webgpu: 'wasm',
@@ -2010,7 +2114,11 @@ function MainApp() {
                                 handleSwitchRenderer(cycle[activeRendererType]);
                             }}
                         >
-                            {activeRendererType === 'wasm' ? '⚡ C++ WASM' : activeRendererType === 'js' ? '🎨 Canvas2D' : '🔷 WebGPU'}
+                            {activeRendererType === 'wasm'
+                                ? '⚡ WASM (exp.)'
+                                : activeRendererType === 'js'
+                                  ? '🎨 Canvas2D'
+                                  : '🔷 WebGPU'}
                         </span>
 
                         {/* FPS Comparison + Switch Toggle (JS WebGPU vs C++ WASM) */}
@@ -2258,7 +2366,7 @@ function MainApp() {
                             }}
                             onSelectVideo={(video) => {
                                 setSelectedVideo(video.url);
-                                setInputSource('video');
+                                syncInputSourceToRenderer('video');
                                 setStatus(`Selected video: ${video.title}`);
                                 setShowStorageBrowser(false);
                             }}
@@ -2272,7 +2380,7 @@ function MainApp() {
                                 if (config.slotParams) {
                                     setSlotParams(config.slotParams);
                                 }
-                                if (config.inputSource) setInputSource(config.inputSource);
+                                if (config.inputSource) syncInputSourceToRenderer(config.inputSource);
                                 if (config.currentImageUrl) handleLoadImage(config.currentImageUrl);
                                 setStatus('Loaded effect configuration from VPS');
                                 setShowStorageBrowser(false);

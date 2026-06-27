@@ -26,7 +26,7 @@ export type RendererType = 'webgpu' | 'wasm' | 'js';
  * Read the preferred renderer type from the URL query string.
  *
  * Supported values for the `renderer` parameter:
- *   - `wasm`   → C++ Emscripten WASM renderer
+ *   - `wasm`   → C++ Emscripten WASM renderer (**experimental** — see WASM_BACKEND_POLICY.md)
  *   - `webgpu` → TypeScript native WebGPU renderer (default)
  *   - `js`     → Canvas 2D fallback (no shaders)
  *
@@ -80,7 +80,7 @@ export class RendererManager {
       console.log('🔧 WASM renderer explicitly requested via ?renderer=wasm');
       const wasmSuccess = await this.switchRenderer('wasm');
       if (wasmSuccess) {
-        console.log('✅ Using C++ WASM renderer (forced via ?renderer=wasm)');
+        console.log('✅ Using C++ WASM renderer (experimental, forced via ?renderer=wasm)');
         return true;
       }
       // Fall through to the normal priority order on failure
@@ -337,12 +337,10 @@ export class RendererManager {
     this.currentRenderer?.setInputSource?.(source);
   }
 
-  /** Returns the active input source when the backend exposes it (WASM). */
+  /** Returns the active input source when the backend exposes it. */
   getInputSource(): InputSource | null {
-    if (this.currentRenderer instanceof WASMRenderer) {
-      return this.currentRenderer.getInputSource();
-    }
-    return null;
+    const r = this.currentRenderer as { getInputSource?: () => InputSource } | null;
+    return r?.getInputSource?.() ?? null;
   }
 
   addRipple(x: number, y: number): void {
@@ -418,17 +416,60 @@ export class RendererManager {
     };
   }
 
+  async reloadShader(id: string, url: string): Promise<boolean> {
+    if (this.currentRenderer instanceof WASMRenderer) {
+      return this.currentRenderer.reloadShaderFromURL(id, url);
+    }
+    return this.currentRenderer?.loadShader(id, url) ?? false;
+  }
+
+  applyTestRenderState(state: {
+    time?: number;
+    mouseX?: number;
+    mouseY?: number;
+    mouseDown?: boolean;
+    bass?: number;
+    mid?: number;
+    treble?: number;
+  }): void {
+    const r = this.currentRenderer as {
+      applyTestRenderState?: (s: typeof state) => void;
+    } | null;
+    r?.applyTestRenderState?.(state);
+  }
+
   getFrameImage(): string {
     return this.currentRenderer?.getFrameImage?.() ?? '';
   }
 
-  /** Capture current frame from WASM renderer (no-op for other backends unless implemented). */
+  /** Capture current frame from the active renderer (WASM readback or canvas fallback). */
   async refreshFrameImage(): Promise<string> {
-    const r = this.currentRenderer as WASMRenderer | null;
-    if (r && typeof (r as WASMRenderer).refreshFrameImage === 'function') {
-      return (r as WASMRenderer).refreshFrameImage();
+    const r = this.currentRenderer as { refreshFrameImage?: () => Promise<string> } | null;
+    if (r?.refreshFrameImage) {
+      return r.refreshFrameImage();
+    }
+    if (this.canvas) {
+      return this.canvas.toDataURL('image/png');
     }
     return '';
+  }
+
+  /** Download a PNG screenshot (GPU readback on WASM, canvas fallback otherwise). */
+  async takeScreenshot(filename = 'screenshot.png'): Promise<void> {
+    const r = this.currentRenderer as { takeScreenshot?: (f?: string) => Promise<void> } | null;
+    if (r?.takeScreenshot) {
+      return r.takeScreenshot(filename);
+    }
+    const dataUrl = await this.refreshFrameImage();
+    if (!dataUrl) {
+      throw new Error('[RendererManager] Screenshot unavailable — no frame source');
+    }
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
   setRecording(isRecording: boolean): void {

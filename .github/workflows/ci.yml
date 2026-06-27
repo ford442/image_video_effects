@@ -39,7 +39,12 @@ jobs:
       run: npm run wasm:build
     
     - name: Validate WASM artifacts
-      run: node scripts/validate_wasm_artifacts.js
+      run: npm run wasm:validate
+    
+    - name: Run WASM unit smoke tests
+      run: npm test -- --watchAll=false --ci --testPathPattern='WASM'
+      env:
+        CI: true
     
     - name: Check artifacts are not stale
       run: |
@@ -75,8 +80,21 @@ jobs:
         fi
         echo "✅ WASM artifact is up to date with source files"
 
+    - name: Upload WASM build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: wasm-artifacts
+        path: |
+          public/wasm/pixelocity_wasm.js
+          public/wasm/pixelocity_wasm.wasm
+          public/wasm/wasm_bridge.js
+          src/wasm/wasm_bridge.js
+          src/wasm/wasm_bridge.d.ts
+        retention-days: 7
+
   test:
     runs-on: ubuntu-latest
+    needs: wasm
     permissions:
       contents: read
     
@@ -91,6 +109,11 @@ jobs:
     
     - name: Install dependencies
       run: npm ci
+
+    - name: Download WASM artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: wasm-artifacts
     
     - name: Run shader list generation
       run: node scripts/generate_shader_lists.js
@@ -113,6 +136,11 @@ jobs:
     
     - name: Build project
       run: npm run build
+      env:
+        SKIP_WASM_BUILD: '1'
+    
+    - name: Validate WASM artifacts after build
+      run: npm run wasm:validate
     
     - name: Upload coverage
       uses: codecov/codecov-action@v3
@@ -123,7 +151,7 @@ jobs:
     permissions:
       contents: read
     needs: [wasm, test]
-    if: always() && needs.wasm.result == 'success'
+    if: always() && needs.wasm.result == 'success' && needs.test.result == 'success'
     
     steps:
     - uses: actions/checkout@v4
@@ -136,28 +164,25 @@ jobs:
     
     - name: Install dependencies
       run: npm ci
-    
-    - name: Setup Emscripten SDK
-      uses: mymindstorm/setup-emsdk@v14
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Download WASM artifacts
+      uses: actions/download-artifact@v4
       with:
-        version: latest
-        actions-cache-folder: 'emsdk-cache'
-    
-    - name: Build WASM renderer
-      run: npm run wasm:build
+        name: wasm-artifacts
     
     - name: Build production app
       run: npm run build
+      env:
+        SKIP_WASM_BUILD: '1'
     
     - name: Install Playwright browsers
       run: npx playwright install chromium
     
     - name: Run WASM Playwright smoke tests
-      run: npx playwright test tests/wasm-renderer.smoke.spec.ts --project=chromium
+      run: npx playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts tests/renderer-parity.spec.ts tests/wasm-benchmark.spec.ts --project=chromium
       env:
         CI: true
+        WASM_GPU_TESTS: '1'
     
     - name: Upload Playwright report
       if: always()
@@ -189,13 +214,37 @@ jobs:
     
     - name: Run WGSL pre-commit gate on changed files
       run: python3 scripts/wgsl_precommit_gate.py --base origin/main
-    
-    - name: Upload gate report
+
+    - name: Audit orphan shader definitions
+      run: python3 scripts/audit_orphan_shader_defs.py
+
+    - name: Workgroup gate unit tests
+      run: python3 scripts/test_workgroup_gate.py
+
+    - name: Publish gate summary
+      if: always()
+      run: |
+        echo "## WGSL pre-commit gate" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f reports/wgsl_precommit_report.json ]; then
+          python3 -c "import json; r=json.load(open('reports/wgsl_precommit_report.json')); print(f\"- Files: {r['total']} passed {r['passed']} failed {r['failed']} warnings {r.get('warnings', 0)}\"); print(f\"- naga available: {r.get('naga_available', True)}\")" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "- No precommit report generated" >> "$GITHUB_STEP_SUMMARY"
+        fi
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "## Orphan shader definitions" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f reports/orphan_shader_defs.md ]; then
+          cat reports/orphan_shader_defs.md >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    - name: Upload gate reports
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: wgsl-precommit-report
-        path: reports/wgsl_precommit_report.json
+        name: wgsl-gate-reports
+        path: |
+          reports/wgsl_precommit_report.json
+          reports/orphan_shader_defs.json
+          reports/orphan_shader_defs.md
         retention-days: 30
 
   lint:

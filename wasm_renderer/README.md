@@ -346,7 +346,7 @@ hardened the init/format/limits handshake:
 
 - `RendererManager` does not forward slot/param changes to WASM
 - App never calls `setInputSource` — generative mode unreachable for WASM
-- `build.sh` exits 0 when `emcc` is missing (silent skip on machines without emsdk)
+- `build.sh` fails without `emcc` unless `SKIP_WASM_BUILD=1` (see [`ARTIFACTS.md`](./ARTIFACTS.md))
 - Live-browser smoke on edge GPUs not yet formally verified
 
 Full tracking:

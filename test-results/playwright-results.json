@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "/app/playwright.config.ts",
-    "rootDir": "/app/tests",
+    "configFile": "/root/image_video_effects/playwright.config.ts",
+    "rootDir": "/root/image_video_effects/tests",
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -16,7 +16,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "/app/test-results",
+        "outputDir": "/root/image_video_effects/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -24,7 +24,7 @@
         },
         "id": "chromium",
         "name": "chromium",
-        "testDir": "/app/tests",
+        "testDir": "/root/image_video_effects/tests",
         "testIgnore": [],
         "testMatch": [
           "**/*.spec.ts"
@@ -32,7 +32,7 @@
         "timeout": 30000
       },
       {
-        "outputDir": "/app/test-results",
+        "outputDir": "/root/image_video_effects/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -40,7 +40,7 @@
         },
         "id": "firefox",
         "name": "firefox",
-        "testDir": "/app/tests",
+        "testDir": "/root/image_video_effects/tests",
         "testIgnore": [],
         "testMatch": [
           "**/*.spec.ts"
@@ -88,778 +88,70 @@
   },
   "suites": [
     {
-      "title": "wasm-renderer.smoke.spec.ts",
-      "file": "wasm-renderer.smoke.spec.ts",
+      "title": "depth-estimation.webgpu.spec.ts",
+      "file": "depth-estimation.webgpu.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "WASM renderer initializes successfully",
+          "title": "production depth model runs on WebGPU",
           "ok": true,
           "tags": [],
           "tests": [
             {
               "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "WebGPU unavailable: no navigator.gpu",
+                  "location": {
+                    "file": "/root/image_video_effects/tests/depth-estimation.webgpu.spec.ts",
+                    "line": 82,
+                    "column": 10
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
               "projectId": "chromium",
               "projectName": "chromium",
               "results": [
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 3431,
+                  "status": "skipped",
+                  "duration": 1209,
                   "errors": [],
-                  "stdout": [
+                  "stdout": [],
+                  "stderr": [
                     {
-                      "text": "[BROWSER log] [ShaderApi] Fetching from https://storage.noahcohn.com/api/shaders?all=true\n"
+                      "buffer": "KG5vZGU6ODcwNTg5KSBXYXJuaW5nOiBUaGUgJ05PX0NPTE9SJyBlbnYgaXMgaWdub3JlZCBkdWUgdG8gdGhlICdGT1JDRV9DT0xPUicgZW52IGJlaW5nIHNldC4KKFVzZSBgbm9kZSAtLXRyYWNlLXdhcm5pbmdzIC4uLmAgdG8gc2hvdyB3aGVyZSB0aGUgd2FybmluZyB3YXMgY3JlYXRlZCkK"
                     },
                     {
-                      "text": "[BROWSER log] 🔧 WASM renderer explicitly requested via ?renderer=wasm\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Init attempt 1/3...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Loading from: /wasm/pixelocity_wasm.js\n"
-                    },
-                    {
-                      "text": "[BROWSER log] Pixelocity WASM module loaded. Call initWasmRenderer() to start.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] 🚀 Pixelocity WASM Renderer initializing...\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    Canvas: 2048x2048\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 1/4, powerPreference=HighPerformance, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 1 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 2/4, powerPreference=Undefined, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 2 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 3/4, powerPreference=LowPower, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 3 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 4/4, powerPreference=Undefined, fallbackAdapter=true)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 4 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ❌ Failed to get WebGPU adapter after all fallback attempts.\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    This commonly happens on Windows with Chrome/Edge when using emdawnwebgpu.\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    The JS WebGPU renderer is unaffected. Consider using ?renderer=webgpu or the UI toggle.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ❌ Failed to create WebGPU device\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WASM] Failed to initialize WASM renderer (C++ returned 0)\n"
-                    },
-                    {
-                      "text": "[BROWSER error] ❌ WASM Renderer init failed (attempt 1/3). Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. See console for detailed C++ logs. Falling back to JS WebGPU renderer.\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WebGPU Renderer] wasm-init: WASM Renderer init failed (attempt 1/3). Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. See console for detailed C++ logs. Falling back to JS WebGPU renderer.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [RendererManager] switchRenderer('wasm') failed — keeping previous renderer\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] ⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WebGPU Renderer] webgpu-unavailable: No suitable GPU adapter found. Your device may not support WebGPU.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [WebGPU] No GPU adapter found\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [RendererManager] switchRenderer('webgpu') failed — keeping previous renderer\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] ⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ✅ JS Renderer initialized with canvas size: 2048x2048\n"
-                    },
-                    {
-                      "text": "[BROWSER log] DIAGNOSTICS: {\n  \"rendererType\": \"js\",\n  \"metrics\": {\n    \"fps\": 0,\n    \"frameTime\": 0,\n    \"agentCount\": 0,\n    \"isWASM\": false\n  },\n  \"timestamp\": \"2026-06-14T23:54:40.459Z\"\n}\n"
-                    },
-                    {
-                      "text": "DIAGNOSTICS: {\n  rendererType: \u001b[32m'js'\u001b[39m,\n  metrics: { fps: \u001b[33m0\u001b[39m, frameTime: \u001b[33m0\u001b[39m, agentCount: \u001b[33m0\u001b[39m, isWASM: \u001b[33mfalse\u001b[39m },\n  timestamp: \u001b[32m'2026-06-14T23:54:40.474Z'\u001b[39m\n}\n"
-                    },
-                    {
-                      "text": "CONSOLE MESSAGES: []\n"
-                    },
-                    {
-                      "text": "WASM renderer fell back (expected in CI)\n"
+                      "buffer": "CiAgdGVzdHMvc21va2UvLmJ1bmRsZS9kZXB0aC13ZWJncHUubWpzICAxLjJtYiDimqDvuI8KCuKaoSBEb25lIGluIDIzMm1zCg=="
                     }
                   ],
-                  "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-06-14T23:54:29.088Z",
-                  "annotations": [],
+                  "startTime": "2026-06-27T20:16:24.885Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "WebGPU unavailable: no navigator.gpu",
+                      "location": {
+                        "file": "/root/image_video_effects/tests/depth-estimation.webgpu.spec.ts",
+                        "line": 82,
+                        "column": 10
+                      }
+                    }
+                  ],
                   "attachments": []
                 }
               ],
-              "status": "expected"
+              "status": "skipped"
             }
           ],
-          "id": "66856f7efa90714362f5-9c8a0d625a15e7876578",
-          "file": "wasm-renderer.smoke.spec.ts",
-          "line": 113,
-          "column": 5
-        },
-        {
-          "title": "WASM renderer loads single shader without errors",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 6738,
-                  "errors": [],
-                  "stdout": [
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Fetching from https://storage.noahcohn.com/api/shaders?all=true\n"
-                    },
-                    {
-                      "text": "[BROWSER log] 🔧 WASM renderer explicitly requested via ?renderer=wasm\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Init attempt 1/3...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Loading from: /wasm/pixelocity_wasm.js\n"
-                    },
-                    {
-                      "text": "[BROWSER log] Pixelocity WASM module loaded. Call initWasmRenderer() to start.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] 🚀 Pixelocity WASM Renderer initializing...\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    Canvas: 2048x2048\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 1/4, powerPreference=HighPerformance, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 1 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 2/4, powerPreference=Undefined, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 2 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 3/4, powerPreference=LowPower, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 3 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 4/4, powerPreference=Undefined, fallbackAdapter=true)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 4 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ❌ Failed to get WebGPU adapter after all fallback attempts.\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    This commonly happens on Windows with Chrome/Edge when using emdawnwebgpu.\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    The JS WebGPU renderer is unaffected. Consider using ?renderer=webgpu or the UI toggle.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ❌ Failed to create WebGPU device\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WASM] Failed to initialize WASM renderer (C++ returned 0)\n"
-                    },
-                    {
-                      "text": "[BROWSER error] ❌ WASM Renderer init failed (attempt 1/3). Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. See console for detailed C++ logs. Falling back to JS WebGPU renderer.\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WebGPU Renderer] wasm-init: WASM Renderer init failed (attempt 1/3). Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. See console for detailed C++ logs. Falling back to JS WebGPU renderer.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [RendererManager] switchRenderer('wasm') failed — keeping previous renderer\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] ⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WebGPU Renderer] webgpu-unavailable: No suitable GPU adapter found. Your device may not support WebGPU.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [WebGPU] No GPU adapter found\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [RendererManager] switchRenderer('webgpu') failed — keeping previous renderer\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] ⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ✅ JS Renderer initialized with canvas size: 2048x2048\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Received 1232 shaders from API\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Shaders with real defaults: 1\n"
-                    },
-                    {
-                      "text": "[BROWSER log] Loaded local manifest. Total: 999 images, 19 videos\n"
-                    },
-                    {
-                      "text": "[BROWSER log] 🎨 JSRenderer: 60 frames rendered, canvas: 2048x2048, ctx: OK\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ✅ JSRenderer: Image loaded 768x768\n"
-                    }
-                  ],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-06-14T23:54:40.818Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "66856f7efa90714362f5-adbea961028e0087672d",
-          "file": "wasm-renderer.smoke.spec.ts",
-          "line": 167,
-          "column": 5
-        },
-        {
-          "title": "WASM renderer loads multiple shaders (multi-slot stack)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 8621,
-                  "errors": [],
-                  "stdout": [
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Fetching from https://storage.noahcohn.com/api/shaders?all=true\n"
-                    },
-                    {
-                      "text": "[BROWSER log] 🔧 WASM renderer explicitly requested via ?renderer=wasm\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Init attempt 1/3...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Loading from: /wasm/pixelocity_wasm.js\n"
-                    },
-                    {
-                      "text": "[BROWSER log] Pixelocity WASM module loaded. Call initWasmRenderer() to start.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] 🚀 Pixelocity WASM Renderer initializing...\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    Canvas: 2048x2048\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 1/4, powerPreference=HighPerformance, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 1 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 2/4, powerPreference=Undefined, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 2 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 3/4, powerPreference=LowPower, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 3 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 4/4, powerPreference=Undefined, fallbackAdapter=true)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 4 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ❌ Failed to get WebGPU adapter after all fallback attempts.\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    This commonly happens on Windows with Chrome/Edge when using emdawnwebgpu.\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    The JS WebGPU renderer is unaffected. Consider using ?renderer=webgpu or the UI toggle.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ❌ Failed to create WebGPU device\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WASM] Failed to initialize WASM renderer (C++ returned 0)\n"
-                    },
-                    {
-                      "text": "[BROWSER error] ❌ WASM Renderer init failed (attempt 1/3). Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. See console for detailed C++ logs. Falling back to JS WebGPU renderer.\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WebGPU Renderer] wasm-init: WASM Renderer init failed (attempt 1/3). Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. See console for detailed C++ logs. Falling back to JS WebGPU renderer.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [RendererManager] switchRenderer('wasm') failed — keeping previous renderer\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] ⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WebGPU Renderer] webgpu-unavailable: No suitable GPU adapter found. Your device may not support WebGPU.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [WebGPU] No GPU adapter found\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [RendererManager] switchRenderer('webgpu') failed — keeping previous renderer\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] ⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ✅ JS Renderer initialized with canvas size: 2048x2048\n"
-                    },
-                    {
-                      "text": "[BROWSER log] Loaded local manifest. Total: 999 images, 19 videos\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Received 1232 shaders from API\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Shaders with real defaults: 1\n"
-                    },
-                    {
-                      "text": "[BROWSER log] 🎨 JSRenderer: 60 frames rendered, canvas: 2048x2048, ctx: OK\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ✅ JSRenderer: Image loaded 1024x1024\n"
-                    }
-                  ],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-06-14T23:54:47.590Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "66856f7efa90714362f5-39e147011d4e6f9c7f85",
-          "file": "wasm-renderer.smoke.spec.ts",
-          "line": 198,
-          "column": 5
-        },
-        {
-          "title": "WASM renderer handles shader loading with minimal console errors",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 5838,
-                  "errors": [],
-                  "stdout": [
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Fetching from https://storage.noahcohn.com/api/shaders?all=true\n"
-                    },
-                    {
-                      "text": "[BROWSER log] 🔧 WASM renderer explicitly requested via ?renderer=wasm\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Init attempt 1/3...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Loading from: /wasm/pixelocity_wasm.js\n"
-                    },
-                    {
-                      "text": "[BROWSER log] Pixelocity WASM module loaded. Call initWasmRenderer() to start.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] 🚀 Pixelocity WASM Renderer initializing...\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    Canvas: 2048x2048\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 1/4, powerPreference=HighPerformance, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 1 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 2/4, powerPreference=Undefined, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 2 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 3/4, powerPreference=LowPower, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 3 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 4/4, powerPreference=Undefined, fallbackAdapter=true)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 4 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ❌ Failed to get WebGPU adapter after all fallback attempts.\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    This commonly happens on Windows with Chrome/Edge when using emdawnwebgpu.\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    The JS WebGPU renderer is unaffected. Consider using ?renderer=webgpu or the UI toggle.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ❌ Failed to create WebGPU device\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WASM] Failed to initialize WASM renderer (C++ returned 0)\n"
-                    },
-                    {
-                      "text": "[BROWSER error] ❌ WASM Renderer init failed (attempt 1/3). Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. See console for detailed C++ logs. Falling back to JS WebGPU renderer.\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WebGPU Renderer] wasm-init: WASM Renderer init failed (attempt 1/3). Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. See console for detailed C++ logs. Falling back to JS WebGPU renderer.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [RendererManager] switchRenderer('wasm') failed — keeping previous renderer\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] ⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WebGPU Renderer] webgpu-unavailable: No suitable GPU adapter found. Your device may not support WebGPU.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [WebGPU] No GPU adapter found\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [RendererManager] switchRenderer('webgpu') failed — keeping previous renderer\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] ⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ✅ JS Renderer initialized with canvas size: 2048x2048\n"
-                    },
-                    {
-                      "text": "[BROWSER log] Loaded local manifest. Total: 999 images, 19 videos\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Received 1232 shaders from API\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Shaders with real defaults: 1\n"
-                    },
-                    {
-                      "text": "[BROWSER log] DIAGNOSTICS: {\n  \"rendererType\": \"js\",\n  \"metrics\": {\n    \"fps\": 0,\n    \"frameTime\": 0,\n    \"agentCount\": 0,\n    \"isWASM\": false\n  },\n  \"timestamp\": \"2026-06-14T23:55:00.859Z\"\n}\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ✅ JSRenderer: Image loaded 1024x1024\n"
-                    }
-                  ],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-06-14T23:54:56.242Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "66856f7efa90714362f5-3a1c9af053fb6dfaf8a4",
-          "file": "wasm-renderer.smoke.spec.ts",
-          "line": 234,
-          "column": 5
-        },
-        {
-          "title": "WASM renderer collects performance metrics",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 6959,
-                  "errors": [],
-                  "stdout": [
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Fetching from https://storage.noahcohn.com/api/shaders?all=true\n"
-                    },
-                    {
-                      "text": "[BROWSER log] 🔧 WASM renderer explicitly requested via ?renderer=wasm\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Init attempt 1/3...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Loading from: /wasm/pixelocity_wasm.js\n"
-                    },
-                    {
-                      "text": "[BROWSER log] Pixelocity WASM module loaded. Call initWasmRenderer() to start.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] 🚀 Pixelocity WASM Renderer initializing...\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    Canvas: 2048x2048\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 1/4, powerPreference=HighPerformance, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 1 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 2/4, powerPreference=Undefined, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 2 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 3/4, powerPreference=LowPower, fallbackAdapter=false)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 3 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Requesting WebGPU adapter (attempt 4/4, powerPreference=Undefined, fallbackAdapter=true)...\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [WASM] Adapter attempt 4 failed.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ❌ Failed to get WebGPU adapter after all fallback attempts.\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    This commonly happens on Windows with Chrome/Edge when using emdawnwebgpu.\n"
-                    },
-                    {
-                      "text": "[BROWSER log]    The JS WebGPU renderer is unaffected. Consider using ?renderer=webgpu or the UI toggle.\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ❌ Failed to create WebGPU device\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WASM] Failed to initialize WASM renderer (C++ returned 0)\n"
-                    },
-                    {
-                      "text": "[BROWSER error] ❌ WASM Renderer init failed (attempt 1/3). Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. See console for detailed C++ logs. Falling back to JS WebGPU renderer.\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WebGPU Renderer] wasm-init: WASM Renderer init failed (attempt 1/3). Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. See console for detailed C++ logs. Falling back to JS WebGPU renderer.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [RendererManager] switchRenderer('wasm') failed — keeping previous renderer\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] ⚠️ WASM renderer requested but failed to initialise — falling back to TypeScript WebGPU\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] No available adapters.\n"
-                    },
-                    {
-                      "text": "[BROWSER error] [WebGPU Renderer] webgpu-unavailable: No suitable GPU adapter found. Your device may not support WebGPU.\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [WebGPU] No GPU adapter found\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] [RendererManager] switchRenderer('webgpu') failed — keeping previous renderer\n"
-                    },
-                    {
-                      "text": "[BROWSER warning] ⚠️ WebGPU unavailable — falling back to Canvas2D (shaders disabled)\n"
-                    },
-                    {
-                      "text": "[BROWSER log] ✅ JS Renderer initialized with canvas size: 2048x2048\n"
-                    },
-                    {
-                      "text": "[BROWSER log] Loaded local manifest. Total: 999 images, 19 videos\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Received 1232 shaders from API\n"
-                    },
-                    {
-                      "text": "[BROWSER log] [ShaderApi] Shaders with real defaults: 1\n"
-                    },
-                    {
-                      "text": "=== WASM Renderer Metrics ===\n{}\n"
-                    },
-                    {
-                      "text": "FPS: undefined\n"
-                    },
-                    {
-                      "text": "Init Time: undefined\n"
-                    },
-                    {
-                      "text": "Has Module: undefined\n"
-                    },
-                    {
-                      "text": "==============================\n"
-                    },
-                    {
-                      "text": "Skipping WASM performance metric assertions because renderer fell back to undefined\n"
-                    }
-                  ],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-06-14T23:55:02.100Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "66856f7efa90714362f5-6874ca046f4b09669061",
-          "file": "wasm-renderer.smoke.spec.ts",
-          "line": 276,
+          "id": "cd06ad0680d75a036715-437f583c56d0f400fd8f",
+          "file": "depth-estimation.webgpu.spec.ts",
+          "line": 67,
           "column": 5
         }
       ]
@@ -867,10 +159,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-06-14T23:54:27.521Z",
-    "duration": 41660.841,
-    "expected": 5,
-    "skipped": 0,
+    "startTime": "2026-06-27T20:16:20.250Z",
+    "duration": 9257.901,
+    "expected": 0,
+    "skipped": 1,
     "unexpected": 0,
     "flaky": 0
   }

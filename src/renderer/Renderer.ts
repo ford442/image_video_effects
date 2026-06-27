@@ -1,3 +1,5 @@
+import type { InputSource } from './types';
+
 // Slot execution mode for inter-shader parallelization
 type SlotMode = 'chained' | 'parallel';
 
@@ -50,7 +52,8 @@ export interface Renderer {
   setParam(name: string, value: number): void;
 
   // Input source selection (for generative/procedural, image, video, webcam, or live)
-  setInputSource?: (source: 'image' | 'video' | 'webcam' | 'generative' | 'live') => void;
+  setInputSource?: (source: InputSource) => void;
+  getInputSource?: () => InputSource;
 
   // Slot management with parallelization support
   setSlotMode?: (index: number, mode: SlotMode) => void;

@@ -308,7 +308,7 @@ These metrics can be used to detect performance regressions.
 ## Known Limitations (June 2026)
 
 - The WASM binary may not be committed; build locally with Emscripten before testing.
-- `build.sh` exits 0 when `emcc` is missing — run `npm run wasm:build` on a machine with emsdk for a real build.
+- `build.sh` fails when `emcc` is missing unless `SKIP_WASM_BUILD=1` — see [`wasm_renderer/ARTIFACTS.md`](./wasm_renderer/ARTIFACTS.md)
 - Automated Playwright tests require a successful WASM build.
 - `RendererManager` does not forward all slot/param APIs to WASM yet (see GAP analysis §3.2).
 - Performance benchmarks vs the TypeScript renderer are not yet automated.

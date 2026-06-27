@@ -4,6 +4,17 @@
 
 ---
 
+## Support tier: **B — Experimental (opt-in)**
+
+**Production default:** TypeScript WebGPU renderer.
+
+The C++ WASM path is available via `?renderer=wasm` or the Controls renderer switcher.
+It is labeled **Experimental** in the UI and is **not** held to the same SLA as the TS backend.
+
+Policy, promotion gates, and demotion criteria: [`WASM_BACKEND_POLICY.md`](../WASM_BACKEND_POLICY.md)
+
+---
+
 ## Implementation Status: Phase 3 Complete ✅ (compute + present pipeline; init/format/limits reliability hardened June 2026)
 
 The C++ WASM renderer has advanced well beyond the March 2026 analysis documents.
@@ -49,7 +60,7 @@ an early-development snapshot and should **not** be treated as authoritative.
 |------|-------|
 | `RendererManager` WASM forwarding | `setSlotShader`, `updateSlotParams` not forwarded to WASM — see GAP §3.2 |
 | `setInputSource` app wiring | Never called from App/WebGPUCanvas — generative mode unreachable for WASM |
-| Build artefacts in `public/wasm/` | Requires Emscripten SDK locally; `build.sh` exits 0 without `emcc` |
+| Build artefacts in `public/wasm/` | CI rebuilds via `wasm` job; local requires emsdk or `SKIP_WASM_BUILD=1` |
 | Full parity test suite | See [`WASM_TESTING.md`](../WASM_TESTING.md) |
 | Performance benchmarking vs JS renderer | Not yet formally measured |
 | Live verification on edge GPUs | June 2026 reliability fixes need real-browser smoke (`WASM_SMOKE_TEST.md`) |

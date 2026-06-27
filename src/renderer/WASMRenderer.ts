@@ -1,4 +1,4 @@
-import { Renderer, RendererConfig } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
 import { InputSource } from './types';
@@ -28,7 +28,7 @@ export interface WASMDiagnostics {
   initTime: string;
 }
 
-export class WASMRenderer implements Renderer {
+export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   private config: RendererConfig;
   private video: HTMLVideoElement | null = null;
   private animationId: number | null = null;
@@ -325,6 +325,34 @@ export class WASMRenderer implements Renderer {
 
   getGPUTimings(): { parallelTime: number; chainedTime: number; totalTime: number; available: boolean } {
     return WasmBridge.getGPUTimings();
+  }
+
+  async reloadShaderFromURL(id: string, url: string): Promise<boolean> {
+    return WasmBridge.reloadShaderFromURL(id, url);
+  }
+
+  /** Test hook: pin uniforms and render one WASM frame. */
+  applyTestRenderState(state: {
+    time?: number;
+    mouseX?: number;
+    mouseY?: number;
+    mouseDown?: boolean;
+    bass?: number;
+    mid?: number;
+    treble?: number;
+  }): void {
+    if (state.mouseX !== undefined) this.mouseX = state.mouseX;
+    if (state.mouseY !== undefined) this.mouseY = state.mouseY;
+    if (state.mouseDown !== undefined) this.mouseDown = state.mouseDown;
+    if (state.bass !== undefined) {
+      WasmBridge.updateAudioData(state.bass, state.mid ?? 0, state.treble ?? 0);
+    }
+    WasmBridge.updateUniforms({
+      ...(state.time !== undefined ? { time: state.time } : {}),
+      mouseX: this.mouseX,
+      mouseY: this.mouseY,
+      mouseDown: this.mouseDown,
+    });
   }
 
   /** Returns the last captured frame as a PNG data URL, or '' if none yet. */

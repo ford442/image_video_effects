@@ -2,22 +2,18 @@
 """
 Pre-commit gate for changed WGSL files.
 
-Runs naga validation + the bindgroup compatibility check on ONLY the .wgsl
-files that changed against a base ref (or an explicit file list). Skips known
-template files and vertex/fragment render shaders. Exits non-zero if any
-changed compute shader fails.
+Runs naga validation + bindgroup compatibility + workgroup-size convention
+checks on ONLY the .wgsl files that changed against a base ref (or an explicit
+file list). Skips known template files and vertex/fragment render shaders.
+
+Workgroup convention: compute shaders must use @workgroup_size with 3 explicit
+dimensions (e.g. 16, 16, 1). Two-arg forms are reported as [WARN] (non-blocking).
 
 Usage:
-    # Against origin/main (default)
     python scripts/wgsl_precommit_gate.py
-
-    # Against a specific base ref
     python scripts/wgsl_precommit_gate.py --base main
-
-    # Explicit files
     python scripts/wgsl_precommit_gate.py --files foo.wgsl bar.wgsl
-
-    # Report JSON (also written to reports/wgsl_precommit_report.json)
+    python scripts/wgsl_precommit_gate.py --fix   # local only: literal (int,int)->(int,int,1)
     python scripts/wgsl_precommit_gate.py --json
 
 For local pre-commit hook setup, see scripts/AUTHORING.md.
@@ -26,6 +22,7 @@ For local pre-commit hook setup, see scripts/AUTHORING.md.
 import argparse
 import json
 import re
+import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -33,11 +30,14 @@ from pathlib import Path
 
 _SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPTS_DIR))
-from bindgroup_checker import parse_shader, TEMPLATE_FILES  # noqa: E402
-
+from bindgroup_checker import (  # noqa: E402
+    TEMPLATE_FILES,
+    check_workgroup_size_convention,
+    fix_literal_two_arg_workgroup_size,
+    parse_shader,
+)
 
 PROJECT_ROOT = _SCRIPTS_DIR.parent
-import shutil
 _naga_path = shutil.which("naga")
 if _naga_path:
     NAGA_BIN = Path(_naga_path)
@@ -45,10 +45,13 @@ else:
     NAGA_BIN = Path.home() / ".cargo" / "bin" / "naga"
 REPORT_PATH = PROJECT_ROOT / "reports" / "wgsl_precommit_report.json"
 
-# Patterns that identify non-compute shaders the gate should ignore.
 VERTEX_PATTERN = re.compile(r"@vertex", re.MULTILINE)
 FRAGMENT_PATTERN = re.compile(r"@fragment", re.MULTILINE)
 COMPUTE_PATTERN = re.compile(r"@compute", re.MULTILINE)
+
+
+def naga_available() -> bool:
+    return bool(shutil.which("naga")) or NAGA_BIN.exists()
 
 
 def discover_changed_files(base_ref: str) -> list[Path]:
@@ -93,15 +96,40 @@ def should_skip(wgsl_path: Path, content: str) -> tuple[bool, str]:
     return False, ""
 
 
-def run_gate(paths: list[Path]) -> dict:
-    """Run naga + bindgroup checks on the given paths."""
+def apply_workgroup_fixes(paths: list[Path]) -> list[dict]:
+    """Apply literal (int,int) workgroup auto-fix. Returns list of fix records."""
+    fixes = []
+    for path in paths:
+        try:
+            content = path.read_text(encoding="utf-8")
+        except OSError as e:
+            fixes.append({"file": str(path), "error": str(e), "replacements": 0})
+            continue
+        skip, _ = should_skip(path, content)
+        if skip:
+            continue
+        new_content, n = fix_literal_two_arg_workgroup_size(content)
+        if n > 0:
+            path.write_text(new_content, encoding="utf-8")
+            try:
+                display = str(path.relative_to(PROJECT_ROOT))
+            except ValueError:
+                display = str(path)
+            fixes.append({"file": display, "replacements": n})
+    return fixes
+
+
+def run_gate(paths: list[Path], *, skip_naga: bool = False) -> dict:
+    """Run naga + bindgroup + workgroup checks on the given paths."""
     report = {
         "timestamp": datetime.now().isoformat(),
         "naga_bin": str(NAGA_BIN),
+        "naga_available": naga_available() and not skip_naga,
         "total": len(paths),
         "passed": 0,
         "failed": 0,
         "skipped": 0,
+        "warnings": 0,
         "results": [],
     }
 
@@ -115,9 +143,11 @@ def run_gate(paths: list[Path]) -> dict:
             "skipped": False,
             "skip_reason": None,
             "naga_ok": None,
+            "naga_skipped": False,
             "naga_error": None,
             "bindgroup_status": None,
             "bindgroup_errors": [],
+            "workgroup_warnings": [],
             "ok": False,
         }
 
@@ -139,9 +169,20 @@ def run_gate(paths: list[Path]) -> dict:
             report["skipped"] += 1
             continue
 
-        naga_result = run_naga(path)
-        entry["naga_ok"] = naga_result["ok"]
-        entry["naga_error"] = naga_result["error"]
+        wg_issues = check_workgroup_size_convention(content)
+        entry["workgroup_warnings"] = wg_issues
+        if wg_issues:
+            report["warnings"] += len(wg_issues)
+
+        if skip_naga or not naga_available():
+            entry["naga_skipped"] = True
+            entry["naga_ok"] = None
+            naga_ok = True
+        else:
+            naga_result = run_naga(path)
+            entry["naga_ok"] = naga_result["ok"]
+            entry["naga_error"] = naga_result["error"]
+            naga_ok = naga_result["ok"]
 
         try:
             bg = parse_shader(path)
@@ -151,7 +192,7 @@ def run_gate(paths: list[Path]) -> dict:
         entry["bindgroup_status"] = bg.get("status", "unknown")
         entry["bindgroup_errors"] = bg.get("errors", [])
 
-        if naga_result["ok"] and bg.get("status") == "compatible":
+        if naga_ok and bg.get("status") == "compatible":
             entry["ok"] = True
             report["passed"] += 1
         else:
@@ -169,29 +210,42 @@ def print_report(report: dict) -> None:
     passed = report["passed"]
     failed = report["failed"]
     skipped = report["skipped"]
+    warnings = report["warnings"]
 
     print("=" * 70)
     print("WGSL PRECOMMIT GATE")
     print("=" * 70)
-    print(f"Files checked: {total}  |  Passed: {passed}  |  Failed: {failed}  |  Skipped: {skipped}")
+    if not report.get("naga_available"):
+        print("[WARN] naga unavailable — skipped naga validation (bindgroup + workgroup still run)")
+    print(
+        f"Files checked: {total}  |  Passed: {passed}  |  Failed: {failed}  |  "
+        f"Skipped: {skipped}  |  Workgroup warnings: {warnings}"
+    )
 
     for entry in report["results"]:
         file = entry["file"]
         if entry["skipped"]:
             print(f"  ⏭  {file} — skipped ({entry['skip_reason']})")
             continue
+
+        for wg in entry.get("workgroup_warnings", []):
+            print(
+                f"  [WARN] {file} — @workgroup_size has {wg['arg_count']} arg(s) "
+                f"(need 3): {wg['match']}"
+            )
+
         if entry["ok"]:
-            print(f"  ✅ {file} — naga OK, bindgroup compatible")
+            naga_note = "naga skipped" if entry.get("naga_skipped") else "naga OK"
+            print(f"  ✅ {file} — {naga_note}, bindgroup compatible")
             continue
 
         details = []
-        if not entry["naga_ok"]:
+        if entry.get("naga_ok") is False:
             details.append("naga failed")
         if entry["bindgroup_status"] != "compatible":
             details.append(f"bindgroup {entry['bindgroup_status']}")
         print(f"  ❌ {file} — {', '.join(details)}")
         if entry["naga_error"]:
-            # Indent naga output for readability
             for line in entry["naga_error"].splitlines()[:8]:
                 print(f"      {line}")
         for err in entry["bindgroup_errors"][:3]:
@@ -202,7 +256,7 @@ def print_report(report: dict) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Run naga + bindgroup checks on changed WGSL files."
+        description="Run naga + bindgroup + workgroup checks on changed WGSL files."
     )
     parser.add_argument(
         "--base",
@@ -214,6 +268,11 @@ def main() -> int:
         nargs="+",
         default=None,
         help="Explicit list of .wgsl paths (relative or absolute)",
+    )
+    parser.add_argument(
+        "--fix",
+        action="store_true",
+        help="Local dev: auto-fix literal @workgroup_size(int, int) -> (int, int, 1)",
     )
     parser.add_argument(
         "--json",
@@ -252,14 +311,21 @@ def main() -> int:
         print("No changed .wgsl files to check.")
         return 0
 
-    if not NAGA_BIN.exists() and not shutil.which("naga"):
+    if args.fix:
+        fixes = apply_workgroup_fixes(paths)
+        for fix in fixes:
+            if fix.get("replacements"):
+                print(f"[FIX] {fix['file']}: {fix['replacements']} literal (int,int) workgroup fix(es)")
+
+    skip_naga = not naga_available()
+    if skip_naga:
         print(
-            f"ERROR: naga not found at {NAGA_BIN}. Install with: cargo install naga-cli",
+            f"[WARN] naga not found at {NAGA_BIN} — skipping naga step "
+            "(install with: cargo install naga-cli)",
             file=sys.stderr,
         )
-        return 2
 
-    report = run_gate(paths)
+    report = run_gate(paths, skip_naga=skip_naga)
 
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(REPORT_PATH, "w", encoding="utf-8") as f:

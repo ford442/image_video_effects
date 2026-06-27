@@ -26,9 +26,9 @@ export const RendererSwitcher: React.FC<RendererSwitcherProps> = ({
     }
   };
 
-  const renderers: { type: RendererType; icon: string; label: string; desc: string }[] = [
-    { type: 'webgpu', icon: '🔷', label: 'WebGPU', desc: 'TypeScript native' },
-    { type: 'wasm', icon: '⚡', label: 'WASM', desc: 'C++ performance' },
+  const renderers: { type: RendererType; icon: string; label: string; desc: string; experimental?: boolean }[] = [
+    { type: 'webgpu', icon: '🔷', label: 'WebGPU', desc: 'Recommended (default)' },
+    { type: 'wasm', icon: '⚡', label: 'WASM', desc: 'C++ compute — experimental', experimental: true },
     { type: 'js', icon: '🎨', label: 'Canvas2D', desc: 'Fallback' },
   ];
 
@@ -53,7 +53,12 @@ export const RendererSwitcher: React.FC<RendererSwitcherProps> = ({
             }}
           >
             <div style={styles.buttonIcon}>{renderer.icon}</div>
-            <div style={styles.buttonLabel}>{renderer.label}</div>
+            <div style={styles.buttonLabel}>
+              {renderer.label}
+              {renderer.experimental && (
+                <span style={styles.experimentalTag}>EXP</span>
+              )}
+            </div>
             <div style={styles.buttonDesc}>{renderer.desc}</div>
             {activeRendererType === renderer.type && (
               <div style={styles.activeBadge}>✓</div>
@@ -61,6 +66,13 @@ export const RendererSwitcher: React.FC<RendererSwitcherProps> = ({
           </button>
         ))}
       </div>
+
+      {activeRendererType === 'wasm' && (
+        <div style={styles.experimentalBanner} title="See WASM_BACKEND_POLICY.md">
+          ⚠️ Experimental C++ backend — TypeScript WebGPU is the supported default. Report issues with
+          diagnostics from the console.
+        </div>
+      )}
 
       {isSwitching && (
         <div style={styles.status}>
@@ -134,6 +146,29 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: '600',
     letterSpacing: '0.05em',
     textTransform: 'uppercase',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+  },
+  experimentalTag: {
+    fontSize: '8px',
+    fontWeight: '700',
+    padding: '1px 4px',
+    borderRadius: '3px',
+    background: 'rgba(255, 140, 0, 0.25)',
+    color: '#ffb347',
+    border: '1px solid rgba(255, 140, 0, 0.5)',
+    letterSpacing: '0.08em',
+  },
+  experimentalBanner: {
+    marginTop: '10px',
+    padding: '8px 10px',
+    fontSize: '10px',
+    lineHeight: 1.4,
+    color: 'rgba(255, 180, 100, 0.95)',
+    background: 'rgba(255, 100, 0, 0.08)',
+    border: '1px solid rgba(255, 140, 0, 0.25)',
+    borderRadius: '6px',
   },
   buttonDesc: {
     fontSize: '9px',

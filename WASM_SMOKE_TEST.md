@@ -2,6 +2,8 @@
 
 This document provides manual verification steps to test that the C++ WASM renderer is working correctly.
 
+See [`WASM_TEST_SUITE.md`](./WASM_TEST_SUITE.md) for the **full automated test suite** (parity matrix, benchmarks, CI commands).
+
 ## Prerequisites
 
 1. **Build the WASM module** (requires [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html)):

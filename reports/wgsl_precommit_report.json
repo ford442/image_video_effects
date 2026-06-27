@@ -1,20 +1,75 @@
 {
-  "timestamp": "2026-06-26T07:58:46.283073",
-  "naga_bin": "/home/jules/.cargo/bin/naga",
-  "total": 1,
-  "passed": 1,
-  "failed": 0,
+  "timestamp": "2026-06-27T21:51:19.648823",
+  "naga_bin": "/root/.cargo/bin/naga",
+  "naga_available": true,
+  "total": 2,
+  "passed": 0,
+  "failed": 2,
   "skipped": 0,
+  "warnings": 1,
   "results": [
     {
-      "file": "public/shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
+      "file": "scripts/fixtures/workgroup_three_arg_ok.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
+      "naga_skipped": false,
       "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "ok": true
+      "bindgroup_status": "incompatible",
+      "bindgroup_errors": [
+        "Missing binding 0",
+        "Missing binding 1",
+        "Missing binding 2",
+        "Missing binding 3",
+        "Missing binding 4",
+        "Missing binding 5",
+        "Missing binding 6",
+        "Missing binding 7",
+        "Missing binding 8",
+        "Missing binding 9",
+        "Missing binding 10",
+        "Missing binding 11",
+        "Missing binding 12",
+        "Uniforms struct not found",
+        "No textureStore calls found"
+      ],
+      "workgroup_warnings": [],
+      "ok": false
+    },
+    {
+      "file": "scripts/fixtures/workgroup_two_arg.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "incompatible",
+      "bindgroup_errors": [
+        "Missing binding 0",
+        "Missing binding 1",
+        "Missing binding 2",
+        "Missing binding 3",
+        "Missing binding 4",
+        "Missing binding 5",
+        "Missing binding 6",
+        "Missing binding 7",
+        "Missing binding 8",
+        "Missing binding 9",
+        "Missing binding 10",
+        "Missing binding 11",
+        "Missing binding 12",
+        "Uniforms struct not found",
+        "No @workgroup_size found",
+        "No textureStore calls found"
+      ],
+      "workgroup_warnings": [
+        {
+          "match": "@workgroup_size(8, 8)",
+          "arg_count": 2,
+          "args": "8, 8"
+        }
+      ],
+      "ok": false
     }
   ]
 }

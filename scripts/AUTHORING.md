@@ -65,6 +65,35 @@ python3 scripts/wgsl_precommit_gate.py --json
 
 It exits non-zero if any changed compute shader fails naga or bindgroup checks.
 
+### `@workgroup_size` convention (3 explicit dimensions)
+
+Pixelocity requires **three explicit workgroup dimensions** on compute entry points
+(e.g. `@workgroup_size(16, 16, 1)`). WGSL allows two-arg forms (Z defaults to 1);
+naga accepts them, but the gate flags `< 3` args as **`[WARN]`** (non-blocking).
+
+The check counts comma-separated arguments after stripping comments, so override
+forms like `@workgroup_size(block_width)` are caught as 1-arg violations.
+
+Local auto-fix (literal `(int, int)` only):
+
+```bash
+python3 scripts/wgsl_precommit_gate.py --files public/shaders/my-effect.wgsl --fix
+```
+
+Never auto-fixes override or single-arg forms.
+
+### Orphan shader definition audit
+
+Offline report for `shader_definitions/**/*.json` entries missing local WGSL:
+
+```bash
+python3 scripts/audit_orphan_shader_defs.py
+```
+
+Writes `reports/orphan_shader_defs.{json,md}`. Classifies entries as `local`,
+`storage-only` (present in `public/shader_coordinates.json` and/or
+`storage_manager/seed_shaders.json`), `allowlisted`, or `likely-broken`.
+
 ## Local pre-commit hook
 
 Save this as `.git/hooks/pre-commit` (and `chmod +x .git/hooks/pre-commit`):

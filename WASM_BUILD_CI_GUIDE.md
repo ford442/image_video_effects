@@ -35,12 +35,17 @@ npm run wasm:build
 ## Build Failures: CI vs Local
 
 **CI (hardened):** the dedicated `wasm` job installs emsdk, runs `npm run wasm:build`,
-and fails on compilation or validation errors.
+validates artifacts, runs WASM unit smoke tests, and uploads artifacts for downstream jobs.
+Downstream jobs (`test`, `test-wasm-e2e`) download those artifacts and set `SKIP_WASM_BUILD=1`.
 
-**Local caveat:** `wasm_renderer/build.sh` still **`exit 0` when `emcc` is missing**
-(with a warning), so `npm run build` on a machine without Emscripten can succeed
-while shipping stale committed artifacts. Run `node scripts/validate_wasm_artifacts.js`
-after local builds, or install emsdk before `npm run wasm:build`.
+**Local:** `wasm_renderer/build.sh` **fails (exit 1) when `emcc` is missing**. Install emsdk
+or use committed artifacts with an explicit skip:
+
+```bash
+SKIP_WASM_BUILD=1 npm run build   # headless VMs without emsdk
+```
+
+Run `npm run wasm:validate` after any C++ or bridge change.
 
 1. **No swallowed compile errors**: `package.json` no longer wraps `wasm:build` in
    `2>/dev/null || echo` — if `emcc` is present and compilation fails, the error
@@ -61,6 +66,8 @@ The validation script (`scripts/validate_wasm_artifacts.js`) checks:
 
 ```bash
 node scripts/validate_wasm_artifacts.js
+# or
+npm run wasm:validate
 ```
 
 This ensures:
@@ -69,9 +76,11 @@ This ensures:
   - `pixelocity_wasm.js` (Emscripten runtime glue)
   - `wasm_bridge.js` (JavaScript bridge to the C++ renderer)
 
-- **Bridge sync** (#821): `wasm_renderer/wasm_bridge.js` must match
-  `src/wasm/wasm_bridge.js` (and `.d.ts`). Skew fails validation with:
+- **Bridge sync** (#821): `wasm_renderer/wasm_bridge.js` must match both
+  `src/wasm/wasm_bridge.js` and `public/wasm/wasm_bridge.js` (and `.d.ts`). Skew fails validation with:
   *"Bridge skew detected — run npm run wasm:build or cp wasm_renderer/wasm_bridge.js src/wasm/"*
+
+See [`wasm_renderer/ARTIFACTS.md`](./wasm_renderer/ARTIFACTS.md) for the full artifact layout.
 
 - **File Sizes**: Reasonable and non-empty
   - `.wasm`: 50–200 KB (should be ~96 KB)
@@ -88,11 +97,13 @@ This ensures:
 
 The `wasm` job runs on every push to `main`/`develop` and on pull requests to `main`:
 
-1. **Setup**: Node.js 20 + npm dependencies
-2. **Emscripten**: Latest emsdk is downloaded and activated
-3. **Build**: `npm run wasm:build` compiles from source
-4. **Validation**: Artifacts are checked for integrity and freshness
-5. **Status**: If any step fails, the CI build fails (no silent skips)
+1. **Setup**: Node.js 24 + npm dependencies
+2. **Emscripten**: Latest emsdk via `mymindstorm/setup-emsdk@v14`
+3. **Build**: `npm run wasm:build` compiles from source (fails if emcc missing)
+4. **Validation**: `npm run wasm:validate` — integrity, bridge sync, freshness
+5. **Smoke**: Jest tests matching `WASM` (bridge API surface)
+6. **Artifacts**: Uploaded for `test` and `test-wasm-e2e` jobs
+7. **Status**: If any step fails, CI fails (no silent skips)
 
 This ensures:
 - WASM artifacts are **never out of sync** with source code
@@ -141,9 +152,7 @@ hardened init/format/limits ([#817](https://github.com/ford442/image_video_effec
 
 **Still open (not #817–#822):**
 
-- `RendererManager` does not forward slot/param changes to WASM
-- App never calls `setInputSource` — generative mode unreachable for WASM
-- Local `build.sh` exits 0 without `emcc` (see above)
+- App never calls `setInputSource` — generative mode unreachable for WASM *(partially addressed 2026-06-20)*
 - Live-browser smoke on edge GPUs not yet formally verified
 
 Tracking table:
@@ -151,8 +160,9 @@ Tracking table:
 
 ## Summary
 
-- **Build command**: `npm run wasm:build`
-- **Validation**: `node scripts/validate_wasm_artifacts.js`
-- **CI**: Dedicated `wasm` job with Emscripten setup, validation, and freshness checks
-- **Local gap**: missing `emcc` is a warning + exit 0 — use validator or install emsdk
+- **Build command**: `npm run wasm:build` (requires emsdk; fails without it)
+- **Validation**: `npm run wasm:validate`
+- **CI**: `wasm` job builds + validates + Jest smoke; `test-wasm-e2e` runs Playwright smoke
+- **Skip (explicit)**: `SKIP_WASM_BUILD=1` for machines without emsdk using committed artifacts
+- **Artifact layout**: [`wasm_renderer/ARTIFACTS.md`](./wasm_renderer/ARTIFACTS.md)
 - **Roadmap**: See [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) and [#799 roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584)
