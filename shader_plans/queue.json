@@ -172,7 +172,7 @@
     },
     {
       "filename": "2026-03-08_live-studio-tab.md",
-      "title": "Live Studio Tab \u2013 HLS + WASM Toggle + Bilibili + Danmaku",
+      "title": "Live Studio Tab – HLS + WASM Toggle + Bilibili + Danmaku",
       "added": "2026-03-07T09:08:09.892871",
       "completed": "2026-03-07T09:13:43.539459"
     },
@@ -274,7 +274,7 @@
     },
     {
       "filename": "2026-03-08_raptor-mini.md",
-      "title": "Raptor Mini \u2013 Fast Predatory Agent Swarm",
+      "title": "Raptor Mini – Fast Predatory Agent Swarm",
       "added": "2026-03-07T09:06:05.264901",
       "completed": "2026-03-27T18:17:59.800656"
     },
@@ -806,6 +806,30 @@
       "added": "2026-05-02T15:31:52.502855",
       "status": "completed",
       "completed_at": "2026-06-27T23:38:42.215772+00:00"
+    },
+    {
+      "filename": "2026-03-07_wasm-hls-physarum-swarm.md",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:40:08.181Z"
+    },
+    {
+      "filename": "2026-03-08_live-studio-tab.md",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:40:08.192Z"
+    },
+    {
+      "filename": "2026-04-26_magnetic-ferrofluid-sculpture.md",
+      "title": "Magnetic Ferrofluid-Sculpture",
+      "added": "2026-04-26T15:06:38.672034",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:40:08.194Z"
+    },
+    {
+      "filename": "2026-04-27_hyper-dimensional-bismuth-matrix.md",
+      "title": "Hyper-Dimensional Bismuth-Matrix",
+      "added": "2026-04-27T15:22:10.278813",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:40:08.199Z"
     }
   ],
   "rejected": [],
@@ -905,16 +929,6 @@
       "filename": "2026-04-22_photonic-crystal-brain.md",
       "title": "Photonic Crystal-Brain",
       "added": "2026-04-22T15:34:57.537389"
-    },
-    {
-      "filename": "2026-04-26_magnetic-ferrofluid-sculpture.md",
-      "title": "Magnetic Ferrofluid-Sculpture",
-      "added": "2026-04-26T15:06:38.672034"
-    },
-    {
-      "filename": "2026-04-27_hyper-dimensional-bismuth-matrix.md",
-      "title": "Hyper-Dimensional Bismuth-Matrix",
-      "added": "2026-04-27T15:22:10.278813"
     },
     {
       "filename": "2026-05-03_cryogenic-frost-plasma-matrix.md",
