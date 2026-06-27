@@ -101,7 +101,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Mouse tracking (orbital camera)
     let mx = (u.zoom_config.y - 0.5) * 6.28;
-    let my = (u.zoom_config.z - 0.5) * 3.14;
+    let my = (0.5 - u.zoom_config.z) * 3.14;
 
     let ro_xz = rotate2D(mx) * vec2<f32>(ro.x, ro.z);
     ro.x = ro_xz.x;

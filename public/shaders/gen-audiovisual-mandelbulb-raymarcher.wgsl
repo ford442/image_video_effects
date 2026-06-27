@@ -95,7 +95,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Camera rotation from mouse
     let mouseRotY = (u.zoom_config.y - 0.5) * 3.14159;
-    let mouseRotX = (u.zoom_config.z - 0.5) * 1.5708;
+    let mouseRotX = (0.5 - u.zoom_config.z) * 1.5708;
 
     // Ray setup
     var ro = vec3<f32>(0.0, 0.0, -2.5);

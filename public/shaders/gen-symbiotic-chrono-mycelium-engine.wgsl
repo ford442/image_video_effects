@@ -85,7 +85,7 @@ fn sdf_mycelium(p: vec3<f32>) -> f32 {
     let audio_react = plasmaBuffer[0].x * 0.5; // bass swells the hyphae
 
     let warp = u.zoom_params.z;
-    let mouse_offset = vec2<f32>((u.zoom_config.y - 0.5) * 2.0, (u.zoom_config.z - 0.5) * 2.0);
+    let mouse_offset = vec2<f32>((u.zoom_config.y - 0.5) * 2.0, (0.5 - u.zoom_config.z) * 2.0);
     pos.x += sin(pos.y * warp + u.config.x) * mouse_offset.x;
     pos.y += sin(pos.x * warp + u.config.x) * mouse_offset.y;
 

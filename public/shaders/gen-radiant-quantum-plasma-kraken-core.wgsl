@@ -95,7 +95,7 @@ fn map(p_in: vec3<f32>, is_light: ptr<function, f32>) -> f32 {
 
     // Mouse Interaction (Gravitational distortion)
     let mx = (u.zoom_config.y - 0.5) * 2.0;
-    let my = (u.zoom_config.z - 0.5) * 2.0;
+    let my = (0.5 - u.zoom_config.z) * 2.0;
     let click_pull = smoothstep(0.0, 1.0, length(vec2<f32>(mx, my)) * 2.0); // Simple proxy for intensity based on mouse distance from center
 
     // Add overall temporal and mouse rotation

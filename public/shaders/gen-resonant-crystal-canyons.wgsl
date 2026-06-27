@@ -247,7 +247,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let camSpeed = 0.5 + audioReactivity * audio * 0.3;
   let camZ = time * camSpeed;
   let camX = sin(time * 0.2) * 2.0 + mousePos.x * 1.0;
-  let camY = 1.5 + sin(time * 0.15) * 0.5 + mousePos.y * 0.5;
+  let camY = 1.5 + sin(time * 0.15) * 0.5 - mousePos.y * 0.5;
   let ro = vec3<f32>(camX, camY, camZ);
 
   // Look ahead + slightly down into canyon

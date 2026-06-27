@@ -95,7 +95,7 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     let threadCenterDist = length(q.xz);
 
     // Mouse Repulsion Sphere
-    let mouse3D = vec3<f32>(g_mouse.x * 10.0, g_mouse.y * 10.0, 5.0); // Projection of mouse into space
+    let mouse3D = vec3<f32>(g_mouse.x * 10.0, -g_mouse.y * 10.0, 5.0); // Projection of mouse into space (Y flipped: screen top = up)
     let mouseDist = length(bp - mouse3D);
     let repulsionSphere = mouseDist - 2.5; // Big void sphere
 
@@ -135,7 +135,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, -g_time * 2.0); // Move forward through the network
-    ro = vec3<f32>(ro.xy + g_mouse * 2.0, ro.z);
+    ro = vec3<f32>(ro.x + g_mouse.x * 2.0, ro.y - g_mouse.y * 2.0, ro.z);
 
     let rd = normalize(vec3<f32>(uv, 1.0));
 

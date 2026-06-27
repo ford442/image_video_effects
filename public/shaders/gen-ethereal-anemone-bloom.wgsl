@@ -176,7 +176,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Mouse Interaction (Vortex/Eddy)
     let mouseWorldX = (u.zoom_config.y - 0.5) * 30.0;
-    let mouseWorldZ = (u.zoom_config.z - 0.5) * 30.0;
+    let mouseWorldZ = (0.5 - u.zoom_config.z) * 30.0;
     let mouseWorld = vec3<f32>(mouseWorldX, 0.0, mouseWorldZ);
 
     let distToMouse = length(p - mouseWorld);
