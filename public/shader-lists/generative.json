@@ -4018,6 +4018,68 @@
     ]
   },
   {
+    "id": "gen-chromatic-glass-lattice",
+    "name": "Chromatic Glass Lattice",
+    "url": "shaders/gen-chromatic-glass-lattice.wgsl",
+    "category": "generative",
+    "description": "A crystalline, infinite lattice of dispersing glass that refracts background light into separating RGB spectrums, shattered dynamically by sound frequencies.",
+    "tags": [
+      "glass",
+      "crystal",
+      "refraction",
+      "chromatic-aberration",
+      "audio-reactive",
+      "raymarched",
+      "dispersion"
+    ],
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "depth-aware",
+      "chromatic"
+    ],
+    "params": [
+      {
+        "id": "refractionIndex",
+        "name": "Refraction Index",
+        "default": 0.36,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "chromaticSpread",
+        "name": "Chromatic Spread",
+        "default": 0.33,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "latticeDensity",
+        "name": "Lattice Density",
+        "default": 0.41,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "shatterForce",
+        "name": "Shatter Force",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "id": "gen-chromatic-metamorphosis",
     "name": "Chromatic Metamorphosis",
     "url": "shaders/gen-chromatic-metamorphosis.wgsl",
@@ -4542,6 +4604,69 @@
         "max": 1,
         "step": 0.05,
         "description": "Distance fade intensity",
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
+    "id": "gen-chronos-monolith-resonator",
+    "name": "Chronos Monolith Resonator",
+    "url": "shaders/gen-chronos-monolith-resonator.wgsl",
+    "category": "generative",
+    "description": "A hyper-dimensional, endlessly shifting obelisk of quantum dark-matter suspended in a cosmic void, projecting glowing ribbons of temporal energy that ripple and distort in sync with unseen gravitational waves.",
+    "tags": [
+      "cosmic",
+      "quantum",
+      "mechanical",
+      "raymarching",
+      "KIFS",
+      "dark-matter",
+      "temporal"
+    ],
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "depth-aware",
+      "sub-surface-scattering",
+      "volumetric-ribbons"
+    ],
+    "params": [
+      {
+        "id": "temporalFlow",
+        "name": "Temporal Flow Speed",
+        "default": 0.27,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "plasmaDensity",
+        "name": "Plasma Density",
+        "default": 0.33,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "monolithComplexity",
+        "name": "Monolith Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "coreResonance",
+        "name": "Core Resonance",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
         "mapping": "zoom_params.w"
       }
     ]
@@ -8070,6 +8195,70 @@
         "step": 0.01,
         "mapping": "zoom_params.w",
         "description": "Controls mouse-driven or secondary variation influence."
+      }
+    ]
+  },
+  {
+    "id": "gen-hyper-bismuth-clockwork",
+    "name": "Hyper-Bismuth Clockwork",
+    "url": "shaders/gen-hyper-bismuth-clockwork.wgsl",
+    "category": "generative",
+    "description": "A relentlessly grinding, infinite geometric mechanism built entirely of iridescent, square-stepped bismuth crystals that unfold and interlock like a cosmic clockwork engine.",
+    "tags": [
+      "mechanical",
+      "crystal",
+      "iridescent",
+      "audio-reactive",
+      "raymarching",
+      "SDF",
+      "KIFS",
+      "bismuth"
+    ],
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "depth-aware",
+      "ambient-occlusion",
+      "iridescent"
+    ],
+    "params": [
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "clockSpeed",
+        "name": "Clock Speed",
+        "default": 0.44,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "gridDensity",
+        "name": "Grid Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
       }
     ]
   },
@@ -14546,6 +14735,70 @@
     ]
   },
   {
+    "id": "gen-resonant-crystal-canyons",
+    "name": "Resonant Crystal-Canyons",
+    "url": "shaders/gen-resonant-crystal-canyons.wgsl",
+    "category": "generative",
+    "description": "An infinite, procedural canyon constructed entirely from highly refractive, glowing crystals where sound waves manifest as visible ripples of chromatic dispersion, flowing like rivers of light through the jagged terrain.",
+    "tags": [
+      "crystal",
+      "landscape",
+      "audio-reactive",
+      "dispersion",
+      "fractal",
+      "canyon",
+      "raymarched",
+      "domain-warped"
+    ],
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "depth-aware",
+      "thin-film-interference",
+      "chromatic"
+    ],
+    "params": [
+      {
+        "id": "crystalDensity",
+        "name": "Crystal Density",
+        "default": 0.27,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "plasmaGlow",
+        "name": "Plasma Glow",
+        "default": 0.44,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "refractiveIndex",
+        "name": "Refractive Index",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "audioReactivity",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "id": "gen-resonant-quantum-obsidian-scarab-engine",
     "name": "Resonant Quantum-Obsidian Scarab-Engine",
     "url": "shaders/gen-resonant-quantum-obsidian-scarab-engine.wgsl",
@@ -16051,6 +16304,69 @@
         "max": 1,
         "step": 0.01,
         "description": "Network growth phase (0=growing, 1=mature)",
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
+    "id": "gen-tectonic-plasma-crucible",
+    "name": "Tectonic Plasma-Crucible",
+    "url": "shaders/gen-tectonic-plasma-crucible.wgsl",
+    "category": "generative",
+    "description": "A violently shifting landscape of cooling obsidian geometric slabs floating on a turbulent, audio-reactive ocean of blinding-hot plasma magma that constantly fractures, erupts, and reshapes itself.",
+    "tags": [
+      "magma",
+      "obsidian",
+      "fractal",
+      "lava",
+      "audio-reactive",
+      "tectonic",
+      "voronoi",
+      "raymarched"
+    ],
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "depth-aware",
+      "blackbody-radiation"
+    ],
+    "params": [
+      {
+        "id": "crustDensity",
+        "name": "Crust Density",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "magmaTurbulence",
+        "name": "Magma Turbulence",
+        "default": 0.33,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "eruptionIntensity",
+        "name": "Eruption Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "tectonicStress",
+        "name": "Tectonic Stress",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
         "mapping": "zoom_params.w"
       }
     ]
