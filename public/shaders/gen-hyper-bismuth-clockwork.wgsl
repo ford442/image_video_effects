@@ -228,16 +228,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Mouse position in 3D
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   let mouseUV = u.zoom_config.yz;
+  let mouseY = 1.0 - mouseUV.y;  // Flip Y: screen top = up
   let mousePos = vec3<f32>(
     (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect,
-    (1.0 - mouseUV.y * 2.0) * 3.0,
+    (mouseUV.y * 2.0 - 1.0) * 3.0,  // 3D position: screen top = +Y (up)
     0.0
   );
 
   // Camera - orbiting through the clockwork
   let camDist = 4.0 + sin(time * 0.1) * 0.5;
   let camAng = time * 0.12 + mouseUV.x * 0.4;
-  let camHeight = mouseUV.y * 1.0;
+  let camHeight = mouseY * 1.0;
   let ro = vec3<f32>(cos(camAng) * camDist, camHeight, sin(camAng) * camDist);
   let ta = vec3<f32>(0.0, 0.0, 0.0);
   let ww = normalize(ta - ro);
