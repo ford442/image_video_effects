@@ -1,0 +1,63 @@
+{
+  "id": "gen-prismatic-quantum-fractal-nautilus-engine",
+  "name": "Prismatic Quantum-Fractal Nautilus-Engine",
+  "url": "shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
+  "category": "generative",
+  "description": "A hyper-organic spiraling biomechanical nautilus shell forged from prismatic quantum glass and auroral plasma, endlessly unfurling within a deep-space nebula while reacting explosively to ambient acoustic frequencies.",
+  "tags": [
+    "organic",
+    "quantum",
+    "fractal",
+    "nautilus",
+    "cosmic",
+    "audio-reactive",
+    "prismatic",
+    "raymarched"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "depth-aware",
+    "chromatic"
+  ],
+  "params": [
+    {
+      "id": "auraIntensity",
+      "name": "Aura Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "spiralExpansion",
+      "name": "Spiral Expansion",
+      "default": 0.44,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "fractalDepth",
+      "name": "Fractal Depth",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "audioReactivity",
+      "name": "Audio Reactivity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "id": "gen-symbiotic-plasma-reef-matrix",
+  "name": "Symbiotic Plasma-Reef Matrix",
+  "url": "shaders/gen-symbiotic-plasma-reef-matrix.wgsl",
+  "category": "generative",
+  "description": "A hyper-vibrant deep-sea reef of fractal coral structures and bioluminescent plasma that pulsates with rhythmic audio, swarming with microscopic glowing entities.",
+  "tags": [
+    "organic",
+    "ocean",
+    "bioluminescent",
+    "plasma",
+    "audio-reactive",
+    "raymarched",
+    "coral",
+    "deep-sea"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "depth-aware",
+    "chromatic"
+  ],
+  "params": [
+    {
+      "id": "reefDensity",
+      "name": "Reef Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "swarmSize",
+      "name": "Entity Swarm Size",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "glowIntensity",
+      "name": "Bioluminescent Glow",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "fogDensity",
+      "name": "Fog Density",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ]
+}
