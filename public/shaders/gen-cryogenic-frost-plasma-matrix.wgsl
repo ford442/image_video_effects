@@ -50,6 +50,11 @@ fn rot(a: f32) -> mat2x2<f32> {
   return mat2x2<f32>(c, -s, s, c);
 }
 
+fn bass_env(prev: f32, curr: f32, att: f32, rel: f32) -> f32 {
+  if(curr > prev) { return mix(prev, curr, att); }
+  else { return mix(prev, curr, rel); }
+}
+
 fn hash3(p: vec3<f32>) -> f32 {
   var q = fract(p * 0.1031);
   q += dot(q, q.yzx + 33.33);

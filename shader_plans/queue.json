@@ -172,7 +172,7 @@
     },
     {
       "filename": "2026-03-08_live-studio-tab.md",
-      "title": "Live Studio Tab \u2013 HLS + WASM Toggle + Bilibili + Danmaku",
+      "title": "Live Studio Tab – HLS + WASM Toggle + Bilibili + Danmaku",
       "added": "2026-03-07T09:08:09.892871",
       "completed": "2026-03-07T09:13:43.539459"
     },
@@ -274,7 +274,7 @@
     },
     {
       "filename": "2026-03-08_raptor-mini.md",
-      "title": "Raptor Mini \u2013 Fast Predatory Agent Swarm",
+      "title": "Raptor Mini – Fast Predatory Agent Swarm",
       "added": "2026-03-07T09:06:05.264901",
       "completed": "2026-03-27T18:17:59.800656"
     },
@@ -830,6 +830,34 @@
       "added": "2026-04-27T15:22:10.278813",
       "status": "completed",
       "completed_at": "2026-06-27T23:40:08.199Z"
+    },
+    {
+      "filename": "2026-05-03_cryogenic-frost-plasma-matrix.md",
+      "title": "Cryogenic Frost-Plasma Matrix",
+      "added": "2026-05-03T15:21:10.239966",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:45:27.480Z"
+    },
+    {
+      "filename": "2026-05-04_sentient-ferro-silicate-swarm.md",
+      "title": "Sentient Ferro-Silicate Swarm",
+      "added": "2026-05-04T15:48:06.428969",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:45:27.491Z"
+    },
+    {
+      "filename": "2026-05-06_cybernetic-mycelium-neural-web.md",
+      "title": "Cybernetic-Mycelium Neural-Web",
+      "added": "2026-05-06T15:43:32.368734",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:45:27.494Z"
+    },
+    {
+      "filename": "2026-05-28_ethereal-quantum-hologram-bonsai.md",
+      "title": "Ethereal Quantum-Hologram Bonsai",
+      "added": "2026-05-28T15:23:06.697098",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:45:27.499Z"
     }
   ],
   "rejected": [],
@@ -931,21 +959,6 @@
       "added": "2026-04-22T15:34:57.537389"
     },
     {
-      "filename": "2026-05-03_cryogenic-frost-plasma-matrix.md",
-      "title": "Cryogenic Frost-Plasma Matrix",
-      "added": "2026-05-03T15:21:10.239966"
-    },
-    {
-      "filename": "2026-05-04_sentient-ferro-silicate-swarm.md",
-      "title": "Sentient Ferro-Silicate Swarm",
-      "added": "2026-05-04T15:48:06.428969"
-    },
-    {
-      "filename": "2026-05-06_cybernetic-mycelium-neural-web.md",
-      "title": "Cybernetic-Mycelium Neural-Web",
-      "added": "2026-05-06T15:43:32.368734"
-    },
-    {
       "filename": "2026-05-07_cosmic-clockwork-dyson-sphere.md",
       "title": "Cosmic-Clockwork Dyson-Sphere",
       "added": "2026-05-07T15:15:44.783988"
@@ -1014,11 +1027,6 @@
       "filename": "2026-05-27_quantum-fluorescent-aether-moth-swarm.md",
       "title": "Quantum-Fluorescent Aether-Moth Swarm",
       "added": "2026-05-27T15:22:31.200548"
-    },
-    {
-      "filename": "2026-05-28_ethereal-quantum-hologram-bonsai.md",
-      "title": "Ethereal Quantum-Hologram Bonsai",
-      "added": "2026-05-28T15:23:06.697098"
     },
     {
       "filename": "2026-05-30_celestial-aether-seraphim-wings.md",
