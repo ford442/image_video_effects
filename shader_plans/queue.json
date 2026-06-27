@@ -172,7 +172,7 @@
     },
     {
       "filename": "2026-03-08_live-studio-tab.md",
-      "title": "Live Studio Tab – HLS + WASM Toggle + Bilibili + Danmaku",
+      "title": "Live Studio Tab \u2013 HLS + WASM Toggle + Bilibili + Danmaku",
       "added": "2026-03-07T09:08:09.892871",
       "completed": "2026-03-07T09:13:43.539459"
     },
@@ -274,7 +274,7 @@
     },
     {
       "filename": "2026-03-08_raptor-mini.md",
-      "title": "Raptor Mini – Fast Predatory Agent Swarm",
+      "title": "Raptor Mini \u2013 Fast Predatory Agent Swarm",
       "added": "2026-03-07T09:06:05.264901",
       "completed": "2026-03-27T18:17:59.800656"
     },
@@ -1068,7 +1068,9 @@
     {
       "filename": "2026-06-10_neuro-fluid-plasma-lotus.md",
       "title": "Neuro-Fluid Plasma-Lotus",
-      "added": "2026-06-10T15:27:36.556094"
+      "added": "2026-06-10T15:27:36.556094",
+      "status": "completed",
+      "completed_at": "2026-06-28T07:41:07.235471"
     },
     {
       "filename": "2026-06-12_galactic-aether-crystal-geode-core.md",
@@ -1103,12 +1105,16 @@
     {
       "filename": "2026-06-20_prismatic-quantum-fractal-nautilus-engine.md",
       "title": "Prismatic Quantum-Fractal Nautilus-Engine",
-      "added": "2026-06-20T15:09:34.367199"
+      "added": "2026-06-20T15:09:34.367199",
+      "status": "completed",
+      "completed_at": "2026-06-28T07:41:07.235513"
     },
     {
       "filename": "2026-06-21_resonant-quantum-plasma-dragon-eye.md",
       "title": "Resonant Quantum-Plasma Dragon-Eye",
-      "added": "2026-06-21T15:07:33.808369"
+      "added": "2026-06-21T15:07:33.808369",
+      "status": "completed",
+      "completed_at": "2026-06-28T07:41:07.235517"
     },
     {
       "filename": "2026-06-22_sentient-quantum-chrono-leviathan-moth.md",
@@ -1130,7 +1136,7 @@
       "title": "Prismatic Cyber-Chrono Void-Kitsune",
       "added": "2026-06-27T15:24:02.938835",
       "status": "completed",
-      "completed_at": "2026-06-27T07:45:57.969453+00:00"
+      "completed_at": "2026-06-28T07:41:07.235521"
     }
   ],
   "in_progress": null
