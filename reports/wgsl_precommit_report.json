@@ -1,75 +1,72 @@
 {
-  "timestamp": "2026-06-27T21:51:19.648823",
+  "timestamp": "2026-06-28T09:19:28.359342",
   "naga_bin": "/root/.cargo/bin/naga",
-  "naga_available": true,
-  "total": 2,
-  "passed": 0,
-  "failed": 2,
+  "naga_available": false,
+  "total": 5,
+  "passed": 5,
+  "failed": 0,
   "skipped": 0,
-  "warnings": 1,
+  "warnings": 0,
   "results": [
     {
-      "file": "scripts/fixtures/workgroup_three_arg_ok.wgsl",
+      "file": "public/shaders/holographic-contour.wgsl",
       "skipped": false,
       "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "incompatible",
-      "bindgroup_errors": [
-        "Missing binding 0",
-        "Missing binding 1",
-        "Missing binding 2",
-        "Missing binding 3",
-        "Missing binding 4",
-        "Missing binding 5",
-        "Missing binding 6",
-        "Missing binding 7",
-        "Missing binding 8",
-        "Missing binding 9",
-        "Missing binding 10",
-        "Missing binding 11",
-        "Missing binding 12",
-        "Uniforms struct not found",
-        "No textureStore calls found"
-      ],
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
       "workgroup_warnings": [],
-      "ok": false
+      "ok": true
     },
     {
-      "file": "scripts/fixtures/workgroup_two_arg.wgsl",
+      "file": "public/shaders/ink_dispersion_alpha.wgsl",
       "skipped": false,
       "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "incompatible",
-      "bindgroup_errors": [
-        "Missing binding 0",
-        "Missing binding 1",
-        "Missing binding 2",
-        "Missing binding 3",
-        "Missing binding 4",
-        "Missing binding 5",
-        "Missing binding 6",
-        "Missing binding 7",
-        "Missing binding 8",
-        "Missing binding 9",
-        "Missing binding 10",
-        "Missing binding 11",
-        "Missing binding 12",
-        "Uniforms struct not found",
-        "No @workgroup_size found",
-        "No textureStore calls found"
-      ],
-      "workgroup_warnings": [
-        {
-          "match": "@workgroup_size(8, 8)",
-          "arg_count": 2,
-          "args": "8, 8"
-        }
-      ],
-      "ok": false
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/liquid-prism-cascade.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/parallax_depth_layers.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/particle_dreams_alpha.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
     }
   ]
 }
