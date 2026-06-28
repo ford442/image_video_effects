@@ -1,7 +1,6 @@
 {
   "name": "Quantum Mycelium",
   "category": "generative",
-  "filename": "gen-quantum-mycelium.wgsl",
   "tags": [
     "organic",
     "microscopic",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-quantum-mycelium",
+  "url": "shaders/gen-quantum-mycelium.wgsl",
+  "features": []
 }

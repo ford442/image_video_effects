@@ -1,7 +1,6 @@
 {
   "name": "Psychedelic Wormhole",
   "category": "generative",
-  "filename": "gen-plasma-psychedelic-wormhole.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-plasma-psychedelic-wormhole",
+  "url": "shaders/gen-plasma-psychedelic-wormhole.wgsl",
+  "features": []
 }

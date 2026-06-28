@@ -1,7 +1,6 @@
 {
   "name": "Kinetic Bloom",
   "category": "generative",
-  "filename": "gen-showcase-kinetic-bloom.wgsl",
   "tags": [
     "generative",
     "showcase",
@@ -57,5 +56,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-showcase-kinetic-bloom",
+  "url": "shaders/gen-showcase-kinetic-bloom.wgsl",
+  "features": []
 }

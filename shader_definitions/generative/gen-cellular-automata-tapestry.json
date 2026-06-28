@@ -1,7 +1,6 @@
 {
   "name": "Cellular Automata Tapestry",
   "category": "generative",
-  "filename": "gen-cellular-automata-tapestry.wgsl",
   "tags": [
     "cellular-automata",
     "reaction-diffusion",
@@ -50,5 +49,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cellular-automata-tapestry",
+  "url": "shaders/gen-cellular-automata-tapestry.wgsl",
+  "features": []
 }

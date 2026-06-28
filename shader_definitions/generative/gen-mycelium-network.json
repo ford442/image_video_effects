@@ -1,7 +1,6 @@
 {
   "name": "Mycelium Network",
   "category": "generative",
-  "filename": "gen-mycelium-network.wgsl",
   "tags": [
     "generative",
     "organic",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-mycelium-network",
+  "url": "shaders/gen-mycelium-network.wgsl",
+  "features": []
 }

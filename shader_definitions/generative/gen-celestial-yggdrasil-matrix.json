@@ -1,7 +1,6 @@
 {
   "name": "Celestial Yggdrasil-Matrix",
   "category": "generative",
-  "filename": "gen-celestial-yggdrasil-matrix.wgsl",
   "tags": [
     "organic",
     "cosmic",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-celestial-yggdrasil-matrix",
+  "url": "shaders/gen-celestial-yggdrasil-matrix.wgsl",
+  "features": []
 }

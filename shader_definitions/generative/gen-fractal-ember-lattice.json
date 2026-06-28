@@ -1,7 +1,6 @@
 {
   "name": "Fractal Ember Lattice",
   "category": "generative",
-  "filename": "gen-fractal-ember-lattice.wgsl",
   "tags": [
     "crystal",
     "fractal",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-fractal-ember-lattice",
+  "url": "shaders/gen-fractal-ember-lattice.wgsl",
+  "features": []
 }

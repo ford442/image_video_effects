@@ -1,7 +1,6 @@
 {
   "name": "Silica Tsunami",
   "category": "generative",
-  "filename": "gen-silica-tsunami.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-silica-tsunami",
+  "url": "shaders/gen-silica-tsunami.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Holographic Data Core",
   "category": "generative",
-  "filename": "gen-holographic-data-core.wgsl",
   "tags": [
     "3d",
     "raymarching",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-holographic-data-core",
+  "url": "shaders/gen-holographic-data-core.wgsl",
+  "features": []
 }

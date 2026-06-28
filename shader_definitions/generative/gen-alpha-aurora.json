@@ -1,7 +1,6 @@
 {
   "name": "Alpha Aurora",
   "category": "generative",
-  "filename": "gen-alpha-aurora.wgsl",
   "tags": [
     "aurora",
     "spectral",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-alpha-aurora",
+  "url": "shaders/gen-alpha-aurora.wgsl",
+  "features": []
 }

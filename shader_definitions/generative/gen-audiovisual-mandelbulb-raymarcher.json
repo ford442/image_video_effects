@@ -1,7 +1,6 @@
 {
   "name": "Audiovisual Mandelbulb",
   "category": "generative",
-  "filename": "gen-audiovisual-mandelbulb-raymarcher.wgsl",
   "tags": [
     "fractal",
     "3d",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-audiovisual-mandelbulb-raymarcher",
+  "url": "shaders/gen-audiovisual-mandelbulb-raymarcher.wgsl",
+  "features": []
 }

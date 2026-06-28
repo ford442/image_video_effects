@@ -1,7 +1,6 @@
 {
   "name": "Magnetic Storm",
   "category": "generative",
-  "filename": "gen-magnetic-storm.wgsl",
   "tags": [
     "magnetic",
     "field-lines",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-magnetic-storm",
+  "url": "shaders/gen-magnetic-storm.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Neural Bioluminescence Matrix",
   "category": "generative",
-  "filename": "gen-neural-bioluminescence-matrix.wgsl",
   "tags": [
     "organic",
     "quantum",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neural-bioluminescence-matrix",
+  "url": "shaders/gen-neural-bioluminescence-matrix.wgsl",
+  "features": []
 }

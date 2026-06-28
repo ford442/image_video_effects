@@ -1,7 +1,6 @@
 {
   "name": "Hyper-Refractive Rain-Matrix",
   "category": "generative",
-  "filename": "gen-hyper-refractive-rain-matrix.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-hyper-refractive-rain-matrix",
+  "url": "shaders/gen-hyper-refractive-rain-matrix.wgsl",
+  "features": []
 }

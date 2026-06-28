@@ -1,7 +1,6 @@
 {
   "name": "Worley Cellular Noise",
   "category": "generative",
-  "filename": "gen-worley-cellular-noise.wgsl",
   "tags": [
     "cellular",
     "worley",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-worley-cellular-noise",
+  "url": "shaders/gen-worley-cellular-noise.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Chromatic Singularity-Loom",
   "category": "generative",
-  "filename": "gen-chromatic-singularity-loom.wgsl",
   "tags": [
     "singularity",
     "fractal",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-chromatic-singularity-loom",
+  "url": "shaders/gen-chromatic-singularity-loom.wgsl",
+  "features": []
 }

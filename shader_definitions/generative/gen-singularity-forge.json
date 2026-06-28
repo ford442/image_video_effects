@@ -1,7 +1,6 @@
 {
   "name": "Singularity Forge",
   "category": "generative",
-  "filename": "gen-singularity-forge.wgsl",
   "tags": [
     "cosmic",
     "black-hole",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-singularity-forge",
+  "url": "shaders/gen-singularity-forge.wgsl",
+  "features": []
 }

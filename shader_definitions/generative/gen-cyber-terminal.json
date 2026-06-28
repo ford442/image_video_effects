@@ -1,7 +1,6 @@
 {
   "name": "Procedural Cyber Terminal (ASCII)",
   "category": "generative",
-  "filename": "gen-cyber-terminal.wgsl",
   "tags": [
     "ascii",
     "terminal",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cyber-terminal",
+  "url": "shaders/gen-cyber-terminal.wgsl",
+  "features": []
 }

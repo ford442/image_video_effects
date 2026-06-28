@@ -1,7 +1,6 @@
 {
   "name": "Rainbow Firefly Dance",
   "category": "generative",
-  "filename": "gen-rainbow-firefly-dance.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-rainbow-firefly-dance",
+  "url": "shaders/gen-rainbow-firefly-dance.wgsl",
+  "features": []
 }

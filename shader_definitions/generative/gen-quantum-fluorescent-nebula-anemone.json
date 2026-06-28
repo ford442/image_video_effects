@@ -1,7 +1,6 @@
 {
   "name": "Quantum-Fluorescent Nebula-Anemone",
   "category": "generative",
-  "filename": "gen-quantum-fluorescent-nebula-anemone.wgsl",
   "tags": [
     "organic",
     "nebula",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-quantum-fluorescent-nebula-anemone",
+  "url": "shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
+  "features": []
 }

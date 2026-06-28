@@ -1,7 +1,6 @@
 {
   "name": "Volcanic Ink",
   "category": "generative",
-  "filename": "gen-volcanic-ink.wgsl",
   "tags": [
     "generative",
     "volcanic",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-volcanic-ink",
+  "url": "shaders/gen-volcanic-ink.wgsl",
+  "features": []
 }

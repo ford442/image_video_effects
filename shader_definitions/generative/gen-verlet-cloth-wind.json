@@ -1,7 +1,6 @@
 {
   "name": "Verlet Cloth Wind",
   "category": "generative",
-  "filename": "gen-verlet-cloth-wind.wgsl",
   "tags": [
     "procedural",
     "generative",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-verlet-cloth-wind",
+  "url": "shaders/gen-verlet-cloth-wind.wgsl",
+  "features": []
 }

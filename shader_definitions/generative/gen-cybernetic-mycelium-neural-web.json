@@ -1,10 +1,19 @@
 {
   "name": "Cybernetic-Mycelium Neural-Web",
   "category": "generative",
-  "filename": "gen-cybernetic-mycelium-neural-web.wgsl",
-  "tags": ["organic", "quantum", "mechanical", "audio-reactive", "fractal"],
+  "tags": [
+    "organic",
+    "quantum",
+    "mechanical",
+    "audio-reactive",
+    "fractal"
+  ],
   "description": "A hyper-organic, glowing network of bio-mechanical mycelial threads that endlessly branch, mutate, and pulse with neon-quantum data streams.",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -41,5 +50,8 @@
   ],
   "supportsDepth": false,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cybernetic-mycelium-neural-web",
+  "url": "shaders/gen-cybernetic-mycelium-neural-web.wgsl",
+  "features": []
 }

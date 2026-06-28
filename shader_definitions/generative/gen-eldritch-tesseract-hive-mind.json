@@ -1,7 +1,6 @@
 {
   "name": "Eldritch Tesseract-Hive Mind",
   "category": "generative",
-  "filename": "gen-eldritch-tesseract-hive-mind.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-eldritch-tesseract-hive-mind",
+  "url": "shaders/gen-eldritch-tesseract-hive-mind.wgsl",
+  "features": []
 }

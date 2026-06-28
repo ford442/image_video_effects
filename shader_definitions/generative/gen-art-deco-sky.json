@@ -1,7 +1,6 @@
 {
   "name": "Art Deco Skyscraper",
   "category": "generative",
-  "filename": "gen-art-deco-sky.wgsl",
   "tags": [
     "3d",
     "raymarching",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-art-deco-sky",
+  "url": "shaders/gen-art-deco-sky.wgsl",
+  "features": []
 }

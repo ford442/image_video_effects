@@ -1,7 +1,6 @@
 {
   "name": "Evolutionary Cellular Gardens",
   "category": "generative",
-  "filename": "gen-evolutionary-cellular-gardens.wgsl",
   "tags": [
     "generative",
     "cellular-automata",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-evolutionary-cellular-gardens",
+  "url": "shaders/gen-evolutionary-cellular-gardens.wgsl",
+  "features": []
 }

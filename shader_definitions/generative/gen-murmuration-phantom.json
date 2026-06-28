@@ -1,7 +1,6 @@
 {
   "name": "Murmuration Phantom",
   "category": "generative",
-  "filename": "gen-murmuration-phantom.wgsl",
   "tags": [
     "murmuration",
     "flock",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-murmuration-phantom",
+  "url": "shaders/gen-murmuration-phantom.wgsl",
+  "features": []
 }

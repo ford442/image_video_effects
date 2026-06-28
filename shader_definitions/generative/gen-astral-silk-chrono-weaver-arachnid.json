@@ -1,7 +1,6 @@
 {
   "name": "Astral-Silk Chrono-Weaver Arachnid",
   "category": "generative",
-  "filename": "gen-astral-silk-chrono-weaver-arachnid.wgsl",
   "tags": [
     "organic",
     "quantum",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-astral-silk-chrono-weaver-arachnid",
+  "url": "shaders/gen-astral-silk-chrono-weaver-arachnid.wgsl",
+  "features": []
 }

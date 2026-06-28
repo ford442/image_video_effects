@@ -1,7 +1,6 @@
 {
   "name": "Quantum Pollen",
   "category": "generative",
-  "filename": "gen-quantum-pollen.wgsl",
   "tags": [
     "generative",
     "particles",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-quantum-pollen",
+  "url": "shaders/gen-quantum-pollen.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Superfluid Quantum-Foam",
   "category": "generative",
-  "filename": "gen-superfluid-quantum-foam.wgsl",
   "tags": [
     "organic",
     "quantum",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-superfluid-quantum-foam",
+  "url": "shaders/gen-superfluid-quantum-foam.wgsl",
+  "features": []
 }

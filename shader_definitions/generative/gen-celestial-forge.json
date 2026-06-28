@@ -1,7 +1,6 @@
 {
   "name": "Celestial Forge",
   "category": "generative",
-  "filename": "gen-celestial-forge.wgsl",
   "tags": [
     "space",
     "megastructure",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-celestial-forge",
+  "url": "shaders/gen-celestial-forge.wgsl",
+  "features": []
 }

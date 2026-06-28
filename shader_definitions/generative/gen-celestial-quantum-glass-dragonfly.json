@@ -1,7 +1,6 @@
 {
   "name": "Celestial Quantum-Glass Dragonfly",
   "category": "generative",
-  "filename": "gen-celestial-quantum-glass-dragonfly.wgsl",
   "tags": [
     "dragonfly",
     "quantum",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-celestial-quantum-glass-dragonfly",
+  "url": "shaders/gen-celestial-quantum-glass-dragonfly.wgsl",
+  "features": []
 }

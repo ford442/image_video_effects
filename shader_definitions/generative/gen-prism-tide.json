@@ -1,7 +1,6 @@
 {
   "name": "Prism Tide",
   "category": "generative",
-  "filename": "gen-prism-tide.wgsl",
   "tags": [
     "generative",
     "prismatic",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-prism-tide",
+  "url": "shaders/gen-prism-tide.wgsl",
+  "features": []
 }

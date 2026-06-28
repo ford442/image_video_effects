@@ -1,7 +1,6 @@
 {
   "name": "Strange Field Flow",
   "category": "generative",
-  "filename": "gen-strange-field-flow.wgsl",
   "tags": [
     "psychedelic",
     "attractor",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-strange-field-flow",
+  "url": "shaders/gen-strange-field-flow.wgsl",
+  "features": []
 }

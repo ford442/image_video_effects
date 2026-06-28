@@ -1,7 +1,6 @@
 {
   "name": "Aperiodic Monotile Hat",
   "category": "generative",
-  "filename": "gen-aperiodic-monotile.wgsl",
   "tags": [
     "generative",
     "tiling",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-aperiodic-monotile",
+  "url": "shaders/gen-aperiodic-monotile.wgsl",
+  "features": []
 }

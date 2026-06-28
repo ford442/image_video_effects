@@ -1,7 +1,6 @@
 {
   "name": "Translucent Nebula",
   "category": "generative",
-  "filename": "gen-translucent-nebula.wgsl",
   "tags": [
     "nebula",
     "volumetric",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-translucent-nebula",
+  "url": "shaders/gen-translucent-nebula.wgsl",
+  "features": []
 }

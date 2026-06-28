@@ -1,7 +1,6 @@
 {
   "name": "Hyperbolic Crystal Symbiosis",
   "category": "generative",
-  "filename": "gen-hyperbolic-crystal-symbiosis.wgsl",
   "tags": [
     "generative",
     "hyperbolic",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-hyperbolic-crystal-symbiosis",
+  "url": "shaders/gen-hyperbolic-crystal-symbiosis.wgsl",
+  "features": []
 }

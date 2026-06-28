@@ -1,7 +1,6 @@
 {
   "name": "Glacial-Aether Quantum-Cavern",
   "category": "generative",
-  "filename": "gen-glacial-aether-quantum-cavern.wgsl",
   "tags": [
     "fractal",
     "ice",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-glacial-aether-quantum-cavern",
+  "url": "shaders/gen-glacial-aether-quantum-cavern.wgsl",
+  "features": []
 }

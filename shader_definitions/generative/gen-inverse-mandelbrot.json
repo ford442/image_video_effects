@@ -1,7 +1,6 @@
 {
   "name": "Inverse Mandelbrot Realm",
   "category": "generative",
-  "filename": "gen-inverse-mandelbrot.wgsl",
   "tags": [
     "mandelbrot",
     "fractal",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-inverse-mandelbrot",
+  "url": "shaders/gen-inverse-mandelbrot.wgsl",
+  "features": []
 }

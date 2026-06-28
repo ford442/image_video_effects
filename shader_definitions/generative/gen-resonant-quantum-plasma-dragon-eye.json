@@ -1,7 +1,6 @@
 {
   "name": "Resonant Quantum-Plasma Dragon-Eye",
   "category": "generative",
-  "filename": "gen-resonant-quantum-plasma-dragon-eye.wgsl",
   "tags": [
     "organic",
     "quantum",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-resonant-quantum-plasma-dragon-eye",
+  "url": "shaders/gen-resonant-quantum-plasma-dragon-eye.wgsl",
+  "features": []
 }

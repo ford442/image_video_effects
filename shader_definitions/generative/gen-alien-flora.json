@@ -1,7 +1,6 @@
 {
   "name": "Alien Flora",
   "category": "generative",
-  "filename": "gen-alien-flora.wgsl",
   "tags": [
     "nature",
     "plants",
@@ -57,5 +56,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-alien-flora",
+  "url": "shaders/gen-alien-flora.wgsl",
+  "features": []
 }

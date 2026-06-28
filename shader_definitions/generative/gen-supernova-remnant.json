@@ -1,7 +1,6 @@
 {
   "name": "Supernova Remnant",
   "category": "generative",
-  "filename": "gen-supernova-remnant.wgsl",
   "tags": [
     "generative",
     "nebula",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-supernova-remnant",
+  "url": "shaders/gen-supernova-remnant.wgsl",
+  "features": []
 }

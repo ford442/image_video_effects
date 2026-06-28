@@ -1,7 +1,6 @@
 {
   "name": "WASM HLS Physarum Swarm",
   "category": "generative",
-  "filename": "gen-wasm-hls-physarum-swarm.wgsl",
   "tags": [
     "physarum",
     "slime-mold",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-wasm-hls-physarum-swarm",
+  "url": "shaders/gen-wasm-hls-physarum-swarm.wgsl",
+  "features": []
 }

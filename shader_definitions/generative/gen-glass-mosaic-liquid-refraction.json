@@ -1,4 +1,6 @@
 {
+  "id": "gen-glass-mosaic-liquid-refraction",
+  "url": "shaders/gen-glass-mosaic-liquid-refraction.wgsl",
   "name": "Glass Mosaic Liquid Refraction",
   "category": "generative",
   "filename": "gen-glass-mosaic-liquid-refraction.wgsl",
@@ -58,5 +60,6 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "features": []
 }

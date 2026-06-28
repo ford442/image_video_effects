@@ -1,7 +1,6 @@
 {
   "name": "Liquid Rainbow Glass",
   "category": "generative",
-  "filename": "gen-liquid-rainbow-glass.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-liquid-rainbow-glass",
+  "url": "shaders/gen-liquid-rainbow-glass.wgsl",
+  "features": []
 }

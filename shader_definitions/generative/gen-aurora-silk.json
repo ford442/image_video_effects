@@ -1,7 +1,6 @@
 {
   "name": "Aurora Silk",
   "category": "generative",
-  "filename": "gen-aurora-silk.wgsl",
   "tags": [
     "generative",
     "aurora",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-aurora-silk",
+  "url": "shaders/gen-aurora-silk.wgsl",
+  "features": []
 }

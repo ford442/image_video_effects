@@ -1,7 +1,6 @@
 {
   "name": "Bioreactor Bloom",
   "category": "generative",
-  "filename": "gen-bioreactor-bloom.wgsl",
   "tags": [
     "generative",
     "cellular",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-bioreactor-bloom",
+  "url": "shaders/gen-bioreactor-bloom.wgsl",
+  "features": []
 }

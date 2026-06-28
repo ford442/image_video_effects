@@ -1,7 +1,6 @@
 {
   "name": "Sentient Quantum-Chrono Leviathan-Moth",
   "category": "generative",
-  "filename": "gen-sentient-quantum-chrono-leviathan-moth.wgsl",
   "tags": [
     "cosmic",
     "moth",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-sentient-quantum-chrono-leviathan-moth",
+  "url": "shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Recursive Ancestral Terrains",
   "category": "generative",
-  "filename": "gen-recursive-ancestral-terrains.wgsl",
   "tags": [
     "generative",
     "fractal",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-recursive-ancestral-terrains",
+  "url": "shaders/gen-recursive-ancestral-terrains.wgsl",
+  "features": []
 }

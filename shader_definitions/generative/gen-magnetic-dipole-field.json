@@ -1,7 +1,6 @@
 {
   "name": "Magnetic Dipole Field Lines",
   "category": "generative",
-  "filename": "gen-magnetic-dipole-field.wgsl",
   "tags": [
     "particles",
     "fieldlines",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-magnetic-dipole-field",
+  "url": "shaders/gen-magnetic-dipole-field.wgsl",
+  "features": []
 }

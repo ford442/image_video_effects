@@ -1,7 +1,6 @@
 {
   "name": "Neuro-Kinetic Bloom",
   "category": "generative",
-  "filename": "gen-neuro-kinetic-bloom.wgsl",
   "tags": [
     "organic",
     "biomechanical",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neuro-kinetic-bloom",
+  "url": "shaders/gen-neuro-kinetic-bloom.wgsl",
+  "features": []
 }

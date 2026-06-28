@@ -1,7 +1,6 @@
 {
   "name": "DLA Copper Deposition",
   "category": "generative",
-  "filename": "gen-dla-copper-deposition.wgsl",
   "tags": [
     "copper",
     "metallic",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-dla-copper-deposition",
+  "url": "shaders/gen-dla-copper-deposition.wgsl",
+  "features": []
 }

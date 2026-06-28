@@ -1,7 +1,6 @@
 {
   "name": "Lichen Reaction-Diffusion",
   "category": "generative",
-  "filename": "gen-lichen-reaction-diffusion.wgsl",
   "tags": [
     "reaction-diffusion",
     "lichen",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-lichen-reaction-diffusion",
+  "url": "shaders/gen-lichen-reaction-diffusion.wgsl",
+  "features": []
 }

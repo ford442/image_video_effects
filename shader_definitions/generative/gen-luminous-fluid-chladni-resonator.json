@@ -1,7 +1,6 @@
 {
   "name": "Luminous-Fluid Chladni-Resonator",
   "category": "generative",
-  "filename": "gen-luminous-fluid-chladni-resonator.wgsl",
   "tags": [
     "chladni",
     "cymatics",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-luminous-fluid-chladni-resonator",
+  "url": "shaders/gen-luminous-fluid-chladni-resonator.wgsl",
+  "features": []
 }

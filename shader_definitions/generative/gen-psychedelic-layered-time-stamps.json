@@ -1,7 +1,6 @@
 {
   "name": "Psychedelic Layered Time-Stamps",
   "category": "generative",
-  "filename": "gen-psychedelic-layered-time-stamps.wgsl",
   "tags": [
     "generative",
     "psychedelic",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-psychedelic-layered-time-stamps",
+  "url": "shaders/gen-psychedelic-layered-time-stamps.wgsl",
+  "features": []
 }

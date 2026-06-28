@@ -1,7 +1,6 @@
 {
   "name": "Astro-Mechanical Quantum-Furnace Engine",
   "category": "generative",
-  "filename": "gen-astro-mechanical-quantum-furnace-engine.wgsl",
   "tags": [
     "mechanical",
     "quantum",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-astro-mechanical-quantum-furnace-engine",
+  "url": "shaders/gen-astro-mechanical-quantum-furnace-engine.wgsl",
+  "features": []
 }

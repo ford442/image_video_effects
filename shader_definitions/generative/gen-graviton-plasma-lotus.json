@@ -1,7 +1,6 @@
 {
   "name": "Graviton Plasma Lotus",
   "category": "generative",
-  "filename": "gen-graviton-plasma-lotus.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-graviton-plasma-lotus",
+  "url": "shaders/gen-graviton-plasma-lotus.wgsl",
+  "features": []
 }

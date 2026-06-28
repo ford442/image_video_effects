@@ -1,7 +1,6 @@
 {
   "name": "Sierpinski Tetrahedron",
   "category": "generative",
-  "filename": "gen-sierpinski-tetrahedron.wgsl",
   "tags": [
     "fractal",
     "sierpinski",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-sierpinski-tetrahedron",
+  "url": "shaders/gen-sierpinski-tetrahedron.wgsl",
+  "features": []
 }

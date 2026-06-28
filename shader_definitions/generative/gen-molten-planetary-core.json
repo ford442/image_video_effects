@@ -1,7 +1,6 @@
 {
   "name": "Molten Planetary Core",
   "category": "generative",
-  "filename": "gen-molten-planetary-core.wgsl",
   "tags": [
     "molten",
     "planet",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-molten-planetary-core",
+  "url": "shaders/gen-molten-planetary-core.wgsl",
+  "features": []
 }

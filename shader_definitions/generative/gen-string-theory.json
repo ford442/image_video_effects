@@ -1,7 +1,6 @@
 {
   "name": "String Theory",
   "category": "generative",
-  "filename": "gen-string-theory.wgsl",
   "tags": [
     "generative",
     "physics",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-string-theory",
+  "url": "shaders/gen-string-theory.wgsl",
+  "features": []
 }

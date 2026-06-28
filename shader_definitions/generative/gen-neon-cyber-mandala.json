@@ -1,7 +1,6 @@
 {
   "name": "Neon Cyber Mandala",
   "category": "generative",
-  "filename": "gen-neon-cyber-mandala.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neon-cyber-mandala",
+  "url": "shaders/gen-neon-cyber-mandala.wgsl",
+  "features": []
 }

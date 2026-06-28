@@ -1,7 +1,6 @@
 {
   "name": "Bioluminescent Aether-Pulsar",
   "category": "generative",
-  "filename": "gen-bioluminescent-aether-pulsar.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-bioluminescent-aether-pulsar",
+  "url": "shaders/gen-bioluminescent-aether-pulsar.wgsl",
+  "features": []
 }

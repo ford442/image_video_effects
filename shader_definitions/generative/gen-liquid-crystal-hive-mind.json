@@ -1,7 +1,6 @@
 {
   "name": "Liquid-Crystal Hive-Mind",
   "category": "generative",
-  "filename": "gen-liquid-crystal-hive-mind.wgsl",
   "tags": [
     "cellular",
     "liquid-crystal",
@@ -58,5 +57,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-liquid-crystal-hive-mind",
+  "url": "shaders/gen-liquid-crystal-hive-mind.wgsl",
+  "features": []
 }

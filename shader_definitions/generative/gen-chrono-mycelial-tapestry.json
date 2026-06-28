@@ -1,7 +1,6 @@
 {
   "name": "Chrono-Mycelial Tapestry",
   "category": "generative",
-  "filename": "gen-chrono-mycelial-tapestry.wgsl",
   "tags": [
     "generative",
     "organic",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-chrono-mycelial-tapestry",
+  "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
+  "features": []
 }

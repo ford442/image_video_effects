@@ -1,7 +1,6 @@
 {
   "name": "Tectonic Plasma-Crucible",
   "category": "generative",
-  "filename": "gen-tectonic-plasma-crucible.wgsl",
   "tags": [
     "magma",
     "obsidian",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-tectonic-plasma-crucible",
+  "url": "shaders/gen-tectonic-plasma-crucible.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "4D Projection Dream Weavers",
   "category": "generative",
-  "filename": "gen-4d-projection-dream-weavers.wgsl",
   "tags": [
     "generative",
     "4d",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-4d-projection-dream-weavers",
+  "url": "shaders/gen-4d-projection-dream-weavers.wgsl",
+  "features": []
 }

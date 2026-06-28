@@ -1,7 +1,6 @@
 {
   "name": "Raptor Mini",
   "category": "generative",
-  "filename": "gen-raptor-mini.wgsl",
   "tags": [
     "agent",
     "chase",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-raptor-mini",
+  "url": "shaders/gen-raptor-mini.wgsl",
+  "features": []
 }

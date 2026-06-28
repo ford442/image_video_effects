@@ -1,7 +1,6 @@
 {
   "name": "Hypnotic Vortex Tunnel",
   "category": "generative",
-  "filename": "gen-hypnotic-vortex-tunnel.wgsl",
   "tags": [
     "tunnel",
     "vortex",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-hypnotic-vortex-tunnel",
+  "url": "shaders/gen-hypnotic-vortex-tunnel.wgsl",
+  "features": []
 }

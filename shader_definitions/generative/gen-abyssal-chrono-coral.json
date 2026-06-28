@@ -1,7 +1,6 @@
 {
   "name": "Abyssal Chrono-Coral",
   "category": "generative",
-  "filename": "gen-abyssal-chrono-coral.wgsl",
   "tags": [
     "organic",
     "fractal",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-abyssal-chrono-coral",
+  "url": "shaders/gen-abyssal-chrono-coral.wgsl",
+  "features": []
 }

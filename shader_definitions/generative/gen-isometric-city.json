@@ -1,7 +1,6 @@
 {
   "name": "Isometric Cyber-City",
   "category": "generative",
-  "filename": "gen-isometric-city.wgsl",
   "tags": [
     "procedural",
     "generative",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-isometric-city",
+  "url": "shaders/gen-isometric-city.wgsl",
+  "features": []
 }

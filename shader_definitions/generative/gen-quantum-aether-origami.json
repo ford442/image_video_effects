@@ -1,4 +1,6 @@
 {
+  "id": "gen-quantum-aether-origami",
+  "url": "shaders/gen-quantum-aether-origami.wgsl",
   "name": "Quantum Aether Origami",
   "category": "generative",
   "filename": "gen-quantum-aether-origami.wgsl",
@@ -59,5 +61,6 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "features": []
 }

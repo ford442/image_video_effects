@@ -1,7 +1,6 @@
 {
   "name": "Ethereal Glass-Flora Terrarium",
   "category": "generative",
-  "filename": "gen-ethereal-glass-flora-terrarium.wgsl",
   "tags": [
     "organic",
     "glass",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-ethereal-glass-flora-terrarium",
+  "url": "shaders/gen-ethereal-glass-flora-terrarium.wgsl",
+  "features": []
 }

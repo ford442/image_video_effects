@@ -1,7 +1,6 @@
 {
   "name": "Opal Circuit",
   "category": "generative",
-  "filename": "gen-opal-circuit.wgsl",
   "tags": [
     "generative",
     "circuit",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-opal-circuit",
+  "url": "shaders/gen-opal-circuit.wgsl",
+  "features": []
 }

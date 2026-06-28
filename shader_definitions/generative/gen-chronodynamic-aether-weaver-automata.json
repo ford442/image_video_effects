@@ -1,7 +1,6 @@
 {
   "name": "Chronodynamic Aether-Weaver Automata",
   "category": "generative",
-  "filename": "gen-chronodynamic-aether-weaver-automata.wgsl",
   "tags": [
     "cosmic",
     "mechanical",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-chronodynamic-aether-weaver-automata",
+  "url": "shaders/gen-chronodynamic-aether-weaver-automata.wgsl",
+  "features": []
 }

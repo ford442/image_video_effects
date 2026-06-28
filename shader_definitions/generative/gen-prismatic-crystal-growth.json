@@ -1,7 +1,6 @@
 {
   "name": "Prismatic Crystal Growth",
   "category": "generative",
-  "filename": "gen-prismatic-crystal-growth.wgsl",
   "tags": [
     "crystal",
     "prismatic",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-prismatic-crystal-growth",
+  "url": "shaders/gen-prismatic-crystal-growth.wgsl",
+  "features": []
 }

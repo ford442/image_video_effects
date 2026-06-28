@@ -1,7 +1,6 @@
 {
   "name": "Holographic Bismuth-Core Reactor",
   "category": "generative",
-  "filename": "gen-holographic-bismuth-core-reactor.wgsl",
   "tags": [
     "cosmic",
     "mechanical",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-holographic-bismuth-core-reactor",
+  "url": "shaders/gen-holographic-bismuth-core-reactor.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Neon Snowfall",
   "category": "generative",
-  "filename": "gen-neon-snowfall.wgsl",
   "tags": [
     "generative",
     "snow",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neon-snowfall",
+  "url": "shaders/gen-neon-snowfall.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Hyper-Bismuth Clockwork",
   "category": "generative",
-  "filename": "gen-hyper-bismuth-clockwork.wgsl",
   "tags": [
     "mechanical",
     "crystal",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-hyper-bismuth-clockwork",
+  "url": "shaders/gen-hyper-bismuth-clockwork.wgsl",
+  "features": []
 }

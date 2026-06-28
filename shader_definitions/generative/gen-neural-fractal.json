@@ -1,7 +1,6 @@
 {
   "name": "Neural Fractal",
   "category": "generative",
-  "filename": "gen-neural-fractal.wgsl",
   "tags": [
     "generative",
     "fractal",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neural-fractal",
+  "url": "shaders/gen-neural-fractal.wgsl",
+  "features": []
 }

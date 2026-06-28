@@ -2,7 +2,6 @@
   "id": "gen-quasicrystal",
   "name": "Quasicrystal",
   "category": "generative",
-  "filename": "gen-quasicrystal.wgsl",
   "tags": [
     "generative",
     "quasicrystal",
@@ -18,7 +17,11 @@
     "gem"
   ],
   "description": "Penrose tiling-inspired quasicrystal patterns with n-fold symmetry using the projection method from higher-dimensional lattices. Upgraded with domain-warped FBM, Voronoi/Worley noise, Fresnel-Schlick gem surfaces, enhanced harmonics, and deep audio reactivity.",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -55,5 +58,7 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "url": "shaders/gen-quasicrystal.wgsl",
+  "features": []
 }

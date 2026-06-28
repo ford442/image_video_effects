@@ -2,7 +2,6 @@
   "id": "gen-cosmic-clockwork-dyson-sphere",
   "name": "Cosmic-Clockwork Dyson-Sphere",
   "category": "generative",
-  "filename": "gen-cosmic-clockwork-dyson-sphere.wgsl",
   "tags": [
     "mechanical",
     "cosmic",
@@ -16,7 +15,11 @@
     "fresnel"
   ],
   "description": "A hyper-intricate colossal megastructure of interlocking golden gears, glowing plasma conduits, and rhythmic mechanical fractal shifts enclosing a blinding quantum singularity. Upgraded with enhanced KIFS SDFs, domain-warped FBM, Worley/Voronoi noise, Beer-Lambert volumetric extinction, Fresnel-Schlick metallic reflections, gear-ring toroids, and deep audio reactivity.",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -53,5 +56,7 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "url": "shaders/gen-cosmic-clockwork-dyson-sphere.wgsl",
+  "features": []
 }

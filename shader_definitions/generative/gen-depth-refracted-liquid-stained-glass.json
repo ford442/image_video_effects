@@ -1,7 +1,6 @@
 {
   "name": "Depth-Refracted Liquid Stained Glass",
   "category": "generative",
-  "filename": "gen-depth-refracted-liquid-stained-glass.wgsl",
   "tags": [
     "kaleidoscope",
     "refraction",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-depth-refracted-liquid-stained-glass",
+  "url": "shaders/gen-depth-refracted-liquid-stained-glass.wgsl",
+  "features": []
 }

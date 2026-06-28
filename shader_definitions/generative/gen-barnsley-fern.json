@@ -1,7 +1,6 @@
 {
   "name": "Barnsley Fern",
   "category": "generative",
-  "filename": "gen-barnsley-fern.wgsl",
   "tags": [
     "fractal",
     "fern",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-barnsley-fern",
+  "url": "shaders/gen-barnsley-fern.wgsl",
+  "features": []
 }

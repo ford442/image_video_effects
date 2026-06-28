@@ -1,7 +1,6 @@
 {
   "name": "Minimal Surface Soap Iridescence",
   "category": "generative",
-  "filename": "gen-minimal-surface-soap-iridescence.wgsl",
   "tags": [
     "soap",
     "iridescence",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-minimal-surface-soap-iridescence",
+  "url": "shaders/gen-minimal-surface-soap-iridescence.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "DMT Fractal Zoom",
   "category": "generative",
-  "filename": "gen-dmt-fractal-zoom.wgsl",
   "tags": [
     "psychedelic",
     "fractal",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-dmt-fractal-zoom",
+  "url": "shaders/gen-dmt-fractal-zoom.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Magnetic Ferrofluid",
   "category": "generative",
-  "filename": "gen-magnetic-ferrofluid.wgsl",
   "tags": [
     "abstract",
     "liquid",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-magnetic-ferrofluid",
+  "url": "shaders/gen-magnetic-ferrofluid.wgsl",
+  "features": []
 }

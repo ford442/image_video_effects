@@ -1,7 +1,6 @@
 {
   "name": "Apollonian Gasket",
   "category": "generative",
-  "filename": "gen-apollonian-gasket.wgsl",
   "tags": [
     "generative",
     "fractal",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-apollonian-gasket",
+  "url": "shaders/gen-apollonian-gasket.wgsl",
+  "features": []
 }

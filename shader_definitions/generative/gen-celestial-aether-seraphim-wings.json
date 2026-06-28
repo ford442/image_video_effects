@@ -1,7 +1,6 @@
 {
   "name": "Celestial Aether-Seraphim Wings",
   "category": "generative",
-  "filename": "gen-celestial-aether-seraphim-wings.wgsl",
   "tags": [
     "wings",
     "angelic",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-celestial-aether-seraphim-wings",
+  "url": "shaders/gen-celestial-aether-seraphim-wings.wgsl",
+  "features": []
 }

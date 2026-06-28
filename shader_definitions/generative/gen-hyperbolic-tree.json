@@ -1,7 +1,6 @@
 {
   "name": "Hyperbolic Tree Fractal",
   "category": "generative",
-  "filename": "gen-hyperbolic-tree.wgsl",
   "tags": [
     "generative",
     "hyperbolic",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-hyperbolic-tree",
+  "url": "shaders/gen-hyperbolic-tree.wgsl",
+  "features": []
 }

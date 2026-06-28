@@ -1,7 +1,6 @@
 {
   "name": "Chromatic Metamorphosis",
   "category": "generative",
-  "filename": "gen-chromatic-metamorphosis.wgsl",
   "tags": [
     "metamorphosis",
     "morphing",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-chromatic-metamorphosis",
+  "url": "shaders/gen-chromatic-metamorphosis.wgsl",
+  "features": []
 }

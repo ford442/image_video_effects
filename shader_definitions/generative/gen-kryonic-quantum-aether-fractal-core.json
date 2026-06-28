@@ -1,7 +1,6 @@
 {
   "name": "Kryonic Quantum-Aether Fractal-Core",
   "category": "generative",
-  "filename": "gen-kryonic-quantum-aether-fractal-core.wgsl",
   "tags": [
     "fractal",
     "quantum",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-kryonic-quantum-aether-fractal-core",
+  "url": "shaders/gen-kryonic-quantum-aether-fractal-core.wgsl",
+  "features": []
 }

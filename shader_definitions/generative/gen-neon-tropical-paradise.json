@@ -1,7 +1,6 @@
 {
   "name": "Neon Tropical Paradise",
   "category": "generative",
-  "filename": "gen-neon-tropical-paradise.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -57,5 +56,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neon-tropical-paradise",
+  "url": "shaders/gen-neon-tropical-paradise.wgsl",
+  "features": []
 }

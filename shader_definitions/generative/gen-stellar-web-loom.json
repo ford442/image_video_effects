@@ -1,7 +1,6 @@
 {
   "name": "Stellar Web-Loom",
   "category": "generative",
-  "filename": "gen-stellar-web-loom.wgsl",
   "tags": [
     "cosmic",
     "neuro",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-stellar-web-loom",
+  "url": "shaders/gen-stellar-web-loom.wgsl",
+  "features": []
 }

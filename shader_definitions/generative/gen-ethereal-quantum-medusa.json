@@ -1,7 +1,6 @@
 {
   "name": "Ethereal Quantum Medusa",
   "category": "generative",
-  "filename": "gen-ethereal-quantum-medusa.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-ethereal-quantum-medusa",
+  "url": "shaders/gen-ethereal-quantum-medusa.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Neon Lotus",
   "category": "generative",
-  "filename": "gen-neon-lotus.wgsl",
   "tags": [
     "lotus",
     "flower",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neon-lotus",
+  "url": "shaders/gen-neon-lotus.wgsl",
+  "features": []
 }

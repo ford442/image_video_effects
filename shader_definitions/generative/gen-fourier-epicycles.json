@@ -1,7 +1,6 @@
 {
   "name": "Fourier Epicycles",
   "category": "generative",
-  "filename": "gen-fourier-epicycles.wgsl",
   "tags": [
     "procedural",
     "generative",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-fourier-epicycles",
+  "url": "shaders/gen-fourier-epicycles.wgsl",
+  "features": []
 }

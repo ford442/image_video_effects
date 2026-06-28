@@ -1,7 +1,6 @@
 {
   "name": "Prismatic Quantum-Fractal Nautilus-Engine",
   "category": "generative",
-  "filename": "gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
   "tags": [
     "organic",
     "quantum",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-prismatic-quantum-fractal-nautilus-engine",
+  "url": "shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
+  "features": []
 }

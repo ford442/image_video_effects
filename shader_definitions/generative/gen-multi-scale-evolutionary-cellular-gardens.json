@@ -1,7 +1,6 @@
 {
   "name": "Multi-Scale Evolutionary Cellular Gardens",
   "category": "generative",
-  "filename": "gen-multi-scale-evolutionary-cellular-gardens.wgsl",
   "tags": [
     "generative",
     "cellular-automata",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-multi-scale-evolutionary-cellular-gardens",
+  "url": "shaders/gen-multi-scale-evolutionary-cellular-gardens.wgsl",
+  "features": []
 }

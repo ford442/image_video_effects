@@ -1,7 +1,6 @@
 {
   "name": "Crystalline Mandala Bloom",
   "category": "generative",
-  "filename": "gen-crystalline-mandala-bloom.wgsl",
   "tags": [
     "generative",
     "mandala",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-crystalline-mandala-bloom",
+  "url": "shaders/gen-crystalline-mandala-bloom.wgsl",
+  "features": []
 }

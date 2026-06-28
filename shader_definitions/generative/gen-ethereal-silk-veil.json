@@ -1,7 +1,6 @@
 {
   "name": "Ethereal Silk Veil",
   "category": "generative",
-  "filename": "gen-ethereal-silk-veil.wgsl",
   "tags": [
     "silk",
     "fabric",
@@ -57,5 +56,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-ethereal-silk-veil",
+  "url": "shaders/gen-ethereal-silk-veil.wgsl",
+  "features": []
 }

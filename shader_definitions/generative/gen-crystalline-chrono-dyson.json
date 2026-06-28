@@ -1,4 +1,6 @@
 {
+  "id": "gen-crystalline-chrono-dyson",
+  "url": "shaders/gen-crystalline-chrono-dyson.wgsl",
   "name": "Crystalline Chrono Dyson",
   "category": "generative",
   "filename": "gen-crystalline-chrono-dyson.wgsl",
@@ -60,5 +62,6 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "features": []
 }

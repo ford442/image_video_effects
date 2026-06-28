@@ -1,7 +1,6 @@
 {
   "name": "Quantum Superposition Lattice",
   "category": "generative",
-  "filename": "gen-quantum-superposition.wgsl",
   "tags": [
     "quantum",
     "superposition",
@@ -57,5 +56,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-quantum-superposition",
+  "url": "shaders/gen-quantum-superposition.wgsl",
+  "features": []
 }

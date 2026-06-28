@@ -1,7 +1,6 @@
 {
   "name": "Hyper-Dimensional Bismuth-Matrix",
   "category": "generative",
-  "filename": "gen-hyper-dimensional-bismuth-matrix.wgsl",
   "tags": [
     "bismuth",
     "crystal",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-hyper-dimensional-bismuth-matrix",
+  "url": "shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Neuro-Kinetic Liquid-Gold Lotus",
   "category": "generative",
-  "filename": "gen-neuro-kinetic-liquid-gold-lotus.wgsl",
   "tags": [
     "organic",
     "liquid",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neuro-kinetic-liquid-gold-lotus",
+  "url": "shaders/gen-neuro-kinetic-liquid-gold-lotus.wgsl",
+  "features": []
 }

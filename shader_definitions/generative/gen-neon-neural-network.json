@@ -1,7 +1,6 @@
 {
   "name": "Neon Neural Network",
   "category": "generative",
-  "filename": "gen-neon-neural-network.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -57,5 +56,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neon-neural-network",
+  "url": "shaders/gen-neon-neural-network.wgsl",
+  "features": []
 }

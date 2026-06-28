@@ -1,7 +1,6 @@
 {
   "name": "Neural Network Glow",
   "category": "generative",
-  "filename": "gen-neural-network-glow-synaptic-pulse.wgsl",
   "tags": [
     "neural",
     "glow",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neural-network-glow-synaptic-pulse",
+  "url": "shaders/gen-neural-network-glow-synaptic-pulse.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Radiant Quantum-Crystalline Forge",
   "category": "generative",
-  "filename": "gen-radiant-quantum-crystalline-forge.wgsl",
   "tags": [
     "fractal",
     "crystal",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-radiant-quantum-crystalline-forge",
+  "url": "shaders/gen-radiant-quantum-crystalline-forge.wgsl",
+  "features": []
 }

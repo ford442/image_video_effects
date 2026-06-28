@@ -1,7 +1,6 @@
 {
   "name": "Torus Knot Rainbow",
   "category": "generative",
-  "filename": "gen-torus-knot-rainbow.wgsl",
   "tags": [
     "psychedelic",
     "colorful",
@@ -57,5 +56,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-torus-knot-rainbow",
+  "url": "shaders/gen-torus-knot-rainbow.wgsl",
+  "features": []
 }

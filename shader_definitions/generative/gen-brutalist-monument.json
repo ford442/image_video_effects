@@ -1,7 +1,6 @@
 {
   "name": "Brutalist Monument",
   "category": "generative",
-  "filename": "gen-brutalist-monument.wgsl",
   "tags": [
     "brutalism",
     "architecture",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-brutalist-monument",
+  "url": "shaders/gen-brutalist-monument.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Micro-Cosmos",
   "category": "generative",
-  "filename": "gen-micro-cosmos.wgsl",
   "tags": [
     "biological",
     "organic",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-micro-cosmos",
+  "url": "shaders/gen-micro-cosmos.wgsl",
+  "features": []
 }

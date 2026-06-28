@@ -1,7 +1,6 @@
 {
   "name": "Astro-Kinetic Chrono-Orrery",
   "category": "generative",
-  "filename": "gen-astro-kinetic-chrono-orrery.wgsl",
   "tags": [
     "cosmic",
     "mechanical",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-astro-kinetic-chrono-orrery",
+  "url": "shaders/gen-astro-kinetic-chrono-orrery.wgsl",
+  "features": []
 }

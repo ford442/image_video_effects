@@ -1,7 +1,6 @@
 {
   "name": "Feedback Echo Chamber",
   "category": "generative",
-  "filename": "gen-feedback-echo-chamber.wgsl",
   "tags": [
     "temporal",
     "echo",
@@ -58,5 +57,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-feedback-echo-chamber",
+  "url": "shaders/gen-feedback-echo-chamber.wgsl",
+  "features": []
 }

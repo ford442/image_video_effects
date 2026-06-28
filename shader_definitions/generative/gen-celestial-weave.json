@@ -1,7 +1,6 @@
 {
   "name": "Celestial Weave",
   "category": "generative",
-  "filename": "gen-celestial-weave.wgsl",
   "tags": [
     "generative",
     "weave",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-celestial-weave",
+  "url": "shaders/gen-celestial-weave.wgsl",
+  "features": []
 }

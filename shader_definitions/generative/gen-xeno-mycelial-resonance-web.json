@@ -1,7 +1,6 @@
 {
   "name": "Xeno-Mycelial Resonance-Web",
   "category": "generative",
-  "filename": "gen-xeno-mycelial-resonance-web.wgsl",
   "tags": [
     "organic",
     "mycelium",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-xeno-mycelial-resonance-web",
+  "url": "shaders/gen-xeno-mycelial-resonance-web.wgsl",
+  "features": []
 }

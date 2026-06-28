@@ -1,7 +1,6 @@
 {
   "name": "Voronoi Crystal",
   "category": "generative",
-  "filename": "gen-voronoi-crystal.wgsl",
   "tags": [
     "generative",
     "voronoi",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-voronoi-crystal",
+  "url": "shaders/gen-voronoi-crystal.wgsl",
+  "features": []
 }

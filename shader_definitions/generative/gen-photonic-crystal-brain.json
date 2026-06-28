@@ -1,7 +1,6 @@
 {
   "name": "Photonic Crystal-Brain",
   "category": "generative",
-  "filename": "gen-photonic-crystal-brain.wgsl",
   "tags": [
     "neural",
     "crystal",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-photonic-crystal-brain",
+  "url": "shaders/gen-photonic-crystal-brain.wgsl",
+  "features": []
 }

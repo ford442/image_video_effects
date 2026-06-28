@@ -1,7 +1,6 @@
 {
   "name": "Dragon Curve",
   "category": "generative",
-  "filename": "gen-dragon-curve.wgsl",
   "tags": [
     "fractal",
     "neon",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-dragon-curve",
+  "url": "shaders/gen-dragon-curve.wgsl",
+  "features": []
 }

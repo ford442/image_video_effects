@@ -1,7 +1,6 @@
 {
   "name": "Crystal Lattice Growth",
   "category": "generative",
-  "filename": "gen-crystal-lattice-growth.wgsl",
   "tags": [
     "crystal",
     "fractal",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-crystal-lattice-growth",
+  "url": "shaders/gen-crystal-lattice-growth.wgsl",
+  "features": []
 }

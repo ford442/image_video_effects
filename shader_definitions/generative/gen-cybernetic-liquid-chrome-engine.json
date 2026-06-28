@@ -1,7 +1,6 @@
 {
   "name": "Cybernetic Liquid-Chrome Engine",
   "category": "generative",
-  "filename": "gen-cybernetic-liquid-chrome-engine.wgsl",
   "tags": [
     "mechanical",
     "liquid-metal",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cybernetic-liquid-chrome-engine",
+  "url": "shaders/gen-cybernetic-liquid-chrome-engine.wgsl",
+  "features": []
 }

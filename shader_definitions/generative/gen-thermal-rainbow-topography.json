@@ -1,7 +1,6 @@
 {
   "name": "Thermal Rainbow Topography",
   "category": "generative",
-  "filename": "gen-thermal-rainbow-topography.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-thermal-rainbow-topography",
+  "url": "shaders/gen-thermal-rainbow-topography.wgsl",
+  "features": []
 }

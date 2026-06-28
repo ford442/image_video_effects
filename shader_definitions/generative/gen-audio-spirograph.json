@@ -1,7 +1,6 @@
 {
   "name": "Audio Spirograph",
   "category": "generative",
-  "filename": "gen-audio-spirograph.wgsl",
   "tags": [
     "generative",
     "audio-reactive",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-audio-spirograph",
+  "url": "shaders/gen-audio-spirograph.wgsl",
+  "features": []
 }

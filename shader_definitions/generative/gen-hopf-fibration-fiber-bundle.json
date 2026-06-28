@@ -1,7 +1,6 @@
 {
   "name": "Hopf Fibration Fiber Bundle",
   "category": "generative",
-  "filename": "gen-hopf-fibration-fiber-bundle.wgsl",
   "tags": [
     "hopf",
     "fibration",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-hopf-fibration-fiber-bundle",
+  "url": "shaders/gen-hopf-fibration-fiber-bundle.wgsl",
+  "features": []
 }

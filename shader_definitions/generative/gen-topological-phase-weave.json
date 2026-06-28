@@ -1,7 +1,6 @@
 {
   "name": "Topological Phase Weave",
   "category": "generative",
-  "filename": "gen-topological-phase-weave.wgsl",
   "tags": [
     "generative",
     "topology",
@@ -59,5 +58,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-topological-phase-weave",
+  "url": "shaders/gen-topological-phase-weave.wgsl",
+  "features": []
 }

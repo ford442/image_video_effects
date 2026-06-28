@@ -1,7 +1,6 @@
 {
   "name": "Cyber-Organic Liquid-Neon Pulsar",
   "category": "generative",
-  "filename": "gen-cyber-organic-liquid-neon-pulsar.wgsl",
   "tags": [
     "neon",
     "pulsar",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cyber-organic-liquid-neon-pulsar",
+  "url": "shaders/gen-cyber-organic-liquid-neon-pulsar.wgsl",
+  "features": []
 }

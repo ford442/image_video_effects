@@ -1,7 +1,6 @@
 {
   "name": "Celestial Prism-Orchid",
   "category": "generative",
-  "filename": "gen-celestial-prism-orchid.wgsl",
   "tags": [
     "organic",
     "cosmic",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-celestial-prism-orchid",
+  "url": "shaders/gen-celestial-prism-orchid.wgsl",
+  "features": []
 }

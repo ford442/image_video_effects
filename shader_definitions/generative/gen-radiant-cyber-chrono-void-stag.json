@@ -1,7 +1,6 @@
 {
   "name": "Radiant Cyber-Chrono Void-Stag",
   "category": "generative",
-  "filename": "gen-radiant-cyber-chrono-void-stag.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-radiant-cyber-chrono-void-stag",
+  "url": "shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
+  "features": []
 }

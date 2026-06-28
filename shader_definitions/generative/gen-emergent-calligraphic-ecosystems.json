@@ -1,7 +1,6 @@
 {
   "name": "Emergent Calligraphic Ecosystems",
   "category": "generative",
-  "filename": "gen-emergent-calligraphic-ecosystems.wgsl",
   "tags": [
     "generative",
     "calligraphy",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-emergent-calligraphic-ecosystems",
+  "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
+  "features": []
 }

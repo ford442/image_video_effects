@@ -1,7 +1,6 @@
 {
   "name": "Radiant Chrono-Glass Nautilus",
   "category": "generative",
-  "filename": "gen-radiant-chrono-glass-nautilus.wgsl",
   "tags": [
     "fractal",
     "nautilus",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-radiant-chrono-glass-nautilus",
+  "url": "shaders/gen-radiant-chrono-glass-nautilus.wgsl",
+  "features": []
 }

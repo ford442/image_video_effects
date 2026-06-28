@@ -1,7 +1,6 @@
 {
   "name": "IFS Fractal Flame",
   "category": "generative",
-  "filename": "gen-ifs-fractal-flame.wgsl",
   "tags": [
     "fractal",
     "flame",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-ifs-fractal-flame",
+  "url": "shaders/gen-ifs-fractal-flame.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Aurora Borealis Synthesis",
   "category": "generative",
-  "filename": "gen-aurora-borealis-synthesis.wgsl",
   "tags": [
     "aurora",
     "volumetric",
@@ -50,5 +49,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-aurora-borealis-synthesis",
+  "url": "shaders/gen-aurora-borealis-synthesis.wgsl",
+  "features": []
 }

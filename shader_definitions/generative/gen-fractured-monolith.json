@@ -1,7 +1,6 @@
 {
   "name": "Fractured Monolith",
   "category": "generative",
-  "filename": "gen-fractured-monolith.wgsl",
   "tags": [
     "monolith",
     "floating",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-fractured-monolith",
+  "url": "shaders/gen-fractured-monolith.wgsl",
+  "features": []
 }

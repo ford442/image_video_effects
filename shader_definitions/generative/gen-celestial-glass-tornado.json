@@ -1,7 +1,6 @@
 {
   "name": "Celestial Glass Tornado",
   "category": "generative",
-  "filename": "gen-celestial-glass-tornado.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-celestial-glass-tornado",
+  "url": "shaders/gen-celestial-glass-tornado.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Abyssal Leviathan-Scales",
   "category": "generative",
-  "filename": "gen-abyssal-leviathan-scales.wgsl",
   "tags": [
     "organic",
     "mechanical",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-abyssal-leviathan-scales",
+  "url": "shaders/gen-abyssal-leviathan-scales.wgsl",
+  "features": []
 }

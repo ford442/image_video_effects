@@ -1,7 +1,6 @@
 {
   "name": "Bio-Luminescent Jelly",
   "category": "generative",
-  "filename": "gen-bio-luminescent-jelly.wgsl",
   "tags": [
     "jellyfish",
     "bioluminescence",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-bio-luminescent-jelly",
+  "url": "shaders/gen-bio-luminescent-jelly.wgsl",
+  "features": []
 }

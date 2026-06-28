@@ -1,7 +1,6 @@
 {
   "name": "Sentient Cyber-Aurora Void-Owl",
   "category": "generative",
-  "filename": "gen-sentient-cyber-aurora-void-owl.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-sentient-cyber-aurora-void-owl",
+  "url": "shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
+  "features": []
 }

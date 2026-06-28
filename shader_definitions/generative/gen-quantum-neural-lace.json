@@ -1,7 +1,6 @@
 {
   "name": "Quantum Neural Lace",
   "category": "generative",
-  "filename": "gen-quantum-neural-lace.wgsl",
   "tags": [
     "cyber",
     "network",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-quantum-neural-lace",
+  "url": "shaders/gen-quantum-neural-lace.wgsl",
+  "features": []
 }

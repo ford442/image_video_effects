@@ -1,7 +1,6 @@
 {
   "name": "Quantum-Chrome Serpent Ouroboros",
   "category": "generative",
-  "filename": "gen-quantum-chrome-serpent-ouroboros.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-quantum-chrome-serpent-ouroboros",
+  "url": "shaders/gen-quantum-chrome-serpent-ouroboros.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Auroral Ferrofluid-Monolith",
   "category": "generative",
-  "filename": "gen-auroral-ferrofluid-monolith.wgsl",
   "tags": [
     "ferrofluid",
     "monolith",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-auroral-ferrofluid-monolith",
+  "url": "shaders/gen-auroral-ferrofluid-monolith.wgsl",
+  "features": []
 }

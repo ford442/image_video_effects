@@ -1,7 +1,6 @@
 {
   "name": "Prismatic Cyber-Auroral Manta-Swarm",
   "category": "generative",
-  "filename": "gen-prismatic-cyber-auroral-manta-swarm.wgsl",
   "tags": [
     "aurora",
     "swarm",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-prismatic-cyber-auroral-manta-swarm",
+  "url": "shaders/gen-prismatic-cyber-auroral-manta-swarm.wgsl",
+  "features": []
 }

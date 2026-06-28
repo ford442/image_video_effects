@@ -1,7 +1,6 @@
 {
   "name": "Nebula Light-Trail Swarm",
   "category": "generative",
-  "filename": "gen-nebula-light-trail-swarm.wgsl",
   "tags": [
     "nebula",
     "particles",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-nebula-light-trail-swarm",
+  "url": "shaders/gen-nebula-light-trail-swarm.wgsl",
+  "features": []
 }

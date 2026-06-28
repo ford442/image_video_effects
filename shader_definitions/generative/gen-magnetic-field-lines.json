@@ -1,7 +1,6 @@
 {
   "name": "Magnetic Field Lines",
   "category": "generative",
-  "filename": "gen-magnetic-field-lines.wgsl",
   "tags": [
     "generative",
     "physics",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-magnetic-field-lines",
+  "url": "shaders/gen-magnetic-field-lines.wgsl",
+  "features": []
 }

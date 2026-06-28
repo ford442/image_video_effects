@@ -1,7 +1,6 @@
 {
   "name": "Cybernetic Ferro-Coral",
   "category": "generative",
-  "filename": "gen-cybernetic-ferro-coral.wgsl",
   "tags": [
     "biomechanical",
     "ferrofluid",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cybernetic-ferro-coral",
+  "url": "shaders/gen-cybernetic-ferro-coral.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Eldritch-Quantum Fractal-Eye",
   "category": "generative",
-  "filename": "gen-eldritch-quantum-fractal-eye.wgsl",
   "tags": [
     "fractal",
     "eldritch",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-eldritch-quantum-fractal-eye",
+  "url": "shaders/gen-eldritch-quantum-fractal-eye.wgsl",
+  "features": []
 }

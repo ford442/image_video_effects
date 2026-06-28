@@ -1,7 +1,6 @@
 {
   "name": "Xeno-Botanical Synth-Flora",
   "category": "generative",
-  "filename": "gen-xeno-botanical-synth-flora.wgsl",
   "tags": [
     "organic",
     "botanical",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-xeno-botanical-synth-flora",
+  "url": "shaders/gen-xeno-botanical-synth-flora.wgsl",
+  "features": []
 }

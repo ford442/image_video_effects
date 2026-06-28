@@ -1,7 +1,6 @@
 {
   "name": "Protocell Division",
   "category": "generative",
-  "filename": "gen-protocell-division.wgsl",
   "tags": [
     "organic",
     "biology",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-protocell-division",
+  "url": "shaders/gen-protocell-division.wgsl",
+  "features": []
 }

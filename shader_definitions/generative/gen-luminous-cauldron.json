@@ -1,7 +1,6 @@
 {
   "name": "Luminous Cauldron",
   "category": "generative",
-  "filename": "gen-luminous-cauldron.wgsl",
   "tags": [
     "generative",
     "cauldron",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-luminous-cauldron",
+  "url": "shaders/gen-luminous-cauldron.wgsl",
+  "features": []
 }

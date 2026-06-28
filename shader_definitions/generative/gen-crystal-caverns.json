@@ -1,7 +1,6 @@
 {
   "name": "Crystal Caverns",
   "category": "generative",
-  "filename": "gen-crystal-caverns.wgsl",
   "tags": [
     "crystal",
     "cave",
@@ -59,5 +58,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-crystal-caverns",
+  "url": "shaders/gen-crystal-caverns.wgsl",
+  "features": []
 }

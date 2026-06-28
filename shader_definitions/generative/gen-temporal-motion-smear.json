@@ -1,7 +1,6 @@
 {
   "name": "Temporal Motion Smear",
   "category": "generative",
-  "filename": "gen-temporal-motion-smear.wgsl",
   "tags": [
     "temporal",
     "motion",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-temporal-motion-smear",
+  "url": "shaders/gen-temporal-motion-smear.wgsl",
+  "features": []
 }

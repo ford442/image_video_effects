@@ -1,7 +1,6 @@
 {
   "name": "Luminescent Quantum-Void Anglerfish",
   "category": "generative",
-  "filename": "gen-luminescent-quantum-void-anglerfish.wgsl",
   "tags": [
     "cosmic",
     "anglerfish",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-luminescent-quantum-void-anglerfish",
+  "url": "shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
+  "features": []
 }

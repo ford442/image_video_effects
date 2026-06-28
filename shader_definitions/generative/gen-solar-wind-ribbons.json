@@ -1,7 +1,6 @@
 {
   "name": "Solar Wind Ribbons",
   "category": "generative",
-  "filename": "gen-solar-wind-ribbons.wgsl",
   "tags": [
     "solar",
     "aurora",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-solar-wind-ribbons",
+  "url": "shaders/gen-solar-wind-ribbons.wgsl",
+  "features": []
 }

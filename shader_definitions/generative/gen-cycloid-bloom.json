@@ -1,7 +1,6 @@
 {
   "name": "Cycloid Bloom",
   "category": "generative",
-  "filename": "gen-cycloid-bloom.wgsl",
   "tags": [
     "psychedelic",
     "colorful",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cycloid-bloom",
+  "url": "shaders/gen-cycloid-bloom.wgsl",
+  "features": []
 }

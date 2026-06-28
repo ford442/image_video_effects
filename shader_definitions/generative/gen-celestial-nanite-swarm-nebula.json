@@ -1,7 +1,6 @@
 {
   "name": "Celestial Nanite-Swarm Nebula",
   "category": "generative",
-  "filename": "gen-celestial-nanite-swarm-nebula.wgsl",
   "tags": [
     "cosmic",
     "particle-system",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-celestial-nanite-swarm-nebula",
+  "url": "shaders/gen-celestial-nanite-swarm-nebula.wgsl",
+  "features": []
 }

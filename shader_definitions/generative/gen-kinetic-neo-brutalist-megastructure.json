@@ -1,7 +1,6 @@
 {
   "name": "Kinetic Neo-Brutalist Megastructure",
   "category": "generative",
-  "filename": "gen-kinetic-neo-brutalist-megastructure.wgsl",
   "tags": [
     "architecture",
     "cyberpunk",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-kinetic-neo-brutalist-megastructure",
+  "url": "shaders/gen-kinetic-neo-brutalist-megastructure.wgsl",
+  "features": []
 }

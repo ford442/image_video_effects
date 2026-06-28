@@ -1,7 +1,6 @@
 {
   "name": "Ghost Flame",
   "category": "generative",
-  "filename": "gen-ghost-flame.wgsl",
   "tags": [
     "flame",
     "fire",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-ghost-flame",
+  "url": "shaders/gen-ghost-flame.wgsl",
+  "features": []
 }

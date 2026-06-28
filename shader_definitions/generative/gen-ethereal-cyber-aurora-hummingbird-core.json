@@ -1,7 +1,6 @@
 {
   "name": "Ethereal Cyber-Aurora Hummingbird-Core",
   "category": "generative",
-  "filename": "gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
   "tags": [
     "organic",
     "biomechanical",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-ethereal-cyber-aurora-hummingbird-core",
+  "url": "shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
+  "features": []
 }

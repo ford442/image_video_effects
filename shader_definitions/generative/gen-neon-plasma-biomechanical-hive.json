@@ -1,7 +1,6 @@
 {
   "name": "Neon-Plasma Biomechanical Hive",
   "category": "generative",
-  "filename": "gen-neon-plasma-biomechanical-hive.wgsl",
   "tags": [
     "biomechanical",
     "neon",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neon-plasma-biomechanical-hive",
+  "url": "shaders/gen-neon-plasma-biomechanical-hive.wgsl",
+  "features": []
 }

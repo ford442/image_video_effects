@@ -1,7 +1,6 @@
 {
   "name": "Langton's Ant",
   "category": "generative",
-  "filename": "gen-langton-ant.wgsl",
   "tags": [
     "langton",
     "ant",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-langton-ant",
+  "url": "shaders/gen-langton-ant.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Phyllotaxis Galaxy Spiral",
   "category": "generative",
-  "filename": "gen-phyllotaxis-galaxy-spiral.wgsl",
   "tags": [
     "galaxy",
     "spiral",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-phyllotaxis-galaxy-spiral",
+  "url": "shaders/gen-phyllotaxis-galaxy-spiral.wgsl",
+  "features": []
 }

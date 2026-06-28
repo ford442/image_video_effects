@@ -1,7 +1,6 @@
 {
   "name": "Koch Snowflake Storm",
   "category": "generative",
-  "filename": "gen-koch-snowflake-storm.wgsl",
   "tags": [
     "generative",
     "fractal",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-koch-snowflake-storm",
+  "url": "shaders/gen-koch-snowflake-storm.wgsl",
+  "features": []
 }

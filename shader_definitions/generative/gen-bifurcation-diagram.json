@@ -1,7 +1,6 @@
 {
   "name": "Bifurcation Diagram",
   "category": "generative",
-  "filename": "gen-bifurcation-diagram.wgsl",
   "tags": [
     "generative",
     "chaos",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-bifurcation-diagram",
+  "url": "shaders/gen-bifurcation-diagram.wgsl",
+  "features": []
 }

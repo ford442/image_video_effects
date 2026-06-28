@@ -1,10 +1,20 @@
 {
   "name": "Cryogenic Frost-Plasma Matrix",
   "category": "generative",
-  "filename": "gen-cryogenic-frost-plasma-matrix.wgsl",
-  "tags": ["crystal", "ice", "plasma", "fractal", "raymarching", "audio-reactive"],
+  "tags": [
+    "crystal",
+    "ice",
+    "plasma",
+    "fractal",
+    "raymarching",
+    "audio-reactive"
+  ],
   "description": "An infinitely shattering and reforming matrix of absolute-zero hyper-fractals that bleed iridescent thermal plasma when fractured by heavy bass frequencies.",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -41,5 +51,8 @@
   ],
   "supportsDepth": false,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cryogenic-frost-plasma-matrix",
+  "url": "shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Sentient Aether-Flora Biosphere",
   "category": "generative",
-  "filename": "gen-sentient-aether-flora-biosphere.wgsl",
   "tags": [
     "flora",
     "organic",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-sentient-aether-flora-biosphere",
+  "url": "shaders/gen-sentient-aether-flora-biosphere.wgsl",
+  "features": []
 }

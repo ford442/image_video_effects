@@ -1,7 +1,6 @@
 {
   "name": "Lorenz Attractor",
   "category": "generative",
-  "filename": "gen-lorenz-attractor.wgsl",
   "tags": [
     "chaos",
     "strange-attractor",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-lorenz-attractor",
+  "url": "shaders/gen-lorenz-attractor.wgsl",
+  "features": []
 }

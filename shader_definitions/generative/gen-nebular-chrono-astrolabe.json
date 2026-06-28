@@ -1,7 +1,6 @@
 {
   "name": "Nebular Chrono Astrolabe",
   "category": "generative",
-  "filename": "gen-nebular-chrono-astrolabe.wgsl",
   "tags": [
     "generative",
     "nebula",
@@ -58,5 +57,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-nebular-chrono-astrolabe",
+  "url": "shaders/gen-nebular-chrono-astrolabe.wgsl",
+  "features": []
 }

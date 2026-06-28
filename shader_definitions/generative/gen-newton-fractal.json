@@ -1,7 +1,6 @@
 {
   "name": "Newton Fractal",
   "category": "generative",
-  "filename": "gen-newton-fractal.wgsl",
   "tags": [
     "generative",
     "fractal",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-newton-fractal",
+  "url": "shaders/gen-newton-fractal.wgsl",
+  "features": []
 }

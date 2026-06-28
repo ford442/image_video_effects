@@ -1,7 +1,6 @@
 {
   "name": "Magnetic Field Warp",
   "category": "generative",
-  "filename": "gen-magnetic-field-warp.wgsl",
   "tags": [
     "magnetic",
     "warp",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-magnetic-field-warp",
+  "url": "shaders/gen-magnetic-field-warp.wgsl",
+  "features": []
 }

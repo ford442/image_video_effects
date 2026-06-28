@@ -1,7 +1,6 @@
 {
   "name": "Holographic Plasma-Geode",
   "category": "generative",
-  "filename": "gen-holographic-plasma-geode.wgsl",
   "tags": [
     "crystal",
     "plasma",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-holographic-plasma-geode",
+  "url": "shaders/gen-holographic-plasma-geode.wgsl",
+  "features": []
 }

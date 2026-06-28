@@ -1,7 +1,6 @@
 {
   "name": "Hyper Labyrinth",
   "category": "generative",
-  "filename": "gen-hyper-labyrinth.wgsl",
   "tags": [
     "neon",
     "cyber",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-hyper-labyrinth",
+  "url": "shaders/gen-hyper-labyrinth.wgsl",
+  "features": []
 }

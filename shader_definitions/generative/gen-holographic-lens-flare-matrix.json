@@ -1,7 +1,6 @@
 {
   "name": "Holographic Lens-Flare Matrix",
   "category": "generative",
-  "filename": "gen-holographic-lens-flare-matrix.wgsl",
   "tags": [
     "generative",
     "holographic",
@@ -49,5 +48,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-holographic-lens-flare-matrix",
+  "url": "shaders/gen-holographic-lens-flare-matrix.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Neuro-Fluid Plasma-Lotus",
   "category": "generative",
-  "filename": "gen-neuro-fluid-plasma-lotus.wgsl",
   "tags": [
     "organic",
     "floral",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neuro-fluid-plasma-lotus",
+  "url": "shaders/gen-neuro-fluid-plasma-lotus.wgsl",
+  "features": []
 }

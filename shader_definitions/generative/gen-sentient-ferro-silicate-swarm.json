@@ -1,10 +1,19 @@
 {
   "name": "Sentient Ferro-Silicate Swarm",
   "category": "generative",
-  "filename": "gen-sentient-ferro-silicate-swarm.wgsl",
-  "tags": ["mechanical", "particle-system", "audio-reactive", "fluid-dynamics", "fractal"],
+  "tags": [
+    "mechanical",
+    "particle-system",
+    "audio-reactive",
+    "fluid-dynamics",
+    "fractal"
+  ],
   "description": "A hyper-dynamic, liquid-metal particle swarm that self-assembles into brutalist geometric architectures before dissolving back into a chaotic, churning ferro-fluid storm.",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -41,5 +50,8 @@
   ],
   "supportsDepth": false,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-sentient-ferro-silicate-swarm",
+  "url": "shaders/gen-sentient-ferro-silicate-swarm.wgsl",
+  "features": []
 }

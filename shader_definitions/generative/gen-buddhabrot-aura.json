@@ -1,7 +1,6 @@
 {
   "name": "Buddhabrot Aura",
   "category": "generative",
-  "filename": "gen-buddhabrot-aura.wgsl",
   "tags": [
     "buddhabrot",
     "fractal",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-buddhabrot-aura",
+  "url": "shaders/gen-buddhabrot-aura.wgsl",
+  "features": []
 }

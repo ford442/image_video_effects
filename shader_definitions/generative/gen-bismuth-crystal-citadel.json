@@ -1,7 +1,6 @@
 {
   "name": "Bismuth Crystal Citadel",
   "category": "generative",
-  "filename": "gen-bismuth-crystal-citadel.wgsl",
   "tags": [
     "generative",
     "raymarch",
@@ -58,5 +57,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-bismuth-crystal-citadel",
+  "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
+  "features": []
 }

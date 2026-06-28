@@ -1,7 +1,6 @@
 {
   "name": "3D Sierpinski Chaos Game",
   "category": "generative",
-  "filename": "gen-3d-sierpinski-chaos.wgsl",
   "tags": [
     "fractal",
     "sierpinski",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-3d-sierpinski-chaos",
+  "url": "shaders/gen-3d-sierpinski-chaos.wgsl",
+  "features": []
 }

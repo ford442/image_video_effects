@@ -1,7 +1,6 @@
 {
   "name": "Hyperbolic Tessellation Engine",
   "category": "generative",
-  "filename": "gen-hyperbolic-tessellation.wgsl",
   "tags": [
     "hyperbolic",
     "tessellation",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-hyperbolic-tessellation",
+  "url": "shaders/gen-hyperbolic-tessellation.wgsl",
+  "features": []
 }

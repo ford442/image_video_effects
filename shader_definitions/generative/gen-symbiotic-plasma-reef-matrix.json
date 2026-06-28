@@ -1,7 +1,6 @@
 {
   "name": "Symbiotic Plasma-Reef Matrix",
   "category": "generative",
-  "filename": "gen-symbiotic-plasma-reef-matrix.wgsl",
   "tags": [
     "organic",
     "ocean",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-symbiotic-plasma-reef-matrix",
+  "url": "shaders/gen-symbiotic-plasma-reef-matrix.wgsl",
+  "features": []
 }

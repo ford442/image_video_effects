@@ -1,7 +1,6 @@
 {
   "name": "Ethereal-Aurora Ghost-Orchid",
   "category": "generative",
-  "filename": "gen-ethereal-aurora-ghost-orchid.wgsl",
   "tags": [
     "generative",
     "aurora",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-ethereal-aurora-ghost-orchid",
+  "url": "shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
+  "features": []
 }

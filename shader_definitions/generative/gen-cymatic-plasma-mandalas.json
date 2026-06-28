@@ -1,7 +1,6 @@
 {
   "name": "Cymatic Plasma-Mandalas",
   "category": "generative",
-  "filename": "gen-cymatic-plasma-mandalas.wgsl",
   "tags": [
     "generative",
     "mandala",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cymatic-plasma-mandalas",
+  "url": "shaders/gen-cymatic-plasma-mandalas.wgsl",
+  "features": []
 }

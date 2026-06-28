@@ -1,7 +1,6 @@
 {
   "name": "Physarum (Slime Mold) Sacred Geometry",
   "category": "generative",
-  "filename": "gen-physarum-sacred-geometry.wgsl",
   "tags": [
     "organic",
     "simulation",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-physarum-sacred-geometry",
+  "url": "shaders/gen-physarum-sacred-geometry.wgsl",
+  "features": []
 }

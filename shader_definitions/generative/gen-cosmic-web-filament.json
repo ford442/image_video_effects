@@ -1,7 +1,6 @@
 {
   "name": "Cosmic Web Filament",
   "category": "generative",
-  "filename": "gen-cosmic-web-filament.wgsl",
   "tags": [
     "generative",
     "cosmic",
@@ -58,5 +57,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cosmic-web-filament",
+  "url": "shaders/gen-cosmic-web-filament.wgsl",
+  "features": []
 }

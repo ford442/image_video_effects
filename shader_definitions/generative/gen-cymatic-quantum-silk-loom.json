@@ -1,7 +1,6 @@
 {
   "name": "Cymatic Quantum-Silk Loom",
   "category": "generative",
-  "filename": "gen-cymatic-quantum-silk-loom.wgsl",
   "tags": [
     "organic",
     "quantum",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cymatic-quantum-silk-loom",
+  "url": "shaders/gen-cymatic-quantum-silk-loom.wgsl",
+  "features": []
 }

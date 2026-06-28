@@ -1,7 +1,6 @@
 {
   "name": "Neon Acid Geometry",
   "category": "generative",
-  "filename": "gen-neon-acid-geometry.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neon-acid-geometry",
+  "url": "shaders/gen-neon-acid-geometry.wgsl",
+  "features": []
 }

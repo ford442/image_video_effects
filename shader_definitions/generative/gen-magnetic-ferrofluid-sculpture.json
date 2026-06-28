@@ -1,7 +1,6 @@
 {
   "name": "Magnetic Ferrofluid-Sculpture",
   "category": "generative",
-  "filename": "gen-magnetic-ferrofluid-sculpture.wgsl",
   "tags": [
     "ferrofluid",
     "magnetic",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-magnetic-ferrofluid-sculpture",
+  "url": "shaders/gen-magnetic-ferrofluid-sculpture.wgsl",
+  "features": []
 }

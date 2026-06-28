@@ -1,7 +1,6 @@
 {
   "name": "Quantum-Entangled Ferrofluid Engine",
   "category": "generative",
-  "filename": "gen-quantum-entangled-ferrofluid-engine.wgsl",
   "tags": [
     "quantum",
     "ferrofluid",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-quantum-entangled-ferrofluid-engine",
+  "url": "shaders/gen-quantum-entangled-ferrofluid-engine.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Stardust Nebula",
   "category": "generative",
-  "filename": "gen-stardust-nebula.wgsl",
   "tags": [
     "nebula",
     "space",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-stardust-nebula",
+  "url": "shaders/gen-stardust-nebula.wgsl",
+  "features": []
 }

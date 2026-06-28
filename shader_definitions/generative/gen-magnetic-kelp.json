@@ -1,7 +1,6 @@
 {
   "name": "Magnetic Kelp",
   "category": "generative",
-  "filename": "gen-magnetic-kelp.wgsl",
   "tags": [
     "generative",
     "kelp",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-magnetic-kelp",
+  "url": "shaders/gen-magnetic-kelp.wgsl",
+  "features": []
 }

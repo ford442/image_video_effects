@@ -1,7 +1,6 @@
 {
   "name": "Gravito-Phononic Accretion",
   "category": "generative",
-  "filename": "gen-gravito-phononic-accretion.wgsl",
   "tags": [
     "generative",
     "gravity",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-gravito-phononic-accretion",
+  "url": "shaders/gen-gravito-phononic-accretion.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Stable Fluids (Jos Stam)",
   "category": "generative",
-  "filename": "gen-stable-fluids-jos-stam.wgsl",
   "tags": [
     "fluid",
     "simulation",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-stable-fluids-jos-stam",
+  "url": "shaders/gen-stable-fluids-jos-stam.wgsl",
+  "features": []
 }

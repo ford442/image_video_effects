@@ -1,7 +1,6 @@
 {
   "name": "Coral Reef Colony",
   "category": "generative",
-  "filename": "gen-coral-reef-colony.wgsl",
   "tags": [
     "coral",
     "organic",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-coral-reef-colony",
+  "url": "shaders/gen-coral-reef-colony.wgsl",
+  "features": []
 }

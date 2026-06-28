@@ -1,7 +1,6 @@
 {
   "name": "Stellar Plasma-Ouroboros",
   "category": "generative",
-  "filename": "gen-stellar-plasma-ouroboros.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-stellar-plasma-ouroboros",
+  "url": "shaders/gen-stellar-plasma-ouroboros.wgsl",
+  "features": []
 }

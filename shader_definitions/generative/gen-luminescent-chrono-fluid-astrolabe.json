@@ -1,7 +1,6 @@
 {
   "name": "Luminescent Chrono-Fluid Astrolabe",
   "category": "generative",
-  "filename": "gen-luminescent-chrono-fluid-astrolabe.wgsl",
   "tags": [
     "cosmic",
     "mechanical",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-luminescent-chrono-fluid-astrolabe",
+  "url": "shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl",
+  "features": []
 }

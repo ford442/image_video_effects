@@ -1,7 +1,6 @@
 {
   "name": "Turing Morphogenesis",
   "category": "generative",
-  "filename": "gen-turing-morphogenesis.wgsl",
   "tags": [
     "turing",
     "reaction-diffusion",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-turing-morphogenesis",
+  "url": "shaders/gen-turing-morphogenesis.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Symbiotic Chrono-Mycelium Engine",
   "category": "generative",
-  "filename": "gen-symbiotic-chrono-mycelium-engine.wgsl",
   "tags": [
     "organic",
     "mechanical",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-symbiotic-chrono-mycelium-engine",
+  "url": "shaders/gen-symbiotic-chrono-mycelium-engine.wgsl",
+  "features": []
 }

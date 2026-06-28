@@ -1,7 +1,6 @@
 {
   "name": "Belousov-Zhabotinsky Reaction",
   "category": "generative",
-  "filename": "gen-belousov-zhabotinsky.wgsl",
   "tags": [
     "procedural",
     "generative",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-belousov-zhabotinsky",
+  "url": "shaders/gen-belousov-zhabotinsky.wgsl",
+  "features": []
 }

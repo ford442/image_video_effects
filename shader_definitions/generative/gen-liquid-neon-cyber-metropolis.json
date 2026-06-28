@@ -1,7 +1,6 @@
 {
   "name": "Liquid-Neon Cyber-Metropolis",
   "category": "generative",
-  "filename": "gen-liquid-neon-cyber-metropolis.wgsl",
   "tags": [
     "cyberpunk",
     "neon",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-liquid-neon-cyber-metropolis",
+  "url": "shaders/gen-liquid-neon-cyber-metropolis.wgsl",
+  "features": []
 }

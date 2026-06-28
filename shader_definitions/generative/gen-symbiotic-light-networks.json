@@ -1,7 +1,6 @@
 {
   "name": "Symbiotic Light Networks",
   "category": "generative",
-  "filename": "gen-symbiotic-light-networks.wgsl",
   "tags": [
     "generative",
     "network",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-symbiotic-light-networks",
+  "url": "shaders/gen-symbiotic-light-networks.wgsl",
+  "features": []
 }

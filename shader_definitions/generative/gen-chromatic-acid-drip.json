@@ -1,7 +1,6 @@
 {
   "name": "Chromatic Acid Drip",
   "category": "generative",
-  "filename": "gen-chromatic-acid-drip.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-chromatic-acid-drip",
+  "url": "shaders/gen-chromatic-acid-drip.wgsl",
+  "features": []
 }

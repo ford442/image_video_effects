@@ -1,7 +1,6 @@
 {
   "name": "Lichtenberg Storm",
   "category": "generative",
-  "filename": "gen-lichtenberg-storm.wgsl",
   "tags": [
     "generative",
     "procedural",
@@ -57,5 +56,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-lichtenberg-storm",
+  "url": "shaders/gen-lichtenberg-storm.wgsl",
+  "features": []
 }

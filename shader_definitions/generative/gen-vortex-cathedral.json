@@ -1,7 +1,6 @@
 {
   "name": "Vortex Cathedral",
   "category": "generative",
-  "filename": "gen-vortex-cathedral.wgsl",
   "tags": [
     "generative",
     "vortex",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-vortex-cathedral",
+  "url": "shaders/gen-vortex-cathedral.wgsl",
+  "features": []
 }

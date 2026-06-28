@@ -1,7 +1,6 @@
 {
   "name": "Chronos Monolith Resonator",
   "category": "generative",
-  "filename": "gen-chronos-monolith-resonator.wgsl",
   "tags": [
     "cosmic",
     "quantum",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-chronos-monolith-resonator",
+  "url": "shaders/gen-chronos-monolith-resonator.wgsl",
+  "features": []
 }

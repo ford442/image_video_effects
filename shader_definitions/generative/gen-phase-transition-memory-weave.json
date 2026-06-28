@@ -1,7 +1,6 @@
 {
   "name": "Phase-Transition Memory Weave",
   "category": "generative",
-  "filename": "gen-phase-transition-memory-weave.wgsl",
   "tags": [
     "generative",
     "phase-transition",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-phase-transition-memory-weave",
+  "url": "shaders/gen-phase-transition-memory-weave.wgsl",
+  "features": []
 }

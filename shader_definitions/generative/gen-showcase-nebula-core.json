@@ -1,7 +1,6 @@
 {
   "name": "Nebula Core",
   "category": "generative",
-  "filename": "gen-showcase-nebula-core.wgsl",
   "tags": [
     "generative",
     "showcase",
@@ -58,5 +57,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-showcase-nebula-core",
+  "url": "shaders/gen-showcase-nebula-core.wgsl",
+  "features": []
 }

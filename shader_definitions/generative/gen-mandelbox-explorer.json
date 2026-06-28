@@ -1,7 +1,6 @@
 {
   "name": "Mandelbox Explorer",
   "category": "generative",
-  "filename": "gen-mandelbox-explorer.wgsl",
   "tags": [
     "generative",
     "fractal",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-mandelbox-explorer",
+  "url": "shaders/gen-mandelbox-explorer.wgsl",
+  "features": []
 }

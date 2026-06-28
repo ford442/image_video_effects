@@ -1,7 +1,6 @@
 {
   "name": "Sonoluminescent Chrono-Geode Matrix",
   "category": "generative",
-  "filename": "gen-sonoluminescent-chrono-geode-matrix.wgsl",
   "tags": [
     "geode",
     "plasma",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-sonoluminescent-chrono-geode-matrix",
+  "url": "shaders/gen-sonoluminescent-chrono-geode-matrix.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Ethereal Anemone Bloom",
   "category": "generative",
-  "filename": "gen-ethereal-anemone-bloom.wgsl",
   "tags": [
     "organic",
     "bioluminescent",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-ethereal-anemone-bloom",
+  "url": "shaders/gen-ethereal-anemone-bloom.wgsl",
+  "features": []
 }

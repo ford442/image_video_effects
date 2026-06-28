@@ -1,7 +1,6 @@
 {
   "name": "Fractal Clockwork",
   "category": "generative",
-  "filename": "gen-fractal-clockwork.wgsl",
   "tags": [
     "steampunk",
     "mechanical",
@@ -59,5 +58,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-fractal-clockwork",
+  "url": "shaders/gen-fractal-clockwork.wgsl",
+  "features": []
 }

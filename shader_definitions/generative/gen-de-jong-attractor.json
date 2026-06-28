@@ -1,7 +1,6 @@
 {
   "name": "Peter de Jong Attractor",
   "category": "generative",
-  "filename": "gen-de-jong-attractor.wgsl",
   "tags": [
     "chaos",
     "strange-attractor",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-de-jong-attractor",
+  "url": "shaders/gen-de-jong-attractor.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Conway Game of Life",
   "category": "generative",
-  "filename": "gen-conway-game-of-life.wgsl",
   "tags": [
     "conway",
     "game-of-life",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-conway-game-of-life",
+  "url": "shaders/gen-conway-game-of-life.wgsl",
+  "features": []
 }

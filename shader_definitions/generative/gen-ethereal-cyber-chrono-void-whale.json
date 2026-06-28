@@ -1,7 +1,6 @@
 {
   "name": "Ethereal Cyber-Chrono Void-Whale",
   "category": "generative",
-  "filename": "gen-ethereal-cyber-chrono-void-whale.wgsl",
   "tags": [
     "organic",
     "cosmic",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-ethereal-cyber-chrono-void-whale",
+  "url": "shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
+  "features": []
 }

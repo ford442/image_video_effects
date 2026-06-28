@@ -1,7 +1,6 @@
 {
   "name": "Quantum Foam",
   "category": "generative",
-  "filename": "gen-quantum-foam.wgsl",
   "tags": [
     "quantum",
     "foam",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-quantum-foam",
+  "url": "shaders/gen-quantum-foam.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Topological Acoustic Knots",
   "category": "generative",
-  "filename": "gen-topological-acoustic-knots.wgsl",
   "tags": [
     "generative",
     "topological",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-topological-acoustic-knots",
+  "url": "shaders/gen-topological-acoustic-knots.wgsl",
+  "features": []
 }

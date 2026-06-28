@@ -1,7 +1,6 @@
 {
   "name": "Electric Kaleidoscope Storm",
   "category": "generative",
-  "filename": "gen-electric-kaleidoscope-storm.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-electric-kaleidoscope-storm",
+  "url": "shaders/gen-electric-kaleidoscope-storm.wgsl",
+  "features": []
 }

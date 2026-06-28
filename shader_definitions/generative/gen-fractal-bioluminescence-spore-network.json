@@ -1,7 +1,6 @@
 {
   "name": "Fractal Bioluminescence Spore-Network",
   "category": "generative",
-  "filename": "gen-fractal-bioluminescence-spore-network.wgsl",
   "tags": [
     "fractal",
     "organic",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-fractal-bioluminescence-spore-network",
+  "url": "shaders/gen-fractal-bioluminescence-spore-network.wgsl",
+  "features": []
 }

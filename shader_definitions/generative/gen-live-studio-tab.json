@@ -1,7 +1,6 @@
 {
   "name": "Live Studio Tab",
   "category": "generative",
-  "filename": "gen-live-studio-tab.wgsl",
   "tags": [
     "broadcast",
     "studio",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-live-studio-tab",
+  "url": "shaders/gen-live-studio-tab.wgsl",
+  "features": []
 }

@@ -1,7 +1,6 @@
 {
   "name": "Prismatic Void-Weaver Ouroboros",
   "category": "generative",
-  "filename": "gen-prismatic-void-weaver-ouroboros.wgsl",
   "tags": [
     "ouroboros",
     "void",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-prismatic-void-weaver-ouroboros",
+  "url": "shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
+  "features": []
 }

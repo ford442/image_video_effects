@@ -1,7 +1,6 @@
 {
   "name": "Resonant Quantum-Obsidian Scarab-Engine",
   "category": "generative",
-  "filename": "gen-resonant-quantum-obsidian-scarab-engine.wgsl",
   "tags": [
     "biomechanical",
     "fractal",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-resonant-quantum-obsidian-scarab-engine",
+  "url": "shaders/gen-resonant-quantum-obsidian-scarab-engine.wgsl",
+  "features": []
 }

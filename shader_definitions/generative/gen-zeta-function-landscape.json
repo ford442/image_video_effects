@@ -1,7 +1,6 @@
 {
   "name": "Zeta Function Landscape",
   "category": "generative",
-  "filename": "gen-zeta-function-landscape.wgsl",
   "tags": [
     "generative",
     "mathematical",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-zeta-function-landscape",
+  "url": "shaders/gen-zeta-function-landscape.wgsl",
+  "features": []
 }

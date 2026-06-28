@@ -1,7 +1,6 @@
 {
   "name": "Cosmic Slime Mold",
   "category": "generative",
-  "filename": "gen-cosmic-slime-mold.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-cosmic-slime-mold",
+  "url": "shaders/gen-cosmic-slime-mold.wgsl",
+  "features": []
 }

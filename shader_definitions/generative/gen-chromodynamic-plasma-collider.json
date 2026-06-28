@@ -1,7 +1,6 @@
 {
   "name": "Chromodynamic Plasma-Collider",
   "category": "generative",
-  "filename": "gen-chromodynamic-plasma-collider.wgsl",
   "tags": [
     "cosmic",
     "mechanical",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-chromodynamic-plasma-collider",
+  "url": "shaders/gen-chromodynamic-plasma-collider.wgsl",
+  "features": []
 }

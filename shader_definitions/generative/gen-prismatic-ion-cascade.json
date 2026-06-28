@@ -1,7 +1,6 @@
 {
   "name": "Prismatic Ion Cascade",
   "category": "generative",
-  "filename": "gen-prismatic-ion-cascade.wgsl",
   "tags": [
     "generative",
     "prismatic",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-prismatic-ion-cascade",
+  "url": "shaders/gen-prismatic-ion-cascade.wgsl",
+  "features": []
 }

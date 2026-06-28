@@ -1,10 +1,20 @@
 {
   "name": "Ethereal Quantum-Hologram Bonsai",
   "category": "generative",
-  "filename": "gen-ethereal-quantum-hologram-bonsai.wgsl",
-  "tags": ["bonsai", "hologram", "quantum", "l-system", "audio-reactive", "interactive"],
+  "tags": [
+    "bonsai",
+    "hologram",
+    "quantum",
+    "l-system",
+    "audio-reactive",
+    "interactive"
+  ],
   "description": "A serene, hyper-dimensional bonsai tree woven entirely from shimmering quantum hard-light, its branches continuously fracturing and self-assembling in probabilistic super-position.",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updatedParams": [
     {
       "index": 0,
@@ -41,5 +51,8 @@
   ],
   "supportsDepth": false,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-ethereal-quantum-hologram-bonsai",
+  "url": "shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
+  "features": []
 }

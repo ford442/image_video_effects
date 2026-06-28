@@ -1,7 +1,6 @@
 {
   "name": "Prismatic Cyber-Chrono Void-Kitsune",
   "category": "generative",
-  "filename": "gen-prismatic-cyber-chrono-void-kitsune.wgsl",
   "tags": [
     "cosmic",
     "kitsune",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-prismatic-cyber-chrono-void-kitsune",
+  "url": "shaders/gen-prismatic-cyber-chrono-void-kitsune.wgsl",
+  "features": []
 }

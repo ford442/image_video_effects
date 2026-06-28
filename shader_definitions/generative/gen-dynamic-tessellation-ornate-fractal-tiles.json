@@ -1,7 +1,6 @@
 {
   "name": "Dynamic Tessellation (Ornate Fractal Tiles)",
   "category": "generative",
-  "filename": "gen-dynamic-tessellation-ornate-fractal-tiles.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-dynamic-tessellation-ornate-fractal-tiles",
+  "url": "shaders/gen-dynamic-tessellation-ornate-fractal-tiles.wgsl",
+  "features": []
 }

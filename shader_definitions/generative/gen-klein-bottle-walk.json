@@ -1,7 +1,6 @@
 {
   "name": "Klein Bottle Walk",
   "category": "generative",
-  "filename": "gen-klein-bottle-walk.wgsl",
   "tags": [
     "generative",
     "klein-bottle",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-klein-bottle-walk",
+  "url": "shaders/gen-klein-bottle-walk.wgsl",
+  "features": []
 }

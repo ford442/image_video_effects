@@ -1,7 +1,6 @@
 {
   "name": "Topology Flow",
   "category": "generative",
-  "filename": "gen-topology-flow.wgsl",
   "tags": [
     "generative",
     "topology",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-topology-flow",
+  "url": "shaders/gen-topology-flow.wgsl",
+  "features": []
 }

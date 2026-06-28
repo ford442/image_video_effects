@@ -1,7 +1,6 @@
 {
   "name": "Velocity Bloom",
   "category": "generative",
-  "filename": "gen-velocity-bloom.wgsl",
   "tags": [
     "temporal",
     "bloom",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-velocity-bloom",
+  "url": "shaders/gen-velocity-bloom.wgsl",
+  "features": []
 }

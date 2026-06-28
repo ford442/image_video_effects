@@ -1,7 +1,6 @@
 {
   "name": "Prismatic Aether-Loom",
   "category": "generative",
-  "filename": "gen-prismatic-aether-loom.wgsl",
   "tags": [
     "cosmic",
     "mechanical",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-prismatic-aether-loom",
+  "url": "shaders/gen-prismatic-aether-loom.wgsl",
+  "features": []
 }

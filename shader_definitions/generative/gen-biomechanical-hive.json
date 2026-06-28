@@ -1,7 +1,6 @@
 {
   "name": "Biomechanical Hive",
   "category": "generative",
-  "filename": "gen-biomechanical-hive.wgsl",
   "tags": [
     "scifi",
     "biomechanical",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-biomechanical-hive",
+  "url": "shaders/gen-biomechanical-hive.wgsl",
+  "features": []
 }

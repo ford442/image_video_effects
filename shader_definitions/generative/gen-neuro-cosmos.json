@@ -1,7 +1,6 @@
 {
   "name": "Neuro-Cosmos",
   "category": "generative",
-  "filename": "gen-neuro-cosmos.wgsl",
   "tags": [
     "network",
     "neural",
@@ -57,5 +56,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-neuro-cosmos",
+  "url": "shaders/gen-neuro-cosmos.wgsl",
+  "features": []
 }

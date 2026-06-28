@@ -1,7 +1,6 @@
 {
   "name": "RGB Diffraction",
   "category": "generative",
-  "filename": "gen-rgb-diffraction.wgsl",
   "tags": [
     "psychedelic",
     "colorful",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-rgb-diffraction",
+  "url": "shaders/gen-rgb-diffraction.wgsl",
+  "features": []
 }

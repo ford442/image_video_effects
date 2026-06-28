@@ -1,7 +1,6 @@
 {
   "name": "Hyper Rainbow Vortex",
   "category": "generative",
-  "filename": "gen-hyper-rainbow-vortex.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-hyper-rainbow-vortex",
+  "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
+  "features": []
 }

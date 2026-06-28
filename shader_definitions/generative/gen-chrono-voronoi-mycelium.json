@@ -1,7 +1,6 @@
 {
   "name": "Chrono-Voronoi Mycelium",
   "category": "generative",
-  "filename": "gen-chrono-voronoi-mycelium.wgsl",
   "tags": [
     "generative",
     "voronoi",
@@ -55,5 +54,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-chrono-voronoi-mycelium",
+  "url": "shaders/gen-chrono-voronoi-mycelium.wgsl",
+  "features": []
 }

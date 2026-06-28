@@ -1,7 +1,6 @@
 {
   "name": "Psychedelic Moire Flower",
   "category": "generative",
-  "filename": "gen-psychedelic-moire-flower.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-psychedelic-moire-flower",
+  "url": "shaders/gen-psychedelic-moire-flower.wgsl",
+  "features": []
 }

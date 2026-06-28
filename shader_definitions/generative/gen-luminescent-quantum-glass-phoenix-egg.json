@@ -1,7 +1,6 @@
 {
   "name": "Luminescent Quantum-Glass Phoenix-Egg",
   "category": "generative",
-  "filename": "gen-luminescent-quantum-glass-phoenix-egg.wgsl",
   "tags": [
     "organic",
     "quantum",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-luminescent-quantum-glass-phoenix-egg",
+  "url": "shaders/gen-luminescent-quantum-glass-phoenix-egg.wgsl",
+  "features": []
 }

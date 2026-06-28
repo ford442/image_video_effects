@@ -1,7 +1,6 @@
 {
   "name": "Crystalline Pulse",
   "category": "generative",
-  "filename": "gen-showcase-crystalline-pulse.wgsl",
   "tags": [
     "generative",
     "showcase",
@@ -59,5 +58,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-showcase-crystalline-pulse",
+  "url": "shaders/gen-showcase-crystalline-pulse.wgsl",
+  "features": []
 }

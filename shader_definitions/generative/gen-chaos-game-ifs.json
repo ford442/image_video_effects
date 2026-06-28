@@ -1,7 +1,6 @@
 {
   "name": "Chaos Game IFS",
   "category": "generative",
-  "filename": "gen-chaos-game-ifs.wgsl",
   "tags": [
     "generative",
     "ifs",
@@ -53,5 +52,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-chaos-game-ifs",
+  "url": "shaders/gen-chaos-game-ifs.wgsl",
+  "features": []
 }

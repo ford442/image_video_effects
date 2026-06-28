@@ -1,7 +1,6 @@
 {
   "name": "Von K\u00e1rm\u00e1n Vortex Street",
   "category": "generative",
-  "filename": "gen-von-karman-vortex.wgsl",
   "tags": [
     "fluid-dynamics",
     "vortex",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-von-karman-vortex",
+  "url": "shaders/gen-von-karman-vortex.wgsl",
+  "features": []
 }

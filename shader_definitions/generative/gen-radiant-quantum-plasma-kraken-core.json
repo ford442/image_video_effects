@@ -1,7 +1,6 @@
 {
   "name": "Radiant Quantum-Plasma Kraken-Core",
   "category": "generative",
-  "filename": "gen-radiant-quantum-plasma-kraken-core.wgsl",
   "tags": [
     "organic",
     "quantum",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-radiant-quantum-plasma-kraken-core",
+  "url": "shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
+  "features": []
 }

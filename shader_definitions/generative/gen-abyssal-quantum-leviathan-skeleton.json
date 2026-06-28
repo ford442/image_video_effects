@@ -1,7 +1,6 @@
 {
   "name": "Abyssal Quantum-Leviathan Skeleton",
   "category": "generative",
-  "filename": "gen-abyssal-quantum-leviathan-skeleton.wgsl",
   "tags": [
     "generative"
   ],
@@ -47,5 +46,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-abyssal-quantum-leviathan-skeleton",
+  "url": "shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
+  "features": []
 }

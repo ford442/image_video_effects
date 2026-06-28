@@ -1,7 +1,6 @@
 {
   "name": "Chronos Labyrinth",
   "category": "generative",
-  "filename": "gen-chronos-labyrinth.wgsl",
   "tags": [
     "3d",
     "raymarching",
@@ -58,5 +57,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-chronos-labyrinth",
+  "url": "shaders/gen-chronos-labyrinth.wgsl",
+  "features": []
 }

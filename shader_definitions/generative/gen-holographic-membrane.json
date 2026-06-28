@@ -1,7 +1,6 @@
 {
   "name": "Holographic Membrane",
   "category": "generative",
-  "filename": "gen-holographic-membrane.wgsl",
   "tags": [
     "holographic",
     "membrane",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-holographic-membrane",
+  "url": "shaders/gen-holographic-membrane.wgsl",
+  "features": []
 }

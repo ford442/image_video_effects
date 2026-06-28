@@ -1,7 +1,6 @@
 {
   "name": "Echo Dunes",
   "category": "generative",
-  "filename": "gen-echo-dunes.wgsl",
   "tags": [
     "generative",
     "desert",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-echo-dunes",
+  "url": "shaders/gen-echo-dunes.wgsl",
+  "features": []
 }

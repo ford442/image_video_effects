@@ -1,7 +1,6 @@
 {
   "name": "Prismatic Fractal-Dunes",
   "category": "generative",
-  "filename": "gen-prismatic-fractal-dunes.wgsl",
   "tags": [
     "landscape",
     "refraction",
@@ -51,5 +50,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-prismatic-fractal-dunes",
+  "url": "shaders/gen-prismatic-fractal-dunes.wgsl",
+  "features": []
 }

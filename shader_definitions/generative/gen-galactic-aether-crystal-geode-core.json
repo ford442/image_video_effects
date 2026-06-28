@@ -1,7 +1,6 @@
 {
   "name": "Galactic Aether-Crystal Geode-Core",
   "category": "generative",
-  "filename": "gen-galactic-aether-crystal-geode-core.wgsl",
   "tags": [
     "crystal",
     "geode",
@@ -52,5 +51,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-galactic-aether-crystal-geode-core",
+  "url": "shaders/gen-galactic-aether-crystal-geode-core.wgsl",
+  "features": []
 }

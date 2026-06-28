@@ -1,7 +1,6 @@
 {
   "name": "Islamic Geometric Star-Rose",
   "category": "generative",
-  "filename": "gen-islamic-star-rose.wgsl",
   "tags": [
     "islamic",
     "geometric",
@@ -56,5 +55,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-islamic-star-rose",
+  "url": "shaders/gen-islamic-star-rose.wgsl",
+  "features": []
 }

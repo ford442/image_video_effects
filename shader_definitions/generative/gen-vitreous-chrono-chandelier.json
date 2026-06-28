@@ -1,7 +1,6 @@
 {
   "name": "Vitreous Chrono-Chandelier",
   "category": "generative",
-  "filename": "gen-vitreous-chrono-chandelier.wgsl",
   "tags": [
     "crystal",
     "mechanical",
@@ -54,5 +53,8 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
-  "updated": true
+  "updated": true,
+  "id": "gen-vitreous-chrono-chandelier",
+  "url": "shaders/gen-vitreous-chrono-chandelier.wgsl",
+  "features": []
 }
