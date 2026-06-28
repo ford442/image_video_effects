@@ -108,61 +108,6 @@
     ]
   },
   {
-    "id": "audio-reactive-temporal-decay",
-    "name": "Audio Reactive Temporal Decay",
-    "url": "shaders/audio-reactive-temporal-decay.wgsl",
-    "category": "post-processing",
-    "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range. Low-band energy → long ghostly trails; high-band energy → fast fade. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
-    "tags": [
-      "audio-reactive",
-      "temporal",
-      "trails",
-      "feedback",
-      "fft",
-      "decay",
-      "frequency"
-    ],
-    "features": [
-      "audio-reactive",
-      "temporal",
-      "fft-bins"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Decay Base",
-        "default": 0.15,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Audio Drive",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Bin Range Lo",
-        "default": 0,
-        "min": 0,
-        "max": 1,
-        "step": 0.008
-      },
-      {
-        "id": "param4",
-        "name": "Bin Range Hi",
-        "default": 0.2,
-        "min": 0,
-        "max": 1,
-        "step": 0.008
-      }
-    ]
-  },
-  {
     "id": "chrono-luma-slit-scan",
     "name": "Chrono Luma Slit Scan",
     "url": "shaders/chrono-luma-slit-scan.wgsl",
@@ -763,7 +708,7 @@
     "name": "Soft Vignette Bloom",
     "url": "shaders/soft-vignette-bloom.wgsl",
     "category": "post-processing",
-    "description": "Cinematic post-processing with multi-scale Gaussian bloom pyramid, anamorphic highlight streaks, and superellipse vignette. Features ACES tone mapping, split-tone shadows, film grain, and depth-driven haze. Bass boosts bloom threshold and mouse shifts vignette center.",
+    "description": "Cinematic post-processing with multi-scale Gaussian bloom pyramid, anamorphic highlight streaks, and superellipse vignette. Enhanced with lens flare ghost images, 8-pointed starburst diffraction spikes, chromatic aberration at edges, bokeh depth-of-field with hexagonal aperture, and enhanced light falloff with realistic attenuation.",
     "tags": [
       "bloom",
       "vignette",
@@ -772,13 +717,25 @@
       "audio-reactive",
       "mouse-driven",
       "depth-aware",
-      "filmic"
+      "filmic",
+      "lens-flare",
+      "starburst",
+      "chromatic-aberration",
+      "bokeh-dof",
+      "anamorphic-streaks"
     ],
     "features": [
       "audio-reactive",
       "mouse-driven",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "lens-flare",
+      "starburst-diffraction",
+      "chromatic-aberration",
+      "bokeh-dof",
+      "anamorphic-streaks",
+      "light-attenuation",
+      "enhanced-falloff"
     ],
     "params": [
       {

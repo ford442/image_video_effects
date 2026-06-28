@@ -17298,9 +17298,13 @@
       "cathedral",
       "radial",
       "cosmic",
-      "audio-reactive"
+      "audio-reactive",
+      "volumetric-god-rays",
+      "starburst-diffraction",
+      "chromatic-aberration",
+      "light-attenuation"
     ],
-    "description": "Spinning radial arches and sanctum rings form a gothic vortex illuminated by bass-lit cores.",
+    "description": "Spinning radial arches and sanctum rings form a gothic vortex illuminated by bass-lit cores. Enhanced with volumetric god rays, 6-pointed starburst diffraction spikes, chromatic aberration at edges, multi-layered sanctum glow, and realistic light attenuation.",
     "workgroup_size": [
       16,
       16,
@@ -17345,7 +17349,14 @@
     "updated": true,
     "id": "gen-vortex-cathedral",
     "url": "shaders/gen-vortex-cathedral.wgsl",
-    "features": []
+    "features": [
+      "volumetric-god-rays",
+      "starburst-diffraction",
+      "chromatic-aberration",
+      "light-attenuation",
+      "enhanced-sanctum-glow",
+      "aces-tone-map"
+    ]
   },
   {
     "name": "WASM HLS Physarum Swarm",

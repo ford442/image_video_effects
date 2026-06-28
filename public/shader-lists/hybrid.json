@@ -671,7 +671,7 @@
     "name": "Ripple Bloom",
     "url": "shaders/ripple-bloom.wgsl",
     "category": "hybrid",
-    "description": "Huygens wavelet ripple simulation with frequency dispersion, chromatic dispersion on crests, HDR bloom on constructive interference, subsurface scattering in troughs, and ACES tone mapping. Bass drives ripple frequency, mouse drops stones, depth controls water depth.",
+    "description": "Huygens wavelet ripple simulation with frequency dispersion, chromatic dispersion on crests, multi-pass Gaussian bloom, caustic refraction light patterns, rainbow dispersion at bright edges, 6-pointed starburst diffraction from bright points, film grain, radial chromatic aberration, color grading with lift/gamma/gain, anamorphic streaks, lens dirt overlay, and ACES tone mapping. Bass drives ripple frequency and anamorphic streaks, mids control bloom and caustics, treble adds dispersion and starburst. Mouse drops stones, depth controls water depth.",
     "tags": [
       "ripple",
       "bloom",
@@ -686,7 +686,16 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "multi-pass-bloom",
+      "caustic-refraction",
+      "dispersion",
+      "starburst-diffraction",
+      "film-grain",
+      "chromatic-aberration",
+      "color-grading",
+      "anamorphic-streaks",
+      "lens-dirt"
     ],
     "params": [
       {
