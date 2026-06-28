@@ -1,8 +1,29 @@
 {
   "id": "radial-slit-scan",
   "name": "Radial Slit Scan",
+  "category": "interactive-mouse",
   "url": "shaders/radial-slit-scan.wgsl",
-  "description": "A time-displacement effect that radiates from the cursor.",
+  "description": "A time-displacement effect that radiates from the cursor, now enhanced with volumetric glow, cosine palette color cycling, chromatic aberration, split-tone grading, and ACES filmic tone mapping.",
+  "features": [
+    "mouse-driven",
+    "feedback",
+    "audio-reactive",
+    "upgraded-rgba",
+    "cosine-palette",
+    "volumetric-glow",
+    "aces-tone-map",
+    "oklab-mixing",
+    "split-tone",
+    "chromatic-aberration"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "slit-scan",
+    "color-cycling",
+    "volumetric",
+    "audio-reactive"
+  ],
   "params": [
     {
       "id": "speed",
@@ -33,12 +54,5 @@
       "max": 1
     }
   ],
-  "features": [
-    "mouse-driven",
-    "feedback"
-  ],
-  "tags": [
-    "filter",
-    "image-processing"
-  ]
+  "updated": true
 }

@@ -3,7 +3,7 @@
   "name": "VHS Chroma Bleed",
   "category": "image",
   "url": "shaders/vhs-chroma-bleed.wgsl",
-  "description": "VHS tape aesthetic with audio-reactive jitter: bass drives line dropouts, treble adds micro-glitch. Chromatic bleed with depth-scatter. RGB channels shift independently for analog decay.",
+  "description": "VHS tape aesthetic with authentic tape degradation: time-varying chromatic aberration, tape tracking error with horizontal wobble and jitter, audio-reactive line dropouts, compression artifacts, analog warmth, saturation roll-off, noise bands, film grain, scanlines, CRT barrel distortion, and vignette. Chromatic bleed with depth-scatter. Bass drives line dropouts, treble adds micro-glitch.",,
   "tags": [
     "vhs",
     "retro",
@@ -23,7 +23,15 @@
     "glitch",
     "audio-reactive",
     "depth-aware",
-    "chromatic-bleed"
+    "chromatic-bleed",
+    "film-grain",
+    "scanlines",
+    "crt-barrel",
+    "tape-tracking",
+    "compression-artifacts",
+    "analog-warmth",
+    "vignette",
+    "noise-bands"
   ],
   "params": [
     {

@@ -2306,7 +2306,7 @@
     "name": "Hex Lens Interactive",
     "category": "image",
     "url": "shaders/hex-lens.wgsl",
-    "description": "Honeycomb microlenses rotate and refract toward the cursor while audio adds prismatic shimmer to each cell.",
+    "description": "Honeycomb microlenses with hexagonal bokeh blur, wavelength-dependent chromatic dispersion, hexagonal aperture diffraction starbursts, FBM domain warping, and 6-fold/12-fold star patterns. Audio-reactive lens rotation and prismatic shimmer.",
     "params": [
       {
         "id": "param1",
@@ -2341,14 +2341,26 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "hexagonal-bokeh",
+      "chromatic-dispersion",
+      "diffraction-patterns"
     ],
     "tags": [
       "hex",
       "lens",
       "honeycomb",
       "prismatic",
-      "audio-reactive"
+      "audio-reactive",
+      "bokeh",
+      "dispersion",
+      "diffraction",
+      "fbm"
+    ],
+    "updated": true,
+    "updatedParams": [
+      "param2",
+      "param4"
     ]
   },
   {
@@ -4476,68 +4488,6 @@
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "vhs-chroma-bleed",
-    "name": "VHS Chroma Bleed",
-    "category": "image",
-    "url": "shaders/vhs-chroma-bleed.wgsl",
-    "description": "VHS tape aesthetic with audio-reactive jitter: bass drives line dropouts, treble adds micro-glitch. Chromatic bleed with depth-scatter. RGB channels shift independently for analog decay.",
-    "tags": [
-      "vhs",
-      "retro",
-      "glitch",
-      "chroma",
-      "noise",
-      "jitter",
-      "tape",
-      "analog",
-      "audio-reactive",
-      "depth-aware",
-      "chromatic"
-    ],
-    "features": [
-      "upgraded-rgba",
-      "temporal",
-      "glitch",
-      "audio-reactive",
-      "depth-aware",
-      "chromatic-bleed"
-    ],
-    "params": [
-      {
-        "id": "chroma_shift",
-        "name": "Chroma Shift",
-        "default": 0.5,
-        "min": 0,
-        "max": 2,
-        "step": 0.01
-      },
-      {
-        "id": "noise_intensity",
-        "name": "Noise Intensity",
-        "default": 0.2,
-        "min": 0,
-        "max": 0.8,
-        "step": 0.01
-      },
-      {
-        "id": "jitter_amount",
-        "name": "Jitter Amount",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "bleed_width",
-        "name": "Bleed Width",
-        "default": 1,
-        "min": 0,
-        "max": 3,
         "step": 0.01
       }
     ]

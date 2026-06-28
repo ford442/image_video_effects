@@ -9,9 +9,13 @@
     "depth-aware",
     "upgraded-rgba",
     "temporal-scan-pass",
-    "chromatic-scan"
+    "chromatic-scan",
+    "holographic-scanlines",
+    "data-visualization",
+    "hex-grid",
+    "interference-patterns"
   ],
-  "description": "A digital scanning line follows the mouse with temporal smear and depth-based colorization. Audio drives scan speed; chromatic separation shifts RGB per treble intensity.",
+  "description": "A digital scanning ecosystem with triple-layer scan lines, holographic interference patterns, hex-grid data visualization, binary rain effects, and FBM noise corruption. Depth-based colorization with chromatic RGB separation driven by treble intensity.",
   "params": [
     {
       "id": "scanWidth",
@@ -50,6 +54,12 @@
     "audio-reactive",
     "depth-aware",
     "chromatic",
-    "temporal"
-  ]
+    "temporal",
+    "holographic",
+    "hex-grid",
+    "interference",
+    "binary-rain"
+  ],
+  "updated": true,
+  "updatedParams": ["scanWidth", "edgeStrength"]
 }

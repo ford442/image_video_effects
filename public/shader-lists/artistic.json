@@ -755,19 +755,26 @@
     "name": "Chromatic Focus",
     "category": "artistic",
     "url": "shaders/chromatic-focus.wgsl",
-    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into colorful chromatic bokeh.",
+    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into colorful chromatic bokeh. Enhanced with OkLab mixing, iridescent thin-film interference, Mie scattering haze, split-tone grading, and ACES filmic tone mapping.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "oklab-mixing",
+      "split-tone",
+      "aces-tone-map",
+      "volumetric-haze",
+      "iridescent-halo"
     ],
     "tags": [
       "focus",
       "bokeh",
       "spectral",
       "chromatic",
-      "audio-reactive"
+      "audio-reactive",
+      "iridescent",
+      "atmospheric"
     ],
     "params": [
       {
@@ -798,7 +805,8 @@
         "min": 0,
         "max": 1
       }
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "chromatic-folds-2",
@@ -2894,11 +2902,14 @@
     "name": "Mouse Pixel Sort",
     "category": "artistic",
     "url": "shaders/mouse-pixel-sort.wgsl",
-    "description": "Luminance-based pixel sorting controlled by mouse proximity.",
+    "description": "Multi-layer luminance-based pixel sorting with FBM organic thresholds, curl-noise sorting directions, De Jong strange attractor warping, and Voronoi cellular patterns. Audio-reactive sparkle trails and dual-layer compositing.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "multi-layer-sort",
+      "fbm-patterns",
+      "noise-warping"
     ],
     "params": [
       {
@@ -2934,7 +2945,16 @@
       "pixel-sort",
       "streak",
       "interactive",
-      "audio-reactive"
+      "audio-reactive",
+      "curl-noise",
+      "strange-attractor",
+      "fbm",
+      "voronoi"
+    ],
+    "updated": true,
+    "updatedParams": [
+      "threshold",
+      "length"
     ]
   },
   {

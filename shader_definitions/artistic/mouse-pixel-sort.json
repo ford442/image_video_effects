@@ -3,11 +3,14 @@
   "name": "Mouse Pixel Sort",
   "category": "artistic",
   "url": "shaders/mouse-pixel-sort.wgsl",
-  "description": "Luminance-based pixel sorting controlled by mouse proximity.",
+  "description": "Multi-layer luminance-based pixel sorting with FBM organic thresholds, curl-noise sorting directions, De Jong strange attractor warping, and Voronoi cellular patterns. Audio-reactive sparkle trails and dual-layer compositing.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "multi-layer-sort",
+    "fbm-patterns",
+    "noise-warping"
   ],
   "params": [
     {
@@ -43,6 +46,12 @@
     "pixel-sort",
     "streak",
     "interactive",
-    "audio-reactive"
-  ]
+    "audio-reactive",
+    "curl-noise",
+    "strange-attractor",
+    "fbm",
+    "voronoi"
+  ],
+  "updated": true,
+  "updatedParams": ["threshold", "length"]
 }

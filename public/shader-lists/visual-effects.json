@@ -288,65 +288,6 @@
     ]
   },
   {
-    "id": "anaglyph-3d",
-    "name": "Anaglyph 3D",
-    "category": "visual-effects",
-    "url": "shaders/anaglyph-3d.wgsl",
-    "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, and bass-pulsed split width.",
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "depth-aware",
-      "upgraded-rgba",
-      "temporal",
-      "chromatic"
-    ],
-    "tags": [
-      "anaglyph",
-      "3d",
-      "depth-aware",
-      "stereo",
-      "audio-reactive",
-      "temporal",
-      "chromatic",
-      "ghost"
-    ],
-    "params": [
-      {
-        "id": "separation",
-        "name": "Separation",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "depthCurve",
-        "name": "Depth Curve",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "ghostAmount",
-        "name": "Ghost Amount",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "grainAmount",
-        "name": "Grain Amount",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
     "id": "anamorphic-caustic-flare",
     "name": "Anamorphic Caustic Flare",
     "url": "shaders/anamorphic-caustic-flare.wgsl",
@@ -823,9 +764,13 @@
       "depth-aware",
       "upgraded-rgba",
       "temporal-scan-pass",
-      "chromatic-scan"
+      "chromatic-scan",
+      "holographic-scanlines",
+      "data-visualization",
+      "hex-grid",
+      "interference-patterns"
     ],
-    "description": "A digital scanning line follows the mouse with temporal smear and depth-based colorization. Audio drives scan speed; chromatic separation shifts RGB per treble intensity.",
+    "description": "A digital scanning ecosystem with triple-layer scan lines, holographic interference patterns, hex-grid data visualization, binary rain effects, and FBM noise corruption. Depth-based colorization with chromatic RGB separation driven by treble intensity.",
     "params": [
       {
         "id": "scanWidth",
@@ -864,7 +809,16 @@
       "audio-reactive",
       "depth-aware",
       "chromatic",
-      "temporal"
+      "temporal",
+      "holographic",
+      "hex-grid",
+      "interference",
+      "binary-rain"
+    ],
+    "updated": true,
+    "updatedParams": [
+      "scanWidth",
+      "edgeStrength"
     ]
   },
   {

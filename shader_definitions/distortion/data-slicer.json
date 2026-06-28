@@ -3,7 +3,7 @@
   "name": "Data Slicer",
   "category": "distortion",
   "url": "shaders/data-slicer.wgsl",
-  "description": "Beat-reactive tape-slice glitch that jitters horizontal bands around the cursor with chromatic scan glow.",
+  "description": "Beat-reactive fractal tape-slice glitch with FBM domain warping, Voronoi cellular cracks, quasicrystal patterns, and 6-octave temporal jitter. Slices distort organically with curl-noise chromatic aberration and audio-reactive sparkle trails.",
   "params": [
     {
       "id": "slideSpeed",
@@ -38,13 +38,21 @@
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
-    "distortion"
+    "fractal-slicing",
+    "fbm-warping",
+    "voronoi-patterns"
   ],
   "tags": [
     "glitch",
     "slice",
     "chromatic",
     "audio-reactive",
-    "scanline"
-  ]
+    "scanline",
+    "fractal",
+    "fbm",
+    "voronoi",
+    "quasicrystal"
+  ],
+  "updated": true,
+  "updatedParams": ["chaos", "aberration"]
 }

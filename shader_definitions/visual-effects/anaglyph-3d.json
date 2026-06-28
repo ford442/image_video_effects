@@ -3,14 +3,21 @@
   "name": "Anaglyph 3D",
   "category": "visual-effects",
   "url": "shaders/anaglyph-3d.wgsl",
-  "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, and bass-pulsed split width.",
+  "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, bass-pulsed split width, and cinematic post-processing: film grain with temporal coherence, radial chromatic aberration, vignette darkening, CRT barrel distortion, color grading with lift/gamma/gain, anamorphic light streaks from bright points, and lens dirt overlay.",,
   "features": [
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
     "upgraded-rgba",
     "temporal",
-    "chromatic"
+    "chromatic",
+    "film-grain",
+    "chromatic-aberration",
+    "vignette",
+    "crt-barrel",
+    "color-grading",
+    "anamorphic-streaks",
+    "lens-dirt"
   ],
   "tags": [
     "anaglyph",

@@ -12600,9 +12600,12 @@
       "interference",
       "waves",
       "audio-reactive",
-      "colorful"
+      "colorful",
+      "caustics",
+      "dispersion",
+      "atmospheric"
     ],
-    "description": "Refractive chroma tides form spectral wavefronts and foam-like interference crests.",
+    "description": "Refractive chroma tides form spectral wavefronts and foam-like interference crests. Enhanced with prism dispersion, animated caustics, Mie scattering haze, OkLab color mixing, split-tone grading, and ACES filmic tone mapping.",
     "workgroup_size": [
       16,
       16,
@@ -12647,7 +12650,20 @@
     "updated": true,
     "id": "gen-prism-tide",
     "url": "shaders/gen-prism-tide.wgsl",
-    "features": []
+    "features": [
+      "procedural",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "chromatic",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "depth-aware",
+      "caustics",
+      "prism-dispersion",
+      "oklab-mixing",
+      "mie-scattering"
+    ]
   },
   {
     "name": "Prismatic Aether-Loom",
@@ -19225,6 +19241,60 @@
         "mapping": "zoom_params.w"
       }
     ]
+  },
+  {
+    "id": "holographic-entropy-vortex",
+    "name": "Holographic Entropy Vortex",
+    "category": "generative",
+    "url": "shaders/holographic-entropy-vortex.wgsl",
+    "description": "A swirling entropy vortex with holographic color shifts, iridescent thin-film interference, and atmospheric depth.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "iridescent",
+      "volumetric-fog",
+      "aces-tone-map"
+    ],
+    "tags": [
+      "vortex",
+      "holographic",
+      "entropy",
+      "iridescent",
+      "atmospheric",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Vortex Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param2",
+        "name": "Entropy Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param3",
+        "name": "Holographic Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "param4",
+        "name": "Atmosphere Density",
+        "default": 0.35,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "updated": true
   },
   {
     "id": "holographic_interference",

@@ -7,9 +7,12 @@
     "interference",
     "waves",
     "audio-reactive",
-    "colorful"
+    "colorful",
+    "caustics",
+    "dispersion",
+    "atmospheric"
   ],
-  "description": "Refractive chroma tides form spectral wavefronts and foam-like interference crests.",
+  "description": "Refractive chroma tides form spectral wavefronts and foam-like interference crests. Enhanced with prism dispersion, animated caustics, Mie scattering haze, OkLab color mixing, split-tone grading, and ACES filmic tone mapping.",
   "workgroup_size": [
     16,
     16,
@@ -54,5 +57,18 @@
   "updated": true,
   "id": "gen-prism-tide",
   "url": "shaders/gen-prism-tide.wgsl",
-  "features": []
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "depth-aware",
+    "caustics",
+    "prism-dispersion",
+    "oklab-mixing",
+    "mie-scattering"
+  ]
 }
