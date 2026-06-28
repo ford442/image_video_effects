@@ -1,4 +1,5 @@
 {
+  "id": "gen-quasicrystal",
   "name": "Quasicrystal",
   "category": "generative",
   "filename": "gen-quasicrystal.wgsl",
@@ -10,14 +11,14 @@
     "procedural",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "domain-warping",
+    "voronoi",
+    "fresnel",
+    "gem"
   ],
-  "description": "Penrose tiling-inspired quasicrystal patterns with n-fold symmetry using the projection method from higher-dimensional lattices",
-  "workgroup_size": [
-    16,
-    16,
-    1
-  ],
+  "description": "Penrose tiling-inspired quasicrystal patterns with n-fold symmetry using the projection method from higher-dimensional lattices. Upgraded with domain-warped FBM, Voronoi/Worley noise, Fresnel-Schlick gem surfaces, enhanced harmonics, and deep audio reactivity.",
+  "workgroup_size": [16, 16, 1],
   "updatedParams": [
     {
       "index": 0,

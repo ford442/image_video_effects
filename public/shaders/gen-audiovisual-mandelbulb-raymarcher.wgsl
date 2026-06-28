@@ -1,13 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Audiovisual Mandelbulb Raymarcher
 //  Category: generative
-//  Description: 3D Mandelbulb fractal raymarched with video texture mapping
-//               and audio-reactive geometry mutation.
+//  Description: 3D Mandelbulb fractal raymarched with video texture mapping,
+//               audio-reactive geometry mutation, OkLab coloring, blackbody palettes,
+//               Fresnel rim lighting, and depth output.
 //  Features: raymarched, audio-reactive, mouse-driven, depth-aware,
-//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
+//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration,
+//            OkLab-mixing, blackbody-palette, Fresnel-rim
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-//  Upgraded: 2026-06-14
-//  By: Claude Code Batch 3B
+//  Upgraded: 2026-06-28 — Visualist Batch (OkLab + blackbody + Fresnel)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -41,6 +42,59 @@ fn rotX(a: f32) -> mat3x3<f32> {
     let s = sin(a);
     let c = cos(a);
     return mat3x3<f32>(1.0, 0.0, 0.0, 0.0, c, -s, 0.0, s, c);
+}
+
+// ─── OkLab color utilities ───
+fn srgb_to_linear(c: vec3<f32>) -> vec3<f32> {
+    return pow(c, vec3<f32>(2.2));
+}
+fn linear_to_srgb(c: vec3<f32>) -> vec3<f32> {
+    return pow(c, vec3<f32>(1.0 / 2.2));
+}
+fn linear_to_oklab(c: vec3<f32>) -> vec3<f32> {
+    let lms = mat3x3<f32>(
+        0.8189330101, 0.3618667424, -0.1288597137,
+        0.0329845436, 0.9293118715,  0.0361456387,
+        0.0482003018, 0.2643662691,  0.6338517070
+    ) * c;
+    let lms_ = sign(lms) * pow(abs(lms), vec3<f32>(1.0 / 3.0));
+    return mat3x3<f32>(
+        0.2104542553,  0.7936177850, -0.0040720468,
+        1.9779984951, -2.4285922050,  0.4505937099,
+        0.0259040371,  0.7827717662, -0.8086757660
+    ) * lms_;
+}
+fn oklab_to_linear(c: vec3<f32>) -> vec3<f32> {
+    let lms_ = mat3x3<f32>(
+        0.2104542553,  0.7936177850, -0.0040720468,
+        1.9779984951, -2.4285922050,  0.4505937099,
+        0.0259040371,  0.7827717662, -0.8086757660
+    ) * c;
+    let lms = lms_ * lms_ * lms_;
+    return mat3x3<f32>(
+        1.2270138511, -0.5577992887,  0.2812561490,
+       -0.0405801784,  1.1122568696, -0.0716766787,
+       -0.0763812845, -0.4214819784,  1.5861632204
+    ) * lms;
+}
+fn oklab_mix(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
+    let a_ok = linear_to_oklab(srgb_to_linear(a));
+    let b_ok = linear_to_oklab(srgb_to_linear(b));
+    return linear_to_srgb(oklab_to_linear(mix(a_ok, b_ok, t)));
+}
+
+// ─── Blackbody palette: approximate temperature color ───
+fn blackbody(t: f32) -> vec3<f32> {
+    let temp = clamp(t, 0.0, 1.0);
+    let r = 1.0;
+    let g = mix(0.3, 1.0, smoothstep(0.0, 0.5, temp));
+    let b = mix(0.0, 0.8, smoothstep(0.3, 1.0, temp));
+    return vec3<f32>(r, g, b) * (0.5 + temp * 0.5);
+}
+
+// ─── Fresnel rim lighting ───
+fn fresnel_rim(n: vec3<f32>, viewDir: vec3<f32>, power: f32) -> f32 {
+    return pow(1.0 - max(dot(n, viewDir), 0.0), power);
 }
 
 // Mandelbulb distance estimator
@@ -77,6 +131,10 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn hash(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = u.config.zw;
@@ -87,27 +145,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let treble = plasmaBuffer[0].z;
 
-    // Parameters
     let iterations = i32(mix(4.0, 12.0, u.zoom_params.x));
     let escapeRadius = u.zoom_params.y * 2.0 + 6.0;
     let glowStrength = u.zoom_params.z * 2.0;
     let textureBlend = u.zoom_params.w;
 
-    // Camera rotation from mouse
+    // Camera rotation from mouse (Y-flipped: screen-top = +Y/up)
     let mouseRotY = (u.zoom_config.y - 0.5) * 3.14159;
     let mouseRotX = (0.5 - u.zoom_config.z) * 1.5708;
 
-    // Ray setup
     var ro = vec3<f32>(0.0, 0.0, -2.5);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     ro = rotY(mouseRotY) * rotX(mouseRotX) * ro;
     rd = rotY(mouseRotY) * rotX(mouseRotX) * rd;
 
-    // Audio-reactive power
     let power = 8.0 + bass * 4.0 + sin(time * 0.5) * 2.0;
 
-    // Raymarch
     var t = 0.0;
     var hit = false;
     for (var i: i32 = 0; i < 80; i = i + 1) {
@@ -128,13 +182,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let p = ro + rd * t;
         let n = calcNormal(p, power, iterations);
 
-        // Orbit trap coloring
+        let viewDir = -rd;
+
+        // Orbit trap coloring with OkLab mixing
         let orbit = fract(length(p) * 0.5 + time * 0.1);
-        let fractalCol = vec3<f32>(
+        let orbitCol = vec3<f32>(
             0.5 + 0.5 * cos(orbit * 6.28318 + 0.0),
             0.5 + 0.5 * cos(orbit * 6.28318 + 2.094),
             0.5 + 0.5 * cos(orbit * 6.28318 + 4.189)
         );
+
+        // Blackbody palette based on orbit depth + bass
+        let bb = blackbody(orbit * 0.8 + bass * 0.3);
+        let fractalCol = oklab_mix(orbitCol, bb, 0.4 + bass * 0.2);
 
         // Video texture mapping (spherical projection)
         let texUV = vec2<f32>(
@@ -143,7 +203,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         );
         let videoCol = textureSampleLevel(readTexture, u_sampler, texUV, 0.0).rgb;
 
-        // Blend fractal color with video
         col = mix(fractalCol, videoCol, textureBlend);
 
         // Lighting
@@ -152,13 +211,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let amb = 0.3;
         col = col * (amb + dif * 0.7);
 
+        // Fresnel rim lighting on the fractal surface
+        let rim = fresnel_rim(n, viewDir, 2.0 + bass * 2.0);
+        let rimCol = blackbody(0.7 + orbit * 0.3) * rim * 0.5 * (1.0 + bass);
+        col += rimCol;
+
         depth = 1.0 - t / escapeRadius;
     } else {
-        // Background with video
         let bgUV = uv * 0.5 + vec2<f32>(0.5);
         col = textureSampleLevel(readTexture, u_sampler, bgUV, 0.0).rgb * 0.3;
 
-        // Glow from near misses
         let glow = glowStrength * 0.02 / (t * t + 0.1);
         let glowCol = vec3<f32>(0.2, 0.4, 0.8) * glow * (1.0 + bass);
         col = col + glowCol;
@@ -175,11 +237,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let coord = vec2<i32>(id.xy);
 
-    // ═══ CHUNK: temporal-feedback (dataTextureC → dataTextureA) ═══
+    // Temporal feedback
     let prev = textureLoad(dataTextureC, coord, 0);
     col = mix(col, prev.rgb * 0.92, 0.05 + bass * 0.01);
 
-    // ═══ CHUNK: chromatic-aberration ═══
+    // Chromatic aberration
     let caStr = 0.003 * (1.0 + bass) + glowStrength * 0.001;
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
@@ -190,8 +252,4 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     textureStore(writeTexture, id.xy, vec4<f32>(col, _alpha_mb));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, vec4<f32>(col, _alpha_mb));
-}
-
-fn hash(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }

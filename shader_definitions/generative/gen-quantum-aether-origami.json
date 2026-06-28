@@ -1,15 +1,23 @@
 {
-  "name": "Quantum Aether-Origami",
+  "name": "Quantum Aether Origami",
   "category": "generative",
   "filename": "gen-quantum-aether-origami.wgsl",
   "tags": [
+    "generative",
     "origami",
-    "quantum",
-    "geometry",
+    "kifs",
+    "fractal",
+    "thin-film",
     "interference",
-    "audio-reactive"
+    "fbm",
+    "domain-warping",
+    "curl-noise",
+    "fresnel",
+    "audio-reactive",
+    "temporal",
+    "depth-aware"
   ],
-  "description": "A hyper-dimensional expanse of iridescent, self-folding light-sheets that crease, snap, and unfold like cosmic origami, collapsing into singularities to the beat of sound.",
+  "description": "A quantum origami folding surface with 5-fold KIFS fractal iteration, domain-warped fold planes, FBM surface detail, multi-band thin-film interference via Fresnel-Schlick, curl-noise aether flow, and audio-reactive fold deformation. Mouse morphs between flat and folded states.",
   "workgroup_size": [
     16,
     16,
@@ -46,7 +54,7 @@
       "default": 0.5,
       "min": 0,
       "max": 2,
-      "step": 0.05
+      "step": 0.1
     }
   ],
   "supportsDepth": true,

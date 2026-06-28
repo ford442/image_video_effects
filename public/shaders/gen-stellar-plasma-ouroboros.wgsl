@@ -1,8 +1,11 @@
 // ----------------------------------------------------------------
 // Stellar Plasma-Ouroboros
 // Category: generative
+// Features: raymarched, OkLab-color-mixing, blackbody-palette,
+//           Fresnel-rim-lighting, audio-reactive, depth-aware
+// Upgraded: 2026-06-28 — Visualist Batch (OkLab + blackbody + Fresnel)
 // ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,7 +19,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
@@ -88,6 +90,59 @@ fn pModPolar(p: vec2<f32>, repetitions: f32) -> vec2<f32> {
     return vec2<f32>(cos(a_mod) * r, sin(a_mod) * r);
 }
 
+// ─── OkLab color utilities ───
+fn srgb_to_linear(c: vec3<f32>) -> vec3<f32> {
+    return pow(c, vec3<f32>(2.2));
+}
+fn linear_to_srgb(c: vec3<f32>) -> vec3<f32> {
+    return pow(c, vec3<f32>(1.0 / 2.2));
+}
+fn linear_to_oklab(c: vec3<f32>) -> vec3<f32> {
+    let lms = mat3x3<f32>(
+        0.8189330101, 0.3618667424, -0.1288597137,
+        0.0329845436, 0.9293118715,  0.0361456387,
+        0.0482003018, 0.2643662691,  0.6338517070
+    ) * c;
+    let lms_ = sign(lms) * pow(abs(lms), vec3<f32>(1.0 / 3.0));
+    return mat3x3<f32>(
+        0.2104542553,  0.7936177850, -0.0040720468,
+        1.9779984951, -2.4285922050,  0.4505937099,
+        0.0259040371,  0.7827717662, -0.8086757660
+    ) * lms_;
+}
+fn oklab_to_linear(c: vec3<f32>) -> vec3<f32> {
+    let lms_ = mat3x3<f32>(
+        0.2104542553,  0.7936177850, -0.0040720468,
+        1.9779984951, -2.4285922050,  0.4505937099,
+        0.0259040371,  0.7827717662, -0.8086757660
+    ) * c;
+    let lms = lms_ * lms_ * lms_;
+    return mat3x3<f32>(
+        1.2270138511, -0.5577992887,  0.2812561490,
+       -0.0405801784,  1.1122568696, -0.0716766787,
+       -0.0763812845, -0.4214819784,  1.5861632204
+    ) * lms;
+}
+fn oklab_mix(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
+    let a_ok = linear_to_oklab(srgb_to_linear(a));
+    let b_ok = linear_to_oklab(srgb_to_linear(b));
+    return linear_to_srgb(oklab_to_linear(mix(a_ok, b_ok, t)));
+}
+
+// ─── Blackbody palette ───
+fn blackbody(t: f32) -> vec3<f32> {
+    let temp = clamp(t, 0.0, 1.0);
+    let r = 1.0;
+    let g = mix(0.3, 1.0, smoothstep(0.0, 0.5, temp));
+    let b = mix(0.0, 0.8, smoothstep(0.3, 1.0, temp));
+    return vec3<f32>(r, g, b) * (0.5 + temp * 0.5);
+}
+
+// ─── Fresnel rim lighting ───
+fn fresnel_rim(n: vec3<f32>, viewDir: vec3<f32>, power: f32) -> f32 {
+    return pow(1.0 - max(dot(n, viewDir), 0.0), power);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
@@ -107,9 +162,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var ro = vec3<f32>(0.0, 0.0, -10.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
+    // Mouse Y-flipped: screen-top (zoom_config.z=0) = +Y/up
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
-    let mouseY = u.zoom_config.z * 2.0 - 1.0;
-    let mousePos = vec3<f32>(mouseX * 8.0, -mouseY * 8.0, 0.0);
+    let mouseY = (1.0 - u.zoom_config.z * 2.0);
+    let mousePos = vec3<f32>(mouseX * 8.0, mouseY * 8.0, 0.0);
 
     let mouseDist = distance(ro + rd * 10.0, mousePos);
     if (mouseDist > 0.1) {
@@ -121,6 +177,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var d = 0.0;
     var glow = vec3<f32>(0.0);
     var hitPlasma = false;
+    var surfaceNormal = vec3<f32>(0.0);
 
     for (var i = 0; i < 100; i++) {
         var p = ro + rd * t;
@@ -151,16 +208,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         if (d < 0.01) {
             let n_fbm = fbm(p * 2.0 + vec3<f32>(0.0, 0.0, time * 2.0));
-            col = vec3<f32>(0.1, 0.2, 0.3) + vec3<f32>(0.5, 0.7, 1.0) * n_fbm;
+            // OkLab mix between cool and hot tones
+            let cool = vec3<f32>(0.1, 0.2, 0.3);
+            let hot = blackbody(0.6 + n_fbm * 0.4);
+            col = oklab_mix(cool, hot, n_fbm);
             let refl = reflect(rd, normalize(p));
             col += textureSampleLevel(readTexture, u_sampler, refl.xy, 0.0).rgb * 0.5;
+
+            // Approximate normal for Fresnel
+            surfaceNormal = normalize(p);
             break;
         }
 
         if (innerPlasma < 0.1) {
             hitPlasma = true;
             let n_plasma = fbm(p * 5.0 - vec3<f32>(0.0, 0.0, time * 5.0 + audioReactivity * 10.0));
-            glow += vec3<f32>(1.0, 0.4, 0.1) * (0.05 * plasmaIntensity) / (abs(innerPlasma - n_plasma) + 0.05);
+            let plasmaBB = blackbody(0.4 + n_plasma * 0.6);
+            glow += plasmaBB * (0.05 * plasmaIntensity) / (abs(innerPlasma - n_plasma) + 0.05);
         }
 
         t += d * 0.5;
@@ -173,9 +237,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     col += glow;
+
+    // Fresnel rim on the ouroboros structure
+    if (length(surfaceNormal) > 0.01) {
+        let viewDir = -rd;
+        let rim = fresnel_rim(surfaceNormal, viewDir, 2.0 + audioReactivity * 2.0);
+        let rimCol = blackbody(0.5 + audioReactivity * 0.5) * rim * 0.4;
+        col += rimCol;
+    }
+
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
-        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, _alpha));
     let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));

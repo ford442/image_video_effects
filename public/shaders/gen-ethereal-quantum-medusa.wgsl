@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Ethereal Quantum-Medusa
 //  Category: generative
-//  Features: raymarched, audio-reactive, mouse-repulsion, upgraded-rgba,
-//            chromatic-tentacles, temporal-bioluminescence, audio-sway, depth-output
+//  Features: raymarched, audio-reactive, mouse-gravity-well, feedback-loops,
+//            upgraded-rgba, chromatic-tentacles, temporal-bioluminescence,
+//            audio-sway, depth-output, gravity-attractor, mouse-trail
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-06-28 — Interactivist Batch (gravity wells + feedback loops)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -46,19 +47,39 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
+// ─── Mouse gravity well + attractor ───
+fn applyMouseGravity(p: vec3<f32>, mouse_pos: vec3<f32>, strength: f32) -> vec3<f32> {
+    let m_dist = length(p - mouse_pos);
+    let gravity = strength / (m_dist * m_dist + 0.5);
+    return p + normalize(p - mouse_pos) * gravity * (1.0 + strength);
+}
+
+fn applyMouseAttractor(p: vec3<f32>, mouse_pos: vec3<f32>, attract: f32) -> vec3<f32> {
+    let m_dist = length(p - mouse_pos);
+    let pull = attract / (m_dist * m_dist + 1.0);
+    return p - normalize(p - mouse_pos) * pull;
+}
+
 fn map(p: vec3<f32>, time: f32, bass: f32, mids: f32) -> vec2<f32> {
     var p1 = p;
 
+    // Mouse in 3D: screen-top (zoom_config.z=0) = +Y/up
     let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 5.0, (0.5 - u.zoom_config.z) * 5.0, 0.0);
-    let m_dist = length(p1 - mouse_pos);
-    p1 += normalize(p1 - mouse_pos) * (1.0 / (m_dist * m_dist + 1.0)) * u.zoom_params.w;
 
-    // Audio-reactive tentacle sway
+    // Gravity well repulsion + attractor dual force
+    let repulse_strength = u.zoom_params.w * 3.0;
+    let attract_strength = u.zoom_params.w * 1.5;
+    p1 = applyMouseGravity(p1, mouse_pos, repulse_strength);
+    p1 = applyMouseAttractor(p1, mouse_pos, attract_strength);
+
+    // Audio-reactive tentacle sway with feedback memory
     let sway = sin(time * 0.5 + p1.y * 2.0) * 0.1 * (1.0 + mids * 0.5);
-    p1.x += sway;
+    let sway_bass = cos(time * 0.3 + p1.x * 1.5) * 0.05 * bass;
+    p1.x += sway + sway_bass;
+    p1.z += sway_bass * 0.5;
 
     var p_bell = p1;
-    p_bell.y += sin(time + length(p_bell.xz)) * 0.2;
+    p_bell.y += sin(time + length(p_bell.xz)) * 0.2 * (1.0 + bass * 0.3);
     let bell = length(p_bell * vec3<f32>(1.0, 2.0, 1.0)) - 1.0;
 
     var p_tent = p1;
@@ -128,6 +149,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var hit = 0.0;
     var fresnel = 0.0;
 
+    // Feedback loop: read previous frame glow accumulation
+    let prevFrame = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(id.xy) / res, 0.0);
+    let prevGlow = prevFrame.a;
+
     if (d < MAX_DIST) {
         hit = 1.0;
         let p = ro + rd * d;
@@ -146,11 +171,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = mix(rCol, bCol, 0.5) * (1.0 - fresnel);
         col += vec3<f32>(0.2, 0.9, 0.8) * glow * (1.0 - fresnel);
 
-        // Temporal bioluminescence pulse memory
-        let prevGlow = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(id.xy) / res, 0.0).a;
-        let pulseMemory = mix(glow, prevGlow * 0.9, 0.1 + bass * 0.05);
+        // Mouse-proximity chromatic boost
+        let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 5.0, (0.5 - u.zoom_config.z) * 5.0, 0.0);
+        let mouse_dist = length(p - mouse_pos);
+        let mouse_prox = exp(-mouse_dist * 2.0);
+        col += vec3<f32>(0.5, 0.1, 0.3) * mouse_prox * bass * 2.0;
+
+        // Temporal bioluminescence pulse memory with feedback
+        let prevGlow2 = prevFrame.a;
+        let pulseMemory = mix(glow, prevGlow2 * 0.92, 0.15 + bass * 0.05);
         col += vec3<f32>(0.3, 0.7, 0.6) * pulseMemory * fresnel;
+
+        // Audio trail feedback: accumulate bass-driven color in feedback buffer
+        let trailColor = vec3<f32>(0.6, 0.2, 0.8) * bass * mouse_prox;
+        col += trailColor * 0.5;
     }
+
+    // Feedback loop: blend with previous frame for motion trails
+    col = mix(col, prevFrame.rgb * 0.95, 0.08 + bass * 0.03);
 
     let lumaOut = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(hit * (0.5 + fresnel * 0.4) + lumaOut * 0.2 + 0.05, 0.0, 1.0);
@@ -159,5 +197,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let depth = clamp(d / MAX_DIST, 0.0, 1.0);
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(col, alpha));
+    // Store accumulated glow in alpha for feedback loop
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(col, alpha * (1.0 + bass * 0.5)));
 }

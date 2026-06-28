@@ -3,9 +3,20 @@
   "category": "generative",
   "filename": "gen-nebular-chrono-astrolabe.wgsl",
   "tags": [
-    "generative"
+    "generative",
+    "nebula",
+    "astrolabe",
+    "raymarching",
+    "fbm",
+    "domain-warping",
+    "curl-noise",
+    "fresnel",
+    "beer-lambert",
+    "audio-reactive",
+    "temporal",
+    "depth-aware"
   ],
-  "description": "",
+  "description": "A cosmic nebula astrolabe with concentric FBM-domain-warped rings, volumetric curl-noise clouds, satellite box structures, Fresnel-Schlick reflections, Beer-Lambert attenuation, and audio-reactive gravity wells. Mouse bends spacetime.",
   "workgroup_size": [
     16,
     16,

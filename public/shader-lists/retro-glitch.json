@@ -1,7 +1,7 @@
 [
   {
     "id": "ascii-flow",
-    "url": "https://test.1ink.us/image_video_effects/shaders/ascii-flow.wgsl",
+    "url": "shaders/ascii-flow.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -50,7 +50,7 @@
     "id": "bayer-dither-interactive",
     "name": "Bayer Dither Interactive",
     "category": "retro-glitch",
-    "url": "https://test.1ink.us/image_video_effects/shaders/bayer-dither-interactive.wgsl",
+    "url": "shaders/bayer-dither-interactive.wgsl",
     "description": "Ordered 8x8 Bayer dither with blue-noise modulation, gather-style error diffusion, retro 1-bit/4-bit/8-bit palette switching, CRT phosphor dot pitch, and chromatic aberration on dither edges.",
     "features": [
       "mouse-driven",
@@ -112,7 +112,7 @@
   {
     "id": "byte-mosh",
     "name": "Byte-Mosh Glitch",
-    "url": "https://test.1ink.us/image_video_effects/shaders/byte-mosh.wgsl",
+    "url": "shaders/byte-mosh.wgsl",
     "description": "Bitwise XOR, AND, shift, and rotate operations creating digital corruption effects.",
     "params": [
       {
@@ -158,7 +158,7 @@
   {
     "id": "crt-magnet",
     "name": "CRT Magnet",
-    "url": "https://test.1ink.us/image_video_effects/shaders/crt-magnet.wgsl",
+    "url": "shaders/crt-magnet.wgsl",
     "description": "Optimized CRT monitor degaussing magnetic distortion near the mouse. Uses canonical fbm/curl noise, unified audio-envelope and spring-damped mouse state, branchless aperture grille, hex-bloom, beam-purity RGB separation, and ACES tone mapping with semantic alpha blending.",
     "params": [
       {
@@ -211,7 +211,7 @@
   {
     "id": "crt-phosphor-decay",
     "name": "CRT Phosphor Decay",
-    "url": "https://test.1ink.us/image_video_effects/shaders/crt-phosphor-decay.wgsl",
+    "url": "shaders/crt-phosphor-decay.wgsl",
     "description": "Simulates CRT phosphor persistence with per-channel RGB decay rates, scanline masking, sub-pixel triad rendering, and halation bloom. Audio-reactive brightness flash and scanline flutter. Touch cursor adds static.",
     "features": [
       "mouse-driven",
@@ -269,7 +269,7 @@
   {
     "id": "crt-tv",
     "name": "CRT TV - Phosphor Physics",
-    "url": "https://test.1ink.us/image_video_effects/shaders/crt-tv.wgsl",
+    "url": "shaders/crt-tv.wgsl",
     "description": "Authentic CRT phosphor physics simulation with aperture grille shadow mask, per-channel phosphor decay (R>G>B persistence rates), halation glow from glass scattering, barrel distortion, and realistic scanlines",
     "tags": [
       "crt",
@@ -322,7 +322,7 @@
   {
     "id": "cyber-rain-interactive",
     "name": "Cyber Rain",
-    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-rain-interactive.wgsl",
+    "url": "shaders/cyber-rain-interactive.wgsl",
     "description": "Matrix-style digital rain that reacts to image luminance and mouse.",
     "features": [
       "mouse-driven"
@@ -366,7 +366,7 @@
   {
     "id": "cyber-terminal-ascii",
     "name": "Cyber Terminal ASCII",
-    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-terminal-ascii.wgsl",
+    "url": "shaders/cyber-terminal-ascii.wgsl",
     "features": [
       "mouse-driven"
     ],
@@ -420,7 +420,7 @@
   {
     "id": "data-moshing-diffusion",
     "name": "Data Moshing Diffusion",
-    "url": "https://test.1ink.us/image_video_effects/shaders/data-moshing-diffusion.wgsl",
+    "url": "shaders/data-moshing-diffusion.wgsl",
     "category": "advanced-hybrid",
     "description": "Data moshing with anisotropic diffusion, chromatic per-channel diffusion offsets, audio-reactive smear strength, temporal smear persistence, and mouse swirl injection.",
     "tags": [
@@ -479,7 +479,7 @@
   {
     "id": "data-moshing",
     "name": "Data Moshing",
-    "url": "https://test.1ink.us/image_video_effects/shaders/data-moshing.wgsl",
+    "url": "shaders/data-moshing.wgsl",
     "category": "retro-glitch",
     "description": "Advanced data-moshing glitch effect with structure-tensor optical flow estimation and motion-compensated smearing. Simulates MPEG macro-blocking, DCT ringing, chroma subsampling errors, and VHS head-switching bands. Bass triggers corruption events, mouse scrubs temporal buffer, and depth controls compression quality.",
     "tags": [
@@ -541,7 +541,7 @@
   {
     "id": "datamosh-brush",
     "name": "Datamosh Brush",
-    "url": "https://test.1ink.us/image_video_effects/shaders/datamosh-brush.wgsl",
+    "url": "shaders/datamosh-brush.wgsl",
     "description": "Interactive datamosh effect. Mouse drags and corrupts pixels like P-frame compression artifacts.",
     "params": [
       {
@@ -589,7 +589,7 @@
   {
     "id": "digital-decay",
     "name": "Digital Decay",
-    "url": "https://test.1ink.us/image_video_effects/shaders/digital-decay.wgsl",
+    "url": "shaders/digital-decay.wgsl",
     "description": "Simulates data corruption: block displacement, sub-pixel jitter, chromatic aberration, bit-flip channel noise, scanline static, and ghost-frame persistence — all scaling with audio bass and depth.",
     "features": [
       "audio-reactive",
@@ -645,7 +645,7 @@
   {
     "id": "digital-glitch-pass1",
     "name": "Digital Glitch (Pass 1)",
-    "url": "https://test.1ink.us/image_video_effects/shaders/digital-glitch-pass1.wgsl",
+    "url": "shaders/digital-glitch-pass1.wgsl",
     "description": "Glitch field generation: block displacement, scanline tearing, bitwise corruption seeds, and per-pixel corruption masks. Outputs glitch field to dataTextureA.",
     "tags": [
       "glitch",
@@ -701,7 +701,7 @@
   {
     "id": "digital-glitch-pass2",
     "name": "Digital Glitch (Pass 2)",
-    "url": "https://test.1ink.us/image_video_effects/shaders/digital-glitch-pass2.wgsl",
+    "url": "shaders/digital-glitch-pass2.wgsl",
     "description": "Error propagation and compositing pass: neighbor error spreading, digital decay with bit-depth reduction, chromatic aberration, scanline artifacts, and block inversion. Reads glitch field from dataTextureC.",
     "tags": [
       "glitch",
@@ -755,7 +755,7 @@
   {
     "id": "digital-glitch",
     "name": "Digital Glitch",
-    "url": "https://test.1ink.us/image_video_effects/shaders/digital-glitch.wgsl",
+    "url": "shaders/digital-glitch.wgsl",
     "description": "",
     "params": [
       {
@@ -812,7 +812,7 @@
   {
     "id": "digital-waves",
     "name": "Digital Waves",
-    "url": "https://test.1ink.us/image_video_effects/shaders/digital-waves.wgsl",
+    "url": "shaders/digital-waves.wgsl",
     "description": "Digital wave interference patterns.",
     "tags": [
       "filter",
@@ -857,7 +857,7 @@
     "id": "film-gate-weave",
     "name": "Film Gate Weave",
     "category": "retro-glitch",
-    "url": "https://test.1ink.us/image_video_effects/shaders/film-gate-weave.wgsl",
+    "url": "shaders/film-gate-weave.wgsl",
     "description": "Accurate 35mm film gate weave simulation with perforation hole registration jitter, gate flutter from intermittent motion, and film scratch generation with temporal persistence. Film grain with dye cloud structure, gate hair accumulation, splice tape artifacts, ACES tone mapping, and chromatic aberration from lens breathing.",
     "features": [
       "temporal-frame-jitter",
@@ -921,7 +921,7 @@
   {
     "id": "halftone",
     "name": "Retro Halftone",
-    "url": "https://test.1ink.us/image_video_effects/shaders/halftone.wgsl",
+    "url": "shaders/halftone.wgsl",
     "description": "Classic newspaper halftone dot pattern with adjustable scale, contrast, and color mode. Audio-reactive bass pulse modulates dot intensity.",
     "params": [
       {
@@ -976,7 +976,7 @@
   {
     "id": "holographic-glitch",
     "name": "Holographic Glitch",
-    "url": "https://test.1ink.us/image_video_effects/shaders/holographic-glitch.wgsl",
+    "url": "shaders/holographic-glitch.wgsl",
     "description": "Futuristic holographic projection with RGB chromatic aberration, scanlines, digital artifacts, and unstable flickering. Perfect for sci-fi aesthetics.",
     "params": [
       {
@@ -1029,7 +1029,7 @@
     "id": "holographic-projection-failure",
     "name": "Holo-Projection Failure v2",
     "category": "retro-glitch",
-    "url": "https://test.1ink.us/image_video_effects/shaders/holographic-projection-failure.wgsl",
+    "url": "shaders/holographic-projection-failure.wgsl",
     "description": "Holographic projection failure simulation with phase wrapping errors, bit-depth truncation, scanline desync, and block corruption. Bass triggers cascading failure modes; mouse repairs the signal locally. Depth controls projection plane distance.",
     "params": [
       {
@@ -1084,7 +1084,7 @@
   {
     "id": "neon-edges",
     "name": "Neon Edges",
-    "url": "https://test.1ink.us/image_video_effects/shaders/neon-edges.wgsl",
+    "url": "shaders/neon-edges.wgsl",
     "description": "Multi-scale Mach-band edge enhancement colorized by blackbody temperature and depth-aware spotlighting.",
     "params": [
       {
@@ -1144,7 +1144,7 @@
   {
     "id": "phosphor-decay",
     "name": "Phosphor Decay",
-    "url": "https://test.1ink.us/image_video_effects/shaders/phosphor-decay.wgsl",
+    "url": "shaders/phosphor-decay.wgsl",
     "description": "CRT phosphor persistence with per-channel decay, OkLab-blended trails, audio-reactive bloom, shadow mask, scan-line blanking, depth haze, blackbody temperature grading, and IGN-dithered premultiplied output.",
     "params": [
       {
@@ -1199,7 +1199,7 @@
   {
     "id": "pixel-rain",
     "name": "Pixel Rain",
-    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-rain.wgsl",
+    "url": "shaders/pixel-rain.wgsl",
     "features": [
       "mouse-driven",
       "upgraded-rgba",
@@ -1248,7 +1248,7 @@
   {
     "id": "pixelation-drift",
     "name": "Pixelation Drift",
-    "url": "https://test.1ink.us/image_video_effects/shaders/pixelation-drift.wgsl",
+    "url": "shaders/pixelation-drift.wgsl",
     "description": "Dynamic pixelated mosaic with audio-reactive pixel sizing, chromatic RGB pixel separation, depth-aware sizing, organic noise drift, and temporal persistence.",
     "params": [
       {
@@ -1307,7 +1307,7 @@
   {
     "id": "rgb-glitch-displacement",
     "name": "RGB Glitch Displacement",
-    "url": "https://test.1ink.us/image_video_effects/shaders/rgb-glitch-displacement.wgsl",
+    "url": "shaders/rgb-glitch-displacement.wgsl",
     "description": "Digital glitch effect with RGB channel displacement, block glitches, scanlines, pixel sorting, and datamosh effects. Mouse-reactive wave displacement and chromatic aberration. Audio reactivity pulses glitch intensity and adds beat-synchronized flashes.",
     "tags": [
       "glitch",
@@ -1357,7 +1357,7 @@
   {
     "id": "rgb-glitch-trail",
     "name": "RGB Glitch Trail",
-    "url": "https://test.1ink.us/image_video_effects/shaders/rgb-glitch-trail.wgsl",
+    "url": "shaders/rgb-glitch-trail.wgsl",
     "description": "Mouse leaves chromatic aberration trails with alpha-channel translucency blending. Uses domain-warped FBM for organic displacement and computes alpha from glitch intensity * temporal persistence.",
     "params": [
       {
@@ -1404,7 +1404,7 @@
   {
     "id": "scan-distort",
     "name": "Scan Distort",
-    "url": "https://test.1ink.us/image_video_effects/shaders/scan-distort.wgsl",
+    "url": "shaders/scan-distort.wgsl",
     "description": "CRT-style scanline distortion with unified displacement fields and alpha translucency blending. Features temporal feedback accumulation, bass-driven audio envelope, mouse-reactive glitch bursts, and block-edge quantization artifacts.",
     "features": [
       "mouse-driven",
@@ -1465,7 +1465,7 @@
   {
     "id": "scanline-drift",
     "name": "Scanline Drift",
-    "url": "https://test.1ink.us/image_video_effects/shaders/scanline-drift.wgsl",
+    "url": "shaders/scanline-drift.wgsl",
     "description": "Horizontal segments of the image drift left and right, simulating a bad video signal or tracking error.",
     "params": [
       {
@@ -1511,7 +1511,7 @@
   {
     "id": "signal-noise",
     "name": "Signal Noise",
-    "url": "https://test.1ink.us/image_video_effects/shaders/signal-noise.wgsl",
+    "url": "shaders/signal-noise.wgsl",
     "description": "Multi-octave analog noise with VHS head-switching bands, DCT block artifacts, datamoshing smear, and directional chromatic aberration with YUV chroma noise.",
     "features": [
       "temporal"
@@ -1561,7 +1561,7 @@
   {
     "id": "spectral-glitch-sort",
     "name": "Spectral Glitch Sort",
-    "url": "https://test.1ink.us/image_video_effects/shaders/spectral-glitch-sort.wgsl",
+    "url": "shaders/spectral-glitch-sort.wgsl",
     "features": [
       "mouse-driven",
       "chromatic-aberration",
@@ -1608,7 +1608,7 @@
   {
     "id": "spectrum-bleed",
     "name": "Spectrum Bleed",
-    "url": "https://test.1ink.us/image_video_effects/shaders/spectrum-bleed.wgsl",
+    "url": "shaders/spectrum-bleed.wgsl",
     "description": "Color channel separation and bleeding effects.",
     "tags": [
       "filter",
@@ -1655,7 +1655,7 @@
   {
     "id": "vhs-tracking",
     "name": "VHS Tracking Error",
-    "url": "https://test.1ink.us/image_video_effects/shaders/vhs-tracking.wgsl",
+    "url": "shaders/vhs-tracking.wgsl",
     "features": [
       "mouse-driven",
       "upgraded-rgba",
@@ -1702,7 +1702,7 @@
     "id": "vinyl-scratch",
     "name": "Vinyl Scratch",
     "category": "retro-glitch",
-    "url": "https://test.1ink.us/image_video_effects/shaders/vinyl-scratch.wgsl",
+    "url": "shaders/vinyl-scratch.wgsl",
     "description": "Vintage vinyl record scratch with chromatic wobble. Bass drives rotation speed, mids warp the record, treble adds groove noise. Depth scales groove intensity.",
     "params": [
       {
@@ -1757,7 +1757,7 @@
   {
     "id": "waveform-glitch",
     "name": "Waveform Glitch",
-    "url": "https://test.1ink.us/image_video_effects/shaders/waveform-glitch.wgsl",
+    "url": "shaders/waveform-glitch.wgsl",
     "description": "VHS waveform glitch driven by a Clifford strange attractor, domain-warped FBM, divergence-free curl flow, Voronoi F2-F1 ridge corruption, YUV chroma noise, CRT shadow mask, and temporal feedback persistence. Alpha encodes waveform displacement magnitude * block corruption intensity.",
     "features": [
       "temporal",
@@ -1827,7 +1827,7 @@
   {
     "id": "xerox-degrade",
     "name": "Xerox Degrade",
-    "url": "https://test.1ink.us/image_video_effects/shaders/xerox-degrade.wgsl",
+    "url": "shaders/xerox-degrade.wgsl",
     "description": "Simulates the degradation of repeated photocopying with grain, high contrast, and smear.",
     "params": [
       {

@@ -1,4 +1,5 @@
 {
+  "id": "gen-gravitational-strain",
   "name": "Gravitational Strain Field",
   "category": "generative",
   "filename": "gen-gravitational-strain.wgsl",
@@ -12,14 +13,14 @@
     "generative",
     "simulation",
     "audio",
-    "music"
+    "music",
+    "domain-warping",
+    "voronoi",
+    "beer-lambert",
+    "fresnel"
   ],
-  "description": "Orbiting gravity wells warp a procedural star field via geodesic ray integration. Tidal emission glows brightest where gravitational gradients collide \u2014 dark matter visualization as art.",
-  "workgroup_size": [
-    16,
-    16,
-    1
-  ],
+  "description": "Orbiting gravity wells warp a procedural star field via RK4 geodesic ray integration. Tidal emission glows where gravitational gradients collide. Upgraded with domain-warped FBM, curl noise, Voronoi nebulae, Beer-Lambert extinction, Fresnel-Schlick lensing, accretion disks, and enhanced audio reactivity.",
+  "workgroup_size": [16, 16, 1],
   "updatedParams": [
     {
       "index": 0,

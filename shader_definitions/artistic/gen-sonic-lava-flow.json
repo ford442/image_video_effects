@@ -1,8 +1,8 @@
 {
   "id": "gen-sonic-lava-flow",
   "name": "Sonic Lava Flow",
-  "url": "/shaders/gen-sonic-lava-flow.wgsl",
-  "description": "Navier-Stokes-style fluid solver with decayed feedback creating a molten lava overlay, audio-reactive heat and chromatic shimmer.",
+  "category": "artistic",
+  "filename": "gen-sonic-lava-flow.wgsl",
   "tags": [
     "lava",
     "fluid",
@@ -11,16 +11,18 @@
     "molten",
     "heat",
     "temporal",
-    "organic"
+    "organic",
+    "domain-warping",
+    "voronoi",
+    "beer-lambert",
+    "fresnel",
+    "curl-noise"
   ],
-  "features": [
-    "audio-reactive",
-    "mouse-driven",
-    "temporal"
-  ],
-  "params": [
+  "description": "Navier-Stokes-style fluid solver with domain-warped FBM, Voronoi crust detail, Beer-Lambert volumetric glow, Fresnel molten surface, enhanced curl noise, and deep audio reactivity creating a living molten world.",
+  "workgroup_size": [16, 16, 1],
+  "updatedParams": [
     {
-      "id": "viscosity",
+      "index": 0,
       "name": "Viscosity",
       "default": 0.6,
       "min": 0,
@@ -28,7 +30,7 @@
       "step": 0.01
     },
     {
-      "id": "turbulence",
+      "index": 1,
       "name": "Turbulence",
       "default": 0.4,
       "min": 0,
@@ -36,7 +38,7 @@
       "step": 0.01
     },
     {
-      "id": "decay",
+      "index": 2,
       "name": "Decay",
       "default": 0.7,
       "min": 0,
@@ -44,12 +46,15 @@
       "step": 0.01
     },
     {
-      "id": "heatGlow",
+      "index": 3,
       "name": "Heat Glow",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }
