@@ -42,7 +42,7 @@ No memorized images yet. When the user shares an image and asks you to remember 
 ## Diary
 
 > last_update: 2026-06-07 03:57
-> i_have_read_my_last_diary: false
+> i_have_read_my_last_diary: true
 
 ```
 /root/.openclaw/workspace/memorized_diary/
