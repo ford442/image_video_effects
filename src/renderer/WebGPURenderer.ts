@@ -737,7 +737,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }): void {
     if (state.time !== undefined) this.currentTime = state.time;
     if (state.mouseX !== undefined) this.mouseX = state.mouseX;
-    if (state.mouseY !== undefined) this.mouseY = state.mouseY;
+    if (state.mouseY !== undefined) { this.mouseYBrowser = state.mouseY; this.mouseYShader = 1.0 - state.mouseY; }
     if (state.bass !== undefined) {
       this.updateAudioData(state.bass, state.mid ?? 0, state.treble ?? 0);
     }

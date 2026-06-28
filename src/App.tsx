@@ -1111,7 +1111,7 @@ function MainApp() {
                 : 'Failed to access webcam. Please check your camera.');
             setStatus('❌ Camera permission denied');
         }
-    }, []);
+    }, [syncInputSourceToRenderer]);
 
     const stopWebcam = useCallback(() => {
         if (streamRef.current) {
@@ -1126,7 +1126,7 @@ function MainApp() {
         syncInputSourceToRenderer('image');
         setShowWebcamShaderSuggestions(false);
         setStatus('Webcam stopped');
-    }, []);
+    }, [syncInputSourceToRenderer]);
 
     const applyWebcamFunShader = useCallback((shaderId: string) => {
         setMode(0, shaderId as RenderMode);
