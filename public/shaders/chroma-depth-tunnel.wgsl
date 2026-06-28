@@ -28,6 +28,25 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn palette(t: f32) -> vec3<f32> {
+    return vec3<f32>(0.52, 0.50, 0.50) +
+           vec3<f32>(0.48, 0.45, 0.42) *
+           cos(6.28318 * (vec3<f32>(1.0, 0.68, 0.44) * t + vec3<f32>(0.00, 0.26, 0.57)));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 @compute @workgroup_size(8, 8, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) {
@@ -76,15 +95,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fog = mix(1.0, smoothstep(0.0, centerFade, radius), step(0.001, centerFade));
     color = color * fog;
 
-    // Audio-reactive color boost: mids warm, treble sparkles
-    color = color + vec3<f32>(mids * 0.05, mids * 0.03, treble * 0.08) * fog;
+    // Cinematic tunnel grade: glowing ribs, spectral core, and audio-hot sparks.
+    let rings = 0.5 + 0.5 * sin(v_coord * density * 0.42 + time * (1.4 + bass));
+    let rib = pow(smoothstep(0.72, 1.0, rings), 3.0);
+    let swirl = 0.5 + 0.5 * sin(angle * 6.0 + v_coord * 0.08 - time * 1.8);
+    let spectral = palette(v_coord * 0.035 + angle * 0.12 + time * 0.05 + mids * 0.2);
+    var hdr = color * (0.78 + fog * 0.32);
+    hdr = hdr + spectral * rib * fog * (1.15 + bass * 1.4);
+    hdr = hdr + vec3<f32>(0.25, 0.55, 1.0) * pow(swirl, 5.0) * fog * treble * 0.75;
+    hdr = hdr + vec3<f32>(1.0, 0.82, 0.45) * pow(max(0.0, 1.0 - radius * 2.3), 4.0) * (0.35 + mids);
 
     // Alpha encodes tunnel depth: inner rings (high v_coord) are more opaque
     let tunnel_depth = clamp(v_coord * 0.02, 0.0, 1.0);
-    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(fog * (0.4 + tunnel_depth * 0.4 + luma * 0.2), 0.0, 1.0);
+    let radial = length(uv - vec2<f32>(0.5)) * 1.414;
+    hdr = hdr * mix(1.08, 0.62, smoothstep(0.48, 1.0, radial));
+    let dither = (ign(vec2<f32>(global_id.xy) + time * 31.0) - 0.5) / 255.0;
+    let mapped = clamp(aces(hdr * 1.18) + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
+    let luma = dot(hdr, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(fog * (0.12 + tunnel_depth * 0.28 + pow(max(0.0, luma - 0.5), 2.0) * 2.8), 0.0, 1.0);
 
-    let finalColor = vec4<f32>(color, alpha);
+    let finalColor = vec4<f32>(mapped * alpha, alpha);
 
     textureStore(writeTexture, coords, finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);
