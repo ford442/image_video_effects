@@ -3,7 +3,7 @@
   "name": "Vinyl Scratch",
   "category": "retro-glitch",
   "url": "shaders/vinyl-scratch.wgsl",
-  "description": "Vintage vinyl record scratch with chromatic wobble, animated dust particles, groove lighting with directional reflections, groove sparkle highlights, analog warmth, saturation roll-off, film grain with temporal coherence, radial chromatic aberration, vignette, and lens dirt. Bass drives rotation speed, mids warp the record, treble adds groove sparkle and dust. Depth scales groove intensity.",,
+  "description": "Vintage vinyl record scratch with chromatic wobble, animated dust particles, groove lighting with directional reflections, groove sparkle highlights, analog warmth, saturation roll-off, film grain with temporal coherence, radial chromatic aberration, vignette, and lens dirt. Bass drives rotation speed, mids warp the record, treble adds groove sparkle and dust. Depth scales groove intensity.",
   "params": [
     {
       "id": "scratch_density",

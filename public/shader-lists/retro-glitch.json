@@ -1699,6 +1699,68 @@
     ]
   },
   {
+    "id": "vinyl-scratch",
+    "name": "Vinyl Scratch",
+    "category": "retro-glitch",
+    "url": "shaders/vinyl-scratch.wgsl",
+    "description": "Vintage vinyl record scratch with chromatic wobble, animated dust particles, groove lighting with directional reflections, groove sparkle highlights, analog warmth, saturation roll-off, film grain with temporal coherence, radial chromatic aberration, vignette, and lens dirt. Bass drives rotation speed, mids warp the record, treble adds groove sparkle and dust. Depth scales groove intensity.",
+    "params": [
+      {
+        "id": "scratch_density",
+        "name": "Scratch Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "dust",
+        "name": "Dust Particles",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "warping",
+        "name": "Record Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      },
+      {
+        "id": "sepia",
+        "name": "Vintage Tone",
+        "default": 0.5,
+        "min": 0,
+        "max": 1
+      }
+    ],
+    "features": [
+      "retro",
+      "texture",
+      "mouse-driven",
+      "upgraded-rgba",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic-wobble",
+      "dust-particles",
+      "groove-lighting",
+      "analog-warmth",
+      "film-grain",
+      "vignette",
+      "lens-dirt"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "vinyl",
+      "scratch",
+      "retro",
+      "audio-reactive",
+      "depth-aware",
+      "chromatic"
+    ]
+  },
+  {
     "id": "waveform-glitch",
     "name": "Waveform Glitch",
     "url": "shaders/waveform-glitch.wgsl",

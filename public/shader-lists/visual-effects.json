@@ -288,6 +288,72 @@
     ]
   },
   {
+    "id": "anaglyph-3d",
+    "name": "Anaglyph 3D",
+    "category": "visual-effects",
+    "url": "shaders/anaglyph-3d.wgsl",
+    "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, bass-pulsed split width, and cinematic post-processing: film grain with temporal coherence, radial chromatic aberration, vignette darkening, CRT barrel distortion, color grading with lift/gamma/gain, anamorphic light streaks from bright points, and lens dirt overlay.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba",
+      "temporal",
+      "chromatic",
+      "film-grain",
+      "chromatic-aberration",
+      "vignette",
+      "crt-barrel",
+      "color-grading",
+      "anamorphic-streaks",
+      "lens-dirt"
+    ],
+    "tags": [
+      "anaglyph",
+      "3d",
+      "depth-aware",
+      "stereo",
+      "audio-reactive",
+      "temporal",
+      "chromatic",
+      "ghost"
+    ],
+    "params": [
+      {
+        "id": "separation",
+        "name": "Separation",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "depthCurve",
+        "name": "Depth Curve",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "ghostAmount",
+        "name": "Ghost Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "grainAmount",
+        "name": "Grain Amount",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "anamorphic-caustic-flare",
     "name": "Anamorphic Caustic Flare",
     "url": "shaders/anamorphic-caustic-flare.wgsl",
