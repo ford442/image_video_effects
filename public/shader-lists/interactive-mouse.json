@@ -237,11 +237,16 @@
     "category": "interactive-mouse",
     "url": "shaders/block-distort-interactive.wgsl",
     "icon": "grid",
-    "description": "Cursor pressure shoves image blocks into a prismatic distortion field with beat-reactive grid highlights.",
+    "description": "Cursor pressure shoves image blocks into a prismatic distortion field with beat-reactive grid highlights. Enhanced with volumetric glow from mouse position, rim lighting on grid edges, audio-reactive light pulses, and warm/cool 3-point fill lighting.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "volumetric-glow",
+      "rim-lighting",
+      "3-point-lighting",
+      "audio-reactive-pulse",
+      "bloom-weighted-alpha"
     ],
     "params": [
       {
@@ -278,7 +283,10 @@
       "interactive",
       "grid",
       "glitch",
-      "audio-reactive"
+      "audio-reactive",
+      "volumetric-glow",
+      "rim-lighting",
+      "lighting"
     ]
   },
   {
