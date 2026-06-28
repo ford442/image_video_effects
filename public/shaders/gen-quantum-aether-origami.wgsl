@@ -111,6 +111,38 @@ fn palette(t: f32) -> vec3<f32> {
 
 fn fresnel(cosTheta: f32, f0: vec3<f32>) -> vec3<f32> { return f0 + (vec3<f32>(1.0) - f0) * pow(1.0 - cosTheta, 5.0); }
 
+fn softShadow(ro: vec3<f32>, rd: vec3<f32>, mint: f32, maxt: f32, k: f32) -> f32 {
+    var res = 1.0; var t = mint;
+    for (var i = 0; i < 24; i++) {
+        let h = map(ro + rd * t);
+        if (h < 0.001) { return 0.0; }
+        res = min(res, k * h / t);
+        t += clamp(h, 0.01, 0.5);
+        if (t > maxt) { break; }
+    }
+    return clamp(res, 0.0, 1.0);
+}
+
+fn ambientOcclusion(p: vec3<f32>, n: vec3<f32>) -> f32 {
+    var occ = 0.0; var scale = 1.0;
+    for (var i = 0; i < 5; i++) {
+        let h = 0.01 + 0.12 * f32(i) / 4.0;
+        let d = map(p + n * h);
+        occ += (h - d) * scale;
+        scale *= 0.5;
+    }
+    return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
+}
+
+fn spectralFold(foldDepth: f32, time: f32, audio: f32) -> vec3<f32> {
+    let phase = foldDepth * TAU * 2.0 + time * 0.3 + audio * 0.5;
+    return vec3<f32>(
+        0.5 + 0.5 * cos(phase + 0.0),
+        0.5 + 0.5 * cos(phase + 2.094),
+        0.5 + 0.5 * cos(phase + 4.189)
+    );
+}
+
 fn getNormal(p: vec3<f32>) -> vec3<f32> {
     let d = map(p); let e = vec2<f32>(0.001, 0.0);
     return normalize(d - vec3<f32>(map(p - e.xyy), map(p - e.yxy), map(p - e.yyx)));
@@ -158,8 +190,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let interference = if1 + if2;
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let diff = max(dot(n, l), 0.0);
+        let shadow = softShadow(p + n * 0.01, l, 0.02, 5.0, 8.0);
+        let ao = ambientOcclusion(p, n);
         let ambient = vec3<f32>(0.02, 0.02, 0.05);
-        let base_col = ambient + diff * interference;
+        let base_col = ambient + diff * interference * shadow * ao;
+        // Spectral fold coloring based on iteration depth
+        let foldCol = spectralFold(min_dist * 10.0, u.config.x, bass) * 0.15 * u.zoom_params.y;
         // Fresnel rim lighting
         let f0 = vec3<f32>(0.04, 0.03, 0.02);
         let fres = fresnel(view_angle, f0);
@@ -168,8 +204,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let edge_glow = smoothstep(0.05, 0.0, min_dist);
         let audio_pulse = 1.0 + u.config.y * u.zoom_params.z;
         let emissive = vec3<f32>(1.0, 0.8, 0.2) * edge_glow * u.zoom_params.y * audio_pulse;
-        let lum = dot(base_col + emissive + rim, vec3<f32>(0.299, 0.587, 0.114));
-        color = vec4<f32>(base_col + emissive + rim, clamp(lum * 1.2 + 0.15, 0.05, 0.98));
+        let lum = dot(base_col + emissive + rim + foldCol, vec3<f32>(0.299, 0.587, 0.114));
+        color = vec4<f32>(base_col + emissive + rim + foldCol, clamp(lum * 1.2 + 0.15, 0.05, 0.98));
     } else {
         let bg_glow = 0.1 / max(length(centered_uv), 0.01);
         let bgCol = vec3<f32>(0.05, 0.0, 0.1) * bg_glow;

@@ -112,6 +112,31 @@ fn refractOffset(uv: vec2<f32>, h: f32, bevel: f32) -> vec2<f32> {
 
 fn fresnel(cosTheta: f32, f0: f32) -> f32 { return f0 + (1.0 - f0) * pow(1.0 - cosTheta, 5.0); }
 
+fn causticPattern(uv: vec2<f32>, time: f32, intensity: f32) -> f32 {
+    let c1 = sin(uv.x * 30.0 + time * 4.0) * sin(uv.y * 25.0 - time * 3.0);
+    let c2 = sin((uv.x + uv.y) * 20.0 + time * 2.5) * sin((uv.x - uv.y) * 15.0 + time * 1.5);
+    let c3 = fbm2(uv * 8.0 + time * 0.5, 3);
+    return pow(max(c1 * c2 * 0.5 + 0.5 + c3 * 0.3, 0.0), 4.0) * intensity;
+}
+
+fn glassThickness(uv: vec2<f32>, h: f32, edgeDist: f32) -> f32 {
+    let baseThick = 0.5 + h * 0.3;
+    let edgeThick = smoothstep(0.0, 0.1, edgeDist) * 0.8;
+    return baseThick + edgeThick;
+}
+
+fn chromaticAberration(uv: vec2<f32>, strength: f32, time: f32) -> vec3<f32> {
+    let dir = normalize(uv - vec2<f32>(0.5) + vec2<f32>(sin(time), cos(time)) * 0.1);
+    let rOff = uv + dir * strength * 1.2;
+    let gOff = uv + dir * strength * 0.6;
+    let bOff = uv - dir * strength * 0.8;
+    return vec3<f32>(
+        textureSampleLevel(readTexture, u_sampler, rOff, 0.0).r,
+        textureSampleLevel(readTexture, u_sampler, gOff, 0.0).g,
+        textureSampleLevel(readTexture, u_sampler, bOff, 0.0).b
+    );
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = u.config.zw;
@@ -153,7 +178,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let videoR = textureSampleLevel(readTexture, u_sampler, refractUV + vec2<f32>(0.003 * treble, 0.0), 0.0).r;
     let videoG = textureSampleLevel(readTexture, u_sampler, refractUV, 0.0).g;
     let videoB = textureSampleLevel(readTexture, u_sampler, refractUV2 - vec2<f32>(0.003 * treble, 0.0), 0.0).b;
-    let videoCol = vec3<f32>(videoR, videoG, videoB);
+    var videoCol = vec3<f32>(videoR, videoG, videoB);
+    // Chromatic aberration from glass thickness variation
+    let thick = glassThickness(uv, h, edgeDist);
+    let aberra = chromaticAberration(refractUV, 0.002 * thick * refractionStrength, time);
+    videoCol = mix(videoCol, aberra, 0.3 * thick);
+    // Beer-Lambert absorption through thick glass
+    let absorption = exp(-thick * vec3<f32>(0.3, 0.5, 0.8) * (1.0 + mids));
+    videoCol *= absorption;
     // Blend tint with video
     let tintedGlass = mix(videoCol, videoCol * paneTint, 0.4 + bass * 0.1);
     // Fresnel reflection on glass surface
@@ -168,14 +200,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let withLead = mix(leadCol * attenuation + tintedGlass * (1.0 - attenuation), tintedGlass + reflectCol, edge);
     // Caustic sparkle on edges with physical dispersion
     let caustic = pow(sin(edgeDist * 50.0 + time * 3.0 + w.y * 10.0) * 0.5 + 0.5, 8.0);
-    let sparkle = caustic * bass * 0.5 * (1.0 + treble * 2.0);
+    let caustic2 = causticPattern(uv * facetCount, time, 1.0 + bass * 2.0);
+    let sparkle = (caustic * 0.6 + caustic2 * 0.4) * bass * 0.5 * (1.0 + treble * 2.0);
     var finalCol = withLead + vec3<f32>(0.9, 0.85, 0.7) * sparkle;
     // Glass specular with temporal shimmer
     let specAngle = sin(uv.x * 20.0 + uv.y * 15.0 + time + fbm2(uv * 5.0, 3) * TAU) * 0.5 + 0.5;
     finalCol += vec3<f32>(0.3, 0.3, 0.35) * specAngle * specAngle * 0.3 * (1.0 + mids * 0.5);
-    // Temporal feedback via dataTextureC
+    // Temporal feedback via dataTextureC with chromatic decay
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    finalCol = mix(finalCol, prev.rgb * 0.95, 0.03 + bass * 0.015);
+    let decayR = 0.95 + treble * 0.02; let decayG = 0.95 + mids * 0.02; let decayB = 0.95 + bass * 0.02;
+    let prevDecay = vec3<f32>(prev.r * decayR, prev.g * decayG, prev.b * decayB);
+    finalCol = mix(finalCol, prevDecay, 0.03 + bass * 0.015);
     let lum2 = dot(clamp(finalCol, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(lum2 * 0.7 + 0.2, 0.0, 1.0);
     textureStore(writeTexture, id.xy, vec4<f32>(clamp(finalCol, vec3<f32>(0.0), vec3<f32>(2.0)), alpha));

@@ -88,6 +88,28 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 { let d = abs(p) - b; return min(max
 
 fn kifsFold(p: vec3<f32>, normal: vec3<f32>, d: f32) -> vec3<f32> { let t = dot(p, normal) - d; return p - 2.0 * min(0.0, t) * normal; }
 
+fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 { let q = abs(p); return (q.x + q.y + q.z - s) * 0.57735027; }
+fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
+    let pa = p - a; let ba = b - a;
+    let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h) - r;
+}
+
+fn spectralGlow(angle: f32, intensity: f32) -> vec3<f32> {
+    return vec3<f32>(
+        0.5 + 0.5 * cos(angle * 6.28 + 0.0),
+        0.5 + 0.5 * cos(angle * 6.28 + 2.094),
+        0.5 + 0.5 * cos(angle * 6.28 + 4.189)
+    ) * intensity;
+}
+
+fn volumetricFog(p: vec3<f32>, ro: vec3<f32>, t: f32, audio: f32) -> vec3<f32> {
+    let fogDensity = 0.03 + audio * 0.02;
+    let fogAmount = 1.0 - exp(-fogDensity * t);
+    let fogColor = vec3<f32>(0.05, 0.02, 0.1) * (1.0 + audio * 0.5);
+    return fogColor * fogAmount;
+}
+
 fn map(p: vec3<f32>) -> f32 {
     let audio = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
     let t = u.config.x * u.zoom_params.z; let density = u.zoom_params.x;
@@ -115,10 +137,20 @@ fn map(p: vec3<f32>) -> f32 {
     let quasar = sdSphere(q, 0.5 + sin(t * 5.0 + q.x * 10.0) * 0.05 * audio) + fbm(qwarp, 3) * 0.1;
     // Plasma conduits between panels
     let conduit = sdTorus(q, vec2<f32>(1.8 + sin(t * 2.0) * 0.2, 0.02 + audio * 0.03));
+    // Octahedron crystal satellites orbiting
+    let orbitAngle = t * 0.4;
+    let satPos = vec3<f32>(cos(orbitAngle) * 2.5, sin(orbitAngle * PHI) * 0.5, sin(orbitAngle) * 2.5);
+    let satellite = sdOctahedron(q - satPos, 0.15 + treble * 0.05);
+    // Radial capsule spokes
+    let spokeAngle = fmod(atan2(q.z, q.x) + t * 0.2, TAU / 8.0) - TAU / 16.0;
+    let spokePos = vec3<f32>(cos(spokeAngle) * 1.9, q.y, sin(spokeAngle) * 1.9);
+    let capsule = sdCapsule(q, spokePos, spokePos * 0.3 + vec3<f32>(0.0, 0.5, 0.0), 0.03 + mids * 0.02);
     let h = 0.5; let blend = clamp(0.5 + 0.5 * (panels - quasar) / h, 0.0, 1.0);
     var d = mix(panels, quasar, blend) - h * blend * (1.0 - blend);
     d = smin(d, kifs, 0.15);
     d = smin(d, conduit, 0.08);
+    d = smin(d, satellite, 0.1);
+    d = smin(d, capsule, 0.06);
     return d;
 }
 
@@ -165,10 +197,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let thickness = clamp(2.0 - dist_to_center, 0.0, 2.0);
         let transmittance = exp(-thickness * 0.8);
         col += vec3<f32>(0.1, 0.3, 0.6) * transmittance * (1.0 + treble);
+        // Spectral glow from quasar core
+        let viewAngle = max(dot(n, v), 0.0);
+        col += spectralGlow(viewAngle * 3.0 + dist_to_center * 2.0, quasar_glow * 0.3 * audio_pulse);
         // Swarm drones
         let swarm = u.zoom_params.w;
         col += vec3<f32>(0.1, 0.8, 1.0) * smoothstep(0.9, 1.0, sin(t * swarm + u.config.x + dist_to_center * 3.0));
     } else { col = vec3<f32>(0.05, 0.05, 0.1) * hash3(rd).x; }
+    // Volumetric fog integration
+    col += volumetricFog(ro + rd * t, ro, t, bass);
     // Temporal feedback with chromatic dispersion
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
     col = mix(col, prev.rgb * 0.9, 0.03 + bass * 0.01);
