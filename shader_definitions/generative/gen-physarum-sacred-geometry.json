@@ -1,10 +1,7 @@
 {
-  "id": "gen-physarum-sacred-geometry",
-  "coordinate": 857,
-  "type": "wgsl",
-  "url": "shaders/gen-physarum-sacred-geometry.wgsl",
   "name": "Physarum (Slime Mold) Sacred Geometry",
-  "description": "A psychedelic organic simulation where millions of microscopic agents feed on video input, leaving vibrant, glowing, fractal trails that pulse with audio.",
+  "category": "generative",
+  "filename": "gen-physarum-sacred-geometry.wgsl",
   "tags": [
     "organic",
     "simulation",
@@ -12,88 +9,47 @@
     "mouse-driven",
     "psychedelic"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive"
+  "description": "A psychedelic organic simulation where millions of microscopic agents feed on video input, leaving vibrant, glowing, fractal trails that pulse with audio.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "sliders": [
+  "updatedParams": [
     {
-      "id": "sensorAngle",
-      "name": "Sensor Angle",
-      "default": 0.5,
-      "min": 0.1,
-      "max": 1.5,
-      "step": 0.05,
-      "param": "zoom_params.x"
-    },
-    {
-      "id": "sensorDistance",
-      "name": "Sensor Distance",
-      "default": 10,
-      "min": 1,
-      "max": 50,
-      "step": 1,
-      "param": "zoom_params.y"
-    },
-    {
-      "id": "decayRate",
-      "name": "Decay Rate",
-      "default": 0.95,
-      "min": 0.8,
-      "max": 0.99,
-      "step": 0.01,
-      "param": "zoom_params.z"
-    },
-    {
-      "id": "diffusionStrength",
-      "name": "Diffusion Strength",
-      "default": 1,
-      "min": 0.1,
-      "max": 5,
-      "step": 0.1,
-      "param": "zoom_params.w"
-    }
-  ],
-  "params": [
-    {
-      "id": "intensity",
+      "index": 0,
       "name": "Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Controls the overall strength of the generated effect."
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Controls animation and temporal evolution speed."
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 2,
       "name": "Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Controls spatial scale, frequency, or detail contrast."
+      "step": 0.01
     },
     {
-      "id": "mouseInfluence",
+      "index": 3,
       "name": "Mouse Influence",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Controls mouse-driven or secondary variation influence."
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

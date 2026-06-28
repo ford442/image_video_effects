@@ -1,52 +1,7 @@
 {
-  "id": "gen-showcase-crystalline-pulse",
   "name": "Crystalline Pulse",
   "category": "generative",
-  "url": "shaders/gen-showcase-crystalline-pulse.wgsl",
-  "description": "Geometric crystal formations based on diamond cubic Bravais lattice structure with phonon pulse propagation. FCC lattice positions, acoustic phonon frequency ω = 2√(k/m)|sin(ka/2)|, bass-driven vibration, temporal feedback trails, chromatic aberration, and mouse lattice defect injection create a scientifically-grounded crystallographic visualization.",
-  "features": [
-    "upgraded-rgba",
-    "temporal",
-    "audio-reactive",
-    "mouse-driven",
-    "generative",
-    "chromatic",
-    "showcase"
-  ],
-  "params": [
-    {
-      "id": "density",
-      "name": "Crystal Density",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "shardSize",
-      "name": "Shard Size",
-      "default": 0.3,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "glow",
-      "name": "Edge Glow",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "id": "chaos",
-      "name": "Chaos Drift",
-      "default": 0.2,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
-  ],
+  "filename": "gen-showcase-crystalline-pulse.wgsl",
   "tags": [
     "generative",
     "showcase",
@@ -61,5 +16,48 @@
     "diamond-lattice",
     "phonon",
     "bravais"
-  ]
+  ],
+  "description": "Geometric crystal formations based on diamond cubic Bravais lattice structure with phonon pulse propagation. FCC lattice positions, acoustic phonon frequency \u03c9 = 2\u221a(k/m)|sin(ka/2)|, bass-driven vibration, temporal feedback trails, chromatic aberration, and mouse lattice defect injection create a scientifically-grounded crystallographic visualization.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Crystal Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Shard Size",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Edge Glow",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Chaos Drift",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

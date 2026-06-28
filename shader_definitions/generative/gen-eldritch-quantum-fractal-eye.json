@@ -1,13 +1,7 @@
 {
-  "id": "gen-eldritch-quantum-fractal-eye",
   "name": "Eldritch-Quantum Fractal-Eye",
-  "features": [
-    "generative",
-    "mouse-driven",
-    "audio-reactive",
-    "raymarched",
-    "upgraded-rgba"
-  ],
+  "category": "generative",
+  "filename": "gen-eldritch-quantum-fractal-eye.wgsl",
   "tags": [
     "fractal",
     "eldritch",
@@ -17,78 +11,46 @@
     "neon"
   ],
   "description": "A colossal, hyper-dimensional eye constructed from infinitely folding quantum fractals and liquid plasma.",
-  "url": "/shaders/gen-eldritch-quantum-fractal-eye.wgsl",
-  "uniforms": {},
-  "parameters": [
-    {
-      "name": "Fractal Iterations",
-      "default": 8,
-      "min": 1,
-      "max": 15,
-      "step": 1
-    },
-    {
-      "name": "Dilation Intensity",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "name": "Plasma Vein Density",
-      "default": 3,
-      "min": 0.1,
-      "max": 10,
-      "step": 0.1
-    },
-    {
-      "name": "Color Shift",
-      "default": 0,
-      "min": -1,
-      "max": 1,
-      "step": 0.01
-    }
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "intensity",
+      "index": 0,
       "name": "Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Controls the overall strength of the generated effect."
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Controls animation and temporal evolution speed."
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 2,
       "name": "Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Controls spatial scale, frequency, or detail contrast."
+      "step": 0.01
     },
     {
-      "id": "mouseInfluence",
+      "index": 3,
       "name": "Mouse Influence",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Controls mouse-driven or secondary variation influence."
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

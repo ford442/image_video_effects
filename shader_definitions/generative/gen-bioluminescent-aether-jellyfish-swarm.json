@@ -1,54 +1,51 @@
 {
-  "id": "gen-bioluminescent-aether-jellyfish-swarm",
   "name": "Bioluminescent Aether-Jellyfish Swarm",
-  "url": "shaders/gen-bioluminescent-aether-jellyfish-swarm.wgsl",
   "category": "generative",
-  "description": "A mesmerizing deep-space ocean with translucent aether-jellyfish reacting to audio.",
-  "features": [
-    "audio-reactive",
-    "upgraded-rgba",
-    "temporal"
+  "filename": "gen-bioluminescent-aether-jellyfish-swarm.wgsl",
+  "tags": [
+    "generative"
   ],
-  "params": [
+  "description": "A mesmerizing deep-space ocean with translucent aether-jellyfish reacting to audio.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Swarm Density",
-      "type": "slider",
+      "default": 10,
       "min": 1,
       "max": 30,
-      "default": 10,
-      "step": 1,
-      "mapping": "zoom_params.x"
+      "step": 1
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Propulsion Speed",
-      "type": "slider",
+      "default": 1,
       "min": 0.1,
       "max": 5,
-      "default": 1,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Bioluminescence Intensity",
-      "type": "slider",
+      "default": 2,
       "min": 0.5,
       "max": 10,
-      "default": 2,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Tentacle Length",
-      "type": "slider",
+      "default": 5,
       "min": 1,
       "max": 15,
-      "default": 5,
-      "step": 0.5,
-      "mapping": "zoom_params.w"
+      "step": 0.5
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

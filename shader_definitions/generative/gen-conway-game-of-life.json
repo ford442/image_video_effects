@@ -1,21 +1,7 @@
 {
-  "id": "gen-conway-game-of-life",
   "name": "Conway Game of Life",
   "category": "generative",
-  "url": "shaders/gen-conway-game-of-life.wgsl",
-  "description": "Conway's Game of Life cellular automaton rendered with glowing neon cell states on a coarse grid. Rules morph between Classic, Day & Night, and HighLife over time. Bass triggers random cell births, mouse draws live cells, and depth controls grid density. Features temporal persistence for death fade trails and chromatic aberration on state-change events.",
-  "features": [
-    "audio-reactive",
-    "mouse-interactive",
-    "depth-aware",
-    "temporal-feedback",
-    "procedural",
-    "cellular-automata",
-    "aces-tone-map",
-    "generation-counter",
-    "hue-preserve-clamp",
-    "ign-dither"
-  ],
+  "filename": "gen-conway-game-of-life.wgsl",
   "tags": [
     "conway",
     "game-of-life",
@@ -26,42 +12,47 @@
     "gliders",
     "spaceships"
   ],
-  "params": [
+  "description": "Conway's Game of Life cellular automaton rendered with glowing neon cell states on a coarse grid. Rules morph between Classic, Day & Night, and HighLife over time. Bass triggers random cell births, mouse draws live cells, and depth controls grid density. Features temporal persistence for death fade trails and chromatic aberration on state-change events.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "seedDensity",
+      "index": 0,
       "name": "Seed Density",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Rule Morph Speed",
       "default": 0.2,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "gridScale",
+      "index": 2,
       "name": "Grid Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "trailDecay",
+      "index": 3,
       "name": "Trail Decay",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

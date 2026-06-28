@@ -1,9 +1,7 @@
 {
-  "id": "gen-tectonic-plasma-crucible",
   "name": "Tectonic Plasma-Crucible",
-  "url": "shaders/gen-tectonic-plasma-crucible.wgsl",
   "category": "generative",
-  "description": "A violently shifting landscape of cooling obsidian geometric slabs floating on a turbulent, audio-reactive ocean of blinding-hot plasma magma that constantly fractures, erupts, and reshapes itself.",
+  "filename": "gen-tectonic-plasma-crucible.wgsl",
   "tags": [
     "magma",
     "obsidian",
@@ -14,50 +12,47 @@
     "voronoi",
     "raymarched"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "depth-aware",
-    "blackbody-radiation"
+  "description": "A violently shifting landscape of cooling obsidian geometric slabs floating on a turbulent, audio-reactive ocean of blinding-hot plasma magma that constantly fractures, erupts, and reshapes itself.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "crustDensity",
+      "index": 0,
       "name": "Crust Density",
       "default": 0.2,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "magmaTurbulence",
+      "index": 1,
       "name": "Magma Turbulence",
       "default": 0.33,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "eruptionIntensity",
+      "index": 2,
       "name": "Eruption Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "tectonicStress",
+      "index": 3,
       "name": "Tectonic Stress",
       "default": 0.25,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

@@ -1,9 +1,7 @@
 {
-  "id": "gen-emergent-script-gardens",
   "name": "Emergent Script Gardens",
-  "url": "shaders/gen-emergent-script-gardens.wgsl",
   "category": "generative",
-  "description": "Interacting ink-like and neon strokes follow golden-ratio phyllotaxis (137.5°) to self-organize into alien symbolic gardens. Bass drives growth iteration count. Mouse interaction plants dense stroke seeds with φ-boosted intensity. Temporal feedback creates organic overgrowth trails. ACES tonemapped with chromatic aberration.",
+  "filename": "gen-emergent-script-gardens.wgsl",
   "tags": [
     "generative",
     "calligraphy",
@@ -18,54 +16,47 @@
     "phyllotaxis",
     "biological"
   ],
-  "features": [
-    "generative",
-    "audio-reactive",
-    "mouse-driven",
-    "temporal",
-    "upgraded-rgba",
-    "meaningful-alpha"
+  "description": "Interacting ink-like and neon strokes follow golden-ratio phyllotaxis (137.5\u00b0) to self-organize into alien symbolic gardens. Bass drives growth iteration count. Mouse interaction plants dense stroke seeds with \u03c6-boosted intensity. Temporal feedback creates organic overgrowth trails. ACES tonemapped with chromatic aberration.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "strokeDensity",
+      "index": 0,
       "name": "Stroke Density",
       "default": 0.55,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Number of interacting strokes in each symbolic garden cluster",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "curvature",
+      "index": 1,
       "name": "Curvature",
       "default": 0.45,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "How strongly strokes bend through the local rule field",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "gardenScale",
+      "index": 2,
       "name": "Garden Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Scale and spacing of emergent glyph clusters",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "palette",
+      "index": 3,
       "name": "Ink / Neon",
       "default": 0.65,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Blend from minimal ink wash to luminous neon script",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

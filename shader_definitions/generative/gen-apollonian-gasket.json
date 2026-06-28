@@ -1,9 +1,7 @@
 {
-  "id": "gen-apollonian-gasket",
   "name": "Apollonian Gasket",
-  "url": "shaders/gen-apollonian-gasket.wgsl",
   "category": "generative",
-  "description": "Apollonian circle packing fractal rendered via iterative circle inversion. Descartes-based circle configuration with metallic coloring, rainbow chromatic aberration on inversions, and mouse-driven point inversion.",
+  "filename": "gen-apollonian-gasket.wgsl",
   "tags": [
     "generative",
     "fractal",
@@ -13,48 +11,47 @@
     "audio-reactive",
     "metallic"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba"
+  "description": "Apollonian circle packing fractal rendered via iterative circle inversion. Descartes-based circle configuration with metallic coloring, rainbow chromatic aberration on inversions, and mouse-driven point inversion.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "recursion",
+      "index": 0,
       "name": "Recursion Depth",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "inversion",
+      "index": 1,
       "name": "Inversion Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "size",
+      "index": 2,
       "name": "Circle Size",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "rainbow",
+      "index": 3,
       "name": "Rainbow Aberration",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

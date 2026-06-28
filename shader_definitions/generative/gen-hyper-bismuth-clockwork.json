@@ -1,9 +1,7 @@
 {
-  "id": "gen-hyper-bismuth-clockwork",
   "name": "Hyper-Bismuth Clockwork",
-  "url": "shaders/gen-hyper-bismuth-clockwork.wgsl",
   "category": "generative",
-  "description": "A relentlessly grinding, infinite geometric mechanism built entirely of iridescent, square-stepped bismuth crystals that unfold and interlock like a cosmic clockwork engine.",
+  "filename": "gen-hyper-bismuth-clockwork.wgsl",
   "tags": [
     "mechanical",
     "crystal",
@@ -14,51 +12,47 @@
     "KIFS",
     "bismuth"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "depth-aware",
-    "ambient-occlusion",
-    "iridescent"
+  "description": "A relentlessly grinding, infinite geometric mechanism built entirely of iridescent, square-stepped bismuth crystals that unfold and interlock like a cosmic clockwork engine.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "complexity",
+      "index": 0,
       "name": "Complexity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "clockSpeed",
+      "index": 1,
       "name": "Clock Speed",
       "default": 0.44,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "iridescence",
+      "index": 2,
       "name": "Iridescence",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "gridDensity",
+      "index": 3,
       "name": "Grid Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

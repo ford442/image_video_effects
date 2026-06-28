@@ -1,8 +1,7 @@
 {
-  "id": "gen-cybernetic-ferro-coral",
   "name": "Cybernetic Ferro-Coral",
-  "url": "shaders/gen-cybernetic-ferro-coral.wgsl",
-  "description": "A biomechanical reef of magnetic, liquid-metal coral that dynamically shapes itself in response to acoustic vibrations, revealing a glowing quantum-plasma core beneath a dark metallic exterior.",
+  "category": "generative",
+  "filename": "gen-cybernetic-ferro-coral.wgsl",
   "tags": [
     "biomechanical",
     "ferrofluid",
@@ -10,47 +9,47 @@
     "magnetic",
     "audio-reactive"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-driven",
-    "audio-reactive"
+  "description": "A biomechanical reef of magnetic, liquid-metal coral that dynamically shapes itself in response to acoustic vibrations, revealing a glowing quantum-plasma core beneath a dark metallic exterior.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "density",
+      "index": 0,
       "name": "Density",
       "default": 0.5,
       "min": 0.1,
       "max": 2,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "spikeIntensity",
+      "index": 1,
       "name": "Spike Intensity",
       "default": 1,
       "min": 0,
       "max": 3,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "coreGlow",
+      "index": 2,
       "name": "Core Glow",
       "default": 1.5,
       "min": 0.5,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "iridescence",
+      "index": 3,
       "name": "Iridescence",
       "default": 1,
       "min": 0,
       "max": 2,
-      "step": 0.1,
-      "mapping": "zoom_params.w"
+      "step": 0.1
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

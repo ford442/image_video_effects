@@ -1,9 +1,7 @@
 {
-  "id": "gen-mandelbox-explorer",
   "name": "Mandelbox Explorer",
-  "url": "shaders/gen-mandelbox-explorer.wgsl",
   "category": "generative",
-  "description": "2D cross-section of the 3D Mandelbox fractal with box folding, sphere folding, and orbit-trap coloring. Metallic surface with ambient occlusion, HDR specular highlights, and ACES tone mapping.",
+  "filename": "gen-mandelbox-explorer.wgsl",
   "tags": [
     "generative",
     "fractal",
@@ -13,48 +11,47 @@
     "metallic",
     "futuristic"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba"
+  "description": "2D cross-section of the 3D Mandelbox fractal with box folding, sphere folding, and orbit-trap coloring. Metallic surface with ambient occlusion, HDR specular highlights, and ACES tone mapping.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "scale",
+      "index": 0,
       "name": "Box Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "iterations",
+      "index": 1,
       "name": "Iterations",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "slice",
+      "index": 2,
       "name": "Slice Thickness",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "specular",
+      "index": 3,
       "name": "Specular",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

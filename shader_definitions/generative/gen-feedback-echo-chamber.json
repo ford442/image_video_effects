@@ -1,8 +1,7 @@
 {
-  "id": "gen-feedback-echo-chamber",
   "name": "Feedback Echo Chamber",
-  "url": "shaders/gen-feedback-echo-chamber.wgsl",
-  "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending",
+  "category": "generative",
+  "filename": "gen-feedback-echo-chamber.wgsl",
   "tags": [
     "temporal",
     "echo",
@@ -17,58 +16,47 @@
     "mouse-reactive",
     "shockwave"
   ],
-  "features": [
-    "aces-tone-map",
-    "advanced-alpha",
-    "audio-driven",
-    "audio-reactive",
-    "chromatic-aberration",
-    "depth-aware",
-    "domain-warp",
-    "gravity-well",
-    "mouse-reactive",
-    "multi-pass",
-    "psychedelic-palette",
-    "shockwave",
-    "temporal",
-    "upgraded-rgba"
+  "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "echoCount",
+      "index": 0,
       "name": "Echo Count",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "decayRate",
+      "index": 1,
       "name": "Decay Rate",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "spacing",
+      "index": 2,
       "name": "Echo Spacing",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "colorShift",
+      "index": 3,
       "name": "Color Shift",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

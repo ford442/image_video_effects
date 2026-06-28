@@ -1,18 +1,7 @@
 {
-  "id": "gen-percolation-threshold",
   "name": "Percolation Threshold",
-  "url": "shaders/gen-percolation-threshold.wgsl",
-  "description": "Site percolation on a 2D square lattice near the critical threshold p_c \u2248 0.5927. Iterative connected-component labeling with jewel-tone cluster coloring and HDR spanning-cluster bloom.",
-  "features": [
-    "aces-tone-map",
-    "audio-reactive",
-    "chromatic-aberration",
-    "depth-aware",
-    "generative",
-    "mouse-driven",
-    "temporal",
-    "upgraded-rgba"
-  ],
+  "category": "generative",
+  "filename": "gen-percolation-threshold.wgsl",
   "tags": [
     "procedural",
     "generative",
@@ -23,42 +12,47 @@
     "audio-reactive",
     "cellular-automaton"
   ],
-  "params": [
+  "description": "Site percolation on a 2D square lattice near the critical threshold p_c \u2248 0.5927. Iterative connected-component labeling with jewel-tone cluster coloring and HDR spanning-cluster bloom.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Threshold Shift",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Lattice Zoom",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Bloom",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Grain",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

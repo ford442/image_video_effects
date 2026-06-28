@@ -1,8 +1,7 @@
 {
   "name": "Ethereal Cyber-Aurora Hummingbird-Core",
-  "description": "A hyper-fast, biomechanical hummingbird woven from liquid auroral plasma and shattered quantum glass, hovering within a massive chrono-distortion flower.",
   "category": "generative",
-  "url": "shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
+  "filename": "gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
   "tags": [
     "organic",
     "biomechanical",
@@ -10,39 +9,47 @@
     "plasma",
     "quantum"
   ],
-  "params": [
+  "description": "A hyper-fast, biomechanical hummingbird woven from liquid auroral plasma and shattered quantum glass, hovering within a massive chrono-distortion flower.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
+      "index": 0,
       "name": "Flutter Speed",
-      "type": "slider",
+      "default": 1.0,
       "min": 0.1,
       "max": 5.0,
-      "default": 1.0,
       "step": 0.1
     },
     {
+      "index": 1,
       "name": "Aura Intensity",
-      "type": "slider",
+      "default": 0.5,
       "min": 0.0,
       "max": 2.0,
-      "default": 0.5,
       "step": 0.05
     },
     {
+      "index": 2,
       "name": "Pollen Density",
-      "type": "slider",
+      "default": 1.0,
       "min": 0.0,
       "max": 3.0,
-      "default": 1.0,
       "step": 0.1
     },
     {
+      "index": 3,
       "name": "Aberration",
-      "type": "slider",
+      "default": 0.2,
       "min": 0.0,
       "max": 1.0,
-      "default": 0.2,
       "step": 0.01
     }
   ],
-  "id": "gen-ethereal-cyber-aurora-hummingbird-core"
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

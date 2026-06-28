@@ -1,9 +1,7 @@
 {
-  "id": "gen-prismatic-quantum-fractal-nautilus-engine",
   "name": "Prismatic Quantum-Fractal Nautilus-Engine",
-  "url": "shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
   "category": "generative",
-  "description": "A hyper-organic spiraling biomechanical nautilus shell forged from prismatic quantum glass and auroral plasma, endlessly unfurling within a deep-space nebula while reacting explosively to ambient acoustic frequencies.",
+  "filename": "gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
   "tags": [
     "organic",
     "quantum",
@@ -14,50 +12,47 @@
     "prismatic",
     "raymarched"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "depth-aware",
-    "chromatic"
+  "description": "A hyper-organic spiraling biomechanical nautilus shell forged from prismatic quantum glass and auroral plasma, endlessly unfurling within a deep-space nebula while reacting explosively to ambient acoustic frequencies.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "auraIntensity",
+      "index": 0,
       "name": "Aura Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "spiralExpansion",
+      "index": 1,
       "name": "Spiral Expansion",
       "default": 0.44,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "fractalDepth",
+      "index": 2,
       "name": "Fractal Depth",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "audioReactivity",
+      "index": 3,
       "name": "Audio Reactivity",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

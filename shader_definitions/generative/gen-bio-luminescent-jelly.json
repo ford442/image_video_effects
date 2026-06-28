@@ -1,14 +1,7 @@
 {
-  "id": "gen-bio-luminescent-jelly",
   "name": "Bio-Luminescent Jelly",
-  "url": "shaders/gen-bio-luminescent-jelly.wgsl",
-  "description": "SDF tentacle jellyfish with pulsing bio-luminescence and glow-intensity alpha encoding. Audio drives pulse rhythm and sparkle particles; mouse attracts the jellyfish and creates shockwaves.",
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "temporal",
-    "upgraded-rgba"
-  ],
+  "category": "generative",
+  "filename": "gen-bio-luminescent-jelly.wgsl",
   "tags": [
     "jellyfish",
     "bioluminescence",
@@ -17,42 +10,47 @@
     "glow",
     "translucent"
   ],
-  "params": [
+  "description": "SDF tentacle jellyfish with pulsing bio-luminescence and glow-intensity alpha encoding. Audio drives pulse rhythm and sparkle particles; mouse attracts the jellyfish and creates shockwaves.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "pulse_speed",
+      "index": 0,
       "name": "Pulse Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "tentacle_length",
+      "index": 1,
       "name": "Tentacle Length",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "glow_intensity",
+      "index": 2,
       "name": "Glow Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "drift_speed",
+      "index": 3,
       "name": "Drift Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

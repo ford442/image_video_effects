@@ -1,9 +1,7 @@
 {
-  "id": "gen-chromatic-glass-lattice",
   "name": "Chromatic Glass Lattice",
-  "url": "shaders/gen-chromatic-glass-lattice.wgsl",
   "category": "generative",
-  "description": "A crystalline, infinite lattice of dispersing glass that refracts background light into separating RGB spectrums, shattered dynamically by sound frequencies.",
+  "filename": "gen-chromatic-glass-lattice.wgsl",
   "tags": [
     "glass",
     "crystal",
@@ -13,50 +11,47 @@
     "raymarched",
     "dispersion"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "depth-aware",
-    "chromatic"
+  "description": "A crystalline, infinite lattice of dispersing glass that refracts background light into separating RGB spectrums, shattered dynamically by sound frequencies.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "refractionIndex",
+      "index": 0,
       "name": "Refraction Index",
       "default": 0.36,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "chromaticSpread",
+      "index": 1,
       "name": "Chromatic Spread",
       "default": 0.33,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "latticeDensity",
+      "index": 2,
       "name": "Lattice Density",
       "default": 0.41,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "shatterForce",
+      "index": 3,
       "name": "Shatter Force",
       "default": 0.25,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

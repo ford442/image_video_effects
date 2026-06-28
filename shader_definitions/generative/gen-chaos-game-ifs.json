@@ -1,8 +1,7 @@
 {
-  "id": "gen-chaos-game-ifs",
   "name": "Chaos Game IFS",
-  "url": "shaders/gen-chaos-game-ifs.wgsl",
-  "description": "Iterated function system chaos game generating fractal attractors. Audio drives iteration depth and attractor scale. Rotating attractor points.",
+  "category": "generative",
+  "filename": "gen-chaos-game-ifs.wgsl",
   "tags": [
     "generative",
     "ifs",
@@ -12,53 +11,47 @@
     "audio",
     "music"
   ],
-  "features": [
-    "generative",
-    "audio-reactive",
-    "upgraded-rgba",
-    "chromatic-attractors",
-    "temporal-ghosting"
+  "description": "Iterated function system chaos game generating fractal attractors. Audio drives iteration depth and attractor scale. Rotating attractor points.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "iterations",
+      "index": 0,
       "name": "Iterations",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "IFS iteration depth",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "glowSize",
+      "index": 1,
       "name": "Glow Size",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Attractor glow radius",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "ringCount",
+      "index": 2,
       "name": "Ring Count",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Density of concentric rings",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "saturation",
+      "index": 3,
       "name": "Saturation",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Color saturation",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

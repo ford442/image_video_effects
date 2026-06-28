@@ -1,14 +1,7 @@
 {
-  "id": "gen-ethereal-anemone-bloom",
   "name": "Ethereal Anemone Bloom",
-  "url": "shaders/gen-ethereal-anemone-bloom.wgsl",
-  "description": "A pulsating, infinite underwater expanse of translucent, bioluminescent anemone-like structures that gently sway in an invisible current, reaching out to feed on the audio frequencies.",
-  "features": [
-    "mouse-driven",
-    "raymarched",
-    "audio-reactive",
-    "audio-driven"
-  ],
+  "category": "generative",
+  "filename": "gen-ethereal-anemone-bloom.wgsl",
   "tags": [
     "organic",
     "bioluminescent",
@@ -19,42 +12,47 @@
     "music",
     "reactive"
   ],
-  "params": [
+  "description": "A pulsating, infinite underwater expanse of translucent, bioluminescent anemone-like structures that gently sway in an invisible current, reaching out to feed on the audio frequencies.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "current_speed",
+      "index": 0,
       "name": "Current Speed",
       "default": 1,
       "min": 0.1,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "tentacle_density",
+      "index": 1,
       "name": "Tentacle Density",
       "default": 0.5,
       "min": 0.1,
       "max": 1,
-      "step": 0.05,
-      "mapping": "zoom_params.y"
+      "step": 0.05
     },
     {
-      "id": "bioluminescence_glow",
+      "index": 2,
       "name": "Bioluminescence Glow",
       "default": 2,
       "min": 0.5,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "water_murkiness",
+      "index": 3,
       "name": "Water Murkiness",
       "default": 0.8,
       "min": 0,
       "max": 1.5,
-      "step": 0.05,
-      "mapping": "zoom_params.w"
+      "step": 0.05
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

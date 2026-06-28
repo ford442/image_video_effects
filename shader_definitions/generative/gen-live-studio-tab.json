@@ -1,9 +1,7 @@
 {
-  "id": "gen-live-studio-tab",
   "name": "Live Studio Tab",
-  "url": "shaders/gen-live-studio-tab.wgsl",
   "category": "generative",
-  "description": "A broadcast studio control room aesthetic with live video preview, audio VU meters, waveform scopes, vector scopes, scanlines, chromatic separation, and a blinking LIVE indicator.",
+  "filename": "gen-live-studio-tab.wgsl",
   "tags": [
     "broadcast",
     "studio",
@@ -14,50 +12,47 @@
     "mouse-driven",
     "chromatic"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "depth-aware",
-    "chromatic"
+  "description": "A broadcast studio control room aesthetic with live video preview, audio VU meters, waveform scopes, vector scopes, scanlines, chromatic separation, and a blinking LIVE indicator.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "scanlineIntensity",
+      "index": 0,
       "name": "Scanline Intensity",
       "default": 0.33,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "overlayOpacity",
+      "index": 1,
       "name": "Overlay Opacity",
       "default": 0.67,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "scopeScale",
+      "index": 2,
       "name": "Scope Scale",
       "default": 0.75,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "glitchAmount",
+      "index": 3,
       "name": "Glitch Amount",
       "default": 0.15,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

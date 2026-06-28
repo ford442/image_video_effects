@@ -1,17 +1,7 @@
 {
-  "id": "gen-electric-kaleidoscope-storm",
   "name": "Electric Kaleidoscope Storm",
   "category": "generative",
-  "url": "shaders/gen-electric-kaleidoscope-storm.wgsl",
-  "description": "Electric lightning bolts radiating from the center in a kaleidoscope symmetry pattern with 6, 8, or 12-fold symmetry. Neon cyan, magenta, and yellow bolts crack and flicker on a deep dark background. Bolts rebranch and reseed each frame for constant motion. Sparks fly randomly. Mouse rotates the kaleidoscope and changes symmetry count.",
-  "features": [
-    "interactive",
-    "mouse-reactive",
-    "temporal",
-    "procedural",
-    "audio-reactive",
-    "upgraded-rgba"
-  ],
+  "filename": "gen-electric-kaleidoscope-storm.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -21,42 +11,47 @@
     "storm",
     "generative"
   ],
-  "params": [
+  "description": "Electric lightning bolts radiating from the center in a kaleidoscope symmetry pattern with 6, 8, or 12-fold symmetry. Neon cyan, magenta, and yellow bolts crack and flicker on a deep dark background. Bolts rebranch and reseed each frame for constant motion. Sparks fly randomly. Mouse rotates the kaleidoscope and changes symmetry count.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "intensity",
+      "index": 0,
       "name": "Bolt Intensity",
       "default": 0.75,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Flicker Speed",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 2,
       "name": "Symmetry",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "colorshift",
+      "index": 3,
       "name": "Color Shift",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

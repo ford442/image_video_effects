@@ -1,16 +1,7 @@
 {
-  "id": "gen-acid-lissajous",
   "name": "Acid Lissajous",
-  "url": "shaders/gen-acid-lissajous.wgsl",
-  "description": "Seven Lissajous curve strands rendered as glowing neon tubes with continuous acid-trip color cycling, harmonic drift, and soft bloom. Each strand traces a different frequency ratio pair that slowly evolves for ever-changing knotted patterns.",
-  "features": [
-    "audio-reactive",
-    "audio-driven",
-    "temporal",
-    "procedural",
-    "upgraded-rgba",
-    "chromatic-strands"
-  ],
+  "category": "generative",
+  "filename": "gen-acid-lissajous.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -21,42 +12,47 @@
     "abstract",
     "glow"
   ],
-  "params": [
+  "description": "Seven Lissajous curve strands rendered as glowing neon tubes with continuous acid-trip color cycling, harmonic drift, and soft bloom. Each strand traces a different frequency ratio pair that slowly evolves for ever-changing knotted patterns.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "speed",
+      "index": 0,
       "name": "Animation Speed",
       "default": 0.35,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "complexity",
+      "index": 1,
       "name": "Harmonic Complexity",
       "default": 0.45,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "glow",
+      "index": 2,
       "name": "Glow Width",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "feedback",
+      "index": 3,
       "name": "Persistence",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

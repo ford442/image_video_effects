@@ -1,47 +1,56 @@
 {
-  "id": "cyber-organic-liquid-neon-pulsar",
   "name": "Cyber-Organic Liquid-Neon Pulsar",
-  "description": "A biomechanical, pulsating celestial core composed of hyper-viscous liquid-neon and crystalline techno-organic fibers. Enriched with Crab Pulsar 30.2 Hz strobe and 10^8 Tesla magnetic field topology.",
   "category": "generative",
-  "url": "shaders/gen-cyber-organic-liquid-neon-pulsar.wgsl",
-  "features": ["upgraded-rgba", "temporal", "audio-reactive", "mouse-driven"],
-  "tags": ["neon", "pulsar", "magnetic-field", "astrophysics", "raymarched", "abstract"],
-  "params": [
+  "filename": "gen-cyber-organic-liquid-neon-pulsar.wgsl",
+  "tags": [
+    "neon",
+    "pulsar",
+    "magnetic-field",
+    "astrophysics",
+    "raymarched",
+    "abstract"
+  ],
+  "description": "A biomechanical, pulsating celestial core composed of hyper-viscous liquid-neon and crystalline techno-organic fibers. Enriched with Crab Pulsar 30.2 Hz strobe and 10^8 Tesla magnetic field topology.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Base Color Hue",
-      "defaultValue": 0.5,
+      "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Fiber Density",
-      "defaultValue": 2.5,
+      "default": 0.5,
       "min": 0.5,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Pulsation Speed",
-      "defaultValue": 1,
+      "default": 0.5,
       "min": 0.1,
       "max": 3,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Glow Intensity",
-      "defaultValue": 1.5,
+      "default": 0.5,
       "min": 0,
       "max": 3,
-      "step": 0.1,
-      "mapping": "zoom_params.w"
+      "step": 0.1
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

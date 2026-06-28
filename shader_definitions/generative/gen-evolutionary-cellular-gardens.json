@@ -1,8 +1,7 @@
 {
-  "id": "gen-evolutionary-cellular-gardens",
   "name": "Evolutionary Cellular Gardens",
-  "url": "shaders/gen-evolutionary-cellular-gardens.wgsl",
-  "description": "Multi-state cellular automata where the rules themselves slowly evolve based on local conditions and global audio input. Audio drives genetic pressure on the automata. Mouse introduces invasive species or protected zones. Organic coral-like emergent structures that change fundamental behavior over time.",
+  "category": "generative",
+  "filename": "gen-evolutionary-cellular-gardens.wgsl",
   "tags": [
     "generative",
     "cellular-automata",
@@ -13,51 +12,47 @@
     "procedural",
     "music"
   ],
-  "features": [
-    "generative",
-    "audio-reactive",
-    "mouse-driven"
+  "description": "Multi-state cellular automata where the rules themselves slowly evolve based on local conditions and global audio input. Audio drives genetic pressure on the automata. Mouse introduces invasive species or protected zones. Organic coral-like emergent structures that change fundamental behavior over time.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "cellScale",
+      "index": 0,
       "name": "Cell Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Scale of the cellular automata grid",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "evolutionSpeed",
+      "index": 1,
       "name": "Evolution Speed",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Speed of rule evolution and mutation",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "invasiveForce",
+      "index": 2,
       "name": "Invasive Force",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Strength of mouse-planted invasive species",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "glow",
+      "index": 3,
       "name": "Bioluminescence",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Bioluminescent glow intensity",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

@@ -1,8 +1,7 @@
 {
-  "id": "gen-holographic-plasma-geode",
   "name": "Holographic Plasma-Geode",
-  "url": "shaders/gen-holographic-plasma-geode.wgsl",
-  "description": "A hyper-dimensional geode cracked open to reveal a swirling, audio-reactive core of liquid plasma and holographic fractal crystals.",
+  "category": "generative",
+  "filename": "gen-holographic-plasma-geode.wgsl",
   "tags": [
     "crystal",
     "plasma",
@@ -10,49 +9,47 @@
     "holographic",
     "raymarching"
   ],
-  "features": [
-    "generative",
-    "mouse-driven",
-    "audio-reactive",
-    "raymarched",
-    "upgraded-rgba"
+  "description": "A hyper-dimensional geode cracked open to reveal a swirling, audio-reactive core of liquid plasma and holographic fractal crystals.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "plasmaIntensity",
+      "index": 0,
       "name": "Plasma Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "crystalDensity",
+      "index": 1,
       "name": "Crystal Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "holographicHue",
+      "index": 2,
       "name": "Holographic Hue",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "coreRotationSpeed",
+      "index": 3,
       "name": "Core Rotation Speed",
       "default": 0.2,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

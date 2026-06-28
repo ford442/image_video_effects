@@ -1,9 +1,7 @@
 {
-  "id": "gen-gravito-phononic-accretion",
   "name": "Gravito-Phononic Accretion",
-  "url": "shaders/gen-gravito-phononic-accretion.wgsl",
   "category": "generative",
-  "description": "Multiple audio-driven gravitational centers that accrete and sculpt procedural density fields with gravitational lensing distortion. Different audio bands control different gravitational bodies. Mouse can add temporary mass concentration. Dark cores with swirling filamentary gas. Blackbody temperature colors for accretion disks.",
+  "filename": "gen-gravito-phononic-accretion.wgsl",
   "tags": [
     "generative",
     "gravity",
@@ -16,53 +14,47 @@
     "blackbody",
     "physics"
   ],
-  "features": [
-    "generative",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "temporal"
+  "description": "Multiple audio-driven gravitational centers that accrete and sculpt procedural density fields with gravitational lensing distortion. Different audio bands control different gravitational bodies. Mouse can add temporary mass concentration. Dark cores with swirling filamentary gas. Blackbody temperature colors for accretion disks.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "massScale",
+      "index": 0,
       "name": "Mass Scale",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Mass of gravitational bodies",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "numBodies",
+      "index": 1,
       "name": "Body Count",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Number of gravitational bodies",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "lensStrength",
+      "index": 2,
       "name": "Lens Strength",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Intensity of gravitational lensing distortion",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "densityAmt",
+      "index": 3,
       "name": "Gas Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Density of accreted gas and filamentary structures",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

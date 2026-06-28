@@ -1,8 +1,7 @@
 {
-  "id": "gen-kryonic-quantum-aether-fractal-core",
   "name": "Kryonic Quantum-Aether Fractal-Core",
-  "url": "shaders/gen-kryonic-quantum-aether-fractal-core.wgsl",
-  "description": "A pulsating, zero-gravity containment field where hyper-frozen fractal geometries endlessly unfold and shatter into luminous aether-plasma shards, reacting aggressively to ambient sonic impulses.",
+  "category": "generative",
+  "filename": "gen-kryonic-quantum-aether-fractal-core.wgsl",
   "tags": [
     "fractal",
     "quantum",
@@ -10,49 +9,47 @@
     "raymarching",
     "crystalline"
   ],
-  "features": [
-    "generative",
-    "upgraded-rgba",
-    "audio-reactive",
-    "mouse-interactive",
-    "volumetric"
+  "description": "A pulsating, zero-gravity containment field where hyper-frozen fractal geometries endlessly unfold and shatter into luminous aether-plasma shards, reacting aggressively to ambient sonic impulses.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Fractal Scale",
       "default": 1.5,
       "min": 0.5,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Shatter Intensity",
       "default": 0.5,
       "min": 0,
       "max": 2,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Glow Strength",
       "default": 1,
       "min": 0.1,
       "max": 3,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Thermal Melt",
       "default": 0.2,
       "min": 0,
       "max": 1,
-      "step": 0.05,
-      "mapping": "zoom_params.w"
+      "step": 0.05
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

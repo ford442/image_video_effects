@@ -1,9 +1,7 @@
 {
-  "id": "gen-vortex-cathedral",
   "name": "Vortex Cathedral",
-  "url": "shaders/gen-vortex-cathedral.wgsl",
   "category": "generative",
-  "description": "Spinning radial arches and sanctum rings form a gothic vortex illuminated by bass-lit cores.",
+  "filename": "gen-vortex-cathedral.wgsl",
   "tags": [
     "generative",
     "vortex",
@@ -12,51 +10,47 @@
     "cosmic",
     "audio-reactive"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "temporal",
-    "chromatic",
-    "depth-aware"
+  "description": "Spinning radial arches and sanctum rings form a gothic vortex illuminated by bass-lit cores.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "archCount",
+      "index": 0,
       "name": "Arch Count",
       "default": 0.46,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "spin",
+      "index": 1,
       "name": "Spin",
       "default": 0.43,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "haze",
+      "index": 2,
       "name": "Haze",
       "default": 0.35,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "sanctum",
+      "index": 3,
       "name": "Sanctum Radius",
       "default": 0.44,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

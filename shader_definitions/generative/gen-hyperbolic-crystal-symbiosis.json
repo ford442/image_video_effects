@@ -1,8 +1,7 @@
 {
-  "id": "gen-hyperbolic-crystal-symbiosis",
   "name": "Hyperbolic Crystal Symbiosis",
-  "url": "shaders/gen-hyperbolic-crystal-symbiosis.wgsl",
-  "description": "Competing and cooperating crystal growth occurring in hyperbolic (Poincaré disk) geometry. Local curvature influenced by audio and mouse position. Exquisite non-Euclidean tiling patterns with iridescent jewel-like coloring and beautiful symmetry breaking.",
+  "category": "generative",
+  "filename": "gen-hyperbolic-crystal-symbiosis.wgsl",
   "tags": [
     "generative",
     "hyperbolic",
@@ -13,51 +12,47 @@
     "audio-reactive",
     "mathematical"
   ],
-  "features": [
-    "generative",
-    "audio-reactive",
-    "mouse-driven"
+  "description": "Competing and cooperating crystal growth occurring in hyperbolic (Poincar\u00e9 disk) geometry. Local curvature influenced by audio and mouse position. Exquisite non-Euclidean tiling patterns with iridescent jewel-like coloring and beautiful symmetry breaking.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "growthSpeed",
+      "index": 0,
       "name": "Growth Speed",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Speed of hyperbolic crystal growth",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "competition",
+      "index": 1,
       "name": "Competition",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Crystal competition level and symmetry breaking",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "curvature",
+      "index": 2,
       "name": "Curvature",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Hyperbolic curvature magnitude",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "mutation",
+      "index": 3,
       "name": "Mutation",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Crystal growth mutation and irregularity",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

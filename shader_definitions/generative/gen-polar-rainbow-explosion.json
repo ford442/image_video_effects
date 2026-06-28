@@ -1,15 +1,7 @@
 {
-  "id": "gen-polar-rainbow-explosion",
   "name": "Polar Rainbow Explosion",
   "category": "generative",
-  "url": "shaders/gen-polar-rainbow-explosion.wgsl",
-  "description": "A polar coordinate explosion enriched with Wolfram spherical shock-wave dynamics. Bass triggers radial shock fronts; treble injects high-frequency ripple. Mouse directs the explosion origin. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
-  "features": [
-    "upgraded-rgba",
-    "temporal",
-    "audio-reactive",
-    "mouse-driven"
-  ],
+  "filename": "gen-polar-rainbow-explosion.wgsl",
   "tags": [
     "psychedelic",
     "neon",
@@ -21,42 +13,47 @@
     "shock-wave",
     "fluid-dynamics"
   ],
-  "params": [
+  "description": "A polar coordinate explosion enriched with Wolfram spherical shock-wave dynamics. Bass triggers radial shock fronts; treble injects high-frequency ripple. Mouse directs the explosion origin. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "intensity",
+      "index": 0,
       "name": "Intensity",
       "default": 0.75,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Speed",
       "default": 0.35,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 2,
       "name": "Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "colorshift",
+      "index": 3,
       "name": "Color Shift",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

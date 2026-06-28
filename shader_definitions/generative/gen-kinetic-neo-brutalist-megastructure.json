@@ -1,8 +1,7 @@
 {
-  "id": "gen-kinetic-neo-brutalist-megastructure",
   "name": "Kinetic Neo-Brutalist Megastructure",
-  "url": "shaders/gen-kinetic-neo-brutalist-megastructure.wgsl",
-  "description": "An endlessly shifting, gravity-defying neo-brutalist megastructure of colossal floating concrete blocks that grind and interlock, revealing glowing, audio-reactive server cores hidden within.",
+  "category": "generative",
+  "filename": "gen-kinetic-neo-brutalist-megastructure.wgsl",
   "tags": [
     "architecture",
     "cyberpunk",
@@ -10,51 +9,47 @@
     "audio-reactive",
     "raymarching"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-driven",
-    "audio-reactive",
-    "upgraded-rgba",
-    "aces-tone-map",
-    "temporal-feedback",
-    "chromatic-aberration"
+  "description": "An endlessly shifting, gravity-defying neo-brutalist megastructure of colossal floating concrete blocks that grind and interlock, revealing glowing, audio-reactive server cores hidden within.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "blockDensity",
+      "index": 0,
       "name": "Block Density",
       "default": 1,
       "min": 0.1,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "repulsionRadius",
+      "index": 1,
       "name": "Repulsion Radius",
       "default": 3,
       "min": 0,
       "max": 10,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "neonIntensity",
+      "index": 2,
       "name": "Neon Intensity",
       "default": 1,
       "min": 0,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "travelSpeed",
+      "index": 3,
       "name": "Travel Speed",
       "default": 1,
       "min": 0,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.w"
+      "step": 0.1
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

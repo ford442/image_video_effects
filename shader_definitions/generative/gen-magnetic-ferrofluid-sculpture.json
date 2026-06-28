@@ -1,9 +1,7 @@
 {
-  "id": "gen-magnetic-ferrofluid-sculpture",
   "name": "Magnetic Ferrofluid-Sculpture",
-  "url": "shaders/gen-magnetic-ferrofluid-sculpture.wgsl",
   "category": "generative",
-  "description": "A hyper-reflective, organic-mechanical mass of magnetic liquid that constantly shifts and forms razor-sharp crystalline spikes, rippling with fluid dynamics and metallic peaks driven by audio frequencies.",
+  "filename": "gen-magnetic-ferrofluid-sculpture.wgsl",
   "tags": [
     "ferrofluid",
     "magnetic",
@@ -14,50 +12,47 @@
     "iridescent",
     "mouse-driven"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "depth-aware",
-    "chromatic"
+  "description": "A hyper-reflective, organic-mechanical mass of magnetic liquid that constantly shifts and forms razor-sharp crystalline spikes, rippling with fluid dynamics and metallic peaks driven by audio frequencies.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "spikeDensity",
+      "index": 0,
       "name": "Spike Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "fluidViscosity",
+      "index": 1,
       "name": "Fluid Viscosity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "iridescence",
+      "index": 2,
       "name": "Iridescence",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "magneticPull",
+      "index": 3,
       "name": "Magnetic Pull",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

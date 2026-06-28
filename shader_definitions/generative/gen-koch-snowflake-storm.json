@@ -1,9 +1,7 @@
 {
-  "id": "gen-koch-snowflake-storm",
   "name": "Koch Snowflake Storm",
-  "url": "shaders/gen-koch-snowflake-storm.wgsl",
   "category": "generative",
-  "description": "Recursive Koch snowflake fractals animated with domain-warped fBm turbulence. Ice crystal aesthetic with subsurface scattering, HDR corner bloom, and chromatic dispersion on refracted edges.",
+  "filename": "gen-koch-snowflake-storm.wgsl",
   "tags": [
     "generative",
     "fractal",
@@ -14,48 +12,47 @@
     "audio-reactive",
     "storm"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba"
+  "description": "Recursive Koch snowflake fractals animated with domain-warped fBm turbulence. Ice crystal aesthetic with subsurface scattering, HDR corner bloom, and chromatic dispersion on refracted edges.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "turbulence",
+      "index": 0,
       "name": "Turbulence",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "recursion",
+      "index": 1,
       "name": "Recursion Depth",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "density",
+      "index": 2,
       "name": "Snowflake Count",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "dispersion",
+      "index": 3,
       "name": "Chromatic Dispersion",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

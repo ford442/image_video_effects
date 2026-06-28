@@ -1,8 +1,7 @@
 {
-  "id": "gen-erosion-strata",
   "name": "Erosion Strata",
-  "url": "shaders/gen-erosion-strata.wgsl",
-  "description": "Procedural sedimentary rock layers carved by domain-warped erosion channels, revealing mineral veins, fossil imprints, and weathered edges. Features atmospheric haze, subsurface scattering, and geological era palette cycling.",
+  "category": "generative",
+  "filename": "gen-erosion-strata.wgsl",
   "tags": [
     "generative",
     "procedural",
@@ -17,57 +16,47 @@
     "audio-reactive",
     "mouse-driven"
   ],
-  "features": [
-    "generative",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "aces-tone-map",
-    "temporal-feedback",
-    "chromatic-aberration",
-    "depth-aware"
+  "description": "Procedural sedimentary rock layers carved by domain-warped erosion channels, revealing mineral veins, fossil imprints, and weathered edges. Features atmospheric haze, subsurface scattering, and geological era palette cycling.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "author": "AI",
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Erosion Depth",
+      "default": 0.5,
       "min": 0,
       "max": 1,
-      "default": 0.5,
-      "step": 0.01,
-      "description": "Depth of erosion channels cutting through sedimentary layers",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Layer Density",
-      "min": 0,
-      "max": 1,
       "default": 0.5,
-      "step": 0.01,
-      "description": "Density of horizontal sedimentary layers",
-      "mapping": "zoom_params.y"
+      "min": 0,
+      "max": 1,
+      "step": 0.01
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Mineral Veins",
+      "default": 0.4,
       "min": 0,
       "max": 1,
-      "default": 0.4,
-      "step": 0.01,
-      "description": "Prominence of Voronoi mineral vein networks",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Water Level",
+      "default": 0.3,
       "min": 0,
       "max": 1,
-      "default": 0.3,
-      "step": 0.01,
-      "description": "Vertical water level submerging lower canyon layers",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

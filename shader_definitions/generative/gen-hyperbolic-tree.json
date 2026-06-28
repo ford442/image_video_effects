@@ -1,8 +1,7 @@
 {
-  "id": "gen-hyperbolic-tree",
   "name": "Hyperbolic Tree Fractal",
-  "url": "shaders/gen-hyperbolic-tree.wgsl",
-  "description": "Recursive tree fractal rendered in hyperbolic Poincare disk. Branches sway with audio, leaves glow with treble. Möbius-transformed space.",
+  "category": "generative",
+  "filename": "gen-hyperbolic-tree.wgsl",
   "tags": [
     "generative",
     "hyperbolic",
@@ -13,53 +12,47 @@
     "audio",
     "music"
   ],
-  "features": [
-    "generative",
-    "audio-reactive",
-    "upgraded-rgba",
-    "chromatic-leaves",
-    "temporal-branch-sway"
+  "description": "Recursive tree fractal rendered in hyperbolic Poincare disk. Branches sway with audio, leaves glow with treble. M\u00f6bius-transformed space.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "depth",
+      "index": 0,
       "name": "Tree Depth",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Recursion depth of branching",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "branchAngle",
+      "index": 1,
       "name": "Branch Angle",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Angle between child branches",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "colorShift",
+      "index": 2,
       "name": "Color Shift",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Base hue rotation",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "saturation",
+      "index": 3,
       "name": "Saturation",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Color saturation",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

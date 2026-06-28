@@ -1,15 +1,7 @@
 {
-  "id": "gen-galactic-aether-crystal-geode-core",
   "name": "Galactic Aether-Crystal Geode-Core",
   "category": "generative",
-  "url": "shaders/gen-galactic-aether-crystal-geode-core.wgsl",
-  "description": "A hyper-dimensional, slowly rotating cosmic geode cracked open to reveal a pulsating, audio-reactive core of liquid aether-plasma and infinitely recursive chrono-crystals.",
-  "features": [
-    "volumetric",
-    "audio-reactive",
-    "fractal",
-    "interactive"
-  ],
+  "filename": "gen-galactic-aether-crystal-geode-core.wgsl",
   "tags": [
     "crystal",
     "geode",
@@ -18,42 +10,47 @@
     "fractal",
     "plasma"
   ],
-  "params": [
+  "description": "A hyper-dimensional, slowly rotating cosmic geode cracked open to reveal a pulsating, audio-reactive core of liquid aether-plasma and infinitely recursive chrono-crystals.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "crystal_density",
+      "index": 0,
       "name": "Crystal Density",
       "default": 1.0,
       "min": 0.1,
       "max": 3.0,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "core_glow",
+      "index": 1,
       "name": "Core Glow",
       "default": 1.5,
       "min": 0.0,
       "max": 5.0,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "fractal_iterations",
+      "index": 2,
       "name": "Fractal Iterations",
       "default": 5.0,
       "min": 1.0,
       "max": 10.0,
-      "step": 1.0,
-      "mapping": "zoom_params.z"
+      "step": 1.0
     },
     {
-      "id": "gas_density",
+      "index": 3,
       "name": "Gas Density",
       "default": 0.5,
       "min": 0.0,
       "max": 2.0,
-      "step": 0.05,
-      "mapping": "zoom_params.w"
+      "step": 0.05
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

@@ -1,8 +1,7 @@
 {
-  "id": "gen-neuro-kinetic-bloom",
   "name": "Neuro-Kinetic Bloom",
-  "url": "shaders/gen-neuro-kinetic-bloom.wgsl",
-  "description": "A vast, deep-sea garden of biomechanical, neon-veined flora that dynamically uncoils and pulses with quantum energy, its tendrils whipping and synchronizing to the rhythm of sound.",
+  "category": "generative",
+  "filename": "gen-neuro-kinetic-bloom.wgsl",
   "tags": [
     "organic",
     "biomechanical",
@@ -11,48 +10,47 @@
     "raymarching",
     "volumetric"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven",
-    "upgraded-rgba"
+  "description": "A vast, deep-sea garden of biomechanical, neon-veined flora that dynamically uncoils and pulses with quantum energy, its tendrils whipping and synchronizing to the rhythm of sound.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "bloomExtension",
+      "index": 0,
       "name": "Bloom Extension",
       "default": 1,
       "min": 0,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "repulsionRadius",
+      "index": 1,
       "name": "Repulsion Radius",
       "default": 3,
       "min": 0,
       "max": 10,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "veinGlow",
+      "index": 2,
       "name": "Vein Glow",
       "default": 1,
       "min": 0,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "cameraZoom",
+      "index": 3,
       "name": "Camera Zoom",
       "default": 0,
       "min": -10,
       "max": 10,
-      "step": 0.1,
-      "mapping": "zoom_params.w"
+      "step": 0.1
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

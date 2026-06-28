@@ -1,8 +1,7 @@
 {
-  "id": "gen-audio-spirograph",
   "name": "Audio Spirograph",
-  "url": "shaders/gen-audio-spirograph.wgsl",
-  "description": "Audio-reactive spirograph with harmonic resonance using epitrochoid and hypotrochoid curves with musical frequency ratios",
+  "category": "generative",
+  "filename": "gen-audio-spirograph.wgsl",
   "tags": [
     "generative",
     "audio-reactive",
@@ -13,47 +12,47 @@
     "music",
     "reactive"
   ],
-  "features": [
-    "audio-reactive",
-    "animated",
-    "audio-driven"
+  "description": "Audio-reactive spirograph with harmonic resonance using epitrochoid and hypotrochoid curves with musical frequency ratios",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "baseFreq",
+      "index": 0,
       "name": "Base Frequency",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "audioReactivity",
+      "index": 1,
       "name": "Audio Reactivity",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "trailLength",
+      "index": 2,
       "name": "Trail Length",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "lineThickness",
+      "index": 3,
       "name": "Line Thickness",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

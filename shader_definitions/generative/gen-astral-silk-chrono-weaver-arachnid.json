@@ -1,8 +1,7 @@
 {
-  "id": "gen-astral-silk-chrono-weaver-arachnid",
   "name": "Astral-Silk Chrono-Weaver Arachnid",
-  "url": "shaders/gen-astral-silk-chrono-weaver-arachnid.wgsl",
-  "description": "A majestic, biomechanical celestial arachnid suspended in a deep cosmic void, continuously weaving an intricate, glowing fractal web of 'astral silk' out of raw quantum time-fluid, heavily reacting to bass frequencies by sending shockwaves of light through its geometric threads.",
+  "category": "generative",
+  "filename": "gen-astral-silk-chrono-weaver-arachnid.wgsl",
   "tags": [
     "organic",
     "quantum",
@@ -10,52 +9,47 @@
     "fractal",
     "audio-reactive"
   ],
-  "features": [
-    "raymarched",
-    "mouse-driven",
-    "audio-reactive",
-    "upgraded-rgba",
-    "aces-tone-map",
-    "temporal-feedback",
-    "chromatic-aberration"
+  "description": "A majestic, biomechanical celestial arachnid suspended in a deep cosmic void, continuously weaving an intricate, glowing fractal web of 'astral silk' out of raw quantum time-fluid, heavily reacting to bass frequencies by sending shockwaves of light through its geometric threads.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Web Glow",
-      "defaultValue": 1.0,
+      "default": 0.5,
       "min": 0.0,
       "max": 5.0,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Arachnid Activity",
-      "defaultValue": 1.0,
+      "default": 0.5,
       "min": 0.1,
       "max": 3.0,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Silk Refraction",
-      "defaultValue": 1.5,
+      "default": 0.5,
       "min": 1.0,
       "max": 3.0,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Shockwave Intensity",
-      "defaultValue": 1.0,
+      "default": 0.5,
       "min": 0.0,
       "max": 5.0,
-      "step": 0.1,
-      "mapping": "zoom_params.w"
+      "step": 0.1
     }
   ],
-  "category": "generative"
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

@@ -1,10 +1,7 @@
 {
-  "id": "gen-prismatic-fractal-dunes",
   "name": "Prismatic Fractal-Dunes",
-  "url": "shaders/gen-prismatic-fractal-dunes.wgsl",
-  "type": "generative",
-  "coordinate": 850,
-  "description": "An infinite, shifting desert where the sand grains are micro-prisms, rippling and flowing like liquid glass under cosmic winds and erupting into chromatic geysers of light to the rhythm of sound.",
+  "category": "generative",
+  "filename": "gen-prismatic-fractal-dunes.wgsl",
   "tags": [
     "landscape",
     "refraction",
@@ -12,47 +9,47 @@
     "raymarching",
     "fractal"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-driven",
-    "audio-reactive"
+  "description": "An infinite, shifting desert where the sand grains are micro-prisms, rippling and flowing like liquid glass under cosmic winds and erupting into chromatic geysers of light to the rhythm of sound.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "duneComplexity",
+      "index": 0,
       "name": "Dune Complexity",
       "default": 5,
       "min": 1,
       "max": 10,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "prismDispersion",
+      "index": 1,
       "name": "Prism Dispersion",
       "default": 1.5,
       "min": 0,
       "max": 5,
-      "step": 0.05,
-      "mapping": "zoom_params.y"
+      "step": 0.05
     },
     {
-      "id": "geyserHeight",
+      "index": 2,
       "name": "Geyser Height",
       "default": 2,
       "min": 0,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "windSpeed",
+      "index": 3,
       "name": "Wind Speed",
       "default": 1,
       "min": 0,
       "max": 3,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

@@ -1,9 +1,7 @@
 {
-  "id": "gen-sentient-quantum-chrono-leviathan-moth",
   "name": "Sentient Quantum-Chrono Leviathan-Moth",
-  "url": "shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
   "category": "generative",
-  "description": "A majestic, colossal cybernetic space moth floating through a deep-space nebula, its wings woven from crystalline threads of frozen time and quantum aether-plasma that softly pulse and ripple in sync with ambient cosmic acoustics.",
+  "filename": "gen-sentient-quantum-chrono-leviathan-moth.wgsl",
   "tags": [
     "cosmic",
     "moth",
@@ -13,50 +11,47 @@
     "mechanical",
     "audio-reactive"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "temporal",
-    "chromatic",
-    "depth-aware"
+  "description": "A majestic, colossal cybernetic space moth floating through a deep-space nebula, its wings woven from crystalline threads of frozen time and quantum aether-plasma that softly pulse and ripple in sync with ambient cosmic acoustics.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "wingSpan",
+      "index": 0,
       "name": "Wing Span",
       "default": 1.5,
       "min": 0.5,
       "max": 3.0,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "plasmaIntensity",
+      "index": 1,
       "name": "Plasma Intensity",
       "default": 2.0,
       "min": 0.1,
       "max": 5.0,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "chronoDistortion",
+      "index": 2,
       "name": "Chrono Distortion",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.05,
-      "mapping": "zoom_params.z"
+      "step": 0.05
     },
     {
-      "id": "nebularDensity",
+      "index": 3,
       "name": "Nebular Density",
       "default": 0.8,
       "min": 0.1,
       "max": 2.0,
-      "step": 0.1,
-      "mapping": "zoom_params.w"
+      "step": 0.1
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

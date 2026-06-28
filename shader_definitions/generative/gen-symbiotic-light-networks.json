@@ -1,8 +1,7 @@
 {
-  "id": "gen-symbiotic-light-networks",
   "name": "Symbiotic Light Networks",
-  "url": "shaders/gen-symbiotic-light-networks.wgsl",
-  "description": "A network of light-conducting organic structures that grow, compete, and support each other while transporting and transforming light in complex ways. Audio influences light color, intensity, and transmission rules. Mouse seeds or prunes the network. Bioluminescent organic networks with complex internal light transport.",
+  "category": "generative",
+  "filename": "gen-symbiotic-light-networks.wgsl",
   "tags": [
     "generative",
     "network",
@@ -13,51 +12,47 @@
     "procedural",
     "music"
   ],
-  "features": [
-    "generative",
-    "audio-reactive",
-    "mouse-driven"
+  "description": "A network of light-conducting organic structures that grow, compete, and support each other while transporting and transforming light in complex ways. Audio influences light color, intensity, and transmission rules. Mouse seeds or prunes the network. Bioluminescent organic networks with complex internal light transport.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "networkDensity",
+      "index": 0,
       "name": "Network Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Density and complexity of the light network",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "competition",
+      "index": 1,
       "name": "Competition",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "0=symbiotic amplification, 1=competitive suppression",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "lightIntensity",
+      "index": 2,
       "name": "Light Intensity",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Intensity of bioluminescent light transport",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "growthAmt",
+      "index": 3,
       "name": "Growth Phase",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Network growth phase (0=growing, 1=mature)",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

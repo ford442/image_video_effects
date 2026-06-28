@@ -1,9 +1,7 @@
 {
-  "id": "gen-neuro-fluid-plasma-lotus",
   "name": "Neuro-Fluid Plasma-Lotus",
-  "url": "shaders/gen-neuro-fluid-plasma-lotus.wgsl",
   "category": "generative",
-  "description": "A majestic, hyper-organic lotus flower suspended in zero-gravity, blooming endlessly with translucent liquid-neon neuro-fluid petals that ripple with bioluminescent plasma in sync with ambient cosmic frequencies.",
+  "filename": "gen-neuro-fluid-plasma-lotus.wgsl",
   "tags": [
     "organic",
     "floral",
@@ -13,50 +11,47 @@
     "volumetric",
     "raymarched"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "depth-aware",
-    "chromatic"
+  "description": "A majestic, hyper-organic lotus flower suspended in zero-gravity, blooming endlessly with translucent liquid-neon neuro-fluid petals that ripple with bioluminescent plasma in sync with ambient cosmic frequencies.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "petalCurl",
+      "index": 0,
       "name": "Petal Curl",
       "default": 0.36,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "bloomPulse",
+      "index": 1,
       "name": "Bloom Pulse",
       "default": 0.33,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "coreHeat",
+      "index": 2,
       "name": "Core Heat",
       "default": 0.25,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "dispersion",
+      "index": 3,
       "name": "Dispersion",
       "default": 0.29,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

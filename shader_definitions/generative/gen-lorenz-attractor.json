@@ -1,8 +1,7 @@
 {
-  "id": "gen-lorenz-attractor",
   "name": "Lorenz Attractor",
-  "url": "shaders/gen-lorenz-attractor.wgsl",
-  "description": "Strange attractor density accumulation. Each pixel seeds a short Lorenz trajectory near an equilibrium lobe; Gaussian kernel splatting onto the x-z projection builds the iconic butterfly over many frames of temporal Monte Carlo integration. Bass widens the rho parameter for more chaotic spread; mouse pans the view.",
+  "category": "generative",
+  "filename": "gen-lorenz-attractor.wgsl",
   "tags": [
     "chaos",
     "strange-attractor",
@@ -11,52 +10,47 @@
     "physics",
     "audio-reactive"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "temporal",
-    "upgraded-rgba",
-    "chromatic-lobes",
-    "audio-decay-modulation",
-    "depth-output"
+  "description": "Strange attractor density accumulation. Each pixel seeds a short Lorenz trajectory near an equilibrium lobe; Gaussian kernel splatting onto the x-z projection builds the iconic butterfly over many frames of temporal Monte Carlo integration. Bass widens the rho parameter for more chaotic spread; mouse pans the view.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "sigma",
+      "index": 0,
       "name": "Sigma",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "rhoMod",
+      "index": 1,
       "name": "Rho (Chaos)",
       "default": 0.35,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "glowRadius",
+      "index": 2,
       "name": "Glow Radius",
       "default": 0.25,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "decay",
+      "index": 3,
       "name": "Trail Decay",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
   ],
-  "coordinate": 886
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

@@ -1,10 +1,7 @@
 {
-  "id": "gen-chromodynamic-plasma-collider",
   "name": "Chromodynamic Plasma-Collider",
-  "coordinate": 853,
-  "type": "wgsl",
-  "url": "shaders/gen-chromodynamic-plasma-collider.wgsl",
-  "description": "A hyper-speed journey down an infinite magnetic containment tunnel where sub-atomic particles collide and shatter into vibrant, audio-reactive showers of exotic matter.",
+  "category": "generative",
+  "filename": "gen-chromodynamic-plasma-collider.wgsl",
   "tags": [
     "cosmic",
     "mechanical",
@@ -15,51 +12,47 @@
     "music",
     "reactive"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-driven",
-    "audio-reactive",
-    "upgraded-rgba",
-    "aces-tone-map",
-    "temporal-feedback",
-    "chromatic-aberration"
+  "description": "A hyper-speed journey down an infinite magnetic containment tunnel where sub-atomic particles collide and shatter into vibrant, audio-reactive showers of exotic matter.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "ringDensity",
+      "index": 0,
       "name": "Ring Density",
       "default": 15,
       "min": 5,
       "max": 30,
-      "step": 1,
-      "mapping": "zoom_params.x"
+      "step": 1
     },
     {
-      "id": "collisionRate",
+      "index": 1,
       "name": "Collision Rate",
       "default": 5,
       "min": 0.5,
       "max": 20,
-      "step": 0.5,
-      "mapping": "zoom_params.y"
+      "step": 0.5
     },
     {
-      "id": "anomalyPull",
+      "index": 2,
       "name": "Anomaly Pull",
       "default": 1,
       "min": 0,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "tunnelWarp",
+      "index": 3,
       "name": "Tunnel Warp",
       "default": 0.5,
       "min": 0,
       "max": 2,
-      "step": 0.05,
-      "mapping": "zoom_params.w"
+      "step": 0.05
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

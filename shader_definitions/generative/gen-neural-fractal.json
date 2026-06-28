@@ -1,8 +1,7 @@
 {
-  "id": "gen-neural-fractal",
   "name": "Neural Fractal",
-  "url": "shaders/gen-neural-fractal.wgsl",
-  "description": "Neural network weight visualization style fractals using sigmoid, tanh, and swish activation functions instead of standard z²+c iterations",
+  "category": "generative",
+  "filename": "gen-neural-fractal.wgsl",
   "tags": [
     "generative",
     "fractal",
@@ -13,47 +12,47 @@
     "music",
     "reactive"
   ],
-  "features": [
-    "animated",
-    "audio-reactive",
-    "audio-driven"
+  "description": "Neural network weight visualization style fractals using sigmoid, tanh, and swish activation functions instead of standard z\u00b2+c iterations",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "zoom",
+      "index": 0,
       "name": "Zoom Level",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "colorSpeed",
+      "index": 1,
       "name": "Color Cycling",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "iterations",
+      "index": 2,
       "name": "Iteration Depth",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "mutation",
+      "index": 3,
       "name": "Mutation Factor",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

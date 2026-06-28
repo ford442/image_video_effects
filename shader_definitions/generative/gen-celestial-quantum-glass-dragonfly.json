@@ -1,8 +1,7 @@
 {
-  "id": "gen-celestial-quantum-glass-dragonfly",
   "name": "Celestial Quantum-Glass Dragonfly",
-  "url": "shaders/gen-celestial-quantum-glass-dragonfly.wgsl",
-  "description": "A hyper-dimensional, biomechanical dragonfly forged from ethereal quantum-glass and liquid starlight, its intricate fractal wings constantly refracting cosmic energy and beating in synchronous rhythm with ambient audio frequencies inside a volumetric plasma storm.",
+  "category": "generative",
+  "filename": "gen-celestial-quantum-glass-dragonfly.wgsl",
   "tags": [
     "dragonfly",
     "quantum",
@@ -11,46 +10,47 @@
     "raymarching",
     "crystalline"
   ],
-  "features": [
-    "audio-reactive",
-    "mouse-interactive"
+  "description": "A hyper-dimensional, biomechanical dragonfly forged from ethereal quantum-glass and liquid starlight, its intricate fractal wings constantly refracting cosmic energy and beating in synchronous rhythm with ambient audio frequencies inside a volumetric plasma storm.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Wing Frequency",
       "default": 1.5,
       "min": 0.1,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Fractal Density",
       "default": 3,
       "min": 1,
       "max": 8,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Refraction Index",
       "default": 1.45,
       "min": 1,
       "max": 3,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Glow Intensity",
       "default": 2,
       "min": 0,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.w"
+      "step": 0.1
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

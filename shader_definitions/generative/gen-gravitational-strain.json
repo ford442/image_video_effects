@@ -1,8 +1,7 @@
 {
-  "id": "gen-gravitational-strain",
   "name": "Gravitational Strain Field",
-  "url": "shaders/gen-gravitational-strain.wgsl",
-  "description": "Orbiting gravity wells warp a procedural star field via geodesic ray integration. Tidal emission glows brightest where gravitational gradients collide — dark matter visualization as art.",
+  "category": "generative",
+  "filename": "gen-gravitational-strain.wgsl",
   "tags": [
     "gravity",
     "lensing",
@@ -15,52 +14,47 @@
     "audio",
     "music"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
+  "description": "Orbiting gravity wells warp a procedural star field via geodesic ray integration. Tidal emission glows brightest where gravitational gradients collide \u2014 dark matter visualization as art.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "author": "AI",
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Well Count",
+      "default": 0.4,
       "min": 0,
       "max": 1,
-      "default": 0.4,
-      "step": 0.01,
-      "description": "Number of gravity wells (maps to 1–6).",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Well Mass",
+      "default": 0.4,
       "min": 0,
       "max": 1,
-      "default": 0.4,
-      "step": 0.01,
-      "description": "Mass of each gravity well — controls bending strength.",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Bend Strength",
+      "default": 0.4,
       "min": 0,
       "max": 1,
-      "default": 0.4,
-      "step": 0.01,
-      "description": "Overall geodesic deflection amplitude.",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Emission Scale",
+      "default": 0.4,
       "min": 0,
       "max": 1,
-      "default": 0.4,
-      "step": 0.01,
-      "description": "Brightness of tidal emission at field gradient maxima.",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

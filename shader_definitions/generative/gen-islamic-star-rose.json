@@ -1,18 +1,7 @@
 {
-  "id": "gen-islamic-star-rose",
   "name": "Islamic Geometric Star-Rose",
   "category": "generative",
-  "url": "shaders/gen-islamic-star-rose.wgsl",
-  "description": "Procedurally generated Islamic geometric patterns enriched by Wolfram Alpha regular pentagon data. Interior angle 108°, central angle 72°. Diagonal/edge ratio φ≈1.618 determines petal proportions. Features girih-style star and polygon tessellations with pentagram-aware geometry. Bass rotates the tessellation. Mouse morphs between star and rose forms. Temporal feedback and chromatic aberration complete the upgraded-rgba stack.",
-  "features": [
-    "upgraded-rgba",
-    "temporal",
-    "audio-reactive",
-    "mouse-driven",
-    "interactive",
-    "procedural",
-    "geometric"
-  ],
+  "filename": "gen-islamic-star-rose.wgsl",
   "tags": [
     "islamic",
     "geometric",
@@ -25,42 +14,47 @@
     "metallic",
     "wolfram"
   ],
-  "params": [
+  "description": "Procedurally generated Islamic geometric patterns enriched by Wolfram Alpha regular pentagon data. Interior angle 108\u00b0, central angle 72\u00b0. Diagonal/edge ratio \u03c6\u22481.618 determines petal proportions. Features girih-style star and polygon tessellations with pentagram-aware geometry. Bass rotates the tessellation. Mouse morphs between star and rose forms. Temporal feedback and chromatic aberration complete the upgraded-rgba stack.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "intensity",
+      "index": 0,
       "name": "Pattern Complexity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Rotation",
       "default": 0.15,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 2,
       "name": "Zoom",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "colorshift",
+      "index": 3,
       "name": "Color Shift",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

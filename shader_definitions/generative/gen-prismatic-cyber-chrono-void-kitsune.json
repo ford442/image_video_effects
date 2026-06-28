@@ -1,9 +1,7 @@
 {
-  "id": "gen-prismatic-cyber-chrono-void-kitsune",
   "name": "Prismatic Cyber-Chrono Void-Kitsune",
-  "url": "shaders/gen-prismatic-cyber-chrono-void-kitsune.wgsl",
   "category": "generative",
-  "description": "A hyper-majestic nine-tailed cybernetic space-fox woven from shattering prismatic quantum glass and glowing liquid-aurora, effortlessly bounding through an endlessly twisting volumetric cosmic-rift while its fluid tails carve geometric chrono-fractals into the void.",
+  "filename": "gen-prismatic-cyber-chrono-void-kitsune.wgsl",
   "tags": [
     "cosmic",
     "kitsune",
@@ -15,50 +13,47 @@
     "volumetric",
     "raymarched"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "depth-aware",
-    "chromatic"
+  "description": "A hyper-majestic nine-tailed cybernetic space-fox woven from shattering prismatic quantum glass and glowing liquid-aurora, effortlessly bounding through an endlessly twisting volumetric cosmic-rift while its fluid tails carve geometric chrono-fractals into the void.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "tailDispersion",
+      "index": 0,
       "name": "Tail Dispersion",
       "default": 0.31,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "riftDensity",
+      "index": 1,
       "name": "Rift Density",
       "default": 0.37,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "runeIntensity",
+      "index": 2,
       "name": "Rune Intensity",
       "default": 0.22,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "glassRefraction",
+      "index": 3,
       "name": "Glass Refraction",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

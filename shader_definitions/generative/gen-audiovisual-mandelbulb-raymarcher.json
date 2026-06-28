@@ -1,8 +1,7 @@
 {
-  "id": "gen-audiovisual-mandelbulb-raymarcher",
   "name": "Audiovisual Mandelbulb",
-  "url": "/shaders/gen-audiovisual-mandelbulb-raymarcher.wgsl",
-  "description": "Raymarched 3D Mandelbulb fractal with video texture mapping, audio-reactive geometry mutation, and depth output.",
+  "category": "generative",
+  "filename": "gen-audiovisual-mandelbulb-raymarcher.wgsl",
   "tags": [
     "fractal",
     "3d",
@@ -12,52 +11,47 @@
     "neon",
     "abstract"
   ],
-  "features": [
-    "raymarched",
-    "audio-reactive",
-    "mouse-driven",
-    "depth-aware",
-    "upgraded-rgba",
-    "aces-tone-map",
-    "temporal-feedback",
-    "chromatic-aberration"
+  "description": "Raymarched 3D Mandelbulb fractal with video texture mapping, audio-reactive geometry mutation, and depth output.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "iterations",
+      "index": 0,
       "name": "Iterations",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "escape",
+      "index": 1,
       "name": "Escape Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "glow",
+      "index": 2,
       "name": "Glow",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "texture",
+      "index": 3,
       "name": "Video Blend",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

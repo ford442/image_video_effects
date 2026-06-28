@@ -1,8 +1,7 @@
 {
-  "id": "gen-astro-kinetic-chrono-orrery",
   "name": "Astro-Kinetic Chrono-Orrery",
-  "url": "shaders/gen-astro-kinetic-chrono-orrery.wgsl",
-  "description": "A hyper-intricate cosmic mechanism of nested, rotating brass and energy rings orbiting a blazing quantum singularity, merging celestial mechanics with clockwork precision.",
+  "category": "generative",
+  "filename": "gen-astro-kinetic-chrono-orrery.wgsl",
   "tags": [
     "cosmic",
     "mechanical",
@@ -13,47 +12,47 @@
     "music",
     "reactive"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
+  "description": "A hyper-intricate cosmic mechanism of nested, rotating brass and energy rings orbiting a blazing quantum singularity, merging celestial mechanics with clockwork precision.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Complexity",
+      "default": 4,
       "min": 1,
       "max": 10,
-      "default": 4,
-      "step": 1,
-      "mapping": "zoom_params.x"
+      "step": 1
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Speed",
+      "default": 1,
       "min": 0,
       "max": 5,
-      "default": 1,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Glow Intensity",
+      "default": 1,
       "min": 0,
       "max": 3,
-      "default": 1,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Audio Reactivity",
+      "default": 0.5,
       "min": 0,
       "max": 1,
-      "default": 0.5,
-      "step": 0.05,
-      "mapping": "zoom_params.w"
+      "step": 0.05
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }
