@@ -2,7 +2,7 @@
   {
     "id": "audio-reactive-pyramid",
     "name": "Audio Reactive Pyramid",
-    "url": "shaders/audio-reactive-pyramid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/audio-reactive-pyramid.wgsl",
     "category": "post-processing",
     "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0–12), mid detail by mid bins (13–50), fine detail by treble bins (51–127). Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
     "tags": [
@@ -56,7 +56,7 @@
   {
     "id": "audio-reactive-rgb-dispersion",
     "name": "Audio Reactive RGB Dispersion",
-    "url": "shaders/audio-reactive-rgb-dispersion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/audio-reactive-rgb-dispersion.wgsl",
     "category": "post-processing",
     "description": "Chromatic (RGB) dispersion effect whose offset magnitudes and direction are driven by the spectral centroid of the live 128-bin FFT array. Bass-heavy music produces tight warm dispersion; treble-heavy music produces wide cool dispersion. Compatible with ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
     "tags": [
@@ -110,7 +110,7 @@
   {
     "id": "audio-reactive-temporal-decay",
     "name": "Audio Reactive Temporal Decay",
-    "url": "shaders/audio-reactive-temporal-decay.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/audio-reactive-temporal-decay.wgsl",
     "category": "post-processing",
     "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range. Low-band energy → long ghostly trails; high-band energy → fast fade. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
     "tags": [
@@ -165,7 +165,7 @@
   {
     "id": "chrono-luma-slit-scan",
     "name": "Chrono Luma Slit Scan",
-    "url": "shaders/chrono-luma-slit-scan.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chrono-luma-slit-scan.wgsl",
     "category": "post-processing",
     "description": "Luminance-driven 3D-texture slit scan: each pixel's brightness determines which frame in the history ring it samples. Bright pixels snap to the present; dark pixels reveal the deep past. Moving subjects leave temporal halos as their bright edges exist in the now while dark backgrounds drift through time.",
     "tags": [
@@ -223,7 +223,7 @@
   {
     "id": "long-exposure",
     "name": "Long Exposure Light Painting",
-    "url": "shaders/long-exposure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/long-exposure.wgsl",
     "description": "Simulates an open camera shutter accumulating light over time. Bright regions of each frame persist and blend into a glowing exposure buffer stored in dataTextureC; darker regions fade slowly, leaving luminous light-painting trails. Mouse click resets the exposure. Bass brightens incoming frames for punchier accumulation; mids control bloom halo radius; treble adds sparkle to the brightest traces.",
     "tags": [
       "long-exposure",
@@ -283,7 +283,7 @@
   {
     "id": "luma-pixel-sort",
     "name": "Luma Pixel Sort",
-    "url": "shaders/luma-pixel-sort.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/luma-pixel-sort.wgsl",
     "description": "Fibonacci disk neighborhood pixel sorting with depth-aware blending, audio-reactive threshold modulation, and luminance-keyed alpha.",
     "features": [
       "upgraded-rgba",
@@ -336,7 +336,7 @@
   {
     "id": "optical-flow-tracer",
     "name": "Optical Flow Tracer",
-    "url": "shaders/optical-flow-tracer.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/optical-flow-tracer.wgsl",
     "category": "post-processing",
     "description": "Lucas-Kanade optical flow tracer: computes per-pixel motion vectors between the current frame and the previous history frame, then warps after-images along those trajectories. Moving objects leave physically-accurate ghost trails that follow actual motion paths rather than fading in place.",
     "tags": [
@@ -395,7 +395,7 @@
   {
     "id": "pixel-depth-sort",
     "name": "Pixel Depth Sort",
-    "url": "shaders/pixel-depth-sort.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-depth-sort.wgsl",
     "description": "Directional pixel sorting by depth with mouse-following sort angle, chromatic aberration at boundaries, bass-driven sort length, depth-layered alpha, temporal feedback, and ACES tone mapping.",
     "features": [
       "upgraded-rgba",
@@ -452,7 +452,7 @@
   {
     "id": "pp-bloom",
     "name": "PP Bloom",
-    "url": "shaders/pp-bloom.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-bloom.wgsl",
     "description": "High-quality HDR bloom with multi-tap Gaussian blur, anamorphic stretch, and lens dirt effects",
     "tags": [
       "post-process",
@@ -494,7 +494,7 @@
   {
     "id": "pp-chromatic",
     "name": "PP Chromatic",
-    "url": "shaders/pp-chromatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-chromatic.wgsl",
     "description": "Chromatic aberration with RGB channel separation, barrel/pincushion distortion, and vignette",
     "tags": [
       "post-process",
@@ -536,7 +536,7 @@
   {
     "id": "pp-sharpen",
     "name": "PP Sharpen",
-    "url": "shaders/pp-sharpen.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-sharpen.wgsl",
     "description": "Unsharp mask sharpening with edge detection, halo control, and multiple enhancement modes",
     "tags": [
       "post-process",
@@ -578,7 +578,7 @@
   {
     "id": "pp-ssao",
     "name": "PP SSAO",
-    "url": "shaders/pp-ssao.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-ssao.wgsl",
     "description": "Screen-space ambient occlusion for added depth, with color bleeding from occluding surfaces",
     "tags": [
       "post-process",
@@ -620,7 +620,7 @@
   {
     "id": "pp-tone-map",
     "name": "PP Tone Map",
-    "url": "shaders/pp-tone-map.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-tone-map.wgsl",
     "description": "HDR to LDR tone mapping with ACES, Uncharted 2, Reinhard, and AgX algorithms. Includes exposure, contrast, and saturation controls.",
     "tags": [
       "post-process",
@@ -662,7 +662,7 @@
   {
     "id": "pp-vignette",
     "name": "PP Vignette",
-    "url": "shaders/pp-vignette.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pp-vignette.wgsl",
     "description": "Film vignette with grain, sepia/warm/cool color grading, and retro scanline effects",
     "tags": [
       "post-process",
@@ -705,7 +705,7 @@
   {
     "id": "radial-blur",
     "name": "Radial Blur",
-    "url": "shaders/radial-blur.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/radial-blur.wgsl",
     "description": "Depth-aware radial blur with bokeh shape selection, chromatic aberration, Gaussian kernel weighting, and vignette.",
     "params": [
       {
@@ -761,7 +761,7 @@
   {
     "id": "soft-vignette-bloom",
     "name": "Soft Vignette Bloom",
-    "url": "shaders/soft-vignette-bloom.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/soft-vignette-bloom.wgsl",
     "category": "post-processing",
     "description": "Cinematic post-processing with multi-scale Gaussian bloom pyramid, anamorphic highlight streaks, and superellipse vignette. Features ACES tone mapping, split-tone shadows, film grain, and depth-driven haze. Bass boosts bloom threshold and mouse shifts vignette center.",
     "tags": [
@@ -822,7 +822,7 @@
   {
     "id": "spatio-temporal-3d-conv",
     "name": "Spatio-Temporal 3D Convolution",
-    "url": "shaders/spatio-temporal-3d-conv.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spatio-temporal-3d-conv.wgsl",
     "category": "post-processing",
     "description": "3×3×T spatio-temporal convolution using the history ring buffer. A Gaussian spatial kernel is applied at each of T past frames and blended with temporal weights. Param 3 selects the operation mode: Temporal Noise Reduction (averages frames to kill flicker), Motion Blur (exponential frame accumulation), or Temporal Sharpening (subtracts the temporal mean to amplify transient changes).",
     "tags": [
@@ -886,7 +886,7 @@
   {
     "id": "temporal-decay-multiresolution",
     "name": "Temporal Decay Multiresolution",
-    "url": "shaders/temporal-decay-multiresolution.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-decay-multiresolution.wgsl",
     "description": "Four-timescale temporal decomposition. R=fast (ages 1–2), G=medium (ages 4–5), B=slow (age 7), A=ultra-slow (full average). Per-channel independent decay rates create psychedelic rainbow splits where motion speed maps to color. Stacks cleanly behind sim-decay-system-rgba.",
     "tags": [
       "temporal",
@@ -943,7 +943,7 @@
   {
     "id": "temporal-feedback-zoom-tracer",
     "name": "Temporal Feedback Zoom Tracer",
-    "url": "shaders/temporal-feedback-zoom-tracer.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-feedback-zoom-tracer.wgsl",
     "description": "Reads the most recent history frame through a slight affine warp (zoom + rotation) then blends with the current frame. The compounding warp generates infinite self-generating psychedelic zoom tunnels from any video content.",
     "tags": [
       "temporal",
@@ -1000,7 +1000,7 @@
   {
     "id": "temporal-frequency-decomposition",
     "name": "Temporal Frequency Decomposition",
-    "url": "shaders/temporal-frequency-decomposition.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-frequency-decomposition.wgsl",
     "description": "Discrete temporal Fourier analysis across the 8-frame history ring. Static pixels cancel to near-zero; pixels flickering or oscillating near the target frequency glow brightly. Reveals hidden temporal rhythms in video content.",
     "tags": [
       "temporal",
@@ -1057,7 +1057,7 @@
   {
     "id": "temporal-halation-freeze",
     "name": "Temporal Halation Freeze",
-    "url": "shaders/temporal-halation-freeze.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-halation-freeze.wgsl",
     "description": "Long-exposure style halation and light bloom that slowly accumulates and 'freezes' bright moments with beautiful decaying ghost echoes. Transforms video into dreamy, time-blurred poetry. Bass lengthens the exposure tail.",
     "tags": [
       "halation",
@@ -1113,7 +1113,7 @@
   {
     "id": "temporal-layered-time-stamps",
     "name": "Temporal Layered Time-Stamps",
-    "url": "shaders/temporal-layered-time-stamps.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-layered-time-stamps.wgsl",
     "description": "Psychedelic temporal echo: blends 4–8 past frames from the history ring buffer (binding 13) with per-layer hue rotation and spiral UV distortion",
     "tags": [
       "temporal",
@@ -1165,7 +1165,7 @@
   {
     "id": "temporal-phosphor-burn-motion-adaptive",
     "name": "Temporal Phosphor Burn (Motion Adaptive)",
-    "url": "shaders/temporal-phosphor-burn-motion-adaptive.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-phosphor-burn-motion-adaptive.wgsl",
     "description": "Motion-adaptive CRT phosphor burn. Fast-moving pixels get slow decay (long bright trails); still areas clear quickly. Green/amber warm tint follows the motion glow for vivid CRT ambiance.",
     "tags": [
       "temporal",
@@ -1223,7 +1223,7 @@
   {
     "id": "temporal-phosphor-burn",
     "name": "Temporal Phosphor Burn",
-    "url": "shaders/temporal-phosphor-burn.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-phosphor-burn.wgsl",
     "description": "CRT phosphor persistence: per-channel exponential decay (R=fast, B=slow) creates green/amber afterglow. max(current, decayed_history) luminance floor keeps bright pixels glowing long after the source moves on.",
     "tags": [
       "temporal",
@@ -1280,7 +1280,7 @@
   {
     "id": "temporal-rgb-ghost",
     "name": "Temporal RGB Ghost",
-    "url": "shaders/temporal-rgb-ghost.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-rgb-ghost.wgsl",
     "description": "Per-channel temporal displacement: R=current, G=N frames ago, B=M frames ago. Moving objects leave vivid rainbow comet tails as each color channel trails a different distance behind. Static areas appear normal.",
     "tags": [
       "temporal",
@@ -1337,7 +1337,7 @@
   {
     "id": "temporal-slit-scan",
     "name": "Temporal Slit Scan",
-    "url": "shaders/temporal-slit-scan.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-slit-scan.wgsl",
     "description": "Classic slit-scan time-smear: each column (or row) samples a different point in the 8-frame history ring. One edge shows the current frame, the opposite edge shows 7 frames ago. Creates the flowing painterly time-smear of Radiohead's Street Spirit video on any motion.",
     "tags": [
       "temporal",
@@ -1394,7 +1394,7 @@
   {
     "id": "tone-histogram-apply",
     "name": "Tone Histogram (Pass 2: Apply)",
-    "url": "shaders/tone-histogram-apply.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/tone-histogram-apply.wgsl",
     "description": "Reads histogram buckets, computes auto-exposure and tone curve, and applies histogram-driven grading.",
     "features": [
       "multi-pass-2",
@@ -1453,7 +1453,7 @@
     "id": "tone-histogram",
     "name": "Tone Histogram v2",
     "category": "post-processing",
-    "url": "shaders/tone-histogram.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/tone-histogram.wgsl",
     "description": "Single-pass local adaptive histogram equalization with film-like tonal curves, split-tone shadows/highlights, grain texture, and depth-driven haze removal. Bass stretches histogram dynamically.",
     "features": [
       "audio-reactive",

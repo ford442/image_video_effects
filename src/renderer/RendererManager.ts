@@ -420,7 +420,7 @@ export class RendererManager {
     if (this.currentRenderer instanceof WASMRenderer) {
       return this.currentRenderer.reloadShaderFromURL(id, url);
     }
-    return this.currentRenderer?.loadShader(id, url) ?? false;
+    return this.currentRenderer?.loadShader ? this.currentRenderer.loadShader(id, url) : false;
   }
 
   applyTestRenderState(state: {
