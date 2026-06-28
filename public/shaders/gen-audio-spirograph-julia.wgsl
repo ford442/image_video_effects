@@ -106,7 +106,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mousePos = u.zoom_config.yz;
   let mouseC = vec2<f32>(
     (mousePos.x - 0.5) * 2.0,
-    (mousePos.y - 0.5) * 2.0
+    (0.5 - mousePos.y) * 2.0
   );
   let autoC = vec2<f32>(
     cos(t * 0.3) * 0.7,

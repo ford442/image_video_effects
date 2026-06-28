@@ -1,16 +1,6 @@
 {
-  "id": "gen-translucent-nebula",
   "name": "Translucent Nebula",
-  "url": "shaders/gen-translucent-nebula.wgsl",
-  "description": "Volumetric gas clouds with density-based alpha translucency. FBM and Worley noise create organic nebula structure where dense cores are opaque and edges fade to transparent. Star sparkle reacts to treble and nebula pulses with bass.",
-  "features": [
-    "audio-reactive",
-    "chromatic-aberration",
-    "mouse-driven",
-    "temporal",
-    "upgraded-rgba",
-    "distance-lod"
-  ],
+  "category": "generative",
   "tags": [
     "nebula",
     "volumetric",
@@ -19,42 +9,50 @@
     "translucent",
     "worley-noise"
   ],
-  "params": [
+  "description": "Volumetric gas clouds with density-based alpha translucency. FBM and Worley noise create organic nebula structure where dense cores are opaque and edges fade to transparent. Star sparkle reacts to treble and nebula pulses with bass.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "density",
+      "index": 0,
       "name": "Cloud Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 1,
       "name": "Cloud Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "color_shift",
+      "index": 2,
       "name": "Color Shift",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "stars",
+      "index": 3,
       "name": "Star Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-translucent-nebula",
+  "url": "shaders/gen-translucent-nebula.wgsl",
+  "features": []
 }

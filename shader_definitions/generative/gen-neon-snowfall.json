@@ -1,9 +1,6 @@
 {
-  "id": "gen-neon-snowfall",
   "name": "Neon Snowfall",
-  "url": "shaders/gen-neon-snowfall.wgsl",
   "category": "generative",
-  "description": "Chromatic snow particles descend in luminous streaks with high-frequency treble twinkle.",
   "tags": [
     "generative",
     "snow",
@@ -12,51 +9,50 @@
     "winter",
     "audio-reactive"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "temporal",
-    "chromatic",
-    "depth-aware"
+  "description": "Chromatic snow particles descend in luminous streaks with high-frequency treble twinkle.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "flakeDensity",
+      "index": 0,
       "name": "Flake Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "fallSpeed",
+      "index": 1,
       "name": "Fall Speed",
       "default": 0.42,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "chroma",
+      "index": 2,
       "name": "Chroma",
       "default": 0.56,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "streak",
+      "index": 3,
       "name": "Streak",
       "default": 0.33,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-neon-snowfall",
+  "url": "shaders/gen-neon-snowfall.wgsl",
+  "features": []
 }

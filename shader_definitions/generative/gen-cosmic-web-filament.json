@@ -1,8 +1,6 @@
 {
-  "id": "gen-cosmic-web-filament",
   "name": "Cosmic Web Filament",
-  "url": "shaders/gen-cosmic-web-filament.wgsl",
-  "description": "Dark matter web with Voronoi filaments, FBM warping, and mouse gravity wells. Hypnotic cosmic structure with purple-to-cyan gradients.",
+  "category": "generative",
   "tags": [
     "generative",
     "cosmic",
@@ -17,55 +15,50 @@
     "music",
     "reactive"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven",
-    "temporal",
-    "chromatic",
-    "depth-aware"
+  "description": "Dark matter web with Voronoi filaments, FBM warping, and mouse gravity wells. Hypnotic cosmic structure with purple-to-cyan gradients.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "author": "ford442",
-  "params": [
+  "updatedParams": [
     {
-      "id": "warp",
+      "index": 0,
       "name": "Warp Strength",
       "default": 0.33,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Controls the overall strength of the generated effect."
+      "step": 0.01
     },
     {
-      "id": "density",
+      "index": 1,
       "name": "Filament Density",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Controls animation and temporal evolution speed."
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 2,
       "name": "Flow Speed",
       "default": 0.25,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Controls spatial scale, frequency, or detail contrast."
+      "step": 0.01
     },
     {
-      "id": "color",
+      "index": 3,
       "name": "Color Shift",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Controls mouse-driven or secondary variation influence."
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-cosmic-web-filament",
+  "url": "shaders/gen-cosmic-web-filament.wgsl",
+  "features": []
 }

@@ -1,9 +1,6 @@
 {
-  "id": "gen-chrono-mycelial-tapestry",
   "name": "Chrono-Mycelial Tapestry",
-  "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
   "category": "generative",
-  "description": "A multi-temporal fungal network where different generations of mycelium coexist in layered time, creating a living, breathing tapestry of organic growth across temporal dimensions.",
   "tags": [
     "generative",
     "organic",
@@ -15,49 +12,50 @@
     "reactive",
     "ambient"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "animated",
-    "upgraded-rgba",
-    "temporal"
+  "description": "A multi-temporal fungal network where different generations of mycelium coexist in layered time, creating a living, breathing tapestry of organic growth across temporal dimensions.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "growthRate",
+      "index": 0,
       "name": "Growth Rate",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "temporalDepth",
+      "index": 1,
       "name": "Temporal Depth",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "colorWarmth",
+      "index": 2,
       "name": "Color Warmth",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "glowIntensity",
+      "index": 3,
       "name": "Glow Intensity",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-chrono-mycelial-tapestry",
+  "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
+  "features": []
 }

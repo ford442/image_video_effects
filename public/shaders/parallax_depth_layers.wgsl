@@ -1,36 +1,31 @@
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-}
+// ═══════════════════════════════════════════════════════════════════
+//  Parallax Layers RGBA
+//  Category: artistic
+//  Features: rgba, parallax, depth-layers, alpha-occlusion, dof, atmospheric
+//  Upgraded: 2026-06-28
+//  By: Codex
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) 
-var u_sampler: sampler;
-@group(0) @binding(1) 
-var readTexture: texture_2d<f32>;
-@group(0) @binding(2) 
-var writeTexture: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(3) 
-var<uniform> u: Uniforms;
-@group(0) @binding(4) 
-var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) 
-var non_filtering_sampler: sampler;
-@group(0) @binding(6) 
-var writeDepthTexture: texture_storage_2d<r32float,write>;
-@group(0) @binding(7) 
-var dataTextureA: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(8) 
-var dataTextureB: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(9) 
-var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) 
-var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) 
-var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) 
-var<storage, read> plasmaBuffer: array<vec4<f32>>;
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,    // .x=time, .y=click_count, .zw=resolution
+  zoom_config: vec4<f32>, // .x=zoom, .yz=mouseXY (0..1), .w=click_flag
+  zoom_params: vec4<f32>, // 4 user params mapped 0..1
+  ripples: array<vec4<f32>, 50>, // ripple history for temporal fx
+};
 
 fn ping_pong(a: f32) -> f32 {
     return (1.0 - abs(((fract((a * 0.5)) * 2.0) - 1.0)));
@@ -151,6 +146,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e4 = u.config.z;
     let _e8 = u.config.w;
     resolution = vec2<f32>(_e4, _e8);
+    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
+        return;
+    }
     let _e13 = resolution;
     uv = (vec2<f32>(gid.xy) / _e13);
     let time = u.config.x;

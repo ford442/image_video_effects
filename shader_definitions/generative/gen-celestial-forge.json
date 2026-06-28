@@ -1,8 +1,6 @@
 {
-  "id": "gen-celestial-forge",
   "name": "Celestial Forge",
-  "url": "shaders/gen-celestial-forge.wgsl",
-  "description": "A massive sci-fi megastructure enclosing a miniature star, featuring contra-rotating rings, plasma arcs, and glowing panels.",
+  "category": "generative",
   "tags": [
     "space",
     "megastructure",
@@ -15,52 +13,50 @@
     "audio",
     "music"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
+  "description": "A massive sci-fi megastructure enclosing a miniature star, featuring contra-rotating rings, plasma arcs, and glowing panels.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "author": "AI",
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Rotation Speed",
+      "default": 1,
       "min": 0,
       "max": 2,
-      "default": 1,
-      "step": 0.01,
-      "description": "Speed of the contra-rotating ring structure.",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Complexity",
+      "default": 0.5,
       "min": 0,
       "max": 1,
-      "default": 0.5,
-      "step": 0.01,
-      "description": "Number of rings and surface detail density.",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Ring Scale",
+      "default": 1,
       "min": 0.5,
       "max": 2,
-      "default": 1,
-      "step": 0.01,
-      "description": "Overall size of the ring structure.",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Core Intensity",
+      "default": 1,
       "min": 0,
       "max": 5,
-      "default": 1,
-      "step": 0.01,
-      "description": "Brightness of the central star and emitted light.",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-celestial-forge",
+  "url": "shaders/gen-celestial-forge.wgsl",
+  "features": []
 }

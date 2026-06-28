@@ -94,7 +94,8 @@ fn map(p: vec3<f32>, time: f32, audio: f32, mpos: vec2<f32>) -> vec2<f32> {
 
         // Spread tails outward
         let spread = rot(phase);
-        tp.xy = spread * tp.xy;
+        let rotated_xy = spread * tp.xy;
+        tp = vec3<f32>(rotated_xy.x, rotated_xy.y, tp.z);
 
         // Offset outward from center
         tp.x -= 0.5 * tail_dispersion;
@@ -120,7 +121,8 @@ fn map(p: vec3<f32>, time: f32, audio: f32, mpos: vec2<f32>) -> vec2<f32> {
     // 3. Volumetric Rift (Tubular SDF)
     var rp = pt;
     let rrot = rot(rp.z * 0.1);
-    rp.xy = rrot * rp.xy;
+    let rotated_rp_xy = rrot * rp.xy;
+    rp = vec3<f32>(rotated_rp_xy.x, rotated_rp_xy.y, rp.z);
     let d_rift = -(length(rp.xy) - 8.0) + sin(rp.z * 2.0) * 0.5; // Hollow cylinder inner surface
 
     // 4. Gravity Dust
@@ -263,5 +265,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Tone mapping
     col = col / (vec3<f32>(1.0) + col);
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    let tex_coord = coord / dim;
+    let prev_frame = textureSampleLevel(dataTextureC, u_sampler, tex_coord, 0.0);
+    col = mix(col, prev_frame.xyz, 0.08 * glass_refraction);
+
+    let final_alpha = clamp(1.0 - density * 0.1, 0.2, 1.0);
+    let final_depth = clamp(t / 30.0, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, final_alpha));
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(final_depth, 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(col, final_alpha));
 }

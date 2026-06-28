@@ -292,14 +292,21 @@
     "name": "Anaglyph 3D",
     "category": "visual-effects",
     "url": "https://test.1ink.us/image_video_effects/shaders/anaglyph-3d.wgsl",
-    "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, and bass-pulsed split width.",
+    "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, bass-pulsed split width, and cinematic post-processing: film grain with temporal coherence, radial chromatic aberration, vignette darkening, CRT barrel distortion, color grading with lift/gamma/gain, anamorphic light streaks from bright points, and lens dirt overlay.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "upgraded-rgba",
       "temporal",
-      "chromatic"
+      "chromatic",
+      "film-grain",
+      "chromatic-aberration",
+      "vignette",
+      "crt-barrel",
+      "color-grading",
+      "anamorphic-streaks",
+      "lens-dirt"
     ],
     "tags": [
       "anaglyph",
@@ -823,9 +830,13 @@
       "depth-aware",
       "upgraded-rgba",
       "temporal-scan-pass",
-      "chromatic-scan"
+      "chromatic-scan",
+      "holographic-scanlines",
+      "data-visualization",
+      "hex-grid",
+      "interference-patterns"
     ],
-    "description": "A digital scanning line follows the mouse with temporal smear and depth-based colorization. Audio drives scan speed; chromatic separation shifts RGB per treble intensity.",
+    "description": "A digital scanning ecosystem with triple-layer scan lines, holographic interference patterns, hex-grid data visualization, binary rain effects, and FBM noise corruption. Depth-based colorization with chromatic RGB separation driven by treble intensity.",
     "params": [
       {
         "id": "scanWidth",
@@ -864,7 +875,16 @@
       "audio-reactive",
       "depth-aware",
       "chromatic",
-      "temporal"
+      "temporal",
+      "holographic",
+      "hex-grid",
+      "interference",
+      "binary-rain"
+    ],
+    "updated": true,
+    "updatedParams": [
+      "scanWidth",
+      "edgeStrength"
     ]
   },
   {

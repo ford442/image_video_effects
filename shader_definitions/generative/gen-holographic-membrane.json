@@ -1,14 +1,6 @@
 {
-  "id": "gen-holographic-membrane",
   "name": "Holographic Membrane",
-  "url": "shaders/gen-holographic-membrane.wgsl",
-  "description": "Thin-film interference membrane that undulates with depth-based alpha translucency. Audio drives vibration and iridescence; mouse controls viewing angle for rainbow interference patterns.",
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "temporal",
-    "upgraded-rgba"
-  ],
+  "category": "generative",
   "tags": [
     "holographic",
     "membrane",
@@ -17,42 +9,50 @@
     "translucent",
     "interference"
   ],
-  "params": [
+  "description": "Thin-film interference membrane that undulates with depth-based alpha translucency. Audio drives vibration and iridescence; mouse controls viewing angle for rainbow interference patterns.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "thickness",
+      "index": 0,
       "name": "Film Thickness",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "frequency",
+      "index": 1,
       "name": "Wave Frequency",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "amplitude",
+      "index": 2,
       "name": "Undulation Amp",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "iridescence",
+      "index": 3,
       "name": "Iridescence",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-holographic-membrane",
+  "url": "shaders/gen-holographic-membrane.wgsl",
+  "features": []
 }

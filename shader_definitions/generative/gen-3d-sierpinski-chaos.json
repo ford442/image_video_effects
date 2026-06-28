@@ -1,16 +1,6 @@
 {
-  "id": "gen-3d-sierpinski-chaos",
   "name": "3D Sierpinski Chaos Game",
   "category": "generative",
-  "url": "shaders/gen-3d-sierpinski-chaos.wgsl",
-  "description": "Iterated function system rendering a 3D Sierpinski tetrahedron using the chaos game algorithm. Thousands of point samples create intricate cloud-like renders of the fractal solid with depth-based coloring and perspective projection. Mouse rotates the 3D view in real-time.",
-  "features": [
-    "interactive",
-    "mouse-reactive",
-    "temporal",
-    "procedural",
-    "3d"
-  ],
   "tags": [
     "fractal",
     "sierpinski",
@@ -21,42 +11,50 @@
     "mathematical",
     "pointcloud"
   ],
-  "params": [
+  "description": "Iterated function system rendering a 3D Sierpinski tetrahedron using the chaos game algorithm. Thousands of point samples create intricate cloud-like renders of the fractal solid with depth-based coloring and perspective projection. Mouse rotates the 3D view in real-time.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "intensity",
+      "index": 0,
       "name": "Point Density",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Rotation Speed",
       "default": 0.25,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 2,
       "name": "Point Size",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "colorshift",
+      "index": 3,
       "name": "Color Shift",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-3d-sierpinski-chaos",
+  "url": "shaders/gen-3d-sierpinski-chaos.wgsl",
+  "features": []
 }

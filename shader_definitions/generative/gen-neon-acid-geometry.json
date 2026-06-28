@@ -1,16 +1,6 @@
 {
-  "id": "gen-neon-acid-geometry",
   "name": "Neon Acid Geometry",
   "category": "generative",
-  "url": "shaders/gen-neon-acid-geometry.wgsl",
-  "description": "Geometric shapes (triangles, hexagons, circles) morphing and melting in psychedelic neon. Upgraded with universal-indicator pH color science: geometry edges glow with realistic acid/base transitions driven by bass oscillation. Critical-angle refraction distortion, temporal feedback trails, chromatic aberration, and ACES tone mapping.",
-  "features": [
-    "upgraded-rgba",
-    "temporal",
-    "audio-reactive",
-    "mouse-driven",
-    "procedural"
-  ],
   "tags": [
     "psychedelic",
     "neon",
@@ -22,42 +12,50 @@
     "ph-science",
     "chemistry"
   ],
-  "params": [
+  "description": "Geometric shapes (triangles, hexagons, circles) morphing and melting in psychedelic neon. Upgraded with universal-indicator pH color science: geometry edges glow with realistic acid/base transitions driven by bass oscillation. Critical-angle refraction distortion, temporal feedback trails, chromatic aberration, and ACES tone mapping.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "intensity",
+      "index": 0,
       "name": "Intensity",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Speed",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 2,
       "name": "Scale",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "colorshift",
+      "index": 3,
       "name": "Color Shift",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-neon-acid-geometry",
+  "url": "shaders/gen-neon-acid-geometry.wgsl",
+  "features": []
 }

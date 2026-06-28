@@ -1,16 +1,6 @@
 {
-  "id": "gen-dla-copper-deposition",
   "name": "DLA Copper Deposition",
-  "url": "shaders/gen-dla-copper-deposition.wgsl",
-  "description": "Procedural diffusion-limited aggregation copper dendrite growth. Domain-warped fBm noise simulates random walker deposition with stick probability, producing metallic branching structures with oxidation patina and electrolyte depletion fields.",
-  "features": [
-    "audio-reactive",
-    "mouse-driven",
-    "temporal",
-    "procedural",
-    "generative",
-    "upgraded-rgba"
-  ],
+  "category": "generative",
   "tags": [
     "copper",
     "metallic",
@@ -23,46 +13,50 @@
     "oxidation",
     "patina"
   ],
-  "params": [
+  "description": "Procedural diffusion-limited aggregation copper dendrite growth. Domain-warped fBm noise simulates random walker deposition with stick probability, producing metallic branching structures with oxidation patina and electrolyte depletion fields.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "scale",
+      "index": 0,
       "name": "Growth Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Controls the overall strength of the generated effect."
+      "step": 0.01
     },
     {
-      "id": "arms",
+      "index": 1,
       "name": "Arm Count",
       "default": 0.35,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Controls animation and temporal evolution speed."
+      "step": 0.01
     },
     {
-      "id": "oxidation",
+      "index": 2,
       "name": "Oxidation",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Controls spatial scale, frequency, or detail contrast."
+      "step": 0.01
     },
     {
-      "id": "spark",
+      "index": 3,
       "name": "Spark Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Controls mouse-driven or secondary variation influence."
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-dla-copper-deposition",
+  "url": "shaders/gen-dla-copper-deposition.wgsl",
+  "features": []
 }

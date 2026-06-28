@@ -312,7 +312,7 @@
     "name": "Data Slicer",
     "category": "distortion",
     "url": "https://test.1ink.us/image_video_effects/shaders/data-slicer.wgsl",
-    "description": "Beat-reactive tape-slice glitch that jitters horizontal bands around the cursor with chromatic scan glow.",
+    "description": "Beat-reactive fractal tape-slice glitch with FBM domain warping, Voronoi cellular cracks, quasicrystal patterns, and 6-octave temporal jitter. Slices distort organically with curl-noise chromatic aberration and audio-reactive sparkle trails.",
     "params": [
       {
         "id": "slideSpeed",
@@ -347,14 +347,25 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "distortion"
+      "fractal-slicing",
+      "fbm-warping",
+      "voronoi-patterns"
     ],
     "tags": [
       "glitch",
       "slice",
       "chromatic",
       "audio-reactive",
-      "scanline"
+      "scanline",
+      "fractal",
+      "fbm",
+      "voronoi",
+      "quasicrystal"
+    ],
+    "updated": true,
+    "updatedParams": [
+      "chaos",
+      "aberration"
     ]
   },
   {
@@ -951,19 +962,27 @@
     "name": "Glass Brick Wall",
     "category": "distortion",
     "url": "https://test.1ink.us/image_video_effects/shaders/glass-brick-wall.wgsl",
-    "description": "Transforms the source image into a wall of refractive glass bricks with beat-driven caustics and dense absorption control.",
+    "description": "Refractive glass brick wall with FBM-perturbed normals, multi-frequency caustic patterns, chromatic dispersion through wavelength-dependent refraction, depth-layer compositing, and internal reflections. Beat-driven caustics and Voronoi cellular caustic enhancement.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "caustic-refraction",
+      "depth-layers",
+      "chromatic-dispersion",
+      "fbm-texture"
     ],
     "tags": [
       "glass",
       "brick",
       "caustic",
       "refraction",
-      "audio-reactive"
+      "audio-reactive",
+      "chromatic",
+      "fbm",
+      "voronoi",
+      "dispersion"
     ],
     "params": [
       {
@@ -994,6 +1013,11 @@
         "min": 0,
         "max": 1
       }
+    ],
+    "updated": true,
+    "updatedParams": [
+      "distortion",
+      "glass_density"
     ]
   },
   {

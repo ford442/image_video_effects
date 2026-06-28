@@ -1,9 +1,6 @@
 {
-  "id": "gen-prismatic-void-weaver-ouroboros",
   "name": "Prismatic Void-Weaver Ouroboros",
-  "description": "A hyper-dimensional, endlessly twisting serpentine ring forged of chromatic plasma and fractal dark matter.",
-  "type": "generative",
-  "url": "shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
+  "category": "generative",
   "tags": [
     "ouroboros",
     "void",
@@ -12,42 +9,50 @@
     "chromatic",
     "loop"
   ],
-  "params": [
+  "description": "A hyper-dimensional, endlessly twisting serpentine ring forged of chromatic plasma and fractal dark matter.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Twist Density",
       "default": 5,
       "min": 1,
       "max": 20,
-      "step": 0.5,
-      "mapping": "zoom_params.x"
+      "step": 0.5
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Plasma Glow",
       "default": 0.8,
       "min": 0.1,
       "max": 2,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Void Gravity",
       "default": 1.5,
       "min": 0,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Audio Reactivity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.05,
-      "mapping": "zoom_params.w"
+      "step": 0.05
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-prismatic-void-weaver-ouroboros",
+  "url": "shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
+  "features": []
 }

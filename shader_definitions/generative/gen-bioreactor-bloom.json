@@ -1,9 +1,6 @@
 {
-  "id": "gen-bioreactor-bloom",
   "name": "Bioreactor Bloom",
-  "url": "shaders/gen-bioreactor-bloom.wgsl",
   "category": "generative",
-  "description": "Reactive cellular colonies pulse and mutate, with toxic blooms around the cursor field.",
   "tags": [
     "generative",
     "cellular",
@@ -12,51 +9,50 @@
     "toxic",
     "audio-reactive"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "temporal",
-    "chromatic",
-    "depth-aware"
+  "description": "Reactive cellular colonies pulse and mutate, with toxic blooms around the cursor field.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "cellScale",
+      "index": 0,
       "name": "Cell Scale",
       "default": 0.45,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "mitosis",
+      "index": 1,
       "name": "Mitosis",
       "default": 0.35,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "reactivity",
+      "index": 2,
       "name": "Reactivity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "toxicity",
+      "index": 3,
       "name": "Toxicity",
       "default": 0.28,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-bioreactor-bloom",
+  "url": "shaders/gen-bioreactor-bloom.wgsl",
+  "features": []
 }

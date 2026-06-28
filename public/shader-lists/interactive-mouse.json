@@ -237,11 +237,16 @@
     "category": "interactive-mouse",
     "url": "https://test.1ink.us/image_video_effects/shaders/block-distort-interactive.wgsl",
     "icon": "grid",
-    "description": "Cursor pressure shoves image blocks into a prismatic distortion field with beat-reactive grid highlights.",
+    "description": "Cursor pressure shoves image blocks into a prismatic distortion field with beat-reactive grid highlights. Enhanced with volumetric glow from mouse position, rim lighting on grid edges, audio-reactive light pulses, and warm/cool 3-point fill lighting.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "volumetric-glow",
+      "rim-lighting",
+      "3-point-lighting",
+      "audio-reactive-pulse",
+      "bloom-weighted-alpha"
     ],
     "params": [
       {
@@ -278,7 +283,10 @@
       "interactive",
       "grid",
       "glitch",
-      "audio-reactive"
+      "audio-reactive",
+      "volumetric-glow",
+      "rim-lighting",
+      "lighting"
     ]
   },
   {
@@ -1499,7 +1507,7 @@
     "name": "Cyber Organic Scanner",
     "category": "interactive-mouse",
     "url": "https://test.1ink.us/image_video_effects/shaders/cyber-organic.wgsl",
-    "description": "Biotech scan lines reveal pulsing synthetic veins beneath the image, concentrated around the cursor.",
+    "description": "Biotech scan lines reveal pulsing synthetic veins beneath the image, concentrated around the cursor. Enhanced with bioluminescent OkLab color mixing, blackbody warmth modulation, volumetric vein glow, split-tone grading, and ACES filmic tone mapping.",
     "params": [
       {
         "id": "scanSpeed",
@@ -1533,15 +1541,24 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "bioluminescent",
+      "oklab-mixing",
+      "blackbody-warmth",
+      "volumetric-glow",
+      "aces-tone-map",
+      "split-tone"
     ],
     "tags": [
       "scanner",
       "organic",
       "biotech",
       "pulse",
-      "audio-reactive"
-    ]
+      "audio-reactive",
+      "bioluminescent",
+      "atmospheric"
+    ],
+    "updated": true
   },
   {
     "id": "cyber-rain",
@@ -8849,8 +8866,29 @@
   {
     "id": "radial-slit-scan",
     "name": "Radial Slit Scan",
+    "category": "interactive-mouse",
     "url": "https://test.1ink.us/image_video_effects/shaders/radial-slit-scan.wgsl",
-    "description": "A time-displacement effect that radiates from the cursor.",
+    "description": "A time-displacement effect that radiates from the cursor, now enhanced with volumetric glow, cosine palette color cycling, chromatic aberration, split-tone grading, and ACES filmic tone mapping.",
+    "features": [
+      "mouse-driven",
+      "feedback",
+      "audio-reactive",
+      "upgraded-rgba",
+      "cosine-palette",
+      "volumetric-glow",
+      "aces-tone-map",
+      "oklab-mixing",
+      "split-tone",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "slit-scan",
+      "color-cycling",
+      "volumetric",
+      "audio-reactive"
+    ],
     "params": [
       {
         "id": "speed",
@@ -8881,14 +8919,7 @@
         "max": 1
       }
     ],
-    "features": [
-      "mouse-driven",
-      "feedback"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
+    "updated": true
   },
   {
     "id": "rain-lens-wipe",

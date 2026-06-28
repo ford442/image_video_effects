@@ -1,9 +1,6 @@
 {
-  "id": "gen-aurora-silk",
   "name": "Aurora Silk",
-  "url": "shaders/gen-aurora-silk.wgsl",
   "category": "generative",
-  "description": "Flowing aurora curtains with silky spectral ribbons that breathe to bass and shimmer to treble.",
   "tags": [
     "generative",
     "aurora",
@@ -12,51 +9,50 @@
     "audio-reactive",
     "neon"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "temporal",
-    "chromatic",
-    "depth-aware"
+  "description": "Flowing aurora curtains with silky spectral ribbons that breathe to bass and shimmer to treble.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "bandCount",
+      "index": 0,
       "name": "Band Count",
       "default": 0.52,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "flowSpeed",
+      "index": 1,
       "name": "Flow Speed",
       "default": 0.44,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "ribbonWidth",
+      "index": 2,
       "name": "Ribbon Width",
       "default": 0.48,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "glow",
+      "index": 3,
       "name": "Glow",
       "default": 0.63,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-aurora-silk",
+  "url": "shaders/gen-aurora-silk.wgsl",
+  "features": []
 }

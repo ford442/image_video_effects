@@ -1,62 +1,74 @@
 {
-  "id": "gen-prism-tide",
   "name": "Prism Tide",
-  "url": "shaders/gen-prism-tide.wgsl",
   "category": "generative",
-  "description": "Refractive chroma tides form spectral wavefronts and foam-like interference crests.",
   "tags": [
     "generative",
     "prismatic",
     "interference",
     "waves",
     "audio-reactive",
-    "colorful"
+    "colorful",
+    "caustics",
+    "dispersion",
+    "atmospheric"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "temporal",
-    "chromatic",
-    "depth-aware"
+  "description": "Refractive chroma tides form spectral wavefronts and foam-like interference crests. Enhanced with prism dispersion, animated caustics, Mie scattering haze, OkLab color mixing, split-tone grading, and ACES filmic tone mapping.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "waveScale",
+      "index": 0,
       "name": "Wave Scale",
       "default": 0.44,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "refraction",
+      "index": 1,
       "name": "Refraction",
       "default": 0.38,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "pulse",
+      "index": 2,
       "name": "Pulse",
       "default": 0.47,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "saturation",
+      "index": 3,
       "name": "Saturation",
       "default": 0.58,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-prism-tide",
+  "url": "shaders/gen-prism-tide.wgsl",
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "chromatic",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "depth-aware",
+    "caustics",
+    "prism-dispersion",
+    "oklab-mixing",
+    "mie-scattering"
   ]
 }

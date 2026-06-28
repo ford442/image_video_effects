@@ -155,7 +155,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let aspect  = res.x / res.y;
     let physPos = (uv01 - 0.5) * vec2<f32>(2.0 * aspect, 2.0);
     let obst    = vec2<f32>((mouse.x - 0.5) * 2.0 * aspect,
-                            (mouse.y - 0.5) * 2.0);
+                            (0.5 - mouse.y) * 2.0);
 
     // Divergence-free curl-noise perturbation + fBM domain warp
     let noiseCoord = physPos * 2.5 + vec2<f32>(time * 0.13, -time * 0.07);

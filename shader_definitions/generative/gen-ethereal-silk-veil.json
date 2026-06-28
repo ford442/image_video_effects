@@ -1,9 +1,6 @@
 {
-  "id": "gen-ethereal-silk-veil",
   "name": "Ethereal Silk Veil",
-  "url": "shaders/gen-ethereal-silk-veil.wgsl",
   "category": "generative",
-  "description": "Multi-layered translucent silk ribbons flowing in an ethereal wind. Audio drives undulation amplitude; mouse gathers and disturbs the fabric like a hand through cloth. Gold-cream palette with depth-layered parallax and fabric sheen.",
   "tags": [
     "silk",
     "fabric",
@@ -17,19 +14,15 @@
     "mouse-driven",
     "temporal"
   ],
-  "features": [
-    "generative",
-    "audio-reactive",
-    "mouse-driven",
-    "temporal",
-    "upgraded-rgba",
-    "aces-tone-map",
-    "chromatic-aberration",
-    "depth-aware"
+  "description": "Multi-layered translucent silk ribbons flowing in an ethereal wind. Audio drives undulation amplitude; mouse gathers and disturbs the fabric like a hand through cloth. Gold-cream palette with depth-layered parallax and fabric sheen.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "flowSpeed",
+      "index": 0,
       "name": "Flow Speed",
       "default": 0.5,
       "min": 0.0,
@@ -37,7 +30,7 @@
       "step": 0.01
     },
     {
-      "id": "waveIntensity",
+      "index": 1,
       "name": "Wave Intensity",
       "default": 0.4,
       "min": 0.0,
@@ -45,7 +38,7 @@
       "step": 0.01
     },
     {
-      "id": "layerDensity",
+      "index": 2,
       "name": "Layer Density",
       "default": 0.5,
       "min": 0.0,
@@ -53,12 +46,18 @@
       "step": 0.01
     },
     {
-      "id": "sheenAmount",
+      "index": 3,
       "name": "Sheen Amount",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
       "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-ethereal-silk-veil",
+  "url": "shaders/gen-ethereal-silk-veil.wgsl",
+  "features": []
 }

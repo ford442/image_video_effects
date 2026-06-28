@@ -1,19 +1,6 @@
 {
-  "id": "gen-belousov-zhabotinsky",
   "name": "Belousov-Zhabotinsky Reaction",
-  "url": "shaders/gen-belousov-zhabotinsky.wgsl",
-  "description": "Chemical oscillator producing spiral waves and target patterns via reaction-diffusion dynamics. Bass modulates reaction rate, mouse seeds new spiral centers, depth controls diffusion.",
-  "features": [
-    "mouse-driven",
-    "depth-aware",
-    "upgraded-rgba",
-    "aces-tone-map",
-    "audio-reactive",
-    "temporal",
-    "simulation",
-    "hue-preserve-clamp",
-    "ign-dither"
-  ],
+  "category": "generative",
   "tags": [
     "procedural",
     "generative",
@@ -24,42 +11,50 @@
     "audio-reactive",
     "vj"
   ],
-  "params": [
+  "description": "Chemical oscillator producing spiral waves and target patterns via reaction-diffusion dynamics. Bass modulates reaction rate, mouse seeds new spiral centers, depth controls diffusion.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Reaction Rate",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Activator Diffusion",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Inhibitor Diffusion",
       "default": 0.25,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Feed Rate",
       "default": 0.2,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-belousov-zhabotinsky",
+  "url": "shaders/gen-belousov-zhabotinsky.wgsl",
+  "features": []
 }

@@ -1,15 +1,6 @@
 {
-  "id": "gen-hyper-rainbow-vortex",
   "name": "Hyper Rainbow Vortex",
   "category": "generative",
-  "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
-  "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Mouse spawns secondary vortices. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
-  "features": [
-    "upgraded-rgba",
-    "temporal",
-    "audio-reactive",
-    "mouse-driven"
-  ],
   "tags": [
     "psychedelic",
     "neon",
@@ -20,42 +11,50 @@
     "fluid-dynamics",
     "rankine"
   ],
-  "params": [
+  "description": "A multi-layered chromatic vortex enriched with Wolfram Rankine fluid dynamics: solid-body rotation inside a bass-reactive core and irrotational flow outside. Angular velocity modulated by mids. Mouse spawns secondary vortices. Full upgraded-rgba stack with ACES tone mapping, temporal feedback, chromatic aberration, and semantic alpha.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "intensity",
+      "index": 0,
       "name": "Intensity",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Speed",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 2,
       "name": "Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "colorshift",
+      "index": 3,
       "name": "Color Shift",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-hyper-rainbow-vortex",
+  "url": "shaders/gen-hyper-rainbow-vortex.wgsl",
+  "features": []
 }

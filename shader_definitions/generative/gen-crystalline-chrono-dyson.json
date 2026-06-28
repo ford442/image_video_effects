@@ -1,59 +1,67 @@
 {
   "id": "gen-crystalline-chrono-dyson",
-  "name": "Crystalline Chrono-Dyson",
   "url": "shaders/gen-crystalline-chrono-dyson.wgsl",
-  "description": "A colossal, self-assembling Dyson sphere constructed of hyper-refractive crystal panels and flowing plasma conduits that orbit and extract energy from a dying, audio-reactive micro-quasar.",
+  "name": "Crystalline Chrono Dyson",
+  "category": "generative",
+  "filename": "gen-crystalline-chrono-dyson.wgsl",
   "tags": [
-    "cosmic",
-    "mechanical",
-    "refraction",
-    "plasma",
-    "raymarching"
-  ],
-  "features": [
-    "mouse-driven",
-    "audio-driven",
+    "generative",
+    "dyson",
+    "crystal",
+    "kifs",
+    "worley",
+    "voronoi",
+    "fresnel",
+    "beer-lambert",
+    "fbm",
+    "domain-warping",
     "audio-reactive",
     "temporal",
-    "chromatic",
-    "depth-aware"
+    "depth-aware",
+    "chromatic"
   ],
-  "params": [
+  "description": "A crystalline Dyson sphere with KIFS fractal panel interiors, Worley/Voronoi crystal lattice, Fresnel-Schlick reflections, plasma conduits with Beer-Lambert subsurface scattering, domain-repeated panels, and audio-reactive quasar core. Mouse orbits the structure.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "panelDensity",
+      "index": 0,
       "name": "Panel Density",
       "default": 4,
       "min": 1,
       "max": 10,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 1
     },
     {
-      "id": "quasarGlow",
+      "index": 1,
       "name": "Quasar Glow",
       "default": 1.5,
       "min": 0,
       "max": 5,
-      "step": 0.05,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "fluxSpeed",
+      "index": 2,
       "name": "Flux Speed",
       "default": 1,
       "min": 0.1,
       "max": 3,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "swarmCount",
+      "index": 3,
       "name": "Swarm Count",
       "default": 50,
       "min": 10,
       "max": 100,
-      "step": 1,
-      "mapping": "zoom_params.w"
+      "step": 10
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": []
 }

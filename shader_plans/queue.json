@@ -115,6 +115,41 @@
       "added": "2026-06-15T08:16:35.280528+00:00",
       "status": "completed",
       "completed_at": "2026-06-15T08:16:35.280548+00:00"
+    },
+    {
+      "filename": "2026-03-15_chromatic-glass-lattice.md",
+      "title": "Chromatic Glass Lattice",
+      "added": "2026-03-15T15:34:17.644228",
+      "status": "completed",
+      "completed_at": "2026-06-27T22:10:10.774492+00:00"
+    },
+    {
+      "filename": "2026-03-19_tectonic-plasma-crucible.md",
+      "title": "Tectonic Plasma-Crucible",
+      "added": "2026-03-19T15:11:20.768331",
+      "status": "completed",
+      "completed_at": "2026-06-27T22:10:10.774492+00:00"
+    },
+    {
+      "filename": "2026-03-29_hyper-bismuth-clockwork.md",
+      "title": "Hyper-Bismuth Clockwork",
+      "added": "2026-03-29T15:19:48.492218",
+      "status": "completed",
+      "completed_at": "2026-06-27T22:10:10.774492+00:00"
+    },
+    {
+      "filename": "2026-04-13_resonant-crystal-canyons.md",
+      "title": "Resonant Crystal-Canyons",
+      "added": "2026-04-13T15:34:48.736863",
+      "status": "completed",
+      "completed_at": "2026-06-27T22:10:10.774492+00:00"
+    },
+    {
+      "filename": "2026-04-24_chronos-monolith-resonator.md",
+      "title": "Chronos Monolith Resonator",
+      "added": "2026-04-24T15:22:10.929711",
+      "status": "completed",
+      "completed_at": "2026-06-27T22:10:10.774492+00:00"
     }
   ],
   "completed": [
@@ -745,11 +780,102 @@
       "completed_at": "2026-06-26T07:53:01.590413+00:00"
     },
     {
+      "filename": "2026-04-28_quantum-singularity-forge.md",
+      "title": "Quantum Singularity-Forge",
+      "added": "2026-04-28T15:29:27.490165",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:38:42.215772+00:00"
+    },
+    {
+      "filename": "2026-04-30_symbiotic-plasma-reef-matrix.md",
+      "title": "Symbiotic Plasma-Reef Matrix",
+      "added": "2026-04-30T15:18:07.778113",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:38:42.215772+00:00"
+    },
+    {
+      "filename": "2026-05-01_cymatic-quantum-silk-loom.md",
+      "title": "Cymatic Quantum-Silk Loom",
+      "added": "2026-05-01T15:13:04.099296",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:38:42.215772+00:00"
+    },
+    {
+      "filename": "2026-05-02_ethereal-glass-flora-terrarium.md",
+      "title": "Ethereal Glass-Flora Terrarium",
+      "added": "2026-05-02T15:31:52.502855",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:38:42.215772+00:00"
+    },
+    {
+      "filename": "2026-04-26_magnetic-ferrofluid-sculpture.md",
+      "title": "Magnetic Ferrofluid-Sculpture",
+      "added": "2026-04-26T15:06:38.672034",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:40:08.194Z"
+    },
+    {
+      "filename": "2026-04-27_hyper-dimensional-bismuth-matrix.md",
+      "title": "Hyper-Dimensional Bismuth-Matrix",
+      "added": "2026-04-27T15:22:10.278813",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:40:08.199Z"
+    },
+    {
+      "filename": "2026-05-03_cryogenic-frost-plasma-matrix.md",
+      "title": "Cryogenic Frost-Plasma Matrix",
+      "added": "2026-05-03T15:21:10.239966",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:45:27.480Z"
+    },
+    {
+      "filename": "2026-05-04_sentient-ferro-silicate-swarm.md",
+      "title": "Sentient Ferro-Silicate Swarm",
+      "added": "2026-05-04T15:48:06.428969",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:45:27.491Z"
+    },
+    {
+      "filename": "2026-05-06_cybernetic-mycelium-neural-web.md",
+      "title": "Cybernetic-Mycelium Neural-Web",
+      "added": "2026-05-06T15:43:32.368734",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:45:27.494Z"
+    },
+    {
+      "filename": "2026-05-28_ethereal-quantum-hologram-bonsai.md",
+      "title": "Ethereal Quantum-Hologram Bonsai",
+      "added": "2026-05-28T15:23:06.697098",
+      "status": "completed",
+      "completed_at": "2026-06-27T23:45:27.499Z"
+    },
+    {
       "filename": "2026-06-27_prismatic-cyber-chrono-void-kitsune.md",
       "title": "Prismatic Cyber-Chrono Void-Kitsune",
       "added": "2026-06-27T15:24:02.938835",
       "status": "completed",
-      "completed_at": "2026-06-28T08:01:33.384451+00:00"
+      "completed_at": "2026-06-28T07:41:07.235521"
+    },
+    {
+      "filename": "2026-06-10_neuro-fluid-plasma-lotus.md",
+      "title": "Neuro-Fluid Plasma-Lotus",
+      "added": "2026-06-10T15:27:36.556094",
+      "status": "completed",
+      "completed_at": "2026-06-28T07:41:07.235471"
+    },
+    {
+      "filename": "2026-06-20_prismatic-quantum-fractal-nautilus-engine.md",
+      "title": "Prismatic Quantum-Fractal Nautilus-Engine",
+      "added": "2026-06-20T15:09:34.367199",
+      "status": "completed",
+      "completed_at": "2026-06-28T07:41:07.235513"
+    },
+    {
+      "filename": "2026-06-21_resonant-quantum-plasma-dragon-eye.md",
+      "title": "Resonant Quantum-Plasma Dragon-Eye",
+      "added": "2026-06-21T15:07:33.808369",
+      "status": "completed",
+      "completed_at": "2026-06-28T07:41:07.235517"
     }
   ],
   "rejected": [],
@@ -771,19 +897,9 @@
       "added": "2026-03-12T15:17:02.885309"
     },
     {
-      "filename": "2026-03-15_chromatic-glass-lattice.md",
-      "title": "Chromatic Glass Lattice",
-      "added": "2026-03-15T15:34:17.644228"
-    },
-    {
       "filename": "2026-03-16_xeno-botanical-synth-flora.md",
       "title": "Xeno-Botanical Synth-Flora",
       "added": "2026-03-16T15:25:27.944847"
-    },
-    {
-      "filename": "2026-03-19_tectonic-plasma-crucible.md",
-      "title": "Tectonic Plasma-Crucible",
-      "added": "2026-03-19T15:11:20.768331"
     },
     {
       "filename": "2026-03-20_cymatic-plasma-mandalas.md",
@@ -809,11 +925,6 @@
       "filename": "2026-03-28_superfluid-quantum-foam.md",
       "title": "Superfluid Quantum-Foam",
       "added": "2026-03-28T15:11:35.996556"
-    },
-    {
-      "filename": "2026-03-29_hyper-bismuth-clockwork.md",
-      "title": "Hyper-Bismuth Clockwork",
-      "added": "2026-03-29T15:19:48.492218"
     },
     {
       "filename": "2026-03-30_vitreous-chrono-chandelier.md",
@@ -846,11 +957,6 @@
       "added": "2026-04-07T15:10:39.717708"
     },
     {
-      "filename": "2026-04-13_resonant-crystal-canyons.md",
-      "title": "Resonant Crystal-Canyons",
-      "added": "2026-04-13T15:34:48.736863"
-    },
-    {
       "filename": "2026-04-14_graviton-plasma-lotus.md",
       "title": "Graviton Plasma-Lotus",
       "added": "2026-04-14T15:39:29.625548"
@@ -869,56 +975,6 @@
       "filename": "2026-04-22_photonic-crystal-brain.md",
       "title": "Photonic Crystal-Brain",
       "added": "2026-04-22T15:34:57.537389"
-    },
-    {
-      "filename": "2026-04-24_chronos-monolith-resonator.md",
-      "title": "Chronos Monolith Resonator",
-      "added": "2026-04-24T15:22:10.929711"
-    },
-    {
-      "filename": "2026-04-26_magnetic-ferrofluid-sculpture.md",
-      "title": "Magnetic Ferrofluid-Sculpture",
-      "added": "2026-04-26T15:06:38.672034"
-    },
-    {
-      "filename": "2026-04-27_hyper-dimensional-bismuth-matrix.md",
-      "title": "Hyper-Dimensional Bismuth-Matrix",
-      "added": "2026-04-27T15:22:10.278813"
-    },
-    {
-      "filename": "2026-04-28_quantum-singularity-forge.md",
-      "title": "Quantum Singularity-Forge",
-      "added": "2026-04-28T15:29:27.490165"
-    },
-    {
-      "filename": "2026-04-30_symbiotic-plasma-reef-matrix.md",
-      "title": "Symbiotic Plasma-Reef Matrix",
-      "added": "2026-04-30T15:18:07.778113"
-    },
-    {
-      "filename": "2026-05-01_cymatic-quantum-silk-loom.md",
-      "title": "Cymatic Quantum-Silk Loom",
-      "added": "2026-05-01T15:13:04.099296"
-    },
-    {
-      "filename": "2026-05-02_ethereal-glass-flora-terrarium.md",
-      "title": "Ethereal Glass-Flora Terrarium",
-      "added": "2026-05-02T15:31:52.502855"
-    },
-    {
-      "filename": "2026-05-03_cryogenic-frost-plasma-matrix.md",
-      "title": "Cryogenic Frost-Plasma Matrix",
-      "added": "2026-05-03T15:21:10.239966"
-    },
-    {
-      "filename": "2026-05-04_sentient-ferro-silicate-swarm.md",
-      "title": "Sentient Ferro-Silicate Swarm",
-      "added": "2026-05-04T15:48:06.428969"
-    },
-    {
-      "filename": "2026-05-06_cybernetic-mycelium-neural-web.md",
-      "title": "Cybernetic-Mycelium Neural-Web",
-      "added": "2026-05-06T15:43:32.368734"
     },
     {
       "filename": "2026-05-07_cosmic-clockwork-dyson-sphere.md",
@@ -991,11 +1047,6 @@
       "added": "2026-05-27T15:22:31.200548"
     },
     {
-      "filename": "2026-05-28_ethereal-quantum-hologram-bonsai.md",
-      "title": "Ethereal Quantum-Hologram Bonsai",
-      "added": "2026-05-28T15:23:06.697098"
-    },
-    {
       "filename": "2026-05-30_celestial-aether-seraphim-wings.md",
       "title": "Celestial Aether-Seraphim Wings",
       "added": "2026-05-30T15:39:39.803092"
@@ -1041,11 +1092,6 @@
       "added": "2026-06-09T15:10:47.923248"
     },
     {
-      "filename": "2026-06-10_neuro-fluid-plasma-lotus.md",
-      "title": "Neuro-Fluid Plasma-Lotus",
-      "added": "2026-06-10T15:27:36.556094"
-    },
-    {
       "filename": "2026-06-12_galactic-aether-crystal-geode-core.md",
       "title": "Galactic Aether-Crystal Geode-Core",
       "added": "2026-06-12T15:24:16.468502"
@@ -1074,16 +1120,6 @@
       "filename": "2026-06-19_sentient-liquid-neon-fractal-heart.md",
       "title": "Sentient Liquid-Neon Fractal-Heart",
       "added": "2026-06-19T15:25:04.778724"
-    },
-    {
-      "filename": "2026-06-20_prismatic-quantum-fractal-nautilus-engine.md",
-      "title": "Prismatic Quantum-Fractal Nautilus-Engine",
-      "added": "2026-06-20T15:09:34.367199"
-    },
-    {
-      "filename": "2026-06-21_resonant-quantum-plasma-dragon-eye.md",
-      "title": "Resonant Quantum-Plasma Dragon-Eye",
-      "added": "2026-06-21T15:07:33.808369"
     },
     {
       "filename": "2026-06-22_sentient-quantum-chrono-leviathan-moth.md",

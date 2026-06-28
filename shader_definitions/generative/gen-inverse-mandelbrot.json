@@ -1,8 +1,6 @@
 {
-  "id": "gen-inverse-mandelbrot",
   "name": "Inverse Mandelbrot Realm",
-  "url": "shaders/gen-inverse-mandelbrot.wgsl",
-  "description": "Instead of iterating coordinates, we iterate color-space vectors through the Mandelbrot map. Each pixel's RGB becomes a complex number that orbits and escapes, creating alien fractal color fields.",
+  "category": "generative",
   "tags": [
     "mandelbrot",
     "fractal",
@@ -15,52 +13,50 @@
     "audio",
     "music"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
+  "description": "Instead of iterating coordinates, we iterate color-space vectors through the Mandelbrot map. Each pixel's RGB becomes a complex number that orbits and escapes, creating alien fractal color fields.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "author": "AI",
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Iterations",
-      "min": 0,
-      "max": 1,
       "default": 0.4,
-      "step": 0.01,
-      "description": "Maximum iteration count (maps to 20–80).",
-      "mapping": "zoom_params.x"
+      "min": 0,
+      "max": 1,
+      "step": 0.01
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Color Zoom",
+      "default": 0.3,
       "min": 0,
       "max": 1,
-      "default": 0.3,
-      "step": 0.01,
-      "description": "Zoom level into the color-space fractal.",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Colormap Rotate",
+      "default": 0,
       "min": 0,
       "max": 1,
-      "default": 0,
-      "step": 0.01,
-      "description": "Global hue rotation of the colormap.",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Bailout Radius",
+      "default": 0.3,
       "min": 0,
       "max": 1,
-      "default": 0.3,
-      "step": 0.01,
-      "description": "Escape radius — lower values create more intricate boundaries.",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-inverse-mandelbrot",
+  "url": "shaders/gen-inverse-mandelbrot.wgsl",
+  "features": []
 }

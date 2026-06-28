@@ -3,7 +3,7 @@
   "name": "Hex Lens Interactive",
   "category": "image",
   "url": "shaders/hex-lens.wgsl",
-  "description": "Honeycomb microlenses rotate and refract toward the cursor while audio adds prismatic shimmer to each cell.",
+  "description": "Honeycomb microlenses with hexagonal bokeh blur, wavelength-dependent chromatic dispersion, hexagonal aperture diffraction starbursts, FBM domain warping, and 6-fold/12-fold star patterns. Audio-reactive lens rotation and prismatic shimmer.",
   "params": [
     {
       "id": "param1",
@@ -38,13 +38,22 @@
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
-    "chromatic-aberration"
+    "chromatic-aberration",
+    "hexagonal-bokeh",
+    "chromatic-dispersion",
+    "diffraction-patterns"
   ],
   "tags": [
     "hex",
     "lens",
     "honeycomb",
     "prismatic",
-    "audio-reactive"
-  ]
+    "audio-reactive",
+    "bokeh",
+    "dispersion",
+    "diffraction",
+    "fbm"
+  ],
+  "updated": true,
+  "updatedParams": ["param2", "param4"]
 }

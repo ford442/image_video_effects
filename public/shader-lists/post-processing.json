@@ -112,7 +112,7 @@
     "name": "Audio Reactive Temporal Decay",
     "url": "https://test.1ink.us/image_video_effects/shaders/audio-reactive-temporal-decay.wgsl",
     "category": "post-processing",
-    "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range. Low-band energy → long ghostly trails; high-band energy → fast fade. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+    "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range, now enhanced with spectral visualization overlay, chromatic aberration on trails, multi-pass bloom on bright areas, anamorphic streaks, film grain, scanlines, color grading with lift/gamma/gain, and vignette. Low-band energy → long ghostly trails; high-band energy → fast fade with spectral color highlights.",
     "tags": [
       "audio-reactive",
       "temporal",
@@ -125,7 +125,15 @@
     "features": [
       "audio-reactive",
       "temporal",
-      "fft-bins"
+      "fft-bins",
+      "spectral-visualization",
+      "chromatic-aberration",
+      "bloom",
+      "film-grain",
+      "scanlines",
+      "color-grading",
+      "anamorphic-streaks",
+      "vignette"
     ],
     "params": [
       {
@@ -763,7 +771,7 @@
     "name": "Soft Vignette Bloom",
     "url": "https://test.1ink.us/image_video_effects/shaders/soft-vignette-bloom.wgsl",
     "category": "post-processing",
-    "description": "Cinematic post-processing with multi-scale Gaussian bloom pyramid, anamorphic highlight streaks, and superellipse vignette. Features ACES tone mapping, split-tone shadows, film grain, and depth-driven haze. Bass boosts bloom threshold and mouse shifts vignette center.",
+    "description": "Cinematic post-processing with multi-scale Gaussian bloom pyramid, anamorphic highlight streaks, and superellipse vignette. Enhanced with lens flare ghost images, 8-pointed starburst diffraction spikes, chromatic aberration at edges, bokeh depth-of-field with hexagonal aperture, and enhanced light falloff with realistic attenuation.",
     "tags": [
       "bloom",
       "vignette",
@@ -772,13 +780,25 @@
       "audio-reactive",
       "mouse-driven",
       "depth-aware",
-      "filmic"
+      "filmic",
+      "lens-flare",
+      "starburst",
+      "chromatic-aberration",
+      "bokeh-dof",
+      "anamorphic-streaks"
     ],
     "features": [
       "audio-reactive",
       "mouse-driven",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "lens-flare",
+      "starburst-diffraction",
+      "chromatic-aberration",
+      "bokeh-dof",
+      "anamorphic-streaks",
+      "light-attenuation",
+      "enhanced-falloff"
     ],
     "params": [
       {

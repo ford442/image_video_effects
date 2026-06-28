@@ -102,7 +102,7 @@ fn map(p: vec3<f32>, time: f32, audio: f32, gearComplexity: f32, mouseXY: vec2<f
     var pos = p;
 
     // Magnetic distortion field driven by mouse interaction
-    let gravityWell = vec3<f32>(mouseXY.x * 10.0, mouseXY.y * 10.0, 0.0);
+    let gravityWell = vec3<f32>(mouseXY.x * 10.0, -mouseXY.y * 10.0, 0.0);
     let distToMouse = length(pos - gravityWell);
     let warpAmt = exp(-distToMouse * 0.2);
     pos += normalize(pos - gravityWell) * warpAmt * sin(time * 2.0);

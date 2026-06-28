@@ -69,7 +69,7 @@ fn map(pos_in: vec3<f32>) -> vec2<f32> {
     let audio_react = u.zoom_params.w * u.config.y; // 1.0 default
 
     // Apply mouse interaction as a gravity well
-    let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 10.0, (u.zoom_config.z - 0.5) * 10.0, 0.0);
+    let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 10.0, (0.5 - u.zoom_config.z) * 10.0, 0.0);
     let dist_to_mouse = length(p - mouse_pos);
     if (dist_to_mouse < 5.0) {
         let pull = smoothstep(5.0, 0.0, dist_to_mouse) * 2.0;

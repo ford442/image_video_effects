@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Vinyl Scratch
-//  Category: distortion
-//  Features: mouse-driven, audio-reactive, rotating-scratch, depth-groove, chromatic-wobble, upgraded-rgba
+//  Vinyl Scratch — Groove Cinema Edition
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, rotating-scratch, depth-groove,
+//            chromatic-wobble, upgraded-rgba, dust-particles, groove-lighting,
+//            analog-warmth, film-grain, vignette, chromatic-aberration,
+//            lens-dirt, saturation-rolloff, groove-reflections
 //  Complexity: High
 //  Chunks From: vinyl-scratch, bass_env
 //  Created: 2024-01-01
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-28
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -33,6 +36,93 @@ fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.5 + mids * 0.2;
 }
 
+fn hash21(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+    return vec2<f32>(hash21(p), hash21(p + vec2<f32>(1.0, 0.0)));
+}
+
+// Temporal film grain
+fn temporalGrain(gid: vec2<f32>, time: f32, treble: f32) -> f32 {
+    let t1 = hash21(gid + fract(time * 0.7) * 100.0);
+    let t2 = hash21(gid * 1.3 + fract(time * 0.3) * 100.0);
+    return (mix(t1, t2, 0.5) - 0.5) * (1.0 + treble * 0.3);
+}
+
+// Vinyl dust particles: animated on surface
+fn vinylDust(uv: vec2<f32>, time: f32, dist: f32, dustAmount: f32) -> f32 {
+    let dustUV1 = uv * 8.0 + time * 0.2;
+    let dustUV2 = uv * 12.0 - time * 0.15;
+    let dust1 = hash21(floor(dustUV1));
+    let dust2 = hash21(floor(dustUV2));
+    let dust = mix(dust1, dust2, 0.5);
+    // Dust is more visible on outer grooves
+    let grooveFactor = smoothstep(0.1, 0.5, dist);
+    return step(1.0 - dustAmount * 0.3, dust) * grooveFactor * 0.4;
+}
+
+// Groove lighting: reflections along concentric grooves
+fn grooveReflection(uv: vec2<f32>, dist: f32, time: f32, angle: f32, bass: f32) -> vec3<f32> {
+    let grooveFreq = 80.0;
+    let groovePhase = dist * grooveFreq - time * 2.0;
+    let groove = sin(groovePhase) * 0.5 + 0.5;
+    let grooveSharp = pow(groove, 4.0);
+    
+    // Light source angle
+    let lightAngle = time * 0.5 + bass * 0.3;
+    let angleDiff = abs(angle - lightAngle);
+    let lightWrap = exp(-angleDiff * angleDiff * 2.0) + exp(-(angleDiff - 6.283) * (angleDiff - 6.283) * 2.0);
+    
+    let reflection = grooveSharp * lightWrap * 0.3 * (1.0 + bass * 0.5);
+    return vec3<f32>(reflection * 1.0, reflection * 0.95, reflection * 0.85);
+}
+
+// Analog warmth: color temperature shift toward orange/yellow
+fn analogWarmth(color: vec3<f32>, amount: f32) -> vec3<f32> {
+    let warmth = vec3<f32>(1.06, 1.02, 0.94);
+    return mix(color, color * warmth, amount);
+}
+
+// Saturation roll-off: colors desaturate toward white in highlights
+fn saturationRolloff(color: vec3<f32>, amount: f32) -> vec3<f32> {
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let highlight = smoothstep(0.5, 1.0, luma);
+    return mix(color, vec3<f32>(luma), highlight * amount);
+}
+
+// Vignette
+fn vignette(uv: vec2<f32>, strength: f32) -> f32 {
+    let center = uv - vec2<f32>(0.5);
+    let r = length(center) * 1.4142;
+    return pow(1.0 - r * strength, 2.0);
+}
+
+// Radial chromatic aberration
+fn radialChromatic(uv: vec2<f32>, center: vec2<f32>, strength: f32) -> vec2<f32> {
+    let dir = uv - center;
+    let r2 = dot(dir, dir);
+    return dir * r2 * strength;
+}
+
+// Lens dirt: subtle dust overlay on bright areas
+fn lensDirt(uv: vec2<f32>, time: f32, brightness: f32) -> f32 {
+    let dirt1 = hash21(uv * 3.0 + time * 0.01);
+    let dirt2 = hash21(uv * 7.0 - time * 0.015);
+    let dirt = mix(dirt1, dirt2, 0.5);
+    return smoothstep(0.6, 0.9, dirt) * brightness * 0.12;
+}
+
+// Groove sparkle: tiny bright points on groove ridges
+fn grooveSparkle(uv: vec2<f32>, dist: f32, time: f32, treble: f32) -> f32 {
+    let sparkleUV = floor(uv * vec2<f32>(200.0, 200.0)) / 200.0;
+    let sparkleHash = hash21(sparkleUV + time * 0.5);
+    let sparkle = step(1.0 - treble * 0.1, sparkleHash);
+    let grooveMask = sin(dist * 300.0) * 0.5 + 0.5;
+    return sparkle * grooveMask * 0.3 * treble;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -55,6 +145,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let wobble = u.zoom_params.z * (1.0 + mids * 0.7);
     let noiseIntensity = u.zoom_params.w * (1.0 + treble * 0.6);
 
+    // Cinematic params
+    let caStrength = 0.015 + bass * 0.02;
+    let vignetteStrength = 0.5 + bass * 0.15;
+    let warmthAmount = 0.2 + mids * 0.1;
+    let saturationRoll = 0.25 + treble * 0.15;
+    let dustAmount = 0.3 + treble * 0.2;
+    let grooveLightAmount = 0.4 + bass * 0.3;
+
     let center = vec2<f32>(0.5, 0.5);
     let dir = uv - center;
     let dirCorrected = vec2<f32>(dir.x * aspect, dir.y);
@@ -74,11 +172,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let sampleUV = vec2<f32>(rotatedDirX / aspect, rotatedDirY) + center + vec2<f32>(wobbleOffset, wobbleOffset);
 
-    // Chromatic wobble: R and B channels wobble at different rates
+    // Chromatic wobble + radial chromatic aberration
+    let caOffset = radialChromatic(uv, center, caStrength);
     let wobbleR = sin(angle * 2.5 + time * 6.0) * 0.003 * wobble * (1.0 + bass);
     let wobbleB = sin(angle * 1.5 + time * 4.0) * 0.003 * wobble * (1.0 + treble);
-    let rUV = clamp(sampleUV + vec2<f32>(wobbleR, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-    let bUV = clamp(sampleUV - vec2<f32>(wobbleB, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let rUV = clamp(sampleUV + vec2<f32>(wobbleR, 0.0) + caOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+    let bUV = clamp(sampleUV - vec2<f32>(wobbleB, 0.0) - caOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
@@ -89,10 +188,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let grooveIntensity = (sin(dist * 400.0) * 0.5 + 0.5) * noiseIntensity * depthGroove;
 
     color = mix(color, vec4<f32>(grooveNoise, grooveNoise, grooveNoise, color.a), grooveIntensity * 0.2);
+
+    // ── Vinyl dust particles ──
+    let dust = vinylDust(uv, time, dist, dustAmount);
+    let dustColor = vec3<f32>(0.85, 0.8, 0.75) * dust;
+    color = vec4<f32>(color.rgb + dustColor, color.a);
+
+    // ── Groove lighting / reflections ──
+    let reflection = grooveReflection(uv, dist, time, angle, bass) * grooveLightAmount;
+    color = vec4<f32>(color.rgb + reflection, color.a);
+
+    // ── Groove sparkle ──
+    let sparkle = grooveSparkle(uv, dist, time, treble);
+    color = vec4<f32>(color.rgb + vec3<f32>(sparkle), color.a);
+
+    // ── Temporal film grain ──
+    let grain = temporalGrain(vec2<f32>(global_id.xy), time, treble);
+    color = vec4<f32>(color.rgb + grain * 0.06, color.a);
+
+    // ── Vignette ──
+    let vig = vignette(uv, vignetteStrength * 0.7);
+    color = vec4<f32>(color.rgb * mix(0.5, 1.0, vig), color.a);
+
+    // ── Analog warmth ──
+    color = vec4<f32>(analogWarmth(color.rgb, warmthAmount), color.a);
+
+    // ── Saturation roll-off in highlights ──
+    color = vec4<f32>(saturationRolloff(color.rgb, saturationRoll), color.a);
+
+    // ── Lens dirt on bright areas ──
+    let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let brightMask = smoothstep(0.5, 0.9, luma);
+    let dirt = lensDirt(uv, time, brightMask);
+    color = vec4<f32>(color.rgb + vec3<f32>(0.9, 0.85, 0.7) * dirt, color.a);
+
     color.a = clamp(color.a + grooveIntensity * 0.15 + bass * 0.05, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-    textureStore(dataTextureA, global_id.xy, color);
+    let finalColor = clamp(color.rgb, vec3<f32>(0.0), vec3<f32>(1.5));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor * color.a, color.a));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor * color.a, color.a));
 
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));

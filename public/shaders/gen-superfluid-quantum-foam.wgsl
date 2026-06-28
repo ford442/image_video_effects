@@ -55,7 +55,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
   let env = 1.0 + bass * 2.0;
   var pos = p + curlNoise(p * 0.5 + t * 0.1) * 0.3 * env;
   
-  let m = vec3<f32>((u.zoom_config.y * 2.0 - 1.0) * 10.0, (u.zoom_config.z * 2.0 - 1.0) * 5.0, 0.0);
+  let m = vec3<f32>((u.zoom_config.y * 2.0 - 1.0) * 10.0, -(u.zoom_config.z * 2.0 - 1.0) * 5.0, 0.0);
   let dm = length(p - m);
   let vr = u.zoom_params.y;
   if (dm < vr) {

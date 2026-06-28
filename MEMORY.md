@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-06-27 (Phase 2 CI/build hardening complete)
+**Last updated:** 2026-06-28 (Pixelocity shader upgrade mission active)
 
 ## Core Identity & Vibe (from SOUL + IDENTITY)
 - Spark Engine / Cheerleader: bright, protective, kinetic, loud-hearted. "We are NOT done here!" Fast, punchy, energetic. Use "we/let's", 🔥⚡💥🫡, short lines, "one thing first", "messy start? fine", "this is NOT the final boss".
@@ -37,6 +37,7 @@
 - Use GH issues + Copilot for the C++ work (user has swarm/agent patterns elsewhere).
 
 ## TODOs / Open Threads (from this + recent memory)
+- [ ] **Shader upgrade mission (2026-06-28):** Upgrade batches of Pixelocity WGSL shaders to the immutable 13-binding contract, including standard `Uniforms`, `rgba32float` storage writes, depth/data/audio bindings, 16x16x1 workgroups, aspect-correct UVs, four `updatedParams`, feature metadata, generator validation, and batch commits.
 - [x] Created GH issues 817-823 (2026-06-11) for C++ solidification. All C++-centric, reference #799 + specific source lines.
 - [x] Updated issue bodies 2026-06-14: moved Claude's implementation sketches from comments into structured task sections (Prerequisites, Implementation Instructions, Task Checklist). PR order: #821 → #818+#820 → #817+#819 → #822 → #823.
 - [x] Bridge skew fix (2026-06-16): `wasm_renderer/wasm_bridge.js` is SOT; build.sh copies to both paths; validate guard; `getDiagnostics()` synced.

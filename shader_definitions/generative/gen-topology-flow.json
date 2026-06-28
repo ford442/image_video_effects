@@ -1,8 +1,6 @@
 {
-  "id": "gen-topology-flow",
   "name": "Topology Flow",
-  "url": "shaders/gen-topology-flow.wgsl",
-  "description": "Topological surface flow visualization inspired by Morse theory, showing gradient flows converging and diverging at critical points",
+  "category": "generative",
   "tags": [
     "generative",
     "topology",
@@ -12,47 +10,50 @@
     "audio",
     "music"
   ],
-  "features": [
-    "animated",
-    "audio-reactive",
-    "audio-driven"
+  "description": "Topological surface flow visualization inspired by Morse theory, showing gradient flows converging and diverging at critical points",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "flowSpeed",
+      "index": 0,
       "name": "Flow Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "complexity",
+      "index": 1,
       "name": "Height Complexity",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "particleDensity",
+      "index": 2,
       "name": "Particle Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "trailPersistence",
+      "index": 3,
       "name": "Trail Persistence",
       "default": 0.8,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-topology-flow",
+  "url": "shaders/gen-topology-flow.wgsl",
+  "features": []
 }

@@ -1,8 +1,7 @@
 {
   "id": "gen-quasicrystal",
   "name": "Quasicrystal",
-  "url": "shaders/gen-quasicrystal.wgsl",
-  "description": "Penrose tiling-inspired quasicrystal patterns with n-fold symmetry using the projection method from higher-dimensional lattices",
+  "category": "generative",
   "tags": [
     "generative",
     "quasicrystal",
@@ -11,55 +10,55 @@
     "procedural",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "domain-warping",
+    "voronoi",
+    "fresnel",
+    "gem"
   ],
-  "features": [
-    "generative",
-    "animated",
-    "audio-reactive",
-    "temporal",
-    "upgraded-rgba",
-    "aces-tone-map",
-    "chromatic-aberration",
-    "neon-glow",
-    "anti-moire"
+  "description": "Penrose tiling-inspired quasicrystal patterns with n-fold symmetry using the projection method from higher-dimensional lattices. Upgraded with domain-warped FBM, Voronoi/Worley noise, Fresnel-Schlick gem surfaces, enhanced harmonics, and deep audio reactivity.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "symmetry",
+      "index": 0,
       "name": "Symmetry Order",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "density",
+      "index": 1,
       "name": "Pattern Density",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "colorCycle",
+      "index": 2,
       "name": "Color Cycling",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "projAngle",
+      "index": 3,
       "name": "Projection Angle",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "url": "shaders/gen-quasicrystal.wgsl",
+  "features": []
 }

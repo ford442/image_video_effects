@@ -750,13 +750,20 @@
     "name": "Ferrofluid Spikes",
     "category": "simulation",
     "url": "https://test.1ink.us/image_video_effects/shaders/ferrofluid-spikes.wgsl",
-    "description": "Mouse-driven ferrofluid simulation. The cursor acts as a magnet, pulling up metallic spikes from a dark liquid surface. Audio adds turbulence.",
+    "description": "Mouse-driven ferrofluid simulation. The cursor acts as a magnet, pulling up metallic spikes from a dark liquid surface. Enhanced with full 3-point studio lighting (key/fill/rim), GGX PBR specular, Fresnel-Schlick reflections, anisotropic metallic sheen, ambient occlusion, and subsurface scattering glow.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
       "generative-surface",
-      "metallic-highlights"
+      "metallic-highlights",
+      "3-point-lighting",
+      "GGX-specular",
+      "Fresnel-Schlick",
+      "anisotropic-sheen",
+      "ambient-occlusion",
+      "subsurface-scattering",
+      "light-attenuation"
     ],
     "params": [
       {
@@ -795,7 +802,11 @@
       "liquid",
       "mouse-driven",
       "audio-reactive",
-      "metallic"
+      "metallic",
+      "PBR",
+      "3-point-lighting",
+      "anisotropic",
+      "ambient-occlusion"
     ]
   },
   {

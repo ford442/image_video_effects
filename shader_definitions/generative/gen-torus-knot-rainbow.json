@@ -1,16 +1,6 @@
 {
-  "id": "gen-torus-knot-rainbow",
   "name": "Torus Knot Rainbow",
-  "url": "shaders/gen-torus-knot-rainbow.wgsl",
-  "description": "A (p,q) torus knot projected onto the 2D plane with perspective, chromatic tube gradient (warm inner / cool outer), audio-driven wind modulation, temporal spin memory, and depth output.",
-  "features": [
-    "audio-reactive",
-    "audio-driven",
-    "mouse-driven",
-    "temporal",
-    "procedural",
-    "semantic-alpha"
-  ],
+  "category": "generative",
   "tags": [
     "psychedelic",
     "colorful",
@@ -24,42 +14,50 @@
     "chromatic",
     "audio-reactive"
   ],
-  "params": [
+  "description": "A (p,q) torus knot projected onto the 2D plane with perspective, chromatic tube gradient (warm inner / cool outer), audio-driven wind modulation, temporal spin memory, and depth output.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "speed",
+      "index": 0,
       "name": "Spin Speed",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "knotp",
+      "index": 1,
       "name": "P Winds",
       "default": 0.25,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "knotq",
+      "index": 2,
       "name": "Q Winds",
       "default": 0.33,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "tube",
+      "index": 3,
       "name": "Tube Radius",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-torus-knot-rainbow",
+  "url": "shaders/gen-torus-knot-rainbow.wgsl",
+  "features": []
 }

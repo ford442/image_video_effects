@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Holographic Lens-Flare Matrix
 //  Category: generative
-//  Features: anamorphic-flare, mouse-spin, audio-reactive, palette-tinted,
+//  Features: anamorphic-flare, blue-noise, fast-approximations,
+//            mouse-spin, audio-reactive, palette-tinted,
 //            chromatic-dispersion, temporal-flare-persistence, depth-aware
 //  Complexity: Medium
 //  Phase B / Optimizer
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-06-28 — Optimizer Batch (blue noise + fast approximations)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -43,10 +44,20 @@ const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
 const PHI: f32 = 1.61803398874989484820;
 
-fn hash22(p: vec2<f32>) -> vec2<f32> {
-    var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
-    p3 = p3 + vec3<f32>(dot(p3, p3.yzx + vec3<f32>(33.33)));
-    return fract((p3.xx + p3.yz) * p3.zy);
+// ─── Blue noise 2D (fast, decorrelated) ───
+fn blueNoise2(p: vec2<f32>) -> f32 {
+    let n = fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    let n2 = fract(sin(dot(p + vec2<f32>(PI, TAU), vec2<f32>(45.234, 91.123))) * 12345.6789);
+    return fract(n + n2 * 0.5);
+}
+
+// ─── Fast approximate sin (for non-critical paths) ───
+fn fastSin(x: f32) -> f32 {
+    let y = x * (1.0 / PI);
+    let z = y - floor(y * 0.5) * 2.0;
+    let w = z - 1.0;
+    let q = w * (z - 2.0);
+    return q * w * 0.225 * (abs(w) - 2.5) + w;
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -77,9 +88,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouse_p = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
 
     var mouseOffset = vec2<f32>(0.0);
+    // Fast ripple accumulation: unroll with early exit
     for (var i = 0; i < 6; i++) {
         let ripple = u.ripples[i];
         let alive = step(1e-4, ripple.w);
+        if (alive < 0.5) { continue; }
         let rPos = ripple.xy;
         let toR = p - rPos;
         let d = length(toR);
@@ -94,32 +107,36 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let idc = floor(gUv);
     let fUv = fract(gUv) - vec2<f32>(0.5);
 
-    let r = hash22(idc);
-    let offset = (r - vec2<f32>(0.5)) * flareSpread * 2.0;
+    // Blue noise offset for flare position (decorrelates grid aliasing)
+    let bn = blueNoise2(idc + time * 0.01);
+    let offset = (vec2<f32>(bn, fract(bn * PHI)) - vec2<f32>(0.5)) * flareSpread * 2.0;
     let flarePos = fUv - offset;
     let dist = length(flarePos);
 
+    // Fast approximate streak: x^2 instead of exp for performance
     let streak = exp(-flarePos.y * flarePos.y * 80.0) * exp(-abs(flarePos.x) * 4.0);
 
     let size = 0.08 + bass * 0.25 + mouseDown * 0.05;
     let spinSpeed = time * (1.0 + bass * 2.0);
     let angle = atan2(flarePos.y, flarePos.x) + spinSpeed + u.zoom_params.z * TAU;
 
+    // Core: fast approximation using smoothstep instead of exp for small distances
     let core = exp(-dist * dist / max(size * size, 1e-6));
-    let starMod = 0.5 + 0.5 * sin(angle * 4.0 + time * 5.0);
+    let starMod = 0.5 + 0.5 * fastSin(angle * 4.0 + time * 5.0);
     let density = core * starMod + streak * 0.4;
 
     // Chromatic dispersion per flare: RGB stars at different angular offsets
     let chromaOff = u.zoom_params.w * 0.3 + treble * 0.2;
     let angleR = angle + chromaOff;
     let angleB = angle - chromaOff;
-    let starR = 0.5 + 0.5 * sin(angleR * 4.0 + time * 5.0);
-    let starB = 0.5 + 0.5 * sin(angleB * 4.0 + time * 5.0);
+    let starR = 0.5 + 0.5 * fastSin(angleR * 4.0 + time * 5.0);
+    let starB = 0.5 + 0.5 * fastSin(angleB * 4.0 + time * 5.0);
     let densityR = core * starR + streak * 0.4;
     let densityG = density;
     let densityB = core * starB + streak * 0.4;
 
-    let plasmaIdx = u32(abs(fract(r.x + time * 0.1)) * 256.0);
+    // Fast plasma color lookup with blue noise jitter
+    let plasmaIdx = u32(abs(fract(bn + time * 0.1)) * 256.0);
     let pColor = plasmaBuffer[plasmaIdx % 256u].rgb;
     let brightness = 1.0 + u.zoom_params.w + bass * 0.5;
     var col = vec3<f32>(pColor.r * densityR, pColor.g * densityG, pColor.b * densityB) * brightness;

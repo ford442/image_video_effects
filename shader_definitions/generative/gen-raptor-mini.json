@@ -1,13 +1,6 @@
 {
-  "id": "gen-raptor-mini",
   "name": "Raptor Mini",
-  "url": "shaders/gen-raptor-mini.wgsl",
-  "description": "Fast predatory mini raptor agents chase the mouse and strike with claws. Audio rage mode boosts speed and attacks.",
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
-  ],
+  "category": "generative",
   "tags": [
     "agent",
     "chase",
@@ -17,42 +10,50 @@
     "generative",
     "reactive"
   ],
-  "params": [
+  "description": "Fast predatory mini raptor agents chase the mouse and strike with claws. Audio rage mode boosts speed and attacks.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "turnSpeed",
+      "index": 0,
       "name": "Turn Speed",
       "default": 0.8,
       "min": 0.2,
       "max": 1,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "maxSpeed",
+      "index": 1,
       "name": "Max Speed",
       "default": 3,
       "min": 1,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "rageDuration",
+      "index": 2,
       "name": "Rage Duration",
       "default": 1.2,
       "min": 0.5,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "glowRadius",
+      "index": 3,
       "name": "Glow Radius",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.05,
-      "mapping": "zoom_params.w"
+      "step": 0.05
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-raptor-mini",
+  "url": "shaders/gen-raptor-mini.wgsl",
+  "features": []
 }

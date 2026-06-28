@@ -147,7 +147,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let detailLevel   = u.zoom_params.w;                 // 0..1
 
     // Mouse controls the W and extra dimension navigation
-    let mousePos = vec2<f32>(u.zoom_config.y - 0.5, u.zoom_config.z - 0.5);
+    let mousePos = vec2<f32>(u.zoom_config.y - 0.5, 0.5 - u.zoom_config.z);
     let w_dim = mousePos.x * PI * 1.5; // extra dimension W from mouse X
     let v_dim = mousePos.y * PI * 1.5; // extra dimension V from mouse Y
 

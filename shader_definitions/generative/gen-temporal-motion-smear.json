@@ -1,8 +1,6 @@
 {
-  "id": "gen-temporal-motion-smear",
   "name": "Temporal Motion Smear",
-  "url": "shaders/gen-temporal-motion-smear.wgsl",
-  "description": "Motion-aware temporal smearing using frame differencing and directional blur, creating colorful trails that follow moving objects",
+  "category": "generative",
   "tags": [
     "temporal",
     "motion",
@@ -12,52 +10,50 @@
     "audio",
     "music"
   ],
-  "features": [
-    "aces-tone-map",
-    "audio-driven",
-    "audio-reactive",
-    "chromatic-aberration",
-    "depth-aware",
-    "motion-aware",
-    "temporal",
-    "upgraded-rgba"
+  "description": "Motion-aware temporal smearing using frame differencing and directional blur, creating colorful trails that follow moving objects",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "persistence",
+      "index": 0,
       "name": "Trail Persistence",
       "default": 0.85,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "sensitivity",
+      "index": 1,
       "name": "Motion Sensitivity",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "directionality",
+      "index": 2,
       "name": "Smear Directionality",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "intensity",
+      "index": 3,
       "name": "Color Intensity",
       "default": 0.8,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-temporal-motion-smear",
+  "url": "shaders/gen-temporal-motion-smear.wgsl",
+  "features": []
 }

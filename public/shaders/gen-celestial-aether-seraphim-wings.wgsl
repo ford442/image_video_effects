@@ -134,7 +134,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
   // Mouse Interaction
   let mouseX = (u.zoom_config.y - 0.5) * 6.28;
-  let mouseY = (u.zoom_config.z - 0.5) * 3.14;
+  let mouseY = (0.5 - u.zoom_config.z) * 3.14;
 
   let roYZ = rot(-mouseY) * ro.yz;
   ro.y = roYZ.x;
@@ -171,7 +171,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   // ═══ Aerodynamic Lift (Wolfram Alpha) ═══
   // C_L = 2πα for thin airfoil, stall ~15° (0.262 rad)
   // Angle of attack α from mouse Y (zoom_config.z)
-  let alphaAOA = (u.zoom_config.z - 0.5) * 0.5;
+  let alphaAOA = (0.5 - u.zoom_config.z) * 0.5;
   let cl = 2.0 * 3.14159 * alphaAOA;
   let stall = smoothstep(0.2, 0.25, abs(alphaAOA));
   // Lift coefficient drives brightness

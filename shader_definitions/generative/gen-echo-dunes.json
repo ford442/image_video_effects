@@ -1,9 +1,6 @@
 {
-  "id": "gen-echo-dunes",
   "name": "Echo Dunes",
-  "url": "shaders/gen-echo-dunes.wgsl",
   "category": "generative",
-  "description": "Wind-carved sand ridges with heat mirage distortions and cursor-centered acoustic echo rings.",
   "tags": [
     "generative",
     "desert",
@@ -12,51 +9,50 @@
     "echo",
     "audio-reactive"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "temporal",
-    "chromatic",
-    "depth-aware"
+  "description": "Wind-carved sand ridges with heat mirage distortions and cursor-centered acoustic echo rings.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "duneScale",
+      "index": 0,
       "name": "Dune Scale",
       "default": 0.42,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "windSpeed",
+      "index": 1,
       "name": "Wind Speed",
       "default": 0.44,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "mirage",
+      "index": 2,
       "name": "Mirage",
       "default": 0.38,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "echo",
+      "index": 3,
       "name": "Echo Rings",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-echo-dunes",
+  "url": "shaders/gen-echo-dunes.wgsl",
+  "features": []
 }

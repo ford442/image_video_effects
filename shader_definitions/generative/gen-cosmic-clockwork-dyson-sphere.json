@@ -1,86 +1,62 @@
 {
   "id": "gen-cosmic-clockwork-dyson-sphere",
   "name": "Cosmic-Clockwork Dyson-Sphere",
-  "description": "A hyper-intricate, colossal megastructure of interlocking golden gears, glowing plasma conduits, and rhythmic mechanical fractal shifts, enclosing a blinding quantum singularity that powers an ancient stellar clock.",
+  "category": "generative",
   "tags": [
     "mechanical",
     "cosmic",
     "fractal",
     "audio-reactive",
-    "volumetric"
+    "volumetric",
+    "kifs",
+    "domain-warping",
+    "voronoi",
+    "beer-lambert",
+    "fresnel"
   ],
-  "coordinate": 879,
-  "parameters": [
-    {
-      "name": "Mechanical Complexity",
-      "default": 0.5,
-      "min": 0.1,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "name": "Clock Speed",
-      "default": 0.5,
-      "min": 0,
-      "max": 2,
-      "step": 0.01
-    },
-    {
-      "name": "Plasma Intensity",
-      "default": 0.8,
-      "min": 0,
-      "max": 2,
-      "step": 0.05
-    },
-    {
-      "name": "Gear Ratio",
-      "default": 0.5,
-      "min": 0.1,
-      "max": 1,
-      "step": 0.01
-    }
+  "description": "A hyper-intricate colossal megastructure of interlocking golden gears, glowing plasma conduits, and rhythmic mechanical fractal shifts enclosing a blinding quantum singularity. Upgraded with enhanced KIFS SDFs, domain-warped FBM, Worley/Voronoi noise, Beer-Lambert volumetric extinction, Fresnel-Schlick metallic reflections, gear-ring toroids, and deep audio reactivity.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "url": "shaders/gen-cosmic-clockwork-dyson-sphere.wgsl",
-  "params": [
+  "updatedParams": [
     {
-      "id": "intensity",
+      "index": 0,
       "name": "Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Controls the overall strength of the generated effect."
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Controls animation and temporal evolution speed."
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 2,
       "name": "Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Controls spatial scale, frequency, or detail contrast."
+      "step": 0.01
     },
     {
-      "id": "mouseInfluence",
+      "index": 3,
       "name": "Mouse Influence",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Controls mouse-driven or secondary variation influence."
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "url": "shaders/gen-cosmic-clockwork-dyson-sphere.wgsl",
+  "features": []
 }

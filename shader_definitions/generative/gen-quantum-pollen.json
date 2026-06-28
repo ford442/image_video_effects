@@ -1,9 +1,6 @@
 {
-  "id": "gen-quantum-pollen",
   "name": "Quantum Pollen",
-  "url": "shaders/gen-quantum-pollen.wgsl",
   "category": "generative",
-  "description": "Bioluminescent pollen swarms drift in layered fields, with treble-driven twinkle and bass-heavy vortices.",
   "tags": [
     "generative",
     "particles",
@@ -12,51 +9,50 @@
     "audio-reactive",
     "bloom"
   ],
-  "features": [
-    "procedural",
-    "audio-reactive",
-    "mouse-driven",
-    "upgraded-rgba",
-    "temporal",
-    "chromatic",
-    "depth-aware"
+  "description": "Bioluminescent pollen swarms drift in layered fields, with treble-driven twinkle and bass-heavy vortices.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "swarmDensity",
+      "index": 0,
       "name": "Swarm Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "drift",
+      "index": 1,
       "name": "Drift",
       "default": 0.42,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "bloom",
+      "index": 2,
       "name": "Bloom",
       "default": 0.56,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "trail",
+      "index": 3,
       "name": "Trail",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-quantum-pollen",
+  "url": "shaders/gen-quantum-pollen.wgsl",
+  "features": []
 }

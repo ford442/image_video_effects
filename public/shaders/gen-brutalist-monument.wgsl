@@ -199,7 +199,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Orbit camera logic
     let radius = 20.0;
-    let cam_h = 5.0 + mouse.y * 20.0;
+    let cam_h = 25.0 - mouse.y * 20.0; // Y-flip: screen top = up
     let cam_angle = mouse.x * 6.28 + time * (0.1 + mids * 0.5);
 
     let ro = vec3<f32>(sin(cam_angle) * radius, cam_h, cos(cam_angle) * radius);

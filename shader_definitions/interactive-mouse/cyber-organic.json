@@ -3,7 +3,7 @@
   "name": "Cyber Organic Scanner",
   "category": "interactive-mouse",
   "url": "shaders/cyber-organic.wgsl",
-  "description": "Biotech scan lines reveal pulsing synthetic veins beneath the image, concentrated around the cursor.",
+  "description": "Biotech scan lines reveal pulsing synthetic veins beneath the image, concentrated around the cursor. Enhanced with bioluminescent OkLab color mixing, blackbody warmth modulation, volumetric vein glow, split-tone grading, and ACES filmic tone mapping.",
   "params": [
     {
       "id": "scanSpeed",
@@ -37,13 +37,22 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "bioluminescent",
+    "oklab-mixing",
+    "blackbody-warmth",
+    "volumetric-glow",
+    "aces-tone-map",
+    "split-tone"
   ],
   "tags": [
     "scanner",
     "organic",
     "biotech",
     "pulse",
-    "audio-reactive"
-  ]
+    "audio-reactive",
+    "bioluminescent",
+    "atmospheric"
+  ],
+  "updated": true
 }

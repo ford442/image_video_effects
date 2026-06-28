@@ -130,7 +130,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   p += (warpField - 0.5) * (0.04 + bass * 0.04);
 
   let yaw = (mouse.x - 0.5) * TAU + time * rotSpeed;
-  let pitch = (mouse.y - 0.5) * PI * 0.8 + sin(time * 0.3) * 0.2;
+  let pitch = ((0.5 - mouse.y)) * PI * 0.8 + sin(time * 0.3) * 0.2;
 
   let v0 = vec3<f32>(0.0, 1.0, 0.0);
   let v1 = vec3<f32>(-0.816, -0.333, 0.577);

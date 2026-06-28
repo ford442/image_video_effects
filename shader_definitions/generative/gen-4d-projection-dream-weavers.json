@@ -1,8 +1,6 @@
 {
-  "id": "gen-4d-projection-dream-weavers",
   "name": "4D Projection Dream Weavers",
-  "url": "shaders/gen-4d-projection-dream-weavers.wgsl",
-  "description": "Smooth continuous slicing and projection through higher-dimensional fractals and lattices. Mouse controls navigation through the extra two dimensions providing genuine higher-dimensional exploration. Audio affects fractal parameters and projection quality. Ethereal mathematical dream-like forms.",
+  "category": "generative",
   "tags": [
     "generative",
     "4d",
@@ -13,52 +11,50 @@
     "audio-reactive",
     "music"
   ],
-  "features": [
-    "generative",
-    "audio-reactive",
-    "mouse-driven",
-    "temporal"
+  "description": "Smooth continuous slicing and projection through higher-dimensional fractals and lattices. Mouse controls navigation through the extra two dimensions providing genuine higher-dimensional exploration. Audio affects fractal parameters and projection quality. Ethereal mathematical dream-like forms.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "zoomLevel",
+      "index": 0,
       "name": "Zoom Level",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Zoom level in 4D fractal space",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "rotSpeed",
+      "index": 1,
       "name": "Rotation Speed",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Speed of 4D rotation through hyperspace",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "colorShift",
+      "index": 2,
       "name": "Color Shift",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Hue rotation of the color palette",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "detailLevel",
+      "index": 3,
       "name": "Detail Level",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Fractal iteration depth and detail",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-4d-projection-dream-weavers",
+  "url": "shaders/gen-4d-projection-dream-weavers.wgsl",
+  "features": []
 }

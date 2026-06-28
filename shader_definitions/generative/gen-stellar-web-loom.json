@@ -1,8 +1,6 @@
 {
-  "id": "gen-stellar-web-loom",
   "name": "Stellar Web-Loom",
-  "url": "shaders/gen-stellar-web-loom.wgsl",
-  "description": "A hyper-dimensional cosmic loom weaving infinite tendrils of starlight and plasma silk across a dark void, blending organic neuro-network vibes with vast, mechanical astrophysics.",
+  "category": "generative",
   "tags": [
     "cosmic",
     "neuro",
@@ -13,47 +11,50 @@
     "music",
     "reactive"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
+  "description": "A hyper-dimensional cosmic loom weaving infinite tendrils of starlight and plasma silk across a dark void, blending organic neuro-network vibes with vast, mechanical astrophysics.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "threadDensity",
+      "index": 0,
       "name": "Thread Density",
       "default": 2,
       "min": 0.5,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "weaveSpeed",
+      "index": 1,
       "name": "Weave Speed",
       "default": 1,
       "min": 0,
       "max": 3,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "plasmaGlow",
+      "index": 2,
       "name": "Plasma Glow",
       "default": 3,
       "min": 1,
       "max": 8,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "threadOpacityExp",
+      "index": 3,
       "name": "Thread Opacity Exponent",
       "default": 1,
       "min": 0.25,
       "max": 3,
-      "step": 0.05,
-      "mapping": "zoom_params.w"
+      "step": 0.05
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-stellar-web-loom",
+  "url": "shaders/gen-stellar-web-loom.wgsl",
+  "features": []
 }

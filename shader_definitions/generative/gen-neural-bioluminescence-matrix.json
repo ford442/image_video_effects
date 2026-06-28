@@ -1,8 +1,6 @@
 {
-  "id": "gen-neural-bioluminescence-matrix",
   "name": "Neural Bioluminescence Matrix",
-  "url": "shaders/gen-neural-bioluminescence-matrix.wgsl",
-  "description": "A pulsing, infinite organic matrix of glowing synthetic neurons firing quantum light impulses across a void, merging biological growth with cybernetic circuitry.",
+  "category": "generative",
   "tags": [
     "organic",
     "quantum",
@@ -10,47 +8,50 @@
     "bioluminescence",
     "neural"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
+  "description": "A pulsing, infinite organic matrix of glowing synthetic neurons firing quantum light impulses across a void, merging biological growth with cybernetic circuitry.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Node Density",
       "default": 1,
       "min": 0.1,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Pulse Speed",
       "default": 1,
       "min": 0,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Audio Reactivity",
       "default": 1,
       "min": 0,
       "max": 2,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Bio-Glow Intensity",
       "default": 2,
       "min": 0,
       "max": 10,
-      "step": 0.1,
-      "mapping": "zoom_params.w"
+      "step": 0.1
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-neural-bioluminescence-matrix",
+  "url": "shaders/gen-neural-bioluminescence-matrix.wgsl",
+  "features": []
 }
