@@ -38,6 +38,30 @@ fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
     return mix(glowAlpha, coreAlpha, clamp(glowIntensity, 0.0, 1.0) * occlusionBalance);
 }
 
+fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
+    let lenSq = max(dot(v, v), 1e-6);
+    return v * inverseSqrt(lenSq);
+}
+
+fn palette(t: f32) -> vec3<f32> {
+    return vec3<f32>(0.50, 0.49, 0.53) +
+           vec3<f32>(0.48, 0.42, 0.45) *
+           cos(6.28318 * (vec3<f32>(1.0, 0.80, 0.55) * t + vec3<f32>(0.28, 0.18, 0.08)));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -46,8 +70,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
+    let audioOverall = max(u.zoom_config.x, plasmaBuffer[0].w);
+    let audioBass = max(plasmaBuffer[0].x, audioOverall * 1.5);
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let audioReactivity = 1.0 + audioOverall * 0.3;
 
     // Parameters
@@ -75,34 +101,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let force = smoothstep(radius, 0.0, dist);
 
     // Calculate displacement
-    let displaceDir = normalize(distVec);
-    let offset = -displaceDir * force * warpStrength * (1.0 + ripple);
+    let displaceDir = safeNormalize(distVec);
+    let tangent = vec2<f32>(-displaceDir.y, displaceDir.x);
+    let offset = (-displaceDir * force * warpStrength * (1.0 + ripple)) +
+                 tangent * sin(dist * 32.0 + time * 2.2) * force * liquidity * 0.018;
 
-    let sampleUV = uv + offset;
+    let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Sample the texture
     var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgba;
 
     // Edge/Stress detection for Neon Glow
-    let edge = smoothstep(0.0, 0.1, abs(dist - radius * 0.8));
+    let edge = 1.0 - smoothstep(0.0, 0.13 + treble * 0.03, abs(dist - radius * 0.8));
     let glowFactor = force * (1.0 - force) * 4.0;
+    let caustic = pow(max(0.0, sin(dist * 42.0 - time * (5.0 + audioBass * 1.5)) * 0.5 + 0.5), 5.0) * force;
 
-    let neonColor = vec3<f32>(
-        0.5 + 0.5 * sin(time + uv.x * 10.0),
-        0.5 + 0.5 * sin(time + uv.y * 10.0 + 2.0),
-        0.5 + 0.5 * sin(time + 4.0)
-    );
+    let neonColor = palette(time * 0.09 + dist * 1.3 + mids * 0.25);
 
     // Emission calculation
     let luma = get_luma(color.rgb);
-    let emission = neonColor * glowFactor * glowIntensity * luma * 3.0;
+    var hdr = color.rgb * (0.58 + force * 0.28);
+    let emission = neonColor * glowFactor * glowIntensity * luma * (3.2 + audioBass);
+    hdr = hdr + emission;
+    hdr = hdr + vec3<f32>(0.42, 0.75, 1.0) * edge * glowIntensity * (0.75 + treble);
+    hdr = hdr + vec3<f32>(1.0, 0.82, 0.46) * caustic * (0.45 + audioBass * 0.35);
+    hdr = hdr * mix(1.0, 0.66, smoothstep(0.46, 1.0, length(uv - vec2<f32>(0.5)) * 1.414));
 
     // Calculate alpha based on emission intensity
-    let glowStrength = length(emission);
-    let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
+    let glowStrength = length(hdr);
+    let bloomAlpha = pow(max(0.0, get_luma(hdr) - 0.55), 2.0) * 2.7;
+    let finalAlpha = clamp(calculateEmissiveAlpha(glowStrength, occlusionBalance) + edge * 0.18 + bloomAlpha, 0.0, 1.0);
+    let dither = (ign(vec2<f32>(global_id.xy) + time * 37.0) - 0.5) / 255.0;
+    let finalRGB = clamp(aces(hdr * 1.16) + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Output with emission alpha
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB * finalAlpha, finalAlpha));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;

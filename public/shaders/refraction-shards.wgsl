@@ -42,6 +42,25 @@ fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
   return v * inverseSqrt(lenSq);
 }
 
+fn palette(t: f32) -> vec3<f32> {
+  return vec3<f32>(0.50, 0.50, 0.52) +
+         vec3<f32>(0.46, 0.42, 0.48) *
+         cos(6.28318 * (vec3<f32>(1.0, 0.72, 0.53) * t + vec3<f32>(0.02, 0.32, 0.62)));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
@@ -58,7 +77,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let shardScale = mix(4.0, 24.0, u.zoom_params.x);
   let refraction = u.zoom_params.y * 0.06;
   let roughness = u.zoom_params.z * 0.04;
-  let prism = u.zoom_params.w * 0.03;
+  let prism = u.zoom_params.w * 0.03 * (1.0 + audio.z * 0.6);
 
   let p = uv * shardScale;
   let cell = floor(p);
@@ -85,21 +104,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let offset = (dir * refraction + wobble * roughness) * (1.0 + audio.x * 0.7 + mouseMask * 0.4);
   let centerUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  var finalColor = vec3<f32>(
+  var refracted = vec3<f32>(
     textureSampleLevel(readTexture, u_sampler, clamp(centerUV + dir * prism, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r,
     textureSampleLevel(readTexture, u_sampler, centerUV, 0.0).g,
     textureSampleLevel(readTexture, u_sampler, clamp(centerUV - dir * prism, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
   );
 
   let shardEdge = 1.0 - smoothstep(0.10, 0.22, sqrt(bestDist));
-  let crystalTint = mix(vec3<f32>(0.15, 0.9, 1.0), vec3<f32>(1.0, 0.55, 0.9), 0.5 + 0.5 * dir.x);
-  finalColor = finalColor + crystalTint * shardEdge * (0.08 + 0.20 * audio.z);
+  let facet = smoothstep(0.32, 0.02, abs(local.x + local.y - 1.0)) + smoothstep(0.23, 0.015, abs(local.x - local.y));
+  let crystalTint = palette(0.5 + 0.5 * dir.x + time * 0.025 + audio.y * 0.15);
+  var hdr = refracted * (0.92 + shardEdge * 0.12);
+  hdr = hdr + crystalTint * shardEdge * (0.24 + 0.75 * audio.z);
+  hdr = hdr + vec3<f32>(1.0, 0.86, 0.56) * pow(facet, 2.2) * (0.12 + audio.x * 0.38);
+  hdr = hdr + vec3<f32>(0.32, 0.62, 1.0) * mouseMask * shardEdge * 0.35;
+  let radial = length(uv - vec2<f32>(0.5)) * 1.414;
+  hdr = hdr * mix(1.06, 0.70, smoothstep(0.48, 1.0, radial));
+  let dither = (ign(vec2<f32>(gid.xy) + time * 29.0) - 0.5) / 255.0;
+  let finalColor = clamp(aces(hdr * 1.2) + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
 
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, centerUV, 0.0).r;
-  let finalAlpha = clamp(0.60 + shardEdge * 0.22 + mouseMask * 0.10, 0.32, 0.97);
+  let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let finalAlpha = clamp(0.16 + shardEdge * 0.34 + mouseMask * 0.10 + pow(max(0.0, luma - 0.6), 2.0) * 2.6, 0.0, 1.0);
   let depthOut = clamp(mix(baseDepth, 0.22 + shardEdge * 0.70, 0.32), 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor * finalAlpha, finalAlpha));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(shardEdge, mouseMask, abs(offset.x) + abs(offset.y), finalAlpha));
 }
