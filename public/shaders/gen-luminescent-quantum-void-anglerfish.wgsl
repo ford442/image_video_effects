@@ -270,4 +270,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = col / (vec3<f32>(1.0) + col);
 
     textureStore(writeTexture, vec2<i32>(i32(global_id.x), i32(global_id.y)), vec4<f32>(col, 1.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

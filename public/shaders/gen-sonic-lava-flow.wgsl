@@ -219,10 +219,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mousePos = vec2<f32>(u.zoom_config.y, mouseY);
 
     // Parameters
-    let viscosity = mix(0.3, 0.95, u.zoom_params.x);
-    let turbulence = u.zoom_params.y * 3.0;
-    let decay = mix(0.8, 0.99, u.zoom_params.z);
-    let heatGlow = u.zoom_params.w;
+    let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let viscosity = mix(0.3, 0.95, zp.x);
+    let turbulence = zp.y * 3.0;
+    let decay = mix(0.8, 0.99, zp.z);
+    let heatGlow = zp.w;
 
     let mouseDown = u.zoom_config.w > 0.5;
     let mouseDist = length(uv - mousePos);
@@ -272,10 +273,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let cosTheta = max(dot(surfaceNormal, viewDir), 0.0);
     let f0 = vec3<f32>(0.15, 0.05, 0.02); // Molten F0
     let fresnel = fresnelSchlick(cosTheta, f0);
-    let moltenLava = mix(lavaCol, crustCol + fresnel * 0.5, crustMask * 0.4);
+    var moltenLava = mix(lavaCol, crustCol + fresnel * 0.5, crustMask * 0.4);
 
     // Add molten cracks
-    let cracks = smoothstep(0.6, 0.8, detail) * 0.5;
+    let cracks = smoothstep(0.6, 0.8, crustDetail) * 0.5;
     moltenLava += vec3<f32>(1.0, 0.6, 0.2) * cracks * (1.0 + bass * 0.5);
 
     // Decay/feedback blend with video using temporal coherence

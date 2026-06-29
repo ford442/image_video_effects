@@ -399,11 +399,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         var spec = 0.0;
         if (mat < 1.5) {
             let refl = reflect(-light_dir, n);
-            spec = pow(max(dot(refl, -rd), 0.0), 32.0) * material_blend;
+            let s = max(dot(refl, -rd), 0.0);
+            let s2 = s * s;
+            let s4 = s2 * s2;
+            let s8 = s4 * s4;
+            let s16 = s8 * s8;
+            let s32 = s16 * s16;
+            spec = s32 * material_blend;
         }
 
         // Fresnel rim lighting for neon effect
-        let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
+        let f = 1.0 - max(dot(n, -rd), 0.0);
+        let fresnel = f * f * f;
         let rim_col = mix(vec3<f32>(0.3, 0.25, 0.2), vec3<f32>(0.0, 0.8, 1.0), material_blend);
 
         if (mat > 1.5) {

@@ -166,7 +166,9 @@ fn voronoi3(p: vec3<f32>) -> vec2<f32> {
 
 // ── Fresnel-Schlick approximation ──
 fn fresnelSchlick(cosTheta: f32, f0: vec3<f32>) -> vec3<f32> {
-    return f0 + (vec3<f32>(1.0) - f0) * pow(1.0 - cosTheta, 5.0);
+    let p = 1.0 - cosTheta;
+    let p5 = p * p * p * p * p;
+    return f0 + (vec3<f32>(1.0) - f0) * p5;
 }
 
 // ── Beer-Lambert extinction ──
@@ -284,7 +286,8 @@ fn einsteinRingGlow(p: vec2<f32>, wellPos: vec2<f32>, mass: f32, t: f32) -> f32 
     let eRing = sqrt(mass * 0.5);
     let ringWidth = 0.008 + mass * 0.005;
     let ringDist = abs(d - eRing);
-    let fresnel = pow(clamp(1.0 - ringDist / ringWidth, 0.0, 1.0), 3.0);
+    let f = clamp(1.0 - ringDist / ringWidth, 0.0, 1.0);
+    let fresnel = f * f * f;
     return fresnel * mass * 10.0;
 }
 
@@ -426,7 +429,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let lensArc  = raySpeed * darkening * emScale * 0.3;
     let arcAngle = atan2(rayVel.y, rayVel.x);
     let arcColor = hsv2rgb(fract(arcAngle / TAU + t * 0.05), 0.8, lensArc);
-    let fresnelArc = pow(clamp(raySpeed * 2.0, 0.0, 1.0), 2.0);
+    let rsClamped = clamp(raySpeed * 2.0, 0.0, 1.0);
+    let fresnelArc = rsClamped * rsClamped;
     col = col + arcColor * fresnelArc * smoothstep(0.05, 0.2, raySpeed);
 
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));

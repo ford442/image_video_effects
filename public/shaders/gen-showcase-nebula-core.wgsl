@@ -94,7 +94,7 @@ fn balmerNebula(dist: f32, nebula: f32, ionization: f32) -> vec3<f32> {
            * (0.3 + nebula * 1.4);
 }
 
-@compute @workgroup_size(8, 8)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(textureDimensions(writeTexture));
     let texel = vec2<f32>(id.xy);

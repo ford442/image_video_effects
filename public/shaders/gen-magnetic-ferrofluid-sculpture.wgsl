@@ -67,7 +67,7 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 // ─── 3D Noise ───
 fn noise3(p: vec3<f32>) -> f32 {
   let i = floor(p);
-  let f = fract(p);
+  var f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
   let n = i.x + i.y * 57.0 + i.z * 113.0;
   var v = 0.0;
@@ -193,10 +193,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Parameters
-  let spikeDensity = u.zoom_params.x;
-  let viscosity = mix(0.5, 1.0, u.zoom_params.y);
-  let iridescence = u.zoom_params.z;
-  let magneticPull = u.zoom_params.w;
+  let spikeDensity = clamp(u.zoom_params.x, 0.0, 1.0);
+  let viscosity = mix(0.5, 1.0, clamp(u.zoom_params.y, 0.0, 1.0));
+  let iridescence = clamp(u.zoom_params.z, 0.0, 1.0);
+  let magneticPull = clamp(u.zoom_params.w, 0.0, 1.0);
 
   // Mouse in 3D - screen top = UP, flip Y
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
@@ -304,7 +304,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Tone map
   col = acesToneMap(col * 1.3);
 
-  let alpha = hit ? sat(0.85 + (1.0 - depth / 8.0) * 0.15) : 0.0;
+  let alpha = 1.0;
   let finalDepth = sat(0.95 - depth * 0.04);
 
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));

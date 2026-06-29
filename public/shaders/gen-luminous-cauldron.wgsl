@@ -2,10 +2,11 @@
 //  Luminous Cauldron
 //  Category: generative
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
-//            upgraded-rgba, depth-aware, aces-tone-map
+//            upgraded-rgba, depth-aware, aces-tone-map, sdf-bubbles,
+//            caustic-light, heat-shimmer, fbm-warp
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-06-28
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -37,6 +38,30 @@ fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  return vec2<f32>(hash21(p), hash21(p + vec2<f32>(17.1, 29.6)));
+}
+
+fn noise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i + vec2<f32>(0.0, 0.0)), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+  var value = 0.0;
+  var amplitude = 0.5;
+  var frequency = 1.0;
+  for (var i: i32 = 0; i < octaves; i = i + 1) {
+    value += amplitude * noise(p * frequency);
+    amplitude *= 0.5;
+    frequency *= 2.0;
+  }
+  return value;
+}
+
 fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
   let k = select(release, attack, bass > prev);
   return mix(prev, bass, k);
@@ -51,6 +76,27 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
+  return length(p) - r;
+}
+
+fn causticPattern(p: vec2<f32>, time: f32) -> f32 {
+  var c = 0.0;
+  c += 0.5 + 0.5 * sin(p.x * 12.0 + time * 2.3);
+  c += 0.5 + 0.5 * sin(p.y * 14.0 - time * 1.7);
+  c += 0.5 + 0.5 * sin((p.x + p.y) * 9.0 + time * 2.9);
+  c += 0.5 + 0.5 * sin(length(p) * 16.0 - time * 3.1);
+  return c * 0.25;
+}
+
+fn heatShimmer(uv: vec2<f32>, time: f32, strength: f32) -> vec2<f32> {
+  let warp = vec2<f32>(
+    fbm(uv * 4.0 + vec2<f32>(time * 0.7, 0.0), 3),
+    fbm(uv * 4.0 + vec2<f32>(0.0, time * 0.6), 3)
+  );
+  return uv + (warp - 0.5) * strength;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -61,7 +107,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
 
-  // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
   let prevBass = extraBuffer[0];
   let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
   extraBuffer[0] = smoothBass;
@@ -69,47 +114,66 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
-  let boilRate = mix(0.1, 2.2, u.zoom_params.x);
-  let convection = mix(0.2, 2.0, u.zoom_params.y);
-  let foam = mix(0.0, 1.0, u.zoom_params.z);
-  let radiance = mix(0.3, 2.5, u.zoom_params.w);
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let boilRate = mix(0.1, 2.2, zp.x);
+  let convection = mix(0.2, 2.0, zp.y);
+  let foam = mix(0.0, 1.0, zp.z);
+  let radiance = mix(0.3, 2.5, zp.w);
 
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
   p = p - mouse * 0.2;
 
+  let shimmerUv = heatShimmer(uv, time, 0.015 * convection);
+  var pShimmer = shimmerUv * 2.0 - 1.0;
+  pShimmer.x = pShimmer.x * aspect;
+  pShimmer = pShimmer - mouse * 0.2;
+
   let bowl = smoothstep(1.05, 0.2, length(p));
   let swirl = atan2(p.y, p.x) + time * boilRate;
   let convectionWaves = 0.5 + 0.5 * sin(swirl * 6.0 + length(p) * 12.0 - time * convection * (1.0 + mids));
 
-  let bubbleGrid = floor((uv + vec2<f32>(0.0, time * boilRate * 0.2)) * 80.0);
-  let bubbleRnd = hash21(bubbleGrid);
-  let bubbleCell = fract((uv + vec2<f32>(0.0, time * boilRate * 0.2)) * 80.0) - 0.5;
-  let bubble = exp(-dot(bubbleCell, bubbleCell) * (30.0 + smoothBass * 35.0)) * step(0.82, bubbleRnd);
-  let froth = bubble * foam;
+  let caustics = causticPattern(pShimmer * 1.5, time) * bowl * radiance;
 
-  let sparks = step(0.997 - treble * 0.03, hash21(floor((uv + vec2<f32>(time * 0.04, -time * 0.03)) * 260.0)));
-  let sparkPulse = 0.5 + 0.5 * sin(time * 18.0 + bubbleRnd * 40.0);
+  var bubbles = 0.0;
+  var bubbleGlow = 0.0;
+  for (var i: i32 = 0; i < 3; i = i + 1) {
+    let fi = f32(i);
+    let gridScale = 12.0 + fi * 8.0;
+    let bubbleGrid = floor((shimmerUv + vec2<f32>(0.0, time * boilRate * (0.08 + fi * 0.04))) * gridScale);
+    let bubbleRnd = hash21(bubbleGrid + fi * 13.7);
+    let bubbleCellRaw = fract((shimmerUv + vec2<f32>(0.0, time * boilRate * (0.08 + fi * 0.04))) * gridScale) - 0.5;
+    let offset = (hash22(bubbleGrid + fi * 13.7) - 0.5) * 0.6;
+    let bubbleCell = bubbleCellRaw - offset;
+    let r = 0.12 + bubbleRnd * 0.18 + fi * 0.03;
+    let d = sdSphere(vec3<f32>(bubbleCell, 0.0), r);
+    let s = smoothstep(0.08, -0.04, d) * step(0.72 - fi * 0.1, bubbleRnd);
+    bubbles += s;
+    bubbleGlow += exp(-max(d, 0.0) * 8.0) * s * 0.5;
+  }
+  bubbles = sat(bubbles);
+  bubbleGlow = sat(bubbleGlow);
 
-  // Chromatic cauldron: purple bowl, orange heat, white foam, blue sparks
+  let froth = bubbles * foam;
+
+  let sparks = step(0.997 - treble * 0.03, hash21(floor((shimmerUv + vec2<f32>(time * 0.04, -time * 0.03)) * 260.0)));
+  let sparkPulse = 0.5 + 0.5 * sin(time * 18.0 + hash21(floor(shimmerUv * 260.0)) * 40.0);
+
   var color = vec3<f32>(0.02, 0.01, 0.04);
   color = color + vec3<f32>(0.5, 0.15, 0.95) * bowl * convectionWaves * radiance * (1.0 + mids * 0.1);
   color = color + vec3<f32>(1.0, 0.5, 0.15) * bowl * (1.0 - convectionWaves) * (0.4 + smoothBass);
+  color = color + vec3<f32>(0.2, 0.9, 1.0) * caustics * (0.6 + treble * 0.2);
   color = color + vec3<f32>(0.95, 1.0, 0.85) * froth * 0.7 * (1.0 + treble * 0.1);
   color = color + vec3<f32>(0.6, 0.85, 1.0) * sparks * sparkPulse * (0.3 + treble);
+  color = color + vec3<f32>(1.0, 0.7, 0.3) * bubbleGlow * 0.4 * (1.0 + smoothBass);
 
-  // Temporal boil persistence: previous bubbles linger
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
   color = mix(color, prev.rgb * 0.9, 0.03 + smoothBass * 0.01);
 
-  let presence = sat(bowl * 0.8 + froth * 0.7 + sparks);
-  let alpha = sat(0.08 + presence * 0.92);
-  let depth = sat(0.9 - bowl * 0.6 - froth * 0.25);
-
   color = acesToneMap(color * 1.1);
 
-  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(convectionWaves, bubble, sparks, alpha));
+  textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(convectionWaves, bubbles, sparks, caustics));
 }

@@ -59,6 +59,7 @@ fn structureTensor(uv: vec2<f32>, texel: vec2<f32>, radius: f32) -> mat2x2<f32> 
 
     let steps = 3;
     let step = radius * texel;
+    let gaussDenom = radius * radius * 0.5;
 
     for (var dy = -steps; dy <= steps; dy++) {
         for (var dx = -steps; dx <= steps; dx++) {
@@ -70,7 +71,7 @@ fn structureTensor(uv: vec2<f32>, texel: vec2<f32>, radius: f32) -> mat2x2<f32> 
             let gy = sampleDepth(pos + vec2<f32>(0.0, texel.y)) - sampleDepth(pos - vec2<f32>(0.0, texel.y));
 
             // Gaussian weight
-            let w = exp(-dot(offset, offset) / (radius * radius * 0.5));
+            let w = exp(-dot(offset, offset) / gaussDenom);
 
             Txx += gx * gx * w;
             Txy += gx * gy * w;
@@ -124,10 +125,11 @@ fn depthHessian(uv: vec2<f32>, texel: vec2<f32>) -> vec3<f32> {
 fn blurSample(uv: vec2<f32>, texel: vec2<f32>, radius: f32) -> vec3<f32> {
     var col = vec3<f32>(0.0);
     var total = 0.0;
+    let denom = radius * 0.5 + 0.1;
     for (var dy = -2; dy <= 2; dy++) {
         for (var dx = -2; dx <= 2; dx++) {
             let offset = vec2<f32>(f32(dx), f32(dy)) * texel * radius;
-            let w = exp(-f32(dx * dx + dy * dy) / (radius * 0.5 + 0.1));
+            let w = exp(-f32(dx * dx + dy * dy) / denom);
             col += textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * w;
             total += w;
         }

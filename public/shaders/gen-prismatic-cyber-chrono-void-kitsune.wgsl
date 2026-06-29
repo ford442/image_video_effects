@@ -58,6 +58,11 @@ fn rot3X(a: f32) -> mat3x3<f32> {
   return mat3x3<f32>(1.0, 0.0, 0.0, 0.0, c, -s, 0.0, s, c);
 }
 
+fn rot3Z(a: f32) -> mat3x3<f32> {
+  let c = cos(a); let s = sin(a);
+  return mat3x3<f32>(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0);
+}
+
 // ─── Noise ───
 fn vnoise3(p: vec3<f32>) -> f32 {
   let i = floor(p);
@@ -293,7 +298,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, tailDispersion: f32, riftDensity: f32,
         );
 
         let glassBase = vec3<f32>(0.15, 0.2, 0.3);
-        let glassCol = mix(glassBase, irid * 1.5, fresnel * glassRefraction);
+        var glassCol = mix(glassBase, irid * 1.5, fresnel * glassRefraction);
         glassCol += vec3<f32>(0.1, 0.15, 0.25) * bgNoise * glassRefraction;
 
         col = glassCol * (diff * 0.5 + 0.3) + irid * fresnel * 0.4;
@@ -311,7 +316,7 @@ fn raymarch(ro: vec3<f32>, rd: vec3<f32>, tailDispersion: f32, riftDensity: f32,
       } else {
         // Rift volumetric: Blackbody color ramp
         let riftT = clamp(length(p.xy) / 5.0, 0.0, 1.0);
-        let riftCol = blackbody(riftT) * riftDensity * 0.8;
+        var riftCol = blackbody(riftT) * riftDensity * 0.8;
         // Edge brightening
         let edge = pow(1.0 - cosi, 2.0);
         riftCol += vec3<f32>(0.8, 0.4, 0.6) * edge * riftDensity;
@@ -360,10 +365,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   extraBuffer[0] = smoothBass;
 
   // Parameters
-  let tailDispersion = mix(0.1, 3.0, u.zoom_params.x);
-  let riftDensity = mix(0.1, 2.0, u.zoom_params.y);
-  let runeIntensity = mix(0.5, 5.0, u.zoom_params.z);
-  let glassRefraction = mix(0.0, 1.0, u.zoom_params.w);
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let tailDispersion = mix(0.1, 3.0, zp.x);
+  let riftDensity = mix(0.1, 2.0, zp.y);
+  let runeIntensity = mix(0.5, 5.0, zp.z);
+  let glassRefraction = mix(0.0, 1.0, zp.w);
 
   // Mouse
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
@@ -398,7 +404,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let numDust = 12;
   let dustStep = 10.0 / f32(numDust);
   for (var i: i32 = 0; i < numDust; i = i + 1) {
-    let dt = f32(i) * dustStep + hash21(vec2<f32>(f32(gid.x + i * 73), f32(gid.y + i * 137))) * dustStep;
+    let dt = f32(i) * dustStep + hash21(vec2<f32>(f32(i32(gid.x) + i * 73), f32(i32(gid.y) + i * 137))) * dustStep;
     let dp = ro + rd * dt;
     let dhash = hash3(dp * 3.0 + vec3<f32>(time * 0.3, 0.0, 0.0));
     if (dhash > 0.92) {
@@ -420,7 +426,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Output
   let presence = sat(alpha + length(dustGlow) * 2.0);
-  let finalAlpha = sat(0.05 + presence * 0.95);
+  let finalAlpha = 1.0;
   let finalDepth = sat(0.95 - alpha * 0.5);
 
   textureStore(writeTexture, coord, vec4<f32>(col, finalAlpha));

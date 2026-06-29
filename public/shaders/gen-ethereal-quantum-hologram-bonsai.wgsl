@@ -93,7 +93,7 @@ fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
   return length(p) - r;
 }
 
-fn bonsaiBranch(p: vec3<f32>, pos: vec3<f32>, dir: vec3<f32>, length: f32, radius: f32) -> f32 {
+fn bonsaiBranch(p: vec3<f32>, pos: vec3<f32>, dir: vec3<f32>, branchLen: f32, radius: f32) -> f32 {
   let local = p - pos;
   // Align cylinder to direction
   let up = vec3<f32>(0.0, 1.0, 0.0);
@@ -103,7 +103,7 @@ fn bonsaiBranch(p: vec3<f32>, pos: vec3<f32>, dir: vec3<f32>, length: f32, radiu
   if(length(rotAxis) > 0.001) {
     aligned = rot3D(rotAxis, rotAngle) * local;
   }
-  return sdCylinder(aligned, length * 0.5, radius);
+  return sdCylinder(aligned, branchLen * 0.5, radius);
 }
 
 fn bonsaiSDF(p: vec3<f32>, time: f32, complexity: f32, instability: f32) -> f32 {
@@ -179,10 +179,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mid = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  let complexity = u.zoom_params.x;      // Branch Complexity
-  let instability = u.zoom_params.y;     // Hologram Instability
-  let glow = u.zoom_params.z;            // Ambient Glow
-  let audioReact = u.zoom_params.w;      // Audio Reactivity
+  let complexity = clamp(u.zoom_params.x, 0.0, 1.0);      // Branch Complexity
+  let instability = clamp(u.zoom_params.y, 0.0, 1.0);     // Hologram Instability
+  let glow = clamp(u.zoom_params.z, 0.0, 1.0);            // Ambient Glow
+  let audioReact = clamp(u.zoom_params.w, 0.0, 1.0);      // Audio Reactivity
 
   // ═══ CHUNK: bass_env smoothing ═══
   let prevBass = extraBuffer[0];
@@ -288,5 +288,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prevCol = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
   col = mix(prevCol, col, 0.3);
 
+  let finalDepth = clamp(0.95 - t * 0.03, 0.0, 1.0);
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
 }

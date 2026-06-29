@@ -133,10 +133,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = audio.y;
   let treble = audio.z;
 
-  let jitterSpeed = 0.15 + u.zoom_params.x * 3.5;
-  let sliceThickness = mix(0.006, 0.12, u.zoom_params.y);
-  let chaosAmount = u.zoom_params.z * 0.12;
-  let colorSplit = u.zoom_params.w * 0.03;
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let jitterSpeed = 0.15 + zp.x * 3.5;
+  let sliceThickness = mix(0.006, 0.12, zp.y);
+  let chaosAmount = zp.z * 0.12;
+  let colorSplit = zp.w * 0.03;
 
   // Multi-scale fractal slicing with domain warping
   let warpedUV = domainWarp(uv * vec2<f32>(aspect * 3.0, 3.0), time, chaosAmount * 2.0, bass);
@@ -203,7 +204,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = finalColor + glitchTint * (scanGlow + cellGlow) * (1.0 + bass * 0.4);
 
   // Fractal sparkle from treble
-  let sparkle = hash12(gid.xy + vec2<f32>(time * 10.0, time * 7.0)) * treble * 0.15 * mouseMask;
+  let sparkle = hash12(vec2<f32>(gid.xy) + vec2<f32>(time * 10.0, time * 7.0)) * treble * 0.15 * mouseMask;
   finalColor = finalColor + vec3<f32>(sparkle);
 
   // Alpha: pattern intensity + fractal depth + cell edges

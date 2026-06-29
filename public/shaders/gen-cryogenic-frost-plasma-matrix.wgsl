@@ -63,7 +63,7 @@ fn hash3(p: vec3<f32>) -> f32 {
 
 fn noise3(p: vec3<f32>) -> f32 {
   let i = floor(p);
-  let f = fract(p);
+  var f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
   let n = i.x + i.y * 57.0 + i.z * 113.0;
   return mix(
@@ -176,11 +176,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mid = plasmaBuffer[0].y;
 
-  // Parameters
-  let fracture = u.zoom_params.x;        // Fracture Intensity
-  let plasmaHeat = u.zoom_params.y;      // Plasma Heat
-  let iceDensity = u.zoom_params.z;      // Ice Density
-  let fogThickness = u.zoom_params.w;    // Fog Thickness
+  // Parameters (clamp zoom_params to normalized range)
+  let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let fracture = mix(0.0, 2.0, zparams.x);        // Fracture Intensity
+  let plasmaHeat = mix(0.0, 2.0, zparams.y);      // Plasma Heat
+  let iceDensity = mix(0.5, 2.0, zparams.z);      // Ice Density
+  let fogThickness = mix(0.0, 1.0, zparams.w);    // Fog Thickness
 
   // ═══ CHUNK: bass_env smoothing ═══
   let prevBass = extraBuffer[0];
@@ -286,4 +287,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Write
   let outCoords = vec2<i32>(global_id.xy);
   textureStore(writeTexture, outCoords, vec4<f32>(col, 1.0));
+  textureStore(writeDepthTexture, outCoords, vec4<f32>(1.0 - clamp(t / MAX_DIST, 0.0, 1.0), 0.0, 0.0, 1.0));
 }

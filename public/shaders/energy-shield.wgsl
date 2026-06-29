@@ -110,7 +110,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distortAmt = activeHex * 0.05 * impactStrength;
     let distortedUV = uv + (gv / hexScale) * distortAmt;
 
-    let color = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0).rgb;
+    let color_sample = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
+    let color = color_sample.rgb;
 
     // Add Hex Overlay
     // Colorize the edge
@@ -148,9 +149,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = finalColor + vec3<f32>(0.0, 0.5, 1.0) * newTrail * 0.5;
 
     // Store trail
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(newTrail, 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(newTrail, 0.0, 0.0, newTrail));
 
-    textureStore(writeTexture, vec2<i32>(vec2<f32>(global_id.xy)), vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(vec2<f32>(global_id.xy)), vec4<f32>(finalColor, color_sample.a));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }
 
 fn modulo(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {

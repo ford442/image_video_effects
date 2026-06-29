@@ -217,4 +217,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = mix(col, vec3<f32>(0.02, 0.02, 0.05), 1.0 - exp(-0.02 * t * t));
 
     textureStore(writeTexture, vec2<i32>(i32(id.x), i32(id.y)), applyGenerativePrimaryControls(vec4<f32>(col, 1.0)));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

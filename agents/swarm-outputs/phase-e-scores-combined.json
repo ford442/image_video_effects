@@ -1,0 +1,494 @@
+{
+  "sample_size": 60,
+  "shaders": [
+    {
+      "id": "alpha-hdr-bloom-chain",
+      "visual": 40,
+      "technical": 45,
+      "metadata": 15,
+      "total": 100,
+      "grade": "A"
+    },
+    {
+      "id": "alpha-reaction-diffusion-rgba",
+      "visual": 40,
+      "technical": 45,
+      "metadata": 15,
+      "total": 100,
+      "grade": "A"
+    },
+    {
+      "id": "bayer-dither-interactive",
+      "visual": 40,
+      "technical": 45,
+      "metadata": 15,
+      "total": 100,
+      "grade": "A"
+    },
+    {
+      "id": "chrono-luma-slit-scan",
+      "visual": 39,
+      "technical": 45,
+      "metadata": 15,
+      "total": 99,
+      "grade": "A"
+    },
+    {
+      "id": "boids-rgba-ecosystem",
+      "visual": 40,
+      "technical": 43,
+      "metadata": 15,
+      "total": 98,
+      "grade": "A"
+    },
+    {
+      "id": "hybrid-cyber-organic",
+      "visual": 40,
+      "technical": 43,
+      "metadata": 15,
+      "total": 98,
+      "grade": "A"
+    },
+    {
+      "id": "alpha-fluid-simulation-paint",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 15,
+      "total": 97,
+      "grade": "A"
+    },
+    {
+      "id": "audio-reactive-pyramid",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 15,
+      "total": 97,
+      "grade": "A"
+    },
+    {
+      "id": "bio-lenia-rgba",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 15,
+      "total": 97,
+      "grade": "A"
+    },
+    {
+      "id": "crt-clear-zone",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 15,
+      "total": 97,
+      "grade": "A"
+    },
+    {
+      "id": "hyb-kaleidoscope-pulse",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 15,
+      "total": 97,
+      "grade": "A"
+    },
+    {
+      "id": "hyb-spectral-fbm-displace",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 15,
+      "total": 97,
+      "grade": "A"
+    },
+    {
+      "id": "hyb-temporal-fbm-ghost",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 15,
+      "total": 97,
+      "grade": "A"
+    },
+    {
+      "id": "liquid-viscous",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 15,
+      "total": 97,
+      "grade": "A"
+    },
+    {
+      "id": "chromatic-phase-inversion",
+      "visual": 40,
+      "technical": 41,
+      "metadata": 15,
+      "total": 96,
+      "grade": "A"
+    },
+    {
+      "id": "cmyk-halftone-explosion",
+      "visual": 40,
+      "technical": 45,
+      "metadata": 11,
+      "total": 96,
+      "grade": "A"
+    },
+    {
+      "id": "data-slicer",
+      "visual": 40,
+      "technical": 45,
+      "metadata": 11,
+      "total": 96,
+      "grade": "A"
+    },
+    {
+      "id": "gemstone-fractures",
+      "visual": 40,
+      "technical": 43,
+      "metadata": 13,
+      "total": 96,
+      "grade": "A"
+    },
+    {
+      "id": "glass-bead-curtain-iridescence",
+      "visual": 40,
+      "technical": 41,
+      "metadata": 15,
+      "total": 96,
+      "grade": "A"
+    },
+    {
+      "id": "hyb-chromatic-circuit",
+      "visual": 40,
+      "technical": 41,
+      "metadata": 15,
+      "total": 96,
+      "grade": "A"
+    },
+    {
+      "id": "kaleido-scope",
+      "visual": 40,
+      "technical": 44,
+      "metadata": 12,
+      "total": 96,
+      "grade": "A"
+    },
+    {
+      "id": "liquid-displacement",
+      "visual": 40,
+      "technical": 41,
+      "metadata": 15,
+      "total": 96,
+      "grade": "A"
+    },
+    {
+      "id": "liquid-metal",
+      "visual": 39,
+      "technical": 42,
+      "metadata": 15,
+      "total": 96,
+      "grade": "A"
+    },
+    {
+      "id": "liquid-tensor-vortex",
+      "visual": 39,
+      "technical": 42,
+      "metadata": 15,
+      "total": 96,
+      "grade": "A"
+    },
+    {
+      "id": "fabric-step-gabor",
+      "visual": 40,
+      "technical": 44,
+      "metadata": 11,
+      "total": 95,
+      "grade": "A"
+    },
+    {
+      "id": "gravito-phononic-accretion",
+      "visual": 40,
+      "technical": 40,
+      "metadata": 15,
+      "total": 95,
+      "grade": "A"
+    },
+    {
+      "id": "hex-mosaic",
+      "visual": 38,
+      "technical": 42,
+      "metadata": 15,
+      "total": 95,
+      "grade": "A"
+    },
+    {
+      "id": "hybrid-noise-kaleidoscope",
+      "visual": 40,
+      "technical": 43,
+      "metadata": 12,
+      "total": 95,
+      "grade": "A"
+    },
+    {
+      "id": "aurora-rift-2-pass1",
+      "visual": 40,
+      "technical": 39,
+      "metadata": 15,
+      "total": 94,
+      "grade": "A"
+    },
+    {
+      "id": "aurora-rift-pass1",
+      "visual": 40,
+      "technical": 39,
+      "metadata": 15,
+      "total": 94,
+      "grade": "A"
+    },
+    {
+      "id": "chrono-slit-scan",
+      "visual": 40,
+      "technical": 43,
+      "metadata": 11,
+      "total": 94,
+      "grade": "A"
+    },
+    {
+      "id": "crystal-refraction",
+      "visual": 40,
+      "technical": 43,
+      "metadata": 11,
+      "total": 94,
+      "grade": "A"
+    },
+    {
+      "id": "gen-chromatic-metamorphosis",
+      "visual": 40,
+      "technical": 43,
+      "metadata": 11,
+      "total": 94,
+      "grade": "A"
+    },
+    {
+      "id": "gen-topological-acoustic-knots",
+      "visual": 39,
+      "technical": 44,
+      "metadata": 11,
+      "total": 94,
+      "grade": "A"
+    },
+    {
+      "id": "ink-marbling",
+      "visual": 38,
+      "technical": 41,
+      "metadata": 15,
+      "total": 94,
+      "grade": "A"
+    },
+    {
+      "id": "interactive-voronoi-lens",
+      "visual": 37,
+      "technical": 42,
+      "metadata": 15,
+      "total": 94,
+      "grade": "A"
+    },
+    {
+      "id": "crt-tv",
+      "visual": 34,
+      "technical": 44,
+      "metadata": 15,
+      "total": 93,
+      "grade": "A"
+    },
+    {
+      "id": "cursor-aura",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 11,
+      "total": 93,
+      "grade": "A"
+    },
+    {
+      "id": "digital-crease",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 11,
+      "total": 93,
+      "grade": "A"
+    },
+    {
+      "id": "double-exposure-zoom",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 11,
+      "total": 93,
+      "grade": "A"
+    },
+    {
+      "id": "elastic-strip",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 11,
+      "total": 93,
+      "grade": "A"
+    },
+    {
+      "id": "encaustic-wax",
+      "visual": 40,
+      "technical": 42,
+      "metadata": 11,
+      "total": 93,
+      "grade": "A"
+    },
+    {
+      "id": "gen-ethereal-silk-veil",
+      "visual": 39,
+      "technical": 43,
+      "metadata": 11,
+      "total": 93,
+      "grade": "A"
+    },
+    {
+      "id": "byte-mosh",
+      "visual": 40,
+      "technical": 41,
+      "metadata": 11,
+      "total": 92,
+      "grade": "A"
+    },
+    {
+      "id": "directional-blur-wipe",
+      "visual": 36,
+      "technical": 41,
+      "metadata": 15,
+      "total": 92,
+      "grade": "A"
+    },
+    {
+      "id": "divine-light-gpt52",
+      "visual": 40,
+      "technical": 41,
+      "metadata": 11,
+      "total": 92,
+      "grade": "A"
+    },
+    {
+      "id": "dynamic-lens-flares",
+      "visual": 40,
+      "technical": 41,
+      "metadata": 11,
+      "total": 92,
+      "grade": "A"
+    },
+    {
+      "id": "luma-magnetism",
+      "visual": 39,
+      "technical": 41,
+      "metadata": 12,
+      "total": 92,
+      "grade": "A"
+    },
+    {
+      "id": "luma-slice-interactive",
+      "visual": 37,
+      "technical": 42,
+      "metadata": 13,
+      "total": 92,
+      "grade": "A"
+    },
+    {
+      "id": "aurora-rift",
+      "visual": 38,
+      "technical": 38,
+      "metadata": 15,
+      "total": 91,
+      "grade": "A"
+    },
+    {
+      "id": "gen-chronos-labyrinth",
+      "visual": 40,
+      "technical": 40,
+      "metadata": 11,
+      "total": 91,
+      "grade": "A"
+    },
+    {
+      "id": "gen-gravitational-strain",
+      "visual": 40,
+      "technical": 40,
+      "metadata": 11,
+      "total": 91,
+      "grade": "A"
+    },
+    {
+      "id": "honey-melt",
+      "visual": 34,
+      "technical": 43,
+      "metadata": 13,
+      "total": 90,
+      "grade": "A"
+    },
+    {
+      "id": "liquid-time-warp",
+      "visual": 38,
+      "technical": 39,
+      "metadata": 12,
+      "total": 89,
+      "grade": "B"
+    },
+    {
+      "id": "flip-matrix",
+      "visual": 32,
+      "technical": 45,
+      "metadata": 11,
+      "total": 88,
+      "grade": "B"
+    },
+    {
+      "id": "gen-inverse-mandelbrot",
+      "visual": 31,
+      "technical": 43,
+      "metadata": 11,
+      "total": 85,
+      "grade": "B"
+    },
+    {
+      "id": "gen-prismatic-bismuth-lattice",
+      "visual": 39,
+      "technical": 33,
+      "metadata": 11,
+      "total": 83,
+      "grade": "B"
+    },
+    {
+      "id": "fractal-kaleidoscope",
+      "visual": 26,
+      "technical": 42,
+      "metadata": 13,
+      "total": 81,
+      "grade": "B"
+    },
+    {
+      "id": "neon-poly-grid",
+      "visual": 21,
+      "technical": 43,
+      "metadata": 12,
+      "total": 76,
+      "grade": "B"
+    },
+    {
+      "id": "gen-quantum-fluorescent-aether-moth-swarm",
+      "visual": 23,
+      "technical": 38,
+      "metadata": 11,
+      "total": 72,
+      "grade": "C"
+    }
+  ],
+  "stats": {
+    "A": 53,
+    "B": 6,
+    "C": 1,
+    "D": 0,
+    "F": 0,
+    "mean": 93.38,
+    "median": 94.0
+  }
+}

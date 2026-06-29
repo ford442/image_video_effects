@@ -1,0 +1,81 @@
+{
+  "id": "hyb-neural-voronoi-feedback",
+  "name": "Neural Voronoi Feedback",
+  "category": "hybrid",
+  "type": "compute",
+  "url": "shaders/hyb-neural-voronoi-feedback.wgsl",
+  "description": "Voronoi neural cells, FBM-driven feedback drift, and glowing neural dust are blended over the input image while preserving alpha.",
+  "features": [
+    "hybrid",
+    "voronoi",
+    "fbm-noise",
+    "feedback-decay",
+    "neural-dust",
+    "image-distortion",
+    "alpha-passthrough",
+    "depth-aware",
+    "randomization-safe"
+  ],
+  "tags": [
+    "hybrid",
+    "voronoi",
+    "fbm",
+    "feedback",
+    "dust",
+    "noise",
+    "iridescence"
+  ],
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {
+      "id": "voronoi_density",
+      "name": "Voronoi Density",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Density of the Voronoi neural cell pattern"
+    },
+    {
+      "id": "feedback_drift",
+      "name": "Feedback Drift",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Amount and decay strength of the FBM-driven feedback echo"
+    },
+    {
+      "id": "dust_intensity",
+      "name": "Dust Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Intensity and density of the iridescent neural dust particles"
+    },
+    {
+      "id": "effect_mix",
+      "name": "Effect Mix",
+      "default": 0.75,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Blend strength of the hybrid layer over the input"
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "chunks_used": [
+    "voronoi2D (interactive-voronoi-lens.wgsl)",
+    "fbm2 (gen_grid.wgsl)",
+    "glow (anamorphic-flare.wgsl)",
+    "iridescence (gen-holographic-fracture.wgsl)"
+  ],
+  "created_by": "Agent 4b - Advanced Hybrid Shader Creator",
+  "updated": true
+}

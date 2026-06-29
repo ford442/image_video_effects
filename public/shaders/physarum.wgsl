@@ -150,6 +150,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // HDR color output
     let hdr_output = local_trail.rgb * (1.0 + signal);
     
-    let output_color = vec4<f32>(hdr_output, clamp(cumulative_alpha, 0.0, 1.0));
+    let final_alpha = clamp(cumulative_alpha, 0.0, 1.0);
+    let output_color = vec4<f32>(hdr_output, final_alpha);
     textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), output_color);
+    let uv = vec2<f32>(gid.xy) / vec2<f32>(textureDimensions(readTexture));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

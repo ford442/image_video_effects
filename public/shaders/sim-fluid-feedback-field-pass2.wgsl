@@ -1,13 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Sim: Fluid Feedback Field (Pass 2 - Density Advection)
+//  Sim: Fluid Feedback Field (Pass 2: Density Advection)
 //  Category: simulation
 //  Features: simulation, multi-pass-2, navier-stokes, density-advection
 //  Complexity: Very High
 //  Created: 2026-03-22
 //  By: Agent 3B - Advanced Hybrid Creator
 // ═══════════════════════════════════════════════════════════════════
-//  Pass 2: Advect density through velocity field
-//  Add new density from mouse/input
+//  Pass graph: Pass 2 reads the velocity field from dataTextureC (copy
+//              of Pass 1's dataTextureA) and the previous density from
+//              dataTextureC, advects density, and writes the new density
+//              to dataTextureB.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -38,14 +40,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
     
     let uv = vec2<f32>(gid.xy) / resolution;
+    let coord = vec2<i32>(gid.xy);
     let pixel = 1.0 / resolution;
     let time = u.config.x;
-    
+
     // Parameters
-    let fadeRate = mix(0.95, 0.995, u.zoom_params.z);  // z: Fade rate
-    
-    // Read velocity from dataTextureA (written by Pass 1)
-    let vel = textureLoad(dataTextureC, gid.xy, 0).xy;
+    let fadeRate = mix(0.95, 0.995, clamp(u.zoom_params.z, 0.0, 1.0));
+
+    // Read velocity from dataTextureC (copy of Pass 1's dataTextureA)
+    let vel = textureLoad(dataTextureC, coord, 0).xy;
     
     // Backtrace for density advection
     let prevPos = uv - vel * pixel * 3.0;
@@ -86,9 +89,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     density *= fadeRate;
     
     // Store density in dataTextureB
-    textureStore(dataTextureB, gid.xy, vec4<f32>(density, 1.0));
-    
+    textureStore(dataTextureB, coord, vec4<f32>(density, 1.0));
+
     // Minimal output
-    textureStore(writeTexture, gid.xy, vec4<f32>(density, 1.0));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(1.0 - length(density) * 0.3, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, vec4<f32>(density, 1.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(1.0 - length(density) * 0.3, 0.0, 0.0, 0.0));
 }

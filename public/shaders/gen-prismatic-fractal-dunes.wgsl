@@ -220,4 +220,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

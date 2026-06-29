@@ -70,11 +70,12 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 { let d = abs(p) - b; return min(max
 fn sdSphere(p: vec3<f32>, r: f32) -> f32 { return length(p) - r; }
 
 fn map(p: vec3<f32>) -> f32 {
-    let audio = plasmaBuffer[0].x * u.zoom_params.z;
-    let mids = plasmaBuffer[0].y * u.zoom_params.z;
-    let treble = plasmaBuffer[0].z * u.zoom_params.z;
+    let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let audio = plasmaBuffer[0].x * zparams.z;
+    let mids = plasmaBuffer[0].y * zparams.z;
+    let treble = plasmaBuffer[0].z * zparams.z;
     let t = u.config.x * 0.2 + audio * 0.5;
-    let iters = i32(u.zoom_params.x);
+    let iters = i32(mix(1.0, 10.0, zparams.x));
     var q = p;
     // Add curl noise aether flow
     q += curl(q * 0.3, t * 0.3) * 0.15;
@@ -153,6 +154,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let texSize = textureDimensions(writeTexture);
     let uv = vec2<f32>(id.xy) / vec2<f32>(texSize);
     if (id.x >= texSize.x || id.y >= texSize.y) { return; }
+    let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
     let res = vec2<f32>(texSize);
     let centered_uv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
     // Mouse Y-flip: screen-top (zoom_config.z=0) = +Y/up
@@ -183,7 +185,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         ));
         let v = -rd;
         let view_angle = max(dot(n, v), 0.0);
-        let shift = u.zoom_params.w * u.config.x * 0.1 + treble * 0.5;
+        let shift = zparams.w * u.config.x * 0.1 + treble * 0.5;
         // Multi-band thin-film interference
         let if1 = palette(view_angle * 2.0 + shift);
         let if2 = palette(view_angle * 3.0 + shift + 0.3) * 0.5;
@@ -195,15 +197,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let ambient = vec3<f32>(0.02, 0.02, 0.05);
         let base_col = ambient + diff * interference * shadow * ao;
         // Spectral fold coloring based on iteration depth
-        let foldCol = spectralFold(min_dist * 10.0, u.config.x, bass) * 0.15 * u.zoom_params.y;
+        let foldCol = spectralFold(min_dist * 10.0, u.config.x, bass) * 0.15 * zparams.y;
         // Fresnel rim lighting
         let f0 = vec3<f32>(0.04, 0.03, 0.02);
         let fres = fresnel(view_angle, f0);
         let rim = fres * (0.5 + bass * 0.5) * palette(shift + 0.5);
         // Edge glow with audio pulse
         let edge_glow = smoothstep(0.05, 0.0, min_dist);
-        let audio_pulse = 1.0 + u.config.y * u.zoom_params.z;
-        let emissive = vec3<f32>(1.0, 0.8, 0.2) * edge_glow * u.zoom_params.y * audio_pulse;
+        let audio_pulse = 1.0 + u.config.y * zparams.z;
+        let emissive = vec3<f32>(1.0, 0.8, 0.2) * edge_glow * zparams.y * audio_pulse;
         let lum = dot(base_col + emissive + rim + foldCol, vec3<f32>(0.299, 0.587, 0.114));
         color = vec4<f32>(base_col + emissive + rim + foldCol, clamp(lum * 1.2 + 0.15, 0.05, 0.98));
     } else {
@@ -220,8 +222,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Curl-noise aether drift on background
     if (!hit) {
         let drift = curl(vec3<f32>(uv * 3.0, u.config.x * 0.1), u.config.x * 0.2);
-        color.rgb += vec3<f32>(0.02, 0.01, 0.03) * drift.z * (0.5 + mids * 0.5);
+        let drift_col = color.rgb + vec3<f32>(0.02, 0.01, 0.03) * drift.z * (0.5 + mids * 0.5);
+        color = vec4<f32>(drift_col, color.a);
     }
+    color.a = 1.0;
     textureStore(writeTexture, id.xy, color);
     let d_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, d_uv, 0.0).r;

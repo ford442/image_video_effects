@@ -162,12 +162,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
   let bass = plasmaBuffer[0].x;
+  let treble = plasmaBuffer[0].z;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  let vignetteStrength = u.zoom_params.x;
-  let bloomRadius = u.zoom_params.y;
-  let hazeAmount = u.zoom_params.z;
-  let bloomIntensity = u.zoom_params.w;
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let vignetteStrength = zp.x;
+  let bloomRadius = zp.y;
+  let hazeAmount = zp.z;
+  let bloomIntensity = zp.w;
 
   // ═══ BOKEH DEPTH OF FIELD ═══
   var col = bokehDOF(uv, mouse, depth, 0.5, bloomRadius * 0.5);

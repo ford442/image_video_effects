@@ -33,7 +33,7 @@ struct Uniforms {
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
 
 fn hash3(p: vec3<f32>) -> f32 {
-  let q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
+  var q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
   q = q + dot(q, q.yzx + 33.33);
   return fract((q.x + q.y) * q.z);
 }
@@ -50,7 +50,7 @@ fn rot3Y(a: f32) -> mat3x3<f32> {
 // ─── Noise ───
 fn noise3D(p: vec3<f32>) -> f32 {
   let i = floor(p);
-  let f = fract(p);
+  var f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
   let n = i.x + i.y * 157.0 + i.z * 113.0;
   return mix(
@@ -261,10 +261,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Parameters
-  let crustDensity = mix(0.5, 2.5, u.zoom_params.x);
-  let magmaTurbulence = mix(0.0, 1.5, u.zoom_params.y);
-  let eruptionIntensity = mix(0.0, 2.0, u.zoom_params.z);
-  let tectonicStress = mix(0.0, 3.5, u.zoom_params.w);
+  let crustDensity = mix(0.5, 2.5, clamp(u.zoom_params.x, 0.0, 1.0));
+  let magmaTurbulence = mix(0.0, 1.5, clamp(u.zoom_params.y, 0.0, 1.0));
+  let eruptionIntensity = mix(0.0, 2.0, clamp(u.zoom_params.z, 0.0, 1.0));
+  let tectonicStress = mix(0.0, 3.5, clamp(u.zoom_params.w, 0.0, 1.0));
 
   // Mouse
   let mouseRaw = u.zoom_config.yz * 2.0 - 1.0;
@@ -365,7 +365,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Volumetric heat shimmer (glowing air above magma)
   var volGlow = vec3<f32>(0.0);
   for (var i: i32 = 0; i < 12; i = i + 1) {
-    let vt = f32(i) * 0.8 + hash21(vec2<f32>(f32(gid.x + i * 31), f32(gid.y + i * 57))) * 0.4;
+    let vt = f32(i) * 0.8 + hash21(vec2<f32>(f32(i32(gid.x) + i * 31), f32(i32(gid.y) + i * 57))) * 0.4;
     if (vt > depth) { break; }
     let vPos = ro + rd * vt;
     let vRes = map(vPos, time, crustDensity, magmaTurbulence, 0.0, 0.0, mousePos);
@@ -383,7 +383,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Tone map
   col = acesToneMap(col * 1.3);
 
-  let alpha = sat(0.8 + length(volGlow) * 2.0);
+  let alpha = 1.0;
   let finalDepth = sat(0.9 - depth * 0.02 + hitTemp * 0.05);
 
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));

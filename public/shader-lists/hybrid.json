@@ -1,5 +1,581 @@
 [
   {
+    "id": "hyb-chromatic-circuit",
+    "name": "Chromatic Circuit",
+    "category": "hybrid",
+    "type": "compute",
+    "url": "shaders/hyb-chromatic-circuit.wgsl",
+    "description": "Opal-circuit style hex-grid trace edges, radial pulse glow, and chromatic aberration are layered over the input image while preserving alpha.",
+    "features": [
+      "hybrid",
+      "hex-grid",
+      "trace-edges",
+      "pulse-glow",
+      "chromatic-aberration",
+      "image-distortion",
+      "alpha-passthrough",
+      "depth-aware",
+      "randomization-safe"
+    ],
+    "tags": [
+      "hybrid",
+      "hex",
+      "circuit",
+      "chromatic",
+      "glow",
+      "pulse",
+      "edges"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "grid_scale",
+        "name": "Grid Scale",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of the hexagonal circuit grid"
+      },
+      {
+        "id": "trace_width",
+        "name": "Trace Width",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Thickness and glow radius of hex-cell trace lines"
+      },
+      {
+        "id": "chroma_spread",
+        "name": "Chroma Spread",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of RGB chromatic separation along the hex gradient"
+      },
+      {
+        "id": "effect_mix",
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Blend strength of the chromatic circuit layer over the input"
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "chunks_used": [
+      "nearestHexCenter (hex-mosaic.wgsl / quantum-prism.wgsl)",
+      "sdSegment (gen-holographic-fracture.wgsl)",
+      "glow (anamorphic-flare.wgsl)",
+      "hsv2rgb (chronos-brush.wgsl)"
+    ],
+    "created_by": "Agent 4c - Advanced Hybrid Effect Creator",
+    "updated": true
+  },
+  {
+    "id": "hyb-hex-voronoi-distort",
+    "name": "Hex Voronoi Distort",
+    "category": "hybrid",
+    "type": "compute",
+    "url": "shaders/hyb-hex-voronoi-distort.wgsl",
+    "description": "Hexagonal grid mosaic distortion blended with animated 2D Voronoi cells. Samples the input image through distorted hex centers while preserving the original alpha channel.",
+    "features": [
+      "hybrid",
+      "hex-grid",
+      "voronoi",
+      "image-distortion",
+      "alpha-passthrough",
+      "depth-aware",
+      "randomization-safe"
+    ],
+    "tags": [
+      "hybrid",
+      "hex",
+      "voronoi",
+      "mosaic",
+      "distortion"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "hex_scale",
+        "name": "Hex Scale",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of the hexagonal grid"
+      },
+      {
+        "id": "voronoi_density",
+        "name": "Voronoi Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Density of the Voronoi cell pattern"
+      },
+      {
+        "id": "distort_amount",
+        "name": "Distortion Amount",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Strength of hex/Voronoi-driven UV distortion"
+      },
+      {
+        "id": "effect_mix",
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Blend between original and distorted image"
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "chunks_used": [
+      "nearestHexCenter (hex-mosaic.wgsl)",
+      "voronoi2D (interactive-voronoi-lens.wgsl)"
+    ],
+    "updated": true
+  },
+  {
+    "id": "hyb-iridescent-fbm-glow",
+    "name": "Iridescent FBM Glow",
+    "category": "hybrid",
+    "type": "compute",
+    "url": "shaders/hyb-iridescent-fbm-glow.wgsl",
+    "description": "Domain-warped FBM drives a thin-film iridescent glow layer that is blended over the input image while preserving alpha.",
+    "features": [
+      "hybrid",
+      "fbm-noise",
+      "iridescence",
+      "image-glow",
+      "alpha-passthrough",
+      "depth-aware",
+      "randomization-safe"
+    ],
+    "tags": [
+      "hybrid",
+      "fbm",
+      "iridescence",
+      "glow",
+      "noise"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "fbm_scale",
+        "name": "FBM Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Scale of the FBM noise domain"
+      },
+      {
+        "id": "fbm_octaves",
+        "name": "FBM Octaves",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Number of FBM noise octaves"
+      },
+      {
+        "id": "color_shift_speed",
+        "name": "Color Shift Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Speed of the iridescent color cycling"
+      },
+      {
+        "id": "glow_mix",
+        "name": "Glow Mix",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Blend strength of the iridescent glow over the input"
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "chunks_used": [
+      "fbm2 (gen_grid.wgsl)",
+      "iridescence (gen-holographic-fracture.wgsl)"
+    ],
+    "updated": true
+  },
+  {
+    "id": "hyb-kaleidoscope-pulse",
+    "name": "Kaleidoscope Pulse",
+    "category": "hybrid",
+    "type": "compute",
+    "url": "shaders/hyb-kaleidoscope-pulse.wgsl",
+    "description": "Mirrors the input image into kaleidoscope segments and adds a reaction-diffusion-style radial pulse at the center, preserving the original alpha.",
+    "features": [
+      "hybrid",
+      "kaleidoscope",
+      "radial-pulse",
+      "image-remix",
+      "alpha-passthrough",
+      "depth-aware",
+      "randomization-safe"
+    ],
+    "tags": [
+      "hybrid",
+      "kaleidoscope",
+      "pulse",
+      "radial",
+      "mirror"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "segments",
+        "name": "Mirror Segments",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Number of kaleidoscope mirror segments"
+      },
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Propagation speed of the radial pulse"
+      },
+      {
+        "id": "pulse_width",
+        "name": "Pulse Width",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Width/decay of the radial glow"
+      },
+      {
+        "id": "effect_mix",
+        "name": "Effect Mix",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Blend strength of the pulse overlay"
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "chunks_used": [
+      "kaleidoscope (kaleidoscope.wgsl)",
+      "rdPulse (gen-bioelectric-pulse.wgsl)",
+      "glow (anamorphic-flare.wgsl)"
+    ],
+    "updated": true
+  },
+  {
+    "id": "hyb-neural-voronoi-feedback",
+    "name": "Neural Voronoi Feedback",
+    "category": "hybrid",
+    "type": "compute",
+    "url": "shaders/hyb-neural-voronoi-feedback.wgsl",
+    "description": "Voronoi neural cells, FBM-driven feedback drift, and glowing neural dust are blended over the input image while preserving alpha.",
+    "features": [
+      "hybrid",
+      "voronoi",
+      "fbm-noise",
+      "feedback-decay",
+      "neural-dust",
+      "image-distortion",
+      "alpha-passthrough",
+      "depth-aware",
+      "randomization-safe"
+    ],
+    "tags": [
+      "hybrid",
+      "voronoi",
+      "fbm",
+      "feedback",
+      "dust",
+      "noise",
+      "iridescence"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "voronoi_density",
+        "name": "Voronoi Density",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Density of the Voronoi neural cell pattern"
+      },
+      {
+        "id": "feedback_drift",
+        "name": "Feedback Drift",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Amount and decay strength of the FBM-driven feedback echo"
+      },
+      {
+        "id": "dust_intensity",
+        "name": "Dust Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Intensity and density of the iridescent neural dust particles"
+      },
+      {
+        "id": "effect_mix",
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Blend strength of the hybrid layer over the input"
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "chunks_used": [
+      "voronoi2D (interactive-voronoi-lens.wgsl)",
+      "fbm2 (gen_grid.wgsl)",
+      "glow (anamorphic-flare.wgsl)",
+      "iridescence (gen-holographic-fracture.wgsl)"
+    ],
+    "created_by": "Agent 4b - Advanced Hybrid Shader Creator",
+    "updated": true
+  },
+  {
+    "id": "hyb-spectral-fbm-displace",
+    "name": "Spectral FBM Displace",
+    "category": "hybrid",
+    "type": "compute",
+    "url": "shaders/hyb-spectral-fbm-displace.wgsl",
+    "description": "FBM domain warping displaces the input image, and the warp gradient drives a chromatic RGB smear tinted by a spectral wavelength palette.",
+    "features": [
+      "hybrid",
+      "fbm-noise",
+      "domain-warp",
+      "spectral-displace",
+      "chromatic-smear",
+      "image-distortion",
+      "alpha-passthrough",
+      "depth-aware",
+      "randomization-safe"
+    ],
+    "tags": [
+      "hybrid",
+      "fbm",
+      "domain-warp",
+      "spectral",
+      "chromatic",
+      "displacement",
+      "noise"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "fbm_scale",
+        "name": "FBM Scale",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Scale of the FBM noise domain used for displacement"
+      },
+      {
+        "id": "warp_amount",
+        "name": "Warp Amount",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strength of the nested FBM domain warp"
+      },
+      {
+        "id": "spectral_spread",
+        "name": "Spectral Spread",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amount of RGB channel separation along the displacement gradient"
+      },
+      {
+        "id": "effect_mix",
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Blend strength of the spectral displacement over the input"
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "chunks_used": [
+      "fbm2 (gen_grid.wgsl)",
+      "domainWarp (gen_grid.wgsl)",
+      "wavelengthToRGB (spec-prismatic-dispersion.wgsl)"
+    ],
+    "created_by": "Agent 4b - Advanced Hybrid Shader Creator",
+    "updated": true
+  },
+  {
+    "id": "hyb-temporal-fbm-ghost",
+    "name": "Temporal FBM Ghost",
+    "category": "hybrid",
+    "type": "compute",
+    "url": "shaders/hyb-temporal-fbm-ghost.wgsl",
+    "description": "Temporal RGB channel offsets, FBM domain-warp displacement, and a ghosting glow are blended over the input image while preserving alpha.",
+    "features": [
+      "hybrid",
+      "temporal-offset",
+      "fbm-noise",
+      "domain-warp",
+      "ghost-glow",
+      "palette-tint",
+      "image-distortion",
+      "alpha-passthrough",
+      "depth-aware",
+      "randomization-safe"
+    ],
+    "tags": [
+      "hybrid",
+      "temporal",
+      "fbm",
+      "domain-warp",
+      "ghost",
+      "glow",
+      "palette",
+      "noise"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "temporal_shift",
+        "name": "Temporal Shift",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Amount of per-channel RGB temporal offset"
+      },
+      {
+        "id": "fbm_scale",
+        "name": "FBM Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Scale of the FBM noise domain driving displacement"
+      },
+      {
+        "id": "warp_amount",
+        "name": "Warp Amount",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Strength of nested FBM domain warp applied to sampling UVs"
+      },
+      {
+        "id": "effect_mix",
+        "name": "Effect Mix",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Blend strength of the temporal FBM ghost layer over the input"
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "chunks_used": [
+      "fbm2 (gen_grid.wgsl)",
+      "domainWarp (gen_grid.wgsl)",
+      "glow (anamorphic-flare.wgsl)",
+      "palette (gen-xeno-botanical-synth-flora.wgsl)"
+    ],
+    "created_by": "Agent 4c - Advanced Hybrid Effect Creator",
+    "updated": true
+  },
+  {
     "id": "hybrid-chromatic-liquid",
     "name": "Hybrid Chromatic Liquid",
     "url": "shaders/hybrid-chromatic-liquid.wgsl",

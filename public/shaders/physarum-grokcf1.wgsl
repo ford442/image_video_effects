@@ -151,7 +151,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Store trail with alpha (density in alpha channel)
     let trail_density = current_trail.a * (1.0 - decay_rate) + deposit_alpha;
-    textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(final_trail, min(trail_density, 1.0)));
+    let trail_alpha = clamp(trail_density, 0.0, 1.0);
+    textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(final_trail, trail_alpha));
     
     // Write back agent data
     extraBuffer[idx * 4u + 0u] = agent.pos.x;
@@ -175,13 +176,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let hdr_output = local_density.rgb * (1.0 + pulse_boost + nutrient_value);
     
     // Pulsing agents are brighter
+    let final_alpha = clamp(cumulative_alpha + pulse_boost * 0.3, 0.0, 1.0);
     let final_output = vec4<f32>(
         hdr_output + vec3<f32>(pulse_boost * 0.3, pulse_boost * 0.5, pulse_boost * 0.4),
-        clamp(cumulative_alpha + pulse_boost * 0.3, 0.0, 1.0)
+        final_alpha
     );
     
     // Only write if above threshold or pulsing
     if (cumulative_alpha > 0.01 || pulse_boost > 0.0) {
         textureStore(writeTexture, vec2<i32>(coord), final_output);
     }
+    let uv = vec2<f32>(gid.xy) / vec2<f32>(textureDimensions(readTexture));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

@@ -33,7 +33,7 @@ struct Uniforms {
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
 
 fn hash3(p: vec3<f32>) -> f32 {
-  let q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
+  var q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
   q = q + dot(q, q.yzx + 33.33);
   return fract((q.x + q.y) * q.z);
 }
@@ -219,11 +219,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Parameters
-  let complexity = mix(1.0, 5.0, u.zoom_params.x);
-  let clockSpeed = mix(0.2, 2.0, u.zoom_params.y);
-  let iridescence = mix(0.2, 2.0, u.zoom_params.z);
-  let gridDensity = mix(1.0, 3.0, u.zoom_params.w);
+  // Parameters (clamp zoom_params to normalized range)
+  let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let complexity = mix(1.0, 5.0, zparams.x);
+  let clockSpeed = mix(0.2, 2.0, zparams.y);
+  let iridescence = mix(0.2, 2.0, zparams.z);
+  let gridDensity = mix(1.0, 3.0, zparams.w);
 
   // Mouse position in 3D
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
@@ -297,7 +298,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // Bismuth crystal surface
       let ired = iridescent(nDotV, time * 0.5 + complexity) * iridescence;
       let baseMetal = vec3<f32>(0.15, 0.18, 0.22);
-      let metal = baseMetal + ired * 0.6;
+      var metal = baseMetal + ired * 0.6;
 
       // Sharp stepped edges = more iridescent
       let edge = pow(1.0 - nDotV, 4.0);
@@ -331,10 +332,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Tone map
   col = acesToneMap(col * 1.2);
 
-  let alpha = sat(0.7 + (1.0 - depth / 10.0) * 0.3);
   let finalDepth = sat(0.95 - depth * 0.04);
 
-  textureStore(writeTexture, coord, vec4<f32>(col, alpha));
+  textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(col.r, col.g, col.b, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(col.r, col.g, col.b, 1.0));
 }

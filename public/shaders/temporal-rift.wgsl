@@ -67,7 +67,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let histR = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(chromaSep, 0.0), 0.0).r;
     let histG = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).g;
     let histB = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(chromaSep, 0.0), 0.0).b;
-    let histColor = vec4<f32>(histR, histG, histB, 1.0);
+    let histColor = vec4<f32>(histR, histG, histB, currColor.a);
 
     // Mix logic:
     // If rift > 0, we inject the CURRENT image strongly but perhaps distorted?
@@ -115,4 +115,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Write to history (dataTextureA)
     // Ensure alpha is 1.0 or used?
     textureStore(dataTextureA, global_id.xy, clamp(nextHist, vec4<f32>(0.0), vec4<f32>(1.0)));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

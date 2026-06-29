@@ -1,4 +1,12 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Motion Heatmap
+//  Category: image
+//  Features: motion-detection, heatmap, mouse-driven, temporal-feedback, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-06-28
+//  By: Agent 1a - Alpha Channel Specialist
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,7 +20,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
   config: vec4<f32>,
@@ -61,10 +68,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
 
     // Params
-    let decay = u.zoom_params.x;          // Heat Decay
-    let sensitivity = u.zoom_params.y;    // Motion Sensitivity
-    let mouse_heat = u.zoom_params.z;     // Mouse Heat Amount
-    let color_shift = u.zoom_params.w;    // Color Shift (Unused currently, keep simplified)
+    let decay = clamp(u.zoom_params.x, 0.0, 1.0);          // Heat Decay
+    let sensitivity = clamp(u.zoom_params.y, 0.0, 1.0);    // Motion Sensitivity
+    let mouse_heat = clamp(u.zoom_params.z, 0.0, 1.0);     // Mouse Heat Amount
+    let color_shift = clamp(u.zoom_params.w, 0.0, 1.0);    // Color Shift (Unused currently, keep simplified)
 
     // Read Current Video
     let currColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -106,10 +113,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let displayHeat = clamp(newHeat, 0.0, 1.0);
     let heatColor = get_heat_color(displayHeat, color_shift);
 
-    // Composite: Additive
+    // Composite: Additive, preserving input alpha
     let finalColor = currColor.rgb + heatColor * displayHeat;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, currColor.a));
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

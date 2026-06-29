@@ -130,4 +130,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     textureStore(writeTexture, gid.xy, vec4<f32>(outColor, facetEdge));
     textureStore(dataTextureA, gid.xy, vec4<f32>(facetOffset, facetHash, facetEdge));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

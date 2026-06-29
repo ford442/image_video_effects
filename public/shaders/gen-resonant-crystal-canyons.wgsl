@@ -33,7 +33,7 @@ struct Uniforms {
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
 
 fn hash3(p: vec3<f32>) -> f32 {
-  let q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
+  var q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
   q = q + dot(q, q.yzx + 33.33);
   return fract((q.x + q.y) * q.z);
 }
@@ -55,7 +55,7 @@ fn rot3Y(a: f32) -> mat3x3<f32> {
 // ─── Noise ───
 fn noise3D(p: vec3<f32>) -> f32 {
   let i = floor(p);
-  let f = fract(p);
+  var f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
   let n = i.x + i.y * 157.0 + i.z * 113.0;
   return mix(
@@ -172,7 +172,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, crystalDensity: f32,
   );
 
   // Canyon floor
-  let floorH = -1.0 + fbm(p.xz * 0.5) * 0.5;
+  let floorH = -1.0 + fbm(vec3<f32>(p.xz * 0.5, 0.0)) * 0.5;
   let floor = p.y - floorH;
 
   // Combine walls with crystals
@@ -233,10 +233,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Parameters
-  let crystalDensity = mix(0.2, 1.0, u.zoom_params.x);
-  let plasmaGlow = mix(0.0, 1.5, u.zoom_params.y);
-  let refractiveIndex = mix(1.0, 2.0, u.zoom_params.z);
-  let audioReactivity = mix(0.0, 2.0, u.zoom_params.w);
+  let crystalDensity = mix(0.2, 1.0, clamp(u.zoom_params.x, 0.0, 1.0));
+  let plasmaGlow = mix(0.0, 1.5, clamp(u.zoom_params.y, 0.0, 1.0));
+  let refractiveIndex = mix(1.0, 2.0, clamp(u.zoom_params.z, 0.0, 1.0));
+  let audioReactivity = mix(0.0, 2.0, clamp(u.zoom_params.w, 0.0, 1.0));
 
   // Mouse
   let mouseRaw = u.zoom_config.yz * 2.0 - 1.0;
@@ -343,7 +343,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Volumetric plasma glow in the canyon depths
   var volGlow = vec3<f32>(0.0);
   for (var i: i32 = 0; i < 16; i = i + 1) {
-    let vt = f32(i) * 2.0 + hash21(vec2<f32>(f32(gid.x + i * 31), f32(gid.y + i * 57))) * 1.0;
+    let vt = f32(i) * 2.0 + hash21(vec2<f32>(f32(i32(gid.x) + i * 31), f32(i32(gid.y) + i * 57))) * 1.0;
     if (vt > depth) { break; }
     let vPos = ro + rd * vt;
     let vRes = map(vPos, time, audio, crystalDensity, plasmaGlow, refractiveIndex, mousePos);
@@ -361,7 +361,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Tone map
   col = acesToneMap(col * 1.2);
 
-  let alpha = sat(0.9 + length(volGlow) * 2.0);
+  let alpha = 1.0;
   let finalDepth = sat(0.95 - depth * 0.015);
 
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));

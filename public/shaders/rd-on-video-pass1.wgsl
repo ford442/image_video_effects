@@ -2,6 +2,9 @@
 //  RD on Video (Pass 1: Gray-Scott Update)
 //  Category: simulation
 //  Features: multi-pass-1, temporal, video-driven
+//  Pass graph: Pass 1 reads the previous state from dataTextureC,
+//              simulates one Gray-Scott step, and writes the new
+//              state to dataTextureA.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -77,7 +80,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   a = clamp(a + dA * dt, 0.0, 1.0);
   b = clamp(b + dB * dt, 0.0, 1.0);
 
-  textureStore(dataTextureA, coord, vec4<f32>(a, b, luma, 1.0));
+  textureStore(dataTextureA, coord, vec4<f32>(a, b, luma, src.a));
   textureStore(writeTexture, coord, src);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

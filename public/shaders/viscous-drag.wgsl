@@ -104,7 +104,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     newOffset = clamp(newOffset, vec2<f32>(-0.5), vec2<f32>(0.5));
 
     // Write state
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newOffset, 0.0, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newOffset, 0.0, 0.0));
 
     // Render
     // Sample readTexture at uv - newOffset * scale
@@ -119,4 +119,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalColor = color + vec4<f32>(specular);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

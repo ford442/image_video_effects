@@ -33,7 +33,7 @@ struct Uniforms {
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
 
 fn hash3(p: vec3<f32>) -> f32 {
-  let q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
+  var q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
   q = q + dot(q, q.yzx + 33.33);
   return fract((q.x + q.y) * q.z);
 }
@@ -310,10 +310,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Parameters
-  let refractionIdx = mix(1.2, 2.5, u.zoom_params.x);
-  let chromaticSpread = mix(0.0, 0.15, u.zoom_params.y);
-  let latticeDensity = mix(0.8, 3.0, u.zoom_params.z);
-  let shatterForce = mix(0.0, 3.0, u.zoom_params.w);
+  let refractionIdx = mix(1.2, 2.5, clamp(u.zoom_params.x, 0.0, 1.0));
+  let chromaticSpread = mix(0.0, 0.15, clamp(u.zoom_params.y, 0.0, 1.0));
+  let latticeDensity = mix(0.8, 3.0, clamp(u.zoom_params.z, 0.0, 1.0));
+  let shatterForce = mix(0.0, 3.0, clamp(u.zoom_params.w, 0.0, 1.0));
 
   // Mouse in 3D
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
@@ -344,14 +344,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let result = raymarchChromatic(ro, rd, time, audio, shatterForce, latticeDensity, chromaticSpread, mousePos);
   var col = result.rgb;
   var alpha = result.a;
-  var depth = result.a > 0.01 ? result.a * 5.0 : 10.0;
+  var depth = select(10.0, result.a * 5.0, result.a > 0.01);
 
   // Volumetric caustics (simplified: glowing particles along ray)
   var causticGlow = vec3<f32>(0.0);
   let numSamples = 16;
   let stepSize = 15.0 / f32(numSamples);
   for (var i: i32 = 0; i < numSamples; i = i + 1) {
-    let t = f32(i) * stepSize + hash21(vec2<f32>(f32(gid.x + i * 73), f32(gid.y + i * 137))) * stepSize;
+    let t = f32(i) * stepSize + hash21(vec2<f32>(f32(i32(gid.x) + i * 73), f32(i32(gid.y) + i * 137))) * stepSize;
     let rp = ro + rd * t;
     let vn = voronoi3D(rp * latticeDensity * 0.5 + time * 0.1);
     let caust = sat(0.3 - vn.x) * exp(-t * 0.08);
@@ -371,7 +371,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Output
   let presence = sat(alpha + length(causticGlow) * 2.0);
-  let finalAlpha = sat(0.05 + presence * 0.95);
+  let finalAlpha = 1.0;
   let finalDepth = sat(0.95 - alpha * 0.5 + shatterForce * 0.02);
 
   textureStore(writeTexture, coord, vec4<f32>(col, finalAlpha));

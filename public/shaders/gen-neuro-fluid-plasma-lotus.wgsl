@@ -293,10 +293,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   extraBuffer[0] = smoothBass;
 
   // Parameters
-  let petalCurl = mix(0.5, 3.0, u.zoom_params.x);
-  let bloomPulse = mix(0.1, 2.5, u.zoom_params.y);
-  let coreHeat = mix(1.0, 5.0, u.zoom_params.z);
-  let dispersion = mix(0.5, 2.5, u.zoom_params.w);
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let petalCurl = mix(0.5, 3.0, zp.x);
+  let bloomPulse = mix(0.1, 2.5, zp.y);
+  let coreHeat = mix(1.0, 5.0, zp.z);
+  let dispersion = mix(0.5, 2.5, zp.w);
 
   // Mouse
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
@@ -331,7 +332,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let numVol = 16;
   let volStep = 15.0 / f32(numVol);
   for (var i: i32 = 0; i < numVol; i = i + 1) {
-    let vt = f32(i) * volStep + hash21(vec2<f32>(f32(gid.x + i * 73), f32(gid.y + i * 137))) * volStep;
+    let vt = f32(i) * volStep + hash21(vec2<f32>(f32(i32(gid.x) + i * 73), f32(i32(gid.y) + i * 137))) * volStep;
     let vp = ro + rd * vt;
     let vfbm = fbm3(vp * 0.8 + vec3<f32>(time * 0.2, 0.0, 0.0));
     let vg = sat(0.5 - vfbm) * exp(-vt * 0.1);
@@ -351,7 +352,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Output
   let presence = sat(alpha + length(volGlow) * 2.0);
-  let finalAlpha = sat(0.05 + presence * 0.95);
+  let finalAlpha = 1.0;
   let finalDepth = sat(0.95 - alpha * 0.5);
 
   textureStore(writeTexture, coord, vec4<f32>(col, finalAlpha));

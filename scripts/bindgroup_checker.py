@@ -129,6 +129,37 @@ FRAGMENT_SHADER_PATTERN = re.compile(r'@fragment', re.MULTILINE)
 COMPUTE_SHADER_PATTERN = re.compile(r'@compute', re.MULTILINE)
 STRUCT_FIELD_PATTERN = re.compile(r'(\w+)\s*:\s*([^,\n]+)', re.MULTILINE)
 
+# Intentional deep-workgroup marker (header comment or JSON definition)
+DEEP_WORKGROUP_HEADER_PATTERN = re.compile(
+    r'requiresDeepWorkgroup\s*:\s*true',
+    re.IGNORECASE | re.MULTILINE
+)
+
+
+def has_deep_workgroup_marker(filepath: str, content: str) -> bool:
+    """
+    Detect intentional deep-workgroup shaders.
+    Checks the WGSL header comment first, then any matching JSON definition.
+    """
+    if DEEP_WORKGROUP_HEADER_PATTERN.search(content):
+        return True
+
+    shader_id = Path(filepath).stem
+    search_roots = [
+        "/root/image_video_effects/shader_definitions",
+        "/root/image_video_effects/public/shader-lists",
+    ]
+    for root in search_roots:
+        for json_path in glob.glob(os.path.join(root, "**", f"{shader_id}.json"), recursive=True):
+            try:
+                with open(json_path, 'r', encoding='utf-8') as jf:
+                    data = json.load(jf)
+                if isinstance(data, dict) and data.get("requiresDeepWorkgroup") is True:
+                    return True
+            except Exception:
+                continue
+    return False
+
 def normalize_type(type_str):
     return type_str.replace(" ", "").lower()
 
@@ -298,9 +329,14 @@ def parse_shader(filepath):
     if result["workgroup_sizes"]:
         has_valid = any(ws == [8, 8, 1] or ws == [16, 16, 1] for ws in result["workgroup_sizes"])
         if not has_valid:
-            result["workgroup_size_valid"] = False
-            result["status"] = "incompatible"
-            result["errors"].append(f"Non-standard workgroup sizes: {result['workgroup_sizes']}")
+            if has_deep_workgroup_marker(filepath, content):
+                result["warnings"].append(
+                    f"Non-standard workgroup size {result['workgroup_sizes']} is intentional (requiresDeepWorkgroup)"
+                )
+            else:
+                result["workgroup_size_valid"] = False
+                result["status"] = "incompatible"
+                result["errors"].append(f"Non-standard workgroup sizes: {result['workgroup_sizes']}")
     else:
         result["workgroup_size_valid"] = False
         result["status"] = "incompatible"

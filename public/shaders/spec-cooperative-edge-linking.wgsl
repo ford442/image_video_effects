@@ -170,4 +170,6 @@ fn main(
 
     textureStore(writeTexture, gid.xy, vec4<f32>(finalRGB, alpha));
     textureStore(dataTextureA, gid.xy, vec4<f32>(gradMag, f32(myEdgeId) / 256.0, f32(isEdge), alpha));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

@@ -221,4 +221,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // (dataTextureB is left unchanged — it holds the Gaussian blur from pass 1
   //  and must not be overwritten here so the post-slot copy propagates it.)
   textureStore(dataTextureA, gid.xy, vec4<f32>(result, edgeMag(hf)));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

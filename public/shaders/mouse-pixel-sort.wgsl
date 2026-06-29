@@ -125,10 +125,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = audio.z;
     let time = u.config.x;
 
-    let sortThreshold = u.zoom_params.x;
-    let sortLength = u.zoom_params.y * (0.2 + bass * 0.06);
-    let direction = u.zoom_params.z;
-    let mode = u.zoom_params.w;
+    let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let sortThreshold = zp.x;
+    let sortLength = zp.y * (0.2 + bass * 0.06);
+    let direction = zp.z;
+    let mode = zp.w;
 
     let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
     let influence = smoothstep(0.35, 0.0, dist);
@@ -207,7 +208,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let streak = smoothstep(localThreshold, 1.0, luma);
 
     // Particle sparkle trails from treble
-    let sparkleNoise = hash12(global_id.xy + vec2<f32>(time * 15.0, time * 11.0));
+    let sparkleNoise = hash12(vec2<f32>(global_id.xy) + vec2<f32>(time * 15.0, time * 11.0));
     let sparkle = smoothstep(0.97, 1.0, sparkleNoise) * treble * influence * 2.0;
 
     var finalColor = sorted.rgb + trailTint * streak * influence * (0.15 + bass * 0.12) + vec3<f32>(sparkle);

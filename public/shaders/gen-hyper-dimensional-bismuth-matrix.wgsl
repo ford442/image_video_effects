@@ -221,10 +221,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Parameters
-  let complexity = mix(1.5, 5.0, u.zoom_params.x);
-  let iridescence = mix(0.3, 2.0, u.zoom_params.y);
-  let growthRate = mix(0.2, 1.5, u.zoom_params.z);
-  let disruptionRadius = mix(0.5, 3.0, u.zoom_params.w);
+  let complexity = mix(1.5, 5.0, clamp(u.zoom_params.x, 0.0, 1.0));
+  let iridescence = mix(0.3, 2.0, clamp(u.zoom_params.y, 0.0, 1.0));
+  let growthRate = mix(0.2, 1.5, clamp(u.zoom_params.z, 0.0, 1.0));
+  let disruptionRadius = mix(0.5, 3.0, clamp(u.zoom_params.w, 0.0, 1.0));
 
   // Mouse in 3D - screen top = UP, flip Y
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
@@ -302,7 +302,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // Bismuth crystal surface
       let ired = iridescent(nDotV, time * 0.3 + complexity, audio) * iridescence;
       let baseMetal = vec3<f32>(0.15, 0.18, 0.22);
-      let metal = baseMetal + ired * 0.8;
+      var metal = baseMetal + ired * 0.8;
 
       // Edge = more iridescent (stepped crystal edges)
       let edge = pow(1.0 - nDotV, 4.0);
@@ -343,7 +343,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fogSteps = 16;
   let fogStep = 20.0 / f32(fogSteps);
   for (var i: i32 = 0; i < fogSteps; i = i + 1) {
-    let ft = f32(i) * fogStep + hash21(vec2<f32>(f32(gid.x + i * 73), f32(gid.y + i * 137))) * fogStep;
+    let ft = f32(i) * fogStep + hash21(vec2<f32>(f32(i32(gid.x) + i * 73), f32(i32(gid.y) + i * 137))) * fogStep;
     let fp = ro + rd * ft;
     let cellSize = 2.5 / 1.5;
     let q = opRep(fp, vec3<f32>(cellSize));
@@ -365,7 +365,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Tone map
   col = acesToneMap(col * 1.2);
 
-  let alpha = hit ? sat(0.8 + (1.0 - depth / 10.0) * 0.2) : 0.0;
+  let alpha = 1.0;
   let finalDepth = sat(0.95 - depth * 0.03);
 
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));

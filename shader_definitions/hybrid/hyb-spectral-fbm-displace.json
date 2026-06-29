@@ -1,0 +1,80 @@
+{
+  "id": "hyb-spectral-fbm-displace",
+  "name": "Spectral FBM Displace",
+  "category": "hybrid",
+  "type": "compute",
+  "url": "shaders/hyb-spectral-fbm-displace.wgsl",
+  "description": "FBM domain warping displaces the input image, and the warp gradient drives a chromatic RGB smear tinted by a spectral wavelength palette.",
+  "features": [
+    "hybrid",
+    "fbm-noise",
+    "domain-warp",
+    "spectral-displace",
+    "chromatic-smear",
+    "image-distortion",
+    "alpha-passthrough",
+    "depth-aware",
+    "randomization-safe"
+  ],
+  "tags": [
+    "hybrid",
+    "fbm",
+    "domain-warp",
+    "spectral",
+    "chromatic",
+    "displacement",
+    "noise"
+  ],
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {
+      "id": "fbm_scale",
+      "name": "FBM Scale",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Scale of the FBM noise domain used for displacement"
+    },
+    {
+      "id": "warp_amount",
+      "name": "Warp Amount",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Strength of the nested FBM domain warp"
+    },
+    {
+      "id": "spectral_spread",
+      "name": "Spectral Spread",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Amount of RGB channel separation along the displacement gradient"
+    },
+    {
+      "id": "effect_mix",
+      "name": "Effect Mix",
+      "default": 0.75,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Blend strength of the spectral displacement over the input"
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "chunks_used": [
+    "fbm2 (gen_grid.wgsl)",
+    "domainWarp (gen_grid.wgsl)",
+    "wavelengthToRGB (spec-prismatic-dispersion.wgsl)"
+  ],
+  "created_by": "Agent 4b - Advanced Hybrid Shader Creator",
+  "updated": true
+}

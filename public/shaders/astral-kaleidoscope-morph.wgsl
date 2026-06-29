@@ -28,7 +28,7 @@
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var depthTex:   texture_2d<f32>;
 @group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var outDepth:   texture_storage_2d<r32float, write>;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
 @group(0) @binding(7) var historyBuf: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var unusedBuf:  texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var historyTex: texture_2d<f32>;
@@ -210,7 +210,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let prev = textureSampleLevel(historyTex, depthSampler, uv, 0.0).rgb;
     let decay = 0.9 + (trails * 0.09);
     let feedback = max(color, prev * decay);
-    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(feedback, 1.0));
+    let feedback_luma = dot(feedback, vec3<f32>(0.299, 0.587, 0.114));
+    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(feedback, feedback_luma));
 
     let finalCol = mix(color, feedback, 0.5);
 
@@ -221,5 +222,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let finalAlpha = mix(alpha * 0.8, min(alpha, 1.0), staticDepth);
 
     textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, finalAlpha));
-    textureStore(outDepth, vec2<i32>(gid.xy), vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
 }

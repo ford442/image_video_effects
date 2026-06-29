@@ -1,0 +1,666 @@
+{
+  "agent": "2e",
+  "batch": 2,
+  "shaders": [
+    {
+      "id": 31,
+      "name": "gemstone-fractures",
+      "randomization_safety": {
+        "score": 25,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 43,
+      "notes": "Safe parameter math; alpha clamped 0.3-1.0. Unused bindings/comparison_sampler/plasmaBuffer/dataTextures dead."
+    },
+    {
+      "id": 32,
+      "name": "gen-chromatic-metamorphosis",
+      "randomization_safety": {
+        "score": 25,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 43,
+      "notes": "Generative raymarch is parameter-safe; alpha clamped 0.2-1.0. Several unused bindings (readTexture, readDepthTexture, etc.)."
+    },
+    {
+      "id": 33,
+      "name": "gen-chronos-labyrinth",
+      "randomization_safety": {
+        "score": 22,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 2,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 40,
+      "notes": "Void background alpha is 0.0, below 0.1 floor. Predicted-alpha early-exit is well done. Unused readTexture/readDepthTexture/comparison_sampler."
+    },
+    {
+      "id": 34,
+      "name": "gen-ethereal-silk-veil",
+      "randomization_safety": {
+        "score": 25,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 4,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 43,
+      "notes": "Layer loop bounded by runtime parameter (4-10). Alpha clamped 0.2-0.9. Minor unused bindings."
+    },
+    {
+      "id": 35,
+      "name": "gen-gravitational-strain",
+      "randomization_safety": {
+        "score": 22,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 2,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 40,
+      "notes": "Alpha can fall below 0.1 in empty regions. All divisions use epsilons. Multiple unused bindings/textures."
+    },
+    {
+      "id": 36,
+      "name": "gen-inverse-mandelbrot",
+      "randomization_safety": {
+        "score": 25,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 43,
+      "notes": "Fully opaque generative (alpha 1.0). log2(log2(sqrt(len2))) only executed after escape test (len2 > bailout^2). Unused bindings."
+    },
+    {
+      "id": 37,
+      "name": "gen-prismatic-bismuth-lattice",
+      "randomization_safety": {
+        "score": 17,
+        "no_division_by_raw_param": 0,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 2
+      },
+      "compilation_performance": {
+        "score": 16,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 4,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 0
+      },
+      "total": 33,
+      "notes": "CRITICAL: crystalScale (zoom_params.z) can be 0, causing division by zero in domain repetition (c=4*scale). Many unused bindings/readTexture."
+    },
+    {
+      "id": 38,
+      "name": "gen-quantum-fluorescent-aether-moth-swarm",
+      "randomization_safety": {
+        "score": 21,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 2,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 4
+      },
+      "compilation_performance": {
+        "score": 17,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 0
+      },
+      "total": 38,
+      "notes": "normalize(mouse_scaled - uv_scaled) can receive zero vector when mouse equals pixel, producing undefined direction. Many unused bindings; no depth write."
+    },
+    {
+      "id": 39,
+      "name": "gen-topological-acoustic-knots",
+      "randomization_safety": {
+        "score": 25,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 44,
+      "notes": "directorAngle recomputed 3x per pixel (redundant work, not texture samples). Alpha clamped 0.2-0.95. Minor unused bindings."
+    },
+    {
+      "id": 40,
+      "name": "glass-bead-curtain-iridescence",
+      "randomization_safety": {
+        "score": 22,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 2,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 41,
+      "notes": "Gap regions write alpha 0.0; bead transmission can also approach 0. Thin-film loop is fixed (17 iterations). Minor unused bindings."
+    },
+    {
+      "id": 41,
+      "name": "gravito-phononic-accretion",
+      "randomization_safety": {
+        "score": 22,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 2,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 40,
+      "notes": "Alpha can drop below 0.1 in low-density regions. All gravity divisions are softened. Several unused bindings."
+    },
+    {
+      "id": 42,
+      "name": "hex-mosaic",
+      "randomization_safety": {
+        "score": 23,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 42,
+      "notes": "Passes through input alpha, which may be <0.1. Loopless and efficient. Minor unused bindings."
+    },
+    {
+      "id": 43,
+      "name": "honey-melt",
+      "randomization_safety": {
+        "score": 25,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 43,
+      "notes": "Alpha clamped 0.35-0.92. Honey thickness and grid math are safe. No depth write; several unused bindings."
+    },
+    {
+      "id": 44,
+      "name": "hyb-chromatic-circuit",
+      "randomization_safety": {
+        "score": 22,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 4,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 41,
+      "notes": "pow(luma-lumaR, 2.0) uses negative base with float exponent (technically integer-valued but risky). Input alpha passthrough. Minor unused bindings."
+    },
+    {
+      "id": 45,
+      "name": "hyb-kaleidoscope-pulse",
+      "randomization_safety": {
+        "score": 23,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 42,
+      "notes": "Segments denominator guarded with max(...,1.0). Input alpha passthrough. Minor unused bindings."
+    },
+    {
+      "id": 46,
+      "name": "hyb-spectral-fbm-displace",
+      "randomization_safety": {
+        "score": 23,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 42,
+      "notes": "Domain warp and spectral smear are safe. Input alpha passthrough. Minor unused bindings."
+    },
+    {
+      "id": 47,
+      "name": "hyb-temporal-fbm-ghost",
+      "randomization_safety": {
+        "score": 23,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 42,
+      "notes": "Temporal RGB offsets clamped to [0,1]. Input alpha passthrough. Minor unused bindings."
+    },
+    {
+      "id": 48,
+      "name": "hybrid-cyber-organic",
+      "randomization_safety": {
+        "score": 25,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 43,
+      "notes": "Alpha mix 0.3-1.0. Hex grid division uses constants. Several unused bindings."
+    },
+    {
+      "id": 49,
+      "name": "hybrid-noise-kaleidoscope",
+      "randomization_safety": {
+        "score": 25,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 43,
+      "notes": "Segments >=3.0 so kaleidoscope divide safe. Alpha mix 0.6-1.0. Several unused bindings."
+    },
+    {
+      "id": 50,
+      "name": "ink-marbling",
+      "randomization_safety": {
+        "score": 23,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 41,
+      "notes": "Alpha can be <0.1 in thin-ink regions (clamp 0.0-0.95). 4-layer warp loop fixed. Several unused bindings."
+    },
+    {
+      "id": 51,
+      "name": "interactive-voronoi-lens",
+      "randomization_safety": {
+        "score": 23,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 42,
+      "notes": "Density denominator guarded (>=5). Input alpha passthrough. Minor unused bindings."
+    },
+    {
+      "id": 52,
+      "name": "kaleido-scope",
+      "randomization_safety": {
+        "score": 25,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 44,
+      "notes": "Alpha explicitly clamped 0.1-0.92. HypR denominator guarded by min(...,0.99)+0.001. Minor unused bindings."
+    },
+    {
+      "id": 53,
+      "name": "liquid-displacement",
+      "randomization_safety": {
+        "score": 23,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 41,
+      "notes": "Pressure-iteration loop bounded 2-20. Input alpha mixed with effect. Several unused bindings."
+    },
+    {
+      "id": 54,
+      "name": "liquid-metal",
+      "randomization_safety": {
+        "score": 23,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 42,
+      "notes": "Alpha can approach 0 when Fresnel is 0. Ripple loop bounded. Minor unused bindings."
+    },
+    {
+      "id": 55,
+      "name": "liquid-tensor-vortex",
+      "randomization_safety": {
+        "score": 23,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 42,
+      "notes": "normalize calls include +0.001 epsilon. Alpha can drop below 0.1 in dark/depth regions. Minor unused bindings."
+    },
+    {
+      "id": 56,
+      "name": "liquid-time-warp",
+      "randomization_safety": {
+        "score": 20,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 3,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 4
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 39,
+      "notes": "normalize(mVec) can receive zero when mouse equals pixel inside interaction radius. Alpha can be <0.1. Minor unused bindings."
+    },
+    {
+      "id": 57,
+      "name": "liquid-viscous",
+      "randomization_safety": {
+        "score": 23,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 42,
+      "notes": "Viscosity clamped >=0.001; all derivatives use texel constants. Alpha can be <0.1 when dye is low. Minor unused bindings."
+    },
+    {
+      "id": 58,
+      "name": "luma-magnetism",
+      "randomization_safety": {
+        "score": 22,
+        "no_division_by_raw_param": 4,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 41,
+      "notes": "normalize(field) could be called on zero field (fieldMag*0 masks result but normalize(0) is still undefined). Alpha can be <0.1. Minor unused bindings."
+    },
+    {
+      "id": 59,
+      "name": "luma-slice-interactive",
+      "randomization_safety": {
+        "score": 23,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 3,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 19,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 2
+      },
+      "total": 42,
+      "notes": "Slice count denominator guarded (>=10). Input alpha passthrough. Minor unused bindings."
+    },
+    {
+      "id": 60,
+      "name": "neon-poly-grid",
+      "randomization_safety": {
+        "score": 25,
+        "no_division_by_raw_param": 5,
+        "no_log_sqrt_issues": 5,
+        "no_pow_issues": 5,
+        "alpha_floor": 5,
+        "params_valid_at_extremes": 5
+      },
+      "compilation_performance": {
+        "score": 18,
+        "valid_compute_workgroup": 5,
+        "bounded_loops": 5,
+        "no_redundant_texture_samples_in_loops": 4,
+        "early_exits": 3,
+        "no_dead_code": 1
+      },
+      "total": 43,
+      "notes": "Alpha 1.0. Hex modulo uses constants. No depth write; several unused bindings."
+    }
+  ]
+}

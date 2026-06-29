@@ -188,4 +188,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Semantic alpha based on density
   let effect = clamp(count * 0.8, 0.4, 0.95);
   textureStore(writeTexture, pixel, vec4<f32>(color, effect));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

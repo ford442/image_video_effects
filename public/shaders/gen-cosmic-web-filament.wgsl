@@ -32,7 +32,7 @@ fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
   let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
   let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
+  let mouseInfluence = mix(0.95, 1.15, clamp(clamp(u.zoom_params.w, 0.0, 1.0) * mouseDistance * 2.0, 0.0, 1.0));
   let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
   return vec4<f32>(controlled, color.a);
 }
@@ -228,9 +228,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let warpStrength = u.zoom_params.x * 3.0 + bass * 0.5;
-  let densityParam = u.zoom_params.y * 3.5 + 0.5;
-  let speed = u.zoom_params.z * 2.0;
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let warpStrength = zp.x * 3.0 + bass * 0.5;
+  let densityParam = zp.y * 3.5 + 0.5;
+  let speed = zp.z * 2.0;
   let dist = length(uv - mouse);
   let force = smoothstep(0.5, 0.0, dist);
   uv -= normalize(uv - mouse + 0.001) * force * 0.8;
@@ -241,7 +242,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   p = quaternionRotate(p, vec3<f32>(0.3, 0.7, 0.5), u.config.x * speed * 0.15);
   p = kleinWarp(p, u.config.x * speed);
   let voidSDF = min(
-    min(sdfSphere(p - mouse * 3.0, 0.4 + bass * 0.2), sdfTorus(p - vec3<f32>(mouse * 3.0, 0.0), vec2<f32>(0.5, 0.15))),
+    min(sdfSphere(p - vec3<f32>(mouse * 3.0, 0.0), 0.4 + bass * 0.2), sdfTorus(p - vec3<f32>(mouse * 3.0, 0.0), vec2<f32>(0.5, 0.15))),
     sdfBox(p + vec3<f32>(mouse * 2.0, 0.0), vec3<f32>(0.3))
   );
   let apollo = apollonianEstimate(p * 0.5, 2.0 + mids);
@@ -274,7 +275,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   col.r = mix(col.r, prevR * 0.9, 0.02 + treble * 0.01);
   col.g = mix(col.g, prevG * 0.9, 0.02 + bass * 0.01);
   col.b = mix(col.b, prevB * 0.9, 0.02 + mids * 0.01);
-  let alpha = clamp(structDensity + glow * 0.2, 0.0, 1.0);
+  let alpha = 1.0;
   textureStore(writeTexture, id.xy, applyGenerativePrimaryControls(vec4<f32>(col, alpha)));
   textureStore(writeDepthTexture, id.xy, vec4<f32>(structDensity * 0.5, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, id.xy, vec4<f32>(col, alpha));

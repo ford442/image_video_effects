@@ -2761,6 +2761,81 @@
     "features": []
   },
   {
+    "id": "gen-bioelectric-pulse",
+    "name": "Bioelectric Pulse",
+    "category": "generative",
+    "url": "shaders/gen-bioelectric-pulse.wgsl",
+    "description": "Reaction-diffusion-like organic pulses through a noise-driven substrate. Audio energizes the pulse field, and mouse activation emits a secondary bioelectric wave.",
+    "features": [
+      "generative",
+      "reaction-diffusion",
+      "organic-pulses",
+      "glow",
+      "fbm-noise",
+      "palette",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware"
+    ],
+    "tags": [
+      "procedural",
+      "generative",
+      "bioelectric",
+      "organic",
+      "reaction-diffusion",
+      "pulse",
+      "noise",
+      "audio-reactive",
+      "vj"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "pulseCount",
+        "name": "Pulse Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "speed",
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "pulseWidth",
+        "name": "Pulse Width",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hueShift",
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true
+  },
+  {
     "name": "Bioluminescent Aether-Jellyfish Swarm",
     "category": "generative",
     "tags": [
@@ -7707,6 +7782,80 @@
     "features": []
   },
   {
+    "id": "gen-holographic-fracture",
+    "name": "Holographic Fracture",
+    "category": "generative",
+    "url": "shaders/gen-holographic-fracture.wgsl",
+    "description": "Iridescent cracked planes with SDF fracture lines and thin-film holographic shards. Audio drives crack glow, and mouse interaction spawns new radial cracks.",
+    "features": [
+      "generative",
+      "sdf",
+      "iridescence",
+      "fracture-lines",
+      "glow",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware"
+    ],
+    "tags": [
+      "procedural",
+      "generative",
+      "fracture",
+      "cracks",
+      "holographic",
+      "iridescent",
+      "crystal",
+      "audio-reactive",
+      "vj"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "fractureCount",
+        "name": "Fracture Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "iridescence",
+        "name": "Iridescence",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "crackWidth",
+        "name": "Crack Width",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "pulseSpeed",
+        "name": "Pulse Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true
+  },
+  {
     "name": "Holographic Lens-Flare Matrix",
     "category": "generative",
     "tags": [
@@ -11579,6 +11728,80 @@
     "id": "gen-neural-bioluminescence-matrix",
     "url": "shaders/gen-neural-bioluminescence-matrix.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-neural-dust",
+    "name": "Neural Dust",
+    "category": "generative",
+    "url": "shaders/gen-neural-dust.wgsl",
+    "description": "Drifting luminous particle field driven by domain-warped FBM. Audio reactivity controls density and jitter, while mouse gravity attracts nearby dust motes.",
+    "features": [
+      "generative",
+      "fbm-noise",
+      "domain-warping",
+      "glow",
+      "palette",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware"
+    ],
+    "tags": [
+      "procedural",
+      "generative",
+      "particles",
+      "dust",
+      "neural",
+      "noise",
+      "glow",
+      "audio-reactive",
+      "vj"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "dustDensity",
+        "name": "Dust Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "flowSpeed",
+        "name": "Flow Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glowRadius",
+        "name": "Glow Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hueShift",
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true
   },
   {
     "name": "Neural Fractal",

@@ -3,6 +3,7 @@
 //  Category: advanced-hybrid
 //  Features: deep-workgroup, shared-memory, workgroup-barrier
 //  Complexity: High
+//  requiresDeepWorkgroup: true
 //  Requires: maxComputeInvocationsPerWorkgroup >= 1024 (16×16×4)
 //
 //  Uses a 16×16×4 workgroup (1024 invocations) where the four Z-layers
@@ -187,5 +188,7 @@ fn main(
         );
 
         textureStore(writeTexture, vec2<i32>(gid.xy), final_colour);
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
     }
 }

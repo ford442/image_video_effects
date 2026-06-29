@@ -4,7 +4,7 @@
 //  Features: mouse-driven, ink-diffusion, organic, audio-reactive, semantic-alpha
 //  Complexity: Medium
 //  Created: 2026-05-30
-//  Updated: 2026-06-01
+//  Updated: 2026-06-28
 //  By: Kimi Agent (integrated + upgraded)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -52,16 +52,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse = u.zoom_config.yz;
     let isPress = u.zoom_config.w;
 
-    let spread = u.zoom_params.x;
-    let turbulence = u.zoom_params.y;
-    let decay = u.zoom_params.z;
-    let colorIntensity = u.zoom_params.w;
+    let spread = mix(0.01, 0.5, clamp(u.zoom_params.x, 0.0, 1.0));
+    let turbulence = clamp(u.zoom_params.y, 0.0, 1.0);
+    let decay = clamp(u.zoom_params.z, 0.0, 1.0);
+    let colorIntensity = clamp(u.zoom_params.w, 0.0, 1.0);
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     let dist = length(uv - mouse);
     let activeBrush = smoothstep(spread * 0.6, spread * 0.08, dist) * (0.6 + isPress * 1.2);
@@ -84,9 +84,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeGlow = smoothstep(0.1, 0.6, inkRadius) * (1.0 - smoothstep(0.4, 0.9, inkRadius));
     color += vec3<f32>(0.05, 0.02, 0.08) * edgeGlow * colorIntensity * (0.8 + mids * 0.4);
 
-    // Semantic alpha - stronger where the ink is actively bleeding
+    // Semantic alpha - preserve input alpha and strengthen where the ink is actively bleeding
     let effect = inkRadius * 0.7 + edgeGlow * 0.5;
-    let semantic_alpha = clamp(0.5 + effect * 0.6, 0.4, 1.0);
+    let semantic_alpha = clamp(baseColor.a * (0.5 + effect * 0.6), 0.0, 1.0);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 

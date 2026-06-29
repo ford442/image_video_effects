@@ -5,7 +5,7 @@
 //  Complexity: High
 //  Chunks From: chronos-brush, bass_env, temporal-feedback
 //  Created: 2024-01-01
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-28
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -50,10 +50,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthOpacity = mix(0.7, 1.0, depth);
 
-    let brushSize = u.zoom_params.x * bass_env(bass, mids);
-    let colorShiftSpeed = u.zoom_params.y;
-    let fadeAmount = u.zoom_params.z;
-    let opacity = u.zoom_params.w * depthOpacity;
+    let brushSize = mix(0.0, 1.0, clamp(u.zoom_params.x, 0.0, 1.0)) * bass_env(bass, mids);
+    let colorShiftSpeed = clamp(u.zoom_params.y, 0.0, 1.0);
+    let fadeAmount = clamp(u.zoom_params.z, 0.0, 1.0);
+    let opacity = mix(0.0, 1.0, clamp(u.zoom_params.w, 0.0, 1.0)) * depthOpacity;
 
     let aspect = resolution.x / resolution.y;
     let aspectCorrection = vec2<f32>(aspect, 1.0);

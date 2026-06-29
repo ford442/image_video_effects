@@ -135,10 +135,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthColorize = mix(0.5, 1.5, depth);
 
-    let scanSpeed = u.zoom_params.x * bass_env(bass, mids);
-    let trailLength = u.zoom_params.y;
-    let scanWidth = u.zoom_params.z;
-    let colorShiftAmt = u.zoom_params.w;
+    let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let scanSpeed = zp.x * bass_env(bass, mids);
+    let trailLength = zp.y;
+    let scanWidth = zp.z;
+    let colorShiftAmt = zp.w;
 
     // Primary scan line
     let scanLine = fract(mousePos.x + time * scanSpeed);
@@ -219,7 +220,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rgb = rgb + vec3<f32>(noiseOverlay * intensity * 0.3);
 
     // Sparkle on scan line intersection with high frequencies
-    let sparkle = hash12(global_id.xy + vec2<f32>(time * 20.0, 0.0));
+    let sparkle = hash12(vec2<f32>(global_id.xy) + vec2<f32>(time * 20.0, 0.0));
     let sparkleBright = smoothstep(0.98, 1.0, sparkle) * treble * totalIntensity * 2.0;
     rgb = rgb + vec3<f32>(sparkleBright);
 

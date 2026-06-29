@@ -1,0 +1,187 @@
+{
+  "agent": "2e",
+  "dimension": "technical",
+  "batch": 1,
+  "shaders": [
+    {
+      "id": "alpha-fluid-simulation-paint",
+      "randomization_safety": { "score": 23, "notes": "No raw param division, log, sqrt, or pow hazards. Alpha equals dye density and can reach 0 (simulation semantics); justified but below 0.1 threshold." },
+      "compile_performance": { "score": 19, "notes": "Valid @compute @workgroup_size(16,16,1); ripple loop bounded by 50; early out-of-bounds return present; minor redundancy sampling all channels in diffusion." },
+      "total": 42
+    },
+    {
+      "id": "alpha-hdr-bloom-chain",
+      "randomization_safety": { "score": 25, "notes": "All guards present; bloom normalization uses 0.001 threshold; alpha = exposure + 0.1 (min 0.1)." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; fixed 16-sample bloom loop and capped ripple loop; early exit present; texture samples in bloom loop are intentional." },
+      "total": 45
+    },
+    {
+      "id": "alpha-reaction-diffusion-rgba",
+      "randomization_safety": { "score": 25, "notes": "No division/log/sqrt/pow hazards; kernelSum division guarded; alpha clamped to [0.3,1.0]." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; capped ripple loop; early exit present; clean bounded loops." },
+      "total": 45
+    },
+    {
+      "id": "audio-reactive-pyramid",
+      "randomization_safety": { "score": 22, "notes": "No math hazards; output alpha preserves input alpha without a 0.1 floor, so low-alpha inputs pass through unchanged." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; fixed bin-average loops; early exit present; gaussBlur taps are explicit, not redundant." },
+      "total": 42
+    },
+    {
+      "id": "aurora-rift",
+      "randomization_safety": { "score": 23, "notes": "Divisions guarded; sqrt on max(col,0.001); alpha is atmospheric transmittance and can approach 0 (physically meaningful)." },
+      "compile_performance": { "score": 15, "notes": "Valid compute decl; bounded nested loops; missing global_invocation_id out-of-bounds early exit; physicalTransmittance() defined but never called." },
+      "total": 38
+    },
+    {
+      "id": "aurora-rift-2-pass1",
+      "randomization_safety": { "score": 23, "notes": "Divisions guarded; alpha is pass-through input/density." },
+      "compile_performance": { "score": 16, "notes": "Valid compute decl; bounded loops; missing gid out-of-bounds early exit; hash3() declared but unused." },
+      "total": 39
+    },
+    {
+      "id": "aurora-rift-pass1",
+      "randomization_safety": { "score": 23, "notes": "Same as aurora-rift-2-pass1: safe math, pass-through alpha." },
+      "compile_performance": { "score": 16, "notes": "Valid compute decl; bounded loops; missing gid out-of-bounds early exit; hash3() declared but unused." },
+      "total": 39
+    },
+    {
+      "id": "bayer-dither-interactive",
+      "randomization_safety": { "score": 25, "notes": "PixelScale min 1.0; levels >= 1.5; alpha clamped to [0.1,0.92]." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; no loops; early exit present; no dead code." },
+      "total": 45
+    },
+    {
+      "id": "bio-lenia-rgba",
+      "randomization_safety": { "score": 23, "notes": "kernelSum division guarded; sqrt on non-negative distance; bell() pow exponent is positive 2.0; alpha = activatorSum can reach 0 (simulation state)." },
+      "compile_performance": { "score": 19, "notes": "Valid compute decl; Lenia neighborhood loop bounded by radius <= 7; early exit present; slight channel-wise sample redundancy." },
+      "total": 42
+    },
+    {
+      "id": "boids-rgba-ecosystem",
+      "randomization_safety": { "score": 23, "notes": "s1Count/s2Count divisions guarded; separation dist > 0 guarded; alpha = biomass can reach 0 (simulation state)." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; fixed 3x3 neighbor loop and 9-element flock loop; capped ripple loop; early exit present." },
+      "total": 43
+    },
+    {
+      "id": "byte-mosh",
+      "randomization_safety": { "score": 22, "notes": "No math hazards; alpha preserves source alpha and can be < 0.1." },
+      "compile_performance": { "score": 19, "notes": "Valid compute decl; fixed LFSR and Galois loops; early exit present; hash12() declared but unused." },
+      "total": 41
+    },
+    {
+      "id": "chromatic-phase-inversion",
+      "randomization_safety": { "score": 22, "notes": "RGB-to-HSV divides use 1e-10 epsilon; no log/sqrt/pow hazards; alpha mixes from input alpha and can fall below 0.1." },
+      "compile_performance": { "score": 19, "notes": "Valid compute decl; fixed 3-octave fbm and capped ripple loop; early exit present; luma_cpi() declared but unused." },
+      "total": 41
+    },
+    {
+      "id": "chrono-luma-slit-scan",
+      "randomization_safety": { "score": 25, "notes": "pow() base clamped [0,1] and exponent positive; age interpolation bounded; alpha clamped >= 0.6." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; capped ripple loop; early exit present; no dead code." },
+      "total": 45
+    },
+    {
+      "id": "chrono-slit-scan",
+      "randomization_safety": { "score": 23, "notes": "No raw divisions or math hazards; alpha derived from temporal history can reach 0 (feedback semantics)." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; fixed 3-slot slit loop and 3-octave fbm; early exit present; no dead code." },
+      "total": 43
+    },
+    {
+      "id": "cmyk-halftone-explosion",
+      "randomization_safety": { "score": 25, "notes": "Prism deflection divides by max(dist,0.02); CMYK division only when k<1.0; sqrt on [0,1] channels; alpha clamped >= 0.8." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; capped ripple loop; early exit present; no dead code." },
+      "total": 45
+    },
+    {
+      "id": "crt-clear-zone",
+      "randomization_safety": { "score": 22, "notes": "pow() base guarded by max(...,0.001); no log/sqrt hazards; alpha clamped to [0,1] and can reach 0." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; no loops; early exit present; no dead code." },
+      "total": 42
+    },
+    {
+      "id": "crt-tv",
+      "randomization_safety": { "score": 25, "notes": "Division by constant denominator >= 1.0; pow() bases clamped non-negative with positive exponents; alpha hardcoded 1.0." },
+      "compile_performance": { "score": 19, "notes": "Valid compute decl; fixed 5-tap halation loop; has UV-based early exit but lacks canonical gid out-of-bounds check at entry." },
+      "total": 44
+    },
+    {
+      "id": "crystal-refraction",
+      "randomization_safety": { "score": 23, "notes": "ior in [1.54,2.42] so IOR division safe; pow() bases non-negative with positive exponents; alpha can approach 0 when no lens influence (physically meaningful)." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; no loops; early exit present; no dead code." },
+      "total": 43
+    },
+    {
+      "id": "cursor-aura",
+      "randomization_safety": { "score": 22, "notes": "Resolution divisions guarded; no log/sqrt/pow hazards; alpha preserves input alpha and can be < 0.1." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; no loops; early exit present; no dead code." },
+      "total": 42
+    },
+    {
+      "id": "data-slicer",
+      "randomization_safety": { "score": 25, "notes": "sliceThickness min 0.006; maxVal accumulation > 0; sqrt on non-negative distances; alpha clamped [0.45,0.98]." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; fixed fbm/voronoi/quasicrystal loops; early exit present; no dead code." },
+      "total": 45
+    },
+    {
+      "id": "digital-crease",
+      "randomization_safety": { "score": 22, "notes": "foldDepth division guarded by max(...,1e-4); no log/sqrt hazards; alpha clamped with floor 0.08 (< 0.1)." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; no loops; early exit present; no dead code." },
+      "total": 42
+    },
+    {
+      "id": "directional-blur-wipe",
+      "randomization_safety": { "score": 22, "notes": "num_samples >= 5; no log/sqrt/pow hazards; output alpha equals sampled input alpha and can be < 0.1." },
+      "compile_performance": { "score": 19, "notes": "Valid compute decl; sample count capped at 55; early exit present; texture samples in blur loop are intentional." },
+      "total": 41
+    },
+    {
+      "id": "divine-light-gpt52",
+      "randomization_safety": { "score": 22, "notes": "Direction divisions guarded; hgPhase pow base > 0; alpha derived from input alpha and can be < 0.1." },
+      "compile_performance": { "score": 19, "notes": "Valid @workgroup_size(8,8,1); fixed 48-step raymarch loop; early exit present; heavy but bounded texture sampling inside loop." },
+      "total": 41
+    },
+    {
+      "id": "double-exposure-zoom",
+      "randomization_safety": { "score": 22, "notes": "Zoom clamped to [0.01,100] before division; pow bases non-negative; alpha can reach 0 when luminance confidence is 0." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; no loops; early exit present; no dead code." },
+      "total": 42
+    },
+    {
+      "id": "dynamic-lens-flares",
+      "randomization_safety": { "score": 22, "notes": "Mouse length guarded; ring falloff denominator >= 0.1; no log/sqrt/pow hazards; alpha clamped with floor 0.08 (< 0.1)." },
+      "compile_performance": { "score": 19, "notes": "Valid compute decl; ghost loop capped at 8 with break; early exit present; hash12() declared but unused." },
+      "total": 41
+    },
+    {
+      "id": "elastic-strip",
+      "randomization_safety": { "score": 22, "notes": "falloff and roughness divisions guarded; pow bases non-negative with positive exponents; alpha can reach 0 from input alpha." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; no loops; early exit present; no dead code." },
+      "total": 42
+    },
+    {
+      "id": "encaustic-wax",
+      "randomization_safety": { "score": 22, "notes": "No raw divisions or math hazards; alpha clamped with floor 0.08 (< 0.1)." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; fixed 3-layer wax loop; early exit present; no dead code." },
+      "total": 42
+    },
+    {
+      "id": "fabric-step-gabor",
+      "randomization_safety": { "score": 25, "notes": "dist division guarded; totalResponse has 0.001 epsilon; no log/sqrt/pow hazards; alpha mix ranges [0.7,0.9]." },
+      "compile_performance": { "score": 19, "notes": "Valid compute decl; Gabor loops bounded by maxRadius=4 (up to 81 taps); early exit present; intentional but expensive texture sampling in loops." },
+      "total": 44
+    },
+    {
+      "id": "flip-matrix",
+      "randomization_safety": { "score": 25, "notes": "density min 10.0; no log/sqrt hazards; pow(abs(sin_a),6.0) safe; alpha hardcoded 1.0." },
+      "compile_performance": { "score": 20, "notes": "Valid compute decl; no loops; early exit present; no dead code." },
+      "total": 45
+    },
+    {
+      "id": "fractal-kaleidoscope",
+      "randomization_safety": { "score": 25, "notes": "segments in [4,8]; no log/sqrt hazards; pow base in [0,1] with positive exponent; alpha hardcoded 1.0." },
+      "compile_performance": { "score": 17, "notes": "Valid compute decl; fractalZoom loop bounded by depth (3-5 iterations); missing gid out-of-bounds early exit; no dead code." },
+      "total": 42
+    }
+  ]
+}

@@ -33,7 +33,7 @@ struct Uniforms {
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
 
 fn hash3(p: vec3<f32>) -> f32 {
-  let q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
+  var q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
   q = q + dot(q, q.yzx + 33.33);
   return fract((q.x + q.y) * q.z);
 }
@@ -82,7 +82,7 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 // ─── Noise ───
 fn noise3D(p: vec3<f32>) -> f32 {
   let i = floor(p);
-  let f = fract(p);
+  var f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
   let n = i.x + i.y * 157.0 + i.z * 113.0;
   return mix(
@@ -160,7 +160,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, complexity: f32,
   // Fractures that shift over time
   let fractureNoise = fbm(p * 3.0 + vec3<f32>(time * 0.2, time * 0.15, time * 0.1));
   let fractures = monolith + fractureNoise * 0.1;
-  let isFractured = fractureNoise < 0.0 ? 1.0 : 0.0;
+  let isFractured = select(0.0, 1.0, fractureNoise < 0.0);
 
   // Inner crystal core (visible through fractures)
   let core = sdSphere(p, 0.8 + sin(time * 0.5) * 0.1);
@@ -239,10 +239,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Parameters
-  let temporalFlow = mix(0.1, 1.5, u.zoom_params.x);
-  let plasmaDensity = mix(0.0, 1.0, u.zoom_params.y);
-  let monolithComplexity = mix(1.0, 5.0, u.zoom_params.z);
-  let coreResonance = mix(0.0, 1.0, u.zoom_params.w);
+  let temporalFlow = mix(0.1, 1.5, clamp(u.zoom_params.x, 0.0, 1.0));
+  let plasmaDensity = mix(0.0, 1.0, clamp(u.zoom_params.y, 0.0, 1.0));
+  let monolithComplexity = mix(1.0, 5.0, clamp(u.zoom_params.z, 0.0, 1.0));
+  let coreResonance = mix(0.0, 1.0, clamp(u.zoom_params.w, 0.0, 1.0));
 
   // Mouse in 3D
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
@@ -318,7 +318,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     } else if (hitMat < 1.5) {
       // Temporal plasma ribbon - cyan, violet, gold
       let ribbonPhase = hitPos.x * 2.0 + time * 2.0;
-      let ribbonCol = vec3<f32>(
+      var ribbonCol = vec3<f32>(
         0.2 + 0.3 * sin(ribbonPhase + 0.0),
         0.3 + 0.4 * sin(ribbonPhase + 2.09),
         0.5 + 0.3 * sin(ribbonPhase + 4.18)
@@ -356,7 +356,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Volumetric ribbon glow
   var volGlow = vec3<f32>(0.0);
   for (var i: i32 = 0; i < 20; i = i + 1) {
-    let vt = f32(i) * 1.0 + hash21(vec2<f32>(f32(gid.x + i * 73), f32(gid.y + i * 137))) * 0.5;
+    let vt = f32(i) * 1.0 + hash21(vec2<f32>(f32(i32(gid.x) + i * 73), f32(i32(gid.y) + i * 137))) * 0.5;
     if (vt > depth) { break; }
     let vPos = ro + rd * vt;
     let vRes = map(vPos, time, audio, monolithComplexity, plasmaDensity, coreResonance, mousePos);
@@ -380,7 +380,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Tone map
   col = acesToneMap(col * 1.3);
 
-  let alpha = sat(0.8 + length(volGlow) * 2.0);
+  let alpha = 1.0;
   let finalDepth = sat(0.95 - depth * 0.03);
 
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));

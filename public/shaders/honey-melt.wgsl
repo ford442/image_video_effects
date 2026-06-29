@@ -150,9 +150,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Sample colors
     var colSolid = textureSampleLevel(readTexture, u_sampler, solidUV, 0.0);
+    let input_alpha = colSolid.a;
     // Golden tint for solid honey
-    colSolid = mix(colSolid, vec4<f32>(1.0, 0.75, 0.15, 1.0), 0.25);
-    colSolid = mix(colSolid, vec4<f32>(0.3, 0.15, 0.0, 1.0), rim * 0.6);
+    colSolid = mix(colSolid, vec4<f32>(1.0, 0.75, 0.15, input_alpha), 0.25);
+    colSolid = mix(colSolid, vec4<f32>(0.3, 0.15, 0.0, input_alpha), rim * 0.6);
 
     let colFluid = textureSampleLevel(readTexture, u_sampler, fluidUV, 0.0);
 
@@ -177,4 +178,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalAlpha = mix(honeyAlpha, mix(honeyAlpha, 0.7, 0.3), melt * 0.5);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor.rgb, finalAlpha));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

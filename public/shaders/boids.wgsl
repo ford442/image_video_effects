@@ -51,6 +51,8 @@ fn toneMap(hdr: vec3<f32>) -> vec3<f32> {
     return hdr / (1.0 + hdr);
 }
 
+// 1D particle dispatch: one thread per boid. Must stay (64, 1, 1) because the
+// update kernel indexes boids by gid.x and is dispatched as a 1D range.
 @compute @workgroup_size(64, 1, 1)
 fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
     let idx = gid.x;
@@ -190,4 +192,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     let output = vec4<f32>(final_color, final_alpha_boosted);
     textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), output);
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(gid.xy) / vec2<f32>(textureDimensions(readTexture)), 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

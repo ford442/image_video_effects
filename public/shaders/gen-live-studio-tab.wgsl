@@ -84,13 +84,13 @@ fn drawVUMeter(uv: vec2<f32>, pos: vec2<f32>, width: f32, height: f32, level: f3
     let barIdx = f32(i);
     let barPos = vec2<f32>(0.0, -height * 0.5 + barIdx * barH + barH * 0.5);
     let barRect = rect(p, barPos, vec2<f32>(barW, barH * 0.7));
-    let active = barIdx / barCount < level;
+    let barActive = barIdx / barCount < level;
     let greenZone = barIdx < 8;
     let yellowZone = barIdx >= 8 && barIdx < 10;
     var barCol = vec3<f32>(0.0);
-    if (active && greenZone) { barCol = vec3<f32>(0.2, 0.9, 0.3); }
-    else if (active && yellowZone) { barCol = vec3<f32>(0.9, 0.9, 0.2); }
-    else if (active) { barCol = vec3<f32>(0.9, 0.2, 0.2); }
+    if (barActive && greenZone) { barCol = vec3<f32>(0.2, 0.9, 0.3); }
+    else if (barActive && yellowZone) { barCol = vec3<f32>(0.9, 0.9, 0.2); }
+    else if (barActive) { barCol = vec3<f32>(0.9, 0.2, 0.2); }
     else { barCol = vec3<f32>(0.08, 0.08, 0.08); }
     col = mix(col, barCol, 1.0 - smoothstep(0.0, 0.002, barRect));
   }
@@ -123,7 +123,7 @@ fn drawVectorScope(uv: vec2<f32>, pos: vec2<f32>, radius: f32, audio: f32, time:
   let audioDot = sin(angle * 3.0 + time) * cos(angle * 2.0 - time * 0.5) * audio;
   let dotDist = abs(r - abs(audioDot) * 0.8 - 0.15);
   let glow = 1.0 - smoothstep(0.0, 0.05, dotDist);
-  let col = vec3<f32>(0.2, 0.9, 0.4) * glow;
+  var col = vec3<f32>(0.2, 0.9, 0.4) * glow;
   let ring = 1.0 - smoothstep(0.0, 0.003, abs(d));
   col = mix(col, vec3<f32>(0.3, 0.3, 0.3), ring * 0.5);
   return col;
@@ -143,10 +143,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   // Parameters
-  let scanlineIntensity = mix(0.0, 0.3, u.zoom_params.x);
-  let overlayOpacity = mix(0.3, 1.0, u.zoom_params.y);
-  let scopeScale = mix(0.5, 1.5, u.zoom_params.z);
-  let glitchAmount = mix(0.0, 0.5, u.zoom_params.w);
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let scanlineIntensity = mix(0.0, 0.3, zp.x);
+  let overlayOpacity = mix(0.3, 1.0, zp.y);
+  let scopeScale = mix(0.5, 1.5, zp.z);
+  let glitchAmount = mix(0.0, 0.5, zp.w);
 
   // Mouse - screen top = UP, flip Y
   let mouseUV = u.zoom_config.yz;

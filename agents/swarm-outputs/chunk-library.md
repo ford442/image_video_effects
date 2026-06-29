@@ -19,6 +19,10 @@ This library contains reusable WGSL code chunks extracted from the image_video_e
 5. [Lighting Effects](#5-lighting-effects)
 6. [Compatibility Matrix](#6-compatibility-matrix)
 7. [Usage Guidelines](#7-usage-guidelines)
+8. [Chunk Sources Index](#8-chunk-sources-index)
+9. [Agent 3C — Spectral Computation Pioneer Chunks](#9-agent-3c--spectral-computation-pioneer-chunks)
+10. [Agent 2a — Phase A Shader Upgrade Additions](#10-agent-2a--phase-a-shader-upgrade-additions)
+11. [Agent 3c — Phase C Additions](#11-agent-3c--phase-c-additions)
 
 ---
 
@@ -595,6 +599,39 @@ fn volumetricRays(uv: vec2<f32>, lightPos: vec2<f32>, intensity: f32) -> f32 {
 | sdSmoothUnion | None | k > 0 | k=0 = hard union |
 | fresnelSchlick | None | F0: 0-1 | Typical F0: 0.02-0.95 |
 | glow | None | radius > 0 | Division by radius |
+| bass_env | None | bass/mids: 0-1 | Audio envelope multiplier |
+| hsv2rgb | None | h,s,v: 0-1 | Standard HSV conversion |
+| paletteSmoothstep | None | t: 0-1 | 4-color smoothstep gradient |
+| heatMapGradient | None | t: 0-1 | Black→blue→yellow→red→white |
+| iridescence | None | theta: any | Thin-film cosine color |
+| nearestHexCenter | None | scale > 0 | Returns center in scaled space |
+| voronoi2D | hash22 | st: any | Returns struct with dist/point/cell |
+| sdSegment | None | 2D segment | Epsilon-guarded denominator |
+| rdPulse | glow | speed, width > 0 | Radial pulse + envelope |
+| hash11 | None | p: any f32 | Fast 1D sine hash |
+| hash3_packed | None | p: any vec2 | Returns 3 uncorrelated hashes |
+| rgbToLuma | None | rgb: any vec3 | Rec. 709 luma weights |
+| sigmoidContrast | None | k > 0 | S-curve contrast boost |
+| bayer4x4 | None | pixel coords | 4x4 ordered dither threshold |
+| halftoneDot | None | freq > 0 | Circular halftone dot mask |
+| applyVignette | None | strength: 0-1 | Soft darkening toward corners |
+| edgeVignette | None | strength: 0-1 | Harder photocopy edge darkening |
+| scanlineBloom | None | luma >= 0 | Scanline brightness modulation |
+| halationGlow | texture + sampler | radius > 0 | 4-tap neighbor luma glow |
+| phosphorMask | fbm | strength: 0-1 | FBM-tinted CRT RGB mask |
+| scanlineJitter | hash21 | intensity: 0-1 | Per-row horizontal jitter |
+| interferenceFringes | None | freq > 0 | Thin-film fringe pattern |
+| lensDistort | None | center in UV | Barrel/pincushion distortion |
+| displacedUV | fbm | strength: 0-1 | FBM-driven UV displacement |
+| heatShimmer | fbm | strength: 0-1 | Heat-haze UV warp |
+| sdSpiral | None | arms > 0 | Angular distance to spiral arms |
+| sdCircle | None | r >= 0 | 2D signed circle distance |
+| hexDistance | None | scale > 0 | Hexagonal grid cell distance |
+| causticPattern | None | p: any vec2 | Summed sinusoid caustics |
+| turing_pattern | fbm | scale > 0 | FBM-based activator/inhibitor |
+| multi_scale_turing | turing_pattern | params: vec4 | 3-layer Turing composition |
+| iridescentSubstrate | fbm | strength: 0-1 | FBM-driven opal iridescence |
+| pulseBloom | None | radius > 0 | Expanding radial ring glow |
 
 ---
 
@@ -848,6 +885,216 @@ fn advectRK4(pos: vec2<f32>, dt: f32, time: f32,
 
 ---
 
+## 10. Agent 2a — Phase A Shader Upgrade Additions
+
+### 10.1 Reactive Helpers
+
+#### `bass_env` — Audio Bass Envelope
+**Source:** `luma-echo-warp.wgsl`, `chronos-brush.wgsl`  
+**Description:** Multiplicative audio-reactivity envelope from bass and mids channels
+
+```wgsl
+fn bass_env(bass: f32, mids: f32) -> f32 {
+  return 1.0 + bass * 0.5 + mids * 0.2;
+}
+```
+
+**Compatibility:** No dependencies  
+**Use Cases:** Scale effect strength, brush size, or glow intensity by audio
+
+---
+
+### 10.2 Color Utilities
+
+#### `hsv2rgb` — HSV to RGB Conversion
+**Source:** `chronos-brush.wgsl`  
+**Description:** Compact HSV to RGB conversion using the IQ / GLSL method
+
+```wgsl
+fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
+    let k = vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0);
+    let p = abs(fract(vec3<f32>(h) + k) * 6.0 - vec3<f32>(3.0));
+    return v * mix(vec3<f32>(1.0), clamp(p - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0)), s);
+}
+```
+
+**Parameters:**
+- `h`: Hue [0, 1]
+- `s`: Saturation [0, 1]
+- `v`: Value [0, 1]
+
+---
+
+#### `paletteSmoothstep` — Smoothstep Gradient Palette
+**Source:** `rd-on-video-pass2.wgsl`  
+**Description:** Four-color palette blended via smoothstep thresholds
+
+```wgsl
+fn paletteSmoothstep(t: f32, c1: vec3<f32>, c2: vec3<f32>, c3: vec3<f32>, c4: vec3<f32>) -> vec3<f32> {
+    let a = smoothstep(0.0, 0.35, t);
+    let b = smoothstep(0.35, 0.75, t);
+    let c = smoothstep(0.75, 1.0, t);
+    return mix(mix(c1, c2, a), mix(c3, c4, c), b);
+}
+```
+
+**Parameters:**
+- `t`: Phase input [0, 1]
+- `c1..c4`: Control colors at 0.0, ~0.35-0.75, ~0.75-1.0, 1.0
+
+---
+
+#### `heatMapGradient` — Heat Map Color Gradient
+**Source:** `motion-heatmap.wgsl`  
+**Description:** Classic thermal visualization gradient
+
+```wgsl
+fn heatMapGradient(t: f32) -> vec3<f32> {
+    var col = vec3<f32>(0.0);
+    if (t < 0.3) {
+        col = mix(vec3<f32>(0.0, 0.0, 0.2), vec3<f32>(0.0, 0.0, 1.0), t / 0.3);
+    } else if (t < 0.6) {
+        col = mix(vec3<f32>(0.0, 0.0, 1.0), vec3<f32>(1.0, 1.0, 0.0), (t - 0.3) / 0.3);
+    } else {
+        col = mix(vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), (t - 0.6) / 0.4);
+    }
+    if (t > 0.9) {
+        col = mix(col, vec3<f32>(1.0, 1.0, 1.0), (t - 0.9) / 0.1);
+    }
+    return col;
+}
+```
+
+**Compatibility:** No dependencies  
+**Returns:** RGB heat color for `t` in [0, 1]
+
+---
+
+#### `iridescence` — Thin-Film Iridescent Color
+**Source:** `gen-holographic-fracture.wgsl`  
+**Description:** Cosine-based iridescence for holographic / thin-film effects
+
+```wgsl
+fn iridescence(theta: f32, shift: f32) -> vec3<f32> {
+    let t = theta * 4.0 + shift;
+    return 0.5 + 0.5 * cos(vec3<f32>(t, t + 2.094, t + 4.189));
+}
+```
+
+**Parameters:**
+- `theta`: Angle or phase input
+- `shift`: Time/distance offset
+
+---
+
+### 10.3 UV Transformations / Geometric Patterns
+
+#### `nearestHexCenter` — Hexagonal Grid Nearest Center
+**Source:** `hex-mosaic.wgsl`, `quantum-prism.wgsl`  
+**Description:** Finds the nearest hexagon cell center for a given UV
+
+```wgsl
+fn nearestHexCenter(uv: vec2<f32>, scale: f32) -> vec2<f32> {
+    let r = vec2<f32>(1.0, 1.7320508);
+    let h = r * 0.5;
+    let uvScaled = uv * scale;
+    let uvA = uvScaled / r;
+    let idA = floor(uvA + 0.5);
+    let uvB = (uvScaled - h) / r;
+    let idB = floor(uvB + 0.5);
+    let centerA = idA * r;
+    let centerB = idB * r + h;
+    let distA = distance(uvScaled, centerA);
+    let distB = distance(uvScaled, centerB);
+    return select(centerB, centerA, distA < distB);
+}
+```
+
+**Compatibility:** No dependencies  
+**Returns:** Center coordinate in the same scaled space as `uv * scale`
+
+---
+
+#### `voronoi2D` — 2D Voronoi Pattern
+**Source:** `interactive-voronoi-lens.wgsl`  
+**Description:** Animated 2D Voronoi with time/chaos-driven jitter
+
+```wgsl
+struct VoronoiResult {
+    dist: f32,
+    point: vec2<f32>,
+    cell: vec2<f32>,
+};
+
+fn voronoi2D(st: vec2<f32>, time: f32, chaos: f32) -> VoronoiResult {
+    let i_st = floor(st);
+    let f_st = fract(st);
+    var result = VoronoiResult(1.0, vec2<f32>(0.0), vec2<f32>(0.0));
+    for (var y = -1; y <= 1; y++) {
+        for (var x = -1; x <= 1; x++) {
+            let neighbor = vec2<f32>(f32(x), f32(y));
+            var point = hash22(i_st + neighbor);
+            point = 0.5 + 0.5 * sin(time * chaos + 6.2831 * point);
+            let d = length(neighbor + point - f_st);
+            if (d < result.dist) {
+                result.dist = d;
+                result.point = point;
+                result.cell = i_st + neighbor;
+            }
+        }
+    }
+    return result;
+}
+```
+
+**Compatibility:** Requires `hash22`  
+**Use Cases:** Voronoi lenses, cell patterns, mosaic effects
+
+---
+
+### 10.4 SDF Primitives
+
+#### `sdSegment` — Signed Distance to Line Segment
+**Source:** `gen-holographic-fracture.wgsl`  
+**Description:** Signed distance from point `p` to segment `a-b`
+
+```wgsl
+fn sdSegment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / (dot(ba, ba) + 1e-6), 0.0, 1.0);
+    return length(pa - ba * h);
+}
+```
+
+**Compatibility:** No dependencies  
+**Returns:** Euclidean distance to segment
+
+---
+
+### 10.5 Reactive Patterns
+
+#### `rdPulse` — Reaction-Diffusion-like Radial Pulse
+**Source:** `gen-bioelectric-pulse.wgsl`  
+**Description:** Decaying radial wave pulse for organic pulse effects
+
+```wgsl
+fn rdPulse(p: vec2<f32>, center: vec2<f32>, time: f32, speed: f32, width: f32) -> f32 {
+    let d = length(p - center);
+    let phase = d * 8.0 - time * speed * 4.0;
+    let wave = sin(phase) * 0.5 + 0.5;
+    let envelope = exp(-d * d * 2.0) * (1.0 - smoothstep(0.0, 1.5, d));
+    return wave * envelope * glow(d, width, 1.0);
+}
+```
+
+**Compatibility:** Requires `glow`  
+**Parameters:**
+- `speed`: Wave propagation speed
+- `width`: Glow/decay width
+
+---
+
 ## Updated Chunk Sources Index
 
 | Shader File | Chunks Extracted |
@@ -871,7 +1118,451 @@ fn advectRK4(pos: vec2<f32>, dt: f32, time: f32,
 | `spec-prismatic-dispersion.wgsl` | cauchyIOR, wavelengthToRGB |
 | `spec-iridescence-engine.wgsl` | wavelengthToRGB |
 | `spec-runge-kutta-advection.wgsl` | advectRK4 |
+| `interactive-voronoi-lens.wgsl` | voronoi2D |
+| `hex-mosaic.wgsl` | nearestHexCenter |
+| `quantum-prism.wgsl` | nearestHexCenter |
+| `motion-heatmap.wgsl` | heatMapGradient |
+| `chronos-brush.wgsl` | hsv2rgb, bass_env |
+| `luma-echo-warp.wgsl` | bass_env |
+| `rd-on-video-pass2.wgsl` | paletteSmoothstep |
+| `gen-holographic-fracture.wgsl` | sdSegment, iridescence |
+| `gen-bioelectric-pulse.wgsl` | rdPulse |
+| `temporal-feedback-zoom-tracer.wgsl` | rgbToLuma |
+| `temporal-rgb-ghost.wgsl` | applyVignette, displacedUV |
+| `temporal-phosphor-burn.wgsl` | scanlineBloom, halationGlow, phosphorMask |
+| `prism-displacement.wgsl` | hash11, lensDistort |
+| `xerox-degrade.wgsl` | hash3_packed, bayer4x4, sigmoidContrast, halftoneDot, edgeVignette |
+| `holographic-flicker.wgsl` | interferenceFringes, scanlineJitter |
+| `chroma-vortex.wgsl` | sdSpiral |
+| `gen-luminous-cauldron.wgsl` | causticPattern, heatShimmer |
+| `generative-turing-veins.wgsl` | turing_pattern, multi_scale_turing |
+| `gen-opal-circuit.wgsl` | hexDistance, iridescentSubstrate |
+| `gen-bioreactor-bloom.wgsl` | sdCircle, pulseBloom |
 
 ---
 
-*End of Chunk Library - 48 Functions Documented*
+## 11. Agent 3c — Phase C Additions
+
+### 11.1 Hash & Noise Helpers
+
+#### `hash11` — 1D Sine Hash
+**Source:** `prism-displacement.wgsl`
+
+```wgsl
+fn hash11(p: f32) -> f32 {
+    return fract(sin(p * 12.9898) * 43758.5453);
+}
+```
+
+**Compatibility:** No dependencies  
+**Returns:** f32 in range [0, 1]
+
+---
+
+#### `hash3_packed` — Packed 2D-to-3D Hash
+**Source:** `xerox-degrade.wgsl`
+
+```wgsl
+fn hash3_packed(p: vec2<f32>) -> vec3<f32> {
+    var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, p3.yxz + 33.33);
+    return fract((p3.xxy + p3.yzz) * p3.zyx);
+}
+```
+
+**Compatibility:** No dependencies  
+**Returns:** Three uncorrelated values in [0, 1]
+
+---
+
+### 11.2 Color & Tone Helpers
+
+#### `rgbToLuma` — Rec. 709 Luminance
+**Source:** `temporal-feedback-zoom-tracer.wgsl`, `temporal-rgb-ghost.wgsl`, `temporal-phosphor-burn.wgsl`
+
+```wgsl
+fn rgbToLuma(rgb: vec3<f32>) -> f32 {
+    return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+```
+
+**Compatibility:** No dependencies
+
+---
+
+#### `sigmoidContrast` — S-Curve Contrast
+**Source:** `xerox-degrade.wgsl`
+
+```wgsl
+fn sigmoidContrast(x: f32, k: f32) -> f32 {
+    return 1.0 / (1.0 + exp(-k * (x - 0.5)));
+}
+```
+
+**Compatibility:** No dependencies  
+**Parameters:**
+- `x`: input value
+- `k`: contrast steepness (higher = harder contrast)
+
+---
+
+### 11.3 Dithering & Halftone
+
+#### `bayer4x4` — Ordered Dither Matrix
+**Source:** `xerox-degrade.wgsl`
+
+```wgsl
+fn bayer4x4(p: vec2<i32>) -> f32 {
+    let x = u32(p.x) & 3u;
+    let y = u32(p.y) & 3u;
+    let M = array<u32, 16>(
+        0u,  8u,  2u, 10u,
+       12u,  4u, 14u,  6u,
+        3u, 11u,  1u,  9u,
+       15u,  7u, 13u,  5u
+    );
+    return f32(M[y * 4u + x]) * 0.0625;
+}
+```
+
+**Compatibility:** No dependencies  
+**Returns:** Threshold value in [0, 1]
+
+---
+
+#### `halftoneDot` — Circular Halftone Dot Mask
+**Source:** `xerox-degrade.wgsl`
+
+```wgsl
+fn halftoneDot(luma: f32, uv: vec2<f32>, freq: f32) -> f32 {
+    let grid = fract(uv * freq) - 0.5;
+    let radius = luma * 0.707;
+    return 1.0 - smoothstep(radius - 0.02, radius, length(grid));
+}
+```
+
+**Compatibility:** No dependencies
+
+---
+
+### 11.4 Vignette
+
+#### `applyVignette` — Soft Corner Darkening
+**Source:** `temporal-rgb-ghost.wgsl`
+
+```wgsl
+fn applyVignette(color: vec3<f32>, uv: vec2<f32>, strength: f32) -> vec3<f32> {
+    let d = length(uv - vec2<f32>(0.5));
+    let v = smoothstep(0.5, 0.5 - strength, d);
+    return color * v;
+}
+```
+
+**Compatibility:** No dependencies
+
+---
+
+#### `edgeVignette` — Photocopy Edge Darkening
+**Source:** `xerox-degrade.wgsl`
+
+```wgsl
+fn edgeVignette(uv: vec2<f32>, strength: f32) -> f32 {
+    let d = length(uv - vec2<f32>(0.5));
+    let v = smoothstep(0.7, 0.35, d);
+    return mix(1.0, v, strength);
+}
+```
+
+**Compatibility:** No dependencies  
+**Returns:** Multiplier in [0, 1]
+
+---
+
+### 11.5 Temporal / CRT Effects
+
+#### `scanlineBloom` — Scanline Brightness Modulation
+**Source:** `temporal-phosphor-burn.wgsl`
+
+```wgsl
+fn scanlineBloom(uv: vec2<f32>, luma: f32, strength: f32) -> f32 {
+    let scan = sin(uv.y * u.config.z * PI);
+    let lineGlow = pow(abs(scan), 0.5);
+    return 1.0 + luma * strength * lineGlow;
+}
+```
+
+**Compatibility:** Requires global `PI` and `u.config.z` (resolution width)
+
+---
+
+#### `halationGlow` — Neighbor Luma Glow
+**Source:** `temporal-phosphor-burn.wgsl`
+
+```wgsl
+fn halationGlow(uv: vec2<f32>, tex: texture_2d<f32>, samp: sampler, radius: f32) -> f32 {
+    let off = radius / vec2<f32>(u.config.z, u.config.w);
+    var glow = 0.0;
+    glow = glow + rgbToLuma(textureSampleLevel(tex, samp, uv + vec2<f32>(off.x, 0.0), 0.0).rgb);
+    glow = glow + rgbToLuma(textureSampleLevel(tex, samp, uv - vec2<f32>(off.x, 0.0), 0.0).rgb);
+    glow = glow + rgbToLuma(textureSampleLevel(tex, samp, uv + vec2<f32>(0.0, off.y), 0.0).rgb);
+    glow = glow + rgbToLuma(textureSampleLevel(tex, samp, uv - vec2<f32>(0.0, off.y), 0.0).rgb);
+    return glow * 0.25;
+}
+```
+
+**Compatibility:** Requires `rgbToLuma` and global `u.config.zw`
+
+---
+
+#### `phosphorMask` — FBM-Tinted CRT RGB Mask
+**Source:** `temporal-phosphor-burn.wgsl`
+
+```wgsl
+fn phosphorMask(uv: vec2<f32>, time: f32, strength: f32) -> vec3<f32> {
+    let n = fbm(uv * 120.0 + time * 0.05, 2);
+    let r = 0.7 + 0.3 * sin(n * 6.28);
+    let g = 0.7 + 0.3 * sin(n * 6.28 + 2.09);
+    let b = 0.7 + 0.3 * sin(n * 6.28 + 4.18);
+    return mix(vec3<f32>(1.0), vec3<f32>(r, g, b), strength);
+}
+```
+
+**Compatibility:** Requires `fbm`
+
+---
+
+#### `scanlineJitter` — Per-Row Horizontal Jitter
+**Source:** `holographic-flicker.wgsl`
+
+```wgsl
+fn scanlineJitter(uv: vec2<f32>, resolution: vec2<f32>, time: f32, intensity: f32) -> vec2<f32> {
+    let line = floor(uv.y * resolution.y);
+    let jitter = (hash21(vec2<f32>(line, time * 60.0)) - 0.5) * intensity * 0.04;
+    return uv + vec2<f32>(jitter, 0.0);
+}
+```
+
+**Compatibility:** Requires `hash21`
+
+---
+
+#### `interferenceFringes` — Thin-Film Fringe Pattern
+**Source:** `holographic-flicker.wgsl`
+
+```wgsl
+fn interferenceFringes(uv: vec2<f32>, time: f32, freq: f32, strength: f32) -> f32 {
+    let phase = uv.y * freq + uv.x * freq * 0.5 - time * 6.0;
+    return pow(0.5 + 0.5 * cos(phase), 6.0) * strength;
+}
+```
+
+**Compatibility:** No dependencies
+
+---
+
+### 11.6 UV Distortion
+
+#### `lensDistort` — Barrel / Pincushion Distortion
+**Source:** `prism-displacement.wgsl`
+
+```wgsl
+fn lensDistort(uv: vec2<f32>, center: vec2<f32>, k1: f32, k2: f32) -> vec2<f32> {
+    let d = uv - center;
+    let r2 = dot(d, d);
+    let factor = 1.0 + k1 * r2 + k2 * r2 * r2;
+    return center + d * factor;
+}
+```
+
+**Compatibility:** No dependencies
+
+---
+
+#### `displacedUV` — FBM-Driven UV Displacement
+**Source:** `temporal-rgb-ghost.wgsl`
+
+```wgsl
+fn displacedUV(uv: vec2<f32>, time: f32, strength: f32, seed: f32) -> vec2<f32> {
+    let n1 = fbm(uv * 10.0 + vec2<f32>(seed, time * 0.2), 3);
+    let n2 = fbm(uv * 10.0 + vec2<f32>(time * 0.15, seed + 31.0), 3);
+    return uv + (vec2<f32>(n1, n2) - 0.5) * strength;
+}
+```
+
+**Compatibility:** Requires `fbm`
+
+---
+
+#### `heatShimmer` — Heat-Haze UV Warp
+**Source:** `gen-luminous-cauldron.wgsl`
+
+```wgsl
+fn heatShimmer(uv: vec2<f32>, time: f32, strength: f32) -> vec2<f32> {
+    let warp = vec2<f32>(
+        fbm(uv * 4.0 + vec2<f32>(time * 0.7, 0.0), 3),
+        fbm(uv * 4.0 + vec2<f32>(0.0, time * 0.6), 3)
+    );
+    return uv + (warp - 0.5) * strength;
+}
+```
+
+**Compatibility:** Requires `fbm`
+
+---
+
+### 11.7 SDF Primitives
+
+#### `sdSpiral` — Spiral Arm Angular Distance
+**Source:** `chroma-vortex.wgsl`
+
+```wgsl
+fn sdSpiral(p: vec2<f32>, arms: f32, tightness: f32) -> f32 {
+    let r = length(p);
+    let a = atan2(p.y, p.x);
+    let spiralTarget = arms * r * tightness;
+    let seg = abs(fract((a + spiralTarget) / TAU) - 0.5) * TAU;
+    return seg;
+}
+```
+
+**Compatibility:** Requires global `TAU`
+
+---
+
+#### `sdCircle` — 2D Signed Circle Distance
+**Source:** `gen-bioreactor-bloom.wgsl`
+
+```wgsl
+fn sdCircle(p: vec2<f32>, r: f32) -> f32 {
+    return length(p) - r;
+}
+```
+
+**Compatibility:** No dependencies
+
+---
+
+#### `hexDistance` — Hexagonal Grid Cell Distance
+**Source:** `gen-opal-circuit.wgsl`
+
+```wgsl
+fn hexDistance(uv: vec2<f32>, scale: f32) -> f32 {
+    let q = sqrt(3.0);
+    let h = uv * scale;
+    let ax = vec2<f32>(q * 0.5, 0.5);
+    let ay = vec2<f32>(0.0, 1.0);
+    let cx = dot(h, ax);
+    let cy = dot(h, ay - ax * 0.5);
+    let rx = round(cx);
+    let ry = round(cy);
+    let rz = round(-cx - cy);
+    let dx = abs(cx - rx);
+    let dy = abs(cy - ry);
+    let dz = abs(-cx - cy - rz);
+    return max(max(dx, dy), dz);
+}
+```
+
+**Compatibility:** No dependencies  
+**Returns:** Distance to nearest hex cell center in axial coordinates
+
+---
+
+### 11.8 Generative Patterns
+
+#### `causticPattern` — Summed Sinusoid Caustics
+**Source:** `gen-luminous-cauldron.wgsl`
+
+```wgsl
+fn causticPattern(p: vec2<f32>, time: f32) -> f32 {
+    var c = 0.0;
+    c += 0.5 + 0.5 * sin(p.x * 12.0 + time * 2.3);
+    c += 0.5 + 0.5 * sin(p.y * 14.0 - time * 1.7);
+    c += 0.5 + 0.5 * sin((p.x + p.y) * 9.0 + time * 2.9);
+    c += 0.5 + 0.5 * sin(length(p) * 16.0 - time * 3.1);
+    return c * 0.25;
+}
+```
+
+**Compatibility:** No dependencies
+
+---
+
+#### `turing_pattern` — FBM-Based Activator/Inhibitor
+**Source:** `generative-turing-veins.wgsl`
+
+```wgsl
+fn turing_pattern(uv: vec2<f32>, time: f32, scale: f32, feed: f32) -> vec2<f32> {
+    var p = uv * scale;
+    let activator = fbm(p + vec2(time * 0.1, 0.0), 6);
+    let inhibitor = fbm(p * 0.5 + vec2(0.0, time * 0.05), 4);
+    let reaction = activator * inhibitor * (feed + 0.5);
+    let diffusion_a = (fbm(p * 1.2, 5) - 0.5) * 0.1;
+    let diffusion_i = (fbm(p * 0.6, 4) - 0.5) * 0.2;
+    return vec2(activator + diffusion_a + reaction * 0.1, inhibitor + diffusion_i - reaction * 0.05);
+}
+```
+
+**Compatibility:** Requires `fbm`
+
+---
+
+#### `multi_scale_turing` — Three-Layer Turing Composition
+**Source:** `generative-turing-veins.wgsl`
+
+```wgsl
+fn multi_scale_turing(uv: vec2<f32>, time: f32, params: vec4<f32>, bass: f32) -> vec4<f32> {
+    let s1 = params.x * 2.0 + 1.0;
+    let s2 = params.y * 1.5 + 0.5;
+    let s3 = params.z * 4.0 + 2.0;
+    let feed = params.w * 0.5 + 0.5 + bass * 0.1 * sin(time * 0.3);
+
+    let p1 = turing_pattern(uv, time, s1, feed);
+    let p2 = turing_pattern(uv * 1.3 + vec2<f32>(0.4, -0.2), time * 0.8, s2, feed * 0.9);
+    let p3 = turing_pattern(uv * 0.7 + vec2<f32>(-0.3, 0.5), time * 1.2, s3, feed * 1.1);
+
+    let coarse = (p1.x * p2.y + p1.y * p2.x) * 2.0;
+    let fine = (p2.x * p3.y + p2.y * p3.x) * 2.5;
+    let micro = abs(p3.x - p3.y) * 3.0;
+    return vec4<f32>(coarse, fine, micro, feed);
+}
+```
+
+**Compatibility:** Requires `turing_pattern`
+
+---
+
+#### `iridescentSubstrate` — FBM-Driven Opal Iridescence
+**Source:** `gen-opal-circuit.wgsl`
+
+```wgsl
+fn iridescentSubstrate(uv: vec2<f32>, time: f32, strength: f32) -> vec3<f32> {
+    let n = fbm(uv * 5.0 + time * 0.1, 4);
+    let angle = n * 6.28318;
+    let r = 0.5 + 0.5 * cos(angle + 0.0);
+    let g = 0.5 + 0.5 * cos(angle + 2.1);
+    let b = 0.5 + 0.5 * cos(angle + 4.2);
+    return vec3<f32>(r, g, b) * strength;
+}
+```
+
+**Compatibility:** Requires `fbm`
+
+---
+
+#### `pulseBloom` — Expanding Radial Ring Glow
+**Source:** `gen-bioreactor-bloom.wgsl`
+
+```wgsl
+fn pulseBloom(uv: vec2<f32>, time: f32, center: vec2<f32>, radius: f32, speed: f32) -> f32 {
+    let d = length(uv - center);
+    let ring = abs(d - radius * (0.7 + 0.3 * sin(time * speed)));
+    return exp(-ring * ring * 80.0) * smoothstep(radius * 1.5, 0.0, d);
+}
+```
+
+**Compatibility:** No dependencies
+
+---
+
+*End of Chunk Library - 75 Functions Documented*

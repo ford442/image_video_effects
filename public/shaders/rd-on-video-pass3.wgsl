@@ -2,6 +2,9 @@
 //  RD on Video (Pass 3: Composite Over Video)
 //  Category: simulation
 //  Features: multi-pass-3, video-composite, luma-mask
+//  Pass graph: Pass 3 reads the colorized pattern from dataTextureC
+//              (copy of Pass 2's dataTextureB), composites it over the
+//              input video, and writes the final image to writeTexture.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -49,7 +52,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var outColor = mix(base.rgb, base.rgb + overlay.rgb * (0.7 + simMask), blend);
   outColor = clamp(outColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  textureStore(writeTexture, coord, vec4<f32>(outColor, 1.0));
+  textureStore(writeTexture, coord, vec4<f32>(outColor, base.a));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

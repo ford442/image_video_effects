@@ -1,0 +1,187 @@
+{
+  "agent": "1e",
+  "dimension": "visual",
+  "batch": 1,
+  "shaders": [
+    {
+      "id": "alpha-fluid-simulation-paint",
+      "rgba_compliance": { "score": 25, "notes": "Calculated density alpha, depth write, all 13 bindings in order, matching Uniforms, and full header present." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "High visual complexity combining Navier-Stokes-style advection, pressure projection, vorticity, mouse and ripple injection." },
+      "total": 40
+    },
+    {
+      "id": "alpha-hdr-bloom-chain",
+      "rgba_compliance": { "score": 25, "notes": "Exposure-based alpha, depth passthrough, bindings and Uniforms match spec, header present." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Diverse techniques: HDR threshold, radial bloom, tone mapping, mouse glow, ripple flash." },
+      "total": 40
+    },
+    {
+      "id": "alpha-reaction-diffusion-rgba",
+      "rgba_compliance": { "score": 25, "notes": "Alpha derived from biomass and instability, depth written, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Four-species predator-prey ecosystem with audio-modulated diffusion and depth stratification." },
+      "total": 40
+    },
+    {
+      "id": "audio-reactive-pyramid",
+      "rgba_compliance": { "score": 25, "notes": "Alpha preserved from source through pyramid blend, depth written, bindings and Uniforms correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Three-level Laplacian pyramid driven by FFT bass/mid/treble bands." },
+      "total": 40
+    },
+    {
+      "id": "aurora-rift",
+      "rgba_compliance": { "score": 23, "notes": "Calculated atmospheric alpha and depth write are correct; Uniforms struct swaps zoom_config and zoom_params order." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Very high complexity: curl/FBM/Voronoi/4D noise, chromatic dispersion, quaternion rotation, anisotropic diffusion." },
+      "total": 38
+    },
+    {
+      "id": "aurora-rift-2-pass1",
+      "rgba_compliance": { "score": 25, "notes": "Pass-through input alpha preserved, depth written, 13 bindings in order, header present." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Rich volumetric pass with curl flow, layered parallax, cellular foam and 4D hyper-noise." },
+      "total": 40
+    },
+    {
+      "id": "aurora-rift-pass1",
+      "rgba_compliance": { "score": 25, "notes": "Input alpha preserved, depth written, bindings in order, header present; Uniforms order matches companion pass." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Volumetric raymarch pass with audio-reactive bass/treble modulation and IGN dither." },
+      "total": 40
+    },
+    {
+      "id": "bayer-dither-interactive",
+      "rgba_compliance": { "score": 25, "notes": "Alpha computed from influence, scanline and dither confidence; depth and Uniforms correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Combines Bayer matrix, error diffusion, palette morphing, phosphor dot mask, chromatic aberration and scanlines." },
+      "total": 40
+    },
+    {
+      "id": "bio-lenia-rgba",
+      "rgba_compliance": { "score": 25, "notes": "State-based activator alpha, depth write, bindings/Uniforms/header all correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Advanced-hybrid: Lenia kernel/growth chunks plus reaction-diffusion ecosystem, chunk attribution present." },
+      "total": 40
+    },
+    {
+      "id": "boids-rgba-ecosystem",
+      "rgba_compliance": { "score": 25, "notes": "Biomass alpha, depth write, bindings and Uniforms match spec, header present." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Advanced-hybrid: boids flocking velocity combined with multi-species ecosystem, chunk attribution present." },
+      "total": 40
+    },
+    {
+      "id": "byte-mosh",
+      "rgba_compliance": { "score": 25, "notes": "Alpha derived from source alpha and edge glow, depth written, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Highly diverse: LFSR corruption, Galois-field XOR, block-copy datamoshing, scanlines and rainbow artifacts." },
+      "total": 40
+    },
+    {
+      "id": "chromatic-phase-inversion",
+      "rgba_compliance": { "score": 25, "notes": "Alpha blends input alpha toward opaque by effect intensity, depth written, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Combines per-channel phase inversion, chromatic offsets, lens distortion, FBM halo, temporal echo and scanlines." },
+      "total": 40
+    },
+    {
+      "id": "chrono-luma-slit-scan",
+      "rgba_compliance": { "score": 24, "notes": "Calculated motion-driven alpha and depth write; uses a 14th historyTexture binding beyond the canonical 13." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "History-ring temporal slit-scan driven by luminance with sub-frame interpolation and ripple warp." },
+      "total": 39
+    },
+    {
+      "id": "chrono-slit-scan",
+      "rgba_compliance": { "score": 25, "notes": "Alpha from temporal history blend, depth passthrough, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Multi-slit SDF with branchless count gating, FBM width modulation and temporal feedback." },
+      "total": 40
+    },
+    {
+      "id": "cmyk-halftone-explosion",
+      "rgba_compliance": { "score": 25, "notes": "Alpha from total chromatic displacement, depth write, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Advanced-hybrid: CMYK halftone dots combined with mouse-driven prism/chromatic shockwaves, chunk attribution present." },
+      "total": 40
+    },
+    {
+      "id": "crt-clear-zone",
+      "rgba_compliance": { "score": 25, "notes": "Alpha from clear-mask, luma, edge and treble; depth written, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Diverse CRT stack: barrel distortion, chromatic aberration, shadow mask, scanlines, phosphor decay, clear zone." },
+      "total": 40
+    },
+    {
+      "id": "crt-tv",
+      "rgba_compliance": { "score": 19, "notes": "Hardcodes alpha to 1.0 on a non-generative post-processing shader; otherwise bindings, Uniforms and header are correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Complex physical CRT simulation with phosphor persistence, aperture grille, halation, barrel distortion and scanlines." },
+      "total": 34
+    },
+    {
+      "id": "crystal-refraction",
+      "rgba_compliance": { "score": 25, "notes": "Physical transmittance alpha via Fresnel/Beer’s-law function, depth write, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Faceted crystal lens with IOR dispersion, Fresnel reflection, absorption and specular edge highlights." },
+      "total": 40
+    },
+    {
+      "id": "cursor-aura",
+      "rgba_compliance": { "score": 25, "notes": "Alpha from pre-final compositing, depth write, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Mouse-driven aura with edge detection, pulsing ring, audio-reactive radius and glow." },
+      "total": 40
+    },
+    {
+      "id": "data-slicer",
+      "rgba_compliance": { "score": 25, "notes": "Alpha from displacement and cell edges, depth written, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Very diverse: domain warping, Voronoi cracks, quasicrystal, chromatic split, FBM sparkle." },
+      "total": 40
+    },
+    {
+      "id": "digital-crease",
+      "rgba_compliance": { "score": 25, "notes": "Alpha from fold opacity, paper opacity and depth; depth write, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Origami fold simulation with paper fiber texture, depth-curve distortion, chromatic folding and lighting." },
+      "total": 40
+    },
+    {
+      "id": "directional-blur-wipe",
+      "rgba_compliance": { "score": 21, "notes": "Blur side hardcodes alpha to 1.0 while the untouched side preserves input alpha, causing inconsistent alpha handling." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Directional blur wipe with split-line glow, depth scatter, chromatic offset and audio reactivity." },
+      "total": 36
+    },
+    {
+      "id": "divine-light-gpt52",
+      "rgba_compliance": { "score": 25, "notes": "Alpha from source alpha plus volumetric luma and halo, depth write, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Volumetric god rays with Henyey-Greenstein phase, dust FBM, Voronoi cells and curl flow." },
+      "total": 40
+    },
+    {
+      "id": "double-exposure-zoom",
+      "rgba_compliance": { "score": 25, "notes": "Alpha from blend ratio, luminance confidence and depth; depth write, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Double exposure with zoom/rotation, chromatic aberration, film response, light leak and temporal trail." },
+      "total": 40
+    },
+    {
+      "id": "dynamic-lens-flares",
+      "rgba_compliance": { "score": 25, "notes": "Alpha from flare energy, ring and starburst, depth write, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Lens flare system with ghosts, halo ring, starburst rays and chromatic hue shifts." },
+      "total": 40
+    },
+    {
+      "id": "elastic-strip",
+      "rgba_compliance": { "score": 25, "notes": "Alpha from base alpha, deformation energy and edge glow; depth write, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Spring-physics strip deformation with chromatic shift, anisotropic highlights, subsurface and plastic sheen." },
+      "total": 40
+    },
+    {
+      "id": "encaustic-wax",
+      "rgba_compliance": { "score": 25, "notes": "Alpha from wax opacity, pigment deposit and depth; depth write, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Painterly wax strata with thermal flow, impasto ridges, subsurface scattering, sparkle and canvas grain." },
+      "total": 40
+    },
+    {
+      "id": "fabric-step-gabor",
+      "rgba_compliance": { "score": 25, "notes": "Fabric alpha from strain, depth write, bindings/Uniforms/header correct." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Advanced-hybrid: mass-spring cloth simulation combined with oriented Gabor filter bank, chunk attribution present." },
+      "total": 40
+    },
+    {
+      "id": "flip-matrix",
+      "rgba_compliance": { "score": 17, "notes": "Hardcodes alpha to 1.0 and uses the copy-paste template header rather than a shader-specific header." },
+      "hybrid_chunk_quality": { "score": 15, "notes": "Grid-based split-flap / 3D flip simulation with aspect-correct cells, backface shading and mechanical glint." },
+      "total": 32
+    },
+    {
+      "id": "fractal-kaleidoscope",
+      "rgba_compliance": { "score": 13, "notes": "Hardcoded alpha 1.0, binding 3 declared out of order after bindings 4-6, and no header comment." },
+      "hybrid_chunk_quality": { "score": 13, "notes": "Kaleidoscope plus fractal zoom and chromatic offset, but minimal inline comments reduce attribution clarity." },
+      "total": 26
+    }
+  ]
+}

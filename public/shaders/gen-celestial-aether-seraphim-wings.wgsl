@@ -226,4 +226,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let outColor = vec4<f32>(col, alpha);
   textureStore(writeTexture, coords, outColor);
   textureStore(dataTextureA, coords, outColor);
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

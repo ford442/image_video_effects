@@ -33,7 +33,7 @@ struct Uniforms {
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
 
 fn hash3(p: vec3<f32>) -> f32 {
-  let q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
+  var q = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
   q = q + dot(q, q.yzx + 33.33);
   return fract((q.x + q.y) * q.z);
 }
@@ -65,7 +65,7 @@ fn rot3Z(a: f32) -> mat3x3<f32> {
 // ─── Noise ───
 fn valueNoise3D(p: vec3<f32>) -> f32 {
   let i = floor(p);
-  let f = fract(p);
+  var f = fract(p);
   f = f * f * (3.0 - 2.0 * f);
   var n = 0.0;
   for (var k: i32 = 0; k <= 1; k = k + 1) {
@@ -288,11 +288,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Parameters from zoom_params
-  let silkDensity = mix(0.1, 1.0, u.zoom_params.x);
-  let cymFreq = mix(0.1, 5.0, u.zoom_params.y);
-  let luminescence = mix(0.0, 2.0, u.zoom_params.z);
-  let weaveSpeed = mix(0.1, 3.0, u.zoom_params.w);
+  // Parameters from zoom_params (clamp to normalized range)
+  let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let silkDensity = mix(0.1, 1.0, zparams.x);
+  let cymFreq = mix(0.1, 5.0, zparams.y);
+  let luminescence = mix(0.0, 2.0, zparams.z);
+  let weaveSpeed = mix(0.1, 3.0, zparams.w);
 
   // Mouse handling: screen top = UP in 3D
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
@@ -336,10 +337,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Tone map
   col = acesToneMap(col * 1.4);
 
-  let finalAlpha = sat(alpha + length(col) * 0.08);
   let finalDepth = sat(0.95 - alpha * 0.3);
 
-  textureStore(writeTexture, coord, vec4<f32>(col, finalAlpha));
+  textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(col.r, col.g, col.b, finalAlpha));
+  textureStore(dataTextureA, coord, vec4<f32>(col.r, col.g, col.b, 1.0));
 }

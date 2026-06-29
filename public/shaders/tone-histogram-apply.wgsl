@@ -14,7 +14,7 @@
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<atomic<u32>>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
@@ -58,7 +58,7 @@ fn main(
   let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
   if (lidx == 0u) {
-    let totalPixels = max(1.0, f32(atomicLoad(&extraBuffer[1])));
+    let totalPixels = max(1.0, extraBuffer[1]);
     var weighted = 0.0;
     var cumulative = 0.0;
     var p05 = 0u;
@@ -68,7 +68,7 @@ fn main(
     let highCut = totalPixels * 0.95;
 
     for (var b = 0u; b < 256u; b = b + 1u) {
-      let count = f32(atomicLoad(&extraBuffer[3u + b]));
+      let count = extraBuffer[3u + b];
       weighted = weighted + f32(b) * count;
       cumulative = cumulative + count;
       if (cumulative <= lowCut) { p05 = b; }
@@ -82,7 +82,7 @@ fn main(
     let tonalSpan = max(4.0, f32(max(1u, p95 - p05)));
     let contrast = mix(0.85, 1.55, clamp(u.zoom_params.y, 0.0, 1.0)) * (255.0 / tonalSpan);
     let saturation = mix(0.80, 1.55, clamp(u.zoom_params.z, 0.0, 1.0));
-    let peakBin = atomicLoad(&extraBuffer[2]);
+    let peakBin = u32(extraBuffer[2]);
 
     wgMeanLuma = meanLuma;
     wgExposure = exposure;

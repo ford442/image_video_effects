@@ -167,4 +167,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     finalColor = pow(finalColor, vec4<f32>(0.92)); // slight gamma lift for glow
 
     textureStore(writeTexture, gid.xy, finalColor);
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

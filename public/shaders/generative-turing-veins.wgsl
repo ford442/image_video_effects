@@ -1,9 +1,14 @@
 // ═══════════════════════════════════════════════════════════════
 // Generative Turing Veins - PASS 1 of 1
-// Multiscale reaction-diffusion Turing patterns generating organic
-// vein/network structures with bioluminescent glow. Evolves procedurally
-// over time with depth-modulated complexity. Blends with input image.
-// Upgraded: 2026-05-31
+//  Category: generative
+//  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
+//            multi-scale-reaction-diffusion, vein-thickness, nutrient-flow,
+//            upgraded-rgba, depth-aware
+//  Multiscale reaction-diffusion Turing patterns generating organic
+//  vein/network structures with bioluminescent glow. Evolves procedurally
+//  over time with depth-modulated complexity. Pure generative output.
+//  Created: 2026-05-31
+//  Upgraded: 2026-06-28
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,88 +33,133 @@ struct Uniforms {
 };
 
 fn hash21(p: vec2<f32>) -> f32 {
-    var n = fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-    return fract(sin(n * 43758.5453) * 43758.5453);
+  var n = fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  return fract(sin(n * 43758.5453) * 43758.5453);
+}
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  return vec2<f32>(hash21(p), hash21(p + vec2(17.1, 29.6)));
 }
 
 fn noise(p: vec2<f32>) -> f32 {
-    var i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(mix(hash21(i + vec2(0.0, 0.0)), hash21(i + vec2(1.0, 0.0)), u.x),
-               mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x), u.y);
+  var i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i + vec2(0.0, 0.0)), hash21(i + vec2(1.0, 0.0)), u.x),
+             mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x), u.y);
 }
 
 fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
-    var value = 0.0;
-    var amplitude = 1.0;
-    var frequency = 1.0;
-    for (var i: i32 = 0; i < octaves; i = i + 1) {
-        value += amplitude * noise(p * frequency);
-        amplitude *= 0.5;
-        frequency *= 2.0;
-    }
-    return value;
+  var value = 0.0;
+  var amplitude = 1.0;
+  var frequency = 1.0;
+  for (var i: i32 = 0; i < octaves; i = i + 1) {
+    value += amplitude * noise(p * frequency);
+    amplitude *= 0.5;
+    frequency *= 2.0;
+  }
+  return value;
 }
 
 fn turing_pattern(uv: vec2<f32>, time: f32, scale: f32, feed: f32) -> vec2<f32> {
-    var p = uv * scale;
-    let activator = fbm(p + vec2(time * 0.1, 0.0), 6);
-    let inhibitor = fbm(p * 0.5 + vec2(0.0, time * 0.05), 4);
-    let reaction = activator * inhibitor * (feed + 0.5);
-    let diffusion_a = (fbm(p * 1.2, 5) - 0.5) * 0.1;
-    let diffusion_i = (fbm(p * 0.6, 4) - 0.5) * 0.2;
-    return vec2(activator + diffusion_a + reaction * 0.1, inhibitor + diffusion_i - reaction * 0.05);
+  var p = uv * scale;
+  let activator = fbm(p + vec2(time * 0.1, 0.0), 6);
+  let inhibitor = fbm(p * 0.5 + vec2(0.0, time * 0.05), 4);
+  let reaction = activator * inhibitor * (feed + 0.5);
+  let diffusion_a = (fbm(p * 1.2, 5) - 0.5) * 0.1;
+  let diffusion_i = (fbm(p * 0.6, 4) - 0.5) * 0.2;
+  return vec2(activator + diffusion_a + reaction * 0.1, inhibitor + diffusion_i - reaction * 0.05);
+}
+
+fn multi_scale_turing(uv: vec2<f32>, time: f32, params: vec4<f32>, bass: f32) -> vec4<f32> {
+  let s1 = params.x * 2.0 + 1.0;
+  let s2 = params.y * 1.5 + 0.5;
+  let s3 = params.z * 4.0 + 2.0;
+  let feed = params.w * 0.5 + 0.5 + bass * 0.1 * sin(time * 0.3);
+
+  let p1 = turing_pattern(uv, time, s1, feed);
+  let p2 = turing_pattern(uv * 1.3 + vec2<f32>(0.4, -0.2), time * 0.8, s2, feed * 0.9);
+  let p3 = turing_pattern(uv * 0.7 + vec2<f32>(-0.3, 0.5), time * 1.2, s3, feed * 1.1);
+
+  let coarse = (p1.x * p2.y + p1.y * p2.x) * 2.0;
+  let fine = (p2.x * p3.y + p2.y * p3.x) * 2.5;
+  let micro = abs(p3.x - p3.y) * 3.0;
+  return vec4<f32>(coarse, fine, micro, feed);
+}
+
+fn veinThickness(uv: vec2<f32>, veins: f32, time: f32) -> f32 {
+  let n = fbm(uv * 18.0 + time * 0.2, 3);
+  let thickness = 0.45 + 0.35 * sin(n * 6.28318 + time * 0.5);
+  return smoothstep(thickness, thickness + 0.12, veins);
+}
+
+fn nutrientFlow(uv: vec2<f32>, time: f32, thicknessMask: f32) -> f32 {
+  var flow = 0.0;
+  for (var i: i32 = 0; i < 4; i = i + 1) {
+    let fi = f32(i);
+    let seed = hash22(vec2<f32>(fi, fi * 7.3));
+    let pos = uv + vec2<f32>(sin(time * 0.4 + fi * 1.7) * 0.3, cos(time * 0.35 + fi * 2.1) * 0.3);
+    let d = length(pos - seed);
+    let pulse = 0.5 + 0.5 * sin(time * 3.0 + fi * 1.3 + d * 25.0);
+    flow += exp(-d * d * 40.0) * pulse * thicknessMask;
+  }
+  return clamp(flow, 0.0, 1.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    var uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
-    let time = u.config.x;
-    let params = u.zoom_params;
-    var mouse = u.zoom_config.yz;
+  let dims = vec2<u32>(u32(u.config.z), u32(u.config.w));
+  if (global_id.x >= dims.x || global_id.y >= dims.y) { return; }
 
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+  let resolution = vec2<f32>(dims);
+  var uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+  let coord = vec2<i32>(global_id.xy);
+  let time = u.config.x;
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  var mouse = u.zoom_config.yz;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let complexity = mix(1.0, 3.0, depth);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-    // Audio-driven feed rate modulation
-    let scale1 = params.x * complexity + 1.0;
-    let scale2 = params.y * complexity * 0.5 + 0.5;
-    let feed_rate = params.z * 0.5 + 0.5 + bass * 0.1 * sin(time * 0.3);
+  let scale1 = zp.x * 1.5 + 0.5;
+  let scale2 = zp.y * 1.0 + 0.25;
+  let feed_rate = zp.z * 0.5 + 0.5;
+  let intensity = zp.w * 0.8 + 0.2;
 
-    var pattern1 = turing_pattern(uv * scale1 + mouse * 0.1, time, scale1, feed_rate);
-    var pattern2 = turing_pattern(uv * scale2 + vec2(time * 0.05), time * 0.7, scale2, feed_rate * 0.8);
+  let warpedUV = uv + vec2<f32>(
+    fbm(uv * 3.0 + vec2<f32>(time * 0.1, 0.0), 3) - 0.5,
+    fbm(uv * 3.0 + vec2<f32>(0.0, time * 0.12), 3) - 0.5
+  ) * 0.04 * (1.0 + mids);
 
-    let veins = (pattern1.x * pattern2.y + pattern1.y * pattern2.x) * 2.0;
-    let vein_mask = smoothstep(0.4, 0.6, veins) * (1.0 - smoothstep(0.7, 1.0, abs(veins - 0.5) * 2.0));
+  let scales = multi_scale_turing(warpedUV * scale1 + mouse * 0.1, time, vec4<f32>(scale1, scale2, 1.0, feed_rate), bass);
+  let veinsRaw = scales.x * 0.55 + scales.y * 0.35 + scales.z * 0.15;
+  let veinMask = veinThickness(warpedUV, veinsRaw, time);
+  let veinGlow = smoothstep(0.3, 0.7, veinsRaw) * (1.0 - smoothstep(0.7, 1.0, abs(veinsRaw - 0.5) * 2.0));
 
-    // Chromatic activator/inhibitor separation
-    let actColor = vec3<f32>(0.2, 0.9, 0.5) * pattern1.x * (1.0 + treble * 0.3);
-    let inhColor = vec3<f32>(0.9, 0.3, 0.6) * pattern2.y * (1.0 + mids * 0.3);
-    let vein_hue = fract(veins * 0.3 + time * 0.1 + pattern1.y * 0.5);
-    let vein_sat = 0.8 + 0.2 * sin(time * 2.0);
-    let vein_val = pow(vein_mask, 0.5) * (params.w + 0.5);
-    let vein_color = mix(vec3(vein_hue, vein_sat, vein_val), actColor + inhColor, 0.3 + bass * 0.2);
+  let nutrients = nutrientFlow(warpedUV, time, veinMask);
+  let nutrientGlow = nutrients * (0.6 + treble * 0.4);
 
-    let src_color = textureSampleLevel(readTexture, u_sampler, uv + (veins - 0.5) * 0.01 * depth, 0.0);
-    var final_color = mix(src_color.rgb, vein_color, vein_mask * 0.7);
+  let actColor = vec3<f32>(0.2, 0.9, 0.5) * scales.x * (1.0 + treble * 0.3);
+  let inhColor = vec3<f32>(0.9, 0.3, 0.6) * scales.y * (1.0 + mids * 0.3);
+  let vein_hue = fract(veinsRaw * 0.3 + time * 0.1 + scales.y * 0.5);
+  let vein_sat = 0.8 + 0.2 * sin(time * 2.0);
+  let vein_val = pow(veinMask, 0.5) * (intensity + 0.5);
+  var vein_color = mix(vec3(vein_hue, vein_sat, vein_val), actColor + inhColor, 0.3 + bass * 0.2);
 
-    let glow = vein_mask * vein_val * 2.0;
-    var final_rgb = final_color + glow * vec3(0.2, 0.4, 0.6);
+  let nutrientColor = vec3<f32>(0.9, 0.95, 0.3) * nutrientGlow;
+  let deepColor = vec3<f32>(0.05, 0.08, 0.12) * (1.0 - veinMask);
+  var final_rgb = deepColor + vein_color * veinMask + nutrientColor;
 
-    // Temporal pattern memory: previous veins blend for organic evolution
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
-    final_rgb = mix(final_rgb, prev * 0.9, 0.05 + bass * 0.02);
+  let glow = veinMask * vein_val * 2.0 + nutrientGlow * 0.8;
+  final_rgb = final_rgb + glow * vec3<f32>(0.2, 0.4, 0.6);
 
-    let alpha = clamp(0.5 + vein_mask * 0.5 + glow * 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4(final_rgb, alpha));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4(final_rgb, alpha));
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+  final_rgb = mix(final_rgb, prev * 0.9, 0.05 + bass * 0.02);
 
-    let mod_depth = depth * (1.0 + vein_mask * 0.3);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(mod_depth, 0.0, 0.0, 0.0));
+  final_rgb = clamp(final_rgb, vec3<f32>(0.0), vec3<f32>(2.0));
+
+  textureStore(writeTexture, coord, vec4(final_rgb, 1.0));
+  textureStore(dataTextureA, coord, vec4(final_rgb, 1.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

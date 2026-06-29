@@ -274,4 +274,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let a = clamp(alpha, 0.0, 1.0);
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col * a, a));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

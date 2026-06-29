@@ -2,10 +2,11 @@
 //  Echo Dunes
 //  Category: generative
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
-//            upgraded-rgba, aces-tone-map, depth-aware
+//            upgraded-rgba, depth-aware, aces-tone-map, domain-warping,
+//            ridge-sdf-shadows, sunset-palette
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-06-28
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -48,6 +49,31 @@ fn noise2(p: vec2<f32>) -> f32 {
   );
 }
 
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+  var value = 0.0;
+  var amplitude = 0.5;
+  var frequency = 1.0;
+  for (var i: i32 = 0; i < octaves; i = i + 1) {
+    value = value + amplitude * noise2(p * frequency);
+    amplitude = amplitude * 0.5;
+    frequency = frequency * 2.0;
+  }
+  return value;
+}
+
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+  let k = select(release, attack, bass > prev);
+  return mix(prev, bass, k);
+}
+
+fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
+  return a + b * cos(6.28318 * (c * t + d));
+}
+
+fn ridgeHeight(x: f32, scale: f32, time: f32, wind: f32, bass: f32) -> f32 {
+  return sin(x * scale + time * wind * (1.0 + bass)) * 0.12;
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -70,21 +96,48 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
-  let duneScale = mix(1.0, 10.0, u.zoom_params.x);
-  let windSpeed = mix(0.05, 1.4, u.zoom_params.y);
-  let mirage = mix(0.0, 1.0, u.zoom_params.z);
-  let echo = mix(0.0, 1.0, u.zoom_params.w);
+  // Clamp/normalize parameter vector
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+
+  // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
+  let prevBass = extraBuffer[0];
+  let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
+  extraBuffer[0] = smoothBass;
+
+  let duneScale = mix(1.0, 10.0, zp.x);
+  let windSpeed = mix(0.05, 1.4, zp.y);
+  let mirage = mix(0.0, 1.0, zp.z);
+  let echo = mix(0.0, 1.0, zp.w);
 
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
 
-  let ridgeA = sin(p.x * duneScale * 5.0 + time * windSpeed * (1.0 + bass));
-  let ridgeB = sin(p.x * duneScale * 2.8 + p.y * 3.0 - time * windSpeed * 0.7);
-  let ridgeC = sin((p.x + p.y * 0.25) * duneScale * 7.0 + time * 0.3);
-  let dunes = ridgeA * 0.5 + ridgeB * 0.35 + ridgeC * 0.15;
+  // ═══ Domain warping: dunes distorted by low-frequency FBM ═══
+  let warp = vec2<f32>(
+    fbm(p * 1.5 + vec2<f32>(time * 0.1, 0.0), 4),
+    fbm(p * 1.5 + vec2<f32>(3.2, 6.1) - time * 0.08, 4)
+  );
+  let warpedP = p + (warp - 0.5) * 0.45;
 
+  let ridgeA = sin(warpedP.x * duneScale * 5.0 + time * windSpeed * (1.0 + smoothBass));
+  let ridgeB = sin(warpedP.x * duneScale * 2.8 + warpedP.y * 3.0 - time * windSpeed * 0.7);
+  let ridgeC = sin((warpedP.x + warpedP.y * 0.25) * duneScale * 7.0 + time * 0.3);
+  let dunes = ridgeA * 0.5 + ridgeB * 0.35 + ridgeC * 0.15;
   let duneHeight = sat(0.5 + 0.5 * dunes);
+
+  // ═══ Ridge SDF shadows: march toward the light, occluded by ridge height ═══
+  let lightDir = normalize(vec2<f32>(0.7, 0.5));
+  var shadow = 1.0;
+  let shadowSteps = 10;
+  for (var i: i32 = 1; i <= shadowSteps; i = i + 1) {
+    let t = f32(i) * 0.04;
+    let sx = p.x + lightDir.x * t;
+    let sy = p.y + lightDir.y * t;
+    let sh = ridgeHeight(sx, duneScale * 5.0, time, windSpeed, smoothBass);
+    shadow = shadow * (0.88 + 0.12 * sat((sy - sh) * 8.0));
+  }
+
   let shimmer = noise2(p * 14.0 + vec2<f32>(time * 0.4, -time * 0.23));
   let mirageWarp = vec2<f32>(sin(p.y * 18.0 + time * 2.0), cos(p.x * 14.0 + time * 1.6)) * mirage * 0.025;
   let warped = noise2((p + mirageWarp) * 9.0);
@@ -93,10 +146,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let echoRings = sin(md * 50.0 - time * (2.0 + mids * 8.0));
   let echoField = smoothstep(0.6, 1.0, echoRings) * exp(-md * 3.0) * echo;
 
-  // Chromatic dunes: warm sand with mirage blue shift
-  var color = vec3<f32>(0.08, 0.05, 0.02);
-  color = color + vec3<f32>(0.92, 0.68, 0.32) * duneHeight * (1.0 + bass * 0.1);
-  color = color + vec3<f32>(1.0, 0.85, 0.55) * shimmer * 0.2;
+  // ═══ Sunset palette: warm horizon to cool zenith ═══
+  let yNorm = sat(0.5 + p.y * 0.5);
+  let skyColor = palette(yNorm,
+    vec3<f32>(0.5, 0.4, 0.5),
+    vec3<f32>(0.5, 0.5, 0.5),
+    vec3<f32>(1.0, 1.0, 1.0),
+    vec3<f32>(0.0, 0.08, 0.18)
+  );
+  let sandLow = vec3<f32>(0.48, 0.26, 0.10);
+  let sandHigh = vec3<f32>(0.95, 0.72, 0.35);
+  let sandColor = mix(sandLow, sandHigh, duneHeight);
+
+  let horizon = smoothstep(-0.1, 0.35, p.y);
+  var color = mix(skyColor, sandColor, horizon);
+  color = color * (0.55 + 0.45 * shadow);
+  color = color + vec3<f32>(1.0, 0.85, 0.55) * shimmer * 0.18;
   color = color + vec3<f32>(0.4, 0.7, 1.0) * warped * mirage * 0.35 * (1.0 + treble * 0.15);
   color = color + vec3<f32>(0.65, 0.9, 1.0) * echoField * (0.4 + treble * 0.9);
 
@@ -104,12 +169,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
   color = mix(color, prev.rgb * 0.9, echo * 0.06 + bass * 0.01);
 
-  let presence = sat(duneHeight * 0.8 + echoField * 0.8 + shimmer * 0.2);
-  let alpha = sat(0.12 + presence * 0.88);
-  let depth = sat(0.95 - duneHeight * 0.65 - echoField * 0.25);
-
   color = acesToneMap(color * 1.1);
-  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(duneHeight, shimmer, echoField, alpha));
+
+  textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(duneHeight, shadow, echoField, 1.0));
 }

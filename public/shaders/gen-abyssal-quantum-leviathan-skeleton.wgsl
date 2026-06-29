@@ -206,4 +206,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let temporal = mix(prev.rgb * decay, color, 0.25);
     textureStore(dataTextureA, coords, vec4<f32>(temporal, 1.0));
     textureStore(writeTexture, coords, vec4<f32>(color, 1.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

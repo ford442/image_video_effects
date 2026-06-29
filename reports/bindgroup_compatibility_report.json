@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-06-14T22:09:09.901409",
-  "total_shaders": 1224,
-  "compatible_count": 1214,
-  "incompatible_count": 6,
+  "timestamp": "2026-06-29T02:37:18.697469",
+  "total_shaders": 1266,
+  "compatible_count": 1261,
+  "incompatible_count": 1,
   "template_count": 4,
   "render_shader_count": 0,
   "shaders": [
@@ -5861,8 +5861,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -7034,7 +7034,7 @@
     {
       "shader_id": "deep-workgroup-multi-effect-blend",
       "file": "/root/image_video_effects/public/shaders/deep-workgroup-multi-effect-blend.wgsl",
-      "status": "incompatible",
+      "status": "compatible",
       "shader_type": "compute",
       "is_template": false,
       "missing_bindings": [],
@@ -7055,11 +7055,11 @@
           4
         ]
       ],
-      "workgroup_size_valid": false,
-      "errors": [
-        "Non-standard workgroup sizes: [[16, 16, 4]]"
-      ],
-      "warnings": []
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": [
+        "Non-standard workgroup size [[16, 16, 4]] is intentional (requiresDeepWorkgroup)"
+      ]
     },
     {
       "shader_id": "digital-compression",
@@ -10285,6 +10285,34 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-astro-mechanical-quantum-furnace-engine",
+      "file": "/root/image_video_effects/public/shaders/gen-astro-mechanical-quantum-furnace-engine.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-astro-orrery-blackbody",
       "file": "/root/image_video_effects/public/shaders/gen-astro-orrery-blackbody.wgsl",
       "status": "compatible",
@@ -10594,6 +10622,36 @@
         "writeTexture",
         "dataTextureA",
         "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-bioelectric-pulse",
+      "file": "/root/image_video_effects/public/shaders/gen-bioelectric-pulse.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -11259,6 +11317,36 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-chromatic-glass-lattice",
+      "file": "/root/image_video_effects/public/shaders/gen-chromatic-glass-lattice.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-chromatic-metamorphosis",
       "file": "/root/image_video_effects/public/shaders/gen-chromatic-metamorphosis.wgsl",
       "status": "compatible",
@@ -11527,6 +11615,36 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-chronos-monolith-resonator",
+      "file": "/root/image_video_effects/public/shaders/gen-chronos-monolith-resonator.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-conway-game-of-life",
       "file": "/root/image_video_effects/public/shaders/gen-conway-game-of-life.wgsl",
       "status": "compatible",
@@ -11597,7 +11715,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -11657,6 +11776,35 @@
         "writeTexture",
         "writeDepthTexture",
         "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-cryogenic-frost-plasma-matrix",
+      "file": "/root/image_video_effects/public/shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -11911,6 +12059,34 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-cybernetic-mycelium-neural-web",
+      "file": "/root/image_video_effects/public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-cycloid-bloom",
       "file": "/root/image_video_effects/public/shaders/gen-cycloid-bloom.wgsl",
       "status": "compatible",
@@ -11963,6 +12139,36 @@
         [
           8,
           8,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-cymatic-quantum-silk-loom",
+      "file": "/root/image_video_effects/public/shaders/gen-cymatic-quantum-silk-loom.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
           1
         ]
       ],
@@ -12402,6 +12608,122 @@
       "texture_store_targets": [
         "dataTextureA",
         "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-ethereal-cyber-aurora-hummingbird-core",
+      "file": "/root/image_video_effects/public/shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-ethereal-cyber-chrono-void-whale",
+      "file": "/root/image_video_effects/public/shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-ethereal-glass-flora-terrarium",
+      "file": "/root/image_video_effects/public/shaders/gen-ethereal-glass-flora-terrarium.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-ethereal-quantum-hologram-bonsai",
+      "file": "/root/image_video_effects/public/shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -12953,6 +13275,36 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-holographic-fracture",
+      "file": "/root/image_video_effects/public/shaders/gen-holographic-fracture.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-holographic-lens-flare-matrix",
       "file": "/root/image_video_effects/public/shaders/gen-holographic-lens-flare-matrix.wgsl",
       "status": "compatible",
@@ -13074,6 +13426,66 @@
     {
       "shader_id": "gen-hopf-fibration-fiber-bundle",
       "file": "/root/image_video_effects/public/shaders/gen-hopf-fibration-fiber-bundle.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-hyper-bismuth-clockwork",
+      "file": "/root/image_video_effects/public/shaders/gen-hyper-bismuth-clockwork.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-hyper-dimensional-bismuth-matrix",
+      "file": "/root/image_video_effects/public/shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
       "status": "compatible",
       "shader_type": "compute",
       "is_template": false,
@@ -13785,6 +14197,36 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-live-studio-tab",
+      "file": "/root/image_video_effects/public/shaders/gen-live-studio-tab.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "dataTextureA",
+        "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-lorenz-attractor",
       "file": "/root/image_video_effects/public/shaders/gen-lorenz-attractor.wgsl",
       "status": "compatible",
@@ -13852,8 +14294,64 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-luminescent-cyber-chrono-void-turtle",
+      "file": "/root/image_video_effects/public/shaders/gen-luminescent-cyber-chrono-void-turtle.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-luminescent-quantum-glass-phoenix-egg",
       "file": "/root/image_video_effects/public/shaders/gen-luminescent-quantum-glass-phoenix-egg.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-luminescent-quantum-void-anglerfish",
+      "file": "/root/image_video_effects/public/shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
       "status": "compatible",
       "shader_type": "compute",
       "is_template": false,
@@ -13951,6 +14449,36 @@
       "texture_store_targets": [
         "writeTexture",
         "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-magnetic-ferrofluid-sculpture",
+      "file": "/root/image_video_effects/public/shaders/gen-magnetic-ferrofluid-sculpture.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -14435,12 +14963,7 @@
       "uniforms_struct": {
         "valid": true,
         "missing_fields": [],
-        "extra_fields": [
-          "x",
-          "y",
-          "z",
-          "w"
-        ]
+        "extra_fields": []
       },
       "workgroup_sizes": [
         [
@@ -14687,6 +15210,36 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-neural-dust",
+      "file": "/root/image_video_effects/public/shaders/gen-neural-dust.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-neural-fractal-hdr",
       "file": "/root/image_video_effects/public/shaders/gen-neural-fractal-hdr.wgsl",
       "status": "compatible",
@@ -14787,6 +15340,36 @@
       "texture_store_targets": [
         "writeTexture",
         "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-neuro-fluid-plasma-lotus",
+      "file": "/root/image_video_effects/public/shaders/gen-neuro-fluid-plasma-lotus.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -15336,6 +15919,36 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-prismatic-cyber-chrono-void-kitsune",
+      "file": "/root/image_video_effects/public/shaders/gen-prismatic-cyber-chrono-void-kitsune.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-prismatic-fractal-dunes",
       "file": "/root/image_video_effects/public/shaders/gen-prismatic-fractal-dunes.wgsl",
       "status": "compatible",
@@ -15366,6 +15979,36 @@
     {
       "shader_id": "gen-prismatic-ion-cascade",
       "file": "/root/image_video_effects/public/shaders/gen-prismatic-ion-cascade.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-prismatic-quantum-fractal-nautilus-engine",
+      "file": "/root/image_video_effects/public/shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
       "status": "compatible",
       "shader_type": "compute",
       "is_template": false,
@@ -15658,6 +16301,34 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-quantum-fluorescent-nebula-anemone",
+      "file": "/root/image_video_effects/public/shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          8,
+          8,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-quantum-foam-alpha",
       "file": "/root/image_video_effects/public/shaders/gen-quantum-foam-alpha.wgsl",
       "status": "compatible",
@@ -15778,6 +16449,36 @@
     {
       "shader_id": "gen-quantum-pollen",
       "file": "/root/image_video_effects/public/shaders/gen-quantum-pollen.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-quantum-singularity-forge",
+      "file": "/root/image_video_effects/public/shaders/gen-quantum-singularity-forge.wgsl",
       "status": "compatible",
       "shader_type": "compute",
       "is_template": false,
@@ -15927,6 +16628,34 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-radiant-cyber-chrono-void-stag",
+      "file": "/root/image_video_effects/public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-radiant-quantum-crystalline-forge",
       "file": "/root/image_video_effects/public/shaders/gen-radiant-quantum-crystalline-forge.wgsl",
       "status": "compatible",
@@ -15939,6 +16668,35 @@
         "writeTexture",
         "writeDepthTexture",
         "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-radiant-quantum-plasma-kraken-core",
+      "file": "/root/image_video_effects/public/shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -16074,8 +16832,68 @@
       "warnings": []
     },
     {
+      "shader_id": "gen-resonant-crystal-canyons",
+      "file": "/root/image_video_effects/public/shaders/gen-resonant-crystal-canyons.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-resonant-quantum-obsidian-scarab-engine",
       "file": "/root/image_video_effects/public/shaders/gen-resonant-quantum-obsidian-scarab-engine.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-resonant-quantum-plasma-dragon-eye",
+      "file": "/root/image_video_effects/public/shaders/gen-resonant-quantum-plasma-dragon-eye.wgsl",
       "status": "compatible",
       "shader_type": "compute",
       "is_template": false,
@@ -16136,6 +16954,118 @@
     {
       "shader_id": "gen-sentient-aether-flora-biosphere",
       "file": "/root/image_video_effects/public/shaders/gen-sentient-aether-flora-biosphere.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-sentient-cyber-aurora-void-owl",
+      "file": "/root/image_video_effects/public/shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-sentient-ferro-silicate-swarm",
+      "file": "/root/image_video_effects/public/shaders/gen-sentient-ferro-silicate-swarm.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-sentient-liquid-neon-fractal-heart",
+      "file": "/root/image_video_effects/public/shaders/gen-sentient-liquid-neon-fractal-heart.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-sentient-quantum-chrono-leviathan-moth",
+      "file": "/root/image_video_effects/public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
       "status": "compatible",
       "shader_type": "compute",
       "is_template": false,
@@ -16224,7 +17154,7 @@
     {
       "shader_id": "gen-showcase-nebula-core",
       "file": "/root/image_video_effects/public/shaders/gen-showcase-nebula-core.wgsl",
-      "status": "incompatible",
+      "status": "compatible",
       "shader_type": "compute",
       "is_template": false,
       "missing_bindings": [],
@@ -16245,11 +17175,15 @@
           "w"
         ]
       },
-      "workgroup_sizes": [],
-      "workgroup_size_valid": false,
-      "errors": [
-        "No @workgroup_size found"
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
       ],
+      "workgroup_size_valid": true,
+      "errors": [],
       "warnings": []
     },
     {
@@ -16412,7 +17346,8 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
-        "writeDepthTexture"
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -16806,6 +17741,66 @@
       "texture_store_targets": [
         "writeTexture",
         "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-symbiotic-plasma-reef-matrix",
+      "file": "/root/image_video_effects/public/shaders/gen-symbiotic-plasma-reef-matrix.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-tectonic-plasma-crucible",
+      "file": "/root/image_video_effects/public/shaders/gen-tectonic-plasma-crucible.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture",
+        "dataTextureA"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -17255,6 +18250,36 @@
         "writeTexture",
         "writeDepthTexture",
         "dataTextureA"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "gen-wasm-hls-physarum-swarm",
+      "file": "/root/image_video_effects/public/shaders/gen-wasm-hls-physarum-swarm.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "dataTextureA",
+        "writeTexture",
+        "writeDepthTexture"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -18637,8 +19662,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -19145,8 +20170,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -19703,6 +20728,209 @@
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "hyb-chromatic-circuit",
+      "file": "/root/image_video_effects/public/shaders/hyb-chromatic-circuit.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "hyb-hex-voronoi-distort",
+      "file": "/root/image_video_effects/public/shaders/hyb-hex-voronoi-distort.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "hyb-iridescent-fbm-glow",
+      "file": "/root/image_video_effects/public/shaders/hyb-iridescent-fbm-glow.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "hyb-kaleidoscope-pulse",
+      "file": "/root/image_video_effects/public/shaders/hyb-kaleidoscope-pulse.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "hyb-neural-voronoi-feedback",
+      "file": "/root/image_video_effects/public/shaders/hyb-neural-voronoi-feedback.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "hyb-spectral-fbm-displace",
+      "file": "/root/image_video_effects/public/shaders/hyb-spectral-fbm-displace.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture"
+      ],
+      "uniforms_struct": {
+        "valid": true,
+        "missing_fields": [],
+        "extra_fields": []
+      },
+      "workgroup_sizes": [
+        [
+          16,
+          16,
+          1
+        ]
+      ],
+      "workgroup_size_valid": true,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "shader_id": "hyb-temporal-fbm-ghost",
+      "file": "/root/image_video_effects/public/shaders/hyb-temporal-fbm-ghost.wgsl",
+      "status": "compatible",
+      "shader_type": "compute",
+      "is_template": false,
+      "missing_bindings": [],
+      "wrong_type_bindings": [],
+      "has_binding_13_plus": false,
+      "texture_store_targets": [
+        "writeTexture",
+        "writeDepthTexture"
       ],
       "uniforms_struct": {
         "valid": true,
@@ -20750,8 +21978,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -20810,8 +22038,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -20870,8 +22098,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -21913,8 +23141,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -24506,8 +25734,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -24668,24 +25896,11 @@
     {
       "shader_id": "molten-gold",
       "file": "/root/image_video_effects/public/shaders/molten-gold.wgsl",
-      "status": "incompatible",
+      "status": "compatible",
       "shader_type": "compute",
       "is_template": false,
       "missing_bindings": [],
-      "wrong_type_bindings": [
-        {
-          "binding": 10,
-          "var_name": "extraBuffer",
-          "found_type": "array<f32>",
-          "storage_class": "<storage, read>"
-        },
-        {
-          "binding": 11,
-          "var_name": "videoTexture",
-          "found_type": "texture_2d<f32>",
-          "storage_class": ""
-        }
-      ],
+      "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
@@ -24710,10 +25925,7 @@
         ]
       ],
       "workgroup_size_valid": true,
-      "errors": [
-        "Binding 10 (extraBuffer) has incompatible type: 'array<f32>'",
-        "Binding 11 (videoTexture) has incompatible type: 'texture_2d<f32>'"
-      ],
+      "errors": [],
       "warnings": []
     },
     {
@@ -24946,8 +26158,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -26652,8 +27864,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -26953,8 +28165,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -27248,8 +28460,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -27701,8 +28913,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -28259,21 +29471,15 @@
     {
       "shader_id": "plasma",
       "file": "/root/image_video_effects/public/shaders/plasma.wgsl",
-      "status": "incompatible",
+      "status": "compatible",
       "shader_type": "compute",
       "is_template": false,
       "missing_bindings": [],
-      "wrong_type_bindings": [
-        {
-          "binding": 12,
-          "var_name": "plasmaBalls",
-          "found_type": "array<PlasmaBall, 50>",
-          "storage_class": "<storage, read>"
-        }
-      ],
+      "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
+        "dataTextureA",
         "writeDepthTexture"
       ],
       "uniforms_struct": {
@@ -28289,9 +29495,7 @@
         ]
       ],
       "workgroup_size_valid": true,
-      "errors": [
-        "Binding 12 (plasmaBalls) has incompatible type: 'array<PlasmaBall, 50>'"
-      ],
+      "errors": [],
       "warnings": []
     },
     {
@@ -29121,8 +30325,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -29569,8 +30773,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -31037,8 +32241,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -31342,8 +32546,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -32919,8 +34123,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -33187,8 +34391,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -34865,18 +36069,11 @@
     {
       "shader_id": "tone-histogram-apply",
       "file": "/root/image_video_effects/public/shaders/tone-histogram-apply.wgsl",
-      "status": "incompatible",
+      "status": "compatible",
       "shader_type": "compute",
       "is_template": false,
       "missing_bindings": [],
-      "wrong_type_bindings": [
-        {
-          "binding": 10,
-          "var_name": "extraBuffer",
-          "found_type": "array<atomic<u32>>",
-          "storage_class": "<storage, read_write>"
-        }
-      ],
+      "wrong_type_bindings": [],
       "has_binding_13_plus": false,
       "texture_store_targets": [
         "writeTexture",
@@ -34896,9 +36093,7 @@
         ]
       ],
       "workgroup_size_valid": true,
-      "errors": [
-        "Binding 10 (extraBuffer) has incompatible type: 'array<atomic<u32>>'"
-      ],
+      "errors": [],
       "warnings": []
     },
     {
@@ -35130,8 +36325,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -36500,8 +37695,8 @@
       },
       "workgroup_sizes": [
         [
-          8,
-          8,
+          16,
+          16,
           1
         ]
       ],
@@ -36805,6 +38000,7 @@
         "datamosh-brush",
         "datamosh",
         "deep-sea-thermal-vent",
+        "deep-workgroup-multi-effect-blend",
         "digital-compression",
         "digital-crease",
         "digital-decay-rgba",
@@ -36913,6 +38109,7 @@
         "gen-art-deco-sky",
         "gen-astral-silk-chrono-weaver-arachnid",
         "gen-astro-kinetic-chrono-orrery",
+        "gen-astro-mechanical-quantum-furnace-engine",
         "gen-astro-orrery-blackbody",
         "gen-audio-spirograph-julia",
         "gen-audio-spirograph",
@@ -36924,6 +38121,7 @@
         "gen-belousov-zhabotinsky",
         "gen-bifurcation-diagram",
         "gen-bio-luminescent-jelly",
+        "gen-bioelectric-pulse",
         "gen-bioluminescent-abyss",
         "gen-bioluminescent-aether-jellyfish-swarm",
         "gen-bioluminescent-aether-pulsar",
@@ -36946,6 +38144,7 @@
         "gen-cellular-automata-tapestry",
         "gen-chaos-game-ifs",
         "gen-chromatic-acid-drip",
+        "gen-chromatic-glass-lattice",
         "gen-chromatic-metamorphosis",
         "gen-chromatic-singularity-loom",
         "gen-chromatic-vortex",
@@ -36955,11 +38154,13 @@
         "gen-chrono-voronoi-mycelium",
         "gen-chronodynamic-aether-weaver-automata",
         "gen-chronos-labyrinth",
+        "gen-chronos-monolith-resonator",
         "gen-conway-game-of-life",
         "gen-coral-reef-colony",
         "gen-cosmic-clockwork-dyson-sphere",
         "gen-cosmic-slime-mold",
         "gen-cosmic-web-filament",
+        "gen-cryogenic-frost-plasma-matrix",
         "gen-crystal-caverns",
         "gen-crystal-lattice-growth",
         "gen-crystalline-chrono-dyson",
@@ -36968,8 +38169,10 @@
         "gen-cyber-terminal",
         "gen-cybernetic-ferro-coral",
         "gen-cybernetic-liquid-chrome-engine",
+        "gen-cybernetic-mycelium-neural-web",
         "gen-cycloid-bloom",
         "gen-cymatic-plasma-mandalas",
+        "gen-cymatic-quantum-silk-loom",
         "gen-de-jong-attractor",
         "gen-depth-refracted-liquid-stained-glass",
         "gen-dla-copper-deposition",
@@ -36985,6 +38188,10 @@
         "gen-erosion-strata",
         "gen-ethereal-anemone-bloom",
         "gen-ethereal-aurora-ghost-orchid",
+        "gen-ethereal-cyber-aurora-hummingbird-core",
+        "gen-ethereal-cyber-chrono-void-whale",
+        "gen-ethereal-glass-flora-terrarium",
+        "gen-ethereal-quantum-hologram-bonsai",
         "gen-ethereal-quantum-medusa",
         "gen-ethereal-silk-veil",
         "gen-evolutionary-cellular-gardens",
@@ -37003,11 +38210,14 @@
         "gen-graviton-plasma-lotus",
         "gen-holographic-bismuth-core-reactor",
         "gen-holographic-data-core",
+        "gen-holographic-fracture",
         "gen-holographic-lens-flare-matrix",
         "gen-holographic-membrane",
         "gen-holographic-plasma-geode",
         "gen-holographic-rainbow-surface",
         "gen-hopf-fibration-fiber-bundle",
+        "gen-hyper-bismuth-clockwork",
+        "gen-hyper-dimensional-bismuth-matrix",
         "gen-hyper-dimensional-tesseract-labyrinth",
         "gen-hyper-labyrinth",
         "gen-hyper-rainbow-vortex",
@@ -37031,12 +38241,16 @@
         "gen-liquid-crystal-hive-mind",
         "gen-liquid-neon-cyber-metropolis",
         "gen-liquid-rainbow-glass",
+        "gen-live-studio-tab",
         "gen-lorenz-attractor",
         "gen-luminescent-chrono-fluid-astrolabe",
+        "gen-luminescent-cyber-chrono-void-turtle",
         "gen-luminescent-quantum-glass-phoenix-egg",
+        "gen-luminescent-quantum-void-anglerfish",
         "gen-luminous-cauldron",
         "gen-luminous-fluid-chladni-resonator",
         "gen-magnetic-dipole-field",
+        "gen-magnetic-ferrofluid-sculpture",
         "gen-magnetic-ferrofluid",
         "gen-magnetic-field-lines",
         "gen-magnetic-field-warp",
@@ -37061,10 +38275,12 @@
         "gen-neon-snowfall",
         "gen-neon-tropical-paradise",
         "gen-neural-bioluminescence-matrix",
+        "gen-neural-dust",
         "gen-neural-fractal-hdr",
         "gen-neural-fractal",
         "gen-neural-network-glow-synaptic-pulse",
         "gen-neuro-cosmos",
+        "gen-neuro-fluid-plasma-lotus",
         "gen-neuro-kinetic-bloom",
         "gen-neuro-kinetic-liquid-gold-lotus",
         "gen-newton-fractal",
@@ -37083,8 +38299,10 @@
         "gen-prismatic-bismuth-lattice",
         "gen-prismatic-crystal-growth",
         "gen-prismatic-cyber-auroral-manta-swarm",
+        "gen-prismatic-cyber-chrono-void-kitsune",
         "gen-prismatic-fractal-dunes",
         "gen-prismatic-ion-cascade",
+        "gen-prismatic-quantum-fractal-nautilus-engine",
         "gen-prismatic-void-weaver-ouroboros",
         "gen-protocell-division",
         "gen-psychedelic-layered-time-stamps",
@@ -37094,25 +38312,36 @@
         "gen-quantum-chrome-serpent-ouroboros",
         "gen-quantum-entangled-ferrofluid-engine",
         "gen-quantum-fluorescent-aether-moth-swarm",
+        "gen-quantum-fluorescent-nebula-anemone",
         "gen-quantum-foam-alpha",
         "gen-quantum-foam",
         "gen-quantum-mycelium",
         "gen-quantum-neural-lace",
         "gen-quantum-pollen",
+        "gen-quantum-singularity-forge",
         "gen-quantum-superposition",
         "gen-quasicrystal-iridescence",
         "gen-quasicrystal",
         "gen-radiant-chrono-glass-nautilus",
+        "gen-radiant-cyber-chrono-void-stag",
         "gen-radiant-quantum-crystalline-forge",
+        "gen-radiant-quantum-plasma-kraken-core",
         "gen-rainbow-firefly-dance",
         "gen-raptor-mini-flow",
         "gen-raptor-mini",
         "gen-recursive-ancestral-terrains",
+        "gen-resonant-crystal-canyons",
         "gen-resonant-quantum-obsidian-scarab-engine",
+        "gen-resonant-quantum-plasma-dragon-eye",
         "gen-rgb-diffraction",
         "gen-sentient-aether-flora-biosphere",
+        "gen-sentient-cyber-aurora-void-owl",
+        "gen-sentient-ferro-silicate-swarm",
+        "gen-sentient-liquid-neon-fractal-heart",
+        "gen-sentient-quantum-chrono-leviathan-moth",
         "gen-showcase-crystalline-pulse",
         "gen-showcase-kinetic-bloom",
+        "gen-showcase-nebula-core",
         "gen-sierpinski-tetrahedron",
         "gen-silica-tsunami",
         "gen-singularity-forge-blackbody",
@@ -37132,6 +38361,8 @@
         "gen-supernova-remnant",
         "gen-symbiotic-chrono-mycelium-engine",
         "gen-symbiotic-light-networks",
+        "gen-symbiotic-plasma-reef-matrix",
+        "gen-tectonic-plasma-crucible",
         "gen-temporal-motion-smear",
         "gen-thermal-rainbow-topography",
         "gen-topological-acoustic-knots",
@@ -37147,6 +38378,7 @@
         "gen-von-karman-vortex",
         "gen-voronoi-crystal",
         "gen-vortex-cathedral",
+        "gen-wasm-hls-physarum-swarm",
         "gen-worley-cellular-noise",
         "gen-xeno-botanical-ecosystem",
         "gen-xeno-botanical-synth-flora",
@@ -37228,6 +38460,13 @@
         "holographic_interference",
         "honey-melt-blackbody",
         "honey-melt",
+        "hyb-chromatic-circuit",
+        "hyb-hex-voronoi-distort",
+        "hyb-iridescent-fbm-glow",
+        "hyb-kaleidoscope-pulse",
+        "hyb-neural-voronoi-feedback",
+        "hyb-spectral-fbm-displace",
+        "hyb-temporal-fbm-ghost",
         "hybrid-chromatic-liquid",
         "hybrid-cyber-organic",
         "hybrid-fractal-feedback",
@@ -37394,6 +38633,7 @@
         "mirror-drag",
         "moire-interference",
         "molten-glass",
+        "molten-gold",
         "morphogenic-resonance",
         "mosaic-reveal",
         "motion-heatmap",
@@ -37512,6 +38752,7 @@
         "pixelation-drift",
         "plasma-jet-stream",
         "plasma-orb",
+        "plasma",
         "plastic-bricks",
         "poincare-tile",
         "polar-warp-interactive",
@@ -37731,6 +38972,7 @@
         "tilt-shift",
         "time-lag-map",
         "time-slit-scan",
+        "tone-histogram-apply",
         "tone-histogram",
         "topological-acoustic-knots",
         "tornado-vortex",
@@ -37789,12 +39031,7 @@
         "zoom-burst"
       ],
       "incompatible": [
-        "_hash_library",
-        "deep-workgroup-multi-effect-blend",
-        "gen-showcase-nebula-core",
-        "molten-gold",
-        "plasma",
-        "tone-histogram-apply"
+        "_hash_library"
       ],
       "templates": [
         "_template_canonical_compute",
@@ -37806,11 +39043,7 @@
     },
     "issues": {
       "missing_bindings": {},
-      "wrong_types": {
-        "molten-gold": "Binding 11 (videoTexture) has incompatible type: 'texture_2d<f32>'",
-        "plasma": "Binding 12 (plasmaBalls) has incompatible type: 'array<PlasmaBall, 50>'",
-        "tone-histogram-apply": "Binding 10 (extraBuffer) has incompatible type: 'array<atomic<u32>>'"
-      },
+      "wrong_types": {},
       "invalid_workgroup": [],
       "missing_uniforms_fields": []
     }

@@ -1,24 +1,24 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Feedback Zoom Tracer
 //  Category: post-processing
-//  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, temporal, history-ring,
+//            upgraded-rgba, fbm-trail-jitter, chromatic-trail-separation,
+//            mouse-driven-zoom-focus, noise-warp
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-28
 //  Requires: binding 13 (historyTexture — HISTORY_DEPTH=8 ring buffer)
-//  Created: 2026-05-23
-//  By: Copilot
 //
 //  Reads the most recent history frame through an affine warp
-//  (zoom + rotation centred on canvas centre) then blends it with
-//  the current frame:  mix(warped_history * decay, current, blend)
-//  The slight magnification + rotation compound across frames,
-//  producing infinite psychedelic zoom tunnels from live content.
+//  (zoom + rotation centred on mouse or canvas centre) then blends it
+//  with the current frame.  FBM jitter and chromatic RGB separation are
+//  applied to the history trail, while mouse position controls the
+//  zoom focus point and audio bass adds zoom energy.
 //
 //  zoom_params layout:
-//    x = zoom power  (0→1.0×, 1→1.01×, default 0.5→1.002×)
-//    y = rotation    (0→-0.002rad, 1→+0.002rad, default 0.625→+0.001rad)
-//    z = history persistence (0→0.92, 1→0.99, default 0.714→0.97)
-//    w = current-frame blend (0→0.05, 1→0.40, default 0.286→0.15)
+//    x = zoom power       (0→1.0×, 1→1.012×)
+//    y = rotation         (0→-0.003rad, 1→+0.003rad)
+//    z = persistence      (0→0.92, 1→0.99)
+//    w = current blend    (0→0.05, 1→0.40)
 //
 //  extraBuffer layout:
 //    [0]=bass  [1]=mid  [2]=treble  [3]=reserved  [4]=historyHead
@@ -47,6 +47,48 @@ struct Uniforms {
 };
 
 const HISTORY_DEPTH: u32 = 8u;
+const PI: f32 = 3.14159265358979323846;
+
+// ── Hash & FBM noise ─────────────────────────────────────────────
+fn hash21(p: vec2<f32>) -> f32 {
+  let h = dot(p, vec2<f32>(127.1, 311.7));
+  return fract(sin(h) * 43758.5453123);
+}
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let a = hash21(i);
+  let b = hash21(i + vec2<f32>(1.0, 0.0));
+  let c = hash21(i + vec2<f32>(0.0, 1.0));
+  let d = hash21(i + vec2<f32>(1.0, 1.0));
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+  var sum = 0.0;
+  var amp = 0.5;
+  var freq = 1.0;
+  for (var i = 0; i < octaves; i = i + 1) {
+    sum = sum + amp * valueNoise(p * freq);
+    freq = freq * 2.0;
+    amp = amp * 0.5;
+  }
+  return sum;
+}
+
+fn rgbToLuma(rgb: vec3<f32>) -> f32 {
+  return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
+// ── Chromatic history sample ─────────────────────────────────────
+fn sampleHistoryChromatic(uv: vec2<f32>, layer: i32, shift: f32) -> vec3<f32> {
+  let r = textureSampleLevel(historyTexture, u_sampler, uv + vec2<f32>(shift, 0.0), layer, 0.0).r;
+  let g = textureSampleLevel(historyTexture, u_sampler, uv, layer, 0.0).g;
+  let b = textureSampleLevel(historyTexture, u_sampler, uv - vec2<f32>(shift, 0.0), layer, 0.0).b;
+  return vec3<f32>(r, g, b);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -55,42 +97,58 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (coord.x >= i32(res.x) || coord.y >= i32(res.y)) { return; }
 
   let uv = (vec2<f32>(global_id.xy) + 0.5) / res;
+  let time = u.config.x;
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
 
-  // Map params to affine warp values; bass drives zoom energy, mids add rotation
-  let zoomFactor  = 1.0 + u.zoom_params.x * 0.01 * (1.0 + bass * 0.5); // 1.0 – 1.01+
-  let rotAngle    = (u.zoom_params.y - 0.5) * 0.004 + mids * 0.001;     // -0.002 – +0.002 rad
-  let persistence = 0.92 + u.zoom_params.z * 0.07;                        // 0.92 – 0.99
-  let blendAmt    = 0.05 + u.zoom_params.w * 0.35;                        // 0.05 – 0.40
+  // Clamp and normalize params
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let zoomFactor  = 1.0 + zp.x * 0.012 * (1.0 + bass * 0.5);
+  let rotAngle    = (zp.y - 0.5) * 0.006 + mids * 0.001;
+  let persistence = 0.92 + zp.z * 0.07;
+  let blendAmt    = 0.05 + zp.w * 0.35;
 
-  // Affine warp: zoom + rotation about canvas centre
-  let uvC = uv - 0.5;
+  // Mouse-driven zoom focus (defaults to centre when mouse at 0.5)
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let focus = mix(vec2<f32>(0.5), mouse, 0.7);
+
+  // FBM trail jitter evolves slowly with time
+  let noiseUV = uv * 8.0 + time * 0.15;
+  let jitterStrength = 0.003 + zp.x * 0.006;
+  let jitter = vec2<f32>(
+    fbm(noiseUV + vec2<f32>(0.0, 12.34), 3) - 0.5,
+    fbm(noiseUV + vec2<f32>(56.78, 0.0), 3) - 0.5,
+  ) * jitterStrength * (1.0 + bass * 0.5);
+
+  // Affine warp: zoom + rotation about focus point
+  let uvC = uv - focus;
   let cosR = cos(rotAngle);
   let sinR = sin(rotAngle);
   let rotated = vec2<f32>(
     cosR * uvC.x - sinR * uvC.y,
     sinR * uvC.x + cosR * uvC.y,
   );
-  // Divide by zoom to reverse-map (so the warped history looks zoomed-in)
-  let warpedUV = clamp(rotated / zoomFactor + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
+  let warpedUV = clamp(rotated / zoomFactor + focus + jitter, vec2<f32>(0.0), vec2<f32>(1.0));
 
   let historyHead = u32(extraBuffer[4]);
-
-  // Most recent history frame, sampled through the warp
   let layerPrev = (historyHead + HISTORY_DEPTH - 1u) % HISTORY_DEPTH;
-  let histWarp  = textureSampleLevel(historyTexture, u_sampler, warpedUV, i32(layerPrev), 0.0);
 
-  // Current input frame (straight UV)
+  // Chromatic trail separation scales with zoom power
+  let chromaShift = 0.001 + zp.x * 0.008;
+  let histWarp = sampleHistoryChromatic(warpedUV, i32(layerPrev), chromaShift);
+
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-  // Blend: weighted history + current  (matches: mix(history*decay, current, blend))
-  let output = mix(histWarp * persistence, current, blendAmt);
-  let motionMag = length(histWarp.rgb - current.rgb);
-  let alpha = clamp(motionMag * 4.0 + bass * 0.25 + 0.25, 0.0, 1.0);
-  let finalOut = vec4<f32>(output.rgb, alpha);
+  // Blend: weighted history + current
+  let output = mix(histWarp * persistence, current.rgb, blendAmt);
+  let motionMag = length(histWarp - current.rgb);
+
+  // Preserve input alpha, adding motion-driven echo alpha
+  let alpha = clamp(current.a * 0.6 + motionMag * 4.0 + bass * 0.25 + 0.25, 0.0, 1.0);
+  let finalOut = vec4<f32>(output, alpha);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
   textureStore(writeTexture, coord, finalOut);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, coord, finalOut);

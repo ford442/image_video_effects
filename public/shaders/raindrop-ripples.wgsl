@@ -122,7 +122,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Formula: next_val = f(curr, prev).
     // Next frame: curr becomes prev.
     // So we write (newHeight, height(current), ...)
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(newHeight, height, 0.0, 1.0));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(newHeight, height, 0.0, 0.0));
 
     // 4. Render
     // Calculate slope for refraction
@@ -141,4 +141,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color + spec * 0.3;
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

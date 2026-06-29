@@ -142,7 +142,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // --- Sampling ---
     // Sample texture at cell center
-    let color = textureSampleLevel(readTexture, u_sampler, cell_center_uv, 0.0).rgb;
+    let input_color = textureSampleLevel(readTexture, u_sampler, cell_center_uv, 0.0);
+    let color = input_color.rgb;
     // Calculate luminance
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
 
@@ -216,5 +217,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let scanline = sin(uv.y * resolution.y * 0.5) * 0.1 + 0.9; // Subtle
     output_color = output_color * scanline;
 
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(output_color, 1.0));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(output_color, input_color.a));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

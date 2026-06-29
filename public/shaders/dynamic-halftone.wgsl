@@ -59,12 +59,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   var mouse = u.zoom_config.yz;
 
+  let time = u.config.x;
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let density = max(20.0 + u.zoom_params.x * 100.0, 0.001);
-  let influenceRadius = u.zoom_params.y * (1.0 + bass * 0.2);
-  let contrast = max(0.5 + u.zoom_params.z * 2.0, 0.001);
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let density = max(20.0 + zp.x * 100.0, 0.001);
+  let influenceRadius = zp.y * (1.0 + bass * 0.2);
+  let contrast = max(0.5 + zp.z * 2.0, 0.001);
 
   let aspectUV = vec2<f32>(uv.x * aspect, uv.y);
   let scale = vec2<f32>(density, density);

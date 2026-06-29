@@ -120,10 +120,14 @@ fn map(p_in: vec3<f32>, t: f32, audio: f32, flutter: f32) -> vec2<f32> {
 
     // Manual rotation matrices instead of mat3x3 components for rotZ
     let rot_flap = rot(flap_angle);
-    p_wing.xy = rot_flap * p_wing.xy;
+    let p_wing_xy_rot = rot_flap * p_wing.xy;
+    p_wing.x = p_wing_xy_rot.x;
+    p_wing.y = p_wing_xy_rot.y;
 
     let rot_pitch = rot(0.5);
-    p_wing.zy = rot_pitch * p_wing.zy;
+    let p_wing_zy_rot = rot_pitch * p_wing.zy;
+    p_wing.z = p_wing_zy_rot.x;
+    p_wing.y = p_wing_zy_rot.y;
 
     // High frequency displacement for fractal light trails
     let wing_disp = sin(p_wing.x * 20.0 + wing_time) * sin(p_wing.z * 15.0 - wing_time) * 0.05;
@@ -179,11 +183,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let t = u.config.x;
     let audio = u.config.y * 2.0 + 1.0;
 
-    // Sliders
-    let flutter = u.zoom_params.x; // Flutter Speed (1.0, 0.1, 5.0)
-    let aura_intensity = u.zoom_params.y; // Aura Intensity (0.5, 0.0, 2.0)
-    let pollen_density = u.zoom_params.z; // Pollen Density (1.0, 0.0, 3.0)
-    let aberration = u.zoom_params.w; // Aberration (0.2, 0.0, 1.0)
+    // Sliders (clamp zoom_params to valid normalized range)
+    let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let flutter = mix(0.1, 5.0, zparams.x); // Flutter Speed
+    let aura_intensity = mix(0.0, 2.0, zparams.y); // Aura Intensity
+    let pollen_density = mix(0.0, 3.0, zparams.z); // Pollen Density
+    let aberration = mix(0.0, 1.0, zparams.w); // Aberration
 
     // Mouse Interaction
     var mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
@@ -197,14 +202,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Mouse rotation
     let rot_x = rot(m_uv.x);
-    ro.xz = rot_x * ro.xz;
+    let ro_xz_rot = rot_x * ro.xz;
+    ro.x = ro_xz_rot.x;
+    ro.z = ro_xz_rot.y;
 
     let rot_y = rot(m_uv.y);
-    ro.yz = rot_y * ro.yz;
+    let ro_yz_rot = rot_y * ro.yz;
+    ro.y = ro_yz_rot.x;
+    ro.z = ro_yz_rot.y;
 
     var rd = normalize(vec3<f32>(uv, 1.0));
-    rd.xz = rot_x * rd.xz;
-    rd.yz = rot_y * rd.yz;
+    let rd_xz_rot = rot_x * rd.xz;
+    rd.x = rd_xz_rot.x;
+    rd.z = rd_xz_rot.y;
+    let rd_yz_rot = rot_y * rd.yz;
+    rd.y = rd_yz_rot.x;
+    rd.z = rd_yz_rot.y;
 
     // Aberration Ray Offsets
     var rd_r = rd;
@@ -215,6 +228,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Render Function
     var final_color = vec3<f32>(0.0);
+    var final_depth = 0.0;
 
     let rds = array<vec3<f32>, 3>(rd_r, rd, rd_b);
     let colors = array<vec3<f32>, 3>(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(0.0, 0.0, 1.0));
@@ -249,6 +263,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             p += cur_rd * d;
             dO += d;
         }
+
+        final_depth = max(final_depth, dO);
 
         var col = vec3<f32>(0.0);
 
@@ -292,4 +308,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     textureStore(writeTexture, id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(1.0 - clamp(final_depth / MAX_DIST, 0.0, 1.0), 0.0, 0.0, 1.0));
 }

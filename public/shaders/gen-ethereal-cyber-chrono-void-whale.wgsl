@@ -299,4 +299,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let finalColor = vec4<f32>(col, 1.0);
     textureStore(writeTexture, gid.xy, finalColor);
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

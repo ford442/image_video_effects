@@ -1,0 +1,831 @@
+{
+  "batch": 2,
+  "evaluator": "Agent 1e - Visual Quality Evaluator",
+  "range": "shaders 31-60",
+  "max_score": 40,
+  "scored_at": "2026-06-29T00:55:20Z",
+  "shaders": [
+    {
+      "sample_index": 31,
+      "id": "gemstone-fractures",
+      "category": "distortion",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 4,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Voronoi cellular refraction with Fresnel/absorption; calculated alpha; depth written."
+    },
+    {
+      "sample_index": 32,
+      "id": "gen-chromatic-metamorphosis",
+      "category": "generative",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 4,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "SDF raymarch with smooth-min shape morphing, audio-driven color, semantic alpha."
+    },
+    {
+      "sample_index": 33,
+      "id": "gen-chronos-labyrinth",
+      "category": "generative",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 4,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Escher raymarch maze with temporal rift echo, ACES, optimization log."
+    },
+    {
+      "sample_index": 34,
+      "id": "gen-ethereal-silk-veil",
+      "category": "generative",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 14,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 39,
+      "grade": "A",
+      "notes": "Layered translucent ribbons with mouse/audio reactivity; alpha from presence."
+    },
+    {
+      "sample_index": 35,
+      "id": "gen-gravitational-strain",
+      "category": "generative",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 4,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "RK4 geodesic gravity lensing with FBM, Voronoi, Beer-Lambert, accretion disks."
+    },
+    {
+      "sample_index": 36,
+      "id": "gen-inverse-mandelbrot",
+      "category": "generative",
+      "rgba_compliance": {
+        "score": 17,
+        "breakdown": {
+          "write_texture_alpha_calculated": 0,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 14,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 31,
+      "grade": "B",
+      "notes": "Color-space Mandelbrot is novel, but alpha is hardcoded 1.0."
+    },
+    {
+      "sample_index": 37,
+      "id": "gen-prismatic-bismuth-lattice",
+      "category": "generative",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 14,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 39,
+      "grade": "A",
+      "notes": "Recursive box raymarch with thin-film iridescence and metallic transmission alpha."
+    },
+    {
+      "sample_index": 38,
+      "id": "gen-quantum-fluorescent-aether-moth-swarm",
+      "category": "generative",
+      "rgba_compliance": {
+        "score": 10,
+        "breakdown": {
+          "write_texture_alpha_calculated": 0,
+          "write_depth_texture_written": 0,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 13,
+        "breakdown": {
+          "technique_diversity": 4,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 23,
+      "grade": "D",
+      "notes": "Curl-noise swarm trail; alpha hardcoded 1.0 and writeDepthTexture missing."
+    },
+    {
+      "sample_index": 39,
+      "id": "gen-topological-acoustic-knots",
+      "category": "generative",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 14,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 39,
+      "grade": "A",
+      "notes": "Liquid-crystal director field, topological defects, iridescent oil-slick color."
+    },
+    {
+      "sample_index": 40,
+      "id": "glass-bead-curtain-iridescence",
+      "category": "advanced-hybrid",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "multiple_techniques": 5,
+          "chunk_attribution": 4,
+          "interface_compatibility": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Advanced hybrid: refraction/Beer-Lambert + spectral thin-film interference."
+    },
+    {
+      "sample_index": 41,
+      "id": "gravito-phononic-accretion",
+      "category": "generative",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 4,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Hex-kernel SPH density, orbital dynamics, shock detection, blackbody, audio reactivity."
+    },
+    {
+      "sample_index": 42,
+      "id": "hex-mosaic",
+      "category": "interactive-mouse",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 13,
+        "breakdown": {
+          "technique_diversity": 4,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 38,
+      "grade": "A",
+      "notes": "Hex tiling with mouse reveal and saturation boost; straightforward implementation."
+    },
+    {
+      "sample_index": 43,
+      "id": "honey-melt",
+      "category": "image",
+      "rgba_compliance": {
+        "score": 20,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 0,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 14,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 34,
+      "grade": "B",
+      "notes": "Honey SSS and thickness alpha are strong, but writeDepthTexture is omitted."
+    },
+    {
+      "sample_index": 44,
+      "id": "hyb-chromatic-circuit",
+      "category": "hybrid",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "multiple_techniques": 5,
+          "chunk_attribution": 4,
+          "interface_compatibility": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Hybrid combines hex traces, image-edge modulation, chromatic aberration, pulse glow."
+    },
+    {
+      "sample_index": 45,
+      "id": "hyb-kaleidoscope-pulse",
+      "category": "hybrid",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "multiple_techniques": 5,
+          "chunk_attribution": 4,
+          "interface_compatibility": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Hybrid mirrors input through kaleidoscope and overlays radial pulse."
+    },
+    {
+      "sample_index": 46,
+      "id": "hyb-spectral-fbm-displace",
+      "category": "hybrid",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "multiple_techniques": 5,
+          "chunk_attribution": 4,
+          "interface_compatibility": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Hybrid layers FBM domain warp with spectral RGB smear and wavelength tint."
+    },
+    {
+      "sample_index": 47,
+      "id": "hyb-temporal-fbm-ghost",
+      "category": "hybrid",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "multiple_techniques": 5,
+          "chunk_attribution": 4,
+          "interface_compatibility": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Hybrid merges temporal RGB offsets, FBM warp, ghost glow, and palette tint."
+    },
+    {
+      "sample_index": 48,
+      "id": "hybrid-cyber-organic",
+      "category": "hybrid",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "multiple_techniques": 5,
+          "chunk_attribution": 4,
+          "interface_compatibility": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Hex circuit grid combined with organic FBM growth and neon glow."
+    },
+    {
+      "sample_index": 49,
+      "id": "hybrid-noise-kaleidoscope",
+      "category": "hybrid",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "multiple_techniques": 5,
+          "chunk_attribution": 4,
+          "interface_compatibility": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "FBM domain warp fed into kaleidoscope symmetry with chromatic split and hue shift."
+    },
+    {
+      "sample_index": 50,
+      "id": "ink-marbling",
+      "category": "liquid-effects",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 13,
+        "breakdown": {
+          "technique_diversity": 4,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 38,
+      "grade": "A",
+      "notes": "Fluid domain-warp distortion with thickness-based ink alpha."
+    },
+    {
+      "sample_index": 51,
+      "id": "interactive-voronoi-lens",
+      "category": "interactive-mouse",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 12,
+        "breakdown": {
+          "technique_diversity": 4,
+          "attribution_comments": 2,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 37,
+      "grade": "A",
+      "notes": "Voronoi cell lensing with mouse influence; input alpha preserved."
+    },
+    {
+      "sample_index": 52,
+      "id": "kaleido-scope",
+      "category": "geometric",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 4,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Hyperbolic Poincaré kaleidoscope with chromatic aberration and audio-driven morphing."
+    },
+    {
+      "sample_index": 53,
+      "id": "liquid-displacement",
+      "category": "liquid-effects",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 4,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Navier-Stokes fluid sim with advection, pressure projection, and flow alpha."
+    },
+    {
+      "sample_index": 54,
+      "id": "liquid-metal",
+      "category": "liquid-effects",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 14,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 39,
+      "grade": "A",
+      "notes": "Temporal FBM height field with Fresnel reflectance and chromatic dispersion."
+    },
+    {
+      "sample_index": 55,
+      "id": "liquid-tensor-vortex",
+      "category": "liquid-effects",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 14,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 39,
+      "grade": "A",
+      "notes": "Curl/warped FBM tensor field with anisotropic metal highlights and audio reactivity."
+    },
+    {
+      "sample_index": 56,
+      "id": "liquid-time-warp",
+      "category": "interactive-mouse",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 13,
+        "breakdown": {
+          "technique_diversity": 4,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 38,
+      "grade": "A",
+      "notes": "Temporal feedback advection with mouse vortex and alpha physics."
+    },
+    {
+      "sample_index": 57,
+      "id": "liquid-viscous",
+      "category": "liquid-effects",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 15,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 4,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 40,
+      "grade": "A",
+      "notes": "Full 2D NS with vorticity confinement, pressure projection, cascades, audio, mouse."
+    },
+    {
+      "sample_index": 58,
+      "id": "luma-magnetism",
+      "category": "interactive-mouse",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 14,
+        "breakdown": {
+          "technique_diversity": 5,
+          "attribution_comments": 3,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 39,
+      "grade": "A",
+      "notes": "RK2 magnetic field lines with luma polarity, HDR bloom, ACES tone mapping."
+    },
+    {
+      "sample_index": 59,
+      "id": "luma-slice-interactive",
+      "category": "interactive-mouse",
+      "rgba_compliance": {
+        "score": 25,
+        "breakdown": {
+          "write_texture_alpha_calculated": 8,
+          "write_depth_texture_written": 5,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 12,
+        "breakdown": {
+          "technique_diversity": 4,
+          "attribution_comments": 2,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 37,
+      "grade": "A",
+      "notes": "Horizontal luma-driven slice displacement; preserves input alpha."
+    },
+    {
+      "sample_index": 60,
+      "id": "neon-poly-grid",
+      "category": "geometric",
+      "rgba_compliance": {
+      "score": 10,
+        "breakdown": {
+          "write_texture_alpha_calculated": 0,
+          "write_depth_texture_written": 0,
+          "bindings_correct_order": 5,
+          "uniforms_match_spec": 4,
+          "header_present": 3
+        }
+      },
+      "hybrid_chunk_quality": {
+        "score": 11,
+        "breakdown": {
+          "technique_diversity": 3,
+          "attribution_comments": 2,
+          "consistency": 3,
+          "id_unique": 3
+        }
+      },
+      "total_score": 21,
+      "grade": "D",
+      "notes": "Simple hex grid trail; alpha hardcoded 1.0 and writeDepthTexture missing."
+    }
+  ],
+  "summary": {
+    "scored": 30,
+    "mean_score": 37.7,
+    "median_score": 40,
+    "grade_distribution": {
+      "A": 26,
+      "B": 2,
+      "C": 0,
+      "D": 2,
+      "F": 0
+    }
+  }
+}
