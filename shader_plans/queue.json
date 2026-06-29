@@ -172,7 +172,7 @@
     },
     {
       "filename": "2026-03-08_live-studio-tab.md",
-      "title": "Live Studio Tab – HLS + WASM Toggle + Bilibili + Danmaku",
+      "title": "Live Studio Tab \u2013 HLS + WASM Toggle + Bilibili + Danmaku",
       "added": "2026-03-07T09:08:09.892871",
       "completed": "2026-03-07T09:13:43.539459"
     },
@@ -274,7 +274,7 @@
     },
     {
       "filename": "2026-03-08_raptor-mini.md",
-      "title": "Raptor Mini – Fast Predatory Agent Swarm",
+      "title": "Raptor Mini \u2013 Fast Predatory Agent Swarm",
       "added": "2026-03-07T09:06:05.264901",
       "completed": "2026-03-27T18:17:59.800656"
     },
@@ -808,16 +808,6 @@
       "completed_at": "2026-06-27T23:38:42.215772+00:00"
     },
     {
-      "filename": "2026-03-07_wasm-hls-physarum-swarm.md",
-      "status": "completed",
-      "completed_at": "2026-06-27T23:40:08.181Z"
-    },
-    {
-      "filename": "2026-03-08_live-studio-tab.md",
-      "status": "completed",
-      "completed_at": "2026-06-27T23:40:08.192Z"
-    },
-    {
       "filename": "2026-04-26_magnetic-ferrofluid-sculpture.md",
       "title": "Magnetic Ferrofluid-Sculpture",
       "added": "2026-04-26T15:06:38.672034",
@@ -858,6 +848,34 @@
       "added": "2026-05-28T15:23:06.697098",
       "status": "completed",
       "completed_at": "2026-06-27T23:45:27.499Z"
+    },
+    {
+      "filename": "2026-06-27_prismatic-cyber-chrono-void-kitsune.md",
+      "title": "Prismatic Cyber-Chrono Void-Kitsune",
+      "added": "2026-06-27T15:24:02.938835",
+      "status": "completed",
+      "completed_at": "2026-06-28T07:41:07.235521"
+    },
+    {
+      "filename": "2026-06-10_neuro-fluid-plasma-lotus.md",
+      "title": "Neuro-Fluid Plasma-Lotus",
+      "added": "2026-06-10T15:27:36.556094",
+      "status": "completed",
+      "completed_at": "2026-06-28T07:41:07.235471"
+    },
+    {
+      "filename": "2026-06-20_prismatic-quantum-fractal-nautilus-engine.md",
+      "title": "Prismatic Quantum-Fractal Nautilus-Engine",
+      "added": "2026-06-20T15:09:34.367199",
+      "status": "completed",
+      "completed_at": "2026-06-28T07:41:07.235513"
+    },
+    {
+      "filename": "2026-06-21_resonant-quantum-plasma-dragon-eye.md",
+      "title": "Resonant Quantum-Plasma Dragon-Eye",
+      "added": "2026-06-21T15:07:33.808369",
+      "status": "completed",
+      "completed_at": "2026-06-28T07:41:07.235517"
     }
   ],
   "rejected": [],
@@ -1074,13 +1092,6 @@
       "added": "2026-06-09T15:10:47.923248"
     },
     {
-      "filename": "2026-06-10_neuro-fluid-plasma-lotus.md",
-      "title": "Neuro-Fluid Plasma-Lotus",
-      "added": "2026-06-10T15:27:36.556094",
-      "status": "completed",
-      "completed_at": "2026-06-28T07:41:07.235471"
-    },
-    {
       "filename": "2026-06-12_galactic-aether-crystal-geode-core.md",
       "title": "Galactic Aether-Crystal Geode-Core",
       "added": "2026-06-12T15:24:16.468502"
@@ -1111,20 +1122,6 @@
       "added": "2026-06-19T15:25:04.778724"
     },
     {
-      "filename": "2026-06-20_prismatic-quantum-fractal-nautilus-engine.md",
-      "title": "Prismatic Quantum-Fractal Nautilus-Engine",
-      "added": "2026-06-20T15:09:34.367199",
-      "status": "completed",
-      "completed_at": "2026-06-28T07:41:07.235513"
-    },
-    {
-      "filename": "2026-06-21_resonant-quantum-plasma-dragon-eye.md",
-      "title": "Resonant Quantum-Plasma Dragon-Eye",
-      "added": "2026-06-21T15:07:33.808369",
-      "status": "completed",
-      "completed_at": "2026-06-28T07:41:07.235517"
-    },
-    {
       "filename": "2026-06-22_sentient-quantum-chrono-leviathan-moth.md",
       "title": "Sentient Quantum-Chrono Leviathan-Moth",
       "added": "2026-06-22T16:53:28.307478"
@@ -1138,13 +1135,6 @@
       "filename": "2026-06-26_sentient-cyber-aurora-void-owl.md",
       "title": "Sentient Cyber-Aurora Void-Owl",
       "added": "2026-06-26T15:23:48.508529"
-    },
-    {
-      "filename": "2026-06-27_prismatic-cyber-chrono-void-kitsune.md",
-      "title": "Prismatic Cyber-Chrono Void-Kitsune",
-      "added": "2026-06-27T15:24:02.938835",
-      "status": "completed",
-      "completed_at": "2026-06-28T07:41:07.235521"
     }
   ],
   "in_progress": null

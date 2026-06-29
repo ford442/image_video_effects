@@ -4484,7 +4484,11 @@
     "synced_at": 1782546230.2439973
   },
   "gen-sentient-cyber-aurora-void-owl": {
-    "hash": "ab871a2caf63988b42c0f49fa71c41a5",
-    "synced_at": 1782546230.137582
+    "hash": "57096de4826dc65e74108a0d2dc2afeb",
+    "synced_at": 1782633561.3659172
+  },
+  "gen-prismatic-cyber-chrono-void-kitsune": {
+    "hash": "b6b56e3d66a8048b3c430b535ac5db71",
+    "synced_at": 1782633561.4820275
   }
 }
