@@ -876,6 +876,13 @@
       "added": "2026-06-21T15:07:33.808369",
       "status": "completed",
       "completed_at": "2026-06-28T07:41:07.235517"
+    },
+    {
+      "filename": "2026-06-29_prismatic-cyber-chrono-nebula-peacock.md",
+      "title": "Prismatic Cyber-Chrono Nebula-Peacock",
+      "added": "2026-06-29T15:34:23.065054",
+      "status": "completed",
+      "completed_at": "2026-07-01T08:04:59.189238+00:00"
     }
   ],
   "rejected": [],
@@ -1135,11 +1142,6 @@
       "filename": "2026-06-26_sentient-cyber-aurora-void-owl.md",
       "title": "Sentient Cyber-Aurora Void-Owl",
       "added": "2026-06-26T15:23:48.508529"
-    },
-    {
-      "filename": "2026-06-29_prismatic-cyber-chrono-nebula-peacock.md",
-      "title": "Prismatic Cyber-Chrono Nebula-Peacock",
-      "added": "2026-06-29T15:34:23.065054"
     }
   ],
   "in_progress": null
