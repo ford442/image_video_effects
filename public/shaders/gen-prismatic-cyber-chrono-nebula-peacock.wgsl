@@ -89,6 +89,7 @@ fn map(pos: vec3<f32>) -> MapResult {
     let new_xz = rot(mouse.x * 3.1415 + time * 0.2) * p.xz;
     p.x = new_xz.x;
     p.z = new_xz.y;
+
     let new_yz = rot(mouse.y * 3.1415) * p.yz;
     p.y = new_yz.x;
     p.z = new_yz.y;
@@ -140,6 +141,7 @@ fn map(pos: vec3<f32>) -> MapResult {
         let new_xy = rot(0.2) * pTail.xy;
         pTail.x = new_xy.x;
         pTail.y = new_xy.y;
+
         let new_yz2 = rot(0.1 + sin(time * 0.5) * 0.05) * pTail.yz;
         pTail.y = new_yz2.x;
         pTail.z = new_yz2.y;
