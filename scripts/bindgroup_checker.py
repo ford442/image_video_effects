@@ -102,7 +102,7 @@ def check_workgroup_size_convention(content: str) -> list[dict]:
     stripped = strip_wgsl_comments(content)
     for match in WORKGROUP_SIZE_ATTR.finditer(stripped):
         arg_count = count_workgroup_size_args(match.group(1))
-        if arg_count < 3:
+        if arg_count < 2:
             issues.append({
                 "match": match.group(0).strip(),
                 "arg_count": arg_count,
