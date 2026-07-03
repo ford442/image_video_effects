@@ -191,7 +191,7 @@ fn nebulaFBM(p: vec3<f32>) -> f32 {
 // ----------------------------------------------------------------
 // MAIN COMPUTE
 // ----------------------------------------------------------------
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dimensions = textureDimensions(writeTexture);
     if (id.x >= dimensions.x || id.y >= dimensions.y) {
