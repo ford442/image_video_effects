@@ -75,11 +75,17 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
     let m = u.mouse.xy;
     if (m.x > 0.0) {
         let angleX = (m.x - 0.5) * 6.28;
-        p.xz = rot(angleX) * p.xz;
+        let rx = rot(angleX) * vec2<f32>(p.x, p.z);
+        p.x = rx.x;
+        p.z = rx.y;
         let angleY = (m.y - 0.5) * 3.14;
-        p.yz = rot(angleY) * p.yz;
+        let ry = rot(angleY) * vec2<f32>(p.y, p.z);
+        p.y = ry.x;
+        p.z = ry.y;
     } else {
-        p.xz = rot(time * 0.2) * p.xz;
+        let rxt = rot(time * 0.2) * vec2<f32>(p.x, p.z);
+        p.x = rxt.x;
+        p.z = rxt.y;
     }
 
     // Chrono-Distortion Ripples from Mouse interaction
@@ -102,8 +108,12 @@ fn map(pos: vec3<f32>) -> vec2<f32> {
         sphereFold(&pF, 0.5, 1.0);
         pF = pF * 2.0 + vec3<f32>(0.1, -1.0, 0.5);
         scale = scale * 2.0;
-        pF.xy = rot(0.2 * sin(time * 0.5) * plumageSpread) * pF.xy;
-        pF.xz = rot(0.1 * plumageSpread) * pF.xz;
+        let rfxy = rot(0.2 * sin(time * 0.5) * plumageSpread) * vec2<f32>(pF.x, pF.y);
+        pF.x = rfxy.x;
+        pF.y = rfxy.y;
+        let rfxz = rot(0.1 * plumageSpread) * vec2<f32>(pF.x, pF.z);
+        pF.x = rfxz.x;
+        pF.z = rfxz.y;
     }
 
     var dPlumage = sdCylinder(pF, vec2<f32>(0.1, 2.0)) / scale;
