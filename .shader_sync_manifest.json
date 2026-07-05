@@ -4580,8 +4580,8 @@
     "synced_at": 1782857444.2061234
   },
   "gen-chrono-kitsune-prism-weaver": {
-    "hash": "101e04bddd2784d8cbde4c09d71e14bd",
-    "synced_at": 1782857474.8089123
+    "hash": "563c78fc5331ffdc03284cc05c9f0727",
+    "synced_at": 1783231025.1165195
   },
   "gen-ethereal-quantum-hologram-bonsai": {
     "hash": "3723be26c4bc5e22fd75b33302e22d53",
@@ -4626,5 +4626,89 @@
   "hyb-hex-voronoi-distort": {
     "hash": "17151bc481483cd6a4204ecd85c092dd",
     "synced_at": 1782857521.7238321
+  },
+  "gen-fireworks-kamuro-gold": {
+    "hash": "0e9484edd7f4ad96a547b27d6a69ae47",
+    "synced_at": 1783231025.0900986
+  },
+  "gen-fireworks-wind-ripple": {
+    "hash": "8f52dc9f6f624a6615c92381c4815e13",
+    "synced_at": 1783231025.110942
+  },
+  "gen-fireworks-horse-tail": {
+    "hash": "ebaab36b44c92e1e35729561a717613a",
+    "synced_at": 1783231025.1188953
+  },
+  "gen-fireworks-nocturne": {
+    "hash": "51f4f8a31439f6b1885bed9ece75ebb9",
+    "synced_at": 1783231025.1777403
+  },
+  "gen-fireworks-crackle-palm": {
+    "hash": "bfaa6a9a2d67363a81e55046a03d8dab",
+    "synced_at": 1783231025.3736894
+  },
+  "gen-image-pixel-detonation": {
+    "hash": "64dba1fa91029da4933dd9276ba90867",
+    "synced_at": 1783231025.430943
+  },
+  "gen-fireworks-chrysanthemum": {
+    "hash": "f18e96ecf75f63593ca055d7c8df8f5b",
+    "synced_at": 1783231025.4330518
+  },
+  "gen-fireworks-smoke-bloom": {
+    "hash": "67e510d7803cd0843e6f6f55a32003cf",
+    "synced_at": 1783231025.4400444
+  },
+  "gen-fireworks-fan-shell": {
+    "hash": "89e1633d289ae54570f19ee6b45a682e",
+    "synced_at": 1783231025.4706483
+  },
+  "gen-fireworks-roman-candle": {
+    "hash": "4442b87a5a3e87931828eab0341899fb",
+    "synced_at": 1783231025.6699498
+  },
+  "gen-fireworks-ring-shell": {
+    "hash": "c355da0033f384a7f57d37474ab8c541",
+    "synced_at": 1783231025.7615762
+  },
+  "gen-fireworks-crossette": {
+    "hash": "8ee97c036286c3833bfd8fba0f468333",
+    "synced_at": 1783231025.7639983
+  },
+  "gen-fireworks-strobe-shell": {
+    "hash": "2210e1b62146937cb3b36f9483800567",
+    "synced_at": 1783231025.770532
+  },
+  "gen-fireworks-willow-cascade": {
+    "hash": "7d8cb1a1ab64aa47e70b7ab8797a1b79",
+    "synced_at": 1783231025.7734752
+  },
+  "gen-fireworks-audio-symphony": {
+    "hash": "1979345191550264cddcc65e33e0e13b",
+    "synced_at": 1783231025.955401
+  },
+  "gen-fireworks-comet-trail": {
+    "hash": "fc2ace2362e628e6426b4304670be01b",
+    "synced_at": 1783231026.091509
+  },
+  "gen-image-pyro": {
+    "hash": "14864fe0fee40dc26638e407e6703401",
+    "synced_at": 1783231026.0972347
+  },
+  "fireworks-portrait-burst": {
+    "hash": "5fc80afb563ec25b4df34c05f1134484",
+    "synced_at": 1783231026.1104815
+  },
+  "fireworks-edge-ignite": {
+    "hash": "ee38fbd28ae2f90caafba29ad8600cd9",
+    "synced_at": 1783231026.1119585
+  },
+  "fireworks-depth-parade": {
+    "hash": "fbc8378f4cc13cde2c18a47b98446be3",
+    "synced_at": 1783231026.2740521
+  },
+  "fireworks-patriotic-july4": {
+    "hash": "ba7e7c4770926086ac32eff9b89587a6",
+    "synced_at": 1783231026.3855705
   }
 }

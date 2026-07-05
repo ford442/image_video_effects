@@ -1,0 +1,63 @@
+{
+  "name": "4th of July \u2014 Image Pyro",
+  "category": "generative",
+  "tags": [
+    "fireworks",
+    "image-reactive",
+    "pyrotechnics",
+    "photo-burst",
+    "sparks",
+    "gravity",
+    "audio-reactive",
+    "celebration",
+    "color-sampling",
+    "4th-of-july",
+    "july-4"
+  ],
+  "description": "Your photo or video frame becomes the fuel for a fireworks show. Bright regions of the image launch colored mortar shells and sparks that inherit the source hues. Explosions paint over the image with gravity arcs and glowing trails while the original image provides the palette. Bass triggers larger detonations, treble adds crackling highlights. Mouse directs a focused barrage.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Burst Power",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Ignition",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Trail Length",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Hue Twist",
+      "default": 0.0,
+      "min": -1,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-image-pyro",
+  "url": "shaders/gen-image-pyro.wgsl",
+  "features": []
+}
