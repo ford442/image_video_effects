@@ -5,17 +5,38 @@
 
 ## Current family roster
 
+> See also `agents/FIREWORKS_CONTRIBUTOR_KIT.md` for the full list including image-effect variants.
+
+### Core generative fireworks
+
 | ID | What it covers |
 |---|---|
 | `gen-fireworks-nocturne` | Classic multi-shell night display, gravity bursts, embers, trails, mouse command shells. |
-| `gen-image-pyro` | Image-reactive pyrotechnics: source image biases launches and spark colors. |
-| `gen-fireworks-crackle-palm` | Multi-stage shells: primary burst → delayed crackle → palm fronds. |
 | `gen-fireworks-willow-cascade` | Long hanging golden/silver willow trails with wind drift. |
 | `gen-fireworks-chrysanthemum` | Dense spherical shells with concentric ring layers. |
-| `gen-image-pixel-detonation` | Pixel-to-spark lift with edge-ignited launches and depth-aware bursts. |
+| `gen-fireworks-crackle-palm` | Multi-stage shells: primary burst → delayed crackle → palm fronds. |
+| `gen-fireworks-ring-shell` | Halo / donut ring bursts. |
+| `gen-fireworks-crossette` | Four-arm split crossette shells. |
+| `gen-fireworks-kamuro-gold` | Slow gold/silver glitter rain. |
+| `gen-fireworks-roman-candle` | Vertical star barrage from tubes. |
+| `gen-fireworks-horse-tail` | Brocade / horse-tail long golden streamers. |
+| `gen-fireworks-comet-trail` | Blazing comet head + luminous trail. |
+| `gen-fireworks-fan-shell` | Wide hemisphere fan spread. |
+| `gen-fireworks-strobe-shell` | Rhythmic multi-flash strobe bursts. |
 | `gen-fireworks-wind-ripple` | Shells drift with wind; ripple events trigger directed barrages. |
 | `gen-fireworks-smoke-bloom` | Volumetric smoke layers and enhanced light bloom. |
 | `gen-fireworks-audio-symphony` | Rhythm-driven display: bass launches, mids secondary bursts, treble micro-sparks. |
+
+### Image / video-reactive pyrotechnics
+
+| ID | What it covers |
+|---|---|
+| `gen-image-pyro` | Photo biases launches and spark colors. |
+| `gen-image-pixel-detonation` | Pixel-to-spark lift with edge-ignited launches and depth-aware bursts. |
+| `fireworks-edge-ignite` | Contours / edges become ignition lines. |
+| `fireworks-portrait-burst` | Bright regions detonate as burst cores. |
+| `fireworks-patriotic-july4` | Red/white/blue July 4th palette. |
+| `fireworks-depth-parade` | Depth-layered sequential launches. |
 
 ## Non-negotiable contract
 

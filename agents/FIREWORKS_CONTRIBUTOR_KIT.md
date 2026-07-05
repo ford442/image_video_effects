@@ -266,6 +266,9 @@ let mouseUV   = (mouse - res * 0.5) / min(res.x, res.y);  // aspect-correct
 | Portrait Burst (image) | ✅ shipped | `fireworks-portrait-burst` | Bright-region cores |
 | Patriotic July 4 (image) | ✅ shipped | `fireworks-patriotic-july4` | R/W/B palette |
 | Depth Parade (image) | ✅ shipped | `fireworks-depth-parade` | Layered depth launches |
+| Wind & Ripple | ✅ shipped | `gen-fireworks-wind-ripple` | Wind-drifted sparks + ripple barrages |
+| Smoke Bloom | ✅ shipped | `gen-fireworks-smoke-bloom` | Volumetric smoke + feedback bloom |
+| Audio Symphony | ✅ shipped | `gen-fireworks-audio-symphony` | Envelope-driven bass/mids/treble shells |
 | **Depth-aware 3D burst** | 🔲 open | — | Parallax from `readDepthTexture`; speed ∝ depth |
 | **Bioluminescent / ferrofluid pyro** | 🔲 open | — | Neon HSV palette pulsing with bass |
 | **Quantum teleport sparks** | 🔲 open | — | Symmetric partner jumps every ~0.12 s |
