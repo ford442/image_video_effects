@@ -1,0 +1,64 @@
+{
+  "name": "4th of July \u2014 Smoke Bloom",
+  "category": "generative",
+  "tags": [
+    "fireworks",
+    "smoke",
+    "bloom",
+    "volumetric",
+    "pyrotechnics",
+    "audio-reactive",
+    "mouse-driven",
+    "trails",
+    "generative",
+    "celebration",
+    "4th-of-july",
+    "july-4"
+  ],
+  "description": "Soft volumetric smoke gathers around bursts and along falling sparks, while a feedback light bloom adds luminous halos to the brightest areas. Bass swells the smoky glow, mids add secondary burst layers, and treble scatters micro-sparks. Mouse launches a smoky peony at the cursor.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Smoke Density",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Bloom Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Burst Energy",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Trail Decay",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-fireworks-smoke-bloom",
+  "url": "shaders/gen-fireworks-smoke-bloom.wgsl",
+  "features": []
+}
