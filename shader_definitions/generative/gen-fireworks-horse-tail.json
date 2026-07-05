@@ -1,0 +1,61 @@
+{
+  "name": "4th of July \u2014 Horse Tail Brocade",
+  "category": "generative",
+  "tags": [
+    "fireworks",
+    "horse-tail",
+    "brocade",
+    "streamers",
+    "pyrotechnics",
+    "july-4",
+    "audio-reactive",
+    "generative",
+    "4th-of-july"
+  ],
+  "description": "Classic horse tail and brocade shells rain long, straight golden streamers from a single burst point. Each spark traces a tight gravity arc with minimal spread, creating luminous waterfalls of light. Bass lengthens the tails, treble adds silver micro-dust along the streams. Mouse launches a personal brocade cascade.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Tail Length",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Stream Width",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Gold Intensity",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Fall Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-fireworks-horse-tail",
+  "url": "shaders/gen-fireworks-horse-tail.wgsl",
+  "features": []
+}
