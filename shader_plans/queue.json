@@ -890,6 +890,13 @@
       "added": "2026-07-04T07:47:29.783993",
       "status": "completed",
       "completed_at": "2026-07-04T19:45:50.569799+00:00"
+    },
+    {
+      "filename": "2026-07-04_ethereal-chrono-plasma-void-manta.md",
+      "title": "Ethereal Chrono-Plasma Void-Manta",
+      "added": "2026-07-04T15:19:54.098199",
+      "status": "completed",
+      "completed_at": "2026-07-05T08:34:32.089112+00:00"
     }
   ],
   "rejected": [],
@@ -1159,11 +1166,6 @@
       "filename": "2026-06-29_prismatic-cyber-chrono-nebula-peacock.md",
       "title": "Prismatic Cyber-Chrono Nebula-Peacock",
       "added": "2026-06-29T15:34:23.065054"
-    },
-    {
-      "filename": "2026-07-04_ethereal-chrono-plasma-void-manta.md",
-      "title": "Ethereal Chrono-Plasma Void-Manta",
-      "added": "2026-07-04T15:19:54.098199"
     }
   ],
   "in_progress": null

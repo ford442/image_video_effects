@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-07-03T07:34:40.249495",
+  "timestamp": "2026-07-05T08:36:46.764644",
   "naga_bin": "/home/jules/.cargo/bin/naga",
-  "naga_available": false,
+  "naga_available": true,
   "total": 1,
   "passed": 1,
   "failed": 0,
@@ -9,12 +9,12 @@
   "warnings": 0,
   "results": [
     {
-      "file": "public/shaders/gen-chrono-kitsune-prism-weaver.wgsl",
+      "file": "public/shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
       "skipped": false,
       "skip_reason": null,
-      "naga_ok": null,
-      "naga_skipped": true,
-      "naga_error": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_warnings": [],
