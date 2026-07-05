@@ -10,10 +10,13 @@ module.exports = {
         },
       });
 
-      // topLevelAwait is required by transformers.js / onnxruntime-web.
-      // Do NOT set outputModule: true or importMeta: false — CRA serves classic
-      // script bundles; leaving import.meta in the output causes a runtime crash:
-      //   Uncaught SyntaxError: Cannot use 'import.meta' outside a module
+      // Shim import.meta inside transformers before webpack parses the package.
+      webpackConfig.module.rules.unshift({
+        test: /\.m?js$/,
+        include: /node_modules[\\/]@xenova[\\/]transformers/,
+        use: path.resolve(__dirname, 'scripts/webpack-import-meta-shim-loader.js'),
+      });
+
       webpackConfig.experiments = {
         ...webpackConfig.experiments,
         topLevelAwait: true,
@@ -27,7 +30,6 @@ module.exports = {
         },
       };
 
-      // Block Node-only backends from being bundled into the browser build.
       webpackConfig.resolve = webpackConfig.resolve || {};
       webpackConfig.resolve.alias = {
         ...webpackConfig.resolve.alias,
