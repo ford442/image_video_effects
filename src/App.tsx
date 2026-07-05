@@ -286,6 +286,8 @@ function MainApp() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const wasmRecordingPromiseRef = useRef<Promise<Blob> | null>(null);
+    const recordingFinishedRef = useRef(false);
 
     // --- State: Mouse Control ---
     const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 });
@@ -409,7 +411,7 @@ function MainApp() {
     const syncInputSourceToRenderer = useCallback((source: InputSource) => {
         inputSourceRef.current = source;
         setInputSource(source);
-        rendererRef.current?.setInputSource?.(source);
+        rendererRef.current?.setInputSource(source);
     }, []);
 
     const mapShaderParamUpdates = useCallback((slotParamsUpdates: Record<string, number>, slotIndex: number): Partial<SlotParams> => {
@@ -593,9 +595,7 @@ function MainApp() {
 
             // Push images to Renderer
             if (rendererRef.current) {
-                if (rendererRef.current.setImageList) {
-                    rendererRef.current.setImageList(content.manifest.map(m => m.url));
-                }
+                rendererRef.current.setImageList(content.manifest.map(m => m.url));
             }
         };
         fetchManifests();
@@ -723,9 +723,7 @@ function MainApp() {
             for (let i = 0; i < data.length; ++i) {
                 normalizedData[i] = 1.0 - ((data[i] - min) / range);
             }
-            if (rendererRef.current.updateDepthMap) {
-                rendererRef.current.updateDepthMap(normalizedData, width, height);
-            }
+            rendererRef.current.updateDepthMap(normalizedData, width, height);
             setStatus('Depth map updated.');
         } catch (e: any) {
             console.error("Error during analysis:", e);
@@ -734,14 +732,13 @@ function MainApp() {
     }, [depthEstimator]);
 
     const handleLoadImage = useCallback(async (url: string) => {
-        if (!rendererRef.current) return;
-        if (rendererRef.current.loadImage) {
-            const newImageUrl = await rendererRef.current.loadImage(url);
-            if (newImageUrl) {
-                setCurrentImageUrl(newImageUrl);
-                if (depthEstimator) {
-                    await runDepthAnalysis(newImageUrl);
-                }
+        const manager = rendererRef.current;
+        if (!manager) return;
+        const newImageUrl = await manager.loadImage(url);
+        if (newImageUrl) {
+            setCurrentImageUrl(newImageUrl);
+            if (depthEstimator) {
+                await runDepthAnalysis(newImageUrl);
             }
         }
     }, [depthEstimator, runDepthAnalysis]);
@@ -901,6 +898,11 @@ function MainApp() {
         await aiVj.randomizeActiveParams();
     }, [aiVj]);
 
+    const handleTriggerNextTransition = useCallback(async () => {
+        if (!aiVj) return;
+        await aiVj.triggerNextTransition();
+    }, [aiVj]);
+
     const handleSavePreset = useCallback((name: string) => {
         if (!aiVj) return;
         const shaderIds = aiVj.getActiveShaderIds();
@@ -962,18 +964,12 @@ function MainApp() {
     }, [aiVj]);
     
     const onInitCanvas = useCallback(() => {
-        if (rendererRef.current) {
-            setActiveRendererType(rendererRef.current.getActiveRendererType());
-            if (rendererRef.current.getAvailableModes) {
-                setAvailableModes(rendererRef.current.getAvailableModes());
-            }
-            // Record deep-workgroup hardware capability so we can filter shaders
-            const deepWg = rendererRef.current.getSupportsDeepWorkgroup?.() ?? false;
-            setSupportsDeepWorkgroup(deepWg);
-            // Ensure the active backend matches the UI input source (WASM + WebGPU).
-            rendererRef.current.setInputSource?.(inputSourceRef.current);
-            setRendererReady(true);
-        }
+        const manager = rendererRef.current;
+        if (!manager) return;
+        setActiveRendererType(manager.getActiveRendererType());
+        setSupportsDeepWorkgroup(manager.getSupportsDeepWorkgroup());
+        manager.setInputSource(inputSourceRef.current);
+        setRendererReady(true);
     }, []);
 
     // --- Test Mode Hook (exposes renderer for Playwright harness) ---
@@ -1234,6 +1230,26 @@ function MainApp() {
             depthThreshold: 0.3 + Math.random() * 0.5,  // 0.3 - 0.8
         };
     }, []);
+
+    const handleRandomizeSlot = useCallback((slot: number) => {
+        const randomShader = getRandomShader();
+        if (!randomShader) {
+            setStatus('No shaders available for randomize.');
+            return;
+        }
+        setMode(slot, randomShader.id as RenderMode);
+        const newParams = randomizeSlotParams();
+        updateSlotParam(slot, newParams);
+        setStatus(`🎲 Randomized slot ${slot + 1}: ${randomShader.name}`);
+        setIsRouletteActive(true);
+        setTimeout(() => setIsRouletteActive(false), 500);
+    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam]);
+
+    const handleSetSlotParam = useCallback((slot: number, param: string, value: number) => {
+        const updates: Partial<SlotParams> = { [param]: value };
+        updateSlotParam(slot, updates);
+        rendererRef.current?.updateSlotParams(updates, slot);
+    }, [updateSlotParam]);
 
     const triggerRoulette = useCallback(() => {
         const randomShader = getRandomShader();
@@ -1749,10 +1765,46 @@ function MainApp() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const stopRecording = useCallback(() => {
+    const finishRecordingBlob = useCallback((blob: Blob) => {
+        if (recordingFinishedRef.current) return;
+        recordingFinishedRef.current = true;
+
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pixelocity-clip-${Date.now()}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        const link = generateShareableLink();
+        setShareableLink(link);
+        setShareVibeText('');
+        setShowShareModal(true);
+
+        setStatus('✅ Recording saved! Download started.');
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, [generateShareableLink]);
+
+    const clearRecordingTimer = useCallback(() => {
         if (recordingTimerRef.current) {
             clearInterval(recordingTimerRef.current);
             recordingTimerRef.current = null;
+        }
+    }, []);
+
+    const stopRecording = useCallback(() => {
+        clearRecordingTimer();
+
+        const manager = rendererRef.current;
+        if (manager?.usesInternalRecording()) {
+            manager.stopRendererRecording();
+            manager.setRecording(false);
+            wasmRecordingPromiseRef.current = null;
+            setIsRecording(false);
+            setRecordingCountdown(8);
+            return;
         }
 
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -1762,21 +1814,68 @@ function MainApp() {
         setIsRecording(false);
         setRecordingCountdown(8);
         rendererRef.current?.setRecording?.(false);
-    }, []);
+    }, [clearRecordingTimer]);
 
     const startRecording = useCallback(async () => {
-        // Use the canvas ref exposed by WebGPUCanvas (avoids fragile DOM querySelector)
         const canvas = webgpuCanvasRef.current;
+        const manager = rendererRef.current;
         if (!canvas) {
             setStatus('❌ Canvas not found for recording');
             return;
         }
-        
+        if (!manager) {
+            setStatus('❌ Renderer not ready for recording');
+            return;
+        }
+
+        recordingFinishedRef.current = false;
+
         try {
-            // Capture stream at 60fps
+            if (manager.usesInternalRecording()) {
+                setIsRecording(true);
+                setRecordingCountdown(8);
+                setStatus('🔴 Recording (WASM)… 8s');
+                manager.setRecording(true);
+
+                const recordingPromise = manager.startRecording(canvas, {
+                    durationMs: 8000,
+                    frameRate: 60,
+                    videoBitsPerSecond: 8_000_000,
+                });
+                wasmRecordingPromiseRef.current = recordingPromise;
+
+                recordingPromise
+                    .then((blob) => {
+                        finishRecordingBlob(blob);
+                    })
+                    .catch((e) => {
+                        console.error('WASM recording failed:', e);
+                        setStatus('❌ Recording failed. WASM readback may be unavailable.');
+                    })
+                    .finally(() => {
+                        wasmRecordingPromiseRef.current = null;
+                        setIsRecording(false);
+                        setRecordingCountdown(8);
+                        manager.setRecording(false);
+                    });
+
+                let count = 8;
+                recordingTimerRef.current = setInterval(() => {
+                    count -= 1;
+                    setRecordingCountdown(count);
+                    setStatus(`🔴 Recording (WASM)… ${count}s`);
+
+                    if (count <= 0) {
+                        stopRecording();
+                    }
+                }, 1000);
+
+                return;
+            }
+
+            // TS WebGPU path: capture the visible WebGPU canvas directly.
             const stream = canvas.captureStream(60);
-            
-            // Try VP9 first, fall back to VP8 or default
+
             let mimeType = 'video/webm;codecs=vp9';
             if (!MediaRecorder.isTypeSupported(mimeType)) {
                 mimeType = 'video/webm;codecs=vp8';
@@ -1784,81 +1883,60 @@ function MainApp() {
                     mimeType = 'video/webm';
                 }
             }
-            
+
             const mediaRecorder = new MediaRecorder(stream, {
                 mimeType,
-                videoBitsPerSecond: 8000000 // 8 Mbps for good quality
+                videoBitsPerSecond: 8000000,
             });
-            
+
             mediaRecorderRef.current = mediaRecorder;
             recordedChunksRef.current = [];
-            
+
             mediaRecorder.ondataavailable = (e) => {
                 if (e.data.size > 0) {
                     recordedChunksRef.current.push(e.data);
                 }
             };
-            
+
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-                const url = URL.createObjectURL(blob);
-                
-                // Auto-download
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `pixelocity-clip-${Date.now()}.webm`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                
-                // Generate shareable link
-                const link = generateShareableLink();
-                setShareableLink(link);
-                setShareVibeText('');
-                setShowShareModal(true);
-                
-                setStatus('✅ Recording saved! Download started.');
-                
-                // Cleanup
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                finishRecordingBlob(blob);
             };
-            
-            // Start recording
-            mediaRecorder.start(100); // Collect data every 100ms
+
+            mediaRecorder.start(100);
             rendererRef.current?.setRecording?.(true);
             setIsRecording(true);
             setRecordingCountdown(8);
-            setStatus('🔴 Recording... 8s');
-            
-            // Countdown timer
+            setStatus('🔴 Recording… 8s');
+
             let count = 8;
             recordingTimerRef.current = setInterval(() => {
                 count -= 1;
                 setRecordingCountdown(count);
-                setStatus(`🔴 Recording... ${count}s`);
-                
+                setStatus(`🔴 Recording… ${count}s`);
+
                 if (count <= 0) {
                     stopRecording();
                 }
             }, 1000);
-            
         } catch (e) {
             console.error('Recording failed:', e);
             setStatus('❌ Recording failed. Browser may not support this feature.');
         }
-    }, [generateShareableLink, stopRecording]);
+    }, [finishRecordingBlob, stopRecording]);
 
     // Cleanup recording on unmount
     useEffect(() => {
         return () => {
-            if (recordingTimerRef.current) {
-                clearInterval(recordingTimerRef.current);
-            }
-            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            clearRecordingTimer();
+            const manager = rendererRef.current;
+            if (manager?.usesInternalRecording()) {
+                manager.stopRendererRecording();
+            } else if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                 mediaRecorderRef.current.stop();
             }
         };
-    }, []);
+    }, [clearRecordingTimer]);
 
     // --- Remote Control Sync ---
     // Build full state object for syncing
@@ -2027,6 +2105,9 @@ function MainApp() {
                         onUpdateStack={handleUpdateStack} onUpdateParams={handleUpdateParams}
                         onRandomizeParams={handleRandomizeParams}
                         onSavePreset={handleSavePreset}
+                        onTriggerNextTransition={handleTriggerNextTransition}
+                        onRandomizeSlot={handleRandomizeSlot}
+                        onSetSlotParam={handleSetSlotParam}
                         onShareVjSet={handleShareVjSet}
                         onSaveVjSet={handleSaveVjSet}
                         onStartAutoTransition={startAutoTransition}
@@ -2083,6 +2164,7 @@ function MainApp() {
                         isWebcamActive={isWebcamActive}
                         webcamVideoElement={videoElementRef.current}
                         onCanvasRef={(el) => { webgpuCanvasRef.current = el; }}
+                        shaderCatalog={availableModes}
                     />
                     <div className="status-bar">
                         <span>{isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}</span>

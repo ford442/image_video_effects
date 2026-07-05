@@ -38,6 +38,7 @@
 
 ## TODOs / Open Threads (from this + recent memory)
 - [ ] **Shader upgrade mission (2026-06-28):** Upgrade batches of Pixelocity WGSL shaders to the immutable 13-binding contract, including standard `Uniforms`, `rgba32float` storage writes, depth/data/audio bindings, 16x16x1 workgroups, aspect-correct UVs, four `updatedParams`, feature metadata, generator validation, and batch commits.
+- [x] 2026-07-03: Created GH issues for WASM renderer remaining work: umbrella #885 + #886–#890 (recording, forwarding audit, parity, tests/bench, docs/promotion). Expanded #845–#849 with follow-up notes. Updated GAP + STATUS docs. C++ renderer still Tier B experimental; core is solid but integration/recording/parity/tests not fully seamless.
 - [x] Created GH issues 817-823 (2026-06-11) for C++ solidification. All C++-centric, reference #799 + specific source lines.
 - [x] Updated issue bodies 2026-06-14: moved Claude's implementation sketches from comments into structured task sections (Prerequisites, Implementation Instructions, Task Checklist). PR order: #821 → #818+#820 → #817+#819 → #822 → #823.
 - [x] Bridge skew fix (2026-06-16): `wasm_renderer/wasm_bridge.js` is SOT; build.sh copies to both paths; validate guard; `getDiagnostics()` synced.
@@ -47,7 +48,7 @@
 - [x] RendererManager WASM forwarding + resync on switch (Phase 1, 2026-06-20).
 - [ ] App-level `setInputSource` everywhere + live edge-GPU verification.
 - [x] Phase 2 CI/build hygiene (2026-06-27): build.sh fails without emcc; CI artifact pipeline; ARTIFACTS.md
-- [x] Phase 3 WASM test suite (2026-06-27): parity matrix, benchmarks, hot-reload, WASM_TEST_SUITE.md
+- [x] 2026-07-04: WASM promotion tracking doc + GAP/STATUS/README refresh (#890). Tier B honest; gates in `WASM_PROMOTION_TRACKING.md`.
 - [x] **Product decision Tier B (2026-06-27):** WASM = experimental opt-in; TS WebGPU = production default. Policy: `WASM_BACKEND_POLICY.md`
 - Memory maintenance: review recent daily (06-07 had swarm, git sync); distill only high-signal (C++ reliability is now key infra bet).
 

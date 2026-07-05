@@ -153,7 +153,7 @@ hardened init/format/limits ([#817](https://github.com/ford442/image_video_effec
 **Still open (not #817–#822):**
 
 - App never calls `setInputSource` — generative mode unreachable for WASM *(partially addressed 2026-06-20)*
-- Live-browser smoke on edge GPUs not yet formally verified
+- Live-browser smoke on edge GPUs — informal only; promotion tracking in [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md)
 
 Tracking table:
 [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06).

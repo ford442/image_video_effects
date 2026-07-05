@@ -528,10 +528,12 @@ export function getSlotState(slotIndex) {
   };
 }
 
-/** CPU wall-clock render timings from the last frame (GPU timestamps unavailable). */
+/** CPU wall-clock render timings from the last frame.
+ *  `available` is false because emdawn/Dawn in WASM does not expose GPU timestamp
+ *  queries yet; parallel/chained/total are still valid per-frame wall-clock ms. */
 export function getGPUTimings() {
   if (!state.initialized || !wasmModule) {
-    return { parallelTime: 0, chainedTime: 0, totalTime: 0, available: false };
+    return { parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable' };
   }
   const ptr = wasmModule._malloc(16);
   try {
@@ -542,7 +544,8 @@ export function getGPUTimings() {
     const chainedTime = wasmModule.getValue(ptr + 4, 'float');
     const totalTime = wasmModule.getValue(ptr + 8, 'float');
     const available = wasmModule.getValue(ptr + 12, 'i32') === 1;
-    return { parallelTime, chainedTime, totalTime, available };
+    const timingSource = totalTime > 0 || parallelTime > 0 || chainedTime > 0 ? 'wall-clock' : 'unavailable';
+    return { parallelTime, chainedTime, totalTime, available, timingSource };
   } finally {
     wasmModule._free(ptr);
   }
@@ -913,7 +916,7 @@ export async function takeScreenshot(filename = 'screenshot.png') {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PHASE 2: Video recording via MediaRecorder + canvas.captureStream()
+// PHASE 2: Video recording
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** @type {MediaRecorder|null} */
@@ -922,14 +925,128 @@ let _recorder      = null;
 let _recordChunks  = [];
 /** @type {((blob: Blob) => void)|null} */
 let _recordResolve = null;
+/** @type {HTMLCanvasElement|null} */
+let _recordCanvas  = null;
+/** @type {CanvasRenderingContext2D|null} */
+let _recordCtx     = null;
+/** @type {number|null} */
+let _recordRafId   = null;
+let _recordFrameActive = false;
+/** @type {ReturnType<typeof setTimeout>|null} */
+let _recordAutoStopTimer = null;
+
+function cleanupRecordingPump() {
+  if (_recordRafId !== null) {
+    cancelAnimationFrame(_recordRafId);
+    _recordRafId = null;
+  }
+  if (_recordAutoStopTimer !== null) {
+    clearTimeout(_recordAutoStopTimer);
+    _recordAutoStopTimer = null;
+  }
+  _recordFrameActive = false;
+  _recordCanvas = null;
+  _recordCtx = null;
+}
+
+async function pumpReadbackRecordingFrame() {
+  if (!_recorder || _recorder.state !== 'recording') return;
+  if (_recordFrameActive) {
+    _recordRafId = requestAnimationFrame(pumpReadbackRecordingFrame);
+    return;
+  }
+
+  _recordFrameActive = true;
+  try {
+    const imageData = await captureFrame();
+    if (_recordCtx && _recordCanvas) {
+      if (_recordCanvas.width !== imageData.width) _recordCanvas.width = imageData.width;
+      if (_recordCanvas.height !== imageData.height) _recordCanvas.height = imageData.height;
+      _recordCtx.putImageData(imageData, 0, 0);
+    }
+  } catch (e) {
+    console.warn('[WASM] Recording frame readback failed:', e);
+  } finally {
+    _recordFrameActive = false;
+    if (_recorder && _recorder.state === 'recording') {
+      _recordRafId = requestAnimationFrame(pumpReadbackRecordingFrame);
+    }
+  }
+}
+
+function beginMediaRecorder(stream, mimeType, videoBitsPerSecond, durationMs, resolve, reject) {
+  _recordChunks = [];
+  _recordResolve = resolve;
+
+  _recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond });
+
+  _recorder.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) _recordChunks.push(e.data);
+  };
+
+  _recorder.onstop = () => {
+    cleanupRecordingPump();
+    const blob = new Blob(_recordChunks, { type: mimeType });
+    _recordChunks = [];
+    const cb = _recordResolve;
+    _recordResolve = null;
+    _recorder = null;
+    setRecording(false);
+    if (cb) cb(blob);
+  };
+
+  _recorder.onerror = (e) => {
+    cleanupRecordingPump();
+    _recorder = null;
+    _recordChunks = [];
+    _recordResolve = null;
+    setRecording(false);
+    reject(new Error(`[WASM] MediaRecorder error: ${e.error?.message ?? e}`));
+  };
+
+  _recorder.start(100);
+  setRecording(true);
+
+  if (durationMs > 0) {
+    _recordAutoStopTimer = setTimeout(() => stopRecording(), durationMs);
+  }
+}
+
+function startReadbackRecording(resolve, reject, { durationMs, frameRate, videoBitsPerSecond }) {
+  const w = state.canvasWidth || 1920;
+  const h = state.canvasHeight || 1080;
+
+  _recordCanvas = document.createElement('canvas');
+  _recordCanvas.width = w;
+  _recordCanvas.height = h;
+  _recordCtx = _recordCanvas.getContext('2d', { willReadFrequently: true });
+
+  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+    ? 'video/webm;codecs=vp9'
+    : 'video/webm';
+
+  let stream;
+  try {
+    stream = _recordCanvas.captureStream(frameRate);
+  } catch (e) {
+    cleanupRecordingPump();
+    reject(new Error(`[WASM] readback canvas.captureStream() failed: ${e.message}`));
+    return;
+  }
+
+  beginMediaRecorder(stream, mimeType, videoBitsPerSecond, durationMs, resolve, reject);
+  console.log(`[WASM] Readback recording started (${durationMs}ms, ${w}x${h}, ${mimeType})`);
+  pumpReadbackRecordingFrame();
+}
 
 /**
- * Start recording the canvas output to a WebM video.
+ * Start recording the renderer output to a WebM video.
  *
- * The recording captures the canvas directly using canvas.captureStream(),
- * which works with WebGPU canvases in Chrome / Edge 113+.
+ * When the WASM renderer is initialized, frames are captured via GPU readback
+ * (`captureFrame`) into an offscreen canvas — the DOM canvas is blank because
+ * `PresentToSurface()` drives the WebGPU swap chain directly.
  *
- * @param {HTMLCanvasElement} canvasElement - The canvas to record.
+ * @param {HTMLCanvasElement} canvasElement - Fallback capture target when WASM is not active.
  * @param {object}            [options]
  * @param {number}            [options.durationMs=8000]       - Auto-stop after this many ms.
  * @param {number}            [options.frameRate=60]          - Target capture frame rate.
@@ -947,15 +1064,19 @@ export function startRecording(canvasElement, {
       return;
     }
 
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+      ? 'video/webm;codecs=vp9'
+      : 'video/webm';
+
+    if (state.initialized && wasmModule) {
+      startReadbackRecording(resolve, reject, { durationMs, frameRate, videoBitsPerSecond });
+      return;
+    }
+
     if (!canvasElement) {
       reject(new Error('[WASM] No canvas element provided'));
       return;
     }
-
-    // Prefer VP9 in WebM; fall back to browser default.
-    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-      ? 'video/webm;codecs=vp9'
-      : 'video/webm';
 
     let stream;
     try {
@@ -965,42 +1086,8 @@ export function startRecording(canvasElement, {
       return;
     }
 
-    _recordChunks  = [];
-    _recordResolve = resolve;
-
-    _recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond });
-
-    _recorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) _recordChunks.push(e.data);
-    };
-
-    _recorder.onstop = () => {
-      const blob = new Blob(_recordChunks, { type: mimeType });
-      _recordChunks  = [];
-      const cb       = _recordResolve;
-      _recordResolve = null;
-      _recorder      = null;
-      setRecording(false);
-      if (cb) cb(blob);
-    };
-
-    _recorder.onerror = (e) => {
-      _recorder      = null;
-      _recordChunks  = [];
-      _recordResolve = null;
-      setRecording(false);
-      reject(new Error(`[WASM] MediaRecorder error: ${e.error?.message ?? e}`));
-    };
-
-    // Collect data every 100 ms for low-latency chunks.
-    _recorder.start(100);
-    setRecording(true);
-    console.log(`[WASM] Recording started (${durationMs}ms, ${mimeType})`);
-
-    // Auto-stop after requested duration.
-    if (durationMs > 0) {
-      setTimeout(() => stopRecording(), durationMs);
-    }
+    beginMediaRecorder(stream, mimeType, videoBitsPerSecond, durationMs, resolve, reject);
+    console.log(`[WASM] Canvas-stream recording started (${durationMs}ms, ${mimeType})`);
   });
 }
 
@@ -1012,6 +1099,7 @@ export function stopRecording() {
   if (_recorder && _recorder.state === 'recording') {
     _recorder.stop();
   } else {
+    cleanupRecordingPump();
     setRecording(false);
   }
 }

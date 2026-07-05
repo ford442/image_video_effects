@@ -3,24 +3,21 @@
 A high-performance C++ WebGPU rendering backend using Emscripten and Dawn/emdawnwebgpu.
 Provides an alternative to the JavaScript WebGPU renderer with potential performance benefits.
 
-## Current Status
+## Current Status (July 2026)
 
-✅ **Core Implementation Complete** (compute + present pipeline)
-- WebGPU device initialization
-- Universal bind group layout (matches all 587+ shaders)
-- Texture management (ping-pong, depth, data A/B/C)
-- Uniform buffer management
-- Shader loading and pipeline caching
-- Ping-pong texture copying for feedback effects
-- Surface/render pass integration (`PresentToSurface`, see `renderer.cpp`)
-- Image loading from JS
-- TypeScript integration
+**Tier B — experimental opt-in.** TypeScript WebGPU is the production default.
 
-⚠️ **Reliability caveats (June 2026)** — see
-[Current known reliability caveats](#current-known-reliability-caveats-june-2026).
-The compute + present pipeline is implemented; init/format/limits handshake
-was hardened in #817–#822. Remaining gaps are integration glue and live-browser
-verification, not missing presentation code.
+| Area | Status |
+|------|--------|
+| Compute + present pipeline | ✅ Implemented |
+| Init/format/limits (#817–#822) | ✅ Closed |
+| Integration glue (#886–#887) | ✅ In tree |
+| Playwright + benchmarks (#889) | ✅ See `WASM_TEST_SUITE.md` |
+| Promotion to Tier A | ⬜ Open — [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md) |
+
+Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md)
+
+⚠️ **Do not describe WASM as production-ready** until promotion gates pass.
 
 ## Architecture
 
@@ -342,17 +339,14 @@ hardened the init/format/limits handshake:
 | [#819](https://github.com/ford442/image_video_effects/issues/819) | ✅ | Explicit `requiredLimits` + early validation |
 | [#822](https://github.com/ford442/image_video_effects/issues/822) | ✅ | Unified init errors, RAII cleanup, `getLastInitErrorStage`/`Message` → JS |
 
-**Still open (not #817–#822):**
+**July 2026 — integration + tests closed in tree (#886–#889). Still open for Tier A promotion:**
 
-- `RendererManager` does not forward slot/param changes to WASM
-- App never calls `setInputSource` — generative mode unreachable for WASM
-- `build.sh` fails without `emcc` unless `SKIP_WASM_BUILD=1` (see [`ARTIFACTS.md`](./ARTIFACTS.md))
-- Live-browser smoke on edge GPUs not yet formally verified
+- Promotion gates — [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md)
+- Edge-GPU manual verification
+- Visual pixel-diff automation
+- `build.sh` requires `emcc` unless `SKIP_WASM_BUILD=1` (see [`ARTIFACTS.md`](./ARTIFACTS.md))
 
-Full tracking:
-[C++ Solidification Tracking](../WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06)
-in `WASM_RENDERER_GAP_ANALYSIS.md`. PR sequence and status:
-[`STATUS.md`](STATUS.md#remaining-work--reliability-june-2026).
+Full tracking: [`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md) · [`STATUS.md`](./STATUS.md)
 
 ## Roadmap
 

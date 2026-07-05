@@ -173,6 +173,29 @@ This engine uses a "Universal BindGroup" architecture. You can drop in new `.wgs
 - **Rendering Pipeline**: Uses a ping-pong texture system where compute shaders read previous frame state and write new state
 - **Depth Integration**: AI-generated depth maps enable parallax and depth-aware effects
 - **Uniform Interface**: All compute shaders share a standardized `Uniforms` structure
+- **Default renderer**: TypeScript WebGPU (Tier A production path)
+
+## Experimental C++ WASM Renderer (Tier B)
+
+An optional **C++ Emscripten** backend can be enabled for performance experiments. It is **not** the production default and is labeled **Experimental** in the UI.
+
+```
+http://localhost:3000/?renderer=wasm
+```
+
+Or use the **Renderer** switcher in Controls.
+
+| Topic | Document |
+|-------|----------|
+| Policy & promotion gates | [`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md) |
+| Promotion checklist + evidence | [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md) |
+| Gap analysis | [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) |
+| How to test | [`WASM_TESTING.md`](./WASM_TESTING.md), [`WASM_TEST_SUITE.md`](./WASM_TEST_SUITE.md) |
+| Implementation status | [`wasm_renderer/STATUS.md`](./wasm_renderer/STATUS.md) |
+
+**Limitations while Tier B:** best-effort parity with TS WebGPU; WASM GPU timings are wall-clock only; Playwright GPU tests require a real WebGPU adapter (`WASM_GPU_TESTS=1`). See policy doc before treating WASM as production-ready.
+
+**Build WASM locally:** `npm run wasm:build` (requires [Emscripten](https://emscripten.org/)). In CI/headless VMs without emsdk: `SKIP_WASM_BUILD=1 npm run build` uses committed artifacts in `public/wasm/`.
 
 ## Browser Support
 

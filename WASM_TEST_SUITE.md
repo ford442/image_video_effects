@@ -16,7 +16,7 @@ Full automated testing for the C++ WASM renderer path — parity with the TypeSc
    npm run wasm:validate
    ```
 
-2. **WebGPU-capable browser** (Chrome/Chromium with GPU). Headless CI VMs often lack a GPU adapter — GPU tests auto-skip when backends fall back.
+2. **WebGPU-capable browser** (Chrome/Chromium with GPU) for strict GPU suites.
 
 3. **Install Playwright** (once):
 
@@ -26,101 +26,125 @@ Full automated testing for the C++ WASM renderer path — parity with the TypeSc
 
 ## Quick reference
 
-| Command | What it runs |
-|---------|----------------|
-| `npm run test:wasm:unit` | Jest — bridge API + RendererManager parity mocks |
-| `npm run test:wasm:smoke` | Playwright — init, multi-shader, error checks |
-| `npm run test:wasm:parity` | Playwright — WASM vs WebGPU statistical parity matrix |
-| `npm run test:wasm:bench` | Playwright — FPS + `getGPUTimings()` benchmark report |
-| `npm run test:wasm` | All of the above (unit + full Playwright suite) |
+| Command | GPU required | What it runs |
+|---------|--------------|--------------|
+| `npm run test:wasm:unit` | No | Jest — bridge API + RendererManager parity mocks |
+| `npm run test:wasm:e2e` | No | Playwright soft smoke — build loads, test API, parity matrix (skips WASM assertions if no adapter) |
+| `npm run test:wasm:smoke` | Alias for `test:wasm:e2e` | Same |
+| `npm run test:wasm:gpu` | Yes (`WASM_GPU_TESTS=1`) | Parity matrix + benchmark JSON report |
+| `npm run test:wasm:parity` | Yes | WASM vs WebGPU statistical parity only |
+| `npm run test:wasm:bench` | Yes | FPS + `getGPUTimings()` benchmark → `test-results/wasm-benchmark-report.json` |
+| `npm run test:wasm` | No | Unit + soft e2e (CI default) |
+| `npm run test:wasm:full` | Yes | Unit + e2e + GPU parity + bench |
 
-## Running locally (with GPU)
+## Running locally
+
+### Headless / CI-style (no GPU)
 
 ```bash
-# 1. Build
-npm run wasm:build && npm run build
-
-# 2. Unit tests (no GPU needed)
-npm run test:wasm:unit
-
-# 3. Playwright suites (GPU required for meaningful results)
-WASM_GPU_TESTS=1 npm run test:wasm:smoke
-WASM_GPU_TESTS=1 npm run test:wasm:parity
-WASM_GPU_TESTS=1 npm run test:wasm:bench
-
-# Or everything:
-WASM_GPU_TESTS=1 npm run test:wasm
+npm run wasm:build && SKIP_WASM_BUILD=1 npm run build
+npm run test:wasm
 ```
 
-Set `WASM_GPU_TESTS=1` to **opt in** to GPU-dependent tests. Without it, parity/benchmark specs skip (safe for headless VMs).
+Verifies WASM artifacts, production build, Playwright loads `?renderer=wasm&testMode=1`, and exercises the shader matrix without requiring a real WebGPU adapter.
 
-## Parity matrix
+### With GPU (promotion / benchmark data)
 
-Defined in [`tests/fixtures/parityMatrix.ts`](./tests/fixtures/parityMatrix.ts):
+```bash
+npm run wasm:build && npm run build
 
-| Category | Shader | What we compare |
-|----------|--------|-----------------|
-| fluid | `sim-fluid-feedback-coupled` | Mean luminance + active pixel coverage |
-| reaction-diffusion | `gen-lichen-reaction-diffusion` | Same + audio uniform injection |
-| audio-reactive | `cyber-ripples` | Same + bass/mid/treble |
-| generative | `plasma` | Same |
-| interactive | `liquid` | Same + mouse position |
+# Strict mode — fails if ?renderer=wasm cannot initialize
+export WASM_GPU_TESTS=1
 
-Both backends render with identical `setTestRenderState()` (fixed time/mouse/audio), then we compare canvas statistics. This avoids brittle pixel-perfect diffs while catching "black canvas" and major divergence.
+npm run test:wasm:full
+# or individually:
+npm run test:wasm:gpu
+```
 
-Optional canvas snapshots (first 2 matrix entries) live under `tests/renderer-parity.spec.ts-snapshots/`.
+**`WASM_GPU_TESTS=1`** enables strict mode:
+- Smoke tests **require** active `wasm` backend (FPS ≥ 5, non-black canvas)
+- Parity/benchmark tests run (skip if adapter missing)
+- Benchmark writes **`test-results/wasm-benchmark-report.json`** with promotion gate assessment
 
-## Benchmark suite
+**Promotion tracking:** [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md)
 
-[`tests/wasm-benchmark.spec.ts`](./tests/wasm-benchmark.spec.ts) runs `__pixelocity__.runBenchmark(60)` on each benchmark-matrix shader for **wasm** and **webgpu**, reporting:
+Attach that JSON to promotion PRs per [`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md).
 
-- `avgFps`
-- `avgTotalMs` / `p95TotalMs` from `getGPUTimings()`
+## Parity matrix (5 shaders)
 
-**Note:** WASM `getGPUTimings().available` is always `false` today — C++ records CPU wall-clock per slot, not GPU timestamp queries. TS WebGPU may report `available: true` when timestamp queries are supported.
+Defined in [`tests/fixtures/parityMatrix.ts`](./tests/fixtures/parityMatrix.ts). Exercised by:
+
+- [`tests/wasm-renderer.smoke.spec.ts`](./tests/wasm-renderer.smoke.spec.ts) — per-shader smoke + multi-slot stack
+- [`tests/renderer-parity.spec.ts`](./tests/renderer-parity.spec.ts) — WASM vs WebGPU luminance comparison
+
+| Category | Shader | Notes |
+|----------|--------|-------|
+| fluid | `sim-fluid-feedback-coupled` | Fixed testState time/mouse |
+| reaction-diffusion | `gen-lichen-reaction-diffusion` | + audio uniforms |
+| audio-reactive | `cyber-ripples` | + bass/mid/treble |
+| generative | `plasma` | generative input |
+| interactive | `liquid` | mouse-driven |
+
+## Benchmark suite & promotion gate
+
+[`tests/wasm-benchmark.spec.ts`](./tests/wasm-benchmark.spec.ts) compares **wasm** vs **webgpu** on the first 3 matrix shaders (fluid, RD, cyber-ripples).
+
+Report fields:
+- `avgFps`, `avgTotalMs`, `p95TotalMs` per backend
+- `comparisons[].speedupRatio` — WASM fps / WebGPU fps (≥ **1.25** meets gate)
+- `promotionGateMet` — true when ≥ **3** shaders meet the ratio
+
+**Note:** WASM `getGPUTimings().available` is `false`; `timingSource` is `wall-clock`. TS WebGPU may report `gpu-timestamp` when supported.
 
 ## Shader hot-reload (dev)
-
-Edit WGSL under `public/shaders/` and reload compute pipelines without restarting:
 
 ```
 http://localhost:3000/?renderer=wasm&shaderHotReload=1
 ```
 
-Implementation:
-- Browser polls `Last-Modified` via `HEAD` requests
-- Calls C++ `reloadShader()` → destroys old pipeline, recompiles WGSL
-- TS WebGPU path already recompiles on content hash change via `loadShader()`
-
 Also works in test mode: `?renderer=wasm&testMode=1&shaderHotReload=1`
 
 ## Manual smoke testing
 
-See [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md) for browser DevTools checks when automated tests aren't available.
+See [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md) for browser DevTools checks.
 
 ## CI
 
-The `test-wasm-e2e` job in [`.github/workflows/ci.yml`](./.github/workflows/ci.yml):
+[`.github/workflows/ci.yml`](./.github/workflows/ci.yml):
 
-1. Downloads WASM artifacts from the `wasm` job
-2. Builds production app (`SKIP_WASM_BUILD=1`)
-3. Runs all Playwright WASM specs with `WASM_GPU_TESTS=1`
-4. Uploads Playwright HTML report
+| Job | What runs |
+|-----|-----------|
+| `wasm` | emsdk build, `wasm:validate`, Jest `--testPathPattern=WASM` |
+| `test` | unit tests + production build |
+| `test-wasm-e2e` | **soft** `test:wasm:e2e` + **strict** `test:wasm:gpu` (GPU specs skip on headless) |
+| `wasm-gpu-manual` | `workflow_dispatch` only — run `test:wasm:full` on a machine with WebGPU |
 
-The `wasm` job runs Jest unit smoke (`--testPathPattern=WASM`).
+Artifacts:
+- `wasm-benchmark-report` — JSON when GPU suite produces data
+- `wasm-playwright-report` — HTML report
+
+### Self-hosted GPU runner (recommended for promotion)
+
+On a machine with Chromium + WebGPU:
+
+```bash
+WASM_GPU_TESTS=1 npm run test:wasm:full
+```
+
+Upload `test-results/wasm-benchmark-report.json` to the promotion issue/PR.
 
 ## Troubleshooting
 
 | Symptom | Fix |
 |---------|-----|
-| All Playwright tests skip | Set `WASM_GPU_TESTS=1` and use a GPU browser |
+| GPU tests all skip | Set `WASM_GPU_TESTS=1` and use Chrome with GPU; headless CI has no adapter |
+| Strict smoke fails | Verify `?renderer=wasm` in browser; check `getDiagnostics().wasm` |
 | `build/` missing | Run `npm run build` first |
-| Parity luminance delta fails | Expected for shaders with timing-dependent feedback; tighten `testState.time` or raise `maxLuminanceDelta` in matrix |
-| Hot reload not firing | Ensure dev server serves `Last-Modified` headers; use `npm start` not static `build/` |
-| Bridge export missing | Run `npm run wasm:build` after C++ changes |
+| No benchmark JSON | GPU suite skipped — run locally with `WASM_GPU_TESTS=1` |
+| Parity luminance delta fails | Raise `maxLuminanceDelta` in matrix or tune `testState.time` |
 
 ## Adding a new parity case
 
 1. Add entry to `PARITY_MATRIX` in `tests/fixtures/parityMatrix.ts`
 2. Choose fixed `testState` for stability
-3. Run `WASM_GPU_TESTS=1 npx playwright test tests/renderer-parity.spec.ts -g "your-shader-id"`
+3. Run `WASM_GPU_TESTS=1 npx playwright test tests/wasm-renderer.smoke.spec.ts -g "your-shader-id"`

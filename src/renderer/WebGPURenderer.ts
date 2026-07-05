@@ -28,7 +28,7 @@
  *  13  texture_2d_array<f32> historyTexture  (HISTORY_DEPTH=8 past frames; opt-in)
  */
 
-import { Renderer, RendererConfig, ShaderSlotRenderer } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
 import { resolveMultipassChain } from './multipassRegistry';
 import { createUniformBufferView, UniformBufferView, Ripple, UNIFORM_FLOATS, MAX_RIPPLES } from './UniformBuffer';
 import { reportError, getBrowserWarning } from './ErrorHandling';
@@ -729,10 +729,11 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   /** Get GPU timing data for performance analysis */
-  getGPUTimings(): { parallelTime: number; chainedTime: number; totalTime: number; available: boolean } {
-    return { 
-      ...this.gpuTimings, 
-      available: this.supportsTimestampQuery 
+  getGPUTimings(): GPUTimings {
+    return {
+      ...this.gpuTimings,
+      available: this.supportsTimestampQuery,
+      timingSource: this.supportsTimestampQuery ? 'gpu-timestamp' : 'wall-clock',
     };
   }
 
@@ -875,7 +876,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   getFPS(): number { return this.fps; }
 
   /** Get audio analysis data for external consumers (e.g. audio-reactive params). */
-  getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } | null {
+  getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } {
     return {
       bass: this.audioBass,
       mid: this.audioMid,

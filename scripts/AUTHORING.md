@@ -63,16 +63,23 @@ python3 scripts/wgsl_precommit_gate.py --files public/shaders/my-effect.wgsl
 python3 scripts/wgsl_precommit_gate.py --json
 ```
 
-It exits non-zero if any changed compute shader fails naga or bindgroup checks.
+It exits non-zero if any changed compute shader fails naga, bindgroup checks, or
+uses a **2-arg** `@workgroup_size` (blocking). **1-arg override** forms are
+reported as warnings only.
 
 ### `@workgroup_size` convention (3 explicit dimensions)
 
 Pixelocity requires **three explicit workgroup dimensions** on compute entry points
 (e.g. `@workgroup_size(16, 16, 1)`). WGSL allows two-arg forms (Z defaults to 1);
-naga accepts them, but the gate flags `< 3` args as **`[WARN]`** (non-blocking).
+naga accepts them, but the gate **blocks** 2-arg forms on changed compute shaders.
 
-The check counts comma-separated arguments after stripping comments, so override
-forms like `@workgroup_size(block_width)` are caught as 1-arg violations.
+| Form | Gate |
+|------|------|
+| `@workgroup_size(16, 16, 1)` | ✅ pass |
+| `@workgroup_size(8, 8)` | ❌ **blocking** |
+| `@workgroup_size(block_width)` (override) | ⚠️ warning (valid WGSL, non-standard) |
+
+The check counts comma-separated arguments after stripping comments.
 
 Local auto-fix (literal `(int, int)` only):
 
@@ -88,11 +95,16 @@ Offline report for `shader_definitions/**/*.json` entries missing local WGSL:
 
 ```bash
 python3 scripts/audit_orphan_shader_defs.py
+python3 scripts/audit_orphan_shader_defs.py --ci-gate --base origin/main
 ```
 
 Writes `reports/orphan_shader_defs.{json,md}`. Classifies entries as `local`,
 `storage-only` (present in `public/shader_coordinates.json` and/or
 `storage_manager/seed_shaders.json`), `allowlisted`, or `likely-broken`.
+
+**CI gate:** fails when a **changed** definition is `likely-broken`, or when a
+**new** `likely-broken` id appears outside `reports/orphan_baseline.json`
+(pre-existing accepted orphans do not retroactively break CI).
 
 ## Local pre-commit hook
 

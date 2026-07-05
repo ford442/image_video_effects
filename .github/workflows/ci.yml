@@ -178,19 +178,88 @@ jobs:
     - name: Install Playwright browsers
       run: npx playwright install chromium
     
-    - name: Run WASM Playwright smoke tests
-      run: npx playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts tests/renderer-parity.spec.ts tests/wasm-benchmark.spec.ts --project=chromium
+    - name: Run WASM Playwright smoke (soft — no GPU required)
+      run: npm run test:wasm:e2e
+      env:
+        CI: true
+    
+    - name: Run WASM GPU parity + benchmark (strict — skips without WebGPU adapter)
+      run: npm run test:wasm:gpu
       env:
         CI: true
         WASM_GPU_TESTS: '1'
+    
+    - name: Upload benchmark JSON (when produced on GPU runners)
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: wasm-benchmark-report
+        path: test-results/wasm-benchmark-report.json
+        if-no-files-found: ignore
+        retention-days: 90
     
     - name: Upload Playwright report
       if: always()
       uses: actions/upload-artifact@v4
       with:
         name: wasm-playwright-report
-        path: playwright-report/
+        path: |
+          playwright-report/
+          test-results/
         retention-days: 30
+
+    - name: Benchmark promotion summary
+      if: always()
+      run: |
+        echo "## WASM Playwright e2e" >> "$GITHUB_STEP_SUMMARY"
+        echo "- **Soft smoke** (\`test:wasm:e2e\`): always runs on headless CI (build + init + no crash)" >> "$GITHUB_STEP_SUMMARY"
+        echo "- **GPU suite** (\`test:wasm:gpu\` + \`WASM_GPU_TESTS=1\`): skips when no WebGPU adapter" >> "$GITHUB_STEP_SUMMARY"
+        echo "- For promotion benchmarks, run \`WASM_GPU_TESTS=1 npm run test:wasm:full\` on a GPU machine" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f test-results/wasm-benchmark-report.json ]; then
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Benchmark report" >> "$GITHUB_STEP_SUMMARY"
+          node -e "
+            const r=require('./test-results/wasm-benchmark-report.json');
+            console.log('- Promotion gate:', r.promotionGateMet ? '✅ MET' : '❌ not met');
+            console.log('- Comparisons:', r.comparisons.length);
+            for (const c of r.comparisons) {
+              console.log('  -', c.shaderId + ':', c.speedupRatio.toFixed(2) + 'x', c.meetsPromotionGate ? '✅' : '—');
+            }
+          " >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+  # Optional: trigger manually on a self-hosted GPU runner for real promotion data.
+  wasm-gpu-manual:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    needs: [wasm, test]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'npm'
+    - run: npm ci
+    - uses: actions/download-artifact@v4
+      with:
+        name: wasm-artifacts
+    - run: npm run build
+      env:
+        SKIP_WASM_BUILD: '1'
+    - run: npx playwright install chromium
+    - name: Full WASM GPU suite
+      run: WASM_GPU_TESTS=1 npm run test:wasm:full
+      env:
+        WASM_GPU_TESTS: '1'
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: wasm-gpu-manual-report
+        path: |
+          test-results/wasm-benchmark-report.json
+          playwright-report/
+        if-no-files-found: ignore
+        retention-days: 90
 
   wgsl-precommit-gate:
     runs-on: ubuntu-latest
@@ -201,6 +270,9 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+
+    - name: Fetch main for diff-based gates
+      run: git fetch origin main --no-tags
     
     - name: Setup Python
       uses: actions/setup-python@v5
@@ -215,18 +287,27 @@ jobs:
     - name: Run WGSL pre-commit gate on changed files
       run: python3 scripts/wgsl_precommit_gate.py --base origin/main
 
-    - name: Audit orphan shader definitions
-      run: python3 scripts/audit_orphan_shader_defs.py
+    - name: Audit orphan shader definitions (CI gate)
+      run: python3 scripts/audit_orphan_shader_defs.py --ci-gate --base origin/main
 
     - name: Workgroup gate unit tests
-      run: python3 scripts/test_workgroup_gate.py
+      run: |
+        python3 scripts/test_workgroup_gate.py
+        python3 scripts/test_orphan_gate.py
 
     - name: Publish gate summary
       if: always()
       run: |
         echo "## WGSL pre-commit gate" >> "$GITHUB_STEP_SUMMARY"
         if [ -f reports/wgsl_precommit_report.json ]; then
-          python3 -c "import json; r=json.load(open('reports/wgsl_precommit_report.json')); print(f\"- Files: {r['total']} passed {r['passed']} failed {r['failed']} warnings {r.get('warnings', 0)}\"); print(f\"- naga available: {r.get('naga_available', True)}\")" >> "$GITHUB_STEP_SUMMARY"
+          python3 -c "
+        import json
+        r=json.load(open('reports/wgsl_precommit_report.json'))
+        print(f\"- Files: {r['total']} passed {r['passed']} failed {r['failed']}\")
+        print(f\"- Workgroup blocking errors: {r.get('workgroup_blocking', 0)} (2-arg @workgroup_size)\")
+        print(f\"- Workgroup warnings: {r.get('warnings', 0)} (1-arg override forms)\")
+        print(f\"- naga available: {r.get('naga_available', True)}\")
+        " >> "$GITHUB_STEP_SUMMARY"
         else
           echo "- No precommit report generated" >> "$GITHUB_STEP_SUMMARY"
         fi
@@ -234,6 +315,14 @@ jobs:
         echo "## Orphan shader definitions" >> "$GITHUB_STEP_SUMMARY"
         if [ -f reports/orphan_shader_defs.md ]; then
           cat reports/orphan_shader_defs.md >> "$GITHUB_STEP_SUMMARY"
+        fi
+        if [ -f reports/orphan_baseline.json ]; then
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          python3 -c "
+        import json
+        b=json.load(open('reports/orphan_baseline.json'))
+        print(f\"_Orphan baseline: {len(b.get('ids', []))} accepted likely-broken id(s)_\")
+        " >> "$GITHUB_STEP_SUMMARY"
         fi
 
     - name: Upload gate reports
@@ -245,6 +334,7 @@ jobs:
           reports/wgsl_precommit_report.json
           reports/orphan_shader_defs.json
           reports/orphan_shader_defs.md
+          reports/orphan_baseline.json
         retention-days: 30
 
   lint:

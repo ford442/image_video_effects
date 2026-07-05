@@ -13,6 +13,11 @@ Outputs:
   reports/orphan_shader_defs.json
   reports/orphan_shader_defs.md
 
+CI gate (--ci-gate):
+  - Fails if a changed/added shader_definitions/*.json classifies as likely-broken
+  - Fails if any likely-broken id appears that is not in reports/orphan_baseline.json
+    (pre-existing accepted orphans do not break CI)
+
 Network-free; safe for CI per-PR gates.
 
 Manifest sources for storage-only classification:
@@ -24,6 +29,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -34,6 +41,7 @@ COORDINATES_PATH = PROJECT_ROOT / "public" / "shader_coordinates.json"
 SEED_SHADERS_PATH = PROJECT_ROOT / "storage_manager" / "seed_shaders.json"
 REPORT_JSON = PROJECT_ROOT / "reports" / "orphan_shader_defs.json"
 REPORT_MD = PROJECT_ROOT / "reports" / "orphan_shader_defs.md"
+BASELINE_JSON = PROJECT_ROOT / "reports" / "orphan_baseline.json"
 
 # Known runtime / probe ids that intentionally have no committed WGSL body.
 ALLOWLIST_IDS = frozenset({
@@ -180,6 +188,75 @@ def audit_definitions() -> dict:
     }
 
 
+def discover_changed_definition_files(base_ref: str) -> set[str]:
+    """Return repo-relative paths of changed shader_definitions JSON files."""
+    result = subprocess.run(
+        ["git", "diff", "--name-only", "--diff-filter=ACMRT", base_ref],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    changed: set[str] = set()
+    prefix = "shader_definitions/"
+    for line in result.stdout.splitlines():
+        path = line.strip()
+        if path.startswith(prefix) and path.endswith(".json"):
+            changed.add(path)
+    return changed
+
+
+def load_baseline_ids() -> set[str]:
+    if not BASELINE_JSON.exists():
+        return set()
+    data = json.loads(BASELINE_JSON.read_text(encoding="utf-8"))
+    return set(data.get("ids") or [])
+
+
+def evaluate_ci_gate(report: dict, base_ref: str) -> tuple[bool, list[str]]:
+    """
+    Return (ok, error_messages) for CI promotion gate.
+    """
+    errors: list[str] = []
+    likely_broken = [
+        r for r in report["entries"] if r["classification"] == "likely-broken"
+    ]
+    likely_broken_ids = {r["id"] for r in likely_broken}
+
+    try:
+        changed_paths = discover_changed_definition_files(base_ref)
+    except subprocess.CalledProcessError as e:
+        return False, [f"could not list changed definition files against '{base_ref}': {e.stderr}"]
+
+    changed_likely_broken = [
+        r for r in likely_broken if r["def_path"] in changed_paths
+    ]
+    if changed_likely_broken:
+        for r in changed_likely_broken:
+            errors.append(
+                f"changed definition `{r['def_path']}` ({r['id']}) is likely-broken "
+                f"(missing {r['expected_wgsl']}, not in manifests)"
+            )
+
+    baseline_ids = load_baseline_ids()
+    new_orphans = sorted(likely_broken_ids - baseline_ids)
+    if new_orphans:
+        for oid in new_orphans:
+            row = next(r for r in likely_broken if r["id"] == oid)
+            if row["def_path"] in changed_paths:
+                continue  # already reported above
+            errors.append(
+                f"new likely-broken id `{oid}` ({row['def_path']}) not in orphan baseline"
+            )
+
+    parse_errors = [r for r in report["entries"] if r["classification"] == "parse-error"]
+    for r in parse_errors:
+        if r["def_path"] in changed_paths:
+            errors.append(f"changed definition `{r['def_path']}` failed to parse: {r.get('error')}")
+
+    return len(errors) == 0, errors
+
+
 def write_markdown(report: dict, path: Path) -> None:
     lines = [
         "# Orphan shader definition audit",
@@ -192,7 +269,8 @@ def write_markdown(report: dict, path: Path) -> None:
         "|----------------|------:|",
     ]
     for key, count in report["summary"].items():
-        lines.append(f"| `{key}` | {count} |")
+        marker = " ⚠️" if key == "likely-broken" and count else ""
+        lines.append(f"| `{key}` | {count}{marker} |")
 
     lines.extend(["", "## Non-local entries", ""])
     non_local = [
@@ -224,10 +302,10 @@ def print_summary(report: dict) -> None:
     print("=" * 60)
     print(f"Definitions scanned: {report['definitions_scanned']}")
     for key, count in s.items():
-        marker = " [WARN]" if key == "likely-broken" and count else ""
+        marker = " [BLOCK]" if key == "likely-broken" and count else ""
         print(f"  {key}: {count}{marker}")
     if s.get("likely-broken"):
-        print("\n[WARN] likely-broken entries (missing local WGSL, not in manifests):")
+        print("\nlikely-broken entries (missing local WGSL, not in manifests):")
         for r in report["entries"]:
             if r["classification"] == "likely-broken":
                 print(f"  • {r['id']} ({r['def_path']}) -> {r['expected_wgsl']}")
@@ -237,6 +315,16 @@ def print_summary(report: dict) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Audit shader_definitions vs local WGSL files.")
     parser.add_argument("--json", action="store_true", help="Print JSON report to stdout")
+    parser.add_argument(
+        "--ci-gate",
+        action="store_true",
+        help="Exit 1 when changed or new likely-broken definitions are detected",
+    )
+    parser.add_argument(
+        "--base",
+        default="origin/main",
+        help="Git ref for changed-definition detection (default: origin/main)",
+    )
     args = parser.parse_args()
 
     report = audit_definitions()
@@ -245,6 +333,15 @@ def main() -> int:
     REPORT_JSON.write_text(json.dumps(report, indent=2), encoding="utf-8")
     write_markdown(report, REPORT_MD)
 
+    exit_code = 0
+    if args.ci_gate:
+        ok, errors = evaluate_ci_gate(report, args.base)
+        if not ok:
+            exit_code = 1
+            print("ORPHAN CI GATE FAILED:", file=sys.stderr)
+            for err in errors:
+                print(f"  • {err}", file=sys.stderr)
+
     if args.json:
         print(json.dumps(report, indent=2))
     else:
@@ -252,7 +349,7 @@ def main() -> int:
         print(f"Wrote {REPORT_JSON.relative_to(PROJECT_ROOT)}")
         print(f"Wrote {REPORT_MD.relative_to(PROJECT_ROOT)}")
 
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

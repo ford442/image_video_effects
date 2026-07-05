@@ -1,60 +1,49 @@
 {
-  "timestamp": "2026-06-29T06:16:28.889602",
+  "timestamp": "2026-07-04T23:53:16.676751",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 4,
-  "passed": 4,
-  "failed": 0,
+  "total": 1,
+  "passed": 0,
+  "failed": 1,
   "skipped": 0,
   "warnings": 0,
+  "workgroup_blocking": 1,
   "results": [
     {
-      "file": "agents/swarm-outputs/generative-upgrade-2026-06-29-batch2/algorithmist/gen-newton-fractal.wgsl",
+      "file": "scripts/fixtures/workgroup_two_arg.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
       "naga_skipped": false,
       "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
+      "bindgroup_status": "incompatible",
+      "bindgroup_errors": [
+        "Missing binding 0",
+        "Missing binding 1",
+        "Missing binding 2",
+        "Missing binding 3",
+        "Missing binding 4",
+        "Missing binding 5",
+        "Missing binding 6",
+        "Missing binding 7",
+        "Missing binding 8",
+        "Missing binding 9",
+        "Missing binding 10",
+        "Missing binding 11",
+        "Missing binding 12",
+        "Uniforms struct not found",
+        "No @workgroup_size found",
+        "No textureStore calls found"
+      ],
+      "workgroup_errors": [
+        {
+          "match": "@workgroup_size(8, 8)",
+          "arg_count": 2,
+          "args": "8, 8"
+        }
+      ],
       "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "agents/swarm-outputs/generative-upgrade-2026-06-29-batch2/interactivist/gen-acid-lissajous.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "agents/swarm-outputs/generative-upgrade-2026-06-29-batch2/optimizer/gen-quantum-foam.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "agents/swarm-outputs/generative-upgrade-2026-06-29-batch2/visualist/gen-minimal-surface-soap-iridescence.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
+      "ok": false
     }
   ]
 }

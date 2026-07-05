@@ -88,13 +88,13 @@
   },
   "suites": [
     {
-      "title": "depth-estimation.webgpu.spec.ts",
-      "file": "depth-estimation.webgpu.spec.ts",
+      "title": "renderer-parity.spec.ts",
+      "file": "renderer-parity.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "production depth model runs on WebGPU",
+          "title": "parity: fluid / sim-fluid-feedback-coupled",
           "ok": true,
           "tags": [],
           "tests": [
@@ -103,10 +103,406 @@
               "annotations": [
                 {
                   "type": "skip",
-                  "description": "WebGPU unavailable: no navigator.gpu",
+                  "description": "GPU backends unavailable (wasm=js, webgpu=js)",
                   "location": {
-                    "file": "/root/image_video_effects/tests/depth-estimation.webgpu.spec.ts",
-                    "line": 82,
+                    "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                    "line": 45,
+                    "column": 12
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "skipped",
+                  "duration": 7778,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-04T21:42:54.322Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "GPU backends unavailable (wasm=js, webgpu=js)",
+                      "location": {
+                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                        "line": 45,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "70d93397f01815bb38df-d030692421e6f40c9a88",
+          "file": "renderer-parity.spec.ts",
+          "line": 33,
+          "column": 7
+        },
+        {
+          "title": "parity: reaction-diffusion / gen-lichen-reaction-diffusion",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "GPU backends unavailable (wasm=js, webgpu=js)",
+                  "location": {
+                    "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                    "line": 45,
+                    "column": 12
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "skipped",
+                  "duration": 8057,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-04T21:43:02.777Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "GPU backends unavailable (wasm=js, webgpu=js)",
+                      "location": {
+                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                        "line": 45,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "70d93397f01815bb38df-ce0bc2e6c6529c314085",
+          "file": "renderer-parity.spec.ts",
+          "line": 33,
+          "column": 7
+        },
+        {
+          "title": "parity: audio-reactive / cyber-ripples",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "GPU backends unavailable (wasm=js, webgpu=js)",
+                  "location": {
+                    "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                    "line": 45,
+                    "column": 12
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "skipped",
+                  "duration": 7494,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-04T21:43:10.899Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "GPU backends unavailable (wasm=js, webgpu=js)",
+                      "location": {
+                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                        "line": 45,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "70d93397f01815bb38df-65d36b507a113e82d541",
+          "file": "renderer-parity.spec.ts",
+          "line": 33,
+          "column": 7
+        },
+        {
+          "title": "parity: generative / plasma",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "GPU backends unavailable (wasm=js, webgpu=js)",
+                  "location": {
+                    "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                    "line": 45,
+                    "column": 12
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "skipped",
+                  "duration": 8399,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-04T21:43:18.427Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "GPU backends unavailable (wasm=js, webgpu=js)",
+                      "location": {
+                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                        "line": 45,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "70d93397f01815bb38df-bee13174e3d321e756be",
+          "file": "renderer-parity.spec.ts",
+          "line": 33,
+          "column": 7
+        },
+        {
+          "title": "parity: interactive / liquid",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "GPU backends unavailable (wasm=js, webgpu=js)",
+                  "location": {
+                    "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                    "line": 45,
+                    "column": 12
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "skipped",
+                  "duration": 7705,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-04T21:43:26.852Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "GPU backends unavailable (wasm=js, webgpu=js)",
+                      "location": {
+                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                        "line": 45,
+                        "column": 12
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "70d93397f01815bb38df-d5ae2865fd30c533faca",
+          "file": "renderer-parity.spec.ts",
+          "line": 33,
+          "column": 7
+        }
+      ],
+      "suites": [
+        {
+          "title": "WASM canvas snapshots",
+          "file": "renderer-parity.spec.ts",
+          "line": 69,
+          "column": 6,
+          "specs": [
+            {
+              "title": "snapshot wasm: sim-fluid-feedback-coupled",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "WASM backend unavailable",
+                      "location": {
+                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                        "line": 76,
+                        "column": 14
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 2876,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-04T21:43:34.579Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "WASM backend unavailable",
+                          "location": {
+                            "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                            "line": 76,
+                            "column": 14
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "70d93397f01815bb38df-f27c80e7a3238b38a132",
+              "file": "renderer-parity.spec.ts",
+              "line": 71,
+              "column": 9
+            },
+            {
+              "title": "snapshot wasm: gen-lichen-reaction-diffusion",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "description": "WASM backend unavailable",
+                      "location": {
+                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                        "line": 76,
+                        "column": 14
+                      }
+                    }
+                  ],
+                  "expectedStatus": "skipped",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "skipped",
+                      "duration": 2488,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-07-04T21:43:37.514Z",
+                      "annotations": [
+                        {
+                          "type": "skip",
+                          "description": "WASM backend unavailable",
+                          "location": {
+                            "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
+                            "line": 76,
+                            "column": 14
+                          }
+                        }
+                      ],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "70d93397f01815bb38df-b9136490467caba120d2",
+              "file": "renderer-parity.spec.ts",
+              "line": 71,
+              "column": 9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "wasm-benchmark.spec.ts",
+      "file": "wasm-benchmark.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "WASM vs WebGPU benchmark matrix",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "description": "WebGPU adapter unavailable — run locally or on a GPU runner with WASM_GPU_TESTS=1",
+                  "location": {
+                    "file": "/root/image_video_effects/tests/wasm-benchmark.spec.ts",
+                    "line": 139,
                     "column": 10
                   }
                 }
@@ -119,26 +515,48 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "skipped",
-                  "duration": 1209,
+                  "duration": 24671,
                   "errors": [],
-                  "stdout": [],
-                  "stderr": [
+                  "stdout": [
                     {
-                      "buffer": "KG5vZGU6ODcwNTg5KSBXYXJuaW5nOiBUaGUgJ05PX0NPTE9SJyBlbnYgaXMgaWdub3JlZCBkdWUgdG8gdGhlICdGT1JDRV9DT0xPUicgZW52IGJlaW5nIHNldC4KKFVzZSBgbm9kZSAtLXRyYWNlLXdhcm5pbmdzIC4uLmAgdG8gc2hvdyB3aGVyZSB0aGUgd2FybmluZyB3YXMgY3JlYXRlZCkK"
+                      "text": "\nWrote benchmark report → test-results/wasm-benchmark-report.json\n\n"
                     },
                     {
-                      "buffer": "CiAgdGVzdHMvc21va2UvLmJ1bmRsZS9kZXB0aC13ZWJncHUubWpzICAxLjJtYiDimqDvuI8KCuKaoSBEb25lIGluIDIzMm1zCg=="
+                      "text": "\n=== WASM Benchmark Report ===\n"
+                    },
+                    {
+                      "text": "{\n  \"generatedAt\": \"2026-07-04T21:44:04.356Z\",\n  \"strictGpuMode\": true,\n  \"gpuBackendObserved\": false,\n  \"results\": [],\n  \"comparisons\": [],\n  \"promotionGateMet\": false,\n  \"promotionMinShaders\": 3,\n  \"promotionSpeedupRatio\": 1.25\n}\n"
+                    },
+                    {
+                      "text": "Promotion gate (≥1.25× on ≥3 shaders): NOT MET (0/0 shaders)\n"
+                    },
+                    {
+                      "text": "Note: WASM getGPUTimings().available is false — timingSource is wall-clock.\n"
+                    },
+                    {
+                      "text": "=============================\n\n"
+                    }
+                  ],
+                  "stderr": [
+                    {
+                      "text": "[bench] Skipping sim-fluid-feedback-coupled: wasm=missing webgpu=missing\n"
+                    },
+                    {
+                      "text": "[bench] Skipping gen-lichen-reaction-diffusion: wasm=missing webgpu=missing\n"
+                    },
+                    {
+                      "text": "[bench] Skipping cyber-ripples: wasm=missing webgpu=missing\n"
                     }
                   ],
                   "retry": 0,
-                  "startTime": "2026-06-27T20:16:24.885Z",
+                  "startTime": "2026-07-04T21:43:40.091Z",
                   "annotations": [
                     {
                       "type": "skip",
-                      "description": "WebGPU unavailable: no navigator.gpu",
+                      "description": "WebGPU adapter unavailable — run locally or on a GPU runner with WASM_GPU_TESTS=1",
                       "location": {
-                        "file": "/root/image_video_effects/tests/depth-estimation.webgpu.spec.ts",
-                        "line": 82,
+                        "file": "/root/image_video_effects/tests/wasm-benchmark.spec.ts",
+                        "line": 139,
                         "column": 10
                       }
                     }
@@ -149,9 +567,43 @@
               "status": "skipped"
             }
           ],
-          "id": "cd06ad0680d75a036715-437f583c56d0f400fd8f",
-          "file": "depth-estimation.webgpu.spec.ts",
-          "line": 67,
+          "id": "4a8aa07ffec9e2acd96b-81095b29f6467e4e7199",
+          "file": "wasm-benchmark.spec.ts",
+          "line": 75,
+          "column": 5
+        },
+        {
+          "title": "WASM getGPUTimings API surface",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2916,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-04T21:44:05.095Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "4a8aa07ffec9e2acd96b-52f43cab48119046cafc",
+          "file": "wasm-benchmark.spec.ts",
+          "line": 143,
           "column": 5
         }
       ]
@@ -159,10 +611,10 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-06-27T20:16:20.250Z",
-    "duration": 9257.901,
-    "expected": 0,
-    "skipped": 1,
+    "startTime": "2026-07-04T21:42:51.618Z",
+    "duration": 76819.75099999999,
+    "expected": 1,
+    "skipped": 8,
     "unexpected": 0,
     "flaky": 0
   }
