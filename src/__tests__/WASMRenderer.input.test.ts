@@ -56,7 +56,7 @@ describe('WASMRenderer input sources', () => {
     jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage: jest.fn(),
       getImageData: jest.fn().mockReturnValue({ data: fakeImageData, width: 640, height: 480 }),
-    } as unknown as CanvasRenderingContext2D);
+    } as unknown as GPUCanvasContext);
 
     for (const source of ['video', 'webcam', 'live'] as const) {
       jest.clearAllMocks();
