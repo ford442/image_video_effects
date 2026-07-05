@@ -876,6 +876,13 @@
       "added": "2026-06-21T15:07:33.808369",
       "status": "completed",
       "completed_at": "2026-06-28T07:41:07.235517"
+    },
+    {
+      "filename": "2026-06-30_chrono-kitsune-prism-weaver.md",
+      "title": "Chrono-Kitsune Prism Weaver",
+      "added": "2026-06-30T00:00:00.000000",
+      "status": "completed",
+      "completed_at": "2026-06-30T22:14:50.031014+00:00"
     }
   ],
   "rejected": [],
@@ -1145,6 +1152,11 @@
       "filename": "2026-06-29_prismatic-cyber-chrono-nebula-peacock.md",
       "title": "Prismatic Cyber-Chrono Nebula-Peacock",
       "added": "2026-06-29T15:34:23.065054"
+    },
+    {
+      "filename": "2026-07-04_ethereal-chrono-plasma-void-manta.md",
+      "title": "Ethereal Chrono-Plasma Void-Manta",
+      "added": "2026-07-04T15:19:54.098199"
     }
   ],
   "in_progress": null
