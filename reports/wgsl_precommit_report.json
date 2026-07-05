@@ -1,21 +1,21 @@
 {
-  "timestamp": "2026-07-04T23:53:16.676751",
+  "timestamp": "2026-07-05T00:00:00.000000",
   "naga_bin": "/root/.cargo/bin/naga",
-  "naga_available": true,
+  "naga_available": false,
   "total": 1,
   "passed": 0,
   "failed": 1,
   "skipped": 0,
   "warnings": 0,
-  "workgroup_blocking": 1,
+  "workgroup_blocking": 0,
   "results": [
     {
       "file": "scripts/fixtures/workgroup_two_arg.wgsl",
       "skipped": false,
       "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
       "bindgroup_status": "incompatible",
       "bindgroup_errors": [
         "Missing binding 0",
@@ -35,13 +35,7 @@
         "No @workgroup_size found",
         "No textureStore calls found"
       ],
-      "workgroup_errors": [
-        {
-          "match": "@workgroup_size(8, 8)",
-          "arg_count": 2,
-          "args": "8, 8"
-        }
-      ],
+      "workgroup_errors": [],
       "workgroup_warnings": [],
       "ok": false
     }

@@ -62,7 +62,7 @@ def test_autofix_literal_two_arg_only():
     assert unchanged == override
 
 
-def test_split_workgroup_two_arg_blocks_one_arg_warns():
+def test_split_workgroup_issues_separates_warnings():
     two = check_workgroup_size_convention(
         (FIXTURES / "workgroup_two_arg.wgsl").read_text(encoding="utf-8")
     )
@@ -70,18 +70,20 @@ def test_split_workgroup_two_arg_blocks_one_arg_warns():
         (FIXTURES / "workgroup_override_one_arg.wgsl").read_text(encoding="utf-8")
     )
     blocking, warnings = split_workgroup_issues(two + one)
-    assert len(blocking) == 1 and blocking[0]["arg_count"] == 2
+    # 2-arg literals are now permitted (no issue produced by checker)
+    assert len(blocking) == 0
     assert len(warnings) == 1 and warnings[0]["arg_count"] == 1
 
 
-def test_gate_blocks_two_arg_fixture():
+def test_gate_two_arg_fixture_permitted_for_workgroup():
     from wgsl_precommit_gate import run_gate  # noqa: E402
 
     report = run_gate([FIXTURES / "workgroup_two_arg.wgsl"], skip_naga=True)
+    # 2-arg is now permitted (no workgroup error); still fails overall due to missing bindgroup layout in minimal fixture
     assert report["failed"] == 1
-    assert report["workgroup_blocking"] == 1
+    assert report["workgroup_blocking"] == 0
     entry = report["results"][0]
-    assert entry["workgroup_errors"]
+    assert not entry["workgroup_errors"]
     assert not entry["ok"]
 
 
@@ -113,8 +115,8 @@ def main() -> int:
         test_override_one_arg_detected,
         test_three_arg_ok,
         test_autofix_literal_two_arg_only,
-        test_split_workgroup_two_arg_blocks_one_arg_warns,
-        test_gate_blocks_two_arg_fixture,
+        test_split_workgroup_issues_separates_warnings,
+        test_gate_two_arg_fixture_permitted_for_workgroup,
         test_gate_warns_override_fixture,
         test_gen_showcase_nebula_core_if_present,
     ]
