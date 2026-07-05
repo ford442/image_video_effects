@@ -1,0 +1,57 @@
+{
+  "name": "Wind & Ripple Fireworks",
+  "category": "generative",
+  "tags": [
+    "fireworks",
+    "wind",
+    "ripple",
+    "pyrotechnics",
+    "audio-reactive",
+    "mouse-driven",
+    "trails",
+    "generative",
+    "celebration"
+  ],
+  "description": "Sparks drift on a time-varying wind while ripple events ignite directed radial barrages. Bass deepens the shells, mids add secondary gusts, and treble scatters silver micro-sparkle through the air. Mouse click or hold launches a personal wind-swept shell at the cursor.",
+  "workgroup_size": [16, 16, 1],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Wind Energy",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Ripple Sensitivity",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Trail Length",
+      "default": 0.72,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Color Drift",
+      "default": 0.15,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-fireworks-wind-ripple",
+  "url": "shaders/gen-fireworks-wind-ripple.wgsl",
+  "features": []
+}

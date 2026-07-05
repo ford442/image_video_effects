@@ -215,10 +215,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       col += vec3<f32>(1.0, 0.97, 0.85) * softGlow(uv, cometPos, 0.011, shellEnergy * 3.2);
     }
 
+    let burstCenter = vec2<f32>(baseX + (seed2 - 0.5) * 0.04, baseY + 1.32);
+
     // Burst + falling phase
     if (burstAge > 0.0 && burstAge < 5.5) {
-      let burstCenter = vec2<f32>(baseX + (seed2 - 0.5) * 0.04, baseY + 1.32);
-
       // Primary radial burst
       let numSparks = i32(38.0 + density * 48.0 + mids * 12.0);
       let burstHueBase = fract(seed * 1.7 + colorDrift * 0.6 + time * 0.015);
@@ -251,6 +251,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       }
 
       // Secondary crackle / micro bursts (treble driven)
+      let burstFade = smoothstep(4.8, 0.6, burstAge);
       let crackles = i32(6.0 + treble * 14.0);
       for (var c = 0; c < crackles; c = c + 1) {
         let cf = f32(c);
@@ -260,7 +261,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let cVel = vec2<f32>(cos(cAngle), sin(cAngle)) * cSpeed;
         let cPos = sparkPos(burstCenter, cVel, burstAge * 0.6, 0.9, 0.35);
 
-        let cGlow = softGlow(uv, cPos, 0.0045, (0.4 + treble * 0.8) * lifeFade * shellEnergy);
+        let cGlow = softGlow(uv, cPos, 0.0045, (0.4 + treble * 0.8) * burstFade * shellEnergy);
         col += vec3<f32>(0.95, 0.98, 1.0) * cGlow * 1.4;
       }
 
@@ -354,7 +355,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Persist state for trails/smoke
   textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(dataTextureC, pixel, vec4<f32>(col * 0.6 + prev * 0.35, 1.0)); // light feedback
+  textureStore(dataTextureB, pixel, vec4<f32>(col * 0.6 + prev * 0.35, 1.0)); // light feedback
 
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(0.0, 0.0, 0.0, 0.0));

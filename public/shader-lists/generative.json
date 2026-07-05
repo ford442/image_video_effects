@@ -7022,6 +7022,488 @@
     "features": []
   },
   {
+    "name": "Audio Symphony Fireworks",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "audio-reactive",
+      "music-sync",
+      "spectrum",
+      "pyrotechnics",
+      "mouse-driven",
+      "trails",
+      "generative",
+      "celebration"
+    ],
+    "description": "A fireworks display conducted by the music. A smoothed bass envelope triggers bigger, faster launches on transients; mids layer in secondary shells; treble crackles a cloud of micro-sparks. Mouse click or hold launches a personal synced shell at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Launch Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bass Drive",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Mids Layering",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Treble Sparkle",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-audio-symphony",
+    "url": "shaders/gen-fireworks-audio-symphony.wgsl",
+    "features": []
+  },
+  {
+    "name": "Chrysanthemum Burst",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "chrysanthemum",
+      "peony",
+      "pyrotechnics",
+      "spherical",
+      "dense",
+      "rings",
+      "audio-reactive",
+      "generative",
+      "celebration"
+    ],
+    "description": "Dense spherical chrysanthemum and peony shells with hundreds of sparks arranged in concentric rings. Each burst flashes brilliant white at the core then blooms into layered color rings — crimson inner petals fading to electric blue and gold at the edges. Multiple timed ring layers create depth within each explosion. Bass expands burst radius, mids add secondary ring shells, treble crackles the outer petals. Mouse detonates a massive peony at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Burst Size",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ring Layers",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spark Density",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Spread",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-chrysanthemum",
+    "url": "shaders/gen-fireworks-chrysanthemum.wgsl",
+    "features": []
+  },
+  {
+    "name": "Comet Trail Shell",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "comet",
+      "trail",
+      "streak",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative"
+    ],
+    "description": "Blazing comet shells with brilliant heads and long luminous tails that streak across the night sky. Each shell launches upward then leaves a glowing path as sparks peel off the main trajectory. Bass makes bigger comet heads, treble adds sparkle along the trail. Mouse fires a comet from the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Comet Speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Trail Length",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Head Brightness",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-comet-trail",
+    "url": "shaders/gen-fireworks-comet-trail.wgsl",
+    "features": []
+  },
+  {
+    "name": "Crackle Palm",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "crackle",
+      "palm",
+      "multi-stage",
+      "pyrotechnics",
+      "audio-reactive",
+      "generative",
+      "celebration"
+    ],
+    "description": "Multi-stage pyrotechnic shells that bloom in two acts. A primary burst erupts first, then delayed secondary crackle and palm fronds spawn from sub-points along the fading sparks. Treble drives thousands of micro-crackle pops; mids trigger the second-stage palm arms. Bass deepens the initial detonation. Mouse launches a triple-stage command shell at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Shell Energy",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Stage Delay",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Crackle",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Palm Spread",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-crackle-palm",
+    "url": "shaders/gen-fireworks-crackle-palm.wgsl",
+    "features": []
+  },
+  {
+    "name": "Crossette Split",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "crossette",
+      "split",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative"
+    ],
+    "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Shell Power",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Split Delay",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Arm Spread",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-crossette",
+    "url": "shaders/gen-fireworks-crossette.wgsl",
+    "features": []
+  },
+  {
+    "name": "Fan Shell Spread",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "fan",
+      "spread",
+      "hemisphere",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative"
+    ],
+    "description": "Wide fan shells that burst into a sweeping hemisphere of colored sparks, like a peacock tail opening in the sky. Sparks spread in a broad arc with strong horizontal bias before falling. Mids widen the fan angle, bass deepens the colors. Mouse opens a personal fan at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fan Angle",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Shell Power",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spark Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hue Cycle",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-fan-shell",
+    "url": "shaders/gen-fireworks-fan-shell.wgsl",
+    "features": []
+  },
+  {
+    "name": "Horse Tail Brocade",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "horse-tail",
+      "brocade",
+      "streamers",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative"
+    ],
+    "description": "Classic horse tail and brocade shells rain long, straight golden streamers from a single burst point. Each spark traces a tight gravity arc with minimal spread, creating luminous waterfalls of light. Bass lengthens the tails, treble adds silver micro-dust along the streams. Mouse launches a personal brocade cascade.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Tail Length",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Stream Width",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Gold Intensity",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Fall Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-horse-tail",
+    "url": "shaders/gen-fireworks-horse-tail.wgsl",
+    "features": []
+  },
+  {
+    "name": "Kamuro Gold",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "kamuro",
+      "gold",
+      "glitter",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative"
+    ],
+    "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Glitter Density",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fall Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Gold Mix",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hang Time",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-kamuro-gold",
+    "url": "shaders/gen-fireworks-kamuro-gold.wgsl",
+    "features": []
+  },
+  {
     "name": "Fireworks Nocturne",
     "category": "generative",
     "tags": [
@@ -7081,6 +7563,371 @@
     "updated": true,
     "id": "gen-fireworks-nocturne",
     "url": "shaders/gen-fireworks-nocturne.wgsl",
+    "features": []
+  },
+  {
+    "name": "Ring Shell",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "ring",
+      "halo",
+      "donut",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative"
+    ],
+    "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ring Radius",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Thickness",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spark Count",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-ring-shell",
+    "url": "shaders/gen-fireworks-ring-shell.wgsl",
+    "features": []
+  },
+  {
+    "name": "Roman Candle",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "roman-candle",
+      "barrage",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative"
+    ],
+    "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Each tube shoots a sequence of colored stars straight upward with comet trails. Bass makes bigger stars, treble increases fire rate. The quintessential backyard July 4th barrage. Mouse aims a personal roman candle at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fire Rate",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Star Size",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Tube Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trail Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-roman-candle",
+    "url": "shaders/gen-fireworks-roman-candle.wgsl",
+    "features": []
+  },
+  {
+    "name": "Smoke Bloom Fireworks",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "smoke",
+      "bloom",
+      "volumetric",
+      "pyrotechnics",
+      "audio-reactive",
+      "mouse-driven",
+      "trails",
+      "generative",
+      "celebration"
+    ],
+    "description": "Soft volumetric smoke gathers around bursts and along falling sparks, while a feedback light bloom adds luminous halos to the brightest areas. Bass swells the smoky glow, mids add secondary burst layers, and treble scatters micro-sparks. Mouse launches a smoky peony at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Smoke Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bloom Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Burst Energy",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trail Decay",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-smoke-bloom",
+    "url": "shaders/gen-fireworks-smoke-bloom.wgsl",
+    "features": []
+  },
+  {
+    "name": "Strobe Blink Shell",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "strobe",
+      "blink",
+      "flash",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "psychedelic"
+    ],
+    "description": "Hypnotic strobe shells that flash multiple times before dissolving into falling sparks. Each burst pulses with rhythmic white-hot flashes synced to the beat, then blooms into color. Treble drives flash rate, bass amplifies each pulse. A psychedelic July 4th finale feel. Mouse triggers a strobe barrage at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flash Rate",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Pulse Power",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Afterglow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Flash",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-strobe-shell",
+    "url": "shaders/gen-fireworks-strobe-shell.wgsl",
+    "features": []
+  },
+  {
+    "name": "Willow Cascade",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "willow",
+      "pyrotechnics",
+      "trails",
+      "golden",
+      "long-exposure",
+      "gravity",
+      "audio-reactive",
+      "generative",
+      "cinematic"
+    ],
+    "description": "Classic willow-style fireworks with long, drooping golden and silver trails that hang in the night sky like luminous weeping branches. Fewer shells but each one paints a slow-falling curtain of sparks with gentle wind drift. Strong temporal persistence creates a cinematic long-exposure feel. Bass deepens the droop, treble adds silver micro-sparkle along the trails. Mouse launches a personal willow shell at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Trail Length",
+        "default": 0.72,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Droop",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Wind",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Warmth",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-willow-cascade",
+    "url": "shaders/gen-fireworks-willow-cascade.wgsl",
+    "features": []
+  },
+  {
+    "name": "Wind & Ripple Fireworks",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "wind",
+      "ripple",
+      "pyrotechnics",
+      "audio-reactive",
+      "mouse-driven",
+      "trails",
+      "generative",
+      "celebration"
+    ],
+    "description": "Sparks drift on a time-varying wind while ripple events ignite directed radial barrages. Bass deepens the shells, mids add secondary gusts, and treble scatters silver micro-sparkle through the air. Mouse click or hold launches a personal wind-swept shell at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wind Energy",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ripple Sensitivity",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Trail Length",
+        "default": 0.72,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Drift",
+        "default": 0.15,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-wind-ripple",
+    "url": "shaders/gen-fireworks-wind-ripple.wgsl",
     "features": []
   },
   {
@@ -8946,6 +9793,67 @@
     "updated": true,
     "id": "gen-ifs-fractal-flame",
     "url": "shaders/gen-ifs-fractal-flame.wgsl",
+    "features": []
+  },
+  {
+    "name": "Pixel Detonation",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "image-reactive",
+      "pixel-flight",
+      "detonation",
+      "pyrotechnics",
+      "photo-burst",
+      "depth-aware",
+      "audio-reactive",
+      "celebration"
+    ],
+    "description": "Your image detonates from within. Bright pixels and edges become launch cores — each spark lifts a fragment of the source photo into gravity arcs, recoloring and fading as it falls. Foreground depth elements launch higher and faster. The picture progressively dissolves into its own celebratory fireworks while revealing ghostly trails of what was there. Bass triggers larger detonations, treble adds pixel crackle. Mouse ignites a focused pixel barrage at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Burst Power",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ignition",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Pixel Lift",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trail Fade",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-image-pixel-detonation",
+    "url": "shaders/gen-image-pixel-detonation.wgsl",
     "features": []
   },
   {

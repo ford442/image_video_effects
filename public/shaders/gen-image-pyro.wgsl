@@ -237,7 +237,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(length(col) * 1.1 + 0.18, 0.12, 0.97);
 
   // Feedback state
-  textureStore(dataTextureC, pixel, vec4<f32>(col * 0.55 + prev * 0.4, 1.0));
+  textureStore(dataTextureB, pixel, vec4<f32>(col * 0.55 + prev * 0.4, 1.0));
   textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
 
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
