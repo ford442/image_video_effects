@@ -27,12 +27,8 @@
     "wasm:build": "bash wasm_renderer/build.sh",
     "wasm:validate": "node scripts/validate_wasm_artifacts.js",
     "wasm:clean": "rm -rf wasm_renderer/build public/wasm",
-<<<<<<< HEAD
-    "test:wasm:unit": "react-scripts test --watchAll=false --ci --testPathPattern=WASM",
-    "test:wasm:e2e": "playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts --project=chromium",
-=======
     "test:wasm:unit": "craco test --watchAll=false --ci --testPathPattern=WASM",
->>>>>>> 0d0feb5ed21f2ea061d0fbcaac4c851afbe54722
+    "test:wasm:e2e": "playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts --project=chromium",
     "test:wasm:smoke": "playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts --project=chromium",
     "test:wasm:parity": "playwright test tests/renderer-parity.spec.ts --project=chromium",
     "test:wasm:bench": "playwright test tests/wasm-benchmark.spec.ts --project=chromium",

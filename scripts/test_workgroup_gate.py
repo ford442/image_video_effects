@@ -103,11 +103,7 @@ def test_gen_showcase_nebula_core_if_present():
     if not target.exists():
         return
     issues = check_workgroup_size_convention(target.read_text(encoding="utf-8"))
-<<<<<<< HEAD
     assert issues == [], "gen-showcase-nebula-core must use 3-arg @workgroup_size"
-=======
-    assert len(issues) == 0
->>>>>>> 0d0feb5ed21f2ea061d0fbcaac4c851afbe54722
 
 
 def main() -> int:

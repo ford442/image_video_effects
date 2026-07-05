@@ -1,25 +1,15 @@
 {
-<<<<<<< HEAD
   "timestamp": "2026-07-04T23:53:16.676751",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 1,
   "passed": 0,
   "failed": 1,
-=======
-  "timestamp": "2026-07-03T07:34:40.249495",
-  "naga_bin": "/home/jules/.cargo/bin/naga",
-  "naga_available": false,
-  "total": 1,
-  "passed": 1,
-  "failed": 0,
->>>>>>> 0d0feb5ed21f2ea061d0fbcaac4c851afbe54722
   "skipped": 0,
   "warnings": 0,
   "workgroup_blocking": 1,
   "results": [
     {
-<<<<<<< HEAD
       "file": "scripts/fixtures/workgroup_two_arg.wgsl",
       "skipped": false,
       "skip_reason": null,
@@ -54,18 +44,6 @@
       ],
       "workgroup_warnings": [],
       "ok": false
-=======
-      "file": "public/shaders/gen-chrono-kitsune-prism-weaver.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": null,
-      "naga_skipped": true,
-      "naga_error": null,
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
->>>>>>> 0d0feb5ed21f2ea061d0fbcaac4c851afbe54722
     }
   ]
 }
