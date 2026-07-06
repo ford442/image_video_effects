@@ -74,6 +74,8 @@
     "@testing-library/user-event": "^13.5.0",
     "@types/hls.js": "^0.13.3",
     "@types/jest": "^27.5.2",
+    "customize-cra": "^1.0.0",
+    "patch-package": "^8.0.1",
     "playwright": "^1.57.0",
     "react-scripts": "^5.0.1",
     "tsx": "^4.22.1",
