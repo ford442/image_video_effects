@@ -111,6 +111,21 @@ npm run build   # Build for production
 npm test     # Run tests
 ```
 
+### AI Agent / Jules Setup (headless envs)
+
+For reproducible setup in Jules (or similar agent environments):
+
+```bash
+bash scripts/jules-setup.sh
+```
+
+- Uses `npm ci`, runs the shader list + manifest generators that `prestart`/`prebuild` rely on.
+- Sets `SKIP_WASM_BUILD=1` automatically (committed artifacts in `public/wasm/` are used).
+- Safe when there is no Emscripten / no GPU.
+- After setup: `BROWSER=none npm start` or `SKIP_WASM_BUILD=1 npm run build`.
+
+See `scripts/jules-setup.sh` (and the comments inside) for full details.
+
 ## Shader Categories
 
 - **Fluid & Physics Simulations** — Navier-Stokes dye, Melting Oil, Pixel Sand, Physarum

@@ -2,6 +2,7 @@ import { Renderer, RendererConfig, ShaderSlotRenderer } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
 import { InputSource } from './types';
+import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
 
 type SlotMode = 'chained' | 'parallel';
 
@@ -123,7 +124,9 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
    * Must be called before setActiveShader().
    */
   async loadShader(id: string, url: string): Promise<boolean> {
-    return WasmBridge.loadShaderFromURL(id, url);
+    const wgsl = await fetchShaderWgsl(id, url);
+    if (!wgsl) return false;
+    return WasmBridge.loadShader(id, wgsl);
   }
 
   /** Switch to a previously loaded shader (legacy single-shader API). */
@@ -328,7 +331,9 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   }
 
   async reloadShaderFromURL(id: string, url: string): Promise<boolean> {
-    return WasmBridge.reloadShaderFromURL(id, url);
+    const wgsl = await fetchShaderWgsl(id, url);
+    if (!wgsl) return false;
+    return WasmBridge.reloadShader(id, wgsl);
   }
 
   /** Test hook: pin uniforms and render one WASM frame. */
