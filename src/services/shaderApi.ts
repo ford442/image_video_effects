@@ -5,6 +5,7 @@
 
 import { STORAGE_API_URL, API_BASE_URL, SHADER_FILES_BASE_URL } from '../config/appConfig';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
+import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || API_BASE_URL;
 
@@ -527,16 +528,10 @@ class ShaderApiService {
     const cached = this.cache.get(`code:${shaderId}`);
     if (cached) return cached;
 
-    try {
-      const response = await fetch(`${this.baseUrl}/api/shaders/${shaderId}/code`);
-      if (!response.ok) throw new Error('API error');
-      const { code } = await response.json() as { id: string; code: string; name?: string };
-      this.cache.set(`code:${shaderId}`, code);
-      return code;
-    } catch (error) {
-      const response = await fetch(resolveShaderUrl(`shaders/${shaderId}.wgsl`));
-      return await response.text();
-    }
+    const code = await fetchShaderWgsl(shaderId);
+    if (!code) throw new Error(`Failed to fetch shader code for ${shaderId}`);
+    this.cache.set(`code:${shaderId}`, code);
+    return code;
   }
 
   clearCache() {

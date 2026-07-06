@@ -36,6 +36,7 @@ import { compileShader } from './ShaderCompilation';
 import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, VIDEO_COPY_WGSL } from './ShaderTemplates';
 import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
+import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
 
 // ── Constants matching C++ renderer ─────────────────────────────────────────
 
@@ -760,27 +761,14 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   // ── Shader management ──────────────────────────────────────────────────────
 
   async loadShader(id: string, url: string): Promise<boolean> {
-    // Helper: fetch a URL, returning text on success or null on any failure.
-    const tryFetch = async (u: string): Promise<string | null> => {
-      try {
-        const r = await fetch(u);
-        return r.ok ? await r.text() : null;
-      } catch { return null; }
-    };
-
-    // Resolve the provided URL against the configured shader base URL.
     const resolvedUrl = resolveShaderUrl(url);
 
     // If subgroup operations are supported, probe the -sg sibling variant first.
-    // The -sg file uses `enable subgroups;` and subgroupAdd/Shuffle ops that
-    // cannot be inlined alongside non-subgroup code in the same module.
-    // We compile it under the same base ID so all downstream code (setSlotShader,
-    // pipeline cache, bind-group lookups) requires zero changes.
     if (this.supportsSubgroups && !id.endsWith('-sg') && resolvedUrl.endsWith('.wgsl')) {
       const sgUrl = resolvedUrl.replace(/\.wgsl$/, '-sg.wgsl');
-      const wgsl = await tryFetch(sgUrl) ?? await tryFetch(resolveShaderUrl(`shaders/${id}-sg.wgsl`));
-      if (wgsl) {
-        const ok = this.compileShader(id, wgsl);
+      const sgWgsl = await fetchShaderWgsl(`${id}-sg`, sgUrl);
+      if (sgWgsl) {
+        const ok = this.compileShader(id, sgWgsl);
         if (ok) {
           if (process.env.NODE_ENV !== 'production') {
             console.log(`[WebGPU] "${id}": loaded subgroup variant (-sg.wgsl)`);
@@ -788,14 +776,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
           return true;
         }
       }
-      // -sg variant absent or failed to compile — fall through to base variant below
       if (process.env.NODE_ENV !== 'production') {
         console.log(`[WebGPU] "${id}": no -sg variant found, using base variant`);
       }
     }
 
-    // Base variant (also serves as silent fallback when -sg is absent or fails)
-    const wgsl = await tryFetch(resolvedUrl) ?? await tryFetch(resolveShaderUrl(`shaders/${id}.wgsl`));
+    const wgsl = await fetchShaderWgsl(id, url);
     if (!wgsl) return false;
     return this.compileShader(id, wgsl);
   }

@@ -95,7 +95,7 @@ def count_workgroup_size_args(arg_list: str) -> int:
 
 def check_workgroup_size_convention(content: str) -> list[dict]:
     """
-    Return issues where @workgroup_size has fewer than 3 explicit dimensions.
+    Return issues where @workgroup_size has fewer than 2 explicit dimensions.
     Checks comment-stripped source so inline comments do not skew counts.
     """
     issues = []

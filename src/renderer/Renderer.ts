@@ -83,6 +83,9 @@ export interface Renderer {
 
   /** Optional: Return current FPS for performance comparison (used by dual-FPS toggle). */
   getFPS?: () => number;
+
+  /** Optional: Reload a single shader from a remote URL without rebuilding the entire pipeline. */
+  reloadShaderFromURL?: (id: string, url: string) => Promise<boolean>;
 }
 
 export interface RendererConfig {
