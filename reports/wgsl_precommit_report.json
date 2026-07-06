@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-07-05T08:36:46.764644",
+  "timestamp": "2026-07-06T09:40:48.271740",
   "naga_bin": "/home/jules/.cargo/bin/naga",
-  "naga_available": true,
+  "naga_available": false,
   "total": 1,
   "passed": 1,
   "failed": 0,
@@ -9,12 +9,12 @@
   "warnings": 0,
   "results": [
     {
-      "file": "public/shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
+      "file": "public/shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
       "skipped": false,
       "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_warnings": [],
