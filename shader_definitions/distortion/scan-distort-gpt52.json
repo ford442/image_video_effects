@@ -2,7 +2,7 @@
   "id": "scan-distort-gpt52",
   "name": "Scan Distort Matrix gpt52",
   "url": "shaders/scan-distort-gpt52.wgsl",
-  "description": "High-density scanlines with 3-band frequency distortion, FBM-perturbed scan positions, rolling jitter, curvature, chromatic tearing, and mids-driven band distortion.",
+  "description": "High-density scanlines with 3-band frequency distortion, FBM-perturbed scan positions, rolling jitter, curvature, chromatic tearing, mids-driven band distortion, domain-warped FBM displacement, and an audio-reactive color palette.",
   "params": [
     {
       "id": "scan_intensity",
@@ -38,7 +38,9 @@
     "animated",
     "depth-aware",
     "upgraded-rgba",
-    "audio-reactive"
+    "audio-reactive",
+    "domain-warp",
+    "palette"
   ],
   "tags": [
     "filter",
@@ -47,6 +49,9 @@
     "vintage",
     "atmospheric",
     "fbm",
-    "bands"
+    "bands",
+    "domain-warp",
+    "audio-palette",
+    "hybrid"
   ]
 }

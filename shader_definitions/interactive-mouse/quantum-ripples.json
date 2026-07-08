@@ -2,7 +2,7 @@
   "id": "quantum-ripples",
   "name": "Quantum Ripples",
   "url": "shaders/quantum-ripples.wgsl",
-  "description": "Mouse-driven quantum interference waves with domain-warped FBM, divergence-free curl turbulence, temporal feedback, depth-aware chromatic aberration and audio reactivity.",
+  "description": "Mouse-driven quantum interference waves with domain-warped FBM, divergence-free curl turbulence, Voronoi cellular displacement, SDF portal masking, audio-driven palette, temporal feedback, depth-aware chromatic aberration and audio reactivity.",
   "params": [
     {
       "id": "waveFreq",
@@ -39,7 +39,10 @@
     "audio-reactive",
     "temporal-feedback",
     "depth-aware",
-    "chromatic-aberration"
+    "chromatic-aberration",
+    "voronoi-displacement",
+    "sdf-masking",
+    "audio-palette"
   ],
   "tags": [
     "filter",
@@ -48,6 +51,9 @@
     "interference",
     "turbulence",
     "domain-warp",
-    "curl-noise"
+    "curl-noise",
+    "voronoi",
+    "sdf",
+    "palette"
   ]
 }

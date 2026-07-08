@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Echo Ripple
+//  Echo Ripple — Phase B Multi-Pass-Architect upgrade
 //  Category: image
 //  Features: mouse-driven, audio-reactive, audio-envelope, temporal,
-//            depth-aware, chromatic-aberration, aces-tone-mapping
+//            depth-aware, chromatic-aberration, aces-tone-mapping,
+//            lod-noise, cached-displacement
 //  Complexity: High
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -28,21 +29,29 @@ struct Uniforms {
 };
 
 const PI: f32 = 3.14159265359;
-const TAU: f32 = 6.28318530718;
 
 // ── Hash & noise ──────────────────────────────────────────────────
 fn hash21(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
+
 fn valueNoise(p: vec2<f32>) -> f32 {
-    let i = floor(p); let f = fract(p);
+    let i = floor(p);
+    let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
                mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
+
 fn fbm(p: vec2<f32>, oct: i32) -> f32 {
-    var s = 0.0; var a = 0.5; var f = 1.0;
-    for (var i: i32 = 0; i < oct; i++) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; }
+    var s = 0.0;
+    var a = 0.5;
+    var f = 1.0;
+    for (var i: i32 = 0; i < oct; i++) {
+        s += a * valueNoise(p * f);
+        f *= 2.0;
+        a *= 0.5;
+    }
     return s;
 }
 
@@ -56,15 +65,9 @@ fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
+
 fn luma(rgb: vec3<f32>) -> f32 {
     return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-}
-
-// ── Chromatic shift ───────────────────────────────────────────────
-fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32) -> vec3<f32> {
-    let angle = atan2(uv.y - 0.5, uv.x - 0.5);
-    let shift = vec2<f32>(cos(angle), sin(angle)) * strength;
-    return vec3<f32>(color.r * (1.0 + shift.x * 0.8), color.g, color.b * (1.0 - shift.y * 0.5));
 }
 
 // ── Echo ripple helper ────────────────────────────────────────────
@@ -87,21 +90,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseDown = u.zoom_config.w;
 
     // Audio reactivity with temporal envelope stored in history alpha
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
-    let rms = plasmaBuffer[0].w;
+    let plasma = plasmaBuffer[0];
+    let bass = plasma.x;
+    let mids = plasma.y;
+    let treble = plasma.z;
     let history = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
     let envBass = bass_env(history.a, bass, 0.8, 0.15);
     let beat = envBass * exp(-3.0 * fract(time * 3.0));
 
-    // Params
+    // User params remapped to working ranges
     let frequency = u.zoom_params.x * 30.0 + 2.0;
     let speed = u.zoom_params.y * 8.0 + 0.5;
     let decay = u.zoom_params.z * 0.97 + 0.02;
     let strength = u.zoom_params.w * 0.15 + 0.01;
 
-    // Mouse gravity well (branchless UV pull toward cursor)
+    // Mouse gravity well: branchless UV pull toward cursor
     let d = (uv01 - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(d);
     let dist2 = dot(d, d) + 0.001;
@@ -111,13 +114,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let wave = sin(dist * frequency - time * speed + mids * 2.0) * (1.0 + beat * 3.0);
     let atten = smoothstep(0.6, 0.0, dist);
 
-    // Echo ripples from the last three click events
+    // Echo ripples from the last three click events — branchless accumulation
     let rippleCount = u32(u.config.y);
     var totalWave = wave;
     for (var i: i32 = 0; i < 3; i++) {
         let hasR = f32(rippleCount > u32(i));
         let r = u.ripples[i];
-        let rw = echoWave(uv01, r.xy, aspect, frequency, speed, time - r.z, f32(i) * 0.7) * hasR;
+        let age = time - r.z;
+        let rw = echoWave(uv01, r.xy, aspect, frequency, speed, age, f32(i) * 0.7) * hasR;
         totalWave += rw;
     }
 
@@ -133,16 +137,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let depthMod = mix(0.6, 1.2, depth);
 
-    // Total UV distortion with organic audio drift
-    let drift = fbm(uv01 * 4.0 + time * 0.1, 2) * 0.01 * mids;
+    // LOD noise: reduce FBM octaves far from the interaction point to save ALU
+    let lodOct = select(1, 2, dist < 0.5);
+    let drift = fbm(uv01 * 4.0 + time * 0.1, lodOct) * 0.01 * mids;
+
+    // ── Cached displacement field ───────────────────────────────────
+    // Compute the combined wave distortion once, then reuse it for RGB
+    // sampling, audio tinting, and temporal advection. In a multi-pass
+    // split this vector would be written to dataTextureA for the compositing
+    // pass; here we keep the single-pass flow to preserve the existing
+    // dataTextureC temporal color feedback.
     let distort = (totalWave + clickWave) * strength * atten * depthMod;
-    let sampleUV = clamp(uv01 - dir * (distort + drift) + grav, vec2<f32>(0.0), vec2<f32>(1.0));
+    let displacement = dir * (distort + drift) - grav;
+    let sampleUV = clamp(uv01 - displacement, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Sample video input with RGB channel separation
+    let sep = 0.003 * strength;
     var color: vec3<f32>;
-    color.r = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(0.003, 0.0) * strength, 0.0).r;
+    color.r = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(sep, 0.0), 0.0).r;
     color.g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
-    color.b = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(0.003, 0.0) * strength, 0.0).b;
+    color.b = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(sep, 0.0), 0.0).b;
 
     // FFT multi-band color tinting at ripple edges
     let fftTint = vec3<f32>(envBass * 0.5, mids * 0.3, treble * 0.6) * totalWave * atten * strength * 10.0;
@@ -154,13 +168,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += vec3<f32>(sparkle);
 
     // Temporal feedback loop with subtle motion advection
-    let advect = dir * distort * 0.02;
+    let advect = displacement * 0.02;
     let prev = textureSampleLevel(dataTextureC, u_sampler, clamp(uv01 - advect, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
     let mixed = mix(color, prev.rgb, decay * (1.0 - atten * 0.25));
 
     // Chromatic aberration + ACES tone mapping
     let caStr = 0.003 * (1.0 + envBass) + depth * 0.001;
-    var outColor = genChromaticShift(mixed, uv01, caStr);
+    let caAngle = atan2(uv01.y - 0.5, uv01.x - 0.5);
+    let caShift = vec2<f32>(cos(caAngle), sin(caAngle)) * caStr;
+    var outColor = vec3<f32>(
+        mixed.r * (1.0 + caShift.x * 0.8),
+        mixed.g,
+        mixed.b * (1.0 - caShift.y * 0.5)
+    );
     outColor = acesToneMap(outColor * (0.9 + mids * 0.2));
 
     // Semantic alpha: blend input transparency with ripple intensity

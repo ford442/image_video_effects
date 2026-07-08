@@ -2,7 +2,7 @@
   "id": "crt-magnet",
   "name": "CRT Magnet",
   "url": "shaders/crt-magnet.wgsl",
-  "description": "Optimized CRT monitor degaussing magnetic distortion near the mouse. Uses canonical fbm/curl noise, unified audio-envelope and spring-damped mouse state, branchless aperture grille, hex-bloom, beam-purity RGB separation, and ACES tone mapping with semantic alpha blending.",
+  "description": "Phase-B hybrid CRT monitor degaussing magnetic distortion near the mouse. Fuses crt-magnet distortion with temporal feedback echo, audio-driven cosine palette, domain-warped FBM, and a smooth SDF mask. Uses canonical fbm/curl noise, unified audio-envelope and spring-damped mouse state, branchless aperture grille, hex-bloom, beam-purity RGB separation, and ACES tone mapping with semantic alpha blending.",
   "params": [
     {
       "id": "magnet_strength",
@@ -38,7 +38,10 @@
     "audio-reactive",
     "depth-aware",
     "upgraded-rgba",
-    "aces-tone-map"
+    "aces-tone-map",
+    "feedback-echo",
+    "audio-palette",
+    "sdf-mask"
   ],
   "tags": [
     "filter",
@@ -48,6 +51,10 @@
     "fractal",
     "crt",
     "magnet",
-    "bloom"
+    "bloom",
+    "feedback",
+    "palette",
+    "sdf",
+    "hybrid"
   ]
 }

@@ -3,7 +3,8 @@
 //  Category: generative
 //  Features: procedural, fractal, sierpinski, tetrahedron, 3d-projection,
 //            audio-reactive, mouse-driven, chromatic-aberration, aces-tonemap,
-//            temporal-feedback, depth-aware, domain-warping, multi-orbit-trap
+//            temporal-feedback, depth-aware, domain-warping, multi-orbit-trap,
+//            lod-noise, branchless-argmin, squared-sdf
 //  Complexity: High
 //  Created: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
@@ -63,20 +64,12 @@ fn domainWarp(p: vec2<f32>, t: f32) -> vec2<f32> {
   return p + 0.3 * q;
 }
 
-fn rotX(v: vec3<f32>, a: f32) -> vec3<f32> {
-  let c = cos(a); let s = sin(a);
-  return vec3<f32>(v.x, c * v.y - s * v.z, s * v.y + c * v.z);
-}
-
-fn rotY(v: vec3<f32>, a: f32) -> vec3<f32> {
-  let c = cos(a); let s = sin(a);
-  return vec3<f32>(c * v.x + s * v.z, v.y, -s * v.x + c * v.z);
-}
-
-fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
-  let pa = p - a; let ba = b - a;
+fn sdCapsuleSq(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>) -> f32 {
+  let pa = p - a;
+  let ba = b - a;
   let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-  return length(pa - ba * h) - r;
+  let d = pa - ba * h;
+  return dot(d, d);
 }
 
 fn jewelColor(idx: f32, shade: f32) -> vec3<f32> {
@@ -109,12 +102,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv01 = vec2<f32>(pixel) / res;
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let audio = plasmaBuffer[0].xyz;
+  let bass = audio.x;
+  let mids = audio.y;
+  let treble = audio.z;
   let mouse = u.zoom_config.yz;
 
-  let recursion = i32(mix(4.0, 10.0, clamp(u.zoom_params.x + bass * 0.25, 0.0, 1.0)));
+  // Distance-based LOD: lower quality at the screen edges.
+  let centerDist = length(uv01 - 0.5);
+  let lod = 1.0 - clamp(centerDist * 2.0, 0.0, 1.0);
+
+  let recCtrl = clamp(u.zoom_params.x + bass * 0.25, 0.0, 1.0) * mix(0.65, 1.0, lod);
+  let recursion = i32(mix(4.0, 10.0, recCtrl));
   let rotSpeed = mix(0.1, 0.6, u.zoom_params.y) * (1.0 + bass * 0.5);
   let persp = mix(1.5, 4.0, u.zoom_params.z);
   let caAmt = u.zoom_params.w;
@@ -122,57 +121,75 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthFactor = mix(0.5, 1.5, depth);
 
+  // LOD noise: fewer octaves in the periphery.
+  let warpOct = i32(mix(2.0, 4.0, lod));
   let warpUv = domainWarp(uv01 * 3.0 + vec2<f32>(time * 0.03), time * 0.05);
-  let warpField = fbm(warpUv * 2.0, 4);
+  let warpField = fbm(warpUv * 2.0, warpOct);
 
   let aspect = res.x / max(res.y, 1.0);
   var p = (uv01 - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
   p += (warpField - 0.5) * (0.04 + bass * 0.04);
 
   let yaw = (mouse.x - 0.5) * TAU + time * rotSpeed;
-  let pitch = ((0.5 - mouse.y)) * PI * 0.8 + sin(time * 0.3) * 0.2;
+  let pitch = (0.5 - mouse.y) * PI * 0.8 + sin(time * 0.3) * 0.2;
 
-  let v0 = vec3<f32>(0.0, 1.0, 0.0);
-  let v1 = vec3<f32>(-0.816, -0.333, 0.577);
-  let v2 = vec3<f32>(0.816, -0.333, 0.577);
-  let v3 = vec3<f32>(0.0, -0.333, -1.155);
+  const V = array<vec3<f32>, 4>(
+    vec3<f32>(0.0, 1.0, 0.0),
+    vec3<f32>(-0.816, -0.333, 0.577),
+    vec3<f32>(0.816, -0.333, 0.577),
+    vec3<f32>(0.0, -0.333, -1.155)
+  );
+  const E = array<vec2<u32>, 6>(
+    vec2<u32>(0u, 1u), vec2<u32>(0u, 2u), vec2<u32>(0u, 3u),
+    vec2<u32>(1u, 2u), vec2<u32>(1u, 3u), vec2<u32>(2u, 3u)
+  );
 
+  // Inline rotation to keep matrix math out of the fractal loop.
+  let cx = cos(pitch); let sx = sin(pitch);
+  let cy = cos(yaw);   let sy = sin(yaw);
   var rp = vec3<f32>(p.x * persp * depthFactor, p.y * persp * depthFactor, 2.5);
-  rp = rotY(rotX(rp, pitch), yaw);
+  rp = vec3<f32>(rp.x, cx * rp.y - sx * rp.z, sx * rp.y + cx * rp.z);
+  rp = vec3<f32>(cy * rp.x + sy * rp.z, rp.y, -sy * rp.x + cy * rp.z);
 
   var point = rp;
-  var minTrap = 1e9;
+  var minTrapSq = 1e9;
   var trapIdx = 0.0;
 
   for (var i = 0; i < recursion; i = i + 1) {
-    let d0 = distance(point, v0);
-    let d1 = distance(point, v1);
-    let d2 = distance(point, v2);
-    let d3 = distance(point, v3);
+    let d0 = dot(point - V[0], point - V[0]);
+    let d1 = dot(point - V[1], point - V[1]);
+    let d2 = dot(point - V[2], point - V[2]);
+    let d3 = dot(point - V[3], point - V[3]);
 
-    var nearest = d0;
-    var vi = 0.0;
-    nearest = select(nearest, d1, d1 < nearest); vi = select(vi, 1.0, d1 < nearest);
-    nearest = select(nearest, d2, d2 < nearest); vi = select(vi, 2.0, d2 < nearest);
-    nearest = select(nearest, d3, d3 < nearest); vi = select(vi, 3.0, d3 < nearest);
+    // Branchless argmin using captured comparisons.
+    var nearest = d0; var vi = 0u;
+    let c1 = d1 < nearest; nearest = select(nearest, d1, c1); vi = select(vi, 1u, c1);
+    let c2 = d2 < nearest; nearest = select(nearest, d2, c2); vi = select(vi, 2u, c2);
+    let c3 = d3 < nearest; nearest = select(nearest, d3, c3); vi = select(vi, 3u, c3);
 
-    let pointTrap = min(min(d0, d1), min(d2, d3));
-    let edgeTrap = min(min(min(sdCapsule(point, v0, v1, 0.0), sdCapsule(point, v0, v2, 0.0)),
-                           min(sdCapsule(point, v0, v3, 0.0), sdCapsule(point, v1, v2, 0.0))),
-                       min(sdCapsule(point, v1, v3, 0.0), sdCapsule(point, v2, v3, 0.0)));
-    let shellTrap = abs(length(point) - 0.9) * 0.5;
-    let trap = min(min(pointTrap, edgeTrap * 0.7), shellTrap);
-
-    if trap < minTrap {
-      minTrap = trap;
-      trapIdx = vi;
+    var edgeTrapSq = 1e9;
+    for (var e = 0u; e < 6u; e = e + 1u) {
+      let ab = E[e];
+      edgeTrapSq = min(edgeTrapSq, sdCapsuleSq(point, V[ab.x], V[ab.y]));
     }
 
-    let tgt = select(select(select(v3, v2, nearest == d2), v1, nearest == d1), v0, nearest == d0);
-    point = (point + tgt) * 0.5;
+    let lenP = length(point);
+    let shellD = abs(lenP - 0.9);
+    let trapSq = min(min(nearest, edgeTrapSq * 0.49), shellD * shellD * 0.25);
+
+    // Branchless update of best orbit trap.
+    let better = trapSq < minTrapSq;
+    minTrapSq = select(minTrapSq, trapSq, better);
+    trapIdx = select(trapIdx, f32(vi), better);
+
+    // Early exit once we are already extremely close to the structure.
+    if (minTrapSq < 1e-6) { break; }
+
+    point = (point + V[vi]) * 0.5;
   }
 
   let prev = textureLoad(dataTextureC, pixel, 0);
+  var minTrap = sqrt(minTrapSq);
   minTrap = mix(minTrap, prev.r, 0.03 + mids * 0.02);
 
   let density = exp(-minTrap * 12.0);

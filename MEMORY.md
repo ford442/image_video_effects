@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-07-05 (Fireworks library expansion)
+**Last updated:** 2026-07-08 (Phase B Advanced Enhancement swarm complete — 48/48 shaders)
 
 ## Core Identity & Vibe (from SOUL + IDENTITY)
 - Spark Engine / Cheerleader: bright, protective, kinetic, loud-hearted. "We are NOT done here!" Fast, punchy, energetic. Use "we/let's", 🔥⚡💥🫡, short lines, "one thing first", "messy start? fine", "this is NOT the final boss".
@@ -38,6 +38,8 @@
 
 ## TODOs / Open Threads (from this + recent memory)
 - [ ] **Shader upgrade mission (2026-06-28):** Upgrade batches of Pixelocity WGSL shaders to the immutable 13-binding contract, including standard `Uniforms`, `rgba32float` storage writes, depth/data/audio bindings, 16x16x1 workgroups, aspect-correct UVs, four `updatedParams`, feature metadata, generator validation, and batch commits.
+  - Phase A: 48 shaders validated and queued for Phase B (`swarm-tasks/upgrade-queue-phase-b.json`).
+  - Phase B Advanced Enhancement (2026-07-08): **All 48 shaders completed + validated** (naga + lists + duplicates + tests + build). Plan: `/root/.kimi/plans/adam-warlock-doctor-strange-sentry.md`. Reports in `swarm-tasks/phase-b-*-report.md`.
 - [x] 2026-07-03: Created GH issues for WASM renderer remaining work: umbrella #885 + #886–#890 (recording, forwarding audit, parity, tests/bench, docs/promotion). Expanded #845–#849 with follow-up notes. Updated GAP + STATUS docs. C++ renderer still Tier B experimental; core is solid but integration/recording/parity/tests not fully seamless.
 - [x] Created GH issues 817-823 (2026-06-11) for C++ solidification. All C++-centric, reference #799 + specific source lines.
 - [x] Updated issue bodies 2026-06-14: moved Claude's implementation sketches from comments into structured task sections (Prerequisites, Implementation Instructions, Task Checklist). PR order: #821 → #818+#820 → #817+#819 → #822 → #823.

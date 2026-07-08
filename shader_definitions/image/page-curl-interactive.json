@@ -10,9 +10,11 @@
     "upgraded-rgba",
     "aces-tone-map",
     "chromatic-aberration",
-    "oklab-mix"
+    "oklab-mix",
+    "lod-noise",
+    "branchless-page-mask"
   ],
-  "description": "Interactive page curl with warm/cool 3-point studio lighting on the curl face, OkLab color blending, ACES tone mapping, click shockwaves, depth-aware shadows, chromatic aberration, and temporal feedback trails.",
+  "description": "Interactive page curl with warm/cool 3-point studio lighting on the curl face, OkLab color blending, ACES tone mapping, click shockwaves, depth-aware shadows, LOD noise, branchless page masking, chromatic aberration, and temporal feedback trails.",
   "params": [
     {
       "id": "param1",

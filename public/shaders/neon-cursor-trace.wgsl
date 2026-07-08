@@ -6,8 +6,8 @@
 //            electric-arc, multi-point-trail, particle-spawn, velocity-smear,
 //            ripple-spark, depth-aware, aces-tone-map
 //  Complexity: High
-//  Upgraded by: Interactivist Agent
-//  Date: 2026-06-14
+//  Upgraded by: Audio-Reactivity Agent
+//  Date: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -49,6 +49,11 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 
 fn luma(rgb: vec3<f32>) -> f32 { return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722)); }
 
+fn bass_env(prev: f32, bass: f32) -> f32 {
+  let k = select(0.15, 0.8, bass > prev);
+  return mix(prev, bass, k);
+}
+
 fn springDamp(targetPos: vec2<f32>, pos: vec2<f32>, vel: vec2<f32>, k: f32, damping: f32, dt: f32) -> vec4<f32> {
   let force = (targetPos - pos) * k;
   let newVel = (vel + force * dt) * (1.0 - damping);
@@ -84,9 +89,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   let prevOut = textureLoad(dataTextureC, pixel, 0);
-  let bassEnv = mix(prevOut.a, bass, select(0.15, 0.8, bass > prevOut.a));
+  let bassEnv = bass_env(prevOut.a, bass);
+  let midsMorph = 1.0 + mids * 0.5;
+  let trebleSpark = clamp(treble * 2.0, 0.0, 1.0);
 
   let bufOff = (global_id.x + global_id.y * u32(res.x)) * 8u;
   var lagPos = vec2<f32>(extraBuffer[bufOff], extraBuffer[bufOff + 1u]);
@@ -100,7 +108,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   lagPos = spring.xy;
   lagVel = spring.zw;
   let velMag = length(lagVel);
-  arcPhase = arcPhase + (velMag * 8.0 + bassEnv * 2.0) * dt;
+  arcPhase = arcPhase + (velMag * 8.0 + bassEnv * 2.0) * dt * midsMorph;
 
   extraBuffer[bufOff] = lagPos.x;
   extraBuffer[bufOff + 1u] = lagPos.y;
@@ -118,7 +126,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let t = f32(i) / f32(segments);
     let n = valueNoise(vec2<f32>(t * 13.0, arcPhase)) - 0.5;
     let n2 = valueNoise(vec2<f32>(t * 17.0 + 50.0, arcPhase * 1.3)) - 0.5;
-    let jitter = vec2<f32>(n, n2) * chaos * 0.24 * t * (1.0 - t);
+    let jitter = vec2<f32>(n, n2) * chaos * 0.24 * t * (1.0 - t) * (1.0 + trebleSpark);
     let well = gravityWell(mix(mousePos, lagPos, t), mousePos, wellStrength * 0.5);
     let velStretch = stretchDir * velMag * t * (1.0 - t) * chaos * 0.6;
     let trailPoint = mix(mousePos, lagPos, t) + jitter + velStretch + well;
@@ -129,7 +137,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let falloff = gauss(d2, w * w);
 
     accum = accum + falloff;
-    let hue = fract(time * 0.07 + t * 0.2 + bassEnv * 0.25 + arcPhase * 0.015);
+    let hue = fract(time * 0.07 * midsMorph + t * 0.2 + bassEnv * 0.25 + arcPhase * 0.015);
     let brightness = 1.0 + mids * 0.5 * sin(t * TAU + time * 3.0);
     glow = glow + neonColor(hue) * falloff * brightness;
   }
@@ -163,6 +171,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
+  if (trebleSpark > 0.15) {
+    for (var i: i32 = 0; i < 5; i = i + 1) {
+      let seed = vec2<f32>(f32(i) + 100.0, fract(time));
+      let ang = hash21(seed) * TAU;
+      let rad = hash21(seed + vec2<f32>(1.0, 0.0)) * traceWidth * 3.0 * (1.0 + trebleSpark);
+      let pPos = mix(mousePos, lagPos, 0.5) + vec2<f32>(cos(ang), sin(ang)) * rad;
+      let pd = distance(uv, pPos);
+      let pFalloff = exp(-pd * pd / (traceWidth * traceWidth * 0.08));
+      let pHue = fract(f32(i) / 5.0 + time * 0.2 + treble);
+      particleGlow = particleGlow + neonColor(pHue) * pFalloff * trebleSpark * 0.5;
+    }
+  }
+
   let rDecay = 0.88 + 0.1 * sin(time * 1.3);
   let gDecay = 0.86 + 0.1 * sin(time * 1.9 + 2.0);
   let bDecay = 0.84 + 0.1 * sin(time * 2.7 + 4.0);
@@ -171,10 +192,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let baseLuma = dot(baseVideo.rgb, vec3<f32>(0.299, 0.587, 0.114));
   let lumaBoost = 1.0 + baseLuma * 0.3;
 
+  let audioIntensity = traceIntensity * (1.0 + bassEnv * 0.5);
+
   var outRGB = vec3<f32>(
-    prevOut.r * rDecay + glow.r * traceIntensity * 0.2 * lumaBoost + particleGlow.r,
-    prevOut.g * gDecay + glow.g * traceIntensity * 0.2 * lumaBoost + particleGlow.g,
-    prevOut.b * bDecay + glow.b * traceIntensity * 0.2 * lumaBoost + particleGlow.b
+    prevOut.r * rDecay + glow.r * audioIntensity * 0.2 * lumaBoost + particleGlow.r,
+    prevOut.g * gDecay + glow.g * audioIntensity * 0.2 * lumaBoost + particleGlow.g,
+    prevOut.b * bDecay + glow.b * audioIntensity * 0.2 * lumaBoost + particleGlow.b
   );
 
   let depth = textureLoad(readDepthTexture, pixel, 0).r;

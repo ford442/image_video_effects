@@ -2,13 +2,16 @@
   "id": "polka-dot-reveal",
   "name": "Polka Dot Reveal",
   "url": "shaders/polka-dot-reveal.wgsl",
-  "description": "Optimized interactive halftone effect with 16x16 workgroups, spring-damped mouse follow, attack/release audio envelope, depth-aware dot radius, per-cell hash jitter to reduce banding, and temporal feedback trails where alpha encodes trail age and interaction intensity.",
+  "description": "Phase-B advanced-alpha halftone effect with 16x16 workgroups, spring-damped mouse follow, attack/release audio envelope, per-cell hash jitter, and temporal feedback trails. Alpha is now composited through depth-layered fade, luminance keying, edge-preservation, and an interaction-energy boost so the 3-slot chain blends meaningfully.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "temporal",
     "upgraded-rgba",
     "depth-aware",
+    "alpha-layered",
+    "edge-preserve",
+    "luminance-key",
     "optimized"
   ],
   "tags": [
@@ -18,7 +21,10 @@
     "audio-reactive",
     "temporal",
     "trails",
-    "depth-aware"
+    "depth-aware",
+    "alpha-layered",
+    "edge-preserve",
+    "luminance-key"
   ],
   "params": [
     {

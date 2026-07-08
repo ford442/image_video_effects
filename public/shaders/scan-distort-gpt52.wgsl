@@ -1,9 +1,11 @@
-// ═══ Scan Distort Matrix gpt52 (Optimized) ═══════════════════════
-//  Category: distortion
-//  Features: glitch, animated, depth-aware, upgraded-rgba, audio-reactive
+// ═══ Scan Distort Matrix gpt52 (Advanced-Hybrid) ═════════════════
+//  Category: advanced-hybrid
+//  Techniques: scanline distortion + domain-warped FBM + audio-driven palette
+//  Features: glitch, animated, depth-aware, upgraded-rgba, audio-reactive,
+//            domain-warp, palette
 //  Complexity: High
-//  Upgrades: 16x16 workgroups, canonical math, branchless band mixing,
-//            textureLoad depth, cleaner HDR scan pipeline
+//  Upgrades: canonical math, branchless band mixing, textureLoad depth,
+//            domain-warped FBM displacement, audio-reactive color palette
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -57,6 +59,18 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 {
   return s;
 }
 
+fn warpedFBM(p: vec2<f32>, oct: i32, warp: f32, time: f32) -> f32 {
+  let q = vec2<f32>(
+    fbm(p + vec2<f32>(0.0, 0.0), oct),
+    fbm(p + vec2<f32>(5.2, 1.3), oct)
+  );
+  let r = vec2<f32>(
+    fbm(p + warp * q + vec2<f32>(1.7, 9.2) + 0.15 * time, oct),
+    fbm(p + warp * q + vec2<f32>(8.3, 2.8) + 0.126 * time, oct)
+  );
+  return fbm(p + warp * r, oct);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
@@ -71,6 +85,14 @@ fn toLinear(c: vec3<f32>) -> vec3<f32> {
 
 fn toSrgb(c: vec3<f32>) -> vec3<f32> {
   return pow(c, vec3<f32>(1.0 / 2.2));
+}
+
+fn audioPalette(t: f32, bass: f32, mids: f32, treble: f32) -> vec3<f32> {
+  let a = vec3<f32>(0.5, 0.5, 0.5);
+  let b = vec3<f32>(0.5, 0.5, 0.5);
+  let c = vec3<f32>(1.0, 1.0, 1.0);
+  let d = vec3<f32>(0.263, 0.416, 0.557) + vec3<f32>(bass * 0.4, mids * 0.25, treble * 0.35);
+  return a + b * cos(TAU * (c * t + d));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -100,6 +122,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let radius = length(centered);
   let bend = mix(0.0, 0.18, bandSplit);
   var warped = uv01 + centered * (radius * radius) * bend;
+
+  // Domain-warped FBM displacement
+  let warpAmp = 0.08 * fbmScale * (1.0 + bass * 1.5);
+  let warpCoord = warped * mix(2.0, 8.0, fbmScale) + vec2<f32>(time * 0.05, time * 0.07);
+  let domainWarp = warpedFBM(warpCoord, 3, 1.2, time);
+  warped = warped + (domainWarp - 0.5) * warpAmp;
 
   // FBM-perturbed scan lines
   let fbmPerturb = fbm(vec2<f32>(warped.y * fbmScale * 5.0, time * 0.3), 4) * 0.02 * fbmScale;
@@ -155,6 +183,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let highlightMask = smoothstep(0.5, 1.0, lum);
   color = color * mix(vec3<f32>(1.0), shadowTint, shadowMask * 0.3);
   color = color * mix(vec3<f32>(1.0), highlightTint, highlightMask * 0.25);
+
+  // Audio-driven palette overlay
+  let palette = audioPalette(lum + time * 0.05, bass, mids, treble);
+  color = mix(color, color * palette * 1.4, chromaticMix * 0.35);
 
   // Rim glow + vignette
   let rim = pow(radius * 1.6, 3.0);

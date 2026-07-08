@@ -2,7 +2,7 @@
   "id": "scanline-sorting",
   "name": "Scanline Sorting",
   "url": "shaders/scanline-sorting.wgsl",
-  "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse. Reacts to audio bass for intensified sorting, applies ACES tone mapping, and uses an early-exit path for inactive pixels.",
+  "description": "Sorts pixels by luminance within a moving scanline band using a tile-wide early-exit and a shared-memory bitonic sort over local 16-pixel segments. Reacts to audio bass for intensified sorting, applies ACES tone mapping, and preserves depth and semantic alpha.",
   "params": [
     {
       "id": "thresh",
@@ -46,7 +46,9 @@
     "upgraded-rgba",
     "aces-tone-map",
     "early-exit",
-    "branchless"
+    "branchless",
+    "shared-memory",
+    "bitonic-sort"
   ],
   "tags": [
     "filter",

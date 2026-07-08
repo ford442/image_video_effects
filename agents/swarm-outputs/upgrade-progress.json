@@ -292,6 +292,96 @@
       "prompts_generated": 12,
       "shaders_validated": 12,
       "notes": "Batch 6 completed after one HTTP 429 retry on directional-glitch. Naga + bindgroup + duplicate checks passed."
+    },
+    {
+      "timestamp": "2026-07-08T03:59:55.175Z",
+      "mode": "prepare",
+      "batch": [
+        "gen-von-karman-vortex",
+        "gen-barnsley-fern",
+        "gen-sierpinski-tetrahedron",
+        "supernova-core",
+        "aurora-curtain",
+        "sand-dunes",
+        "gen-feedback-echo-chamber",
+        "hyperbolic-crystal-symbiosis"
+      ],
+      "prompts_generated": 8
+    },
+    {
+      "timestamp": "2026-07-08T04:12:46.466Z",
+      "mode": "prepare",
+      "batch": [
+        "gen-ifs-fractal-flame",
+        "spec-distance-field-text",
+        "gen-quasicrystal",
+        "cosmic-web",
+        "phosphor-decay",
+        "bitonic-sort",
+        "temporal-rgb-smear",
+        "elastic-chromatic"
+      ],
+      "prompts_generated": 8
+    },
+    {
+      "timestamp": "2026-07-08T04:22:38.118Z",
+      "mode": "prepare",
+      "batch": [
+        "waveform-glitch",
+        "data-slicer-interactive",
+        "pixel-stretch-cross",
+        "interactive-magnetic-ripple",
+        "luma-pixel-sort",
+        "pixel-depth-sort",
+        "pixel-sand",
+        "crt-magnet"
+      ],
+      "prompts_generated": 8
+    },
+    {
+      "timestamp": "2026-07-08T04:31:04.780Z",
+      "mode": "prepare",
+      "batch": [
+        "tesseract-fold",
+        "spiral-lens",
+        "tile-twist",
+        "chromatic-mosaic-projector",
+        "mosaic-reveal",
+        "page-curl-interactive",
+        "polar-warp-interactive",
+        "echo-ripple"
+      ],
+      "prompts_generated": 8
+    },
+    {
+      "timestamp": "2026-07-08T04:37:25.777Z",
+      "mode": "prepare",
+      "batch": [
+        "digital-lens",
+        "scan-distort-gpt52",
+        "chrono-slit-scan",
+        "quad-mirror",
+        "scanline-wave",
+        "quantum-ripples",
+        "oscilloscope-overlay",
+        "spectral-brush"
+      ],
+      "prompts_generated": 8
+    },
+    {
+      "timestamp": "2026-07-08T04:44:03.704Z",
+      "mode": "prepare",
+      "batch": [
+        "magnetic-interference",
+        "voxel-grid",
+        "polka-dot-reveal",
+        "scanline-sorting",
+        "neon-cursor-trace",
+        "directional-glitch",
+        "stereoscopic-3d",
+        "cyber-ripples"
+      ],
+      "prompts_generated": 8
     }
   ],
   "current": {},

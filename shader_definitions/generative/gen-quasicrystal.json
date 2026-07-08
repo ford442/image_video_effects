@@ -60,5 +60,5 @@
   "supportsDof": false,
   "updated": true,
   "url": "shaders/gen-quasicrystal.wgsl",
-  "features": []
+  "features": ["audio-reactive"]
 }

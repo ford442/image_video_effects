@@ -2,7 +2,7 @@
   "id": "digital-lens",
   "name": "Digital Lens",
   "url": "shaders/digital-lens.wgsl",
-  "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, mouse gravity-well focus, attack/release bass envelope, temporal feedback trails, ACES tone mapping, and film grain.",
+  "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, mouse gravity-well focus, attack/release bass envelope, temporal feedback trails, ACES tone mapping, film grain, and advanced RGBA compositing via depth-layered, luminance-key, and effect-intensity alpha.",
   "params": [
     {
       "id": "distortion",
@@ -41,7 +41,9 @@
     "barrel-distortion",
     "chromatic-dispersion",
     "anamorphic",
-    "temporal-feedback"
+    "temporal-feedback",
+    "alpha-layered",
+    "luminance-key"
   ],
   "tags": [
     "filter",
@@ -52,6 +54,8 @@
     "audio-reactive",
     "anamorphic",
     "temporal-feedback",
-    "gravity-well"
+    "gravity-well",
+    "alpha-layered",
+    "luminance-key"
   ]
 }

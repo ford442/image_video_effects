@@ -2,7 +2,7 @@
   "id": "directional-glitch",
   "name": "Directional Glitch",
   "url": "shaders/directional-glitch.wgsl",
-  "description": "Voronoi-ridge and FBM domain-warped glitch bands radiate from the mouse, driven by curl-noise displacement, chromatic aberration, depth-aware masking, and temporal feedback.",
+  "description": "SDF-masked Voronoi-ridge and FBM domain-warped glitch bands radiate from the mouse, driven by curl-noise displacement, audio-reactive cosine palette, chromatic aberration, depth-aware masking, and kaleidoscope temporal feedback.",
   "params": [
     {
       "id": "intensity",
@@ -55,6 +55,9 @@
     "curl-noise",
     "domain-warp",
     "voronoi-ridges",
+    "sdf-masking",
+    "audio-palette",
+    "kaleidoscope-echo",
     "upgraded-rgba"
   ],
   "tags": [
@@ -67,6 +70,9 @@
     "chromatic-aberration",
     "curl-noise",
     "voronoi",
-    "multi-scale"
+    "multi-scale",
+    "sdf",
+    "palette",
+    "kaleidoscope"
   ]
 }

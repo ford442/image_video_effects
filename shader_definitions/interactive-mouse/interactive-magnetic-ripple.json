@@ -2,7 +2,7 @@
   "id": "interactive-magnetic-ripple",
   "name": "Magnetic Ripple",
   "url": "shaders/interactive-magnetic-ripple.wgsl",
-  "description": "Magnetic field distortion with curl-noise field lines, click-burst shockwaves, all 50 ripple point accumulation, FBM domain warping, depth-aware compositing, temporal motion trails, chromatic split, and glow-alpha at ripple peaks.",
+  "description": "Phase B audio-reactive magnetic ripple. Bass-pulsed ripple frequency and field strength, mids-morphing hue-cycled glow, treble sparkle on field lines, plus curl-noise field lines, click-burst shockwaves, 50 ripple-point accumulation, FBM domain warping, depth-aware compositing, temporal motion trails, chromatic split, and semantic glow-alpha.",
   "params": [
     {
       "id": "ripple_freq",

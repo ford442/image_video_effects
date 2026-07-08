@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Magnetic Ripple — Interactivist Upgrade
+//  Interactive Magnetic Ripple — Phase B Audio-Reactivity Upgrade
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal-feedback,
-//            motion-trails, chromatic-aberration, aces-tone-map
-//  Upgraded: 2026-06-14
+//            motion-trails, chromatic-aberration, aces-tone-map,
+//            bass-pulse, mids-morph, treble-sparkle
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -72,6 +73,22 @@ fn luma(rgb: vec3<f32>) -> f32 {
   return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
+// ── Audio reactivity helpers ─────────────────────────────────────
+
+fn bass_env(prev: f32, bass: f32) -> f32 {
+  let k = select(0.15, 0.8, bass > prev);
+  return mix(prev, bass, k);
+}
+
+fn sparkle(uv: vec2<f32>, t: f32, treble: f32) -> f32 {
+  let h = hash21(uv * 300.0 + t * 15.0);
+  return pow(h, 18.0) * treble * 2.5;
+}
+
+fn colorCycle(t: f32) -> vec3<f32> {
+  return vec3<f32>(0.5 + 0.5 * cos(t + vec3<f32>(0.0, 2.094, 4.189)));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
@@ -84,11 +101,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w > 0.5;
 
-  let freq = u.zoom_params.x * 40.0;
-  let decay = u.zoom_params.y * 3.0 + 0.5;
-  let fieldStrength = u.zoom_params.z;
-  let chromaticSplit = u.zoom_params.w * 0.08;
-
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
@@ -97,16 +109,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prev = textureLoad(dataTextureC, pixel, 0);
 
   // Attack/release bass envelope + spring-smoothed mouse
-  let env = mix(prev.r, bass, select(0.15, 0.85, bass > prev.r));
+  let env = bass_env(prev.r, bass);
   let k = 0.12 + env * 0.08;
   let mSmooth = mix(prev.gb, mouse, vec2<f32>(k));
   let mVel = mSmooth - prev.gb;
+
+  let bassPulse = 1.0 + env * 0.5;
+  let freq = u.zoom_params.x * 40.0 * (0.8 + env * 0.4);
+  let decay = u.zoom_params.y * 3.0 + 0.5;
+  let fieldStrength = u.zoom_params.z * bassPulse;
+  let chromaticSplit = u.zoom_params.w * 0.08;
 
   let pulseStrength = fieldStrength * (1.0 + env * 0.7);
   let clickBurst = select(0.0, 1.0, mouseDown) * (1.0 + env);
 
   var totalDisp = vec2<f32>(0.0);
   var rippleIntensity = 0.0;
+
+  // Treble sparkle field
+  let spark = sparkle(uv01, time, treble);
+  rippleIntensity += spark;
 
   // Mouse-driven magnetic field
   if (mouse.x >= 0.0) {
@@ -130,10 +152,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     totalDisp += magPull + curl * 0.04;
     rippleIntensity += length(magPull) * 10.0;
 
-    let fieldLine = sin(atan2(dAspect.y, dAspect.x) * 12.0 + fbm(uv01 * 5.0, 3) * 3.0);
+    // Mids morph field-line frequency and add sparkle
+    let lineFreq = 12.0 + mids * 8.0;
+    let fieldLine = sin(atan2(dAspect.y, dAspect.x) * lineFreq + fbm(uv01 * 5.0, 3) * 3.0);
     let fieldLineMask = smoothstep(0.3, 0.0, abs(fieldLine)) * exp(-dist * 3.0);
     totalDisp += dir * fieldLineMask * pulseStrength * 0.02;
-    rippleIntensity += fieldLineMask * pulseStrength;
+    rippleIntensity += fieldLineMask * pulseStrength + spark * fieldLineMask * 5.0;
   }
 
   // Click burst shockwave
@@ -171,9 +195,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var color = vec3<f32>(r, g, b);
 
-  // Audio-reactive glow at ripple peaks
-  let glow = smoothstep(0.2, 0.8, rippleIntensity) * (1.0 + env * 0.5);
-  color += vec3<f32>(0.3 + mids * 0.3, 0.5 + treble * 0.3, 0.8) * glow * 0.4;
+  // Audio-reactive glow at ripple peaks with mids color cycling
+  let glow = smoothstep(0.2, 0.8, rippleIntensity) * bassPulse;
+  let baseGlow = vec3<f32>(0.3 + mids * 0.3, 0.5 + treble * 0.3, 0.8);
+  let cycleGlow = colorCycle(time * 0.5 + mids * TAU + rippleIntensity * 3.0);
+  color += mix(baseGlow, cycleGlow, mids * 0.5) * glow * 0.4;
+
+  // Treble sparkle overlay
+  color += vec3<f32>(spark * (0.6 + treble * 0.4));
 
   // Temporal feedback trail
   let trailDecay = 0.94 + env * 0.04;

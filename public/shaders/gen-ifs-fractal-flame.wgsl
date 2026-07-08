@@ -1,8 +1,9 @@
-// ═══ IFS Fractal Flame v4 ════════════════════════════════════════
+// ═══ IFS Fractal Flame v5 ════════════════════════════════════════
 //  Category: generative
 //  Features: ifs, flame, bass-envelope, gravity-well, click-burst,
 //            treble-sparkle, luma-spawn, depth-aware, temporal-feedback,
-//            organic-drift, chromatic-aberration, aces-tone-map
+//            organic-drift, chromatic-aberration, aces-tone-map,
+//            alpha-layered, physical-transmittance, luminance-key
 //  Complexity: Medium
 
 // ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
@@ -178,18 +179,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, color * 0.5, fog * 0.4);
     color = acesToneMap(color * 1.4);
 
-    // Alpha encodes intensity
+    // ── Advanced Alpha Composition ────────────────────────────────
+    // Physical transmittance: dense hot core is opaque, smoky edges fade.
+    let opticalDepth = density * flameTemp * mix(2.2, 0.45, u.zoom_params.z);
+    let transmittance = exp(-opticalDepth);
+    let bodyAlpha = 1.0 - transmittance;
+
+    // Luminance key: suppress alpha in dark soot / empty regions.
+    let lumaKey = smoothstep(0.04, 0.22, luma(color));
+
+    // Depth-layered fade: distant flame is more translucent.
+    let depthFade = mix(0.35, 1.0, depthFactor);
+
+    // Accumulative temporal alpha: feedback builds smoky persistence.
     let clickDist = length(uv01 - mouse);
     let mouseProx = smoothstep(0.3, 0.0, clickDist);
-    let alpha = clamp(density * flameTemp * depthFactor + mouseProx * 0.3 + sparkleMask * 0.5, 0.0, 1.0);
+    let accumAlpha = mix(prev.a, bodyAlpha, 0.18 + mouseDown * 0.08);
 
-    // Depth output
-    let depthOut = clamp(1.0 - flameTemp * 0.8, 0.0, 1.0);
+    // Composite alpha with emission boosts for sparkles and mouse glow.
+    var alpha = clamp(
+        accumAlpha * lumaKey * depthFade + sparkleMask * 0.65 + mouseProx * 0.25,
+        0.05, 1.0
+    );
 
-    // Temporal accumulation with decay
+    // Temporal accumulation with decay (RGBA-aware trail)
     let decay = 0.94 - caAmt * 0.04;
-    let trail = mix(prev.rgb * decay, color, 0.25 + bass * 0.1);
-    color = mix(color, trail, 0.55);
+    let trail = mix(prev * decay, vec4<f32>(color, alpha), 0.25 + bass * 0.1);
+    color = trail.rgb;
+    alpha = trail.a;
+
+    // Depth output: inverse flame heat writes the depth buffer.
+    let depthOut = clamp(1.0 - flameTemp * 0.8, 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 1.0));

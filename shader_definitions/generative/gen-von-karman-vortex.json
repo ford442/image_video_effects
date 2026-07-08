@@ -9,7 +9,7 @@
     "physics",
     "audio-reactive"
   ],
-  "description": "Analytic vortex-street flow visualization. Ten alternating point-vortex pairs shed behind the mouse-driven obstacle; their combined streamfunction \u03c8 = U\u00b7y + \u03a3 \u00b1(\u0393/2\u03c0)\u00b7ln(r) produces isocontours tracing the classic K\u00e1rm\u00e1n street wake. Bass drives shedding speed; mids vary vortex separation for staggered or aligned rows.",
+  "description": "Analytic vortex-street flow visualization. Ten alternating point-vortex pairs shed behind the mouse-driven obstacle; their combined streamfunction \u03c8 = U\u00b7y + \u03a3 \u00b1(\u0393/2\u03c0)\u00b7ln(r) produces isocontours tracing the classic K\u00e1rm\u00e1n street wake. Envelope-smoothed bass drives shedding speed and brightness pulses; mids morph vortex separation and color cycling; treble adds high-frequency sparkle along fast streamlines.",
   "workgroup_size": [
     16,
     16,
@@ -54,5 +54,7 @@
   "updated": true,
   "id": "gen-von-karman-vortex",
   "url": "shaders/gen-von-karman-vortex.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive"
+  ]
 }

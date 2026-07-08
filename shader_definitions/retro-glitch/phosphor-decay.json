@@ -2,7 +2,7 @@
   "id": "phosphor-decay",
   "name": "Phosphor Decay",
   "url": "shaders/phosphor-decay.wgsl",
-  "description": "CRT phosphor persistence with per-channel decay, OkLab-blended trails, audio-reactive bloom, shadow mask, scan-line blanking, depth haze, blackbody temperature grading, and IGN-dithered premultiplied output.",
+  "description": "CRT phosphor persistence with per-channel linear-feedback decay, OkLab-blended trails, audio-reactive bloom, branchless shadow mask, scan-line blanking, depth haze, blackbody temperature grading, and IGN-dithered premultiplied output.",
   "params": [
     {
       "id": "decay_rate",
@@ -50,6 +50,8 @@
     "bloom",
     "oklab",
     "blackbody",
-    "dithered"
+    "dithered",
+    "temporal-feedback",
+    "linear-feedback"
   ]
 }
