@@ -904,6 +904,13 @@
       "added": "2026-07-04T15:19:54.098199",
       "status": "completed",
       "completed_at": "2026-07-05T08:34:32.089112+00:00"
+    },
+    {
+      "filename": "2026-07-02_luminescent-aether-plasma-nebula-koi.md",
+      "title": "Luminescent Aether-Plasma Nebula-Koi",
+      "added": "2026-07-02T15:17:55.851373",
+      "status": "completed",
+      "completed_at": "2026-07-08T00:22:46.930125+00:00"
     }
   ],
   "rejected": [],
@@ -1178,11 +1185,6 @@
       "filename": "2026-06-29_prismatic-cyber-chrono-nebula-peacock.md",
       "title": "Prismatic Cyber-Chrono Nebula-Peacock",
       "added": "2026-06-29T15:34:23.065054"
-    },
-    {
-      "filename": "2026-07-02_luminescent-aether-plasma-nebula-koi.md",
-      "title": "Luminescent Aether-Plasma Nebula-Koi",
-      "added": "2026-07-02T15:17:55.851373"
     }
   ],
   "in_progress": null
