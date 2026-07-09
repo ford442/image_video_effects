@@ -1931,7 +1931,7 @@
   {
     "id": "fireworks-depth-parade",
     "name": "4th of July — Depth Parade",
-    "url": "https://test.1ink.us/image_video_effects/shaders/fireworks-depth-parade.wgsl",
+    "url": "shaders/fireworks-depth-parade.wgsl",
     "description": "Depth layers of your image launch fireworks in parade sequence — foreground detonates first, then midground, then background. Creates a cinematic 3D-ish celebration where near elements pop before far ones. Image colors tint each layer's shells. Bass amplifies foreground launches. Mouse triggers a depth-sorted barrage.",
     "tags": [
       "fireworks",
@@ -1988,7 +1988,7 @@
   {
     "id": "fireworks-edge-ignite",
     "name": "4th of July — Edge Ignite",
-    "url": "https://test.1ink.us/image_video_effects/shaders/fireworks-edge-ignite.wgsl",
+    "url": "shaders/fireworks-edge-ignite.wgsl",
     "description": "Image contours and edges become ignition lines for a fireworks show. Bright boundaries spark and launch colored shells along the detected edges of your photo. The picture's outlines trace themselves in pyrotechnic light. Bass deepens edge bursts, treble adds crackle along contours. Mouse ignites edges at the cursor.",
     "tags": [
       "fireworks",
@@ -2044,7 +2044,7 @@
   {
     "id": "fireworks-patriotic-july4",
     "name": "4th of July — Patriotic Pyro",
-    "url": "https://test.1ink.us/image_video_effects/shaders/fireworks-patriotic-july4.wgsl",
+    "url": "shaders/fireworks-patriotic-july4.wgsl",
     "description": "Happy July 4th! Your image fuels a red, white, and blue fireworks spectacular. Bright regions launch patriotic shells cycling through crimson, silver-white, and electric blue. Image hues blend with the classic American palette for a backyard celebration feel. Bass booms the big shells, treble crackles the finale. Mouse fires a patriotic barrage.",
     "tags": [
       "fireworks",
@@ -2100,7 +2100,7 @@
   {
     "id": "fireworks-portrait-burst",
     "name": "4th of July — Portrait Burst",
-    "url": "https://test.1ink.us/image_video_effects/shaders/fireworks-portrait-burst.wgsl",
+    "url": "shaders/fireworks-portrait-burst.wgsl",
     "description": "Bright regions of your image become the cores of spectacular firework detonations. Faces, skylines, and luminous highlights erupt in bursts that inherit the source colors. The photo celebrates itself — portraits explode in their own palette. Bass triggers larger cores, treble adds sparkle. Mouse detonates at the cursor.",
     "tags": [
       "fireworks",
