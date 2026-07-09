@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: wasm-renderer.smoke.spec.ts >> WASM renderer initializes successfully
-- Location: tests/wasm-renderer.smoke.spec.ts:113:5
+- Name: wasm-renderer.smoke.spec.ts >> WASM renderer handles shader loading with minimal console errors
+- Location: tests/wasm-renderer.smoke.spec.ts:234:5
 
 # Error details
 
@@ -22,5 +22,5 @@ Error: page.evaluate: TypeError: Failed to execute 'decode' on 'TextDecoder': Th
     at Module.l (http://localhost:3457/static/js/main.9e0342ba.js:2:201919)
     at dA.getDiagnostics (http://localhost:3457/static/js/main.9e0342ba.js:2:220054)
     at jA.getDiagnostics (http://localhost:3457/static/js/main.9e0342ba.js:2:269748)
-    at eval (eval at evaluate (:303:30), <anonymous>:3:343)
+    at eval (eval at evaluate (:303:30), <anonymous>:3:349)
 ```

@@ -1,92 +1,10 @@
-<testsuites id="" name="" tests="10" failures="0" skipped="8" errors="2" time="61.812093999999995">
-<testsuite name="wasm-renderer.smoke.spec.ts" timestamp="2026-07-09T08:39:52.950Z" hostname="chromium" tests="5" failures="0" skipped="4" time="0" errors="1">
-<testcase name="WASM renderer initializes successfully" classname="wasm-renderer.smoke.spec.ts" time="0">
-<system-out>
-<![CDATA[
-[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/error-context.md]]
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/error-context.md]]
-]]>
-</system-out>
-<error message="&quot;beforeAll&quot; hook timeout of 30000ms exceeded." type="Error">
-<![CDATA[  [chromium] › wasm-renderer.smoke.spec.ts:113:5 › WASM renderer initializes successfully ──────────
-
-    "beforeAll" hook timeout of 30000ms exceeded.
-
-      70 | }
-      71 |
-    > 72 | test.beforeAll(async () => {
-         |      ^
-      73 |   await startServer();
-      74 | }, 60000);
-      75 |
-        at /app/tests/wasm-renderer.smoke.spec.ts:72:6
-
-    Error Context: ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/error-context.md
-
-    Error Context: ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-chromium/error-context.md
-]]>
-</error>
-</testcase>
-<testcase name="WASM renderer loads single shader without errors" classname="wasm-renderer.smoke.spec.ts">
-<skipped>
-</skipped>
-</testcase>
-<testcase name="WASM renderer loads multiple shaders (multi-slot stack)" classname="wasm-renderer.smoke.spec.ts">
-<skipped>
-</skipped>
-</testcase>
-<testcase name="WASM renderer handles shader loading with minimal console errors" classname="wasm-renderer.smoke.spec.ts">
-<skipped>
-</skipped>
-</testcase>
-<testcase name="WASM renderer collects performance metrics" classname="wasm-renderer.smoke.spec.ts">
-<skipped>
-</skipped>
-</testcase>
-</testsuite>
-<testsuite name="wasm-renderer.smoke.spec.ts" timestamp="2026-07-09T08:39:52.950Z" hostname="firefox" tests="5" failures="0" skipped="4" time="0" errors="1">
-<testcase name="WASM renderer initializes successfully" classname="wasm-renderer.smoke.spec.ts" time="0">
-<system-out>
-<![CDATA[
-[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-firefox/error-context.md]]
-
-[[ATTACHMENT|wasm-renderer.smoke-WASM-renderer-initializes-successfully-firefox/error-context.md]]
-]]>
-</system-out>
-<error message="&quot;beforeAll&quot; hook timeout of 30000ms exceeded." type="Error">
-<![CDATA[  [firefox] › wasm-renderer.smoke.spec.ts:113:5 › WASM renderer initializes successfully ───────────
-
-    "beforeAll" hook timeout of 30000ms exceeded.
-
-      70 | }
-      71 |
-    > 72 | test.beforeAll(async () => {
-         |      ^
-      73 |   await startServer();
-      74 | }, 60000);
-      75 |
-        at /app/tests/wasm-renderer.smoke.spec.ts:72:6
-
-    Error Context: ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-firefox/error-context.md
-
-    Error Context: ../test-results/wasm-renderer.smoke-WASM-renderer-initializes-successfully-firefox/error-context.md
-]]>
-</error>
-</testcase>
-<testcase name="WASM renderer loads single shader without errors" classname="wasm-renderer.smoke.spec.ts">
-<skipped>
-</skipped>
-</testcase>
-<testcase name="WASM renderer loads multiple shaders (multi-slot stack)" classname="wasm-renderer.smoke.spec.ts">
-<skipped>
-</skipped>
-</testcase>
-<testcase name="WASM renderer handles shader loading with minimal console errors" classname="wasm-renderer.smoke.spec.ts">
-<skipped>
-</skipped>
-</testcase>
-<testcase name="WASM renderer collects performance metrics" classname="wasm-renderer.smoke.spec.ts">
+<testsuites id="" name="" tests="1" failures="0" skipped="1" errors="0" time="9.257901">
+<testsuite name="depth-estimation.webgpu.spec.ts" timestamp="2026-06-27T20:16:20.843Z" hostname="chromium" tests="1" failures="0" skipped="1" time="1.209" errors="0">
+<testcase name="production depth model runs on WebGPU" classname="depth-estimation.webgpu.spec.ts" time="1.209">
+<properties>
+<property name="skip" value="WebGPU unavailable: no navigator.gpu">
+</property>
+</properties>
 <skipped>
 </skipped>
 </testcase>

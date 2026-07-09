@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: wasm-renderer.smoke.spec.ts >> WASM renderer initializes successfully
-- Location: tests/wasm-renderer.smoke.spec.ts:113:5
+- Name: wasm-renderer.smoke.spec.ts >> WASM renderer handles shader loading with minimal console errors
+- Location: tests/wasm-renderer.smoke.spec.ts:234:5
 
 # Error details
 
@@ -22,7 +22,7 @@ G@http://localhost:3457/static/js/main.9e0342ba.js:2:201657
 l@http://localhost:3457/static/js/main.9e0342ba.js:2:201919
 getDiagnostics@http://localhost:3457/static/js/main.9e0342ba.js:2:220054
 getDiagnostics@http://localhost:3457/static/js/main.9e0342ba.js:2:269748
-@debugger eval code line 303 > eval:3:343
+@debugger eval code line 303 > eval:3:349
 evaluate@debugger eval code:305:16
 @debugger eval code:1:44
 @debugger eval code:1:62
