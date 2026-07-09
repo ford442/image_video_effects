@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-06T09:40:48.271740",
+  "timestamp": "2026-07-09T08:16:18.593606",
   "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": false,
   "total": 1,
@@ -9,7 +9,7 @@
   "warnings": 0,
   "results": [
     {
-      "file": "public/shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
+      "file": "public/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
