@@ -1,7 +1,14 @@
 {
   "config": {
-    "configFile": "/root/image_video_effects/playwright.config.ts",
-    "rootDir": "/root/image_video_effects/tests",
+    "argv": [
+      "/home/jules/.nvm/versions/node/v22.22.1/bin/node",
+      "/app/node_modules/.bin/playwright",
+      "test",
+      "tests/wasm-renderer.smoke.spec.ts"
+    ],
+    "configFile": "/app/playwright.config.ts",
+    "rootDir": "/app/tests",
+    "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -16,7 +23,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "/root/image_video_effects/test-results",
+        "outputDir": "/app/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -24,7 +31,7 @@
         },
         "id": "chromium",
         "name": "chromium",
-        "testDir": "/root/image_video_effects/tests",
+        "testDir": "/app/tests",
         "testIgnore": [],
         "testMatch": [
           "**/*.spec.ts"
@@ -32,7 +39,7 @@
         "timeout": 30000
       },
       {
-        "outputDir": "/root/image_video_effects/test-results",
+        "outputDir": "/app/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -40,7 +47,7 @@
         },
         "id": "firefox",
         "name": "firefox",
-        "testDir": "/root/image_video_effects/tests",
+        "testDir": "/app/tests",
         "testIgnore": [],
         "testMatch": [
           "**/*.spec.ts"
@@ -77,24 +84,23 @@
       "max": 5,
       "threshold": 300000
     },
-    "runAgents": "none",
     "shard": null,
     "tags": [],
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.58.2",
+    "version": "1.61.1",
     "workers": 1,
     "webServer": null
   },
   "suites": [
     {
-      "title": "depth-estimation.webgpu.spec.ts",
-      "file": "depth-estimation.webgpu.spec.ts",
+      "title": "wasm-renderer.smoke.spec.ts",
+      "file": "wasm-renderer.smoke.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "production depth model runs on WebGPU",
+          "title": "WASM renderer initializes successfully",
           "ok": true,
           "tags": [],
           "tests": [
@@ -103,11 +109,10 @@
               "annotations": [
                 {
                   "type": "skip",
-                  "description": "WebGPU unavailable: no navigator.gpu",
                   "location": {
-                    "file": "/root/image_video_effects/tests/depth-estimation.webgpu.spec.ts",
-                    "line": 82,
-                    "column": 10
+                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                    "line": 115,
+                    "column": 6
                   }
                 }
               ],
@@ -116,30 +121,22 @@
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
                   "status": "skipped",
-                  "duration": 1209,
+                  "duration": 0,
                   "errors": [],
                   "stdout": [],
-                  "stderr": [
-                    {
-                      "buffer": "KG5vZGU6ODcwNTg5KSBXYXJuaW5nOiBUaGUgJ05PX0NPTE9SJyBlbnYgaXMgaWdub3JlZCBkdWUgdG8gdGhlICdGT1JDRV9DT0xPUicgZW52IGJlaW5nIHNldC4KKFVzZSBgbm9kZSAtLXRyYWNlLXdhcm5pbmdzIC4uLmAgdG8gc2hvdyB3aGVyZSB0aGUgd2FybmluZyB3YXMgY3JlYXRlZCkK"
-                    },
-                    {
-                      "buffer": "CiAgdGVzdHMvc21va2UvLmJ1bmRsZS9kZXB0aC13ZWJncHUubWpzICAxLjJtYiDimqDvuI8KCuKaoSBEb25lIGluIDIzMm1zCg=="
-                    }
-                  ],
+                  "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-06-27T20:16:24.885Z",
+                  "startTime": "2026-07-09T10:43:02.748Z",
                   "annotations": [
                     {
                       "type": "skip",
-                      "description": "WebGPU unavailable: no navigator.gpu",
                       "location": {
-                        "file": "/root/image_video_effects/tests/depth-estimation.webgpu.spec.ts",
-                        "line": 82,
-                        "column": 10
+                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                        "line": 115,
+                        "column": 6
                       }
                     }
                   ],
@@ -149,20 +146,488 @@
               "status": "skipped"
             }
           ],
-          "id": "cd06ad0680d75a036715-437f583c56d0f400fd8f",
-          "file": "depth-estimation.webgpu.spec.ts",
-          "line": 67,
-          "column": 5
+          "id": "66856f7efa90714362f5-9c8a0d625a15e7876578",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 115,
+          "column": 6
+        },
+        {
+          "title": "WASM renderer loads single shader without errors",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "location": {
+                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                    "line": 169,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-09T10:43:02.749Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                        "line": 169,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-adbea961028e0087672d",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 169,
+          "column": 6
+        },
+        {
+          "title": "WASM renderer loads multiple shaders (multi-slot stack)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "location": {
+                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                    "line": 200,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-09T10:43:02.749Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                        "line": 200,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-39e147011d4e6f9c7f85",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 200,
+          "column": 6
+        },
+        {
+          "title": "WASM renderer handles shader loading with minimal console errors",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "location": {
+                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                    "line": 236,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-09T10:43:02.749Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                        "line": 236,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-3a1c9af053fb6dfaf8a4",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 236,
+          "column": 6
+        },
+        {
+          "title": "WASM renderer collects performance metrics",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "location": {
+                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                    "line": 278,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-09T10:43:02.749Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                        "line": 278,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-6874ca046f4b09669061",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 278,
+          "column": 6
+        },
+        {
+          "title": "WASM renderer initializes successfully",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "location": {
+                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                    "line": 115,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-09T10:43:02.749Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                        "line": 115,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-b87d96fa7addd36f2259",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 115,
+          "column": 6
+        },
+        {
+          "title": "WASM renderer loads single shader without errors",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "location": {
+                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                    "line": 169,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-09T10:43:02.749Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                        "line": 169,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-ac70f68c0ab765d2f080",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 169,
+          "column": 6
+        },
+        {
+          "title": "WASM renderer loads multiple shaders (multi-slot stack)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "location": {
+                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                    "line": 200,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-09T10:43:02.749Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                        "line": 200,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-3147ed529035051eb9e5",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 200,
+          "column": 6
+        },
+        {
+          "title": "WASM renderer handles shader loading with minimal console errors",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "location": {
+                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                    "line": 236,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-09T10:43:02.750Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                        "line": 236,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-5ee662764b6d2df8208f",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 236,
+          "column": 6
+        },
+        {
+          "title": "WASM renderer collects performance metrics",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [
+                {
+                  "type": "skip",
+                  "location": {
+                    "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                    "line": 278,
+                    "column": 6
+                  }
+                }
+              ],
+              "expectedStatus": "skipped",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-09T10:43:02.750Z",
+                  "annotations": [
+                    {
+                      "type": "skip",
+                      "location": {
+                        "file": "/app/tests/wasm-renderer.smoke.spec.ts",
+                        "line": 278,
+                        "column": 6
+                      }
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-8daf30be7342aefdff73",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 278,
+          "column": 6
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-06-27T20:16:20.250Z",
-    "duration": 9257.901,
+    "startTime": "2026-07-09T10:43:02.478Z",
+    "duration": 273.039,
     "expected": 0,
-    "skipped": 1,
+    "skipped": 10,
     "unexpected": 0,
     "flaky": 0
   }
