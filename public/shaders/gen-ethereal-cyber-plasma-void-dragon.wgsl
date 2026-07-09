@@ -197,10 +197,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rotY = rot2D(-mx);
     let rotX = rot2D(my);
 
-    ro.yz = rotX * ro.yz;
-    rd.yz = rotX * rd.yz;
-    ro.xz = rotY * ro.xz;
-    rd.xz = rotY * rd.xz;
+    let ro_yz = rotX * ro.yz;
+    ro.y = ro_yz.x;
+    ro.z = ro_yz.y;
+    let rd_yz = rotX * rd.yz;
+    rd.y = rd_yz.x;
+    rd.z = rd_yz.y;
+
+    let ro_xz = rotY * ro.xz;
+    ro.x = ro_xz.x;
+    ro.z = ro_xz.y;
+    let rd_xz = rotY * rd.xz;
+    rd.x = rd_xz.x;
+    rd.z = rd_xz.y;
 
     // Raymarching
     var t = 0.0;
