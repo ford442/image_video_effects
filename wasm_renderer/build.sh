@@ -114,6 +114,7 @@ emcc -std=c++20 -O2 \
     -sEXPORTED_FUNCTIONS="${EXPORTED}" \
     -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,HEAPU8,HEAPF32 \
     -sALLOW_MEMORY_GROWTH=1 \
+    -sGROWABLE_ARRAYBUFFERS=0 \
     -sNO_EXIT_RUNTIME=1 \
     -sMODULARIZE=1 \
     -sEXPORT_NAME=PixelocityWASM \

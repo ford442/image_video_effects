@@ -43,7 +43,7 @@ fn noise(p: vec3<f32>) -> f32 {
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
 
-    let n = i.x + i.y * 157.0 + 113.0 * i.z;
+    let n = p.x + p.y * 157.0 + 113.0 * p.z;
     let res = mix(
         mix(mix(fract(sin(n + 0.0) * 43758.5453123),
                 fract(sin(n + 1.0) * 43758.5453123), u.x),
@@ -92,12 +92,23 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return min(a, b) - h * h * k * (1.0 / 4.0);
 }
 
-fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
-    let pa = p - a;
-    let ba = b - a;
-    let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-    return length(pa - ba * h) - r;
-}
+// Main SDF evaluation
+fn map(p: vec3<f32>, time: f32, audio: f32) -> vec4<f32> {
+    // Parameters
+    let plasmaIntensity = u.config.z; // param 0: 1.5 default
+    let undulationSpeed = u.zoom_config.x; // param 1: 1.0 default
+    let segmentDensity = u.zoom_config.y; // param 2: 20.0 default
+    let nebulaDensity = u.zoom_config.z; // param 3: 0.8 default
+
+    // --- Mouse Target ---
+    let pointer = u.zoom_params.xy;
+    let aspect = vec2<f32>(1.0, 1.0);
+    let m = (pointer * 2.0 - vec2<f32>(1.0));
+    let targetPos = vec3<f32>(m.x * 10.0, -m.y * 10.0, -5.0);
+
+    // --- Dragon Body ---
+    var d = 1000.0;
+    var glow = 0.0;
 
 // Environment mapping
 fn map(p: vec3<f32>, time: f32, audio: f32, mouseTarget: vec3<f32>, params: vec4<f32>) -> vec2<f32> {
@@ -241,7 +252,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         total_dist = total_dist + d;
     }
 
-    var col = vec3<f32>(0.0);
+    var final_col = vec3<f32>(0.0);
 
     // Background Nebula (Volumetric FBM)
     let neb_dir = rd;
@@ -289,5 +300,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vig = 1.0 - length(uv) * 0.8;
     col = col * vig;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_col, 1.0));
 }
