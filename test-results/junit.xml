@@ -1,8 +1,82 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="1" errors="0" time="9.257901">
-<testsuite name="depth-estimation.webgpu.spec.ts" timestamp="2026-06-27T20:16:20.843Z" hostname="chromium" tests="1" failures="0" skipped="1" time="1.209" errors="0">
-<testcase name="production depth model runs on WebGPU" classname="depth-estimation.webgpu.spec.ts" time="1.209">
+<testsuites id="" name="" tests="10" failures="0" skipped="10" errors="0" time="0.273039">
+<testsuite name="wasm-renderer.smoke.spec.ts" timestamp="2026-07-09T10:43:02.746Z" hostname="chromium" tests="5" failures="0" skipped="5" time="0" errors="0">
+<testcase name="WASM renderer initializes successfully" classname="wasm-renderer.smoke.spec.ts">
 <properties>
-<property name="skip" value="WebGPU unavailable: no navigator.gpu">
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM renderer loads single shader without errors" classname="wasm-renderer.smoke.spec.ts">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM renderer loads multiple shaders (multi-slot stack)" classname="wasm-renderer.smoke.spec.ts">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM renderer handles shader loading with minimal console errors" classname="wasm-renderer.smoke.spec.ts">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM renderer collects performance metrics" classname="wasm-renderer.smoke.spec.ts">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="wasm-renderer.smoke.spec.ts" timestamp="2026-07-09T10:43:02.746Z" hostname="firefox" tests="5" failures="0" skipped="5" time="0" errors="0">
+<testcase name="WASM renderer initializes successfully" classname="wasm-renderer.smoke.spec.ts">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM renderer loads single shader without errors" classname="wasm-renderer.smoke.spec.ts">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM renderer loads multiple shaders (multi-slot stack)" classname="wasm-renderer.smoke.spec.ts">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM renderer handles shader loading with minimal console errors" classname="wasm-renderer.smoke.spec.ts">
+<properties>
+<property name="skip" value="">
+</property>
+</properties>
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM renderer collects performance metrics" classname="wasm-renderer.smoke.spec.ts">
+<properties>
+<property name="skip" value="">
 </property>
 </properties>
 <skipped>
