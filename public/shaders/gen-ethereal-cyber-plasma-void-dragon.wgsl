@@ -1,7 +1,7 @@
 struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
+    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    zoom_params: vec4<f32>,  // x=Plasma Intensity, y=Dragon Undulation Speed, z=Body Segment Density, w=Nebula Density
     ripples: array<vec4<f32>, 50>,
 };
 
