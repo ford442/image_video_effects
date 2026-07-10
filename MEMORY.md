@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-07-08 (Phase B Advanced Enhancement swarm complete — 48/48 shaders)
+**Last updated:** 2026-07-10 (full project audit + GitHub issue roadmap #912–#933)
 
 ## Core Identity & Vibe (from SOUL + IDENTITY)
 - Spark Engine / Cheerleader: bright, protective, kinetic, loud-hearted. "We are NOT done here!" Fast, punchy, energetic. Use "we/let's", 🔥⚡💥🫡, short lines, "one thing first", "messy start? fine", "this is NOT the final boss".
@@ -37,9 +37,8 @@
 - Use GH issues + Copilot for the C++ work (user has swarm/agent patterns elsewhere).
 
 ## TODOs / Open Threads (from this + recent memory)
-- [ ] **Shader upgrade mission (2026-06-28):** Upgrade batches of Pixelocity WGSL shaders to the immutable 13-binding contract, including standard `Uniforms`, `rgba32float` storage writes, depth/data/audio bindings, 16x16x1 workgroups, aspect-correct UVs, four `updatedParams`, feature metadata, generator validation, and batch commits.
-  - Phase A: 48 shaders validated and queued for Phase B (`swarm-tasks/upgrade-queue-phase-b.json`).
-  - Phase B Advanced Enhancement (2026-07-08): **All 48 shaders completed + validated** (naga + lists + duplicates + tests + build). Plan: `/root/.kimi/plans/adam-warlock-doctor-strange-sentry.md`. Reports in `swarm-tasks/phase-b-*-report.md`.
+- [x] **Shader upgrade mission (2026-06-28):** Phase A + Phase B Advanced Enhancement (2026-07-08): **48/48 completed + validated**. Reports in `swarm-tasks/phase-b-*-report.md`.
+- [x] **2026-07-10 project audit:** Progress check + foundation-first strategy. Created GH issues **#912–#933** (epic #912). Snapshot: 1201 cataloged shaders / 1288 WGSL / 346 thumbs; WASM Tier B complete on glue; App/Controls/renderer.cpp monoliths; TS missing requiredLimits vs C++; double wasm:build; 93 orphan WGSL + 6 missing defs; legacy lists. **Suggested sprint:** #919 → #918 → #917 → #915 → #913/#914 → #920 → product #922/#921. Content parallel: #897 fireworks. Multipass sims #924 after #923.
 - [x] 2026-07-03: Created GH issues for WASM renderer remaining work: umbrella #885 + #886–#890 (recording, forwarding audit, parity, tests/bench, docs/promotion). Expanded #845–#849 with follow-up notes. Updated GAP + STATUS docs. C++ renderer still Tier B experimental; core is solid but integration/recording/parity/tests not fully seamless.
 - [x] Created GH issues 817-823 (2026-06-11) for C++ solidification. All C++-centric, reference #799 + specific source lines.
 - [x] Updated issue bodies 2026-06-14: moved Claude's implementation sketches from comments into structured task sections (Prerequisites, Implementation Instructions, Task Checklist). PR order: #821 → #818+#820 → #817+#819 → #822 → #823.
@@ -48,7 +47,7 @@
 - [x] Bridge sync (#821, 2026-06-16): canonical `wasm_renderer/wasm_bridge.js` synced to `src/wasm/` + validator guard.
 - [x] WASM docs refresh (#823, 2026-06-16): GAP_ANALYSIS, STATUS, README, WASM_*.md — presentation corrected, #817–#822 tracking table, #799 roadmap link.
 - [x] RendererManager WASM forwarding + resync on switch (Phase 1, 2026-06-20).
-- [ ] App-level `setInputSource` everywhere + live edge-GPU verification.
+- [x] App-level `setInputSource` + manager forwarding (July #886–#887). Residual: edge-GPU live verification + promotion evidence (#925).
 - [x] Phase 2 CI/build hygiene (2026-06-27): build.sh fails without emcc; CI artifact pipeline; ARTIFACTS.md
 - [x] 2026-07-04: WASM promotion tracking doc + GAP/STATUS/README refresh (#890). Tier B honest; gates in `WASM_PROMOTION_TRACKING.md`.
 - [x] **Product decision Tier B (2026-06-27):** WASM = experimental opt-in; TS WebGPU = production default. Policy: `WASM_BACKEND_POLICY.md`
