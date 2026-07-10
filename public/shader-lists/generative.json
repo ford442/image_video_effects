@@ -4212,7 +4212,7 @@
   {
     "id": "gen-chrono-kitsune-prism-weaver",
     "name": "Chrono-Kitsune Prism Weaver",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chrono-kitsune-prism-weaver.wgsl",
+    "url": "shaders/gen-chrono-kitsune-prism-weaver.wgsl",
     "category": "generative",
     "description": "A living prismatic kitsune spirit weaving through a chrono-void lattice with deep temporal feedback and audio reactivity.",
     "workgroup_size": [
@@ -6551,7 +6551,7 @@
   },
   {
     "id": "gen-ethereal-chrono-plasma-void-manta",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
+    "url": "shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
     "name": "Ethereal Chrono-Plasma Void-Manta",
     "category": "generative",
     "description": "A majestic, hyper-organic cybernetic space-manta ray gliding through a dark-matter ocean, its translucent biomimetic wings rippling with shifting auroral temporal energy as it consumes deep acoustic bass frequencies.",
@@ -6651,7 +6651,7 @@
     "id": "gen-ethereal-cyber-chrono-nebula-phoenix",
     "name": "Ethereal Cyber-Chrono Nebula-Phoenix",
     "description": "A majestic, hyper-organic cybernetic phoenix rising from a deep-space nebula, its wings woven from liquid auroral plasma and shattered quantum glass that burst into geometric temporal fractals upon acoustic climax.",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-cyber-chrono-nebula-phoenix.wgsl",
+    "url": "shaders/gen-ethereal-cyber-chrono-nebula-phoenix.wgsl",
     "category": "generative",
     "tags": [
       "organic",
@@ -6745,6 +6745,65 @@
     "updated": true,
     "id": "gen-ethereal-cyber-chrono-void-whale",
     "url": "shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
+    "features": []
+  },
+  {
+    "name": "Ethereal Cyber-Plasma Void-Dragon",
+    "category": "generative",
+    "tags": [
+      "dragon",
+      "plasma",
+      "organic",
+      "quantum",
+      "audio-reactive",
+      "cybernetic",
+      "void"
+    ],
+    "description": "A majestic, hyper-dimensional cyber-dragon forged from flowing quantum plasma and crystalline temporal scales, soaring through a massive, slowly collapsing dark-matter nebula while radiating bioluminescent shockwaves synced to heavy acoustic bass drops.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Plasma Intensity",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Dragon Undulation Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Body Segment Density",
+        "default": 20,
+        "min": 10,
+        "max": 40,
+        "step": 1
+      },
+      {
+        "index": 3,
+        "name": "Nebula Density",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-ethereal-cyber-plasma-void-dragon",
+    "url": "shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
     "features": []
   },
   {
@@ -7165,7 +7224,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-audio-symphony",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-audio-symphony.wgsl",
+    "url": "shaders/gen-fireworks-audio-symphony.wgsl",
     "features": []
   },
   {
@@ -7229,7 +7288,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-chrysanthemum",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-chrysanthemum.wgsl",
+    "url": "shaders/gen-fireworks-chrysanthemum.wgsl",
     "features": []
   },
   {
@@ -7290,7 +7349,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-comet-trail",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-comet-trail.wgsl",
+    "url": "shaders/gen-fireworks-comet-trail.wgsl",
     "features": []
   },
   {
@@ -7352,7 +7411,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-crackle-palm",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-crackle-palm.wgsl",
+    "url": "shaders/gen-fireworks-crackle-palm.wgsl",
     "features": []
   },
   {
@@ -7412,7 +7471,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-crossette",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-crossette.wgsl",
+    "url": "shaders/gen-fireworks-crossette.wgsl",
     "features": []
   },
   {
@@ -7473,7 +7532,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-fan-shell",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-fan-shell.wgsl",
+    "url": "shaders/gen-fireworks-fan-shell.wgsl",
     "features": []
   },
   {
@@ -7534,7 +7593,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-horse-tail",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-horse-tail.wgsl",
+    "url": "shaders/gen-fireworks-horse-tail.wgsl",
     "features": []
   },
   {
@@ -7595,7 +7654,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-kamuro-gold",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-kamuro-gold.wgsl",
+    "url": "shaders/gen-fireworks-kamuro-gold.wgsl",
     "features": []
   },
   {
@@ -7659,7 +7718,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-nocturne",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-nocturne.wgsl",
+    "url": "shaders/gen-fireworks-nocturne.wgsl",
     "features": []
   },
   {
@@ -7720,7 +7779,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-ring-shell",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-ring-shell.wgsl",
+    "url": "shaders/gen-fireworks-ring-shell.wgsl",
     "features": []
   },
   {
@@ -7780,7 +7839,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-roman-candle",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-roman-candle.wgsl",
+    "url": "shaders/gen-fireworks-roman-candle.wgsl",
     "features": []
   },
   {
@@ -7844,7 +7903,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-smoke-bloom",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-smoke-bloom.wgsl",
+    "url": "shaders/gen-fireworks-smoke-bloom.wgsl",
     "features": []
   },
   {
@@ -7906,7 +7965,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-strobe-shell",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-strobe-shell.wgsl",
+    "url": "shaders/gen-fireworks-strobe-shell.wgsl",
     "features": []
   },
   {
@@ -7970,7 +8029,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-willow-cascade",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-willow-cascade.wgsl",
+    "url": "shaders/gen-fireworks-willow-cascade.wgsl",
     "features": []
   },
   {
@@ -8033,7 +8092,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-fireworks-wind-ripple",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-wind-ripple.wgsl",
+    "url": "shaders/gen-fireworks-wind-ripple.wgsl",
     "features": []
   },
   {
@@ -9961,7 +10020,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-image-pixel-detonation",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-image-pixel-detonation.wgsl",
+    "url": "shaders/gen-image-pixel-detonation.wgsl",
     "features": []
   },
   {
@@ -10024,7 +10083,7 @@
     "supportsDof": false,
     "updated": true,
     "id": "gen-image-pyro",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-image-pyro.wgsl",
+    "url": "shaders/gen-image-pyro.wgsl",
     "features": []
   },
   {
@@ -14384,7 +14443,7 @@
     "name": "Prismatic Cyber-Aurora Astral-Dragonfly",
     "description": "A majestic, hyper-organic biomechanical dragonfly forged from liquid auroral plasma and shattered chromatic crystal.",
     "category": "generative",
-    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
+    "url": "shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
     "uniforms": [
       {
         "name": "Wingspan",
