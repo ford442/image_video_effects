@@ -925,6 +925,13 @@
       "added": "2026-07-07T15:21:35.078095",
       "status": "completed",
       "completed_at": "2026-07-09T10:19:11.342685+00:00"
+    },
+    {
+      "filename": "2026-07-10_luminescent-quantum-void-astral-turtle.md",
+      "title": "Luminescent Quantum-Void Astral-Turtle",
+      "added": "2026-07-10T15:15:18.904449",
+      "completed_at": "2026-07-11T07:55:47.993769+00:00",
+      "status": "completed"
     }
   ],
   "rejected": [],
@@ -1219,11 +1226,6 @@
       "filename": "2026-07-09_sentient-quantum-resonance-astral-jellyfish.md",
       "title": "Sentient Quantum-Resonance Astral-Jellyfish",
       "added": "2026-07-09T15:27:35.213119"
-    },
-    {
-      "filename": "2026-07-10_luminescent-quantum-void-astral-turtle.md",
-      "title": "Luminescent Quantum-Void Astral-Turtle",
-      "added": "2026-07-10T15:15:18.904449"
     }
   ],
   "in_progress": null
