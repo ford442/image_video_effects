@@ -528,9 +528,7 @@ export function getSlotState(slotIndex) {
   };
 }
 
-/** CPU wall-clock render timings from the last frame.
- *  `available` is false because emdawn/Dawn in WASM does not expose GPU timestamp
- *  queries yet; parallel/chained/total are still valid per-frame wall-clock ms. */
+/** Render timings from the last frame (GPU timestamp queries when supported). */
 export function getGPUTimings() {
   if (!state.initialized || !wasmModule) {
     return { parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable' };
@@ -544,7 +542,9 @@ export function getGPUTimings() {
     const chainedTime = wasmModule.getValue(ptr + 4, 'float');
     const totalTime = wasmModule.getValue(ptr + 8, 'float');
     const available = wasmModule.getValue(ptr + 12, 'i32') === 1;
-    const timingSource = totalTime > 0 || parallelTime > 0 || chainedTime > 0 ? 'wall-clock' : 'unavailable';
+    const timingSource = available
+      ? 'gpu-timestamp'
+      : (totalTime > 0 || parallelTime > 0 || chainedTime > 0 ? 'wall-clock' : 'unavailable');
     return { parallelTime, chainedTime, totalTime, available, timingSource };
   } finally {
     wasmModule._free(ptr);

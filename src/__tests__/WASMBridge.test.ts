@@ -159,6 +159,20 @@ describe('WASMBridge API surface', () => {
     }));
   });
 
+  it('getGPUTimings() returns gpu-timestamp when C++ reports available', () => {
+    b.getGPUTimings.mockReturnValueOnce({
+      parallelTime: 2.5,
+      chainedTime: 4.1,
+      totalTime: 8.2,
+      available: true,
+      timingSource: 'gpu-timestamp',
+    });
+    const timings = b.getGPUTimings();
+    expect(timings.available).toBe(true);
+    expect(timings.timingSource).toBe('gpu-timestamp');
+    expect(timings.totalTime).toBeGreaterThan(0);
+  });
+
   it('startRecording() returns a Promise', () => {
     expect(b.startRecording(document.createElement('canvas'))).toEqual(expect.objectContaining({ then: expect.any(Function) }));
   });

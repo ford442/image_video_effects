@@ -275,7 +275,7 @@ This repository is the **Pixelocity / WebGPU Shader Effects** app (Create React 
 - **Dev server:** `npm start` (CRA on port 3000). The `prestart` step regenerates `public/shader-lists/*.json` (with a hard-coded `--base-url=https://test.1ink.us/...`) and the unified manifest; this runs automatically. Use `BROWSER=none` to avoid CRA trying to open a browser.
 - **Unit tests:** `npx react-scripts test --watchAll=false --ci` (Jest; ~125 tests, all pass). `npm test` works too.
 - **Lint:** `npx eslint src --ext .ts,.tsx`. NOTE: lint is **non-gating** — CI runs it with `|| true`, and there are pre-existing eslint errors/warnings in test/component files. Don't treat a non-zero eslint exit as a setup failure.
-- **Build:** `npm run build` (CRA production build + `wasm:build`). Succeeds here.
+- **Build:** `npm run build` runs `wasm:build` once in `prebuild`, then CRA; CI `wasm` job compiles separately. Use `SKIP_WASM_BUILD=1 npm run build` without emcc.
 
 ### Hard environment limitations in the Cloud VM (these are NOT bugs you introduced)
 - **No GPU adapter / WebGPU unavailable.** The headless VM has no Vulkan ICD, so `navigator.gpu.requestAdapter()` returns null and the app logs `webgpu.unavailable: No suitable GPU adapter found`. The app falls back to Canvas2D/JS renderer. This means **GPU shader effects cannot be visually exercised here** — the canvas renders black (a live debug overlay still updates fps + mouse coords). Validate shader/renderer code via the unit tests and the build instead, not by looking at the canvas.

@@ -1,4 +1,4 @@
-import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
+import { IRenderer, RendererConfig, ShaderSlotRenderer, GPUTimings, WASMDiagnostics } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
 import { InputSource } from './types';
@@ -9,30 +9,9 @@ type SlotMode = 'chained' | 'parallel';
 /** FFT bins mirrored in extraBuffer[5..132] (matches TS WebGPURenderer). */
 const AUDIO_FFT_BINS = 128;
 
-/**
- * Diagnostic information from the WASM renderer.
- */
-export interface WASMDiagnostics {
-  initialized: boolean;
-  initAttempts: number;
-  errorCount: number;
-  lastErrorTime: string | null;
-  fps: number;
-  hasModule: boolean;
-  adapterInfo: string;
-  /** WebGPURenderer::InitStage of the last Initialize() attempt (0=None, 8=Ready). */
-  failedStage: number;
-  /** Human-readable reason for the last Initialize() failure, or '' if none. */
-  lastInitError: string;
-  /** InitStage name from C++ (e.g. 'Device', 'Surface'). */
-  failedStageName: string;
-  /** Bridge-layer load/init failures (from wasm_bridge.js getDiagnostics). */
-  loadErrorCount: number;
-  lastLoadError: string | null;
-  initTime: string;
-}
+export type { WASMDiagnostics } from './Renderer';
 
-export class WASMRenderer implements Renderer, ShaderSlotRenderer {
+export class WASMRenderer implements IRenderer, ShaderSlotRenderer {
   private config: RendererConfig;
   private video: HTMLVideoElement | null = null;
   private animationId: number | null = null;
@@ -265,6 +244,10 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
 
   setVideo(video: HTMLVideoElement): void {
     this.video = video;
+  }
+
+  getVideo(): HTMLVideoElement | null {
+    return this.video;
   }
 
   updateVideoFrame(): void {

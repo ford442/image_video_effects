@@ -1,6 +1,5 @@
-import { Renderer, RendererConfig, ShaderSlotRenderer, SlotZoomParamsUpdate, GPUTimings } from './Renderer';
+import { IRenderer, RendererConfig, ShaderSlotRenderer, SlotZoomParamsUpdate, GPUTimings, WASMDiagnostics, WebGPUDiagnostics } from './Renderer';
 import { JSRenderer } from './JSRenderer';
-import { WASMDiagnostics } from './WASMRenderer';
 import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
@@ -17,7 +16,7 @@ export interface RendererDiagnostics {
   metrics: RendererMetrics;
   timestamp: string;
   wasm?: WASMDiagnostics;
-  webgpu?: Record<string, any>;
+  webgpu?: WebGPUDiagnostics;
 }
 
 /** Supported renderer backend identifiers. */
@@ -47,7 +46,7 @@ export function getRendererTypeFromURL(): RendererType | null {
 }
 
 export class RendererManager {
-  private currentRenderer: Renderer | null = null;
+  private currentRenderer: IRenderer | null = null;
   // Retained even when switchRenderer('wasm') fails and falls back, so
   // getDiagnostics().wasm can still surface *why* WASM init failed
   // (e.g. surface-creation/adapter-limits errors recorded in adapterInfo).
@@ -111,11 +110,11 @@ export class RendererManager {
     if (!this.canvas) return false;
 
     // Preserve video reference across renderer switches
-    const video = (this.currentRenderer as { video?: HTMLVideoElement } | null)?.video;
+    const video = this.currentRenderer?.getVideo?.() ?? null;
 
     // Destroy the old renderer only after the new one is ready, so we don't
     // leave the app without a renderer if initialization fails.
-    let renderer: Renderer;
+    let renderer: IRenderer;
     if (type === 'webgpu') {
       renderer = new WebGPURenderer(this.config);
     } else if (type === 'wasm') {
@@ -192,16 +191,16 @@ export class RendererManager {
   }
 
   /** Returns the shader-capable backend, or null for Canvas2D fallback. */
-  private getShaderBackend(): ShaderSlotRenderer | null {
+  private getShaderBackend(): (IRenderer & ShaderSlotRenderer) | null {
     const r = this.currentRenderer;
     if (!r || r instanceof JSRenderer) return null;
-    const candidate = r as ShaderSlotRenderer;
+    const slotRenderer = r as IRenderer & ShaderSlotRenderer;
     if (
-      typeof candidate.loadShader === 'function' &&
-      typeof candidate.setSlotShader === 'function' &&
-      typeof candidate.updateSlotParams === 'function'
+      typeof slotRenderer.loadShader === 'function' &&
+      typeof slotRenderer.setSlotShader === 'function' &&
+      typeof slotRenderer.updateSlotParams === 'function'
     ) {
-      return candidate;
+      return slotRenderer;
     }
     return null;
   }
@@ -339,8 +338,7 @@ export class RendererManager {
 
   /** Returns the active input source when the backend exposes it. */
   getInputSource(): InputSource | null {
-    const r = this.currentRenderer as { getInputSource?: () => InputSource } | null;
-    return r?.getInputSource?.() ?? null;
+    return this.currentRenderer?.getInputSource?.() ?? null;
   }
 
   addRipple(x: number, y: number): void {
@@ -358,10 +356,7 @@ export class RendererManager {
 
   /** Load an image by URL into the active renderer's read texture. */
   async loadImage(url: string): Promise<string> {
-    const r = this.currentRenderer as {
-      loadImage?: (url: string) => Promise<string>;
-      loadImageFromURL?: (url: string) => Promise<void>;
-    } | null;
+    const r = this.currentRenderer;
     if (!r) return url;
     if (r.loadImage) {
       return r.loadImage(url);
@@ -380,8 +375,7 @@ export class RendererManager {
 
 
   getAvailableModes(): ShaderEntry[] {
-    const r = this.currentRenderer as { getAvailableModes?: () => ShaderEntry[] } | null;
-    return r?.getAvailableModes?.() ?? [];
+    return this.currentRenderer?.getAvailableModes?.() ?? [];
   }
 
   /** Forward a list of image URLs to the active renderer (e.g. for slideshow mode). */
@@ -419,9 +413,7 @@ export class RendererManager {
 
   /** Plasma drag impulse (WebGPU-only when implemented; otherwise falls back to ripple). */
   firePlasma(x: number, y: number, vx: number, vy: number): void {
-    const r = this.currentRenderer as {
-      firePlasma?: (x: number, y: number, vx: number, vy: number) => void;
-    } | null;
+    const r = this.currentRenderer;
     if (r?.firePlasma) {
       r.firePlasma(x, y, vx, vy);
       return;
@@ -448,10 +440,7 @@ export class RendererManager {
     mid?: number;
     treble?: number;
   }): void {
-    const r = this.currentRenderer as {
-      applyTestRenderState?: (s: typeof state) => void;
-    } | null;
-    r?.applyTestRenderState?.(state);
+    this.currentRenderer?.applyTestRenderState?.(state);
   }
 
   getFrameImage(): string {
@@ -460,7 +449,7 @@ export class RendererManager {
 
   /** Capture current frame from the active renderer (WASM readback or canvas fallback). */
   async refreshFrameImage(): Promise<string> {
-    const r = this.currentRenderer as { refreshFrameImage?: () => Promise<string> } | null;
+    const r = this.currentRenderer;
     if (r?.refreshFrameImage) {
       return r.refreshFrameImage();
     }
@@ -472,7 +461,7 @@ export class RendererManager {
 
   /** Download a PNG screenshot (GPU readback on WASM, canvas fallback otherwise). */
   async takeScreenshot(filename = 'screenshot.png'): Promise<void> {
-    const r = this.currentRenderer as { takeScreenshot?: (f?: string) => Promise<void> } | null;
+    const r = this.currentRenderer;
     if (r?.takeScreenshot) {
       return r.takeScreenshot(filename);
     }
@@ -509,12 +498,7 @@ export class RendererManager {
     canvas: HTMLCanvasElement,
     options?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number }
   ): Promise<Blob> {
-    const r = this.currentRenderer as {
-      startRecording?: (
-        c: HTMLCanvasElement,
-        o?: { durationMs?: number; frameRate?: number; videoBitsPerSecond?: number }
-      ) => Promise<Blob>;
-    } | null;
+    const r = this.currentRenderer;
     if (r?.startRecording) {
       return r.startRecording(canvas, options);
     }
@@ -523,8 +507,7 @@ export class RendererManager {
 
   /** Stop an in-progress renderer recording (WASM readback path). */
   stopRendererRecording(): void {
-    const r = this.currentRenderer as { stopRecording?: () => void } | null;
-    r?.stopRecording?.();
+    this.currentRenderer?.stopRecording?.();
   }
 
   getMetrics(): RendererMetrics {
@@ -557,25 +540,28 @@ export class RendererManager {
       timestamp: new Date().toISOString(),
     };
 
-    const active = this.currentRenderer as {
-      getDiagnostics?: () => WASMDiagnostics;
-      initialized?: boolean;
-      getFPS?: () => number;
-    } | null;
+    const active = this.currentRenderer;
 
     if (this.metrics.isWASM && active?.getDiagnostics) {
+      const wasmDiag = active.getDiagnostics();
       return {
         ...baseDiagnostics,
-        wasm: active.getDiagnostics(),
+        wasm: wasmDiag as WASMDiagnostics,
       };
     }
 
     if (this.getShaderBackend() && !this.metrics.isWASM && active) {
+      const webgpuDiag = active.getDiagnostics?.() as WebGPUDiagnostics | undefined;
       return {
         ...baseDiagnostics,
         webgpu: {
-          initialized: active.initialized ?? false,
-          fps: active.getFPS?.() ?? 0,
+          initialized: webgpuDiag?.initialized ?? false,
+          lastInitError: webgpuDiag?.lastInitError ?? '',
+          adapterSummary: webgpuDiag?.adapterSummary ?? '',
+          adapterAttemptLabel: webgpuDiag?.adapterAttemptLabel ?? null,
+          supportsDeepWorkgroup: webgpuDiag?.supportsDeepWorkgroup ?? false,
+          supportsSubgroups: webgpuDiag?.supportsSubgroups ?? false,
+          fps: active.getFPS?.() ?? webgpuDiag?.fps ?? 0,
         },
         ...(this.lastFailedWasmRenderer
           ? { wasm: this.lastFailedWasmRenderer.getDiagnostics() }
@@ -610,10 +596,7 @@ export class RendererManager {
 
   /** Get audio analysis data from the active renderer when supported. */
   getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } | null {
-    const r = this.currentRenderer as {
-      getAudioData?: () => { bass: number; mid: number; treble: number; freqBins: Float32Array };
-    } | null;
-    return r?.getAudioData?.() ?? null;
+    return this.currentRenderer?.getAudioData?.() ?? null;
   }
 
   isRecording(): boolean {

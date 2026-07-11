@@ -102,14 +102,44 @@ _free"
 # into per-TU compile invocations and recent Emscripten rejects the resulting
 # USE_WEBGPU state with "invalid command line setting `-sUSE_WEBGPU=1`".
 #
+# Module layout (see wasm_renderer/README.md):
+#   renderer.cpp      — lifecycle facade (Initialize/Shutdown, slot API, params)
+#   device.cpp        — instance/adapter/device/limits/surface/present
+#   resources.cpp     — textures, buffers, samplers, resize
+#   pipeline.cpp      — shaders, compute/blit pipelines, bind groups
+#   frame.cpp         — multi-slot Render(), capture readback
+#   audio_depth.cpp   — image/video upload, depth map, audio bins
+#   wasm_internal.cpp — shared helpers (limits check, workgroup parse)
+#
+# Compile flags review (2026-07):
+#   -sASYNCIFY          — required for wgpuInstanceWaitAny (adapter/device callbacks).
+#                        Adds binary size + async transform cost; do not remove unless
+#                        emdawn moves to fully synchronous request APIs.
+#   -O2                 — default; -O3 trades ~5-10% size for marginal shader perf.
+#                        Benchmark before switching on priority shaders.
+#   -sALLOW_MEMORY_GROWTH — needed for 2048² rgba32f ping-pong stacks + staging.
+#                        Optional tuning: -sINITIAL_MEMORY=67108864 (64 MiB) to reduce
+#                        early reallocations on large canvases.
+#   compatibleSurface=nullptr in device.cpp — intentional; see device.cpp comment.
+#
 # Source files are referenced by absolute path so this script can be run from
 # any CWD (e.g. /content/build_space/) without accidentally picking up stale
 # copies that still use the old WebGPU C++ API or html5_webgpu.h.
 echo "=== Compiling + linking ==="
+SOURCES=(
+    "$SCRIPT_DIR/main.cpp"
+    "$SCRIPT_DIR/renderer.cpp"
+    "$SCRIPT_DIR/device.cpp"
+    "$SCRIPT_DIR/resources.cpp"
+    "$SCRIPT_DIR/pipeline.cpp"
+    "$SCRIPT_DIR/frame.cpp"
+    "$SCRIPT_DIR/timing.cpp"
+    "$SCRIPT_DIR/audio_depth.cpp"
+    "$SCRIPT_DIR/wasm_internal.cpp"
+)
 emcc -std=c++20 -O2 \
     --use-port=emdawnwebgpu \
-    "$SCRIPT_DIR/main.cpp" \
-    "$SCRIPT_DIR/renderer.cpp" \
+    "${SOURCES[@]}" \
     "-I$SCRIPT_DIR" \
     -sEXPORTED_FUNCTIONS="${EXPORTED}" \
     -sEXPORTED_RUNTIME_METHODS=ccall,cwrap,getValue,setValue,UTF8ToString,stringToUTF8,HEAPU8,HEAPF32 \
