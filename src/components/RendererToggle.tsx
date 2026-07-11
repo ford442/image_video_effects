@@ -1,5 +1,9 @@
 import React, { useState, useCallback } from 'react';
 
+/**
+ * @deprecated Canvas overlay FPS toggle — production Controls use `RendererSwitcher`
+ * via `RendererBackendPanel`. Kept for App canvas HUD and LiveStudioTab.
+ */
 interface RendererToggleProps {
   isWASM: boolean;
   onToggle: (useWasm: boolean) => Promise<void>;
