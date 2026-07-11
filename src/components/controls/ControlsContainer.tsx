@@ -967,6 +967,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                             onApplyPack={(chain: SharedChain) => onApplySharedChain(chain)}
                         />
                     )}
+                    {/* TODO(wire): mount CommunityGallery once #936/#938 land */}
 
                     {remixOpen && remixCatalog && (
                         <VariationGrid
