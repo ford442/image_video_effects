@@ -11385,6 +11385,63 @@
     "features": []
   },
   {
+    "name": "Luminescent Quantum-Void Astral-Turtle",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "quantum",
+      "cosmic",
+      "animal",
+      "volumetric"
+    ],
+    "description": "A hyper-organic, glowing biomechanical space-turtle drifting through a volumetric quantum nebula, its shell woven from shattered chromatic crystal and liquid-plasma that intensely reacts to deep bass frequencies.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fractal Detail",
+        "default": 3,
+        "min": 1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Plasma Glow",
+        "default": 1.5,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Void Density",
+        "default": 0.8,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 3,
+        "name": "Acoustic Reactivity",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      }
+    ],
+    "supportsDepth": false,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-luminescent-quantum-void-astral-turtle",
+    "url": "shaders/gen-luminescent-quantum-void-astral-turtle.wgsl",
+    "features": []
+  },
+  {
     "name": "Luminous Cauldron",
     "category": "generative",
     "tags": [
