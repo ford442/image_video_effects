@@ -166,3 +166,12 @@ Tracking table:
 - **Skip (explicit)**: `SKIP_WASM_BUILD=1` for machines without emsdk using committed artifacts
 - **Artifact layout**: [`wasm_renderer/ARTIFACTS.md`](./wasm_renderer/ARTIFACTS.md)
 - **Roadmap**: See [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) and [#799 roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584)
+
+### Known Workarounds
+
+#### TextDecoder and Resizable ArrayBuffers
+When compiling with recent Emscripten versions and enabling WebGPU (or certain `emcc` memory flags), the WebAssembly heap may be backed by a resizable `ArrayBuffer`.
+Certain browser implementations of `TextDecoder.decode()` throw a `TypeError` if provided a view into a resizable `ArrayBuffer`. This causes an initialization failure in the JS glue code (specifically within Emscripten's `UTF8ToString` or `UTF8ArrayToString`).
+
+**Solution:**
+The `wasm_renderer/build.sh` script explicitly includes `-sGROWABLE_ARRAYBUFFERS=0` while preserving `-sALLOW_MEMORY_GROWTH=1`. This prevents the memory's underlying ArrayBuffer from being marked resizable, completely bypassing the browser's `TextDecoder` exceptions without requiring runtime JS monkey-patches.
