@@ -3,26 +3,44 @@
 A high-performance C++ WebGPU rendering backend using Emscripten and Dawn/emdawnwebgpu.
 Provides an alternative to the JavaScript WebGPU renderer with potential performance benefits.
 
-## Current Status
+## Current Status (July 2026)
 
-✅ **Core Implementation Complete** (compute + present pipeline)
-- WebGPU device initialization
-- Universal bind group layout (matches all 587+ shaders)
-- Texture management (ping-pong, depth, data A/B/C)
-- Uniform buffer management
-- Shader loading and pipeline caching
-- Ping-pong texture copying for feedback effects
-- Surface/render pass integration (`PresentToSurface`, see `renderer.cpp`)
-- Image loading from JS
-- TypeScript integration
+**Tier B — experimental opt-in.** TypeScript WebGPU is the production default.
 
-⚠️ **Reliability caveats (June 2026)** — see
-[Current known reliability caveats](#current-known-reliability-caveats-june-2026).
-The compute + present pipeline is implemented; init/format/limits handshake
-was hardened in #817–#822. Remaining gaps are integration glue and live-browser
-verification, not missing presentation code.
+| Area | Status |
+|------|--------|
+| Compute + present pipeline | ✅ Implemented |
+| Init/format/limits (#817–#822) | ✅ Closed |
+| Integration glue (#886–#887) | ✅ In tree |
+| Playwright + benchmarks (#889) | ✅ See `WASM_TEST_SUITE.md` |
+| Promotion to Tier A | ⬜ Open — [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md) |
+
+Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md)
+
+⚠️ **Do not describe WASM as production-ready** until promotion gates pass.
 
 ## Architecture
+
+### Source file map (modular layout, July 2026)
+
+| File | Responsibility |
+|------|----------------|
+| `main.cpp` | `EMSCRIPTEN_KEEPALIVE` exports, render loop glue |
+| `renderer.h` | `WebGPURenderer` class declaration, RAII handles, types |
+| `renderer.cpp` | Lifecycle facade: `Initialize`/`Shutdown`, slot API, mouse/zoom/ripples |
+| `device.cpp` | Instance/adapter/device ladder, limits, surface, `PresentToSurface` |
+| `resources.cpp` | Textures, buffers, samplers, `ResizeCanvas` / `RecreateTextures` |
+| `pipeline.cpp` | Shader load/reload, compute + blit pipelines, bind groups |
+| `frame.cpp` | Multi-slot `Render()`, uniforms flush, async frame capture |
+| `timing.cpp` | GPU timestamp queries + `getGPUTimings` resolve/readback |
+| `audio_depth.cpp` | Image/video upload, depth map, audio FFT bins |
+| `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
+| `wasm_bridge.js` | JS bridge (canonical; copied to `public/wasm/` + `src/wasm/`) |
+| `build.sh` | **Canonical build** — single-pass `emcc` + emdawnwebgpu |
+| `CMakeLists.txt` | Optional IDE/fallback build (link-time port only) |
+
+Cross-reference: TypeScript device policy lives in `src/renderer/webgpuDevicePolicy.ts`
+(must stay in sync with `device.cpp` `CreateDevice()` limits table).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -115,12 +133,28 @@ struct Uniforms {
 
 ### Build
 
+**Canonical path:** `build.sh` (single-pass `emcc`). CMake is optional/IDE-only.
+
 ```bash
 cd wasm_renderer
 ./build.sh
 ```
 
-Or manually:
+`SKIP_WASM_BUILD=1` skips when `emcc` is missing (uses committed `public/wasm/` artifacts).
+
+#### Compile flags (reviewed July 2026)
+
+| Flag | Rationale |
+|------|-----------|
+| `-sASYNCIFY` | Required for `wgpuInstanceWaitAny` during adapter/device request callbacks. Adds size cost; keep until emdawn offers sync path. |
+| `-O2` | Default balance; evaluate `-O3` per-shader if profiling shows benefit. |
+| `-sALLOW_MEMORY_GROWTH=1` | Large 2048² rgba32f texture stacks; optional `-sINITIAL_MEMORY=67108864` reduces early growth. |
+| `-sMODULARIZE=1` | `PixelocityWASM` factory for `wasm_bridge.js` |
+| `compatibleSurface=nullptr` | Surface created post-device via `importJsSurface` — see `device.cpp` |
+
+Bridge copy + `scripts/validate_wasm_artifacts.js` remain the source-of-truth guards after build.
+
+Or manually (CMake fallback — may be fragile with two-step emdawn):
 
 ```bash
 cd wasm_renderer
@@ -342,17 +376,14 @@ hardened the init/format/limits handshake:
 | [#819](https://github.com/ford442/image_video_effects/issues/819) | ✅ | Explicit `requiredLimits` + early validation |
 | [#822](https://github.com/ford442/image_video_effects/issues/822) | ✅ | Unified init errors, RAII cleanup, `getLastInitErrorStage`/`Message` → JS |
 
-**Still open (not #817–#822):**
+**July 2026 — integration + tests closed in tree (#886–#889). Still open for Tier A promotion:**
 
-- `RendererManager` does not forward slot/param changes to WASM
-- App never calls `setInputSource` — generative mode unreachable for WASM
-- `build.sh` fails without `emcc` unless `SKIP_WASM_BUILD=1` (see [`ARTIFACTS.md`](./ARTIFACTS.md))
-- Live-browser smoke on edge GPUs not yet formally verified
+- Promotion gates — [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md)
+- Edge-GPU manual verification
+- Visual pixel-diff automation
+- `build.sh` requires `emcc` unless `SKIP_WASM_BUILD=1` (see [`ARTIFACTS.md`](./ARTIFACTS.md))
 
-Full tracking:
-[C++ Solidification Tracking](../WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06)
-in `WASM_RENDERER_GAP_ANALYSIS.md`. PR sequence and status:
-[`STATUS.md`](STATUS.md#remaining-work--reliability-june-2026).
+Full tracking: [`WASM_RENDERER_GAP_ANALYSIS.md`](../WASM_RENDERER_GAP_ANALYSIS.md) · [`STATUS.md`](./STATUS.md)
 
 ## Roadmap
 

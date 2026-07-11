@@ -28,10 +28,17 @@
  *  13  texture_2d_array<f32> historyTexture  (HISTORY_DEPTH=8 past frames; opt-in)
  */
 
-import { Renderer, RendererConfig, ShaderSlotRenderer } from './Renderer';
+import { IRenderer, RendererConfig, ShaderSlotRenderer, GPUTimings, WebGPUDiagnostics } from './Renderer';
 import { resolveMultipassChain } from './multipassRegistry';
 import { createUniformBufferView, UniformBufferView, Ripple, UNIFORM_FLOATS, MAX_RIPPLES } from './UniformBuffer';
 import { reportError, getBrowserWarning } from './ErrorHandling';
+import {
+  assertAdapterMeetsContract,
+  buildRequiredLimits,
+  formatAdapterLimitsSummary,
+  logAdapterFeatures,
+  requestAdapterWithFallback,
+} from './webgpuDevicePolicy';
 import { compileShader } from './ShaderCompilation';
 import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, VIDEO_COPY_WGSL } from './ShaderTemplates';
 import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
@@ -113,7 +120,7 @@ interface ShaderSlot {
 
 // ── Renderer class ───────────────────────────────────────────────────────────
 
-export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
+export class WebGPURenderer implements IRenderer, ShaderSlotRenderer {
 
   // WebGPU core
   private device: GPUDevice | null = null;
@@ -240,10 +247,28 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   // True on Apple M1/M2/M3, NVIDIA RTX, AMD RDNA2+; false on Intel UHD / older mobile
   private supportsDeepWorkgroup: boolean = false;
 
+  // Init diagnostics (mirrors WASM adapterSummary / lastError_)
+  private lastInitError: string = '';
+  private adapterSummary: string = '';
+  private adapterAttemptLabel: string | null = null;
+
   constructor(private config: RendererConfig) {}
 
   /** Returns true if the GPU supports 1024-invocation workgroups (16×16×4). */
   getSupportsDeepWorkgroup(): boolean { return this.supportsDeepWorkgroup; }
+
+  /** Diagnostic snapshot for RendererManager / debugging. */
+  getDiagnostics(): WebGPUDiagnostics {
+    return {
+      initialized: this.initialized,
+      lastInitError: this.lastInitError,
+      adapterSummary: this.adapterSummary,
+      adapterAttemptLabel: this.adapterAttemptLabel,
+      supportsDeepWorkgroup: this.supportsDeepWorkgroup,
+      supportsSubgroups: this.supportsSubgroups,
+      fps: this.fps,
+    };
+  }
 
   // ── Initialisation ─────────────────────────────────────────────────────────
 
@@ -266,17 +291,44 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       return false;
     }
 
-    const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+    const maxCanvasDim = Math.max(
+      canvas.width || this.config.width,
+      canvas.height || this.config.height,
+      1,
+    );
+    const { adapter, attemptLabel } = await requestAdapterWithFallback(navigator.gpu);
+    this.adapterAttemptLabel = attemptLabel;
+
     if (!adapter) {
+      const message =
+        'Failed to obtain a WebGPU adapter after all fallback attempts ' +
+        '(HighPerformance/Undefined/LowPower/forceFallbackAdapter).';
+      this.lastInitError = message;
       reportError({
         type: 'webgpu-unavailable',
-        message: 'No suitable GPU adapter found. Your device may not support WebGPU.',
-        recoverable: false
+        message,
+        recoverable: false,
       });
-      
-      console.warn('[WebGPU] No GPU adapter found');
+      console.warn('[WebGPU]', message);
       return false;
     }
+
+    logAdapterFeatures(adapter);
+
+    const contract = assertAdapterMeetsContract(adapter, { maxCanvasDim });
+    if (!contract.ok) {
+      this.lastInitError = contract.message;
+      this.adapterSummary = `INSUFFICIENT adapter limits — ${contract.failures.join('; ')}`;
+      reportError({
+        type: 'webgpu-unavailable',
+        message: `${contract.message} (${contract.failures.join('; ')})`,
+        recoverable: false,
+      });
+      console.warn('[WebGPU] Adapter limits insufficient:', contract.failures);
+      return false;
+    }
+
+    this.adapterSummary = `Adapter attempt=${attemptLabel ?? 'unknown'} | limits: ${formatAdapterLimitsSummary(adapter)} (sufficient)`;
 
     // Request float32-filterable when available so shaders can use
     // textureSample() with a linear sampler on rgba32float textures.
@@ -298,14 +350,34 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       wantFeatures.push(subgroupFeatureName);
     }
 
+    const requiredLimits = buildRequiredLimits(maxCanvasDim);
+
     try {
       this.device = await adapter.requestDevice({
         label: 'PixelocityDevice',
         requiredFeatures: wantFeatures,
+        requiredLimits,
       });
     } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      this.lastInitError = `requestDevice failed: ${message}`;
+      reportError({
+        type: 'webgpu-unavailable',
+        message: this.lastInitError,
+        recoverable: false,
+      });
       console.warn('[WebGPU] requestDevice failed:', e);
       return false;
+    }
+
+    if (this.device.limits) {
+      const dl = this.device.limits;
+      this.adapterSummary += ` | device: maxTex2D=${dl.maxTextureDimension2D} computeInvocations=${dl.maxComputeInvocationsPerWorkgroup}`;
+      console.log(
+        '[WebGPU] Device limits:',
+        `maxTex2D=${dl.maxTextureDimension2D} storageTex=${dl.maxStorageTexturesPerShaderStage} ` +
+        `computeInvocations=${dl.maxComputeInvocationsPerWorkgroup}`,
+      );
     }
 
     // Record whether subgroup operations are available
@@ -730,10 +802,11 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   /** Get GPU timing data for performance analysis */
-  getGPUTimings(): { parallelTime: number; chainedTime: number; totalTime: number; available: boolean } {
-    return { 
-      ...this.gpuTimings, 
-      available: this.supportsTimestampQuery 
+  getGPUTimings(): GPUTimings {
+    return {
+      ...this.gpuTimings,
+      available: this.supportsTimestampQuery,
+      timingSource: this.supportsTimestampQuery ? 'gpu-timestamp' : 'wall-clock',
     };
   }
 
@@ -861,7 +934,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   getFPS(): number { return this.fps; }
 
   /** Get audio analysis data for external consumers (e.g. audio-reactive params). */
-  getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } | null {
+  getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } {
     return {
       bass: this.audioBass,
       mid: this.audioMid,
@@ -994,6 +1067,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   setVideo(video: HTMLVideoElement | undefined): void {
     this.video = video ?? null;
+  }
+
+  getVideo(): HTMLVideoElement | null {
+    return this.video;
   }
 
   updateVideoFrame(): void {

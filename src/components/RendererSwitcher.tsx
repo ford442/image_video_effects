@@ -68,9 +68,9 @@ export const RendererSwitcher: React.FC<RendererSwitcherProps> = ({
       </div>
 
       {activeRendererType === 'wasm' && (
-        <div style={styles.experimentalBanner} title="See WASM_BACKEND_POLICY.md">
-          ⚠️ Experimental C++ backend — TypeScript WebGPU is the supported default. Report issues with
-          diagnostics from the console.
+        <div style={styles.experimentalBanner} title="Tier B experimental — see WASM_BACKEND_POLICY.md">
+          ⚠️ Experimental C++ backend — TypeScript WebGPU is the supported default. Check
+          <code>getDiagnostics()</code> in the console if something looks wrong.
         </div>
       )}
 

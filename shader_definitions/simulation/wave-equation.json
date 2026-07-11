@@ -2,35 +2,47 @@
   "id": "wave-equation",
   "name": "Wave Tank",
   "url": "shaders/wave-equation.wgsl",
-  "description": "2D wave equation simulation with ripple physics, refraction effects, and rainbow phase coloring.",
+  "description": "Psychedelic ripple tank — click to drop interference rings, drag to stir, bass pulses the waves. Rainbow phase bands and caustic sparkles over your image.",
   "params": [
     {
       "id": "waveSpeed",
       "name": "Wave Speed",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Wave propagation speed (c² in the discrete equation)"
     },
     {
       "id": "damping",
       "name": "Damping",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Velocity decay per frame"
     },
     {
       "id": "sourceStrength",
       "name": "Source Strength",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Mouse, ripple, and audio injection strength"
     },
     {
       "id": "boundaryReflect",
       "name": "Boundary Reflect",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Edge absorption (0) vs reflection (1)"
     }
   ],
   "features": [
@@ -38,7 +50,9 @@
     "temporal-persistence",
     "interactive",
     "physics",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "simulation"
   ],
   "tags": [
     "filter",

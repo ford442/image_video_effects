@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """
-Offline auditor for shader_definitions JSON entries whose local WGSL is missing.
+Shader catalog hygiene auditor — defs ↔ WGSL pairing.
 
-Classifies each definition:
+Classifies each shader_definitions JSON entry:
   - local          — public/shaders/<file>.wgsl exists
   - storage-only   — missing locally but id appears in shader_coordinates.json
                      and/or storage_manager/seed_shaders.json (VPS-served)
   - allowlisted    — known dynamic/runtime id (WASM, CDN, capabilities probe)
-  - likely-broken  — missing locally and not in any manifest
+  - likely-broken  — missing locally and not in any manifest (only_def)
+
+Also reports WGSL files without a catalog entry (only_wgsl), excluding:
+  - `_` prefix (templates / hash library)
+  - `-sg` subgroup variants when base id is cataloged
+  - multipass secondary passes referenced by a primary JSON or multipassRegistry
 
 Outputs:
   reports/orphan_shader_defs.json
@@ -15,27 +20,35 @@ Outputs:
 
 Network-free; safe for CI per-PR gates.
 
+Exit code 1 when --fail (default in CI) and:
+  - any likely-broken definition (def without WGSL), or
+  - any unexpected orphan WGSL (only_wgsl)
+
 Manifest sources for storage-only classification:
   - Primary: public/shader_coordinates.json (keys = shader ids used by the app)
   - Secondary: storage_manager/seed_shaders.json (id + filename fields)
+
+Cross-reference: docs/SHADER_TEMPLATES.md, scripts/seed_orphan_shader_defs.py
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFINITIONS_DIR = PROJECT_ROOT / "shader_definitions"
 SHADERS_DIR = PROJECT_ROOT / "public" / "shaders"
+PUBLIC_DIR = PROJECT_ROOT / "public"
 COORDINATES_PATH = PROJECT_ROOT / "public" / "shader_coordinates.json"
 SEED_SHADERS_PATH = PROJECT_ROOT / "storage_manager" / "seed_shaders.json"
+MULTIPASS_REGISTRY = PROJECT_ROOT / "src" / "renderer" / "multipassRegistry.ts"
 REPORT_JSON = PROJECT_ROOT / "reports" / "orphan_shader_defs.json"
 REPORT_MD = PROJECT_ROOT / "reports" / "orphan_shader_defs.md"
 
-# Known runtime / probe ids that intentionally have no committed WGSL body.
 ALLOWLIST_IDS = frozenset({
     "gen_capabilities",
     "wasm-bridge-probe",
@@ -46,6 +59,8 @@ ALLOWLIST_PREFIXES = (
     "__",
 )
 
+WGSL_IGNORE_PREFIXES = ("_",)
+
 
 def load_coordinates_ids() -> set[str]:
     if not COORDINATES_PATH.exists():
@@ -55,7 +70,6 @@ def load_coordinates_ids() -> set[str]:
 
 
 def load_seed_manifest_ids() -> tuple[set[str], set[str]]:
-    """Return (ids, wgsl_filenames) from seed_shaders.json."""
     if not SEED_SHADERS_PATH.exists():
         return set(), set()
     entries = json.loads(SEED_SHADERS_PATH.read_text(encoding="utf-8"))
@@ -76,6 +90,31 @@ def load_seed_manifest_ids() -> tuple[set[str], set[str]]:
     return ids, filenames
 
 
+def load_referenced_wgsl_filenames() -> set[str]:
+    """WGSL basenames referenced by defs (url + multipass.passes) and multipass registry."""
+    names: set[str] = set()
+    for json_path in DEFINITIONS_DIR.rglob("*.json"):
+        try:
+            data = json.loads(json_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        url = data.get("url") or ""
+        if url:
+            names.add(Path(str(url)).name)
+        multipass = data.get("multipass") or {}
+        for entry in multipass.get("passes") or []:
+            fn = entry.get("file")
+            if fn:
+                names.add(fn)
+    if MULTIPASS_REGISTRY.exists():
+        text = MULTIPASS_REGISTRY.read_text(encoding="utf-8")
+        names |= {
+            (m if m.endswith(".wgsl") else f"{m}.wgsl")
+            for m in re.findall(r'"([^"]+)"', text)
+        }
+    return names
+
+
 def is_allowlisted(shader_id: str) -> bool:
     if shader_id in ALLOWLIST_IDS:
         return True
@@ -83,10 +122,6 @@ def is_allowlisted(shader_id: str) -> bool:
 
 
 def expected_wgsl_from_def(defn: dict, json_path: Path) -> tuple[str, str]:
-    """
-    Return (shader_id, expected_filename) from a definition record.
-    Primary: url field (shaders/foo.wgsl). Fallback: id.wgsl.
-    """
     shader_id = str(defn.get("id") or json_path.stem)
     url = defn.get("url") or ""
     if url:
@@ -129,6 +164,65 @@ def classify_definition(
     }
 
 
+def build_def_index() -> tuple[set[str], set[str], set[str]]:
+    """Return (ids, wgsl_stems_with_def, wgsl_filenames_referenced)."""
+    ids: set[str] = set()
+    stems: set[str] = set()
+    for json_path in DEFINITIONS_DIR.rglob("*.json"):
+        try:
+            defn = json.loads(json_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        shader_id, wgsl_name = expected_wgsl_from_def(defn, json_path)
+        ids.add(shader_id)
+        stems.add(Path(wgsl_name).stem)
+        stems.add(json_path.stem)
+        stems.add(shader_id)
+    referenced = load_referenced_wgsl_filenames()
+    return ids, stems, referenced
+
+
+def audit_orphan_wgsl(def_ids: set[str], def_stems: set[str], referenced: set[str]) -> list[dict]:
+    rows: list[dict] = []
+    for path in sorted(SHADERS_DIR.glob("*.wgsl")):
+        stem = path.stem
+        name = path.name
+        if any(stem.startswith(p) for p in WGSL_IGNORE_PREFIXES):
+            rows.append({
+                "wgsl": name,
+                "stem": stem,
+                "classification": "template-prefix",
+            })
+            continue
+        if stem.endswith("-sg") and stem[:-3] in def_stems:
+            rows.append({
+                "wgsl": name,
+                "stem": stem,
+                "classification": "subgroup-variant",
+            })
+            continue
+        if stem in def_stems or stem in def_ids:
+            rows.append({
+                "wgsl": name,
+                "stem": stem,
+                "classification": "cataloged",
+            })
+            continue
+        if name in referenced:
+            rows.append({
+                "wgsl": name,
+                "stem": stem,
+                "classification": "multipass-secondary",
+            })
+            continue
+        rows.append({
+            "wgsl": name,
+            "stem": stem,
+            "classification": "orphan",
+        })
+    return rows
+
+
 def audit_definitions() -> dict:
     coord_ids = load_coordinates_ids()
     seed_ids, seed_filenames = load_seed_manifest_ids()
@@ -158,6 +252,9 @@ def audit_definitions() -> dict:
             )
         )
 
+    def_ids, def_stems, referenced = build_def_index()
+    wgsl_rows = audit_orphan_wgsl(def_ids, def_stems, referenced)
+
     summary = {
         "local": sum(1 for r in rows if r["classification"] == "local"),
         "storage-only": sum(1 for r in rows if r["classification"] == "storage-only"),
@@ -165,10 +262,18 @@ def audit_definitions() -> dict:
         "likely-broken": sum(1 for r in rows if r["classification"] == "likely-broken"),
         "parse-error": sum(1 for r in rows if r["classification"] == "parse-error"),
     }
+    wgsl_summary = {
+        "cataloged": sum(1 for r in wgsl_rows if r["classification"] == "cataloged"),
+        "template-prefix": sum(1 for r in wgsl_rows if r["classification"] == "template-prefix"),
+        "subgroup-variant": sum(1 for r in wgsl_rows if r["classification"] == "subgroup-variant"),
+        "multipass-secondary": sum(1 for r in wgsl_rows if r["classification"] == "multipass-secondary"),
+        "orphan": sum(1 for r in wgsl_rows if r["classification"] == "orphan"),
+    }
 
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "definitions_scanned": len(rows),
+        "wgsl_files_scanned": len(wgsl_rows),
         "manifests": {
             "shader_coordinates": str(COORDINATES_PATH.relative_to(PROJECT_ROOT)),
             "shader_coordinates_count": len(coord_ids),
@@ -176,17 +281,21 @@ def audit_definitions() -> dict:
             "seed_shaders_count": len(seed_ids),
         },
         "summary": summary,
+        "wgsl_summary": wgsl_summary,
+        "only_def_count": summary.get("likely-broken", 0) + summary.get("parse-error", 0),
+        "only_wgsl_count": wgsl_summary.get("orphan", 0),
         "entries": rows,
+        "wgsl_entries": wgsl_rows,
     }
 
 
 def write_markdown(report: dict, path: Path) -> None:
     lines = [
-        "# Orphan shader definition audit",
+        "# Shader catalog hygiene audit",
         "",
         f"Generated: {report['timestamp']}",
         "",
-        "## Summary",
+        "## Definition → WGSL",
         "",
         "| Classification | Count |",
         "|----------------|------:|",
@@ -194,24 +303,48 @@ def write_markdown(report: dict, path: Path) -> None:
     for key, count in report["summary"].items():
         lines.append(f"| `{key}` | {count} |")
 
-    lines.extend(["", "## Non-local entries", ""])
-    non_local = [
-        r for r in report["entries"]
-        if r["classification"] not in ("local",)
-    ]
+    lines.extend([
+        "",
+        "## WGSL → Definition",
+        "",
+        "| Classification | Count |",
+        "|----------------|------:|",
+    ])
+    for key, count in report["wgsl_summary"].items():
+        lines.append(f"| `{key}` | {count} |")
+
+    lines.extend([
+        "",
+        f"**only_def** (defs without WGSL): {report['only_def_count']}",
+        f"**only_wgsl** (unexpected orphans): {report['only_wgsl_count']}",
+        "",
+        "## Non-local definitions",
+        "",
+    ])
+    non_local = [r for r in report["entries"] if r["classification"] not in ("local",)]
     if not non_local:
         lines.append("_All definitions have a matching local WGSL file._")
     else:
         lines.extend([
-            "| id | def | expected wgsl | classification | in coords | in seed |",
-            "|----|-----|---------------|----------------|-----------|---------|",
+            "| id | def | expected wgsl | classification |",
+            "|----|-----|---------------|----------------|",
         ])
         for r in non_local:
             lines.append(
-                f"| `{r['id']}` | `{r['def_path']}` | `{r['expected_wgsl']}` | "
-                f"**{r['classification']}** | {r.get('in_shader_coordinates', False)} | "
-                f"{r.get('in_seed_shaders', False)} |"
+                f"| `{r['id']}` | `{r['def_path']}` | `{r['expected_wgsl']}` | **{r['classification']}** |"
             )
+
+    orphans = [r for r in report["wgsl_entries"] if r["classification"] == "orphan"]
+    lines.extend(["", "## Orphan WGSL files", ""])
+    if not orphans:
+        lines.append("_No unexpected orphan WGSL files._")
+    else:
+        lines.append(f"_{len(orphans)} files need a shader_definitions JSON or ignore prefix._")
+        lines.append("")
+        for r in orphans[:50]:
+            lines.append(f"- `{r['wgsl']}`")
+        if len(orphans) > 50:
+            lines.append(f"- … and {len(orphans) - 50} more")
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -219,24 +352,48 @@ def write_markdown(report: dict, path: Path) -> None:
 
 def print_summary(report: dict) -> None:
     s = report["summary"]
+    ws = report["wgsl_summary"]
     print("=" * 60)
-    print("ORPHAN SHADER DEF AUDIT")
+    print("SHADER CATALOG HYGIENE AUDIT")
     print("=" * 60)
     print(f"Definitions scanned: {report['definitions_scanned']}")
+    print(f"WGSL files scanned:  {report['wgsl_files_scanned']}")
+    print("\nDefinitions → WGSL:")
     for key, count in s.items():
-        marker = " [WARN]" if key == "likely-broken" and count else ""
+        marker = " [FAIL]" if key in ("likely-broken", "parse-error") and count else ""
         print(f"  {key}: {count}{marker}")
-    if s.get("likely-broken"):
-        print("\n[WARN] likely-broken entries (missing local WGSL, not in manifests):")
+    print("\nWGSL → definitions:")
+    for key, count in ws.items():
+        marker = " [FAIL]" if key == "orphan" and count else ""
+        print(f"  {key}: {count}{marker}")
+    print(f"\nonly_def={report['only_def_count']}  only_wgsl={report['only_wgsl_count']}")
+    if report["only_def_count"]:
+        print("\n[FAIL] Definitions missing WGSL:")
         for r in report["entries"]:
-            if r["classification"] == "likely-broken":
+            if r["classification"] in ("likely-broken", "parse-error"):
                 print(f"  • {r['id']} ({r['def_path']}) -> {r['expected_wgsl']}")
+    if report["only_wgsl_count"]:
+        print("\n[FAIL] Orphan WGSL (no catalog entry):")
+        for r in report["wgsl_entries"]:
+            if r["classification"] == "orphan":
+                print(f"  • {r['wgsl']}")
     print("=" * 60)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Audit shader_definitions vs local WGSL files.")
+    parser = argparse.ArgumentParser(description="Audit shader_definitions ↔ WGSL catalog pairing.")
     parser.add_argument("--json", action="store_true", help="Print JSON report to stdout")
+    parser.add_argument(
+        "--fail",
+        action="store_true",
+        default=True,
+        help="Exit 1 when only_def or unexpected only_wgsl > 0 (default: true)",
+    )
+    parser.add_argument(
+        "--no-fail",
+        action="store_true",
+        help="Always exit 0 (report only)",
+    )
     args = parser.parse_args()
 
     report = audit_definitions()
@@ -252,6 +409,9 @@ def main() -> int:
         print(f"Wrote {REPORT_JSON.relative_to(PROJECT_ROOT)}")
         print(f"Wrote {REPORT_MD.relative_to(PROJECT_ROOT)}")
 
+    should_fail = args.fail and not args.no_fail
+    if should_fail and (report["only_def_count"] > 0 or report["only_wgsl_count"] > 0):
+        return 1
     return 0
 
 

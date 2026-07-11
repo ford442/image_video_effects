@@ -1,5 +1,9 @@
 # PLAN: Advanced Physics, Geometry, and Visual Effects
 
+> **Epic agent kit (swarm-ready):** [`swarm-tasks/advanced-physics/README.md`](../../swarm-tasks/advanced-physics/README.md)  
+> **Multipass sim contract:** [`swarm-tasks/advanced-physics/MULTIPASS_SIM_CONTRACT.md`](../../swarm-tasks/advanced-physics/MULTIPASS_SIM_CONTRACT.md)  
+> **Dependency:** Tier C effects blocked on multipass graph runner (#929). Tier A/B ship now.
+
 This plan collects concrete implementation steps for a set of advanced shader effects and simulation systems. Each section gives architectural notes, implementation steps, suggestions for shader-level parameters (these map to `u.zoom_params` or `extraBuffer`), performance guidance, and testing checkpoints.
 
 IMPORTANT: Follow the immutable shader contract described in `AGENTS.md`. Use `u.ripples` and `u.zoom_config` for mouse and zoom/position control, and write shaders under `public/shaders/*.wgsl`. Keep changes to Renderer.ts minimal and only use existing bind groups and buffers.
