@@ -1,0 +1,57 @@
+{
+  "id": "gen-ethereal-cyber-plasma-void-dragon",
+  "name": "Ethereal Cyber-Plasma Void-Dragon",
+  "category": "generative",
+  "tags": [
+    "dragon",
+    "plasma",
+    "organic",
+    "quantum",
+    "audio-reactive",
+    "cybernetic",
+    "void"
+  ],
+  "description": "A majestic, hyper-dimensional cyber-dragon forged from flowing quantum plasma and crystalline temporal scales, soaring through a massive, slowly collapsing dark-matter nebula while radiating bioluminescent shockwaves synced to heavy acoustic bass drops.",
+  "url": "shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Plasma Intensity",
+      "default": 1.5,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "name": "Dragon Undulation Speed",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "index": 2,
+      "name": "Body Segment Density",
+      "default": 20.0,
+      "min": 10.0,
+      "max": 40.0,
+      "step": 1.0
+    },
+    {
+      "index": 3,
+      "name": "Nebula Density",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ]
+}
