@@ -1895,7 +1895,9 @@ void WebGPURenderer::GetGPUTimings(float* parallelMs, float* chainedMs, float* t
     if (parallelMs) *parallelMs = lastParallelTimeMs_;
     if (chainedMs)  *chainedMs  = lastChainedTimeMs_;
     if (totalMs)    *totalMs    = lastTotalTimeMs_;
-    if (available)  *available  = 0;  // CPU wall-clock only; no GPU timestamp queries
+    // GPU timestamp queries are not wired in the emdawn WASM build; JS sets
+    // timingSource='wall-clock' while available stays 0.
+    if (available)  *available  = 0;
 }
 
 void WebGPURenderer::SetRecording(bool recording) {
