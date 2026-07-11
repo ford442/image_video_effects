@@ -4672,11 +4672,15 @@
     "synced_at": 1783584550.7690225
   },
   "gen-ethereal-cyber-plasma-void-dragon": {
-    "hash": "f6cdd15b1c45277d82ea846146a37f84",
-    "synced_at": 1783584551.1886935
+    "hash": "e45d006bdf1aa298f9364063be1bdcae",
+    "synced_at": 1783756516.580207
   },
   "gen-prismatic-cyber-aurora-astral-dragonfly": {
     "hash": "99247af2c10f8dde173c85797ba694af",
     "synced_at": 1783584624.057284
+  },
+  "gen-luminescent-quantum-void-astral-turtle": {
+    "hash": "616bbc35dbb630374a14836bf1c38e8f",
+    "synced_at": 1783756516.7003777
   }
 }
