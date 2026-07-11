@@ -8,7 +8,6 @@ import { RendererToggle } from './components/RendererToggle';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { RendererType, RendererManager } from './renderer/RendererManager';
 import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from './AutoDJ';
-import { pipeline, env } from '@xenova/transformers';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
 import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
 import { resolveShaderUrl } from './utils/resolveShaderUrl';
@@ -22,11 +21,8 @@ import { fetchContentManifest, LoadedContent } from './services/contentLoader';
 import { VideoSegment, pickRandomSegment, hydrateDurations } from './services/videoSegmentManager';
 import { savePreset } from './services/vjPresets';
 import { saveMyVjSet } from './services/myVjSets';
-import { mapVJStackToSharedChain } from './services/vjToSharedChain';
-import { buildCatalog } from './services/shaderCatalog';
 import { mapOrderedParamsToSlotParams } from './utils/shaderParamMapping';
-import { SharedChain, encodeChain, decodeChain, buildSharedChain, expandSharedChain, MAX_SHARED_SLOTS } from './services/layerChainShare';
-import { useAudioAnalyzer } from './hooks';
+import { useDepthEstimation, useAudioReactiveParams, useShareChain } from './hooks';
 import './style.css';
 
 // --- Webcam Fun Shaders ---
@@ -161,9 +157,6 @@ function getShaderDefaults(shaderId: string, numParams: number = 4): number[] {
 }
 
 // --- Configuration ---
-env.allowLocalModels = false;
-env.backends.onnx.logLevel = 'warning';
-const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
 // Use VPS Storage API instead of HuggingFace
 const SHADER_WGSL_URL = `${STORAGE_API_URL}/api/shaders`;
 // URL vars removed for unused variables warning
@@ -232,7 +225,6 @@ function MainApp() {
     const [slotShaderStatus, setSlotShaderStatus] = useState<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle', 'idle', 'idle', 'idle']);
     
     // --- State: AI Models & VJ ---
-    const [depthEstimator, setDepthEstimator] = useState<any>(null);
     const [aiVj, setAiVj] = useState<Alucinate | null>(null);
     const [aiVjStatus, setAiVjStatus] = useState<AIStatus>('idle');
     const [aiVjMessage, setAiVjMessage] = useState('AI VJ is offline.');
@@ -278,11 +270,6 @@ function MainApp() {
     // --- State: Recording ---
     const [isRecording, setIsRecording] = useState(false);
     const [recordingCountdown, setRecordingCountdown] = useState(8);
-    const [showShareModal, setShowShareModal] = useState(false);
-    const [shareableLink, setShareableLink] = useState('');
-    // Vibe prompt shown alongside the link in the share modal (VJ-set shares
-    // only). It is intentionally NOT embedded in the `?chain=` link.
-    const [shareVibeText, setShareVibeText] = useState('');
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -296,16 +283,6 @@ function MainApp() {
     const [generativeShowcaseLocked, setGenerativeShowcaseLocked] = useState(false);
     const [generativeShowcaseDelay] = useState(12);
     const generativeShowcaseTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-    // --- State: Audio-Reactive Params ---
-    const [audioReactiveParams, setAudioReactiveParams] = useState(false);
-    const [audioReactiveAmount, setAudioReactiveAmount] = useState(0.8); // master 0-1 mix
-
-    // --- Audio Analyzer Hook ---
-    const { startAudio: startAudioAnalyzer, stopAudio: stopAudioAnalyzer, getAudioData: getAudioAnalyzerData, getAudioBins } = useAudioAnalyzer();
-
-    // --- Refs for audio-reactive param smoothing ---
-    const audioParamSmoothedRef = useRef<[number, number, number, number]>([0.5, 0.5, 0.5, 0.5]);
 
     // --- State: Boot Gate ---
     const [rendererReady, setRendererReady] = useState(false);
@@ -321,6 +298,17 @@ function MainApp() {
     const availableModesRef = useRef<ShaderEntry[]>(availableModes);
     const slotParamsRef = useRef<SlotParams[]>(slotParams);
     const inputSourceRef = useRef<InputSource>(inputSource);
+
+    const {
+        depthEstimator,
+        isModelLoaded,
+        loadDepthModel,
+        runDepthAnalysis,
+    } = useDepthEstimation({
+        rendererRef,
+        currentImageUrl,
+        setStatus,
+    });
 
     // --- Renderer backend state ---
     const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
@@ -524,6 +512,20 @@ function MainApp() {
         });
     }, []);
 
+    const {
+        audioReactiveParams,
+        setAudioReactiveParams,
+        audioReactiveAmount,
+        setAudioReactiveAmount,
+    } = useAudioReactiveParams({
+        rendererRef,
+        modes,
+        availableModes,
+        updateSlotParam,
+        getShaderDefaults,
+        setStatus,
+    });
+
     const handleUpdateStack = useCallback((ids: string[]) => {
         setModes(prev => {
             const next = [...prev];
@@ -709,30 +711,6 @@ function MainApp() {
     }, [rendererReady, supportsDeepWorkgroup, availableModes.length]);
 
     // --- Image Loading ---
-    const runDepthAnalysis = useCallback(async (imageUrl: string) => {
-        if (!depthEstimator || !rendererRef.current) return;
-        setStatus('Analyzing image with depth model...');
-        try {
-            const result = await depthEstimator(imageUrl);
-            const { data, dims } = result.predicted_depth;
-            const [height, width] = [dims[dims.length-2], dims[dims.length-1]];
-            const normalizedData = new Float32Array(data.length);
-            let min = Infinity, max = -Infinity;
-            data.forEach((v:number) => { min = Math.min(min, v); max = Math.max(max, v); });
-            const range = max - min;
-            for (let i = 0; i < data.length; ++i) {
-                normalizedData[i] = 1.0 - ((data[i] - min) / range);
-            }
-            if (rendererRef.current.updateDepthMap) {
-                rendererRef.current.updateDepthMap(normalizedData, width, height);
-            }
-            setStatus('Depth map updated.');
-        } catch (e: any) {
-            console.error("Error during analysis:", e);
-            setStatus(`Failed to analyze image: ${e.message}`);
-        }
-    }, [depthEstimator]);
-
     const handleLoadImage = useCallback(async (url: string) => {
         if (!rendererRef.current) return;
         if (rendererRef.current.loadImage) {
@@ -819,22 +797,6 @@ function MainApp() {
         return () => clearInterval(interval);
     }, [autoChangeEnabled, autoChangeDelay, inputSource, handleNewRandomImage]);
 
-    const loadDepthModel = useCallback(async () => {
-        if (depthEstimator) { setStatus('Depth model already loaded.'); return; }
-        try {
-            setStatus('Loading depth model...');
-            const estimator = await pipeline('depth-estimation', DEPTH_MODEL_ID, {
-                progress_callback: (p: any) => setStatus(`Loading depth model: ${p.status}...`),
-            });
-            setDepthEstimator(() => estimator);
-            setStatus('Depth model loaded.');
-            if (currentImageUrl) await runDepthAnalysis(currentImageUrl);
-        } catch (e: any) {
-            console.error(e);
-            setStatus(`Failed to load depth model: ${e.message}`);
-        }
-    }, [depthEstimator, currentImageUrl, runDepthAnalysis]);
-    
     // --- AI VJ Mode ---
     const toggleAiVj = useCallback(async () => {
         if (!aiVj) {
@@ -908,49 +870,6 @@ function MainApp() {
         if (shaderIds.length === 0 || params.length === 0) return;
         savePreset(name, shaderIds, params);
     }, [aiVj]);
-
-    /**
-     * Encode the live AI VJ stack into a `?chain=` share link via the existing
-     * share modal. The vibe prompt is shown alongside the link (not in the URL).
-     * Returns the encoded chain string (for "Save as My VJ Set"), or '' on failure.
-     */
-    const buildVjChainString = useCallback(async (): Promise<string> => {
-        if (!aiVj) return '';
-        const shaderIds = aiVj.getActiveShaderIds();
-        const params = aiVj.getCurrentParams();
-        if (shaderIds.length === 0) return '';
-        const catalog = await buildCatalog();
-        const knownIds = new Set(catalog.map(s => s.id));
-        // Generic-defaults compaction (no per-shader lookup) so the app's
-        // load-time decode path reproduces the same zoomParam1-4 values.
-        const chain = mapVJStackToSharedChain(shaderIds, params, catalog, knownIds);
-        return encodeChain(chain);
-    }, [aiVj]);
-
-    const handleShareVjSet = useCallback(async () => {
-        const encoded = await buildVjChainString();
-        if (!encoded) {
-            setStatus('❌ No active VJ stack to share');
-            return;
-        }
-        const url = new URL(window.location.href);
-        url.search = '';
-        url.hash = '';
-        url.searchParams.set('chain', encoded);
-        setShareableLink(url.toString());
-        setShareVibeText(aiVj?.getLastVibeText() ?? '');
-        setShowShareModal(true);
-    }, [buildVjChainString, aiVj]);
-
-    const handleSaveVjSet = useCallback(async (name: string) => {
-        const encoded = await buildVjChainString();
-        if (!encoded) {
-            setStatus('❌ No active VJ stack to save');
-            return;
-        }
-        saveMyVjSet(name, aiVj?.getLastVibeText() ?? '', encoded);
-        setStatus(`💾 Saved VJ set "${name}"`);
-    }, [buildVjChainString, aiVj]);
 
     const startAutoTransition = useCallback(async (config: AutoTransitionConfig) => {
         if (!aiVj) return false;
@@ -1127,6 +1046,45 @@ function MainApp() {
         setShowWebcamShaderSuggestions(false);
         setStatus('Webcam stopped');
     }, [syncInputSourceToRenderer]);
+
+    const {
+        showShareModal,
+        setShowShareModal,
+        shareableLink,
+        shareVibeText,
+        buildVjChainString,
+        handleShareVjSet,
+        applySharedChain,
+        copyChainShareLink,
+        openRecordingShareModal,
+    } = useShareChain({
+        modes,
+        activeSlot,
+        slotParams,
+        inputSource,
+        currentImageUrl,
+        activeGenerativeShader,
+        availableModesRef,
+        aiVj,
+        setMode,
+        setActiveSlot,
+        updateSlotParam,
+        syncInputSourceToRenderer,
+        setActiveGenerativeShader,
+        handleLoadImage,
+        startWebcam,
+        setStatus,
+    });
+
+    const handleSaveVjSet = useCallback(async (name: string) => {
+        const encoded = await buildVjChainString();
+        if (!encoded) {
+            setStatus('❌ No active VJ stack to save');
+            return;
+        }
+        saveMyVjSet(name, aiVj?.getLastVibeText() ?? '', encoded);
+        setStatus(`💾 Saved VJ set "${name}"`);
+    }, [buildVjChainString, aiVj, setStatus]);
 
     const applyWebcamFunShader = useCallback((shaderId: string) => {
         setMode(0, shaderId as RenderMode);
@@ -1414,51 +1372,6 @@ function MainApp() {
         };
     }, [generativeShowcaseActive, generativeShowcaseLocked, generativeShowcaseDelay, advanceGenerativeShowcase]);
 
-    // --- Audio-Reactive Param Modulation ---
-    // When enabled, zoomParam1-4 are automatically modulated by audio analysis
-    // data sent from the audioGraph / WebGPU renderer extraBuffer.
-    const updateAudioReactiveParams = useCallback(() => {
-        const manager = rendererRef.current;
-        if (!manager || !audioReactiveParams) return;
-
-        // Read audio values from the analyzer hook (started when A toggle goes on)
-        const audioData = getAudioAnalyzerData();
-        if (!audioData) return;
-
-        const { bass, mid, treble } = audioData;
-        manager.updateAudioData(bass, mid, treble);
-        manager.updateAudioFrequencyBins(getAudioBins());
-
-        const overall = (bass + mid + treble) / 3.0;
-        const amount = audioReactiveAmount;
-
-        // Smooth the values to avoid jitter
-        const smoothed = audioParamSmoothedRef.current;
-        const smoothing = 0.15;
-        smoothed[0] += (bass - smoothed[0]) * smoothing;
-        smoothed[1] += (mid - smoothed[1]) * smoothing;
-        smoothed[2] += (treble - smoothed[2]) * smoothing;
-        smoothed[3] += (overall - smoothed[3]) * smoothing;
-
-        // Only apply to generative shaders in active slot
-        const currentShader = modes[0];
-        const shaderEntry = availableModes.find(m => m.id === currentShader);
-        if (shaderEntry && shaderEntry.category === 'generative') {
-            const baseDefaults = getShaderDefaults(currentShader, 4);
-
-            // Modulate around defaults: default ± amount * audio
-            const modulated = {
-                zoomParam1: Math.max(0, Math.min(1, baseDefaults[0] + (smoothed[0] - 0.5) * amount)),
-                zoomParam2: Math.max(0, Math.min(1, baseDefaults[1] + (smoothed[1] - 0.5) * amount)),
-                zoomParam3: Math.max(0, Math.min(1, baseDefaults[2] + (smoothed[2] - 0.5) * amount)),
-                zoomParam4: Math.max(0, Math.min(1, baseDefaults[3] + (smoothed[3] - 0.5) * amount)),
-            };
-
-            updateSlotParam(0, modulated);
-            rendererRef.current?.updateSlotParams(modulated, 0);
-        }
-    }, [audioReactiveParams, audioReactiveAmount, modes, availableModes, updateSlotParam, getAudioAnalyzerData, getAudioBins]);
-
     const handleTakeScreenshot = useCallback(async () => {
         const manager = rendererRef.current;
         if (!manager) return;
@@ -1472,30 +1385,7 @@ function MainApp() {
         }
     }, []);
 
-    // Animation-frame callback for audio-reactive params (runs every frame)
-    useEffect(() => {
-        if (!audioReactiveParams) return;
-
-        let rafId: number;
-        const tick = () => {
-            updateAudioReactiveParams();
-            rafId = requestAnimationFrame(tick);
-        };
-        rafId = requestAnimationFrame(tick);
-
-        return () => cancelAnimationFrame(rafId);
-    }, [audioReactiveParams, updateAudioReactiveParams]);
-
-    // Start/stop audio analyzer when A toggle changes
-    useEffect(() => {
-        if (audioReactiveParams) {
-            startAudioAnalyzer();
-        } else {
-            stopAudioAnalyzer();
-        }
-    }, [audioReactiveParams, startAudioAnalyzer, stopAudioAnalyzer]);
-
-    // --- Keyboard shortcuts: Generative Showcase & Audio-Reactive ---
+    // --- Keyboard shortcuts: Generative Showcase ---
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -1519,29 +1409,6 @@ function MainApp() {
                     }
                 }
             }
-            // 'A' toggles audio-reactive param modulation
-            if (e.key === 'a' || e.key === 'A') {
-                setAudioReactiveParams(prev => {
-                    const next = !prev;
-                    setStatus(next ? '🔊 Audio-reactive params ON' : '🔇 Audio-reactive params OFF');
-                    return next;
-                });
-            }
-            // '[' / ']' adjust audio reactive amount
-            if (e.key === '[') {
-                setAudioReactiveAmount(prev => {
-                    const next = Math.max(0, Math.min(1, prev - 0.1));
-                    setStatus(`🔊 Audio React Amount: ${Math.round(next * 100)}%`);
-                    return next;
-                });
-            }
-            if (e.key === ']') {
-                setAudioReactiveAmount(prev => {
-                    const next = Math.max(0, Math.min(1, prev + 0.1));
-                    setStatus(`🔊 Audio React Amount: ${Math.round(next * 100)}%`);
-                    return next;
-                });
-            }
         };
 
         window.addEventListener('keydown', handleKeyDown);
@@ -1563,191 +1430,6 @@ function MainApp() {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [triggerRoulette]);
-
-    // --- Recording & Share Functions ---
-    const generateShareableLink = useCallback(() => {
-        const params = new URLSearchParams();
-        
-        // Current shader/mode
-        params.set('shader', modes[0]);
-        params.set('slot', activeSlot.toString());
-        
-        // Current slot parameters
-        const params1 = slotParams[activeSlot];
-        if (params1) {
-            params.set('p1', params1.zoomParam1.toFixed(2));
-            params.set('p2', params1.zoomParam2.toFixed(2));
-            params.set('p3', params1.zoomParam3.toFixed(2));
-            params.set('p4', params1.zoomParam4.toFixed(2));
-            params.set('light', params1.lightStrength.toFixed(2));
-            params.set('ambient', params1.ambient.toFixed(2));
-        }
-        
-        // Input source and related state
-        params.set('source', inputSource);
-        if (inputSource === 'webcam') {
-            params.set('webcam', 'true');
-        }
-        if (currentImageUrl) {
-            params.set('img', encodeURIComponent(currentImageUrl));
-        }
-        
-        // Generative shader if active
-        if (inputSource === 'generative' && activeGenerativeShader) {
-            params.set('gen', activeGenerativeShader);
-        }
-        
-        const hash = params.toString();
-        const baseUrl = window.location.origin + window.location.pathname;
-        return `${baseUrl}#${hash}`;
-    }, [modes, activeSlot, slotParams, inputSource, currentImageUrl, activeGenerativeShader]);
-
-    const restoreStateFromHash = useCallback(() => {
-        const hash = window.location.hash.slice(1); // Remove #
-        if (!hash) return;
-        
-        try {
-            const params = new URLSearchParams(hash);
-            
-            // Restore shader/mode
-            const shader = params.get('shader');
-            if (shader) {
-                setMode(0, shader as RenderMode);
-            }
-            
-            // Restore active slot
-            const slot = params.get('slot');
-            if (slot) {
-                setActiveSlot(parseInt(slot, 10));
-            }
-            
-            // Restore slot parameters
-            const updates: Partial<SlotParams> = {};
-            const p1 = params.get('p1');
-            const p2 = params.get('p2');
-            const p3 = params.get('p3');
-            const p4 = params.get('p4');
-            const light = params.get('light');
-            const ambient = params.get('ambient');
-            
-            if (p1) updates.zoomParam1 = parseFloat(p1);
-            if (p2) updates.zoomParam2 = parseFloat(p2);
-            if (p3) updates.zoomParam3 = parseFloat(p3);
-            if (p4) updates.zoomParam4 = parseFloat(p4);
-            if (light) updates.lightStrength = parseFloat(light);
-            if (ambient) updates.ambient = parseFloat(ambient);
-            
-            if (Object.keys(updates).length > 0) {
-                updateSlotParam(slot ? parseInt(slot, 10) : 0, updates);
-            }
-            
-            // Restore input source
-            const source = params.get('source');
-            if (source) {
-                syncInputSourceToRenderer(source as InputSource);
-                if (source === 'webcam') {
-                    // Will need to trigger webcam start separately
-                    setTimeout(() => startWebcam(), 1000);
-                }
-            }
-            
-            // Restore image URL if present
-            const img = params.get('img');
-            if (img && source !== 'webcam') {
-                handleLoadImage(decodeURIComponent(img));
-            }
-            
-            // Restore generative shader
-            const gen = params.get('gen');
-            if (gen) {
-                setActiveGenerativeShader(gen);
-                syncInputSourceToRenderer('generative');
-            }
-            
-            setStatus('🎉 Shared state restored!');
-        } catch (e) {
-            console.error('Failed to restore state from hash:', e);
-        }
-    }, [setMode, setActiveSlot, updateSlotParam, syncInputSourceToRenderer, setActiveGenerativeShader, handleLoadImage, startWebcam]);
-
-    // Restore state from URL hash on load
-    useEffect(() => {
-        restoreStateFromHash();
-    }, [restoreStateFromHash]);
-
-    // --- Multi-Slot Chain Sharing ---
-    const SHARE_CHAIN_PARAM = 'chain';
-
-    /** Applies a decoded chain to the live slot state, skipping unknown shader ids. */
-    const applySharedChain = useCallback((chain: SharedChain) => {
-        const { modes: sharedModes, slotParams: sharedParams } = expandSharedChain(chain);
-        const known = availableModesRef.current;
-
-        sharedModes.forEach((shaderId, index) => {
-            if (index >= MAX_SHARED_SLOTS) return;
-
-            if (!shaderId || shaderId === 'none') {
-                setMode(index, 'none');
-                return;
-            }
-
-            const exists = known.length === 0 || known.some(m => m.id === shaderId);
-            if (!exists) {
-                console.warn(`[layerChainShare] skipping unknown shader id "${shaderId}" for slot ${index}`);
-                return;
-            }
-
-            setMode(index, shaderId as RenderMode);
-            updateSlotParam(index, sharedParams[index]);
-        });
-
-        setStatus('🔗 Shared chain loaded!');
-    }, [setMode, updateSlotParam]);
-
-    /** Builds a compact, URL-safe link encoding the entire active chain. */
-    const generateChainShareLink = useCallback(() => {
-        const chain = buildSharedChain(modes, slotParams);
-        const encoded = encodeChain(chain);
-        const url = new URL(window.location.href);
-        url.search = '';
-        url.hash = '';
-        url.searchParams.set(SHARE_CHAIN_PARAM, encoded);
-        return url.toString();
-    }, [modes, slotParams]);
-
-    /** Copies the current chain's share link to the clipboard. */
-    const copyChainShareLink = useCallback(async () => {
-        try {
-            const link = generateChainShareLink();
-            await navigator.clipboard.writeText(link);
-            setStatus('🔗 Chain share link copied to clipboard!');
-        } catch (e) {
-            console.error('Failed to copy chain share link:', e);
-            setStatus('❌ Failed to copy share link');
-        }
-    }, [generateChainShareLink]);
-
-    // Hydrate the active chain from a `?chain=` share link on first load, then
-    // strip the param so a refresh doesn't re-clobber the user's edits.
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const params = new URLSearchParams(window.location.search);
-        const encoded = params.get(SHARE_CHAIN_PARAM);
-        if (!encoded) return;
-
-        const chain = decodeChain(encoded);
-        if (!chain) {
-            console.warn('[layerChainShare] ignoring invalid chain share link');
-        } else {
-            applySharedChain(chain);
-        }
-
-        params.delete(SHARE_CHAIN_PARAM);
-        const newSearch = params.toString();
-        const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`;
-        window.history.replaceState(null, '', newUrl);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     const stopRecording = useCallback(() => {
         if (recordingTimerRef.current) {
@@ -1811,11 +1493,8 @@ function MainApp() {
                 a.click();
                 document.body.removeChild(a);
                 
-                // Generate shareable link
-                const link = generateShareableLink();
-                setShareableLink(link);
-                setShareVibeText('');
-                setShowShareModal(true);
+                // Open share modal with hash-based link
+                openRecordingShareModal();
                 
                 setStatus('✅ Recording saved! Download started.');
                 
@@ -1846,7 +1525,7 @@ function MainApp() {
             console.error('Recording failed:', e);
             setStatus('❌ Recording failed. Browser may not support this feature.');
         }
-    }, [generateShareableLink, stopRecording]);
+    }, [openRecordingShareModal, stopRecording]);
 
     // Cleanup recording on unmount
     useEffect(() => {
@@ -1870,13 +1549,13 @@ function MainApp() {
         inputSource,
         autoChangeEnabled,
         autoChangeDelay,
-        isModelLoaded: !!depthEstimator,
+        isModelLoaded,
         availableModes,
         videoList,
         selectedVideo,
         isMuted,
     }), [modes, activeSlot, slotParams, shaderCategory, inputSource,
-        autoChangeEnabled, autoChangeDelay, depthEstimator, availableModes, videoList, selectedVideo, isMuted]);
+        autoChangeEnabled, autoChangeDelay, isModelLoaded, availableModes, videoList, selectedVideo, isMuted]);
 
     // Keep latest buildFullState in a ref so the BroadcastChannel effect
     // doesn't re-run every time state changes.
@@ -2011,7 +1690,7 @@ function MainApp() {
                         setShaderCategory={setShaderCategory} onNewImage={handleNewRandomImage}
                         autoChangeEnabled={autoChangeEnabled} setAutoChangeEnabled={setAutoChangeEnabled}
                         autoChangeDelay={autoChangeDelay} setAutoChangeDelay={setAutoChangeDelay}
-                        onLoadModel={loadDepthModel} isModelLoaded={!!depthEstimator} availableModes={availableModes}
+                        onLoadModel={loadDepthModel} isModelLoaded={isModelLoaded} availableModes={availableModes}
                         inputSource={inputSource} setInputSource={syncInputSourceToRenderer} videoList={videoList}
                         selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo}
                         videoB3hdMode={videoB3hdMode} setVideoB3hdMode={setVideoB3hdMode}
