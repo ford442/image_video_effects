@@ -2,13 +2,16 @@
 
 Module map after the App.tsx strangler refactor. Behavior is preserved; this documents where logic lives and what remains in the monolith.
 
-## Line counts
+## Line counts (post split-large-source-files refactor)
 
 | Module | Before | After |
 |--------|--------|-------|
-| `src/App.tsx` | ~2479 | ~2160 |
-| `src/components/Controls.tsx` | ~2211 | 2 (re-export) |
-| `src/components/controls/ControlsContainer.tsx` | — | ~1167 |
+| `src/App.tsx` | ~2160 | ~530 |
+| `src/components/controls/ControlsContainer.tsx` | ~1168 | ~379 |
+| `src/renderer/WebGPURenderer.ts` | ~1708 | ~484 |
+| `wasm_renderer/bridge/*.js` | (monolith ~1175) | 8 modules, each &lt;300 |
+
+**WASM bridge:** Edit `wasm_renderer/bridge/*.js` only; `concat_bridge.sh` assembles `wasm_bridge.js` for runtime (`public/wasm/` + `src/wasm/`). The concatenated glue file is a build artifact, not hand-edited.
 
 Stretch targets (App &lt;600, ControlsContainer &lt;400) require future waves — not safe in one pass without regressions.
 
