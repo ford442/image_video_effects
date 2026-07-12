@@ -215,7 +215,7 @@ jobs:
     - name: Run WGSL pre-commit gate on changed files
       run: python3 scripts/wgsl_precommit_gate.py --base origin/main
 
-    - name: Audit orphan shader definitions
+    - name: Audit shader catalog hygiene (defs ↔ WGSL)
       run: python3 scripts/audit_orphan_shader_defs.py
 
     - name: Workgroup gate unit tests

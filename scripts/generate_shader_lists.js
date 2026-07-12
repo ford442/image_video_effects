@@ -154,11 +154,24 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
     });
 
     // Write out each category file from buckets
+    const activeCategories = new Set();
     buckets.forEach((list, category) => {
+        activeCategories.add(`${category}.json`);
         const outputPath = path.join(OUTPUT_DIR, `${category}.json`);
         fs.writeFileSync(outputPath, JSON.stringify(list, null, 2));
         console.log(`Generated ${category}.json with ${list.length} shaders.`);
     });
+
+    // Remove stale list files left over from renamed/legacy categories
+    if (fs.existsSync(OUTPUT_DIR)) {
+        const staleLists = fs.readdirSync(OUTPUT_DIR).filter((file) => {
+            return file.endsWith('.json') && !activeCategories.has(file);
+        });
+        staleLists.forEach((file) => {
+            fs.unlinkSync(path.join(OUTPUT_DIR, file));
+            console.log(`Removed stale list file: ${file}`);
+        });
+    }
 
     // Summary Report
     console.log("\n--- Generation Summary ---");
