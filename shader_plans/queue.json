@@ -932,6 +932,13 @@
       "added": "2026-07-10T15:15:18.904449",
       "completed_at": "2026-07-11T07:55:47.993769+00:00",
       "status": "completed"
+    },
+    {
+      "filename": "2026-07-11_bismuth-singularity-loom-engine.md",
+      "title": "Bismuth Singularity-Loom Engine",
+      "added": "2026-07-11T15:35:18.997905",
+      "completed_at": "2026-07-12T07:55:51.187169+00:00",
+      "status": "completed"
     }
   ],
   "rejected": [],
@@ -1251,11 +1258,6 @@
       "filename": "2026-07-09_sentient-quantum-resonance-astral-jellyfish.md",
       "title": "Sentient Quantum-Resonance Astral-Jellyfish",
       "added": "2026-07-09T15:27:35.213119"
-    },
-    {
-      "filename": "2026-07-11_bismuth-singularity-loom-engine.md",
-      "title": "Bismuth Singularity-Loom Engine",
-      "added": "2026-07-11T15:35:18.997905"
     }
   ],
   "in_progress": null
