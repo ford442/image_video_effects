@@ -36,7 +36,6 @@ import './style.css';
 
 function MainApp() {
     const [activeTab, setActiveTab] = useState<'main' | 'live-studio'>('main');
-
     const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
     const [modes, setModes] = useState<RenderMode[]>(['none', 'none', 'none', 'none', 'none', 'none']);
     const [activeSlot, setActiveSlot] = useState<number>(0);
@@ -48,12 +47,10 @@ function MainApp() {
         defaultSlotParams,
         defaultSlotParams,
     ]);
-
     const [autoChangeEnabled, setAutoChangeEnabled] = useState(false);
     const [autoChangeDelay, setAutoChangeDelay] = useState(10);
     const [status, setStatus] = useState('Ready.');
     const [slotShaderStatus, setSlotShaderStatus] = useState<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle', 'idle', 'idle', 'idle']);
-
     const [imageManifest, setImageManifest] = useState<ImageRecord[]>([]);
     const [videoList, setVideoList] = useState<VideoRecord[]>([]);
     const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>();
@@ -68,18 +65,14 @@ function MainApp() {
     const [b3hdSegmentLength, setB3hdSegmentLength] = useState(DEFAULT_B3HD_SEGMENT_LENGTH);
     const [b3hdIntervalSeconds, setB3hdIntervalSeconds] = useState(DEFAULT_B3HD_INTERVAL_SECONDS);
     const [currentSegment, setCurrentSegment] = useState<VideoSegment | null>(null);
-
     const [showSidebar, setShowSidebar] = useState(true);
     const [showShaderScanner, setShowShaderScanner] = useState(false);
     const [showStorageBrowser, setShowStorageBrowser] = useState(false);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [storageBrowserTab, setStorageBrowserTab] = useState<'shaders' | 'images' | 'videos'>('shaders');
-
     const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 });
     const [isMouseDown, setIsMouseDown] = useState(false);
-
     const [shadersReady, setShadersReady] = useState(false);
-
     const rendererRef = useRef<RendererManager | null>(null);
     const modesRef = useRef<RenderMode[]>(modes);
     const availableModesRef = useRef<ShaderEntry[]>(availableModes);
@@ -329,6 +322,10 @@ function MainApp() {
     const {
         generativeShowcaseActive,
         generativeShowcaseLocked,
+        startGenerativeShowcase,
+        stopGenerativeShowcase,
+        lockGenerativeShowcase,
+        unlockGenerativeShowcase,
     } = useGenerativeShowcase({
         availableModes,
         setMode,
@@ -356,6 +353,49 @@ function MainApp() {
             setStatus('❌ Screenshot failed');
         }
     }, []);
+
+    // --- Keyboard shortcuts: Generative Showcase ---
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            // 'G' toggles Generative Showcase
+            if (e.key === 'g' || e.key === 'G') {
+                if (generativeShowcaseActive) {
+                    stopGenerativeShowcase();
+                } else {
+                    startGenerativeShowcase();
+                }
+            }
+            // SPACE locks/unlocks the current generative shader
+            if (e.key === ' ') {
+                e.preventDefault(); // prevent page scroll
+                if (generativeShowcaseActive) {
+                    if (generativeShowcaseLocked) {
+                        unlockGenerativeShowcase();
+                    } else {
+                        lockGenerativeShowcase();
+                    }
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [generativeShowcaseActive, generativeShowcaseLocked, startGenerativeShowcase, stopGenerativeShowcase, lockGenerativeShowcase, unlockGenerativeShowcase]);
+
+    // Keyboard shortcut for Roulette
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'r' || e.key === 'R') {
+                // Don't trigger if user is typing in an input
+                if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+                    return;
+                }
+                triggerRoulette();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [triggerRoulette]);
 
     const {
         isRecording,
