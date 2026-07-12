@@ -124,6 +124,9 @@ interface ControlsProps {
     // Multi-Slot Chain Sharing Props
     onCopyChainShareLink?: () => void;
     onApplySharedChain?: (chain: SharedChain) => void;
+    onTriggerNextTransition?: () => Promise<void> | void;
+    onRandomizeSlot?: (slot: number) => void;
+    onSetSlotParam?: (slot: number, param: string, value: number) => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -190,7 +193,11 @@ const Controls: React.FC<ControlsProps> = ({
     onSwitchRenderer,
     onOpenStorageBrowser,
     onCopyChainShareLink,
-    onApplySharedChain
+    onApplySharedChain,
+
+    onTriggerNextTransition,
+    onRandomizeSlot,
+    onSetSlotParam,
 }) => {
     // --- Coordinate System State ---
     const [showCoordinateBrowser, setShowCoordinateBrowser] = useState(false);
