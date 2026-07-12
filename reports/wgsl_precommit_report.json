@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-07-03T10:12:38.532265",
-  "naga_bin": "/home/jules/.cargo/bin/naga",
+  "timestamp": "2026-07-11T21:38:29.713715",
+  "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 1,
   "passed": 1,
@@ -9,12 +9,12 @@
   "warnings": 0,
   "results": [
     {
-      "file": "public/shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
+      "file": "public/shaders/wave-equation.wgsl",
       "skipped": false,
       "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_warnings": [],

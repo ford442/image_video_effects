@@ -18,7 +18,7 @@ import {
   startStaticServer,
   stopStaticServer,
   renderShaderCase,
-  hasGpuForTests,
+  isStrictGpuMode,
 } from './helpers/rendererHarness';
 
 test.beforeAll(async () => {
@@ -31,7 +31,7 @@ test.afterAll(async () => {
 
 for (const shaderCase of PARITY_MATRIX) {
   test(`parity: ${shaderCase.category} / ${shaderCase.id}`, async ({ page, browser }) => {
-    test.skip(!hasGpuForTests(), 'Set WASM_GPU_TESTS=1 locally with a WebGPU-capable browser');
+    test.skip(!isStrictGpuMode(), 'Set WASM_GPU_TESTS=1 locally with a WebGPU-capable browser');
 
     const wasmPage = page;
     const tsPage = await browser.newPage();
@@ -69,7 +69,7 @@ for (const shaderCase of PARITY_MATRIX) {
 test.describe('WASM canvas snapshots', () => {
   for (const shaderCase of PARITY_MATRIX.slice(0, 2)) {
     test(`snapshot wasm: ${shaderCase.id}`, async ({ page }) => {
-      test.skip(!hasGpuForTests(), 'Set WASM_GPU_TESTS=1 for snapshot tests');
+      test.skip(!isStrictGpuMode(), 'Set WASM_GPU_TESTS=1 for snapshot tests');
 
       const result = await renderShaderCase(page, 'wasm', shaderCase);
       if (result.backend !== 'wasm') {

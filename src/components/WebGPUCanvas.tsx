@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useLayoutEffect, useState } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useState, useCallback } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
-import { RenderMode, InputSource, SlotParams } from '../renderer/types';
+import { RenderMode, InputSource, SlotParams, ShaderEntry } from '../renderer/types';
 import { INTERNAL_RENDER_RESOLUTION } from '../config/appConfig';
 import { LiveStreamBridge } from './LiveStreamBridge';
 
@@ -29,6 +29,8 @@ interface WebGPUCanvasProps {
     liveStreamUrl?: string; // NEW: HLS live stream URL
     // Expose the canvas element to the parent (e.g. for recording)
     onCanvasRef?: (canvas: HTMLCanvasElement | null) => void;
+    /** Shader catalog for interactive-feature detection (from App manifest). */
+    shaderCatalog?: ShaderEntry[];
     // B3HD segment
     segment?: { start: number; end: number } | null;
 }
@@ -43,6 +45,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     webcamVideoElement,
     liveStreamUrl,
     onCanvasRef,
+    shaderCatalog = [],
     segment,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -66,6 +69,22 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
     // Track if there are active interactive/mouse-driven effects
     const [hasInteractiveEffects, setHasInteractiveEffects] = useState(false);
+
+    const modeHasInteractiveFeatures = useCallback((activeModes: RenderMode[]) => {
+        for (const mm of activeModes) {
+            const entry = shaderCatalog.find(s => s.id === mm);
+            if (
+                entry?.features?.includes('mouse-driven')
+                || entry?.features?.includes('splat')
+                || mm === 'ripple'
+                || mm === 'vortex'
+                || mm.startsWith('liquid')
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }, [shaderCatalog]);
 
     // Expose canvas element to parent (e.g. for recording) via onCanvasRef callback
     useEffect(() => {
@@ -121,15 +140,6 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         });
         let mounted = true;
 
-        // Hook up dimensions listener - kept for potential future use or informational purposes,
-        // but we are locking buffer size now.
-        if ('onImageDimensions' in renderer) {
-            (renderer as any).onImageDimensions = (w: number, h: number) => {
-                // We no longer resize the canvas based on image dimensions
-                // But we might want to log it or use it for aspect ratio logic if needed in future
-            };
-        }
-
         (async () => {
             const success = await renderer.init(canvasRef.current!);
             // StrictMode guard: if unmounted during async init, discard the result
@@ -138,8 +148,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 return;
             }
             if (success) {
-                if (rendererRef && 'current' in rendererRef) {
-                    (rendererRef as React.MutableRefObject<any>).current = renderer;
+                if (rendererRef) {
+                    rendererRef.current = renderer;
                 }
                 if (videoRef.current) {
                     renderer.setVideo(videoRef.current);
@@ -239,16 +249,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
 
     // Check for interactive effects
     useEffect(() => {
-        const hasInteractive = (() => {
-            const rendererModes = rendererRef.current?.getAvailableModes?.() || [];
-            for (const mm of modes) {
-                const entry = rendererModes.find(s => s.id === mm);
-                if (entry?.features?.includes('mouse-driven') || entry?.features?.includes('splat') || mm === 'ripple' || mm === 'vortex' || mm.startsWith('liquid')) return true;
-            }
-            return false;
-        })();
-        setHasInteractiveEffects(hasInteractive);
-    }, [modes, rendererRef]);
+        setHasInteractiveEffects(modeHasInteractiveFeatures(modes));
+    }, [modes, modeHasInteractiveFeatures]);
 
     // Handle webcam video element
     useEffect(() => {
@@ -488,16 +490,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
         setIsMouseDown(true);
         updateMousePosition(event);
 
-        // Check if any active mode supports interaction (use shader metadata when available)
-        const hasInteractiveMode = (() => {
-            // Prefer renderer-provided metadata when available (covers many interactive shaders)
-            const rendererModes = rendererRef.current?.getAvailableModes?.() || [];
-            for (const mm of modes) {
-                const entry = rendererModes.find(s => s.id === mm);
-                if (entry?.features?.includes('mouse-driven') || entry?.features?.includes('splat') || mm === 'ripple' || mm === 'vortex' || mm.startsWith('liquid')) return true;
-            }
-            return false;
-        })();
+        const hasInteractiveMode = modeHasInteractiveFeatures(modes);
 
         if (hasInteractiveMode) addRippleAtMouseEvent(event);
 
@@ -525,9 +518,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
             if (dt > 0.01) {
                 const vx = dx / dt; const vy = dy / dt;
             if (Math.sqrt(vx * vx + vy * vy) > 0.1) {
-                if ('firePlasma' in rendererRef.current) {
-                    (rendererRef.current as any).firePlasma(currentX, currentY, vx * 0.5, vy * 0.5);
-                }
+                rendererRef.current.firePlasma(currentX, currentY, vx * 0.5, vy * 0.5);
             }
             }
             dragStartPos.current = null;
@@ -535,15 +526,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     };
 
     const handleCanvasMouseMove = (event: React.MouseEvent<HTMLCanvasElement> | React.PointerEvent<HTMLCanvasElement>) => {
-        updateMousePosition(event as any);
-        const hasInteractiveMode = (() => {
-            const rendererModes = rendererRef.current?.getAvailableModes?.() || [];
-            for (const mm of modes) {
-                const entry = rendererModes.find(s => s.id === mm);
-                if (entry?.features?.includes('mouse-driven') || entry?.features?.includes('splat') || mm === 'ripple' || mm === 'vortex' || mm.startsWith('liquid')) return true;
-            }
-            return false;
-        })();
+        updateMousePosition(event as React.MouseEvent<HTMLCanvasElement>);
+        const hasInteractiveMode = modeHasInteractiveFeatures(modes);
 
         if (isMouseDown && hasInteractiveMode) {
             const now = performance.now();

@@ -1,32 +1,6 @@
-// Base renderer interface for Live Studio
-export interface BaseRenderer {
-  init(canvas: HTMLCanvasElement): Promise<boolean>;
-  render(): void;
-  destroy(): void;
-  
-  // Video input
-  setVideo(video: HTMLVideoElement): void;
-  updateVideoFrame(): void;
-  
-  // Audio input
-  updateAudioData(bass: number, mid: number, treble: number): void;
-  updateAudioFrequencyBins?(bins: Float32Array): void;
-  
-  // Mouse input
-  updateMouse(x: number, y: number): void;
-  
-  // Parameters
-  setParam(name: string, value: number): void;
-}
+// Re-export canonical renderer types (IRenderer supersedes this module's legacy name).
+export type { IRenderer, Renderer, RendererConfig } from './Renderer';
+export { DEFAULT_CONFIG } from './Renderer';
 
-export interface RendererConfig {
-  width: number;
-  height: number;
-  agentCount: number;
-}
-
-export const DEFAULT_CONFIG: RendererConfig = {
-  width: 1920,
-  height: 1080,
-  agentCount: 50000,
-};
+/** @deprecated Use IRenderer from './Renderer'. */
+export type BaseRenderer = import('./Renderer').IRenderer;
