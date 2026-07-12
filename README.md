@@ -1,194 +1,229 @@
 # WebGPU Shader Effects & Visual Library
 
-A React-based web application that runs a wide variety of GPU shader effects (compute + fragment) — not only fluid simulations. Effects range from particle-based simulations and cellular automata to audio-driven spectrogram displacement, Voronoi tessellations, and fractal warping. Features include real-time interactive effects, AI-powered depth estimation, and dozens of shader modes.
+A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,291** compute shaders across 14 categories.
 
-## Features
+## Documentation map
 
-- **Interactive Fluid Effects**: Click on images to create ripples and fluid-like distortions
-- **AI Depth Estimation**: Uses the DPT-Hybrid-MIDAS model for depth map generation
-- **1,290+ Shader Effects**: 1,291 shaders across 14 canonical categories (generative, interactive-mouse, image, distortion, simulation, hybrid, and more)
-- **Dynamic Shader Loading**: Shaders are loaded from a configuration file for easy extensibility
-- **WebGPU Powered**: High-performance compute shaders for real-time rendering
+| Doc | Purpose |
+|-----|---------|
+| [**Add a shader (5 min)**](#quick-start-add-a-shader-5-minutes) | Below — WGSL + JSON + manifest |
+| [`WASM_BACKEND_POLICY.md`](WASM_BACKEND_POLICY.md) | **Dual-renderer policy** — TS Tier A vs WASM Tier B |
+| [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) | JSON/WGSL conventions, multipass, `-sg` variants |
+| [`agents/WGSL_BUILTINS_GENERATIVE.md`](agents/WGSL_BUILTINS_GENERATIVE.md) | Agent preamble — bindings, naga-safe builtins |
+| [`notes/CREATIVE_VISION.md`](notes/CREATIVE_VISION.md) | Artistic direction (psychedelic / beautiful / strange) |
+| [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) | App, Controls panels, hook map |
+| [`docs/STORAGE_API.md`](docs/STORAGE_API.md) | VPS storage client contract |
+| [`AGENTS.md`](AGENTS.md) | AI agent workspace rules + canonical WGSL header |
 
-## Prerequisites
+## Renderers: TypeScript (Tier A) vs WASM (Tier B)
 
-- A **WebGPU-compatible browser** (Chrome 113+, Edge 113+, or Firefox Nightly with WebGPU enabled)
-- Node.js 16+ and npm
+| Tier | Backend | Default? | Notes |
+|------|---------|----------|-------|
+| **A — Production** | TypeScript `WebGPURenderer` | ✅ Yes | Full Controls parity; recommended for all work |
+| **B — Experimental** | C++ WASM (`?renderer=wasm`) | Opt-in only | Labeled **Experimental** in UI; must not crash app |
+| Fallback | Canvas2D `JSRenderer` | Auto when no WebGPU | No GPU shaders |
 
-## Installation
+WASM is **never** an automatic fallback. See [`WASM_BACKEND_POLICY.md`](WASM_BACKEND_POLICY.md) for promotion gates, CI expectations, and engineering rules.
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd image_video_effects
+## Quick start: add a shader (5 minutes)
 
-# Install dependencies
-npm install
+1. **Create WGSL** — `public/shaders/my-effect.wgsl`  
+   Copy the 13-binding compute header from [`AGENTS.md`](AGENTS.md) (or [`agents/WGSL_BUILTINS_GENERATIVE.md`](agents/WGSL_BUILTINS_GENERATIVE.md) for generative shaders).
 
-# Start the development server
-npm start
+2. **Register JSON** — `shader_definitions/<category>/my-effect.json`:
+
+```json
+{
+  "id": "my-effect",
+  "name": "My Effect",
+  "url": "shaders/my-effect.wgsl",
+  "category": "image"
+}
 ```
 
-The application will open at `http://localhost:3000`.
+Canonical categories: `advanced-hybrid`, `artistic`, `distortion`, `generative`, `geometric`, `hybrid`, `image`, `interactive-mouse`, `lighting-effects`, `liquid-effects`, `post-processing`, `retro-glitch`, `simulation`, `visual-effects`.
 
-## Usage
-
-1. Open the application in a WebGPU-compatible browser
-2. Click **"New Image"** to load a random image
-3. Click **"Load AI Model"** to enable depth-based effects
-4. Select different effect modes from the dropdown
-5. Click and drag on the image to create interactive ripples
-
-## Available Effect Categories
-
-Counts from the latest manifest build (`npm run build:manifest`):
-
-| Category | Count | Description |
-|----------|------:|-------------|
-| **generative** | 393 | Procedural art, fractals, and generative patterns |
-| **interactive-mouse** | 239 | Mouse and touch-driven interactions |
-| **artistic** | 99 | Creative and artistic visual effects |
-| **image** | 93 | Image processing and filtering effects |
-| **advanced-hybrid** | 166 | Multi-technique / advanced hybrid stacks |
-| **distortion** | 63 | Spatial warping and distortion effects |
-| **simulation** | 47 | Physics simulations and cellular automata |
-| **visual-effects** | 46 | Post-processing and visual enhancements |
-| **retro-glitch** | 35 | Retro aesthetics and glitch art |
-| **liquid-effects** | 31 | Fluid and liquid simulations |
-| **post-processing** | 28 | Color grading, bloom, composite passes |
-| **hybrid** | 18 | Combined technique shaders |
-| **lighting-effects** | 17 | Volumetric lighting and glow effects |
-| **geometric** | 16 | Geometric patterns and tessellations |
-| **Total** | **1,291** | |
-
-**Canonical categories** (14): `advanced-hybrid`, `artistic`, `distortion`, `generative`, `geometric`, `hybrid`, `image`, `interactive-mouse`, `lighting-effects`, `liquid-effects`, `post-processing`, `retro-glitch`, `simulation`, `visual-effects`.
-
-Legacy list files (`interactive.json`, `liquid.json`) were removed — use `interactive-mouse.json` and `liquid-effects.json`.
-
-### Featured Shader Examples
-
-| Shader | Category | Description |
-|--------|----------|-------------|
-| Neural Raymarcher | Advanced Hybrid | Raymarched neural network visualization |
-| Gravitational Lensing | Advanced Hybrid | Black hole light bending simulation |
-| Quantum Foam | Simulation | 3-pass quantum field simulation |
-| Aurora Rift | Lighting | Volumetric aurora borealis effect |
-| Hyper Tensor Fluid | Advanced Hybrid | Tensor field fluid dynamics |
-| Audio Spirograph | Generative | Audio-reactive geometric patterns |
-| Chromatic Reaction-Diffusion | Artistic | Per-channel Gray-Scott patterns |
-| Hybrid Spectral Sorting | Hybrid | Audio-driven pixel sorting |
-
-## Project Structure
-
-```
-image_video_effects/
-├── public/
-│   ├── index.html           # HTML entry point
-│   ├── shader-lists/        # Generated category JSON (from shader_definitions/)
-│   │   ├── generative.json           # Procedural / generative shaders
-│   │   ├── interactive-mouse.json    # Mouse-driven shaders
-│   │   ├── liquid-effects.json       # Fluid / liquid shaders
-│   │   └── …                         # 14 canonical category files total
-│   └── shaders/             # WGSL compute shaders (1,290+ total)
-│       ├── liquid.wgsl
-│       ├── liquid-*.wgsl    # Various liquid effects
-│       ├── plasma.wgsl
-│       ├── vortex.wgsl
-│       └── ...
-├── src/
-│   ├── App.tsx              # Main React component
-│   ├── index.tsx            # React entry point
-│   ├── style.css            # Application styles
-│   ├── components/
-│   │   ├── Controls.tsx     # UI controls component
-│   │   └── WebGPUCanvas.tsx # Canvas wrapper component
-│   └── renderer/
-│       ├── Renderer.ts      # WebGPU rendering engine
-│       └── types.ts         # TypeScript type definitions
-├── package.json
-├── tsconfig.json
-└── AGENTS.md                # AI agent instructions
-```
-
-## Scripts
-
-```bash
-npm start       # Start development server
-npm run build   # Production build (wasm:build once in prebuild → lists → manifest → craco)
-npm test        # Run tests
-```
-
-Production build order: `wasm:build` → shader lists → manifest → `craco build`. WASM is **not** recompiled after CRA. Headless VMs without emcc: `SKIP_WASM_BUILD=1 npm run build`. See [`WASM_BUILD_CI_GUIDE.md`](./WASM_BUILD_CI_GUIDE.md).
-
-### AI Agent / Jules Setup (headless envs)
-
-For reproducible setup in Jules (or similar agent environments):
-
-```bash
-bash scripts/jules-setup.sh
-```
-
-- Uses `npm ci`, runs the shader list + manifest generators that `prestart`/`prebuild` rely on.
-- Sets `SKIP_WASM_BUILD=1` automatically (committed artifacts in `public/wasm/` are used).
-- Safe when there is no Emscripten / no GPU.
-- After setup: `BROWSER=none npm start` or `SKIP_WASM_BUILD=1 npm run build`.
-
-See `scripts/jules-setup.sh` (and the comments inside) for full details.
-
-## Shader Categories
-
-- **Fluid & Physics Simulations** — Navier-Stokes dye, Melting Oil, Pixel Sand, Physarum
-- **Iterative & Feedback Systems** — Temporal Echo, Reaction-Diffusion, Lenia
-- **Distortion & Sorting** — Bitonic Pixel Sort, Julia Warp, Voronoi
-- **Data-Driven & Abstract** — Spectrogram Displace, Datamosh, ASCII/Glyph, Neon Edge
-
-## Adding New Shaders
-
-1. Create a new `.wgsl` file in `public/shaders/`
-2. Follow the standard shader interface (see `AGENTS.md` for details)
-3. Add a JSON definition under `shader_definitions/<category>/` (category folder = source of truth), then regenerate lists:
+3. **Regenerate lists + manifest**:
 
 ```bash
 node scripts/generate_shader_lists.js && npm run build:manifest
 ```
 
-Canonical categories: `advanced-hybrid`, `artistic`, `distortion`, `generative`, `geometric`, `hybrid`, `image`, `interactive-mouse`, `lighting-effects`, `liquid-effects`, `post-processing`, `retro-glitch`, `simulation`, `visual-effects`.
+4. **Refresh** — `npm start` (or hard-refresh if already running). The shader appears in the picker. No TypeScript recompile needed (Universal BindGroup hot-swap).
 
-```json
-{
-  "id": "my-shader",
-  "name": "My Shader",
-  "url": "shaders/my-shader.wgsl",
-  "category": "image"
-}
+More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts/new_shader.py`](scripts/new_shader.py) scaffolds JSON + WGSL pairs.
+
+## Features
+
+- **1,291 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`)
+- **Dual renderer** — TypeScript WebGPU (default) + experimental C++/WASM backend
+- **Multipass & slot stacks** — chained/parallel layers, ping-pong feedback (`docs/PARALLEL_SLOTS.md`)
+- **AI depth estimation** — DPT-Hybrid-MIDAS via `@xenova/transformers`
+- **VPS storage** — save/load shaders, configs, assets via typed `StorageClient`
+- **Audio/MIDI reactivity** — generative param mapping, live control bindings
+
+## Prerequisites
+
+- **WebGPU browser** — Chrome 113+, Edge 113+, or Firefox Nightly with WebGPU enabled
+- **Node.js 16+** and npm
+- **Optional:** Emscripten (`emcc`) for WASM rebuilds; headless VMs can use `SKIP_WASM_BUILD=1`
+
+## Installation
+
+```bash
+git clone <repository-url>
+cd image_video_effects
+npm install
+npm start          # prestart regenerates shader lists + manifest
 ```
 
-## ⚡️ Hot-Swap Shader Workflow (No Recompile Needed)
+Opens at `http://localhost:3000`. Use `BROWSER=none npm start` in headless environments.
 
-This engine uses a "Universal BindGroup" architecture. You can drop in new `.wgsl` files without restarting the dev server or recompiling the TypeScript host.
+### Headless / Cloud VM contributors
 
-1.  **Create File:** Add `public/shaders/my-cool-effect.wgsl`.
-2.  **Paste Header:** Copy the standard uniform header from `AGENTS.md`.
-3.  **Register:** Add `shader_definitions/<category>/my-cool-effect.json`, then run `node scripts/generate_shader_lists.js && npm run build:manifest`.
-    ```json
-    { "id": "cool-effect", "name": "My Cool Effect", "url": "shaders/my-cool-effect.wgsl", "category": "image" }
-    ```
-4.  **Test:** Refresh the browser. The new effect appears in the dropdown immediately.
+Cursor Cloud and similar VMs **lack a GPU adapter** — WebGPU init fails and the canvas falls back to Canvas2D (black canvas, debug overlay still updates). Validate shader/renderer work via **Jest** (`npm test`) and **build** (`SKIP_WASM_BUILD=1 npm run build`), not by eyeballing the canvas.
 
-**Note to AI Copilots:** If asked to create a shader, output *only* the WGSL file and the JSON snippet. Do not modify the rendering engine. Add new shaders to the most appropriate category file to avoid merge conflicts.
+Outbound requests to `storage.noahcohn.com`, `storage.googleapis.com`, and Unsplash may be **network-blocked** — use local `public/` assets. See [`AGENTS.md`](AGENTS.md) Cloud VM section.
 
-## Technical Details
+Setup script for agent environments: `bash scripts/jules-setup.sh` (uses committed WASM artifacts, `SKIP_WASM_BUILD=1`).
 
-- **Rendering Pipeline**: Uses a ping-pong texture system where compute shaders read previous frame state and write new state
-- **Depth Integration**: AI-generated depth maps enable parallax and depth-aware effects
-- **Uniform Interface**: All compute shaders share a standardized `Uniforms` structure
+## Storage: Local vs VPS
 
-## Browser Support
+| Mode | When | Source |
+|------|------|--------|
+| **Local (default dev)** | `npm start` without VPS env overrides | `public/shaders/`, unified manifest |
+| **VPS storage** | `REACT_APP_API_BASE_URL` → storage manager | REST + HMAC webhook writes |
 
-This application requires WebGPU support:
+- Client: `src/services/storage/` (`StorageClient`)
+- Hook: `useStorage()` · UI: `StoragePanel`
+
+Env vars in `src/config/appConfig.ts` · Contract: [`docs/STORAGE_API.md`](docs/STORAGE_API.md)
+
+## Usage
+
+1. Open in a WebGPU-compatible browser
+2. **New Image** — load random image (or pick from storage)
+3. **Load AI Model** — enable depth-based effects
+4. Select effect modes from the shader picker / slot stack
+5. Click/drag for interactive ripples; toggle audio/MIDI in Controls
+
+## Shader catalog
+
+Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
+
+| Category | Count | Description |
+|----------|------:|-------------|
+| **generative** | 393 | Procedural art, fractals, generative patterns |
+| **interactive-mouse** | 239 | Mouse and touch-driven interactions |
+| **advanced-hybrid** | 166 | Multi-technique / advanced hybrid stacks |
+| **artistic** | 99 | Creative and artistic visual effects |
+| **image** | 93 | Image processing and filtering |
+| **distortion** | 63 | Spatial warping and distortion |
+| **simulation** | 47 | Physics simulations, cellular automata |
+| **visual-effects** | 46 | Post-processing and visual enhancements |
+| **retro-glitch** | 35 | Retro aesthetics and glitch art |
+| **liquid-effects** | 31 | Fluid and liquid simulations |
+| **post-processing** | 28 | Color grading, bloom, composite passes |
+| **hybrid** | 18 | Combined technique shaders |
+| **lighting-effects** | 17 | Volumetric lighting and glow |
+| **geometric** | 16 | Geometric patterns and tessellations |
+| **Total** | **1,291** | 14 canonical categories |
+
+Legacy list files (`interactive.json`, `liquid.json`) were removed — use `interactive-mouse.json` and `liquid-effects.json`.
+
+## Project structure
+
+```
+image_video_effects/
+├── public/
+│   ├── shaders/                    # WGSL compute shaders (1,291 registered)
+│   ├── shader-lists/               # Generated category JSON (14 files)
+│   ├── shader-manifest-unified.json
+│   └── wasm/                       # Committed WASM artifacts (emcc output)
+├── shader_definitions/             # Source of truth — one JSON per shader
+├── src/
+│   ├── App.tsx                     # Main app shell
+│   ├── components/
+│   │   ├── controls/               # ControlsContainer + panels
+│   │   ├── storage/                # StoragePanel, useStorage UI
+│   │   └── WebGPUCanvas.tsx
+│   ├── hooks/                      # useStorage, useDepthEstimation, useShareChain, …
+│   ├── renderer/
+│   │   ├── WebGPURenderer.ts       # Tier A — default production renderer
+│   │   ├── WASMRenderer.ts         # Tier B — experimental C++ bridge
+│   │   ├── JSRenderer.ts           # Canvas2D fallback
+│   │   ├── RendererManager.ts      # Backend switcher
+│   │   ├── multipass/              # Multipass chain resolver
+│   │   └── webgpuDevicePolicy.ts   # Adapter/limits ladder
+│   └── services/
+│       ├── storage/                # StorageClient (shaders, ratings, assets)
+│       └── shaderCatalog.ts        # Search + catalog helpers
+├── wasm_renderer/                  # C++ WebGPU → Emscripten (Tier B)
+│   ├── renderer.cpp                # Lifecycle facade
+│   ├── device.cpp, frame.cpp, …    # Split modules
+│   └── STATUS.md                   # Current WASM state (not *_ANALYSIS.md)
+├── storage_manager/                # FastAPI VPS backend (Python)
+├── agents/                         # WGSL agent docs, swarm prompts
+├── scripts/                        # Manifest, deploy, audit, sync tools
+├── docs/                           # Architecture, templates, plans
+├── tests/                          # Playwright smoke / parity / bench
+├── AGENTS.md
+└── WASM_BACKEND_POLICY.md          # Dual-renderer one-pager
+```
+
+See [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) for panel/hook detail.
+
+## Scripts
+
+### Dev & build
+
+| Command | Purpose |
+|---------|---------|
+| `npm start` | Dev server (prestart: shader lists + manifest) |
+| `npm run build` | Production build (`prebuild`: wasm → lists → manifest → craco) |
+| `npm run build:manifest` | Regenerate `shader-manifest-unified.json` from category lists |
+| `npm test` | Jest unit tests (~250) |
+| `bash scripts/jules-setup.sh` | Agent/headless setup (`npm ci`, skip WASM compile) |
+
+Production path: `wasm:build` runs **once** in `prebuild`, not again in `build`. No emcc: `SKIP_WASM_BUILD=1 npm run build`. Details: [`WASM_BUILD_CI_GUIDE.md`](WASM_BUILD_CI_GUIDE.md).
+
+### WASM (Tier B)
+
+| Command | Purpose |
+|---------|---------|
+| `npm run wasm:build` | Compile C++ → `public/wasm/` |
+| `npm run wasm:validate` | Check committed artifacts |
+| `npm run wasm:clean` | Remove build + public wasm |
+| `npm run test:wasm:unit` | Jest WASM bridge tests |
+| `npm run test:wasm:e2e` | Playwright smoke (layer chain) |
+| `npm run test:wasm:parity` | Renderer parity (needs GPU) |
+| `npm run test:wasm:bench` | WASM benchmark (needs GPU) |
+| `npm run test:wasm` | Unit + e2e smoke |
+| `npm run test:wasm:full` | Unit + e2e + GPU parity/bench |
+
+### Storage, deploy, swarm
+
+| Command | Purpose |
+|---------|---------|
+| `npm run bucket:sync` | Sync GCS bucket (simple watcher) |
+| `npm run bucket:watch` | Watch mode |
+| `npm run sync:shaders` | Push shaders to VPS storage |
+| `npm run deploy` / `deploy:app` / `deploy:full` | Deploy scripts |
+| `npm run audit:shaders` | WGSL audit swarm |
+| `npm run swarm:upgrade` | Shader upgrade swarm runner |
+
+## Technical details
+
+- **Pipeline:** Ping-pong textures; compute shaders read prior frame, write next
+- **Uniforms:** Shared 13-binding compute contract (see `AGENTS.md`)
+- **Depth:** AI depth maps drive parallax and depth-aware effects
+- **Multipass:** Linear chains today; graph runner planned — [`docs/plans/PLAN-ADVANCED-EFFECTS.md`](docs/plans/PLAN-ADVANCED-EFFECTS.md)
+
+## Browser support
+
 - ✅ Chrome 113+
 - ✅ Edge 113+
-- ⚠️ Firefox Nightly (with `dom.webgpu.enabled` flag)
+- ⚠️ Firefox Nightly (`dom.webgpu.enabled`)
 - ❌ Safari (WebGPU in development)
 
 ## License

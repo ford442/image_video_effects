@@ -1,8 +1,5 @@
 /**
- * StorageService.ts — backward-compatible facade over src/services/storage/
- *
- * Canonical API: StorageClient from './storage'
- * @see docs/STORAGE_API.md
+ * VPS Storage client — typed modules aligned with storage_manager/app.py
  */
 
 export {
@@ -15,7 +12,7 @@ export {
   createStorageService,
   resetStorageClient,
   resetStorageService,
-} from './storage';
+} from './client';
 
 export type {
   StorageSaveAction,
@@ -39,15 +36,20 @@ export type {
   StorageOperation,
   HealthResponse,
   StorageClientConfig,
-  StorageHttpError,
-  UploadFileType,
-} from './storage';
+} from './types';
 
 export {
+  StorageHttpError,
   encodeResourcePath,
   resolveStaticUrl,
   mapHttpError,
+  assertOk,
+  fetchJson,
+  fetchText,
   unwrapListResponse,
-} from './storage';
+  generateHmacSignature,
+} from './http';
 
-export { StorageClient as default } from './storage';
+export { OperationTracker } from './operations';
+
+export type { UploadFileType } from './webhook';

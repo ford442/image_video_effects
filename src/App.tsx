@@ -5,7 +5,10 @@ import ShaderScanner from './components/ShaderScanner';
 import LiveStudioTab from './components/LiveStudioTab';
 import { StorageBrowser } from './components/StorageBrowser';
 import { RendererToggle } from './components/RendererToggle';
+import { PerformanceStatusHUD } from './components/PerformanceStatusHUD';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
+import { RenderQualityMode } from './config/performancePolicy';
+import { loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
 import { RendererType, RendererManager } from './renderer/RendererManager';
 import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from './AutoDJ';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
@@ -294,6 +297,17 @@ function MainApp() {
     // --- State: GPU Capabilities ---
     const [supportsDeepWorkgroup, setSupportsDeepWorkgroup] = useState(false);
 
+    // --- State: Render quality ---
+    const [renderQualityMode, setRenderQualityMode] = useState<RenderQualityMode>(() => loadRenderQualityMode());
+    const [performanceHud, setPerformanceHud] = useState({
+        internalWidth: 2048,
+        internalHeight: 2048,
+        scale: 1,
+        targetFps: 60,
+        adaptive: true,
+        maxActiveSlots: 3,
+    });
+
     // --- Refs ---
     const rendererRef = useRef<RendererManager | null>(null);
     const modesRef = useRef<RenderMode[]>(modes);
@@ -425,6 +439,12 @@ function MainApp() {
     }, [mapShaderParamUpdates]);
 
     const setMode = useCallback(async (index: number, mode: RenderMode) => {
+        const maxSlots = rendererRef.current?.getMaxActiveSlots?.() ?? 3;
+        if (mode !== 'none' && index >= maxSlots) {
+            setStatus(`Quality cap: only ${maxSlots} slot(s) active — raise quality in Render Quality panel.`);
+            return;
+        }
+
         // Guard: if a shader is already compiling on this slot, skip to prevent chaos-mode pile-up
         if (slotShaderStatusRef.current[index] === 'loading') return;
 
@@ -456,7 +476,11 @@ function MainApp() {
                 let shaderUrl = shaderEntry.url;
                 
                 // Load the shader
-                const ok = await rendererRef.current.loadShader(shaderEntry.id, shaderUrl);
+                const ok = await rendererRef.current.loadShader(
+                    shaderEntry.id,
+                    shaderUrl,
+                    { requiresDeepWorkgroup: shaderEntry.requiresDeepWorkgroup },
+                );
                 
                 // Activate the shader on the specified slot
                 if (ok && rendererRef.current) {
@@ -888,10 +912,42 @@ function MainApp() {
         const manager = rendererRef.current;
         if (!manager) return;
         setActiveRendererType(manager.getActiveRendererType());
-        setSupportsDeepWorkgroup(manager.getSupportsDeepWorkgroup());
+        const deep = manager.getSupportsDeepWorkgroup();
+        setSupportsDeepWorkgroup(deep);
+        manager.setRenderQuality(renderQualityMode, { supportsDeepWorkgroup: deep });
         manager.setInputSource(inputSourceRef.current);
         setRendererReady(true);
+    }, [renderQualityMode]);
+
+    const handleRenderQualityChange = useCallback((mode: RenderQualityMode) => {
+        setRenderQualityMode(mode);
+        saveRenderQualityMode(mode);
+        const manager = rendererRef.current;
+        if (manager) {
+            manager.setRenderQuality(mode, { supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup() });
+        }
     }, []);
+
+    // Poll internal resolution + backend for status HUD
+    useEffect(() => {
+        if (!rendererReady) return;
+        const tick = () => {
+            const manager = rendererRef.current;
+            if (!manager) return;
+            const status = manager.getPerformanceStatus();
+            setPerformanceHud({
+                internalWidth: status.internalWidth,
+                internalHeight: status.internalHeight,
+                scale: status.scale,
+                targetFps: status.targetFps,
+                adaptive: status.adaptive,
+                maxActiveSlots: status.maxActiveSlots,
+            });
+        };
+        tick();
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [rendererReady, activeRendererType, renderQualityMode]);
 
     // --- Test Mode Hook (exposes renderer for Playwright harness) ---
     useEffect(() => {
@@ -2142,7 +2198,9 @@ function MainApp() {
                                 if (config.slotParams) {
                                     setSlotParams(config.slotParams);
                                 }
-                                if (config.inputSource) syncInputSourceToRenderer(config.inputSource);
+                                if (config.inputSource) {
+                                    syncInputSourceToRenderer(config.inputSource as InputSource);
+                                }
                                 if (config.currentImageUrl) handleLoadImage(config.currentImageUrl);
                                 setStatus('Loaded effect configuration from VPS');
                                 setShowStorageBrowser(false);

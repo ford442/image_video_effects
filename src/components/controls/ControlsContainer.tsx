@@ -26,6 +26,7 @@ import { LiveControlPanel } from './panels/LiveControlPanel';
 import { RoulettePanel } from './panels/RoulettePanel';
 import { CoordinateBrowserOverlay } from './panels/CoordinateBrowserOverlay';
 import { AdvancedDebugPanel } from './panels/AdvancedDebugPanel';
+import { RenderQualityPanel } from './panels/RenderQualityPanel';
 import { useLiveControl } from './hooks/useLiveControl';
 import type { ControlsProps, ShaderCoordData } from './types';
 import '../../styles/gold-glass-theme.css';
@@ -98,6 +99,10 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onTriggerNextTransition,
     onRandomizeSlot,
     onSetSlotParam,
+    renderQualityMode = 'auto',
+    onRenderQualityChange,
+    maxActiveSlots = 3,
+    performanceHud,
 }) => {
     // --- Coordinate System State ---
     const [showCoordinateBrowser, setShowCoordinateBrowser] = useState(false);
@@ -391,6 +396,18 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 modes={modes}
             />
 
+            {onRenderQualityChange && performanceHud && (
+                <RenderQualityPanel
+                    qualityMode={renderQualityMode}
+                    onQualityChange={onRenderQualityChange}
+                    maxActiveSlots={maxActiveSlots}
+                    internalResolution={performanceHud.internalWidth}
+                    scale={performanceHud.scale}
+                    adaptive={performanceHud.adaptive}
+                    targetFps={performanceHud.targetFps}
+                />
+            )}
+
             {/* --- Renderer Switcher --- */}
             {onSwitchRenderer && activeRendererType && (
                 <RendererBackendPanel
@@ -459,6 +476,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 setActiveSlot={setActiveSlot}
                 slotShaderStatus={slotShaderStatus}
                 slotMenuOptions={slotMenuOptions}
+                maxActiveSlots={maxActiveSlots}
             />
 
             <ParamSlidersPanel

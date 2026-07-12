@@ -11,9 +11,8 @@ export { default as ShaderBrowserWithRatings } from './ShaderBrowserWithRatings'
 export { default as LiveStudioTab } from './LiveStudioTab';
 export { default as LiveStreamBridge } from './LiveStreamBridge';
 
-// Storage Components
-export { StorageBrowser } from './StorageBrowser';
-export { StorageControls } from './StorageControls';
+// Storage Components (canonical: StoragePanel + useStorage hook)
+export { StoragePanel, StorageBrowser, StorageControls } from './storage';
 export { DragDropUpload } from './DragDropUpload';
 
 // Shader Components
