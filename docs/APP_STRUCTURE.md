@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # App Structure — Foundation Epic #912 Wave 3
 
 Module map after the Wave 3 strangler refactor (`chore/foundation-912-w3`). Behavior is preserved; this documents where logic lives and what remains in the monoliths.
@@ -14,6 +15,54 @@ Stretch targets (App &lt;1200, Controls &lt;400) are **future waves** — not sa
 ---
 
 ## App.tsx — extracted hooks (Issue #913)
+=======
+# App Structure — Foundation Epic #912 (#913)
+
+Module map after the App.tsx strangler refactor. Behavior is preserved; this documents where logic lives and what remains in the monolith.
+
+## Line counts
+
+| Module | Before | After |
+|--------|--------|-------|
+| `src/App.tsx` | ~2479 | ~2160 |
+| `src/components/Controls.tsx` | ~2211 | 2 (re-export) |
+| `src/components/controls/ControlsContainer.tsx` | — | ~1167 |
+
+Stretch targets (App &lt;600, ControlsContainer &lt;400) require future waves — not safe in one pass without regressions.
+
+---
+
+## Controls — extracted panels (#914)
+
+Directory: `src/components/controls/`
+
+| File | Responsibility |
+|------|----------------|
+| `Controls.tsx` | Thin re-export of `ControlsContainer` |
+| `ControlsContainer.tsx` | Props wiring, local state, panel composition |
+| `types.ts` | `ControlsProps`, `ShaderCoordData` |
+| `hooks/useLiveControl.ts` | MIDI/keyboard bindings, auto-transition side effects |
+
+| Panel | File | Responsibility |
+|-------|------|----------------|
+| `RendererBackendPanel` | `panels/RendererBackendPanel.tsx` | Canonical `RendererSwitcher` wrapper |
+| `SlotStackPanel` | `panels/SlotStackPanel.tsx` | Six shader slots, compile status, mega-menu |
+| `ParamSlidersPanel` | `panels/ParamSlidersPanel.tsx` | Active-slot param sliders |
+| `InputSourcePanel` | `panels/InputSourcePanel.tsx` | Input source radios |
+| `RecordingSharePanel` | `panels/RecordingSharePanel.tsx` | Record clip + screenshot |
+| `LiveControlPanel` | `panels/LiveControlPanel.tsx` | MIDI arm/learn UI |
+| `RoulettePanel` | `panels/RoulettePanel.tsx` | Randomize, chaos, audio-reactive |
+| `CoordinateBrowserOverlay` | `panels/CoordinateBrowserOverlay.tsx` | Number-jump + coordinate browser modals |
+| `AdvancedDebugPanel` | `panels/AdvancedDebugPanel.tsx` | Dev tools, storage browser entry |
+
+**Renderer switcher:** `RendererSwitcher` + `RendererBackendPanel` is canonical. `RendererToggle` (root + shaders/) and `WASMToggle` are `@deprecated`.
+
+**Still inline in ControlsContainer:** AI VJ studio block, video/B3HD, generative picker, effect category filter.
+
+---
+
+## App.tsx — extracted hooks (#913)
+>>>>>>> origin/main
 
 | Hook | File | Responsibility |
 |------|------|----------------|
@@ -23,6 +72,7 @@ Stretch targets (App &lt;1200, Controls &lt;400) are **future waves** — not sa
 
 ### App.tsx — still inline (TODO future waves)
 
+<<<<<<< HEAD
 - **`useShaderCatalogLoad`** — shader manifest fetch, `availableModes` boot, deep-workgroup filter (not extracted this wave)
 - **`useInputSourceLifecycle`** — image/video/webcam/generative/live input switching, B3HD, auto image timer
 - **`useRemoteSync`** — BroadcastChannel remote control, `buildFullState`, heartbeat
@@ -66,6 +116,18 @@ Directory: `src/components/controls/panels/`
 | `RendererToggle.tsx` (root) | `@deprecated` — App canvas FPS HUD + `LiveStudioTab` |
 | `components/shaders/RendererToggle.tsx` | `@deprecated` — `ShaderDemo` only |
 | `WASMToggle.tsx` | `@deprecated` — legacy floating button; no parallel switch logic in Controls |
+=======
+| Module (proposed) | Responsibility |
+|-------------------|----------------|
+| `useShaderCatalogLoad` | Shader manifest fetch, `availableModes` boot, deep-workgroup filter |
+| `useInputSourceLifecycle` | Image/video/webcam/generative/live input switching, B3HD, auto image timer |
+| `useRemoteSync` | BroadcastChannel remote control, `buildFullState`, heartbeat |
+| `AppShell.tsx` | Layout composition only |
+
+Also still inline: AI VJ (`Alucinate`), roulette/chaos/generative showcase, WASM+TS recording, renderer switch, `SHADER_DEFAULTS` table, boot gate.
+
+**Preserved globals:** `window.__pixelocity__`, `window.__rendererManager`, URL params (`?renderer=`, `?chain=`, `?testMode=`, hash state).
+>>>>>>> origin/main
 
 ---
 
@@ -74,6 +136,7 @@ Directory: `src/components/controls/panels/`
 All custom hooks export from `src/hooks/index.ts`:
 
 - `useStorage`, `useWASM`, `useAudioAnalyzer`, `usePerformanceMonitor`
+<<<<<<< HEAD
 - **Wave 3:** `useDepthEstimation`, `useAudioReactiveParams`, `useShareChain`
 
 ---
@@ -81,11 +144,20 @@ All custom hooks export from `src/hooks/index.ts`:
 ## TypeScript (#920 slice)
 
 - `tsconfig.json` `target` raised **es5 → ES2020** (stretch). No mass `@ts-ignore` hunt this wave.
+=======
+- **#913:** `useDepthEstimation`, `useAudioReactiveParams`, `useShareChain`
+>>>>>>> origin/main
 
 ---
 
 ## Testing
 
+<<<<<<< HEAD
 After each extraction: `npx react-scripts test --watchAll=false --ci` (180 tests, all green at Wave 3 landing).
+=======
+```bash
+npx react-scripts test --watchAll=false --ci
+```
+>>>>>>> origin/main
 
 Build in Cloud VM: `SKIP_WASM_BUILD=1 npm run build`

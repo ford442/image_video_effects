@@ -2,7 +2,24 @@
 
 ## The Blessed Build Path
 
-The canonical way to build the Pixelocity WASM renderer is:
+### Full production build (`npm run build`)
+
+CRA copies `public/` into the output **during** `craco build`, so WASM artifacts must exist **before** that step. The `prebuild` hook runs this sequence **once**:
+
+```
+wasm:build → generate_shader_lists → build:manifest → craco build
+```
+
+`npm run build` invokes `craco build` only — it does **not** call `wasm:build` again. A second compile would be redundant: artifacts are already in `public/wasm/` and are copied into `build/wasm/` by CRA.
+
+```bash
+npm run build                    # full path (requires emsdk, or see SKIP below)
+SKIP_WASM_BUILD=1 npm run build  # headless VMs: skip emcc, use committed public/wasm/
+```
+
+### WASM-only compile (`npm run wasm:build`)
+
+The canonical way to rebuild the C++ WASM renderer alone is:
 
 ```bash
 npm run wasm:build
@@ -34,9 +51,12 @@ npm run wasm:build
 
 ## Build Failures: CI vs Local
 
-**CI (hardened):** the dedicated `wasm` job installs emsdk, runs `npm run wasm:build`,
-validates artifacts, runs WASM unit smoke tests, and uploads artifacts for downstream jobs.
-Downstream jobs (`test`, `test-wasm-e2e`) download those artifacts and set `SKIP_WASM_BUILD=1`.
+**CI — `wasm` job:** installs emsdk, runs `npm run wasm:build` **once**, then
+`npm run wasm:validate`, WASM Jest smoke tests, and uploads artifacts.
+
+**CI — `test` / `test-wasm-e2e` jobs:** download WASM artifacts, set
+`SKIP_WASM_BUILD=1`, then run `npm run build`. `prebuild` sees the skip and does not
+recompile; committed/downloaded `public/wasm/` is copied into `build/` by CRA.
 
 **Local:** `wasm_renderer/build.sh` **fails (exit 1) when `emcc` is missing**. Install emsdk
 or use committed artifacts with an explicit skip:
@@ -45,7 +65,16 @@ or use committed artifacts with an explicit skip:
 SKIP_WASM_BUILD=1 npm run build   # headless VMs without emsdk
 ```
 
-Run `npm run wasm:validate` after any C++ or bridge change.
+### When `wasm:validate` runs
+
+| Context | Command |
+|---------|---------|
+| After local C++ or bridge change | `npm run wasm:validate` |
+| CI `wasm` job | immediately after `wasm:build` |
+| CI `test` job | after `npm run build` (confirms artifacts survived the bundle) |
+| Not run automatically | `npm start` / dev server (uses existing `public/wasm/`) |
+
+Run `npm run wasm:validate` manually after any C++ or bridge change.
 
 1. **No swallowed compile errors**: `package.json` no longer wraps `wasm:build` in
    `2>/dev/null || echo` — if `emcc` is present and compilation fails, the error

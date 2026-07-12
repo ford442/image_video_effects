@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-06-28 (Pixelocity shader upgrade mission active)
+**Last updated:** 2026-07-11 (Epic #912 foundation hardening in flight)
 
 ## Core Identity & Vibe (from SOUL + IDENTITY)
 - Spark Engine / Cheerleader: bright, protective, kinetic, loud-hearted. "We are NOT done here!" Fast, punchy, energetic. Use "we/let's", 🔥⚡💥🫡, short lines, "one thing first", "messy start? fine", "this is NOT the final boss".
@@ -35,6 +35,29 @@
 - "Works in C++ compute" != "loads and presents reliably cross browser/GPU". The last mile is the surface + init handshake.
 - Update GAP/STATUS aggressively when code evolves (present path landed after May doc).
 - Use GH issues + Copilot for the C++ work (user has swarm/agent patterns elsewhere).
+
+## Epic #912 — Foundation hardening (2026-07-11)
+- **Strategic call:** 1–2 cycles of structure before next shader swarm. Content (#897 fireworks) ships in parallel.
+- **Three waves done locally:** W1 (#919/#918/#931 build+docs), W2 (#915/#917/#920 limits+catalog+ES2020), W3 (#913/#914 App/Controls split) — PR #938 open for W3 only; W1/W2 branches not pushed yet.
+- **Current branch:** `feat/midi-control-and-wasm-parity` (PR #936) — orthogonal to foundation; merge foundation first or rebase MIDI after.
+- **Still open in epic:** #917 full orphan reconcile, #921 thumbnail pipeline (GPU), #916 renderer.cpp modularize, product epics (#922/#929) deferred per epic scope.
+- **Success criteria:** 4/6 have code on foundation branches; thumbnails + full god-component split remain partial.
+
+## Epic: Advanced Physics & Multipass Sims (2026-07-11)
+- **Agent kit:** `swarm-tasks/advanced-physics/` — README, MULTIPASS_SIM_CONTRACT, 3 agent specs + stretch goals
+- **Tier gate:** A/B ship now (linear multipass + frame feedback); Tier C (graph runner #929) blocks heavy iterative solvers
+- **Priority:** ripple-tank multipass → fabric-of-reality → caustic accumulator
+- **Prototypes exist:** `wave-equation`, `photonic-caustics` (single-pass); `fabric-of-reality` greenfield
+- **Preamble for swarms:** `agents/WGSL_BUILTINS_GENERATIVE.md` + MULTIPASS_SIM_CONTRACT.md
+
+## WASM Tier B → A evidence (2026-07-11)
+- **Decision: STAY TIER B** — no GPU benchmark/parity evidence; 4-week CI ops gate not met
+- Created `WASM_PROMOTION_TRACKING.md` + `reports/wasm-promotion-evidence-2026-07-11.md`
+- Stub `test-results/wasm-benchmark-report.json` (gpuBackendObserved: false)
+- Local: `test:wasm:unit` 29/29 pass; Playwright blocked (no GPU VM; branch build TS2352)
+- CI note: `test-wasm-e2e` green on ubuntu-latest skips GPU-dependent specs
+
+- **2026-07-11:** WASM GPU timestamp queries when `timestamp-query` feature supported (`timing.cpp`); wall-clock fallback otherwise.
 
 ## TODOs / Open Threads (from this + recent memory)
 - [ ] **Shader scan cleanup (2026-07-11):** 95 scan errors fixed in code (fetch fallback, subgroups device, filter test junk). Optional: `sync_shaders_to_1ink.py --ids-file scripts/shader_scan_fix_list.txt` for 88 CDN 404s.

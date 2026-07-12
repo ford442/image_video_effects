@@ -8,6 +8,16 @@ env.backends.onnx.logLevel = 'warning';
 
 const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
 
+<<<<<<< HEAD
+=======
+/** Narrow surface over @xenova/transformers depth pipeline (avoids importing heavy lib types). */
+export interface DepthEstimatorPipeline {
+  (imageUrl: string): Promise<{
+    predicted_depth: { data: number[]; dims: number[] };
+  }>;
+}
+
+>>>>>>> origin/main
 export interface UseDepthEstimationOptions {
     rendererRef: RefObject<RendererManager | null>;
     currentImageUrl: string | undefined;
@@ -15,7 +25,11 @@ export interface UseDepthEstimationOptions {
 }
 
 export interface UseDepthEstimationReturn {
+<<<<<<< HEAD
     depthEstimator: unknown | null;
+=======
+    depthEstimator: DepthEstimatorPipeline | null;
+>>>>>>> origin/main
     isModelLoaded: boolean;
     loadDepthModel: () => Promise<void>;
     runDepthAnalysis: (imageUrl: string) => Promise<void>;
@@ -26,16 +40,24 @@ export function useDepthEstimation({
     currentImageUrl,
     setStatus,
 }: UseDepthEstimationOptions): UseDepthEstimationReturn {
+<<<<<<< HEAD
     const [depthEstimator, setDepthEstimator] = useState<unknown | null>(null);
+=======
+    const [depthEstimator, setDepthEstimator] = useState<DepthEstimatorPipeline | null>(null);
+>>>>>>> origin/main
 
     const runDepthAnalysis = useCallback(async (imageUrl: string) => {
         if (!depthEstimator || !rendererRef.current) return;
         setStatus('Analyzing image with depth model...');
         try {
+<<<<<<< HEAD
             const estimator = depthEstimator as (url: string) => Promise<{
                 predicted_depth: { data: number[]; dims: number[] };
             }>;
             const result = await estimator(imageUrl);
+=======
+            const result = await depthEstimator(imageUrl);
+>>>>>>> origin/main
             const { data, dims } = result.predicted_depth;
             const [height, width] = [dims[dims.length - 2], dims[dims.length - 1]];
             const normalizedData = new Float32Array(data.length);
@@ -71,7 +93,11 @@ export function useDepthEstimation({
                 progress_callback: (p: { status?: string }) =>
                     setStatus(`Loading depth model: ${p.status}...`),
             });
+<<<<<<< HEAD
             setDepthEstimator(() => estimator);
+=======
+            setDepthEstimator(() => estimator as DepthEstimatorPipeline);
+>>>>>>> origin/main
             setStatus('Depth model loaded.');
             if (currentImageUrl) await runDepthAnalysis(currentImageUrl);
         } catch (e: unknown) {

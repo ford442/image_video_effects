@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useMemo } from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
 import { AIStatus, AutoTransitionConfig } from '../AutoDJ';
@@ -1661,3 +1662,7 @@ const Controls: React.FC<ControlsProps> = ({
 
 
 export default Controls;
+=======
+export { ControlsContainer as default } from './controls/ControlsContainer';
+export type { ControlsProps } from './controls/types';
+>>>>>>> origin/main
