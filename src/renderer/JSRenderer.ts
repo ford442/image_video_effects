@@ -1,6 +1,6 @@
-import { Renderer, RendererConfig } from './Renderer';
+import { IRenderer, RendererConfig } from './Renderer';
 
-export class JSRenderer implements Renderer {
+export class JSRenderer implements IRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private config: RendererConfig;
@@ -51,6 +51,10 @@ export class JSRenderer implements Renderer {
     this.image = null; // Clear image when video is set
   }
 
+  getVideo(): HTMLVideoElement | null {
+    return this.video;
+  }
+
   updateVideoFrame(): void {
     // Video is sampled directly in render loop
   }
@@ -86,7 +90,7 @@ export class JSRenderer implements Renderer {
 
   setParam(name: string, value: number): void {
     if (name in this.params) {
-      (this.params as any)[name] = value;
+      (this.params as Record<string, number>)[name] = value;
     }
   }
 

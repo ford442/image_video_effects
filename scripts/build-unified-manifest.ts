@@ -44,6 +44,24 @@ const PROJECT_ROOT = process.cwd();
 const LISTS_DIR = path.join(PROJECT_ROOT, 'public', 'shader-lists');
 const OUTPUT_FILE = path.join(PROJECT_ROOT, 'public', 'shader-manifest-unified.json');
 
+/** Must match folder names under shader_definitions/ and generate_shader_lists.js output. */
+const CANONICAL_LIST_FILES = [
+  'advanced-hybrid.json',
+  'artistic.json',
+  'distortion.json',
+  'generative.json',
+  'geometric.json',
+  'hybrid.json',
+  'image.json',
+  'interactive-mouse.json',
+  'lighting-effects.json',
+  'liquid-effects.json',
+  'post-processing.json',
+  'retro-glitch.json',
+  'simulation.json',
+  'visual-effects.json',
+];
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 function buildUnifiedManifest(): void {
@@ -54,10 +72,14 @@ function buildUnifiedManifest(): void {
     process.exit(1);
   }
 
-  const jsonFiles = fs
-    .readdirSync(LISTS_DIR)
-    .filter((f) => f.endsWith('.json'))
-    .sort();
+  const jsonFiles = CANONICAL_LIST_FILES.filter((f) => {
+    const filePath = path.join(LISTS_DIR, f);
+    if (!fs.existsSync(filePath)) {
+      console.warn(`⚠️  Canonical list missing (skipped): ${f}`);
+      return false;
+    }
+    return true;
+  });
 
   if (jsonFiles.length === 0) {
     console.error(`❌ No JSON files found in ${LISTS_DIR}`);

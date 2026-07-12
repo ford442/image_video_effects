@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useMemo } from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
 import { AIStatus, AutoTransitionConfig } from '../AutoDJ';
@@ -13,7 +14,9 @@ import { LiveStreamPanel } from './LiveStreamPanel';
 import { loadVJHistory, clearVJHistory, VJHistoryEntry } from '../services/vjHistory';
 import { VJPreset, loadPresets, deletePreset } from '../services/vjPresets';
 import { MyVjSet, loadMyVjSets, deleteMyVjSet } from '../services/myVjSets';
-import { RendererSwitcher } from './RendererSwitcher';
+import { RendererBackendPanel } from './controls/panels/RendererBackendPanel';
+import { ParamSlidersPanel } from './controls/panels/ParamSlidersPanel';
+import { SlotStackPanel } from './controls/panels/SlotStackPanel';
 import { PresetPackGallery } from './PresetPackGallery';
 import { decodeChain, buildSharedChain } from '../services/layerChainShare';
 import type { SharedChain } from '../services/layerChainShare';
@@ -699,8 +702,8 @@ const Controls: React.FC<ControlsProps> = ({
 
                         
             {/* --- Renderer Switcher --- */}
-            {onSwitchRenderer && (
-                <RendererSwitcher
+            {onSwitchRenderer && activeRendererType && (
+                <RendererBackendPanel
                     activeRendererType={activeRendererType}
                     onSwitchRenderer={onSwitchRenderer}
                 />
@@ -820,194 +823,21 @@ const Controls: React.FC<ControlsProps> = ({
                 </div>
             </div>
 
-            {/* --- Stack / Slot Selection --- */}
-            <div className="glass-panel" style={{padding: '12px'}}>
-                <div className="gold-section-header" style={{fontSize: '12px', marginTop: '0'}}>Shader Slots</div>
-                {modes.map((_, i) => {
-                    const slotStatus = slotShaderStatus[i] || 'idle';
-                    const borderColor = slotStatus === 'error' ? '#ff4757'
-                        : slotStatus === 'loading' ? '#ffa502'
-                        : activeSlot === i ? '#FFD700' : 'rgba(255,215,0,0.08)';
-                    const glowStyle = activeSlot === i ? 
-                        {boxShadow: '0 0 20px rgba(255, 215, 0, 0.2)'} : {};
-                    return (
-                    <div
-                        key={i}
-                        className={`glass-card ${activeSlot === i ? 'gold-active' : ''}`}
-                        onClick={() => setActiveSlot(i)}
-                        style={{
-                            padding: '10px',
-                            marginBottom: '8px',
-                            cursor: 'pointer',
-                            borderColor: borderColor,
-                            ...glowStyle
-                        }}
-                    >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                            <span style={{ fontSize: '12px', color: activeSlot === i ? '#FFD700' : '#a0a0b0', fontWeight: 600 }}>Slot {i + 1}</span>
-                            {slotStatus === 'loading' && (
-                                <span className="gold-badge" style={{color: '#ffa502', borderColor: 'rgba(255,165,2,0.3)', background: 'rgba(255,165,2,0.1)'}}>
-                                    <span className="gold-spinner" style={{width: '12px', height: '12px'}}></span>
-                                    COMPILING
-                                </span>
-                            )}
-                            {slotStatus === 'error' && (
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <span
-                                        className="gold-badge"
-                                        title="Shader failed to compile or load. Retry if it was a transient network error, or pick a different shader below."
-                                        style={{color: '#ff4757', borderColor: 'rgba(255,71,87,0.3)', background: 'rgba(255,71,87,0.1)'}}
-                                    >
-                                        ✕ FAILED
-                                    </span>
-                                    <button
-                                        title="Retry loading this shader (useful for transient network errors)"
-                                        onClick={(e) => { e.stopPropagation(); setMode(i, modes[i]); }}
-                                        style={{
-                                            background: 'rgba(255,71,87,0.15)',
-                                            border: '1px solid rgba(255,71,87,0.4)',
-                                            borderRadius: '4px',
-                                            color: '#ff4757',
-                                            cursor: 'pointer',
-                                            fontSize: '10px',
-                                            padding: '2px 6px',
-                                            lineHeight: 1.4,
-                                        }}
-                                    >
-                                        ↺ Retry
-                                    </button>
-                                </span>
-                            )}
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                            <div style={{ flex: 1 }}>
-                                <ShaderMegaMenu
-                                    options={slotMenuOptions}
-                                    value={modes[i]}
-                                    onChange={(id) => setMode(i, id as RenderMode)}
-                                    includeNone={true}
-                                    onClick={(e) => e.stopPropagation()}
-                                />
-                            </div>
-                            <button
-                                className="gold-badge"
-                                title="Browse shader thumbnails"
-                                onClick={(e) => { e.stopPropagation(); setGalleryOpenFor(i); }}
-                                style={{ cursor: 'pointer', fontSize: '13px', padding: '6px 8px' }}
-                            >
-                                🖼️
-                            </button>
-                        </div>
-                    </div>
-                    );
-                })}
-            </div>
+            <SlotStackPanel
+                modes={modes}
+                setMode={setMode}
+                activeSlot={activeSlot}
+                setActiveSlot={setActiveSlot}
+                slotShaderStatus={slotShaderStatus}
+                slotMenuOptions={slotMenuOptions}
+            />
 
-            {galleryOpenFor !== null && typeof galleryOpenFor === 'number' && (
-                <ShaderGallery
-                    options={slotMenuOptions}
-                    value={modes[galleryOpenFor]}
-                    onSelect={(id) => { setMode(galleryOpenFor, id as RenderMode); setGalleryOpenFor(null); }}
-                    onClose={() => setGalleryOpenFor(null)}
-                />
-            )}
-
-            {/* --- Slot Parameter Controls --- */}
-            <div className="gold-section-header">
-                Shader Parameters
-                <span style={{fontWeight: 'normal', color: '#a0a0b0', marginLeft: '8px', fontSize: '12px'}}>
-                    {currentShaderEntry?.name || 'None'}
-                </span>
-            </div>
-
-            <div className="params-grid">
-            {currentShaderEntry?.params?.map((param, index) => {
-                if (index > 3) return null; // Support up to 4 params
-
-                let val = 0;
-                if (index === 0) val = currentParams.zoomParam1;
-                else if (index === 1) val = currentParams.zoomParam2;
-                else if (index === 2) val = currentParams.zoomParam3;
-                else if (index === 3) val = currentParams.zoomParam4;
-
-                return (
-                    <div key={param.id} className="control-group">
-                        <label htmlFor={`param-${param.id}`} style={{display: 'flex', justifyContent: 'space-between', color: '#a0a0b0'}}>
-                            <span>{param.name}</span>
-                            <span style={{color: '#FFD700', fontSize: '11px', fontWeight: 500}}>{val.toFixed(2)}</span>
-                        </label>
-                        <input
-                            id={`param-${param.id}`}
-                            type="range"
-                            className="glass-range"
-                            min={param.min}
-                            max={param.max}
-                            step={param.step || 0.01}
-                            value={val}
-                            onChange={(e) => {
-                                const v = parseFloat(e.target.value);
-                                const update: Partial<SlotParams> = {};
-                                if (index === 0) update.zoomParam1 = v;
-                                else if (index === 1) update.zoomParam2 = v;
-                                else if (index === 2) update.zoomParam3 = v;
-                                else if (index === 3) update.zoomParam4 = v;
-                                updateSlotParam(activeSlot, update);
-                            }}
-                        />
-                    </div>
-                );
-            })}
-            </div>
-
-            {currentShaderEntry?.params && currentShaderEntry.params.length > 4 && (
-                <div style={{color: '#a0a0b0', fontStyle: 'italic', padding: '5px 0', fontSize: '11px', textAlign: 'center'}}>
-                    Showing 4 of {currentShaderEntry.params.length} parameters (renderer limit)
-                </div>
-            )}
-            
-            {currentShaderEntry && (!currentShaderEntry.params || currentShaderEntry.params.length === 0) && (
-                <>
-                <div style={{color: '#a0a0b0', fontStyle: 'italic', padding: '5px 0', fontSize: '11px', textAlign: 'center'}}>
-                    Generic parameters for <code style={{color: '#FFD700'}}>{currentShaderEntry.id}</code>
-                </div>
-                <div className="params-grid">
-                {[
-                    { id: 'fallback1', name: 'Param 1', paramKey: 'zoomParam1' as const },
-                    { id: 'fallback2', name: 'Param 2', paramKey: 'zoomParam2' as const },
-                    { id: 'fallback3', name: 'Param 3', paramKey: 'zoomParam3' as const },
-                    { id: 'fallback4', name: 'Param 4', paramKey: 'zoomParam4' as const },
-                ].map((fb) => {
-                    const val = currentParams[fb.paramKey];
-                    return (
-                        <div key={fb.id} className="control-group">
-                            <label htmlFor={`param-${fb.id}`} style={{display: 'flex', justifyContent: 'space-between', color: '#a0a0b0'}}>
-                                <span>{fb.name}</span>
-                                <span style={{color: '#FFD700', fontSize: '11px', fontWeight: 500}}>{val.toFixed(2)}</span>
-                            </label>
-                            <input
-                                id={`param-${fb.id}`}
-                                type="range"
-                                className="glass-range"
-                                min={0}
-                                max={1}
-                                step={0.01}
-                                value={val}
-                                onChange={(e) => {
-                                    updateSlotParam(activeSlot, { [fb.paramKey]: parseFloat(e.target.value) });
-                                }}
-                            />
-                        </div>
-                    );
-                })}
-                </div>
-                </>
-            )}
-            
-            {!currentShaderEntry && (
-                <div className="glass-card" style={{textAlign: 'center', padding: '15px', color: '#a0a0b0', fontStyle: 'italic'}}>
-                    Select an effect for this slot to see parameters.
-                </div>
-            )}
+            <ParamSlidersPanel
+                activeSlot={activeSlot}
+                currentShaderEntry={currentShaderEntry}
+                currentParams={currentParams}
+                updateSlotParam={updateSlotParam}
+            />
 
             {/* --- Current Shader Coordinate Display --- */}
             {currentCoordinate !== null && (
@@ -1832,3 +1662,7 @@ const Controls: React.FC<ControlsProps> = ({
 
 
 export default Controls;
+=======
+export { ControlsContainer as default } from './controls/ControlsContainer';
+export type { ControlsProps } from './controls/types';
+>>>>>>> origin/main

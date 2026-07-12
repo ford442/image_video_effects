@@ -27,6 +27,7 @@ export interface GPUTimings {
   chainedTime: number;
   totalTime: number;
   available: boolean;
+  timingSource: 'gpu-timestamp' | 'wall-clock' | 'unavailable';
 }
 
 export interface SlotState {

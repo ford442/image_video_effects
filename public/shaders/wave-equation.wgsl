@@ -105,10 +105,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
-  // Parameters
+  // Parameters — bass from plasmaBuffer amplifies injection
+  let bass = plasmaBuffer[0].x;
   let waveSpeed = mix(0.1, 0.5, u.zoom_params.x);
   let damping = mix(0.98, 0.999, u.zoom_params.y);
-  let sourceStrength = mix(0.1, 1.0, u.zoom_params.z);
+  let sourceStrength = mix(0.1, 1.0, u.zoom_params.z) * (1.0 + bass * 0.35);
   let boundaryReflect = mix(0.0, 0.95, u.zoom_params.w);
   
   // Read current state: r=height, g=velocity, b=previous height, a=source intensity

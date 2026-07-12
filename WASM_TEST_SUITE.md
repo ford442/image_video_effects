@@ -77,7 +77,7 @@ Optional canvas snapshots (first 2 matrix entries) live under `tests/renderer-pa
 - `avgFps`
 - `avgTotalMs` / `p95TotalMs` from `getGPUTimings()`
 
-**Note:** WASM `getGPUTimings().available` is always `false` today — C++ records CPU wall-clock per slot, not GPU timestamp queries. TS WebGPU may report `available: true` when timestamp queries are supported.
+**Note:** WASM `getGPUTimings().available` is `true` when the adapter supports `timestamp-query` and readback succeeded; otherwise wall-clock with `available: false`. TS WebGPU uses the same shape.
 
 ## Shader hot-reload (dev)
 

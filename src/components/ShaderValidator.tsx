@@ -17,8 +17,8 @@ interface ValidationResult {
 }
 
 const SHADER_LIST_FILES = [
-  'image.json', 'generative.json', 'interactive.json', 'interactive-mouse.json',
-  'distortion.json', 'simulation.json', 'liquid.json', 'liquid-effects.json',
+  'image.json', 'generative.json', 'interactive-mouse.json',
+  'distortion.json', 'simulation.json', 'liquid-effects.json',
   'artistic.json', 'geometric.json', 'hybrid.json', 'advanced-hybrid.json',
   'visual-effects.json', 'lighting-effects.json', 'retro-glitch.json', 'post-processing.json'
 ];

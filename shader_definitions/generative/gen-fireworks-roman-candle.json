@@ -1,0 +1,60 @@
+{
+  "name": "4th of July \u2014 Roman Candle",
+  "category": "generative",
+  "tags": [
+    "fireworks",
+    "roman-candle",
+    "barrage",
+    "pyrotechnics",
+    "july-4",
+    "audio-reactive",
+    "generative",
+    "4th-of-july"
+  ],
+  "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Each tube shoots a sequence of colored stars straight upward with comet trails. Bass makes bigger stars, treble increases fire rate. The quintessential backyard July 4th barrage. Mouse aims a personal roman candle at the cursor.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Fire Rate",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Star Size",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Tube Spread",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Trail Length",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-fireworks-roman-candle",
+  "url": "shaders/gen-fireworks-roman-candle.wgsl",
+  "features": []
+}

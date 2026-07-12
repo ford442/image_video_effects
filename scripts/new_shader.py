@@ -26,6 +26,7 @@ from bindgroup_checker import EXPECTED_BINDINGS, TEMPLATE_FILES  # noqa: E402
 
 PROJECT_ROOT = _SCRIPTS_DIR.parent
 SHADERS_DIR = PROJECT_ROOT / "public" / "shaders"
+DEFINITIONS_DIR = PROJECT_ROOT / "shader_definitions"
 TEMPLATE_PATH = SHADERS_DIR / "_template_canonical_compute.wgsl"
 
 # Canonical variable name for each binding number. The contract in
@@ -115,6 +116,59 @@ def generate_shader(shader_id: str, category: str | None) -> str:
     return header + "\n" + load_template_stub()
 
 
+def infer_category(shader_id: str, category: str | None) -> str:
+    if category:
+        return category.replace(" ", "-").lower()
+    prefixes = {
+        "gen-": "generative",
+        "sim-": "simulation",
+        "interactive-": "interactive-mouse",
+        "pp-": "post-processing",
+    }
+    for prefix, folder in prefixes.items():
+        if shader_id.startswith(prefix):
+            return folder
+    return "advanced-hybrid"
+
+
+def title_from_id(shader_id: str) -> str:
+    return " ".join(word.capitalize() for word in shader_id.split("-"))
+
+
+def write_shader_definition(shader_id: str, category: str | None) -> Path:
+    """Create shader_definitions/<category>/<id>.json alongside the WGSL file."""
+    import json
+
+    folder = infer_category(shader_id, category)
+    def_path = DEFINITIONS_DIR / folder / f"{shader_id}.json"
+    if def_path.exists():
+        raise FileExistsError(f"Definition already exists: {def_path}")
+
+    defn = {
+        "id": shader_id,
+        "name": title_from_id(shader_id),
+        "url": f"shaders/{shader_id}.wgsl",
+        "description": f"New effect scaffolded by scripts/new_shader.py ({datetime.now().date().isoformat()}).",
+        "tags": [folder.replace("-", " ")],
+        "features": ["mouse-driven"],
+        "params": [
+            {
+                "id": f"param{i}",
+                "name": f"Param {i}",
+                "default": 0.5,
+                "min": 0,
+                "max": 1,
+                "step": 0.01,
+                "mapping": f"zoom_params.{axis}",
+            }
+            for i, axis in enumerate(["x", "y", "z", "w"], start=1)
+        ],
+    }
+    def_path.parent.mkdir(parents=True, exist_ok=True)
+    def_path.write_text(json.dumps(defn, indent=2) + "\n", encoding="utf-8")
+    return def_path
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Scaffold a new Pixelocity compute shader."
@@ -123,7 +177,12 @@ def main() -> int:
     parser.add_argument(
         "--category",
         default=None,
-        help="Optional category (recorded in header; does not affect WGSL path)",
+        help="shader_definitions/ folder (e.g. generative, simulation). Inferred from id prefix when omitted.",
+    )
+    parser.add_argument(
+        "--skip-json",
+        action="store_true",
+        help="Only write WGSL; skip shader_definitions JSON (not recommended)",
     )
     parser.add_argument(
         "--dry-run",
@@ -134,6 +193,7 @@ def main() -> int:
 
     shader_id = sanitize_shader_id(args.name)
     out_path = SHADERS_DIR / f"{shader_id}.wgsl"
+    def_path = DEFINITIONS_DIR / infer_category(shader_id, args.category) / f"{shader_id}.json"
 
     if out_path.name in TEMPLATE_FILES:
         print(f"ERROR: '{out_path.name}' is a reserved template filename.", file=sys.stderr)
@@ -143,16 +203,28 @@ def main() -> int:
         print(f"ERROR: Refusing to overwrite existing file: {out_path}", file=sys.stderr)
         return 1
 
+    if not args.skip_json and def_path.exists() and not args.dry_run:
+        print(f"ERROR: Refusing to overwrite existing definition: {def_path}", file=sys.stderr)
+        return 1
+
     source = generate_shader(shader_id, args.category)
 
     if args.dry_run:
         print(source)
+        if not args.skip_json:
+            print(f"\n# Would also create {def_path}")
         return 0
 
     out_path.write_text(source, encoding="utf-8")
     print(f"Created {out_path}")
-    print(f"Next: edit the stub effect, then run:")
-    print(f"  /root/.cargo/bin/naga {out_path}")
+
+    if not args.skip_json:
+        written_def = write_shader_definition(shader_id, args.category)
+        print(f"Created {written_def}")
+
+    print("Next:")
+    print(f"  node scripts/generate_shader_lists.js")
+    print(f"  python3 scripts/audit_orphan_shader_defs.py")
     print(f"  python scripts/wgsl_precommit_gate.py --files {out_path.name}")
     return 0
 

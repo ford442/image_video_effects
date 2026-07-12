@@ -1,9 +1,8 @@
 /**
- * WASM vs WebGPU benchmark suite using getGPUTimings() + FPS metrics.
+ * WASM vs WebGPU benchmark suite — FPS + getGPUTimings() wall-clock metrics.
  *
- * Outputs JSON summary to stdout for CI artifacts / local comparison.
+ * Writes JSON report for CI artifacts / Tier A promotion tracking.
  *
- * Run locally:
  *   npm run build && WASM_GPU_TESTS=1 npm run test:wasm:bench
  */
 
@@ -16,17 +15,14 @@ import {
   waitForTestApi,
   loadShaderOnSlot,
   applyTestState,
-  hasGpuForTests,
+  isStrictGpuMode,
+  computeSpeedupRatio,
+  buildBenchmarkReport,
+  writeBenchmarkReport,
+  type BenchResult,
+  type BenchComparison,
+  PROMOTION_SPEEDUP_RATIO,
 } from './helpers/rendererHarness';
-
-interface BenchResult {
-  shaderId: string;
-  backend: string;
-  avgFps: number;
-  avgTotalMs: number;
-  gpuTimingsAvailable: boolean;
-  p95TotalMs: number;
-}
 
 test.beforeAll(async () => {
   await startStaticServer();
@@ -63,20 +59,27 @@ async function benchBackend(
     .sort((a: number, b: number) => a - b);
   const p95 = totals.length ? totals[Math.floor(totals.length * 0.95)] ?? 0 : 0;
 
+  const lastGpu = report?.samples?.[report.samples.length - 1]?.gpu;
+
   return {
     shaderId: shader.id,
     backend,
     avgFps: report?.avgFps ?? 0,
     avgTotalMs: report?.avgTotalMs ?? 0,
     gpuTimingsAvailable: report?.gpuTimingsAvailable ?? false,
+    timingSource: lastGpu?.timingSource ?? 'unavailable',
     p95TotalMs: p95,
   };
 }
 
 test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
-  test.skip(!hasGpuForTests(), 'Set WASM_GPU_TESTS=1 with WebGPU hardware');
+  if (!isStrictGpuMode()) {
+    test.skip(true, 'Set WASM_GPU_TESTS=1 with WebGPU hardware for benchmarks');
+  }
 
   const allResults: BenchResult[] = [];
+  const comparisons: BenchComparison[] = [];
+  let gpuObserved = false;
 
   for (const shader of BENCHMARK_MATRIX) {
     const wasmPage = page;
@@ -87,24 +90,54 @@ test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
     await tsPage.close();
 
     if (!wasmBench || !tsBench) {
-      test.skip(true, 'One or both GPU backends unavailable');
+      console.warn(
+        `[bench] Skipping ${shader.id}: wasm=${wasmBench ? 'ok' : 'missing'} webgpu=${tsBench ? 'ok' : 'missing'}`
+      );
+      continue;
     }
 
-    allResults.push(wasmBench!, tsBench!);
+    gpuObserved = true;
+    allResults.push(wasmBench, tsBench);
 
-    // WASM should stay within 3× TS wall-clock (generous — different timing sources)
-    if (wasmBench!.avgTotalMs > 0 && tsBench!.avgTotalMs > 0) {
-      expect(wasmBench!.avgTotalMs).toBeLessThan(tsBench!.avgTotalMs * 3 + 5);
+    const speedupRatio = computeSpeedupRatio(wasmBench, tsBench);
+    const meetsPromotionGate = speedupRatio >= PROMOTION_SPEEDUP_RATIO;
+
+    comparisons.push({
+      shaderId: shader.id,
+      wasmFps: wasmBench.avgFps,
+      webgpuFps: tsBench.avgFps,
+      wasmAvgTotalMs: wasmBench.avgTotalMs,
+      webgpuAvgTotalMs: tsBench.avgTotalMs,
+      speedupRatio,
+      meetsPromotionGate,
+    });
+
+    expect(wasmBench.avgFps).toBeGreaterThan(0);
+    expect(tsBench.avgFps).toBeGreaterThan(0);
+
+    // Generous wall-clock guard (different timing sources)
+    if (wasmBench.avgTotalMs > 0 && tsBench.avgTotalMs > 0) {
+      expect(wasmBench.avgTotalMs).toBeLessThan(tsBench.avgTotalMs * 3 + 5);
     }
-
-    expect(wasmBench!.avgFps).toBeGreaterThan(0);
-    expect(tsBench!.avgFps).toBeGreaterThan(0);
   }
 
+  const report = buildBenchmarkReport(allResults, comparisons);
+  report.gpuBackendObserved = gpuObserved;
+  writeBenchmarkReport(report);
+
   console.log('\n=== WASM Benchmark Report ===');
-  console.log(JSON.stringify(allResults, null, 2));
-  console.log('Note: WASM getGPUTimings().available is false (CPU wall-clock only).');
+  console.log(JSON.stringify(report, null, 2));
+  console.log(
+    `Promotion gate (≥${PROMOTION_SPEEDUP_RATIO}× on ≥${report.promotionMinShaders} shaders): ` +
+      `${report.promotionGateMet ? 'MET' : 'NOT MET'} ` +
+      `(${comparisons.filter((c) => c.meetsPromotionGate).length}/${comparisons.length} shaders)`
+  );
+  console.log('Note: WASM timingSource is gpu-timestamp when timestamp-query is supported, else wall-clock.');
   console.log('=============================\n');
+
+  if (!gpuObserved) {
+    test.skip(true, 'WebGPU adapter unavailable — run locally or on a GPU runner with WASM_GPU_TESTS=1');
+  }
 });
 
 test('WASM getGPUTimings API surface', async ({ page }) => {
@@ -117,4 +150,5 @@ test('WASM getGPUTimings API surface', async ({ page }) => {
   expect(typeof timings.chainedTime).toBe('number');
   expect(typeof timings.totalTime).toBe('number');
   expect(typeof timings.available).toBe('boolean');
+  expect(['gpu-timestamp', 'wall-clock', 'unavailable']).toContain(timings.timingSource);
 });
