@@ -4,7 +4,12 @@
  * Shader loading, compilation, and pipeline cache for the WebGPU renderer.
  */
 
-import { compileShader } from '../ShaderCompilation';
+import {
+  analyzeShaderBindings,
+  compileShader,
+  CONSERVATIVE_BINDING_USAGE,
+  ShaderBindingUsage,
+} from '../ShaderCompilation';
 import { resolveShaderUrl } from '../../utils/resolveShaderUrl';
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
 
@@ -12,6 +17,7 @@ export class WebGPUShaderManager {
   private pipelines = new Map<string, GPUComputePipeline>();
   private pipelineHashes = new Map<string, string>();
   private workgroupSizes = new Map<string, { x: number; y: number }>();
+  private bindingUsages = new Map<string, ShaderBindingUsage>();
 
   getPipeline(id: string): GPUComputePipeline | undefined {
     return this.pipelines.get(id);
@@ -25,6 +31,10 @@ export class WebGPUShaderManager {
     return this.workgroupSizes.get(id) || { x: 8, y: 8 };
   }
 
+  getBindingUsage(id: string): ShaderBindingUsage {
+    return this.bindingUsages.get(id) ?? CONSERVATIVE_BINDING_USAGE;
+  }
+
   getCacheStats(): { cachedCount: number; cachedIds: string[] } {
     return {
       cachedCount: this.pipelines.size,
@@ -36,6 +46,7 @@ export class WebGPUShaderManager {
     this.pipelines.clear();
     this.pipelineHashes.clear();
     this.workgroupSizes.clear();
+    this.bindingUsages.clear();
   }
 
   compile(
@@ -44,7 +55,7 @@ export class WebGPUShaderManager {
     id: string,
     wgsl: string,
   ): boolean {
-    return compileShader(
+    const ok = compileShader(
       device,
       pipelineLayout,
       id,
@@ -53,6 +64,13 @@ export class WebGPUShaderManager {
       this.pipelineHashes,
       this.workgroupSizes,
     );
+    if (ok) {
+      // Analyzed from the requested source even if the fallback pipeline was
+      // used — the fallback touches strictly fewer resources, so this only
+      // ever errs toward performing a copy.
+      this.bindingUsages.set(id, analyzeShaderBindings(wgsl));
+    }
+    return ok;
   }
 
   async loadShader(

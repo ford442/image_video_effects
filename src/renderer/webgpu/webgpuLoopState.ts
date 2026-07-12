@@ -32,9 +32,7 @@ export interface WebGPURenderLoopHost {
   blitBindGroupLayout: GPUBindGroupLayout;
   blitPipeline: GPURenderPipeline;
   generativeBlitPipeline: GPURenderPipeline;
-  filterSampler: GPUSampler;
-  videoCopyPipeline: GPURenderPipeline | null;
-  videoCopyBindGroupLayout: GPUBindGroupLayout | null;
+  scaleCopyPipeline: GPURenderPipeline;
   canvasW: number;
   canvasH: number;
   scaledW: number;
@@ -100,9 +98,7 @@ export function createRenderLoopState(host: WebGPURenderLoopHost): WebGPURenderL
     get blitBindGroupLayout() { return h.blitBindGroupLayout; },
     get blitPipeline() { return h.blitPipeline; },
     get generativeBlitPipeline() { return h.generativeBlitPipeline; },
-    get filterSampler() { return h.filterSampler; },
-    get videoCopyPipeline() { return h.videoCopyPipeline; },
-    get videoCopyBindGroupLayout() { return h.videoCopyBindGroupLayout; },
+    get scaleCopyPipeline() { return h.scaleCopyPipeline; },
     get canvasW() { return h.canvasW; },
     get canvasH() { return h.canvasH; },
     get scaledW() { return h.scaledW; },
@@ -112,6 +108,7 @@ export function createRenderLoopState(host: WebGPURenderLoopHost): WebGPURenderL
     getPipeline: (id) => h.shaderManager.getPipeline(id),
     getWorkgroupSize: (id) => h.shaderManager.getWorkgroupSize(id),
     hasPipeline: (id) => h.shaderManager.hasPipeline(id),
+    getBindingUsage: (id) => h.shaderManager.getBindingUsage(id),
     get ripples() { return h.ripples; },
     get mouseX() { return h.mouseX; },
     get mouseYShader() { return h.mouseYShader; },
