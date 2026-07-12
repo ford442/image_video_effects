@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-11T11:19:31.983061+00:00",
+  "timestamp": "2026-07-12T03:01:06.451875+00:00",
   "definitions_scanned": 1291,
   "wgsl_files_scanned": 1294,
   "manifests": {
@@ -19407,5 +19407,7 @@
       "stem": "zoom-burst",
       "classification": "cataloged"
     }
-  ]
+  ],
+  "changed_definitions_checked": 0,
+  "changed_definition_failures": 0
 }

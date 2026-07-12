@@ -1882,6 +1882,10 @@ function MainApp() {
                         // Multi-Slot Chain Sharing props
                         onCopyChainShareLink={copyChainShareLink}
                         onApplySharedChain={applySharedChain}
+                        renderQualityMode={renderQualityMode}
+                        onRenderQualityChange={handleRenderQualityChange}
+                        maxActiveSlots={performanceHud.maxActiveSlots}
+                        performanceHud={performanceHud}
                     />
                 </aside>
                 <main className="canvas-container">
@@ -1938,6 +1942,15 @@ function MainApp() {
                                   ? '🎨 Canvas2D'
                                   : '🔷 WebGPU'}
                         </span>
+
+                        <PerformanceStatusHUD
+                            backend={activeRendererType}
+                            internalWidth={performanceHud.internalWidth}
+                            internalHeight={performanceHud.internalHeight}
+                            scale={performanceHud.scale}
+                            fps={activeRendererType === 'wasm' ? wasmFps : jsFps}
+                            qualityLabel={renderQualityMode}
+                        />
 
                         {/* FPS Comparison + Switch Toggle (JS WebGPU vs C++ WASM) */}
                         <RendererToggle
