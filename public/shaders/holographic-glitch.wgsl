@@ -1,9 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Holographic Glitch
 //  Category: retro-glitch
-//  Features: upgraded-rgba, holographic, glitch, chromatic-aberration, scanlines, audio-reactive, aces-tone-map, ign-dither, depth-aware, temporal-feedback
+//  Features: upgraded-rgba, holographic, glitch, chromatic-aberration,
+//            scanlines, audio-reactive, aces-tone-map, ign-dither,
+//            depth-aware, temporal-feedback, fresnel-rim, split-tone,
+//            film-grain, hue-preserve-clamp
 //  Complexity: Medium
-//  Upgraded: 2026-07-12
+//  Upgraded: 2026-07-12 (retry)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -35,7 +38,7 @@ fn valueNoise(p: vec2<f32>) -> f32 {
     let i = floor(p); let f = fract(p); let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x), mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
-fn fbm(p: vec2<f32>, oct: i32) -> f32 { var s = 0.0; var a = 0.5; var f = 1.0; for (var i = 0; i < oct; i++) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; } return s; }
+fn fbm(p: vec2<f32>, oct: i32) -> f32 { var s = 0.0; var a = 0.5; var f = 1.0; for (var i = 0; i < oct; i = i + 1) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; } return s; }
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0)); }
 fn ign(p: vec2<f32>) -> f32 { return fract(52.9829181 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715)))); }
 fn luma(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722)); }
@@ -49,6 +52,32 @@ fn chromaticAberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
     let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     return vec3<f32>(r, g, b);
+}
+
+// Split-tone the image: cool cyan in shadows and warm amber in highlights.
+fn splitTone(c: vec3<f32>, shadows: vec3<f32>, highlights: vec3<f32>, strength: f32) -> vec3<f32> {
+    let y = luma(c);
+    let mask = smoothstep(0.25, 0.7, y);
+    let tint = mix(shadows, highlights, mask);
+    return mix(c, c * tint, strength);
+}
+
+// Fresnel rim brightens the viewport edges like a worn holographic plate.
+fn fresnelRim(uv: vec2<f32>, bias: f32, power: f32) -> f32 {
+    let d = distance(uv, vec2<f32>(0.5));
+    let f = 1.0 - pow(clamp(d * 2.0, 0.0, 1.0), power);
+    return bias + (1.0 - bias) * f;
+}
+
+// Coarse film-grain overlay for a retro analog feel.
+fn filmGrain(uv: vec2<f32>, time: f32, strength: f32) -> f32 {
+    return (hash21(uv * 1234.5 + time * 37.0) - 0.5) * strength;
+}
+
+// Keep saturated highlights from clipping to white while preserving hue.
+fn huePreserveClamp(c: vec3<f32>) -> vec3<f32> {
+    let mx = max(max(c.r, c.g), c.b);
+    return c / max(mx, 1.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -80,10 +109,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let holo = (0.5 + 0.5 * cos(vec3<f32>(time + uv.x * 6.0, time + uv.x * 6.0 + 2.094, time + uv.x * 6.0 + 4.189))) * p2;
     let scan = sin(uv.y * res.y * 0.7 + time * (1.0 + p4 * 9.0) * (1.0 + treble)) * 0.07;
     let flick = 1.0 - p4 * 0.35 * hash21(uv + time);
+    let rim = fresnelRim(uv, 0.08, 2.2) * p2 * (0.4 + bass * 0.4);
 
-    var color = mix(ca, holo + scan, p2 * flick);
+    var color = mix(ca, holo + scan + rim, p2 * flick);
+    color = splitTone(color, vec3<f32>(0.65, 0.95, 1.05), vec3<f32>(1.15, 0.92, 0.68), p4 * 0.45);
     color = acesToneMap(color * (0.9 + mids * 0.25));
     color += (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
+    color += filmGrain(uv, time, p1 * 0.03);
+    color = huePreserveClamp(color);
 
     let depthAlpha = mix(0.35, 0.95, depth);
     let alpha = clamp(luma(color) * 0.8 * (1.0 + p2) * depthAlpha, 0.1, 0.98);

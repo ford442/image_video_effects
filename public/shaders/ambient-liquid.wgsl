@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Ambient Liquid
+//  Ambient Liquid  (RETRY expanded upgrade)
 //  Category: artistic
 //  Features: mouse-driven, liquid-distortion, upgraded-rgba,
-//            curl-noise, depth-aware, aces-tone-map
+//            curl-noise, depth-aware, aces-tone-map, reaction-diffusion,
+//            sdf-metaballs, anisotropic-specular, film-grain
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -55,6 +56,12 @@ fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
     let ny = fbm(p + vec2<f32>(eps, 0.0), 4) - fbm(p - vec2<f32>(eps, 0.0), 4);
     return vec2<f32>(nx, -ny) / (2.0 * eps);
 }
+fn curl2DAdv(p: vec2<f32>, t: f32) -> vec2<f32> {
+    // Advected curl: sample curl at a displaced location for extra vorticity.
+    let base = curl2D(p, t);
+    let adv = curl2D(p - base * 0.3 + t * 0.05, t);
+    return mix(base, adv, 0.5);
+}
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
@@ -85,6 +92,27 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
     else              { rgb = vec3<f32>(c, 0.0, x); }
     return rgb + vec3<f32>(m);
 }
+fn grayScott(p: vec2<f32>, t: f32) -> f32 {
+    // Approximate reaction-diffusion spot pattern from a few shifted sine waves.
+    let s1 = sin(p.x * 12.0 + t) + sin(p.y * 12.0 + t * 0.7);
+    let s2 = sin((p.x + p.y) * 8.0 + t * 1.3) + sin((p.x - p.y) * 8.0 - t * 0.9);
+    let spots = sin(s1 + s2 * 0.5) * 0.5 + 0.5;
+    return smoothstep(0.35, 0.65, spots);
+}
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = clamp(0.5 + 0.5 * (b - a) / max(k, 0.0001), 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
+fn metaballField(p: vec2<f32>, t: f32) -> f32 {
+    // Soft-body SDF metaball primitive field.
+    var d = 1000.0;
+    for (var i = 0; i < 4; i = i + 1) {
+        let fi = f32(i);
+        let center = vec2<f32>(0.3 + 0.4 * sin(t * 0.2 + fi), 0.3 + 0.4 * cos(t * 0.17 + fi * 1.7));
+        d = smin(d, length(p - center) - 0.12, 0.25);
+    }
+    return d;
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -99,7 +127,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let p3 = clamp(u.zoom_params.z, 0.0, 1.0);
     let p4 = clamp(u.zoom_params.w, 0.0, 1.0);
 
-    let flow = curl2D(uv * mix(4.0, 14.0, p2), time * 0.12);
+    let flow = curl2DAdv(uv * mix(4.0, 14.0, p2), time * 0.12);
     let mouse = u.zoom_config.yz;
     let to_mouse = mouse - uv;
     let mouse_influence = exp(-length(to_mouse) * 5.0) * 0.02 * (1.0 - p1);
@@ -115,6 +143,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         disp += vec2<f32>(to_ripple.y, -to_ripple.x) * ripple_strength * p3;
     }
 
+    // Domain-warped FBM turbulence layered on top of curl flow.
+    let turb = fbm(uv * mix(6.0, 22.0, p2) + disp * 30.0 + time * 0.1, 4);
+    disp += vec2<f32>(cos(turb * TAU), sin(turb * TAU)) * 0.006 * p2;
+
     let displacedUV = clamp(uv + disp, vec2<f32>(0.0), vec2<f32>(1.0));
     var color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 
@@ -128,10 +160,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, textureSampleLevel(readTexture, u_sampler, brightUV, 0.0), brightMask * 0.25);
     color = mix(color, textureSampleLevel(readTexture, u_sampler, darkUV, 0.0), darkMask * 0.75);
 
+    // Reaction-diffusion pattern modulates saturation and local hue.
+    let rd = grayScott(uv * mix(2.0, 8.0, p2) + disp * 10.0, time * 0.3);
+    // SDF metaball ink blobs.
+    let mb = metaballField(uv, time);
+    let inkMask = 1.0 - smoothstep(0.0, 0.12, mb);
+    let inkColor = vec3<f32>(0.05, 0.15, 0.35);
+
     var hsv = rgb2hsv(color.rgb);
-    hsv.x = fract(hsv.x + p4 * 0.08 + length(disp) * 2.0);
+    hsv.x = fract(hsv.x + p4 * 0.08 + length(disp) * 2.0 + rd * 0.05);
+    hsv.y = clamp(hsv.y * (1.0 + rd * 0.4 * p4), 0.0, 1.0);
     color = vec4<f32>(hsv2rgb(hsv), color.a);
     color = vec4<f32>(acesToneMap(color.rgb * (1.0 + p4 * 0.2)), color.a);
+
+    // Blend ink blobs into dark regions.
+    color = vec4<f32>(mix(color.rgb, inkColor, inkMask * darkMask * 0.5 * p3), color.a);
+
+    // Anisotropic specular highlight along flow direction.
+    let flowDir = normalize(disp + vec2<f32>(0.0001));
+    let aniso = pow(max(dot(normalize(uv - 0.5 + vec2<f32>(0.0001)), flowDir), 0.0), 16.0);
+    let spec = vec3<f32>(0.25, 0.3, 0.35) * aniso * length(disp) * 40.0 * (1.0 + plasmaBuffer[0].z);
+    color = vec4<f32>(color.rgb + spec * p2, color.a);
+
+    // Vignette + film grain.
+    let vig = 1.0 - smoothstep(0.4, 1.4, length(uv - 0.5) * 1.4);
+    let grain = (hash21(uv * 1000.0 + time) - 0.5) / 128.0;
+    color = vec4<f32>(color.rgb * vig + grain, color.a);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let alpha = clamp(dot(color.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.8 + depth * 0.2 + length(disp) * 8.0, 0.15, 0.95);

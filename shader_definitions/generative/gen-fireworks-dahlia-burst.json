@@ -1,0 +1,63 @@
+{
+  "name": "4th of July — Dahlia Burst",
+  "category": "generative",
+  "tags": [
+    "fireworks",
+    "dahlia",
+    "petals",
+    "disk",
+    "flat-burst",
+    "pyrotechnics",
+    "july-4",
+    "audio-reactive",
+    "generative",
+    "4th-of-july"
+  ],
+  "description": "Flat dahlia-disk shells that bloom into layered rows of radial petals — warm coral cores fading to gold tips across concentric petal rings. Unlike spherical chrysanthemums, dahlia bursts spread in a wide flat disk before petals curl and fall. Bass expands disk radius, mids stagger petal-row timing, treble adds micro-petals. Mouse detonates a personal dahlia at the cursor.",
+  "workgroup_size": [16, 16, 1],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Petal Count",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Disk Size",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Petal Rows",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Hue Cycle",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-fireworks-dahlia-burst",
+  "url": "shaders/gen-fireworks-dahlia-burst.wgsl",
+  "features": [
+    "fireworks",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal-feedback"
+  ]
+}

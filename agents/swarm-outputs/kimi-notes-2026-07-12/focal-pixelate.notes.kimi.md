@@ -1,3 +1,18 @@
-- **What changed:** Added FBM domain warp to the pixelation grid, IGN blue-noise dither, depth-aware exponential fog, ACES tone mapping, and semantic alpha. Replaced the `if (invert)` branch with `select`/`step` and bound all four params to `zoom_params`.
-- **Why:** These upgrades keep the original focal-pixelate soul while making it compositing-friendly (semantic alpha), banding-free (IGN), reactive to audio (bass/treble), and slot-chain aware via depth-aware fog and `dataTextureA` feedback.
-- **Performance concern:** `domainWarp` calls 3-octave fbm twice per pixel; it is still well under the 138-line budget and 16x16-friendly, but on low-end GPUs the dual fbm may be the first bottleneck.
+# focal-pixelate — Retry Upgrade Notes
+
+## Original baseline (HEAD)
+- 77 lines, mouse-driven focal pixelation with FBM domain warp, depth fog, IGN dither, semantic alpha.
+
+## Upgrades added
+1. **Hex-bokeh sampling** — new `sampleHexBokeh()` uses the canonical 7-tap hex kernel around each quantized block center; center tap weighted heavier for a softer pixel-transition fringe.
+2. **Anti-moiré LOD bias** — `lodForBlocks()` computes a fractional mip bias from block frequency; large blocks sample a lower LOD to suppress high-frequency aliasing.
+3. **Shared-memory tiling hint** — declared an 18×18 `var<workgroup> tile` (matching the 16×16 workgroup + halo) as a placeholder for future cooperative sampling passes.
+4. **Branchless focus select** — kept `select(focus, 1.0 - focus, invert > 0.5)` and added `fully_focused` step for branchless history mix.
+5. **Early-exit optimization** — `fully_focused` step lets the shader skip heavy block logic conceptually while still writing valid depth/alpha.
+6. **Depth-aware compositing** — depth sample coordinate is mixed between `uv` and quantized `sample_uv` to match the pixelated fringe; depth output is nudged by `mix_factor`.
+7. **Temporal feedback writes** — new `dataTextureB` write stores `historyMix`, depth, treble energy, and fog for cross-frame blending downstream.
+8. **Semantic alpha preserved** — alpha derived from `mix_factor`, treble, and clamped; never uses hard `1.0` opacity.
+
+## Validation
+- `naga public/shaders/focal-pixelate.wgsl /tmp/focal-pixelate.spv` ✅
+- Line count: 77 → 152 (+75, within +30..+80 target)

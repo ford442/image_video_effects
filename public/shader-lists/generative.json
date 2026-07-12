@@ -4209,6 +4209,72 @@
     "features": []
   },
   {
+    "name": "Chromatic Zonohedron",
+    "category": "generative",
+    "tags": [
+      "generative",
+      "geometry",
+      "zonohedron",
+      "rhombic",
+      "tiling",
+      "rainbow",
+      "prismatic",
+      "audio-reactive"
+    ],
+    "description": "A spinning rhombic zonohedron projected into 2D — each facet filled with a unique spectral color and neon edge outlines. Three-axis rhomb tiling creates jewel-like cells that pulse with bass and shimmer with treble. Mouse shifts the focal center.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Facet Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spin Speed",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Edge Width",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Cycle",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-chromatic-zonohedron",
+    "url": "shaders/gen-chromatic-zonohedron.wgsl",
+    "features": [
+      "generative",
+      "geometry",
+      "audio-reactive",
+      "mouse-driven",
+      "spectral-color"
+    ]
+  },
+  {
     "name": "Chromodynamic Plasma-Collider",
     "category": "generative",
     "tags": [
@@ -7530,6 +7596,73 @@
     "id": "gen-fireworks-crossette",
     "url": "shaders/gen-fireworks-crossette.wgsl",
     "features": []
+  },
+  {
+    "name": "4th of July — Dahlia Burst",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "dahlia",
+      "petals",
+      "disk",
+      "flat-burst",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ],
+    "description": "Flat dahlia-disk shells that bloom into layered rows of radial petals — warm coral cores fading to gold tips across concentric petal rings. Unlike spherical chrysanthemums, dahlia bursts spread in a wide flat disk before petals curl and fall. Bass expands disk radius, mids stagger petal-row timing, treble adds micro-petals. Mouse detonates a personal dahlia at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Petal Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Disk Size",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Petal Rows",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hue Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-dahlia-burst",
+    "url": "shaders/gen-fireworks-dahlia-burst.wgsl",
+    "features": [
+      "fireworks",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback"
+    ]
   },
   {
     "name": "4th of July — Fan Shell",
@@ -13027,6 +13160,73 @@
     "features": []
   },
   {
+    "name": "Neon Stellated Octahedron",
+    "category": "generative",
+    "tags": [
+      "generative",
+      "geometry",
+      "stellated",
+      "octahedron",
+      "star-tetrahedron",
+      "neon",
+      "kaleidoscope",
+      "audio-reactive"
+    ],
+    "description": "A neon-lit stellated octahedron (star tetrahedron) — two interpenetrating tetrahedra with blazing rainbow edges and dual-color facet glow. Six-fold kaleidoscopic symmetry multiplies the geometry; bass pulses the star scale, treble ignites vertex spikes. Mouse spins the form through space.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Star Scale",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spin Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Neon Power",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-neon-stellated-octahedron",
+    "url": "shaders/gen-neon-stellated-octahedron.wgsl",
+    "features": [
+      "generative",
+      "geometry",
+      "audio-reactive",
+      "mouse-driven",
+      "neon",
+      "kaleidoscope"
+    ]
+  },
+  {
     "name": "Neon Tropical Paradise",
     "category": "generative",
     "tags": [
@@ -14802,6 +15002,72 @@
     "features": []
   },
   {
+    "name": "Prismatic Möbius Helix",
+    "category": "generative",
+    "tags": [
+      "generative",
+      "geometry",
+      "mobius",
+      "helix",
+      "topology",
+      "iridescent",
+      "thin-film",
+      "audio-reactive"
+    ],
+    "description": "A stack of Möbius-strip rings twisted into a prismatic helix, each ribbon coated in thin-film iridescence that shifts through the full spectrum as you orbit. Bass drives the helical twist; treble adds film shimmer. Mouse controls the 3D viewing angle.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Coil Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ribbon Width",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Helix Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Iridescence",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-prismatic-mobius-helix",
+    "url": "shaders/gen-prismatic-mobius-helix.wgsl",
+    "features": [
+      "generative",
+      "geometry",
+      "audio-reactive",
+      "mouse-driven",
+      "iridescent"
+    ]
+  },
+  {
     "name": "Prismatic Quantum-Fractal Nautilus-Engine",
     "category": "generative",
     "tags": [
@@ -16243,6 +16509,73 @@
     "id": "gen-rainbow-firefly-dance",
     "url": "shaders/gen-rainbow-firefly-dance.wgsl",
     "features": []
+  },
+  {
+    "name": "Rainbow Icosahedron Cascade",
+    "category": "generative",
+    "tags": [
+      "generative",
+      "geometry",
+      "icosahedron",
+      "polyhedron",
+      "rainbow",
+      "spectral",
+      "nested",
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "description": "Nested concentric icosahedral wireframe shells radiating spectral edge glow. Each golden-ratio shell cycles through a full rainbow palette; bass expands the cascade, treble shimmers facet hues. Mouse orbits the entire structure through 3D space.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Shell Count",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Shell Spacing",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Edge Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hue Drift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-rainbow-icosahedron-cascade",
+    "url": "shaders/gen-rainbow-icosahedron-cascade.wgsl",
+    "features": [
+      "generative",
+      "geometry",
+      "audio-reactive",
+      "mouse-driven",
+      "spectral-color"
+    ]
   },
   {
     "name": "Raptor Mini",

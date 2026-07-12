@@ -1,0 +1,19 @@
+{
+  "name": "Chromatic Zonohedron",
+  "category": "generative",
+  "tags": ["generative", "geometry", "zonohedron", "rhombic", "tiling", "rainbow", "prismatic", "audio-reactive"],
+  "description": "A spinning rhombic zonohedron projected into 2D — each facet filled with a unique spectral color and neon edge outlines. Three-axis rhomb tiling creates jewel-like cells that pulse with bass and shimmer with treble. Mouse shifts the focal center.",
+  "workgroup_size": [16, 16, 1],
+  "updatedParams": [
+    { "index": 0, "name": "Facet Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Spin Speed", "default": 0.35, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Edge Width", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Color Cycle", "default": 0.25, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-chromatic-zonohedron",
+  "url": "shaders/gen-chromatic-zonohedron.wgsl",
+  "features": ["generative", "geometry", "audio-reactive", "mouse-driven", "spectral-color"]
+}

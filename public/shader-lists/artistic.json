@@ -128,7 +128,10 @@
       "mouse-driven",
       "upgraded-rgba",
       "depth-aware",
-      "audio-reactive"
+      "audio-reactive",
+      "reaction-diffusion",
+      "sdf-metaballs",
+      "anisotropic-specular"
     ],
     "tags": [
       "filter",
@@ -5227,7 +5230,7 @@
     "name": "Thermal Vision",
     "category": "artistic",
     "url": "shaders/thermal-vision.wgsl",
-    "description": "Heat-signature camera with FBM sensor noise, audio-reactive sensitivity, depth-aware fade, ACES tone mapping and IGN dither.",
+    "description": "Heat-signature camera with FBM sensor noise, audio-reactive sensitivity, depth-aware fade, ACES tone mapping, IGN dither, blackbody temperature, split-tone, hue-preserve clamp and vignette.",
     "workgroup_size": [
       16,
       16,
@@ -5278,7 +5281,11 @@
       "audio-reactive",
       "depth-aware",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "blackbody-temperature",
+      "split-tone",
+      "hue-preserve-clamp",
+      "vignette"
     ],
     "tags": [
       "filter",

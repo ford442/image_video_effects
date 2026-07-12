@@ -12,7 +12,10 @@
     "image-remix",
     "upgraded-rgba",
     "depth-aware",
-    "randomization-safe"
+    "randomization-safe",
+    "sdf-primitives",
+    "strange-attractor",
+    "chromatic-split"
   ],
   "tags": [
     "hybrid",

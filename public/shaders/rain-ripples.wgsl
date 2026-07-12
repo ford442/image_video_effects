@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Rain Ripples
+//  Rain Ripples  (RETRY expanded upgrade)
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba,
-//            depth-aware, aces-tone-map, fbm-micro-ripples
+//            depth-aware, aces-tone-map, fbm-micro-ripples,
+//            voronoi-raindrops, caustics, thin-film-interference
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +32,10 @@ const TAU: f32 = 6.28318530718;
 fn hash21(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+    let n = sin(dot(p, vec2<f32>(127.1, 311.7)));
+    return fract(vec2<f32>(n, n * 1.618) * 43758.5453123);
+}
 fn valueNoise(p: vec2<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
@@ -51,6 +56,38 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 {
 }
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn voronoi(p: vec2<f32>, t: f32) -> vec2<f32> {
+    // Returns distance to nearest cell center in x, cell-id hash in y.
+    let i = floor(p);
+    let f = fract(p);
+    var minD = 100.0;
+    var cellHash = 0.0;
+    for (var y: i32 = -1; y <= 1; y = y + 1) {
+        for (var x: i32 = -1; x <= 1; x = x + 1) {
+            let offset = vec2<f32>(f32(x), f32(y));
+            let neighbor = i + offset;
+            let point = offset + 0.5 + 0.5 * sin(hash22(neighbor) * TAU + t);
+            let d = length(point - f);
+            if (d < minD) {
+                minD = d;
+                cellHash = hash21(neighbor);
+            }
+        }
+    }
+    return vec2<f32>(minD, cellHash);
+}
+fn caustics(p: vec2<f32>, t: f32) -> f32 {
+    // Caustic-like pattern via overlapping warped sine gradients.
+    let c1 = sin(p.x * 18.0 + t + sin(p.y * 12.0));
+    let c2 = sin(p.y * 16.0 - t * 0.7 + sin(p.x * 14.0));
+    let c3 = sin((p.x + p.y) * 10.0 + t * 0.4);
+    return pow(abs(c1 + c2 + c3) * 0.3, 2.0);
+}
+fn wetMask(p: vec2<f32>, t: f32) -> f32 {
+    // SDF mask: wet patches are soft disks animated by FBM.
+    let f = fbm(p * 3.0 + t * 0.05, 3);
+    return smoothstep(0.35, 0.65, f);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -75,8 +112,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let waveWidth = mix(0.03, 0.12, 1.0 - p4);
     let scale = mix(0.5, 2.5, p3);
 
-    let micro = vec2<f32>(fbm(uv * scale * 12.0 + time * 0.1, 3),
-                          fbm(uv * scale * 12.0 + vec2<f32>(5.2, 1.3) - time * 0.08, 3)) * 0.004 * p4;
+    // Domain-warped FBM micro-ripples.
+    let q = vec2<f32>(fbm(uv * scale * 8.0 + time * 0.1, 3),
+                      fbm(uv * scale * 8.0 + vec2<f32>(5.2, 1.3) - time * 0.08, 3));
+    let micro = vec2<f32>(fbm(uv * scale * 12.0 + 3.0 * q + time * 0.15, 3),
+                          fbm(uv * scale * 12.0 + 3.0 * q + vec2<f32>(5.2, 1.3) - time * 0.12, 3)) * 0.004 * p4;
+
+    // Voronoi cellular raindrop impacts.
+    let cell = voronoi(uv * mix(4.0, 12.0, p3) + time * 0.05, time * 2.0);
+    let drop = sin(cell.x * 40.0 - time * 8.0) * exp(-cell.x * 3.0) * 0.015 * p3;
 
     var totalDisplacement = vec2<f32>(0.0);
     for (var i: u32 = 0u; i < 50u; i = i + 1u) {
@@ -99,6 +143,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     totalDisplacement += micro;
 
+    // Add raindrop displacement along ripple gradient.
+    let dropGrad = vec2<f32>(cos(cell.y * TAU), sin(cell.y * TAU));
+    totalDisplacement += dropGrad * drop;
+
     let displacedUV = clamp(uv + totalDisplacement, vec2<f32>(0.0), vec2<f32>(1.0));
     var color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 
@@ -111,10 +159,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fog = exp(-depth * 2.0 * (1.0 - p1));
     color = vec4<f32>(color.rgb * fog, color.a);
 
+    // Caustic refraction overlay on wet areas.
+    let wet = wetMask(uv, time);
+    let caus = caustics(uv * mix(2.0, 6.0, p3) + totalDisplacement * 50.0, time);
+    let causColor = vec3<f32>(0.9, 0.95, 1.0) * caus * wet * p4;
+    color = vec4<f32>(color.rgb + causColor * 0.15, color.a);
+
+    // Chromatic aberration.
     let caDir = normalize(totalDisplacement + vec2<f32>(0.0001)) * dispMag * 0.5;
     let r = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + caDir, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let b = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV - caDir * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     color = vec4<f32>(mix(color.rgb, vec3<f32>(r, color.g, b), p4 * 0.5), color.a);
+
+    // Thin-film rainbow interference on high curvature.
+    let curvature = fbm(uv * 20.0 + totalDisplacement * 100.0, 2);
+    let film = vec3<f32>(sin(curvature * TAU + 0.0), sin(curvature * TAU + 2.09), sin(curvature * TAU + 4.18));
+    color = vec4<f32>(mix(color.rgb, color.rgb * (0.7 + 0.3 * film), wet * p3 * 0.25), color.a);
 
     color = vec4<f32>(acesToneMap(color.rgb * (1.0 + mids * 0.15)), color.a);
 

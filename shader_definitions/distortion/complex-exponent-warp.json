@@ -10,7 +10,10 @@
     "audio-reactive",
     "complex-math",
     "upgraded-rgba",
-    "depth-aware"
+    "depth-aware",
+    "julia-orbit-trap",
+    "sdf-cardioid",
+    "newton-fractal"
   ],
   "tags": [
     "warp",

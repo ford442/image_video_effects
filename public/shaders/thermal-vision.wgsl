@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Thermal Vision
 //  Category: artistic
-//  Features: upgraded-rgba, thermal, color-remap, audio-reactive, depth-aware, aces-tone-map, ign-dither
+//  Features: upgraded-rgba, thermal, color-remap, audio-reactive,
+//            depth-aware, aces-tone-map, ign-dither, blackbody-temperature,
+//            split-tone, hue-preserve-clamp, vignette
 //  Complexity: Medium
-//  Upgraded: 2026-07-12
+//  Upgraded: 2026-07-12 (retry)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -35,7 +37,7 @@ fn valueNoise(p: vec2<f32>) -> f32 {
     let i = floor(p); let f = fract(p); let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x), mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
-fn fbm(p: vec2<f32>, oct: i32) -> f32 { var s = 0.0; var a = 0.5; var f = 1.0; for (var i = 0; i < oct; i++) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; } return s; }
+fn fbm(p: vec2<f32>, oct: i32) -> f32 { var s = 0.0; var a = 0.5; var f = 1.0; for (var i = 0; i < oct; i = i + 1) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; } return s; }
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0)); }
 fn ign(p: vec2<f32>) -> f32 { return fract(52.9829181 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715)))); }
 fn luma(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722)); }
@@ -52,6 +54,37 @@ fn thermal_gradient(t: f32) -> vec3<f32> {
     color = mix(color, c3, step(0.6, t));
     color = mix(color, c4, step(0.8, t));
     return color;
+}
+
+// Preserve hue when one channel is driven above 1.0 by normalising.
+fn huePreserveClamp(c: vec3<f32>) -> vec3<f32> {
+    let mx = max(max(c.r, c.g), c.b);
+    return c / max(mx, 1.0);
+}
+
+// Approximate blackbody emission curve for a realistic heat source colour.
+fn blackbody(t: f32) -> vec3<f32> {
+    let k = mix(1000.0, 10000.0, clamp(t, 0.0, 1.0));
+    let k2 = k * k;
+    let k3 = k2 * k;
+    let r = 1.0;
+    let g = clamp(-4.959e-12 * k3 + 6.351e-8 * k2 - 0.0002776 * k + 0.4756, 0.0, 1.0);
+    let b = clamp(4.22e-12 * k3 - 2.55e-7 * k2 + 0.0005156 * k - 0.3266, 0.0, 1.0);
+    return vec3<f32>(r, g, b);
+}
+
+// Split-tone the thermal image: cool shadows and hot highlights.
+fn splitTone(c: vec3<f32>, shadows: vec3<f32>, highlights: vec3<f32>, strength: f32) -> vec3<f32> {
+    let y = luma(c);
+    let mask = smoothstep(0.2, 0.75, y);
+    let tint = mix(shadows, highlights, mask);
+    return mix(c, c * tint, strength);
+}
+
+// Subtle vignette to draw attention toward the centre of the thermal view.
+fn vignette(uv: vec2<f32>, strength: f32) -> f32 {
+    let d = distance(uv, vec2<f32>(0.5));
+    return 1.0 - d * d * strength;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -85,12 +118,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let drift = 0.6 + treble * 1.6;
     let n = fbm(uv * res * 0.04 + vec2<f32>(time * drift, -time * drift * 0.6), 4) - 0.5;
     let heat = clamp((blurredLuma + n * sensorNoise) * sensitivity, 0.0, 1.0);
-    let thermalColor = thermal_gradient(pow(heat, mix(1.5, 0.55, colorRange)));
+
+    var thermalColor = thermal_gradient(pow(heat, mix(1.5, 0.55, colorRange)));
+    let bb = blackbody(heat);
+    thermalColor = mix(thermalColor, bb, smoothstep(0.35, 0.9, heat) * colorRange * 0.7);
+
     let hotspot = smoothstep(0.75, 1.0, heat) * (0.15 + treble * 0.1);
     var color = mix(base.rgb * 0.25, thermalColor, 0.85) + vec3<f32>(hotspot);
 
+    color = splitTone(color, vec3<f32>(0.7, 0.95, 1.1), vec3<f32>(1.2, 0.85, 0.55), colorRange * 0.5);
+
     let depthFade = exp(-depth * 1.5);
-    color = acesToneMap(color * (1.0 + bass * 0.2) * depthFade);
+    let vig = vignette(uv, 0.35);
+    color = acesToneMap(color * (1.0 + bass * 0.2) * depthFade * vig);
+    color = huePreserveClamp(color);
     color += (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
 
     let alpha = clamp(base.a * 0.4 + heat * 0.4 + bass * 0.05, 0.1, 1.0);

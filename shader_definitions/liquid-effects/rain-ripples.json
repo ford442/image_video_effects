@@ -9,7 +9,10 @@
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
-    "depth-aware"
+    "depth-aware",
+    "voronoi-raindrops",
+    "caustics",
+    "thin-film-interference"
   ],
   "tags": [
     "filter",

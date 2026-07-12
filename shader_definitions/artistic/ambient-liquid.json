@@ -9,7 +9,10 @@
     "mouse-driven",
     "upgraded-rgba",
     "depth-aware",
-    "audio-reactive"
+    "audio-reactive",
+    "reaction-diffusion",
+    "sdf-metaballs",
+    "anisotropic-specular"
   ],
   "tags": [
     "filter",

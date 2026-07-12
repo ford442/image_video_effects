@@ -3,7 +3,7 @@
   "name": "Neon Edge Radar",
   "category": "interactive-mouse",
   "url": "shaders/neon-edge-radar.wgsl",
-  "description": "Mouse-centered radar sweep with depth-aware edge detection, audio-reactive neon emission, ACES tone mapping and IGN dither.",
+  "description": "Mouse-centered radar sweep with depth-aware edge detection, audio-reactive neon emission, ACES tone mapping, IGN dither, Fresnel rim, volumetric fog, hue-preserve clamp and blackbody hotspots.",
   "workgroup_size": [16, 16, 1],
   "params": [
     {
@@ -50,7 +50,11 @@
     "audio-driven",
     "depth-aware",
     "aces-tone-map",
-    "ign-dither"
+    "ign-dither",
+    "fresnel-rim",
+    "volumetric-fog",
+    "hue-preserve-clamp",
+    "blackbody-temperature"
   ],
   "tags": [
     "mouse-driven",

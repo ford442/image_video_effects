@@ -1,0 +1,19 @@
+{
+  "name": "Prismatic Möbius Helix",
+  "category": "generative",
+  "tags": ["generative", "geometry", "mobius", "helix", "topology", "iridescent", "thin-film", "audio-reactive"],
+  "description": "A stack of Möbius-strip rings twisted into a prismatic helix, each ribbon coated in thin-film iridescence that shifts through the full spectrum as you orbit. Bass drives the helical twist; treble adds film shimmer. Mouse controls the 3D viewing angle.",
+  "workgroup_size": [16, 16, 1],
+  "updatedParams": [
+    { "index": 0, "name": "Coil Count", "default": 0.55, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Ribbon Width", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Helix Radius", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Iridescence", "default": 0.6, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-prismatic-mobius-helix",
+  "url": "shaders/gen-prismatic-mobius-helix.wgsl",
+  "features": ["generative", "geometry", "audio-reactive", "mouse-driven", "iridescent"]
+}
