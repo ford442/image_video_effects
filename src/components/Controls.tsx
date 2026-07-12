@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useState, useEffect, useMemo } from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
 import { AIStatus, AutoTransitionConfig } from '../AutoDJ';
