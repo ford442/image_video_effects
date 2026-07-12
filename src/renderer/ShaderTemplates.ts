@@ -43,6 +43,41 @@ fn fs_main(in: VSOut) -> @location(0) vec4f {
 }
 `;
 
+/**
+ * Source→read downscale shader for resolutionScale < 1.0.
+ * Samples the full-resolution rgba32float sourceTex with textureLoad
+ * (nearest — no filterable-float requirement) and writes raw linear values,
+ * matching the identity orientation of copyTextureToTexture at scale = 1.
+ */
+export const SCALE_COPY_WGSL = /* wgsl */ `
+struct VSOut {
+  @builtin(position) pos : vec4f,
+  @location(0)       uv  : vec2f,
+}
+
+@vertex
+fn vs(@builtin(vertex_index) idx: u32) -> VSOut {
+  var p = array<vec2f,3>(
+    vec2f(-1.0, -1.0),
+    vec2f( 3.0, -1.0),
+    vec2f(-1.0,  3.0),
+  );
+  var out: VSOut;
+  out.pos = vec4f(p[idx], 0.0, 1.0);
+  out.uv  = p[idx] * vec2f(0.5, -0.5) + vec2f(0.5);
+  return out;
+}
+
+@group(0) @binding(0) var src: texture_2d<f32>;
+
+@fragment
+fn fs(in: VSOut) -> @location(0) vec4f {
+  let dim   = vec2i(textureDimensions(src));
+  let coord = clamp(vec2i(in.uv * vec2f(dim)), vec2i(0), dim - 1);
+  return textureLoad(src, coord, 0);
+}
+`;
+
 const makeBlitWGSL = (flipY: boolean) => /* wgsl */ `
 struct VSOut {
   @builtin(position) pos : vec4f,

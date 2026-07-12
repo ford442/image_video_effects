@@ -4,7 +4,7 @@
  * GPU resource creation for the TypeScript WebGPU renderer.
  */
 
-import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
+import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
 import { UNIFORM_FLOATS } from '../UniformBuffer';
 import {
   EXTRA_FLOATS,
@@ -45,6 +45,7 @@ export interface WebGPUComputeLayout {
 export interface WebGPUBlitResources {
   blitPipeline: GPURenderPipeline;
   generativeBlitPipeline: GPURenderPipeline;
+  scaleCopyPipeline: GPURenderPipeline;
   blitBindGroupLayout: GPUBindGroupLayout;
   blitBindGroup: GPUBindGroup;
   videoCopyPipeline: GPURenderPipeline | null;
@@ -344,6 +345,22 @@ export function createBlitPipeline(
     entries: [{ binding: 0, resource: blitReadTex.createView() }],
   });
 
+  // Downscale pass for resolutionScale < 1.0: samples the full-res
+  // rgba32float sourceTex via textureLoad (unfilterable-float — works on
+  // every adapter) and writes into the scaled readTex. Reuses the blit
+  // bind-group layout (single sampled texture at binding 0).
+  const scaleModule = device.createShaderModule({
+    label: 'scaleCopyShader',
+    code: SCALE_COPY_WGSL,
+  });
+  const scaleCopyPipeline = device.createRenderPipeline({
+    label: 'scaleCopyPipeline',
+    layout: device.createPipelineLayout({ bindGroupLayouts: [blitBindGroupLayout] }),
+    vertex: { module: scaleModule, entryPoint: 'vs' },
+    fragment: { module: scaleModule, entryPoint: 'fs', targets: [{ format: 'rgba32float' }] },
+    primitive: { topology: 'triangle-list' },
+  });
+
   const supportsExternalTexture = 'importExternalTexture' in device;
   let videoCopyPipeline: GPURenderPipeline | null = null;
   let videoCopyBindGroupLayout: GPUBindGroupLayout | null = null;
@@ -380,6 +397,7 @@ export function createBlitPipeline(
   return {
     blitPipeline,
     generativeBlitPipeline,
+    scaleCopyPipeline,
     blitBindGroupLayout,
     blitBindGroup,
     videoCopyPipeline,

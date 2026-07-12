@@ -74,6 +74,7 @@ export class WebGPURenderer implements IRenderer, ShaderSlotRenderer {
 
   private blitPipeline!: GPURenderPipeline;
   private generativeBlitPipeline!: GPURenderPipeline;
+  private scaleCopyPipeline!: GPURenderPipeline;
   private blitBindGroupLayout!: GPUBindGroupLayout;
   private blitBindGroup!: GPUBindGroup;
   private blitReadTex!: GPUTexture;
@@ -219,6 +220,7 @@ export class WebGPURenderer implements IRenderer, ShaderSlotRenderer {
     const blit = createBlitPipeline(d, this.canvasFormat, this.blitReadTex, this.scaledW, this.scaledH);
     this.blitPipeline = blit.blitPipeline;
     this.generativeBlitPipeline = blit.generativeBlitPipeline;
+    this.scaleCopyPipeline = blit.scaleCopyPipeline;
     this.blitBindGroupLayout = blit.blitBindGroupLayout;
     this.blitBindGroup = blit.blitBindGroup;
     this.videoCopyPipeline = blit.videoCopyPipeline;
@@ -309,8 +311,10 @@ export class WebGPURenderer implements IRenderer, ShaderSlotRenderer {
     if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) {
       const mode = this.slots[index]?.mode ?? 'chained';
       this.slots[index] = { shaderId: id, enabled: !!id, mode };
-      console.log(`[WebGPURenderer] Slot ${index} set to "${id}" (enabled: ${!!id}, mode: ${mode})`);
-      console.log(`[WebGPURenderer] Current slots:`, this.slots.map(s => ({ id: s.shaderId, enabled: s.enabled, mode: s.mode })));
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[WebGPURenderer] Slot ${index} set to "${id}" (enabled: ${!!id}, mode: ${mode})`);
+        console.log(`[WebGPURenderer] Current slots:`, this.slots.map(s => ({ id: s.shaderId, enabled: s.enabled, mode: s.mode })));
+      }
     }
   }
 

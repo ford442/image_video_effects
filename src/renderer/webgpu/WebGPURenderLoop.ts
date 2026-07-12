@@ -6,6 +6,7 @@
 
 import { GPUTimings } from '../Renderer';
 import { resolveMultipassChain } from '../multipassRegistry';
+import { ShaderBindingUsage } from '../ShaderCompilation';
 import {
   createUniformBufferView,
   UniformBufferView,
@@ -18,7 +19,6 @@ import {
   EXTRA_FLOATS,
   HISTORY_DEPTH,
   ShaderSlot,
-  SlotMode,
   WG_SIZE_X,
   WG_SIZE_Y,
 } from './webgpuConstants';
@@ -49,11 +49,7 @@ export interface WebGPURenderLoopState {
   blitBindGroupLayout: GPUBindGroupLayout;
   blitPipeline: GPURenderPipeline;
   generativeBlitPipeline: GPURenderPipeline;
-
-  // Samplers & video copy
-  filterSampler: GPUSampler;
-  videoCopyPipeline: GPURenderPipeline | null;
-  videoCopyBindGroupLayout: GPUBindGroupLayout | null;
+  scaleCopyPipeline: GPURenderPipeline;
 
   // Dimensions
   canvasW: number;
@@ -67,6 +63,7 @@ export interface WebGPURenderLoopState {
   getPipeline: (id: string) => GPUComputePipeline | undefined;
   getWorkgroupSize: (id: string) => { x: number; y: number };
   hasPipeline: (id: string) => boolean;
+  getBindingUsage: (id: string) => ShaderBindingUsage;
 
   // Uniform / audio state
   ripples: { x: number; y: number; startTime: number }[];
@@ -105,6 +102,9 @@ export interface WebGPURenderLoopState {
 
 export class WebGPURenderLoop {
   private uniformView: UniformBufferView = createUniformBufferView();
+  private extraData = new Float32Array(EXTRA_FLOATS);
+  private scaleBindGroup: GPUBindGroup | null = null;
+  private scaleBindGroupTex: GPUTexture | null = null;
 
   startRenderLoop(state: WebGPURenderLoopState): void {
     const loop = () => {
@@ -161,6 +161,24 @@ export class WebGPURenderLoop {
 
     this.writeUniforms(state);
 
+    // Resolve each slot's multipass chain once and aggregate which optional
+    // feedback copies this frame actually needs.
+    let anyReadsC = false;
+    let anyUsesHistory = false;
+    const slotPlans = enabled.map((slot) => {
+      const chain = resolveMultipassChain(slot.shaderId!);
+      let writesDataA = false;
+      let writesDataB = false;
+      for (const id of chain) {
+        const usage = state.getBindingUsage(id);
+        writesDataA = writesDataA || usage.writesDataA;
+        writesDataB = writesDataB || usage.writesDataB;
+        anyReadsC = anyReadsC || usage.readsDataC;
+        anyUsesHistory = anyUsesHistory || usage.usesHistory;
+      }
+      return { slot, chain, writesDataA, writesDataB };
+    });
+
     const encoder = state.device.createCommandEncoder({ label: 'frame' });
 
     if (state.resolutionScale < 1.0) {
@@ -175,17 +193,8 @@ export class WebGPURenderLoop {
           },
         ],
       });
-      scalePass.setPipeline(state.videoCopyPipeline!);
-      scalePass.setBindGroup(
-        0,
-        state.device.createBindGroup({
-          layout: state.videoCopyBindGroupLayout!,
-          entries: [
-            { binding: 0, resource: state.sourceTex.createView() },
-            { binding: 1, resource: state.filterSampler },
-          ],
-        }),
-      );
+      scalePass.setPipeline(state.scaleCopyPipeline);
+      scalePass.setBindGroup(0, this.getScaleBindGroup(state));
       scalePass.draw(3);
       scalePass.end();
     } else {
@@ -196,28 +205,28 @@ export class WebGPURenderLoop {
       );
     }
 
-    const parallelSlots = enabled.filter((s) => s.mode === 'parallel');
-    const chainedSlots = enabled.filter((s) => s.mode === 'chained');
+    const parallelPlans = slotPlans.filter((p) => p.slot.mode === 'parallel');
+    const chainedPlans = slotPlans.filter((p) => p.slot.mode === 'chained');
     const singleChained = enabled.length === 1 && enabled[0].mode === 'chained';
     state.blitReadTex = state.readTex;
 
-    if (state.frameCount % 60 === 0) {
+    if (process.env.NODE_ENV === 'development' && state.frameCount % 60 === 0) {
       console.log(
-        `[WebGPURenderer] Parallel slots: ${parallelSlots.length}, Chained slots: ${chainedSlots.length}`,
+        `[WebGPURenderer] Parallel slots: ${parallelPlans.length}, Chained slots: ${chainedPlans.length}`,
       );
-      if (chainedSlots.length > 0) {
+      if (chainedPlans.length > 0) {
         console.log(
           `[WebGPURenderer] Chained slot order:`,
-          chainedSlots.map((s) => s.shaderId),
+          chainedPlans.map((p) => p.slot.shaderId),
         );
       }
     }
 
-    for (const slot of parallelSlots) {
-      this.dispatchSlot(state, encoder, slot, 'parallel');
+    for (const plan of parallelPlans) {
+      this.dispatchChain(state, encoder, plan.chain, 'parallel');
     }
 
-    if (parallelSlots.length > 0) {
+    if (parallelPlans.length > 0) {
       encoder.copyTextureToTexture(
         { texture: state.writeTex },
         { texture: state.readTex },
@@ -225,12 +234,8 @@ export class WebGPURenderLoop {
       );
     }
 
-    for (let i = 0; i < chainedSlots.length; i++) {
-      const slot = chainedSlots[i];
-      if (state.frameCount % 60 === 0) {
-        console.log(`[WebGPURenderer] Processing chained slot ${i}: ${slot.shaderId}`);
-      }
-      this.dispatchSlot(state, encoder, slot, 'chained');
+    for (const plan of chainedPlans) {
+      this.dispatchChain(state, encoder, plan.chain, 'chained');
 
       if (singleChained) {
         state.blitReadTex = state.writeTex;
@@ -242,29 +247,45 @@ export class WebGPURenderLoop {
         );
       }
 
-      encoder.copyTextureToTexture(
-        { texture: state.dataTexA },
-        { texture: state.dataTexC },
-        [state.scaledW, state.scaledH, 1],
-      );
+      // Data-texture feedback (dataTextureA/B → dataTextureC, binding 9).
+      // Skipped entirely when nothing enabled this frame reads dataTextureC,
+      // and each copy only runs when this slot's shaders write that texture —
+      // so an A-writing simulation is no longer clobbered by a stale B copy.
+      if (anyReadsC) {
+        if (plan.writesDataA) {
+          encoder.copyTextureToTexture(
+            { texture: state.dataTexA },
+            { texture: state.dataTexC },
+            [state.scaledW, state.scaledH, 1],
+          );
+        }
+        if (plan.writesDataB) {
+          encoder.copyTextureToTexture(
+            { texture: state.dataTexB },
+            { texture: state.dataTexC },
+            [state.scaledW, state.scaledH, 1],
+          );
+        }
+      }
+    }
 
+    // History ring copy (binding 13) — opt-in, used by very few shaders.
+    if (anyUsesHistory) {
       encoder.copyTextureToTexture(
-        { texture: state.dataTexB },
-        { texture: state.dataTexC },
+        { texture: state.blitReadTex },
+        { texture: state.historyTex, origin: [0, 0, state.historyHead] },
         [state.scaledW, state.scaledH, 1],
       );
     }
 
-    encoder.copyTextureToTexture(
-      { texture: state.blitReadTex },
-      { texture: state.historyTex, origin: [0, 0, state.historyHead] },
-      [state.scaledW, state.scaledH, 1],
-    );
+    // Encode the canvas blit into the same command buffer: one submit/frame.
+    this.updateBlitBindGroup(state);
+    this.encodeBlit(state, encoder);
 
     state.device.queue.submit([encoder.finish()]);
-    state.historyHead = (state.historyHead + 1) % HISTORY_DEPTH;
-
-    this.blitToCanvas(state);
+    if (anyUsesHistory) {
+      state.historyHead = (state.historyHead + 1) % HISTORY_DEPTH;
+    }
 
     state.frameCount++;
     const now = performance.now() / 1000;
@@ -276,14 +297,24 @@ export class WebGPURenderLoop {
     }
   }
 
-  private dispatchSlot(
+  private getScaleBindGroup(state: WebGPURenderLoopState): GPUBindGroup {
+    if (!this.scaleBindGroup || this.scaleBindGroupTex !== state.sourceTex) {
+      this.scaleBindGroup = createBlitBindGroup(
+        state.device!,
+        state.blitBindGroupLayout,
+        state.sourceTex,
+      );
+      this.scaleBindGroupTex = state.sourceTex;
+    }
+    return this.scaleBindGroup;
+  }
+
+  private dispatchChain(
     state: WebGPURenderLoopState,
     encoder: GPUCommandEncoder,
-    slot: { shaderId: string | null; enabled: boolean; mode: SlotMode },
+    chain: string[],
     labelPrefix: string,
   ): void {
-    if (!slot.shaderId) return;
-    const chain = resolveMultipassChain(slot.shaderId);
     for (const shaderId of chain) {
       const pipeline = state.getPipeline(shaderId);
       if (!pipeline) {
@@ -332,7 +363,7 @@ export class WebGPURenderLoop {
 
     state.device.queue.writeBuffer(state.uniformBuf, 0, u.data);
 
-    const extraData = new Float32Array(EXTRA_FLOATS);
+    const extraData = this.extraData;
     extraData[0] = state.audioBass;
     extraData[1] = state.audioMid;
     extraData[2] = state.audioTreble;
@@ -342,19 +373,18 @@ export class WebGPURenderLoop {
     state.device.queue.writeBuffer(state.extraBuf, 0, extraData);
   }
 
-  private blitToCanvas(state: WebGPURenderLoopState): void {
-    if (!state.device || !state.context || !state.initialized) return;
+  /** Record the canvas blit into an existing encoder (no-op if the swapchain texture is unavailable). */
+  private encodeBlit(state: WebGPURenderLoopState, encoder: GPUCommandEncoder): void {
+    if (!state.context) return;
 
+    let currentTexture: GPUTexture;
     try {
-      const currentTexture = state.context.getCurrentTexture();
-      if (!currentTexture) return;
+      currentTexture = state.context.getCurrentTexture();
     } catch {
       return;
     }
+    if (!currentTexture) return;
 
-    this.updateBlitBindGroup(state);
-
-    const encoder = state.device.createCommandEncoder({ label: 'blit' });
     const pipeline =
       state.inputSource === 'generative'
         ? state.generativeBlitPipeline
@@ -362,7 +392,7 @@ export class WebGPURenderLoop {
     const pass = encoder.beginRenderPass({
       colorAttachments: [
         {
-          view: state.context.getCurrentTexture().createView(),
+          view: currentTexture.createView(),
           loadOp: 'clear',
           storeOp: 'store',
           clearValue: { r: 0, g: 0, b: 0, a: 1 },
@@ -373,6 +403,15 @@ export class WebGPURenderLoop {
     pass.setBindGroup(0, state.blitBindGroup);
     pass.draw(3);
     pass.end();
+  }
+
+  private blitToCanvas(state: WebGPURenderLoopState): void {
+    if (!state.device || !state.context || !state.initialized) return;
+
+    this.updateBlitBindGroup(state);
+
+    const encoder = state.device.createCommandEncoder({ label: 'blit' });
+    this.encodeBlit(state, encoder);
     state.device.queue.submit([encoder.finish()]);
   }
 
