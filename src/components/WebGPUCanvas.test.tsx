@@ -1,6 +1,8 @@
 import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react';
 import WebGPUCanvas from './WebGPUCanvas';
+import { RendererManager } from '../renderer/RendererManager';
+import { ShaderEntry, SlotParams } from '../renderer/types';
 
 // Mock the Renderer class to prevent WebGPU initialization in tests
 jest.mock('../renderer/Renderer', () => {
@@ -58,27 +60,27 @@ beforeAll(() => {
 });
 
 test('mouse down emits ripple for mouse-driven shader', () => {
-    const mockRenderer: any = {
-        getAvailableModes: () => [
-            { id: 'interactive-ripple', features: ['mouse-driven'] }
-        ],
+    const mockRenderer = {
         addRipplePoint: jest.fn(),
+        firePlasma: jest.fn(),
         syncAllSlotParams: jest.fn(),
         setInputSource: jest.fn(),
         setVideo: jest.fn(),
         render: jest.fn(),
-        firePlasma: jest.fn(),
     };
 
-    const rendererRef = { current: mockRenderer } as any;
+    const rendererRef = { current: mockRenderer as unknown as RendererManager };
     const setMousePosition = jest.fn();
     const setIsMouseDown = jest.fn();
 
     render(
         <WebGPUCanvas
             modes={['interactive-ripple', 'none', 'none']}
-            slotParams={[{}, {}, {}] as any}
-            rendererRef={rendererRef as any}
+            slotParams={[{}, {}, {}] as SlotParams[]}
+            rendererRef={rendererRef}
+            shaderCatalog={[
+                { id: 'interactive-ripple', features: ['mouse-driven'] } as ShaderEntry,
+            ]}
             farthestPoint={{ x: 0.5, y: 0.5 }}
             mousePosition={{ x: -1, y: -1 }}
             setMousePosition={setMousePosition}

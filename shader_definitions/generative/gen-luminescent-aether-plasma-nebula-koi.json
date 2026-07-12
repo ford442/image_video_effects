@@ -1,0 +1,46 @@
+{
+  "id": "gen-luminescent-aether-plasma-nebula-koi",
+  "name": "Luminescent Aether-Plasma Nebula-Koi",
+  "category": "generative",
+  "description": "A hyper-organic, glowing biomechanical space-koi woven from flowing aether-plasma and shattered chromatic crystal, swimming gracefully through a volumetric quantum nebula while reacting dynamically to ambient acoustic frequencies.",
+  "url": "shaders/gen-luminescent-aether-plasma-nebula-koi.wgsl",
+  "tags": ["organic", "quantum", "cosmic", "particle systems", "audio-reactive"],
+  "parameters": [
+    {
+      "name": "zoom_params.x",
+      "label": "plasma_intensity",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "name": "zoom_params.y",
+      "label": "koi_speed",
+      "type": "float",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "name": "zoom_params.z",
+      "label": "nebula_density",
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "name": "zoom_params.w",
+      "label": "tail_length",
+      "type": "float",
+      "default": 1.5,
+      "min": 0.5,
+      "max": 3.0,
+      "step": 0.1
+    }
+  ]
+}
