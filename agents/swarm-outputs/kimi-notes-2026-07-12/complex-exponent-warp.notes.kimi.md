@@ -1,0 +1,3 @@
+- Injected an FBM domain warp before the complex power operation, added depth-aware fog and displacement-driven chromatic aberration, and finished with ACES tone mapping.
+- Semantic alpha now folds in depth and audio bass while preserving the original distance-from-center fade so far-mapped regions remain transparent.
+- Performance concern: complex `log`/`exp`/`atan2` per pixel plus three texture samples and fBM is fine for 1080p but may become ALU-bound at 4K in a 3-slot chain.

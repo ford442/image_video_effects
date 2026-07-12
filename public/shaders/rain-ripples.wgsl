@@ -1,9 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Rain Ripples
-//  Category: distortion
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Complexity: Medium
-//  Upgraded: 2026-05-17
+//  Category: liquid-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba,
+//            depth-aware, aces-tone-map, fbm-micro-ripples
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -21,88 +20,107 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+const TAU: f32 = 6.28318530718;
+
+fn hash21(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
+               mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+fn fbm(p: vec2<f32>, oct: i32) -> f32 {
+    var s = 0.0;
+    var a = 0.5;
+    var f = 1.0;
+    for (var i = 0; i < oct; i = i + 1) {
+        s += a * valueNoise(p * f);
+        f *= 2.0;
+        a *= 0.5;
+    }
+    return s;
+}
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-
     let coord = vec2<i32>(global_id.xy);
-    let uv    = vec2<f32>(global_id.xy) / resolution;
-    let currentTime = u.config.x;
+    if (coord.x >= i32(resolution.x) || coord.y >= i32(resolution.y)) { return; }
 
-    // Audio reactivity
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
+    let uv = vec2<f32>(coord) / resolution;
+    let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
+    let p1 = clamp(u.zoom_params.x, 0.0, 1.0);
+    let p2 = clamp(u.zoom_params.y, 0.0, 1.0);
+    let p3 = clamp(u.zoom_params.z, 0.0, 1.0);
+    let p4 = clamp(u.zoom_params.w, 0.0, 1.0);
+
     let aspect = resolution.x / max(resolution.y, 0.001);
+    let speed = mix(0.2, 1.2, p2);
+    let waveWidth = mix(0.03, 0.12, 1.0 - p4);
+    let scale = mix(0.5, 2.5, p3);
 
-    // Accumulate displacement from all active ripples
+    let micro = vec2<f32>(fbm(uv * scale * 12.0 + time * 0.1, 3),
+                          fbm(uv * scale * 12.0 + vec2<f32>(5.2, 1.3) - time * 0.08, 3)) * 0.004 * p4;
+
     var totalDisplacement = vec2<f32>(0.0);
-
     for (var i: u32 = 0u; i < 50u; i = i + 1u) {
-        let ripple    = u.ripples[i];
-        let ripplePos = ripple.xy;
+        let ripple = u.ripples[i];
         let startTime = ripple.z;
-
-        // Loop guards are acceptable
-        if (startTime <= 0.0) { continue; }
-
-        let elapsed = currentTime - startTime;
-        if (elapsed < 0.0 || elapsed > 2.0) { continue; }
-
-        let uvCorrected  = vec2<f32>(uv.x * aspect, uv.y);
-        let posCorrected = vec2<f32>(ripplePos.x * aspect, ripplePos.y);
-
-        // Safe distance (avoid divide-by-zero in normalize below)
-        let diffVec = uvCorrected - posCorrected;
-        let distSafe = max(length(diffVec), 0.0001);
-
-        let speed      = 0.5;
-        let radius     = speed * elapsed;
-        let distFromWave = distSafe - radius;
-        let waveWidth  = 0.05;
-
-        // Branchless wave mask using smoothstep instead of if(abs(distFromWave) < waveWidth)
+        let elapsed = time - startTime;
+        let rippleMask = f32(startTime > 0.0 && elapsed >= 0.0 && elapsed <= 2.0);
+        let uvC = vec2<f32>(uv.x * aspect, uv.y);
+        let posC = vec2<f32>(ripple.x * aspect, ripple.y);
+        let diff = uvC - posC;
+        let dist = max(length(diff), 0.0001);
+        let radius = speed * elapsed;
+        let distFromWave = dist - radius;
         let waveMask = smoothstep(waveWidth, 0.0, abs(distFromWave));
-
-        let profile   = cos(distFromWave / max(waveWidth, 0.001) * 3.14159 * 2.0);
-        let decay     = max(0.0, 1.0 - elapsed / 2.0);
-        let distDecay = max(0.0, 1.0 - distSafe * 2.0);
-
-        // Bass scales ripple amplitude
-        let amplitude = profile * decay * distDecay * 0.03 * (1.0 + bass * 0.4) * waveMask;
-
-        let dir = diffVec / distSafe;
-        totalDisplacement = totalDisplacement - dir * amplitude;
+        let profile = cos(distFromWave / max(waveWidth, 0.001) * TAU);
+        let decay = max(0.0, 1.0 - elapsed * 0.5);
+        let distDecay = max(0.0, 1.0 - dist * 2.0);
+        let amplitude = profile * decay * distDecay * 0.03 * (1.0 + bass * 0.4) * waveMask * rippleMask;
+        totalDisplacement -= (diff / dist) * amplitude;
     }
+    totalDisplacement += micro;
 
-    let displacedUV = uv + totalDisplacement;
-
-    // Sample texture
+    let displacedUV = clamp(uv + totalDisplacement, vec2<f32>(0.0), vec2<f32>(1.0));
     var color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 
-    // Branchless specular highlight using smoothstep instead of if(length > 0.001)
-    let dispMag     = length(totalDisplacement);
-    let highlight   = smoothstep(0.0005, 0.002, dispMag);
-    let highlightColor = vec3<f32>(0.1, 0.1, 0.15) * highlight;
-    color = vec4<f32>(color.rgb + highlightColor, color.a);
+    let dispMag = length(totalDisplacement);
+    let highlight = smoothstep(0.0005, 0.002, dispMag);
+    let spec = vec3<f32>(0.12, 0.14, 0.18) * highlight * (1.0 + treble);
+    color = vec4<f32>(color.rgb + spec, color.a);
 
-    // Meaningful alpha: displacement magnitude + bass pulse
-    let alpha = clamp(dispMag * 30.0 + bass * 0.25 + mids * 0.1, 0.0, 1.0);
-
-    let finalColor = vec4<f32>(color.rgb, alpha);
-
-    textureStore(writeTexture, coord, finalColor);
-    textureStore(dataTextureA, coord, finalColor);
-
-    // Depth passthrough
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let fog = exp(-depth * 2.0 * (1.0 - p1));
+    color = vec4<f32>(color.rgb * fog, color.a);
+
+    let caDir = normalize(totalDisplacement + vec2<f32>(0.0001)) * dispMag * 0.5;
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + caDir, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV - caDir * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    color = vec4<f32>(mix(color.rgb, vec3<f32>(r, color.g, b), p4 * 0.5), color.a);
+
+    color = vec4<f32>(acesToneMap(color.rgb * (1.0 + mids * 0.15)), color.a);
+
+    let alpha = clamp(dispMag * 30.0 + bass * 0.25 + mids * 0.1 + depth * 0.2, 0.0, 1.0);
+
+    textureStore(writeTexture, coord, vec4<f32>(color.rgb, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(color.rgb, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

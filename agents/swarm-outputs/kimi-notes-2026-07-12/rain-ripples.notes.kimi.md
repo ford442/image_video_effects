@@ -1,0 +1,3 @@
+- Added FBM micro-ripples, depth-aware exponential fog, displacement-driven chromatic aberration, and ACES tonemapping while keeping the original 50-ripple branchless accumulation loop.
+- Semantic alpha was retained (displacement magnitude + audio + depth) and the shader now writes the same rgba to `dataTextureA` for downstream compositing.
+- Performance concern: up to five `textureSampleLevel` calls per pixel (base + r/b aberration + depth) plus fBM; still within 3-slot budget but worth watching on 4K.

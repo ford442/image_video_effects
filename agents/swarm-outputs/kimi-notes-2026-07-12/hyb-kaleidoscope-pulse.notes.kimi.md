@@ -1,0 +1,3 @@
+- Added FBM domain warp to the kaleidoscope coordinates and replaced the pulse glow with an ACES filmic tonemap + IGN blue-noise dither, keeping the original mirror/radial-pulse identity intact.
+- Semantic alpha now encodes pulse energy and scene depth instead of passthrough, and the 13-binding header, workgroup size, and `textureSampleLevel` sampling remain strictly compliant.
+- Performance concern: three fBM octaves plus an extra texture sample per pixel are still cheap, but the domain warp slightly amplifies cache pressure on high-res outputs.

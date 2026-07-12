@@ -1,0 +1,3 @@
+- **What changed:** Preserved the hexagonal mosaic lens core while adding FBM organic warp, anti-moiré LOD bias, depth-aware fog, a 7-tap hex blur for lens-edge smoothness, and semantic alpha. Replaced the branchy `if/else` hex-center selection with `select`.
+- **Why:** These changes make the effect reactive to audio, depth-aware for compositing, and slot-chain friendly while keeping the original radial-magnification soul intact.
+- **Performance concern:** Each pixel evaluates 3-octave fbm plus a LOD sample and a 7-tap hex blur; blur is gated by `falloff * p3`, but the base cost is higher than the original 112-line version.

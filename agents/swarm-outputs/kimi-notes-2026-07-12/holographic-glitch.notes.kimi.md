@@ -1,0 +1,3 @@
+- **What changed**: Replaced the branch-based glitch block with a step-driven UV offset, added canonical chromatic aberration, holographic rainbow + scanlines, temporal feedback from `dataTextureC`, ACES tone mapping, IGN dither, and depth-aware semantic alpha.
+- **Why**: The original used an `if` for glitch offsets and wrote a flat alpha; the new version is branchless, produces more convincing RGB separation and scanline flicker, and lets depth drive compositing strength.
+- **Performance concern**: `chromaticAberration` performs three `textureSampleLevel` reads of `readTexture` per pixel plus a load of the previous frame; total texture traffic is higher than the original single sample.

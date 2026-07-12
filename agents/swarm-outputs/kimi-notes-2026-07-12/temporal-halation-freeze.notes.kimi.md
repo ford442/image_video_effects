@@ -1,0 +1,3 @@
+- **What changed:** Replaced the 24-tap nested-loop bloom with a 7-tap hex-bokeh kernel, added an audio envelope stored in `dataTextureC.a`, ACES tone mapping, depth-aware fog, IGN dither, and kept the temporal accumulation/ghost-echo behavior.
+- **Why:** The hex kernel halves texture-sample count versus the old 5x5 loop while preserving soft bloom, and the envelope makes decay tempo-reactive without breaking the long-exposure freeze aesthetic.
+- **Performance concern:** `bass_env` reads `prev.a` from `dataTextureC` which is written to `dataTextureA` in the same dispatch; this is correct under the engine's ping-pong state semantics but will show one-frame latency if used as direct feedback in a single slot.

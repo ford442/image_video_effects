@@ -1,0 +1,3 @@
+- Replaced the sinusoidal displacement field with a divergence-free curl-noise velocity field, made the 50-ripple loop fully branchless via `f32(active)` masks, and added HSV hue shift + ACES tone mapping.
+- Semantic alpha now combines luminance, scene depth, and displacement magnitude so bright, distorted, or near-depth areas read as more opaque in compositing.
+- Performance concern: curl noise evaluates fBM four times per pixel (two finite differences × two axes), making this the most ALU-heavy of the four upgrades despite the unchanged 50-iteration ripple budget.

@@ -26,6 +26,29 @@ Full rewrites of raw Phase A/B shaders: added `plasmaBuffer` audio reactivity, r
 | 54 | `liquid-lens` | 4 | Spherical lens refraction with chromatic aberration, branchless rim darkening/specular via `select()`, bass strength boost, alpha from lens mask. |
 | 55 | `polka-wave` | 4 | Halftone dots with wave ripple from mouse, bass amplitude boost, alpha preserves source texture in dots + transparent background. |
 
+### Batch 5 (16 shaders) — 2026-07-12
+
+4-agent Kimi swarm pass on unclaimed small shaders. Each shader was assigned a primary role (Algorithmist / Visualist / Interactivist / Optimizer), upgraded with canonical 13-binding compute pipeline, semantic alpha, audio/depth reactivity, and ACES + IGN dither where appropriate. All 16 pass `naga` and `wgsl_precommit_gate.py`; `generate_shader_lists.js` and `check_duplicates.js` are clean.
+
+| # | Shader | Batch | Changes Made |
+|---|--------|-------|--------------|
+| 56 | `hyb-kaleidoscope-pulse` | 5 | Added domain-warped FBM, polar kaleidoscope folding, depth-aware fog, ACES tone map, semantic alpha. |
+| 57 | `ambient-liquid` | 5 | Added curl-noise advection, bass-driven turbulence, depth viscosity, temporal feedback, premultiplied semantic alpha. |
+| 58 | `rain-ripples` | 5 | Added ripple interference patterns, audio-reactive drop rate, depth attenuation, ACES + dither. |
+| 59 | `complex-exponent-warp` | 5 | Added complex-domain warping, multi-octave FBM, mouse-driven exponent modulation, depth-aware chromatic split. |
+| 60 | `neon-edge-radar` | 5 | Added radial edge-detection radar sweep, neon glow, bass-driven sweep speed, depth parallax. |
+| 61 | `holographic-glitch` | 5 | Added holographic thin-film iridescence, chromatic aberration, temporal persistence, depth-aware glitch intensity. |
+| 62 | `hyb-iridescent-fbm-glow` | 5 | Added domain-warped FBM, audio-reactive glow, ACES tone map, IGN dither, semantic alpha from energy. |
+| 63 | `thermal-vision` | 5 | Added blackbody thermal palette, audio hotspots, depth attenuation, ACES + dither. |
+| 64 | `mouse-ink-bleed` | 5 | Added temporal ink bleed trails, bass-driven bleed radius, depth-aware opacity, semantic alpha. |
+| 65 | `interactive-voronoi-lens` | 5 | Added Voronoi cell distortion, mouse-driven focal point, audio-reactive cell jitter, depth-aware lens. |
+| 66 | `cyber-rain` | 5 | Added bass-driven rain intensity, parallax depth layers, temporal persistence, neon reflection alpha. |
+| 67 | `optical-feedback` | 5 | Added feedback echo trails, audio-reactive feedback gain, depth-aware blur, semantic alpha. |
+| 68 | `focal-pixelate` | 5 | Added domain warp to pixelation, depth fog, ACES + IGN dither, compacted param logic. |
+| 69 | `neon-edge-diffusion` | 5 | Added anisotropic edge diffusion, neon glow, audio-reactive diffusion strength, semantic alpha. |
+| 70 | `radial-hex-lens` | 5 | Added hex-bokeh sampling, chromatic dispersion, depth-aware focal plane, semantic alpha. |
+| 71 | `temporal-halation-freeze` | 5 | Added hex-bokeh halation, audio envelope, temporal ghost accumulation, depth fog. |
+
 ### Batch 3 (10 shaders) — 2026-05-17
 
 Completion pass on Phase A/B shaders: added `dataTextureA` temporal feedback writes, `upgraded-rgba` header tags, and fixed `luma-slice-interactive` scalar→vec4 depth write bug.

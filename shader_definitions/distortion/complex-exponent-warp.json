@@ -1,12 +1,24 @@
 {
   "id": "complex-exponent-warp",
   "name": "Complex Exponent Warp",
+  "category": "distortion",
+  "type": "compute",
   "url": "shaders/complex-exponent-warp.wgsl",
-  "description": "Applies a complex domain distortion z -> z^p where p is controlled by mouse position. Creates spirals, fractals, and inversions.",
+  "description": "Applies a complex domain distortion z -> z^p with FBM pre-warp, mouse-driven exponent, depth-aware fog, chromatic aberration, and ACES tone mapping.",
   "features": [
     "mouse-driven",
-    "complex-math"
+    "audio-reactive",
+    "complex-math",
+    "upgraded-rgba",
+    "depth-aware"
   ],
+  "tags": [
+    "warp",
+    "distort",
+    "transform",
+    "complex"
+  ],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "scale",
@@ -46,12 +58,10 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Scale of the UV warp output"
+      "description": "Scale of the FBM domain warp and output UV warp"
     }
   ],
-  "tags": [
-    "warp",
-    "distort",
-    "transform"
-  ]
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

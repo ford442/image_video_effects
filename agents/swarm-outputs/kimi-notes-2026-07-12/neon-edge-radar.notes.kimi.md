@@ -1,0 +1,3 @@
+- **What changed**: Replaced simple luma edge detection with a combined depth+color Sobel metric, wrapped the radar sweep angle, added audio-reactive hue via FBM-driven `neonSpectrum`, ACES filmic tone mapping, IGN blue-noise dither, and semantic alpha tied to edge/sweep energy.
+- **Why**: The previous radar had a flat green neon and hard binary edges; these upgrades give it depth-aware, audio-reactive color variation, HDR-safe output, and compositing-friendly alpha.
+- **Performance concern**: The edge metric samples `readTexture` and `readDepthTexture` four times each per pixel (eight total); this is still within the 138-line budget but adds ~8 texture fetches per invocation.

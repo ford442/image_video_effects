@@ -1,0 +1,3 @@
+- **What changed:** Added FBM domain warp to the pixelation grid, IGN blue-noise dither, depth-aware exponential fog, ACES tone mapping, and semantic alpha. Replaced the `if (invert)` branch with `select`/`step` and bound all four params to `zoom_params`.
+- **Why:** These upgrades keep the original focal-pixelate soul while making it compositing-friendly (semantic alpha), banding-free (IGN), reactive to audio (bass/treble), and slot-chain aware via depth-aware fog and `dataTextureA` feedback.
+- **Performance concern:** `domainWarp` calls 3-octave fbm twice per pixel; it is still well under the 138-line budget and 16x16-friendly, but on low-end GPUs the dual fbm may be the first bottleneck.

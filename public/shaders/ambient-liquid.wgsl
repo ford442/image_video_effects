@@ -1,11 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Ambient Liquid
 //  Category: artistic
-//  Features: mouse-driven, liquid-distortion
-//  Complexity: Low
-//  Chunks From: ambient-liquid
-//  Created: 2026-05-31
-//  By: Copilot CLI (tactical swarm)
+//  Features: mouse-driven, liquid-distortion, upgraded-rgba,
+//            curl-noise, depth-aware, aces-tone-map
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,81 +20,122 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=unused, y=unused, z=unused, w=unused
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530718;
+
+fn hash21(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
+               mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+fn fbm(p: vec2<f32>, oct: i32) -> f32 {
+    var s = 0.0;
+    var a = 0.5;
+    var f = 1.0;
+    for (var i = 0; i < oct; i = i + 1) {
+        s += a * valueNoise(p * f);
+        f *= 2.0;
+        a *= 0.5;
+    }
+    return s;
+}
+fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
+    let eps = 0.001;
+    let nx = fbm(p + vec2<f32>(0.0, eps), 4) - fbm(p - vec2<f32>(0.0, eps), 4);
+    let ny = fbm(p + vec2<f32>(eps, 0.0), 4) - fbm(p - vec2<f32>(eps, 0.0), 4);
+    return vec2<f32>(nx, -ny) / (2.0 * eps);
+}
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
+    let mx = max(max(c.r, c.g), c.b);
+    let mn = min(min(c.r, c.g), c.b);
+    let d = mx - mn;
+    var h = 0.0;
+    if (d > 0.0) {
+        if      (mx == c.r) { h = (c.g - c.b) / d + select(0.0, 6.0, c.g < c.b); }
+        else if (mx == c.g) { h = (c.b - c.r) / d + 2.0; }
+        else                { h = (c.r - c.g) / d + 4.0; }
+        h /= 6.0;
+    }
+    return vec3<f32>(h, select(0.0, d / mx, mx > 0.0), mx);
+}
+fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
+    let c = hsv.z * hsv.y;
+    let h = hsv.x * 6.0;
+    let x = c * (1.0 - abs(fract(h / 2.0) * 2.0 - 1.0));
+    let m = hsv.z - c;
+    var rgb: vec3<f32>;
+    if      (h < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
+    else if (h < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
+    else if (h < 3.0) { rgb = vec3<f32>(0.0, c, x); }
+    else if (h < 4.0) { rgb = vec3<f32>(0.0, x, c); }
+    else if (h < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
+    else              { rgb = vec3<f32>(c, 0.0, x); }
+    return rgb + vec3<f32>(m);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = vec2<f32>(u.config.z, u.config.w);
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    let rate = 0.5;
-    let time = u.config.x * rate;
-    let strength = 0.02;
-    let frequency = 15.0;
-    
-    // Mouse position as attractor center
-    let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-    let to_mouse = mouse_pos - uv;
-    let dist_to_mouse = length(to_mouse);
-    let mouse_influence = exp(-dist_to_mouse * 5.0) * 0.015;
-    
-    var d1 = sin(uv.x * frequency + time) * strength;
-    var d2 = cos(uv.y * frequency * 0.7 + time) * strength;
-    
-    // Add mouse attractor influence
-    d1 += to_mouse.x * mouse_influence;
-    d2 += to_mouse.y * mouse_influence;
-    
-    // Add ripple-based eddies
-    for (var i = 0; i < 50; i++) {
+    let resolution = u.config.zw;
+    let coord = vec2<i32>(global_id.xy);
+    if (coord.x >= i32(resolution.x) || coord.y >= i32(resolution.y)) { return; }
+
+    let uv = vec2<f32>(coord) / resolution;
+    let time = u.config.x;
+    let p1 = clamp(u.zoom_params.x, 0.0, 1.0);
+    let p2 = clamp(u.zoom_params.y, 0.0, 1.0);
+    let p3 = clamp(u.zoom_params.z, 0.0, 1.0);
+    let p4 = clamp(u.zoom_params.w, 0.0, 1.0);
+
+    let flow = curl2D(uv * mix(4.0, 14.0, p2), time * 0.12);
+    let mouse = u.zoom_config.yz;
+    let to_mouse = mouse - uv;
+    let mouse_influence = exp(-length(to_mouse) * 5.0) * 0.02 * (1.0 - p1);
+    var disp = flow * mix(0.01, 0.06, p1) + to_mouse * mouse_influence;
+
+    for (var i = 0; i < 50; i = i + 1) {
         let ripple = u.ripples[i];
-        if (ripple.z > 0.0) {
-            let ripple_pos = ripple.xy;
-            let ripple_age = time - ripple.z;
-            if (ripple_age > 0.0 && ripple_age < 4.0) {
-                let to_ripple = uv - ripple_pos;
-                let ripple_dist = length(to_ripple);
-                let ripple_strength = sin(ripple_dist * 20.0 - ripple_age * 5.0) * exp(-ripple_age * 0.5) * 0.01;
-                d1 += to_ripple.y * ripple_strength;
-                d2 -= to_ripple.x * ripple_strength;
-            }
-        }
+        let age = time - ripple.z;
+        let rippleMask = f32(ripple.z > 0.0 && age > 0.0 && age < 4.0);
+        let to_ripple = uv - ripple.xy;
+        let ripple_dist = length(to_ripple);
+        let ripple_strength = sin(ripple_dist * 20.0 - age * 5.0) * exp(-age * 0.5) * 0.01 * rippleMask;
+        disp += vec2<f32>(to_ripple.y, -to_ripple.x) * ripple_strength * p3;
     }
-    
-    var displacedUV = uv + vec2<f32>(d1, d2);
-    
+
+    let displacedUV = clamp(uv + disp, vec2<f32>(0.0), vec2<f32>(1.0));
     var color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 
-    // This is the unique logic for this shader that makes it different.
-    if (((color.r + color.g + color.b) / 3.0) > 0.75) {
-        let bright_time = u.config.x * 0.65;
-        let bd1 = sin(uv.x * frequency + bright_time) * strength;
-        let bd2 = cos(uv.y * frequency * 0.7 + bright_time) * strength;
-        let brightDisplacedUV = uv + vec2<f32>(bd1, bd2);
-        color = mix(color, textureSampleLevel(readTexture, u_sampler, brightDisplacedUV, 0.0), 0.25);
-    }
-
-    if (((color.r + color.g + color.b) / 3.0) < 0.25) {
-        let dark_time = u.config.x * 0.45;
-        let dd1 = sin(uv.x * frequency + dark_time) * strength;
-        let dd2 = cos(uv.y * frequency * 0.7 + dark_time) * strength;
-        let darkDisplacedUV = uv + vec2<f32>(dd1, dd2);
-        color = mix(color, textureSampleLevel(readTexture, u_sampler, darkDisplacedUV, 0.0), 0.75);
-    }
-
-    // Sample depth for alpha calculation
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
-    // Calculate luminance-based alpha
     let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = mix(0.7, 1.0, luma);
-    let finalAlpha = mix(alpha * 0.8, alpha, depth);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color.rgb, finalAlpha));
-    
-    // Pass depth
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let freq = mix(8.0, 24.0, p2);
+    let strength = 0.015 * (1.0 - p1);
+    let brightMask = smoothstep(0.65, 0.8, luma);
+    let darkMask = 1.0 - smoothstep(0.2, 0.35, luma);
+    let brightUV = clamp(uv + vec2<f32>(sin(uv.x * freq + time * 0.65), cos(uv.y * freq * 0.7 + time * 0.65)) * strength, vec2<f32>(0.0), vec2<f32>(1.0));
+    let darkUV = clamp(uv + vec2<f32>(sin(uv.x * freq + time * 0.45), cos(uv.y * freq * 0.7 + time * 0.45)) * strength, vec2<f32>(0.0), vec2<f32>(1.0));
+    color = mix(color, textureSampleLevel(readTexture, u_sampler, brightUV, 0.0), brightMask * 0.25);
+    color = mix(color, textureSampleLevel(readTexture, u_sampler, darkUV, 0.0), darkMask * 0.75);
+
+    var hsv = rgb2hsv(color.rgb);
+    hsv.x = fract(hsv.x + p4 * 0.08 + length(disp) * 2.0);
+    color = vec4<f32>(hsv2rgb(hsv), color.a);
+    color = vec4<f32>(acesToneMap(color.rgb * (1.0 + p4 * 0.2)), color.a);
+
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let alpha = clamp(dot(color.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.8 + depth * 0.2 + length(disp) * 8.0, 0.15, 0.95);
+
+    textureStore(writeTexture, coord, vec4<f32>(color.rgb, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

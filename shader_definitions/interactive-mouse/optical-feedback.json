@@ -2,43 +2,54 @@
   "id": "optical-feedback",
   "name": "Optical Feedback Loop",
   "url": "shaders/optical-feedback.wgsl",
-  "description": "Infinite video feedback loop centered on the mouse cursor.",
+  "category": "interactive-mouse",
+  "description": "Infinite video feedback loop centered on the mouse cursor with audio-pumped zoom, domain-warped drift, hue shifting, depth-aware fade, and temporal accumulation.",
+  "tags": ["feedback", "loop", "infinite", "mouse-driven", "audio-reactive", "domain-warp", "depth-aware", "hue-shift"],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "semantic-alpha",
+    "upgraded-rgba",
+    "temporal-persistence",
+    "depth-aware"
+  ],
+  "workgroup_size": [16, 16, 1],
   "params": [
+    {
+      "id": "accumulation",
+      "name": "Accumulation Rate",
+      "default": 0.35,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.x"
+    },
     {
       "id": "zoom",
       "name": "Feedback Zoom",
       "default": 0.6,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.y"
     },
     {
       "id": "rotation",
       "name": "Rotation",
       "default": 0.5,
-      "min": 0,
-      "max": 1
-    },
-    {
-      "id": "decay",
-      "name": "Decay",
-      "default": 0.95,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.z"
     },
     {
       "id": "shift",
       "name": "Hue Shift",
       "default": 0.1,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.w"
     }
-  ],
-  "features": [
-    "mouse-driven",
-    "temporal-persistence"
-  ],
-  "tags": [
-    "filter",
-    "image-processing"
   ]
 }

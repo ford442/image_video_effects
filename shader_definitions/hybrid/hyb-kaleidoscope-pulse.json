@@ -4,13 +4,13 @@
   "category": "hybrid",
   "type": "compute",
   "url": "shaders/hyb-kaleidoscope-pulse.wgsl",
-  "description": "Mirrors the input image into kaleidoscope segments and adds a reaction-diffusion-style radial pulse at the center, preserving the original alpha.",
+  "description": "Mirrors the input image into FBM-domain-warped kaleidoscope segments, adds an ACES-tonemapped radial pulse, and writes semantic alpha encoding pulse energy and depth.",
   "features": [
     "hybrid",
     "kaleidoscope",
     "radial-pulse",
     "image-remix",
-    "alpha-passthrough",
+    "upgraded-rgba",
     "depth-aware",
     "randomization-safe"
   ],
@@ -61,7 +61,7 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Blend strength of the pulse overlay"
+      "description": "Blend strength of pulse, warp, and semantic alpha"
     }
   ],
   "supportsDepth": true,

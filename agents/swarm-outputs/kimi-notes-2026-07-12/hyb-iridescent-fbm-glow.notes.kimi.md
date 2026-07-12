@@ -1,0 +1,3 @@
+- **What changed**: Added audio-reactive FBM timing, a depth fog multiplier, ACES tone mapping, IGN blue-noise dither, and semantic alpha derived from glow energy instead of a straight passthrough.
+- **Why**: The original glow was uniform over the image; these changes make the effect react to bass, respect depth for layering, and keep the iridescent gradients band-free.
+- **Performance concern**: FBM evaluation scales with the octave count (up to 7 via `zoom_params.y`) and is executed several times per pixel for the domain warp; high octave values will increase ALU cost.

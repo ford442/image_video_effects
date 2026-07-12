@@ -1,0 +1,3 @@
+- **What changed**: Replaced the simple value noise with FBM-based sensor grain, added a depth-aware fade, ACES tone mapping, IGN dither, and made alpha semantic by mixing source alpha with heat energy.
+- **Why**: Thermal palettes band easily and the old effect ignored depth; the upgrades give richer sensor noise, smoother gradients, and better integration with the scene depth.
+- **Performance concern**: Each pixel performs five luma samples for the optional box blur plus a 4-octave FBM noise evaluation; the blur and noise together raise texture and ALU cost.

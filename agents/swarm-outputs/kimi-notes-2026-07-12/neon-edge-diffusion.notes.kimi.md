@@ -1,0 +1,3 @@
+- **What changed:** Collapsed the old two-pass edge/diffuse design into a single pass using a 16x16 shared-memory tile for the 3x3 Sobel kernel, then applied a 7-tap hex-bokeh glow, ACES tone map, audio-reactive mouse amplification, and semantic alpha.
+- **Why:** Shared memory eliminates redundant neighbor texture reads and the hex kernel gives a perceptually circular glow at lower cost than the old 5x5 nested loop, while semantic alpha lets downstream slots treat neon as emissive rather than opaque.
+- **Performance concern:** The 18x18 tile stores 324 `vec3<f32>` values (~4KB shared memory) and every pixel does 7 extra texture samples; combined register pressure may limit occupancy on mobile GPUs.
