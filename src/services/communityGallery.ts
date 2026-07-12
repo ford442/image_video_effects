@@ -134,4 +134,5 @@ export async function getCommunityPackWithDecodedChain(
   return { pack, chain };
 }
 
-export { encodeChain, decodeChain, SharedChain };
+export { encodeChain, decodeChain };
+export type { SharedChain };

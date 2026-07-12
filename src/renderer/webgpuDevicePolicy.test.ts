@@ -40,7 +40,7 @@ function makeLimits(overrides: Partial<GPUSupportedLimits> = {}): GPUSupportedLi
     maxComputeWorkgroupSizeX: 256,
     maxComputeWorkgroupSizeY: 256,
     maxComputeWorkgroupSizeZ: 64,
-  } as GPUSupportedLimits;
+  } as unknown as GPUSupportedLimits;
 
   return { ...base, ...overrides };
 }
