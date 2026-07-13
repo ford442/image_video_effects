@@ -172,4 +172,7 @@ fn main(
   // has a valid image even if the chain does not run to completion.
   let origRGB = tileAt(lid, 0, 0);
   textureStore(writeTexture, gid.xy, vec4<f32>(origRGB, 1.0));
+  let uv = vec2<f32>(gid.xy) / vec2<f32>(textureDimensions(readTexture));
+  let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

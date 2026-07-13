@@ -1,9 +1,6 @@
 {
-  "id": "gen-ethereal-aurora-ghost-orchid",
   "name": "Ethereal-Aurora Ghost-Orchid",
-  "url": "shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
   "category": "generative",
-  "description": "A phantom-like, hyper-dimensional orchid whose transparent, glowing petals are formed entirely from captured aurora borealis, blooming and disintegrating infinitely in a volumetric dark-matter void, driven by acoustic resonance. Enriched with Wolfram Alpha aurora physics: oxygen green (557.7 nm) at lower altitude, red (630.0 nm) at higher altitude, nitrogen blue/purple at base, and bass-driven solar wind particle density.",
   "tags": [
     "generative",
     "aurora",
@@ -15,52 +12,50 @@
     "organic",
     "neon"
   ],
-  "features": [
-    "upgraded-rgba",
-    "temporal",
-    "audio-reactive",
-    "mouse-driven"
+  "description": "A phantom-like, hyper-dimensional orchid whose transparent, glowing petals are formed entirely from captured aurora borealis, blooming and disintegrating infinitely in a volumetric dark-matter void, driven by acoustic resonance. Enriched with Wolfram Alpha aurora physics: oxygen green (557.7 nm) at lower altitude, red (630.0 nm) at higher altitude, nitrogen blue/purple at base, and bass-driven solar wind particle density.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Petal Complexity",
-      "type": "slider",
+      "default": 3,
       "min": 1,
       "max": 10,
-      "default": 3,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Aurora Intensity",
-      "type": "slider",
+      "default": 2,
       "min": 0.5,
       "max": 5,
-      "default": 2,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Audio Reactivity",
-      "type": "slider",
+      "default": 1.5,
       "min": 0,
       "max": 3,
-      "default": 1.5,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Pollen Density",
-      "type": "slider",
+      "default": 5,
       "min": 0,
       "max": 10,
-      "default": 5,
-      "step": 0.5,
-      "mapping": "zoom_params.w"
+      "step": 0.5
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-ethereal-aurora-ghost-orchid",
+  "url": "shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
+  "features": []
 }

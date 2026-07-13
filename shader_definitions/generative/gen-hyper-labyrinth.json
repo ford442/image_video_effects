@@ -1,13 +1,6 @@
 {
-  "id": "gen-hyper-labyrinth",
   "name": "Hyper Labyrinth",
-  "url": "shaders/gen-hyper-labyrinth.wgsl",
-  "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure.",
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "audio-driven"
-  ],
+  "category": "generative",
   "tags": [
     "neon",
     "cyber",
@@ -20,38 +13,50 @@
     "audio",
     "music"
   ],
-  "params": [
+  "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "scale",
+      "index": 0,
       "name": "Labyrinth Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "morph",
+      "index": 1,
       "name": "Morph Speed",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "glow",
+      "index": 2,
       "name": "Neon Glow",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "thickness",
+      "index": 3,
       "name": "Wall Thickness",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-hyper-labyrinth",
+  "url": "shaders/gen-hyper-labyrinth.wgsl",
+  "features": []
 }

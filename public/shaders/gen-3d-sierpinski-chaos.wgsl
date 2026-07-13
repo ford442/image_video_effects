@@ -84,7 +84,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var rot_pitch: f32;
   if mouseDown {
     rot_yaw = (mouse.x - 0.5) * PI * 2.0;
-    rot_pitch = (mouse.y - 0.5) * PI * 0.8;
+    rot_pitch = ((0.5 - mouse.y)) * PI * 0.8;
   } else {
     rot_yaw = time * audioSpeed * 0.3;
     rot_pitch = sin(time * audioSpeed * 0.2) * 0.4;
@@ -188,4 +188,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Semantic alpha based on density
   let effect = clamp(count * 0.8, 0.4, 0.95);
   textureStore(writeTexture, pixel, vec4<f32>(color, effect));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

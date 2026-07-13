@@ -297,4 +297,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
     textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(col, alpha));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

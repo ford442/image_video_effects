@@ -338,4 +338,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let effectStrength = clamp(luminance * 0.6 + bubbleField * 0.4, 0.3, 0.95);
   textureStore(writeTexture, pixel, vec4<f32>(color, effectStrength));
   textureStore(dataTextureA, pixel, vec4<f32>(temporal, effectStrength));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

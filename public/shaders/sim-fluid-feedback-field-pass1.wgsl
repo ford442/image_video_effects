@@ -1,13 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Sim: Fluid Feedback Field (Pass 1 - Velocity Advection)
+//  Sim: Fluid Feedback Field (Pass 1: Velocity Advection)
 //  Category: simulation
 //  Features: simulation, multi-pass-1, navier-stokes, velocity-advection
 //  Complexity: Very High
 //  Upgraded: 2026-05-23
 //  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
-//  Pass 1: Advect velocity field through itself
-//  Add curl noise for turbulence
+//  Pass graph: Pass 1 reads the previous velocity from dataTextureC,
+//              advects it with curl noise and mouse input, and writes
+//              the new velocity field to dataTextureA.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -69,6 +70,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
     
     let uv = vec2<f32>(gid.xy) / resolution;
+    let coord = vec2<i32>(gid.xy);
     let pixel = 1.0 / resolution;
     let time = u.config.x;
     
@@ -77,8 +79,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseDown = u.zoom_config.w;
 
     // Parameters — bass amplifies turbulence
-    let viscosity = mix(0.9, 0.999, u.zoom_params.x);
-    let turbulence = u.zoom_params.y * 2.0 * (1.0 + bass * 0.5);
+    let viscosity = mix(0.9, 0.999, clamp(u.zoom_params.x, 0.0, 1.0));
+    let turbulence = clamp(u.zoom_params.y, 0.0, 1.0) * 2.0 * (1.0 + bass * 0.5);
     let mouseForce = clamp(u.zoom_params.z, 0.0, 1.0);
 
     // Curl-noise seed (divergence-free) modulated by mouse stir
@@ -95,13 +97,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     newVel *= viscosity;
     
     // Store new velocity in dataTextureA
-    textureStore(dataTextureA, gid.xy, vec4<f32>(newVel, 0.0, 1.0));
-    
+    textureStore(dataTextureA, coord, vec4<f32>(newVel, 0.0, 1.0));
+
     // Pass-through input to maintain chain (Pass 2 will do final compositing)
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    textureStore(writeTexture, gid.xy, inputColor);
-    
+    textureStore(writeTexture, coord, inputColor);
+
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0, 0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

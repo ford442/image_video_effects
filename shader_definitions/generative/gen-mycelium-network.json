@@ -1,8 +1,6 @@
 {
-  "id": "gen-mycelium-network",
   "name": "Mycelium Network",
-  "url": "shaders/gen-mycelium-network.wgsl",
-  "description": "Growing network patterns resembling fungal mycelium with diffusion-limited aggregation branching and bioluminescent tips",
+  "category": "generative",
   "tags": [
     "generative",
     "organic",
@@ -13,47 +11,50 @@
     "music",
     "reactive"
   ],
-  "features": [
-    "animated",
-    "audio-reactive",
-    "audio-driven"
+  "description": "Growing network patterns resembling fungal mycelium with diffusion-limited aggregation branching and bioluminescent tips",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "growthRate",
+      "index": 0,
       "name": "Growth Rate",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "branching",
+      "index": 1,
       "name": "Branching Factor",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "nutrientDensity",
+      "index": 2,
       "name": "Nutrient Density",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "biolumIntensity",
+      "index": 3,
       "name": "Bioluminescence",
       "default": 0.8,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-mycelium-network",
+  "url": "shaders/gen-mycelium-network.wgsl",
+  "features": []
 }

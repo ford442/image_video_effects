@@ -2,7 +2,7 @@ struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 30>,
+  ripples: array<vec4<f32>, 50>,
 };
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -74,7 +74,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let angle = atan2(p_aspect.y - m_aspect.y, p_aspect.x - m_aspect.x);
 
     // Sample original image
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let baseColorSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let baseColor = baseColorSample.rgb;
     let luma = dot(baseColor, vec3<f32>(0.299, 0.587, 0.114));
 
     // Flux Core Effect
@@ -119,7 +120,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor += hotColor * smoothstep(0.05, 0.0, dist) * 2.0;
     finalColor += fluxColor * glow * 0.5;
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, baseColorSample.a));
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;

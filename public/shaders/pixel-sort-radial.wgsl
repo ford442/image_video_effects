@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Radial Pixel Stretch
 //  Category: image
-//  Features: mouse-driven, audio-reactive
+//  Features: image, mouse-driven, audio-reactive, chromatic-aberration, pixel-sort
 //  Complexity: Medium
-//  Upgraded: 2026-05-17
-//  By: Shader Upgrade Swarm
+//  Upgraded: 2026-06-28
+//  By: Agent 1a - Alpha Channel Specialist
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -41,10 +41,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coord = vec2<i32>(global_id.xy);
   let uv = vec2<f32>(global_id.xy) / max(resolution, vec2<f32>(1.0));
 
-  let stretchAmt = u.zoom_params.x;
-  let threshold = u.zoom_params.y;
-  let radius = 0.1 + u.zoom_params.z * 0.8;
-  let direction = u.zoom_params.w;
+  let stretchAmt = mix(0.0, 1.0, clamp(u.zoom_params.x, 0.0, 1.0));
+  let threshold = mix(0.0, 1.0, clamp(u.zoom_params.y, 0.0, 1.0));
+  let radius = mix(0.1, 0.9, clamp(u.zoom_params.z, 0.0, 1.0));
+  let direction = mix(0.0, 1.0, clamp(u.zoom_params.w, 0.0, 1.0));
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;

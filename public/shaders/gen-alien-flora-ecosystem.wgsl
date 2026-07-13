@@ -194,7 +194,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mouse = u.zoom_config.yz;
     var time = u.config.x * 0.1;
     let yaw = (mouse.x - 0.5) * 10.0 + time;
-    let pitch = (mouse.y - 0.5) * 2.0 + 0.5;
+    let pitch = ((0.5 - mouse.y)) * 2.0 + 0.5;
     let dist = 10.0;
     let target_pos = vec3<f32>(0.0, 2.0, time * 10.0);
     let ro = vec3<f32>(
@@ -234,7 +234,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Mouse nurturing: add resourceLevel near mouse world position
         let mouseWorldX = (u.zoom_config.y - 0.5) * 40.0;
-        let mouseWorldZ = (u.zoom_config.z - 0.5) * 40.0 + time * 10.0;
+        let mouseWorldZ = (0.5 - u.zoom_config.z) * 40.0 + time * 10.0;
         let mouseWorld = vec2<f32>(mouseWorldX, mouseWorldZ);
         let mouseDist = length(p.xz - mouseWorld);
         let mouseNurture = exp(-mouseDist * 0.3) * select(0.0, 1.0, u.zoom_config.w > 0.5);

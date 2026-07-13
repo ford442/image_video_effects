@@ -1,10 +1,11 @@
-// ═══ Phosphor Decay (Visualist Upgrade) ═══════════════════════════
+// ═══ Phosphor Decay (Multi-Pass Architect Upgrade) ════════════════
 //  Category: retro-glitch
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
-//            oklab-mixed, blackbody-graded, ign-dithered
+//            oklab-mixed, blackbody-graded, ign-dithered, linear-feedback
 //  Complexity: Medium
-//  Upgrades: OkLab phosphor blending, blackbody temperature grading,
-//            hue-preserving HDR clamp, IGN dither, premultiplied bloom alpha
+//  Upgrades: Linear radiance cached in dataTextureA for temporal feedback,
+//            branchless CRT shadow mask, separate display pass (tone-map +
+//            dither) to writeTexture, energy-carrying feedback alpha.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -95,8 +96,29 @@ fn chromatic_aberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b);
 }
 
+fn box_bloom(uv: vec2<f32>, spread: f32) -> vec3<f32> {
+    let off = vec2<f32>(spread, 0.0);
+    var b = vec3<f32>(0.0);
+    b += to_linear(textureSampleLevel(readTexture, u_sampler, uv + off, 0.0).rgb);
+    b += to_linear(textureSampleLevel(readTexture, u_sampler, uv - off, 0.0).rgb);
+    b += to_linear(textureSampleLevel(readTexture, u_sampler, uv + off.yx, 0.0).rgb);
+    b += to_linear(textureSampleLevel(readTexture, u_sampler, uv - off.yx, 0.0).rgb);
+    return b * 0.25;
+}
+
 fn ign(p: vec2<f32>) -> f32 {
     return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
+// Branchless RGB shadow mask: red column, green column, otherwise blue-ish.
+fn shadow_mask(pixel_x: i32) -> vec3<f32> {
+    let mx = pixel_x % 3;
+    let red  = vec3<f32>(1.0, 0.6, 0.6);
+    let green = vec3<f32>(0.6, 1.0, 0.6);
+    let blue  = vec3<f32>(0.6, 0.6, 1.0);
+    var mask = mix(blue, red, f32(mx == 0));
+    mask = mix(mask, green, f32(mx == 1));
+    return mask;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -117,64 +139,60 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Per-channel phosphor decay
+    // ---- PASS 1: temporal accumulation (cached as linear radiance) ----
+    // dataTextureC is the previous frame's copy of dataTextureA.
+    let prev = textureLoad(dataTextureC, pixel, 0);
+
+    // Per-channel phosphor decay on linear feedback state.
     let decay = vec3<f32>(
         0.95 - decayRateParam * 0.1,
         0.96 - decayRateParam * 0.1,
         0.98 - decayRateParam * 0.05
     );
-    let prev = textureLoad(dataTextureC, pixel, 0);
-    var history = to_linear(prev.rgb) * decay;
+    var history = prev.rgb * decay;
 
-    // Current input + chromatic aberration
+    // Current input with audio-reactive chromatic aberration.
     let inputRGB  = chromatic_aberration(uv, 0.003 + treble * 0.001);
     var inputColor = to_linear(inputRGB);
 
-    // Audio-reactive bloom
+    // Audio-reactive 4-tap box bloom, gated by input luma.
     let spread = bloomSpread * 0.02 * (1.0 + bass * 2.0);
-    var bloom = vec3<f32>(0.0);
-    bloom += to_linear(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(spread, 0.0), 0.0).rgb) * 0.25;
-    bloom += to_linear(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(spread, 0.0), 0.0).rgb) * 0.25;
-    bloom += to_linear(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, spread), 0.0).rgb) * 0.25;
-    bloom += to_linear(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, spread), 0.0).rgb) * 0.25;
-
+    let bloom  = box_bloom(uv, spread);
     let inputLuma = dot(inputColor, vec3<f32>(0.299, 0.587, 0.114));
     let bloomAdd  = bloom * smoothstep(0.5, 1.0, inputLuma) * bloomSpread * (1.0 + bass * 2.0);
     inputColor += bloomAdd;
 
-    // Merge through OkLab for smooth phosphor trails
-    var merged = mixOkLab(history, inputColor, 0.35 + bass * 0.15);
-    merged = max(merged, history * 0.85);
+    // Merge through OkLab for smooth, hue-preserved phosphor trails.
+    var state = mixOkLab(history, inputColor, 0.35 + bass * 0.15);
+    state = max(state, history * 0.85);
 
-    // CRT shadow mask
-    let maskX = pixel.x % 3;
-    var mask = vec3<f32>(0.6, 0.6, 1.0);
-    if (maskX == 0) { mask = vec3<f32>(1.0, 0.6, 0.6); }
-    else if (maskX == 1) { mask = vec3<f32>(0.6, 1.0, 0.6); }
-    merged = mix(merged, merged * mask, shadowMaskStrength * (1.0 + mids * 0.6) * 0.5);
+    // Branchless CRT shadow mask and scan-line blanking.
+    let mask = shadow_mask(pixel.x);
+    state = mix(state, state * mask, shadowMaskStrength * (1.0 + mids * 0.6) * 0.5);
 
-    // Scan-line blanking
     let scanLine = sin(uv.y * res.y * 0.5) * 0.5 + 0.5;
-    merged *= mix(1.0, scanLine, scanBlanking * (1.0 + treble * 0.4) * 0.4);
+    state *= mix(1.0, scanLine, scanBlanking * (1.0 + treble * 0.4) * 0.4);
 
-    // Depth haze via OkLab
+    // Depth haze + blackbody temperature grading.
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let hazeColor = vec3<f32>(0.08, 0.06, 0.04) * 1.5;
-    merged = mixOkLab(merged, hazeColor, depth * 0.25);
+    state = mixOkLab(state, hazeColor, depth * 0.25);
 
-    // Blackbody temperature grading driven by mids and depth
     let temp = 3200.0 + mids * 3000.0 + depth * 1500.0;
-    merged *= blackbodyRGB(temp);
+    state *= blackbodyRGB(temp);
 
-    // CRT vignette
-    merged *= vignette(uv, 1.2);
+    // Energy-carrying alpha for the feedback buffer.
+    let energy = clamp(max(state.r, max(state.g, state.b)), 0.0, 1.0);
+    textureStore(dataTextureA, pixel, vec4<f32>(state, energy));
 
-    // HDR clamp, ACES, sRGB
-    merged = hue_preserve_clamp(merged, 2.0);
-    var finalRGB = aces_tone_map(merged);
+    // ---- PASS 2: display output (tone-map, vignette, dither) ----
+    state *= vignette(uv, 1.2);
+
+    state = hue_preserve_clamp(state, 2.0);
+    var finalRGB = aces_tone_map(state);
     finalRGB = to_srgb(finalRGB);
 
-    // Semantic alpha = bloom weight, IGN dither, premultiplied write
+    // Semantic alpha = bloom/bright weight; IGN dither; premultiplied write.
     let luma = dot(finalRGB, vec3<f32>(0.2126, 0.7152, 0.0722));
     let bloomWeight = pow(max(0.0, luma - 0.55), 2.0) * 3.0;
     let alpha = clamp(bloomWeight, 0.0, 1.0);
@@ -182,6 +200,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalRGB = finalRGB + vec3<f32>(dither);
 
     textureStore(writeTexture, pixel, vec4<f32>(finalRGB * alpha, alpha));
-    textureStore(dataTextureA, pixel, vec4<f32>(finalRGB, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

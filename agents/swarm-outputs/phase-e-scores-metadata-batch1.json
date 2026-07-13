@@ -1,0 +1,727 @@
+{
+  "agent": "3e",
+  "dimension": "metadata",
+  "batch": 1,
+  "shaders": [
+    {
+      "id": "alpha-fluid-simulation-paint",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/simulation/alpha-fluid-simulation-paint.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/alpha-fluid-simulation-paint.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category simulation is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, temporal, rgba-state-machine are consistent with description"
+      },
+      "total": 15
+    },
+    {
+      "id": "alpha-hdr-bloom-chain",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/visual-effects/alpha-hdr-bloom-chain.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/alpha-hdr-bloom-chain.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category visual-effects is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, rgba-state-machine are consistent with description"
+      },
+      "total": 15
+    },
+    {
+      "id": "alpha-reaction-diffusion-rgba",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/simulation/alpha-reaction-diffusion-rgba.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/alpha-reaction-diffusion-rgba.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category simulation is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, temporal, rgba-state-machine are consistent with description"
+      },
+      "total": 15
+    },
+    {
+      "id": "audio-reactive-pyramid",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/post-processing/audio-reactive-pyramid.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/audio-reactive-pyramid.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Explicit category post-processing matches directory"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags audio-reactive, fft-bins match description"
+      },
+      "total": 15
+    },
+    {
+      "id": "aurora-rift",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/artistic/aurora-rift.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/aurora-rift.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category artistic is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flag mouse-driven is consistent with description"
+      },
+      "total": 15
+    },
+    {
+      "id": "aurora-rift-2-pass1",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/lighting-effects/aurora-rift-2-pass1.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/aurora-rift-2-pass1.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category lighting-effects is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags multi-pass-1, compute-shader, volumetric, raymarch are consistent"
+      },
+      "total": 15
+    },
+    {
+      "id": "aurora-rift-pass1",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/lighting-effects/aurora-rift-pass1.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/aurora-rift-pass1.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category lighting-effects is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags multi-pass-1, compute-shader, volumetric, raymarch are consistent"
+      },
+      "total": 15
+    },
+    {
+      "id": "bayer-dither-interactive",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/retro-glitch/bayer-dither-interactive.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/bayer-dither-interactive.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Explicit category retro-glitch matches directory"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, retro-style, audio-reactive, upgraded-rgba are consistent"
+      },
+      "total": 15
+    },
+    {
+      "id": "bio-lenia-rgba",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/advanced-hybrid/bio-lenia-rgba.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/bio-lenia-rgba.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category advanced-hybrid is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, temporal, rgba-state-machine, audio-reactive are consistent"
+      },
+      "total": 15
+    },
+    {
+      "id": "boids-rgba-ecosystem",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/advanced-hybrid/boids-rgba-ecosystem.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/boids-rgba-ecosystem.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category advanced-hybrid is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, temporal, rgba-state-machine are consistent"
+      },
+      "total": 15
+    },
+    {
+      "id": "byte-mosh",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/retro-glitch/byte-mosh.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/byte-mosh.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category retro-glitch is valid"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags interactive, chromatic-aberration, glitch, mouse-driven are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "chromatic-phase-inversion",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/artistic/chromatic-phase-inversion.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/chromatic-phase-inversion.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category artistic is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, audio-reactive are consistent with description"
+      },
+      "total": 15
+    },
+    {
+      "id": "chrono-luma-slit-scan",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/post-processing/chrono-luma-slit-scan.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/chrono-luma-slit-scan.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Explicit category post-processing matches directory"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags temporal, history-ring, audio-reactive, upgraded-rgba are consistent"
+      },
+      "total": 15
+    },
+    {
+      "id": "chrono-slit-scan",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/image/chrono-slit-scan.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/chrono-slit-scan.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category image is valid"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags temporal-persistence, audio-reactive, fbm-warp, sdf-composition, upgraded-rgba, multi-slit, depth-aware are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "cmyk-halftone-explosion",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/advanced-hybrid/cmyk-halftone-explosion.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/cmyk-halftone-explosion.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category advanced-hybrid is valid"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, chromatic, prism, print-simulation are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "crt-clear-zone",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/visual-effects/crt-clear-zone.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/crt-clear-zone.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category visual-effects is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, audio-reactive, upgraded-rgba, temporal are consistent"
+      },
+      "total": 15
+    },
+    {
+      "id": "crt-tv",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/retro-glitch/crt-tv.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/crt-tv.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category retro-glitch is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flag mouse-driven is plausible though description focuses on CRT physics"
+      },
+      "total": 15
+    },
+    {
+      "id": "crystal-refraction",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/interactive-mouse/crystal-refraction.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/crystal-refraction.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category interactive-mouse is valid"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, alpha-transmission, chromatic-aberration, physical-refraction, audio-reactive, audio-driven, advanced-alpha are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "cursor-aura",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/interactive-mouse/cursor-aura.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/cursor-aura.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category interactive-mouse is valid"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, glow, audio-reactive, upgraded-rgba are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "data-slicer",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/distortion/data-slicer.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/data-slicer.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Explicit category distortion matches directory"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, audio-reactive, upgraded-rgba, fractal-slicing, fbm-warping, voronoi-patterns are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "digital-crease",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/geometric/digital-crease.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/digital-crease.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Explicit category geometric matches directory"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags audio-reactive, depth-aware, upgraded-rgba, temporal-paper-fold, chromatic-folding, origami are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "directional-blur-wipe",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/image/directional-blur-wipe.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/directional-blur-wipe.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Explicit category image matches directory"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, audio-reactive, depth-aware, upgraded-rgba, chromatic-offset are consistent"
+      },
+      "total": 15
+    },
+    {
+      "id": "divine-light-gpt52",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/lighting-effects/divine-light-gpt52.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/divine-light-gpt52.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category lighting-effects is valid"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, volumetric, atmospheric, audio-reactive, upgraded-rgba are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "double-exposure-zoom",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/artistic/double-exposure-zoom.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/double-exposure-zoom.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category artistic is valid"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "dynamic-lens-flares",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/lighting-effects/dynamic-lens-flares.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/dynamic-lens-flares.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category lighting-effects is valid"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, optical, cinematic are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "elastic-strip",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/distortion/elastic-strip.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/elastic-strip.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category distortion is valid"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, audio-reactive, spring-physics, chromatic-aberration, depth-aware, upgraded-rgba are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "encaustic-wax",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/artistic/encaustic-wax.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/encaustic-wax.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Explicit category artistic matches directory"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, audio-reactive, upgraded-rgba, painterly, thermal-flow are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "fabric-step-gabor",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/advanced-hybrid/fabric-step-gabor.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/fabric-step-gabor.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category advanced-hybrid is valid"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flags mouse-driven, physics, gabor, texture-analysis, depth-aware are consistent"
+      },
+      "total": 11
+    },
+    {
+      "id": "flip-matrix",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/geometric/flip-matrix.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/flip-matrix.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category geometric is valid"
+      },
+      "params_complete": {
+        "score": 0,
+        "notes": "All 4 params are missing required 'step' field"
+      },
+      "features_accurate": {
+        "score": 2,
+        "notes": "Flag mouse-driven is consistent with description"
+      },
+      "total": 11
+    },
+    {
+      "id": "fractal-kaleidoscope",
+      "json_exists": {
+        "score": 4,
+        "notes": "Found at shader_definitions/distortion/fractal-kaleidoscope.json"
+      },
+      "id_url_match": {
+        "score": 3,
+        "notes": "ID matches filename; URL is shaders/fractal-kaleidoscope.wgsl"
+      },
+      "category_valid": {
+        "score": 2,
+        "notes": "Directory category distortion is valid"
+      },
+      "params_complete": {
+        "score": 4,
+        "notes": "All 4 params have id, name, default, min, max, step"
+      },
+      "features_accurate": {
+        "score": 0,
+        "notes": "No features array present"
+      },
+      "total": 13
+    }
+  ]
+}

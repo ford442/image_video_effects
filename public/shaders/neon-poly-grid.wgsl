@@ -93,7 +93,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let newTrail = max(historyColor.r * decay, activation);
 
     // Store new trail state
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newTrail, 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newTrail, 0.0, 0.0, newTrail));
 
     // Render
     let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -115,5 +115,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Let's add it.
     let finalColor = sourceColor.rgb + gridColor;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, sourceColor.a));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

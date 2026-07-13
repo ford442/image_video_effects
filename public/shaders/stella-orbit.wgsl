@@ -371,4 +371,5 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
     if (gid.x < u32(u.config.z) && gid.y < u32(u.config.w)) {
         textureStore(writeTexture, vec2<i32>(gid.xy), outColor);
     }
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

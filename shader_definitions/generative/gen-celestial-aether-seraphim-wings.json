@@ -1,9 +1,6 @@
 {
-  "id": "gen-celestial-aether-seraphim-wings",
   "name": "Celestial Aether-Seraphim Wings",
-  "url": "shaders/gen-celestial-aether-seraphim-wings.wgsl",
   "category": "generative",
-  "description": "A majestic hyper-dimensional array of fractal wings enriched with aerodynamic lift physics. Angle of attack α from mouse Y drives C_L=2πα (thin airfoil). Stall at ~15° creates turbulent breakdown. Bass drives flapping frequency via damped oscillation. Temporal feedback, chromatic aberration, and ACES tone mapping.",
   "tags": [
     "wings",
     "angelic",
@@ -15,53 +12,50 @@
     "temporal",
     "mouse-driven"
   ],
-  "features": [
-    "upgraded-rgba",
-    "temporal",
-    "audio-reactive",
-    "mouse-driven",
-    "raymarched"
+  "description": "A majestic hyper-dimensional array of fractal wings enriched with aerodynamic lift physics. Angle of attack \u03b1 from mouse Y drives C_L=2\u03c0\u03b1 (thin airfoil). Stall at ~15\u00b0 creates turbulent breakdown. Bass drives flapping frequency via damped oscillation. Temporal feedback, chromatic aberration, and ACES tone mapping.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Fractal Spread",
       "default": 1.0,
       "min": 0.1,
       "max": 3.0,
-      "step": 0.1,
-      "mapping": "zoom_params.x",
-      "description": "Adjusts the spread of the fractal wings"
+      "step": 0.1
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Feather Thickness",
       "default": 0.2,
       "min": 0.05,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Adjusts the thickness of the geometric feathers"
+      "step": 0.01
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Iridescence Hue",
       "default": 0.2,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Shifts the iridescence hue"
+      "step": 0.01
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Ascent Speed",
       "default": 1.0,
       "min": 0.0,
       "max": 5.0,
-      "step": 0.1,
-      "mapping": "zoom_params.w",
-      "description": "Adjusts the vertical movement speed"
+      "step": 0.1
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-celestial-aether-seraphim-wings",
+  "url": "shaders/gen-celestial-aether-seraphim-wings.wgsl",
+  "features": []
 }

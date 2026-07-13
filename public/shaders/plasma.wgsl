@@ -1,31 +1,25 @@
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-
-struct Uniforms {
-  config: vec4<f32>,              // time, rippleCount, resolutionX, resolutionY
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,  // x, y, startTime, unused
-};
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-
-struct PlasmaBall {
-    pos: vec4<f32>,   // x, y, vx, vy
-    color: vec4<f32>, // r, g, b, radius
-    info: vec4<f32>,  // age, maxAge, seed, unused
-};
-
-@group(0) @binding(12) var<storage, read> plasmaBalls: array<PlasmaBall, 50>;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,              // time, audioOverall, resolutionX, resolutionY
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
+};
+
+const BALL_COUNT: u32 = 8u;
 
 // Simple Hash for Noise
 fn hash(p: vec2<f32>) -> f32 {
@@ -55,80 +49,94 @@ fn fbm(p: vec2<f32>) -> f32 {
     return v;
 }
 
+fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
+    let k = vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0);
+    let p = abs(fract(vec3<f32>(h) + k) * 6.0 - vec3<f32>(3.0));
+    return v * mix(vec3<f32>(1.0), clamp(p - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0)), s);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
+  let uv = vec2<f32>(global_id.xy) / resolution;
 
   // Sample original image
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+
+  // Audio reactivity from canonical plasmaBuffer
+  var audioOverall = u.config.y;
+  var audioBass = audioOverall * 1.2;
+  var audioMid = audioOverall;
+  var audioHigh = audioOverall;
+  if (arrayLength(&plasmaBuffer) > 0u) {
+    let audio = plasmaBuffer[0];
+    audioBass = audio.x;
+    audioMid = audio.y;
+    audioHigh = audio.z;
+    audioOverall = (audio.x + audio.y + audio.z) * 0.3333;
+  }
+  let audioReactivity = 1.0 + audioOverall * 0.5;
 
   // Plasma Calculation
   var plasmaField = 0.0;
   var plasmaColor = vec3<f32>(0.0);
   var shadowVal = 0.0;
 
-  // Iterate balls
-  for (var i = 0u; i < 50u; i = i + 1u) {
-      let ball = plasmaBalls[i];
-      // Check if active (age < maxAge and radius > 0)
-      if (ball.info.x < ball.info.y && ball.color.w > 0.0) {
-          var pos = ball.pos.xy;
+  let time = u.config.x;
+  let aspect = resolution.x / resolution.y;
+
+  // Iterate procedural plasma balls
+  for (var i = 0u; i < BALL_COUNT; i = i + 1u) {
+      let fi = f32(i);
+      // Procedural orbital motion
+      let angle = time * 0.3 + fi * 0.785398;
+      let radiusOrbit = 0.25 + 0.12 * sin(time * 0.17 + fi * 0.63);
+      var pos = vec2<f32>(
+          0.5 + radiusOrbit * cos(angle),
+          0.5 + radiusOrbit * sin(angle) * 0.6
+      );
+      // Audio reactive pulse
+      let radius = 0.045 + 0.025 * sin(time * 1.5 + fi) + 0.015 * audioBass;
+      let ballColor = hsv2rgb(fract(0.12 * fi + time * 0.05), 0.85, 1.0);
+
+      if (radius > 0.0) {
           // Correct aspect ratio for distance
-          let aspect = resolution.x / resolution.y;
           let dvec = (uv - pos) * vec2<f32>(aspect, 1.0);
           let dist = length(dvec);
 
-          let radius = ball.color.w;
+          // Velocity-derived trail direction
+          let nextPos = vec2<f32>(
+              0.5 + radiusOrbit * cos(angle + 0.01),
+              0.5 + radiusOrbit * sin(angle + 0.01) * 0.6
+          );
+          let vel = nextPos - pos;
+          let velDir = normalize(vel + vec2<f32>(0.0001));
+          let speed = length(vel);
 
           // Wisp/Noise distortion
-          // Displace distance based on noise and velocity direction
-          let vel = ball.pos.zw;
-          let velDir = normalize(vel);
-          let speed = length(vel);
-          let time = u.config.x;
-          // ═══ AUDIO REACTIVITY ═══
-          let audioOverall = u.config.y;
-          let audioBass = u.config.y * 1.2;
-          let audioMid = u.config.z;
-          let audioHigh = u.config.w;
-          let audioReactivity = 1.0 + audioOverall * 0.5;
+          let noiseVal = fbm(uv * 20.0 - vel * time * 8.0 * audioReactivity + vec2<f32>(fi * 12.34));
 
-          // Noise offset
-          // Animate noise with time and velocity
-          // Increased frequency and speed for more chaos
-          let noiseVal = fbm(uv * 20.0 - vel * time * 8.0 * audioReactivity + vec2<f32>(ball.info.z));
-
-          // Distort the field
-          // Make it trail behind significantly
-          // dot(dvec, vel) is positive if we are in front, negative if behind
+          // Trail behind velocity
           let dotP = dot(normalize(dvec), velDir);
-          let trail = smoothstep(0.2, 1.0, -dotP); // 1.0 behind
+          let trail = smoothstep(0.2, 1.0, -dotP);
 
-          // "Irregular whooshing"
-          // Stretch noise along velocity
-          // Increase effective radius more dramatically based on noise
+          // Irregular whooshing
           let distortion = 1.0 + (1.5 * noiseVal * trail) + (0.5 * noiseVal);
           let effectiveRadius = radius * distortion;
 
-          // Metaball function: 1 / (dist^2) or similar gaussian
-          // Using Gaussian for smoothness: exp(-k * dist^2)
-          // Lower k for broader, softer blobs
+          // Metaball influence
           let influence = exp(-40.0 * (dist * dist) / (effectiveRadius * effectiveRadius));
 
           plasmaField += influence;
-          // Boost color intensity
-          plasmaColor += ball.color.rgb * influence * 1.5;
+          plasmaColor += ballColor * influence * 1.5;
 
-          // Shadow Logic
-          // If pixel is "offset" from ball center away from light, cast shadow
-          // Let's assume light is top-left (-1, -1) direction
+          // Shadow logic
           let lightDir = normalize(vec2<f32>(-1.0, -1.0));
-          let shadowOffset = vec2<f32>(0.01, 0.01); // Shift shadow
+          let shadowOffset = vec2<f32>(0.01, 0.01);
           let shadowUV = uv - shadowOffset;
           let dvecShadow = (shadowUV - pos) * vec2<f32>(aspect, 1.0);
           let distShadow = length(dvecShadow);
-          let shadowInfluence = exp(-100.0 * (distShadow * distShadow) / (radius*radius));
+          let shadowInfluence = exp(-100.0 * (distShadow * distShadow) / (radius * radius));
           shadowVal += shadowInfluence;
       }
   }
@@ -137,38 +145,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var finalColor = baseColor.rgb;
 
   // Apply Shadow first (on the image)
-  // Shadow is just darkening where plasma *would be* if shifted
-  // But we only want shadow if there isn't plasma *there* already covering it?
-  // Or just multiply.
-  // We assume plasma is floating above.
   let shadowStr = smoothstep(0.1, 1.0, shadowVal);
   finalColor = mix(finalColor, finalColor * 0.5, shadowStr * 0.8);
 
   // Render Plasma on top
   if (plasmaField > 0.1) {
       // Normalize color
-      let renderColor = plasmaColor / plasmaField; // weighted average
+      let renderColor = plasmaColor / plasmaField;
 
-      // Add "core" glow
+      // Add core glow
       let core = smoothstep(0.8, 2.0, plasmaField);
       let edge = smoothstep(0.1, 0.8, plasmaField);
 
-      // Mix edge and core
-      // Edge is "wispy"
       let wispColor = renderColor;
-      let coreColor = vec3<f32>(1.0, 1.0, 1.0); // White hot core
+      let coreColor = vec3<f32>(1.0, 1.0, 1.0);
 
       let plasmaFinal = mix(wispColor, coreColor, core);
 
-      // Additive blending or alpha blending?
-      // Alpha blending
       let alpha = clamp(plasmaField, 0.0, 1.0);
       finalColor = mix(finalColor, plasmaFinal, alpha);
   }
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, 1.0));
 
-  // Preserve depth (or update if we wanted the balls to have depth)
-  // For now, just pass through or 0.0
+  // Preserve depth
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
 }

@@ -120,14 +120,29 @@
   {
     "id": "ambient-liquid",
     "name": "Ambient Liquid",
+    "category": "artistic",
+    "type": "compute",
     "url": "shaders/ambient-liquid.wgsl",
-    "description": "Gentle ambient liquid motion effects.",
+    "description": "Curl-noise-driven ambient liquid distortion with mouse attraction, branchless ripple eddies, HSV color shift, depth-aware semantic alpha, and ACES tone mapping.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba",
+      "depth-aware",
+      "audio-reactive",
+      "reaction-diffusion",
+      "sdf-metaballs",
+      "anisotropic-specular"
     ],
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "liquid",
+      "noise"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "params": [
       {
@@ -170,7 +185,10 @@
         "mapping": "zoom_params.w",
         "description": "Color manipulation amount"
       }
-    ]
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true
   },
   {
     "id": "anisotropic-kuwahara",
@@ -755,19 +773,26 @@
     "name": "Chromatic Focus",
     "category": "artistic",
     "url": "shaders/chromatic-focus.wgsl",
-    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into colorful chromatic bokeh.",
+    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into colorful chromatic bokeh. Enhanced with OkLab mixing, iridescent thin-film interference, Mie scattering haze, split-tone grading, and ACES filmic tone mapping.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "oklab-mixing",
+      "split-tone",
+      "aces-tone-map",
+      "volumetric-haze",
+      "iridescent-halo"
     ],
     "tags": [
       "focus",
       "bokeh",
       "spectral",
       "chromatic",
-      "audio-reactive"
+      "audio-reactive",
+      "iridescent",
+      "atmospheric"
     ],
     "params": [
       {
@@ -798,7 +823,8 @@
         "min": 0,
         "max": 1
       }
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "chromatic-folds-2",
@@ -1849,115 +1875,6 @@
     ]
   },
   {
-    "id": "gen-glass-mosaic-liquid-refraction",
-    "name": "Glass Mosaic Refraction",
-    "url": "/shaders/gen-glass-mosaic-liquid-refraction.wgsl",
-    "description": "Stained-glass polygon mosaic with pseudo-depth height-field refraction, audio-reactive ripples, and depth output.",
-    "tags": [
-      "glass",
-      "mosaic",
-      "refraction",
-      "stained-glass",
-      "audio-reactive",
-      "ornate",
-      "caustics"
-    ],
-    "features": [
-      "mouse-driven",
-      "audio-reactive",
-      "depth-aware"
-    ],
-    "params": [
-      {
-        "id": "facets",
-        "name": "Facet Count",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "bevel",
-        "name": "Bevel Width",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "refraction",
-        "name": "Refraction",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "ripple",
-        "name": "Ripple Speed",
-        "default": 0.3,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "gen-sonic-lava-flow",
-    "name": "Sonic Lava Flow",
-    "url": "/shaders/gen-sonic-lava-flow.wgsl",
-    "description": "Navier-Stokes-style fluid solver with decayed feedback creating a molten lava overlay, audio-reactive heat and chromatic shimmer.",
-    "tags": [
-      "lava",
-      "fluid",
-      "fire",
-      "audio-reactive",
-      "molten",
-      "heat",
-      "temporal",
-      "organic"
-    ],
-    "features": [
-      "audio-reactive",
-      "mouse-driven",
-      "temporal"
-    ],
-    "params": [
-      {
-        "id": "viscosity",
-        "name": "Viscosity",
-        "default": 0.6,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "turbulence",
-        "name": "Turbulence",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "decay",
-        "name": "Decay",
-        "default": 0.7,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "heatGlow",
-        "name": "Heat Glow",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
     "id": "glass_refraction_alpha",
     "name": "Glass Refraction RGBA",
     "url": "shaders/glass_refraction_alpha.wgsl",
@@ -2125,6 +2042,13 @@
     "id": "holographic-contour",
     "name": "Holographic Contour",
     "url": "shaders/holographic-contour.wgsl",
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2158,6 +2082,40 @@
         "default": 0.8,
         "min": 0,
         "max": 1
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Edge Threshold",
+        "default": 0.1,
+        "min": 0.01,
+        "max": 0.5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glow Strength",
+        "default": 2,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Hologram Shift",
+        "default": 0.05,
+        "min": 0,
+        "max": 0.2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Darken Background",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ],
     "tags": [
@@ -2235,6 +2193,13 @@
     "id": "ink_dispersion_alpha",
     "name": "Ink Dispersion RGBA",
     "url": "shaders/ink_dispersion_alpha.wgsl",
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
     "description": "Ink in water simulation with Navier-Stokes velocity field. Alpha = ink density/concentration. Multiple colors, chemical reactions.",
     "tags": [
       "ink",
@@ -2279,6 +2244,40 @@
       },
       {
         "id": "param4",
+        "name": "Reaction",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Diffusion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Intensity",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 3,
         "name": "Reaction",
         "default": 0.2,
         "min": 0,
@@ -2560,6 +2559,13 @@
     "id": "liquid-prism-cascade",
     "name": "Liquid Prism Cascade",
     "url": "shaders/liquid-prism-cascade.wgsl",
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
     "description": "Colors separate along curved planes like light through prisms, creating a layered 3-D depth illusion where R, G, and B channels drift independently through warped color-space.",
     "tags": [
       "chromatic",
@@ -2610,6 +2616,40 @@
         "default": 0.6,
         "step": 0.01,
         "description": "Blend weight between luminance gradient and depth curvature."
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Dispersion Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Depth Curvature",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Prism Twist",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Depth Weight",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -2821,11 +2861,12 @@
   {
     "id": "mosaic-reveal",
     "name": "Mosaic Reveal",
-    "url": "shaders/mosaic-reveal.wgsl",
-    "description": "Mosaic reveal with hexagonal/square grids, flood-fill reveal from the mouse, OkLab perceptual blending, audio-reactive blackbody rim glow, temporal trails, and ACES tone mapping.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/mosaic-reveal.wgsl",
+    "description": "Mosaic reveal with hexagonal/square grids, flood-fill reveal from the mouse, OkLab perceptual blending, audio-reactive blackbody rim glow, temporal trails, ACES tone mapping, and advanced layered alpha compositing.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
+      "alpha-layered",
       "mosaic",
       "interactive-reveal",
       "mouse-driven",
@@ -2880,11 +2921,14 @@
     "name": "Mouse Pixel Sort",
     "category": "artistic",
     "url": "shaders/mouse-pixel-sort.wgsl",
-    "description": "Luminance-based pixel sorting controlled by mouse proximity.",
+    "description": "Multi-layer luminance-based pixel sorting with FBM organic thresholds, curl-noise sorting directions, De Jong strange attractor warping, and Voronoi cellular patterns. Audio-reactive sparkle trails and dual-layer compositing.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "multi-layer-sort",
+      "fbm-patterns",
+      "noise-warping"
     ],
     "params": [
       {
@@ -2920,7 +2964,16 @@
       "pixel-sort",
       "streak",
       "interactive",
-      "audio-reactive"
+      "audio-reactive",
+      "curl-noise",
+      "strange-attractor",
+      "fbm",
+      "voronoi"
+    ],
+    "updated": true,
+    "updatedParams": [
+      "threshold",
+      "length"
     ]
   },
   {
@@ -3125,11 +3178,17 @@
     "id": "neon-edge-diffusion",
     "name": "Neon Edge Diffusion",
     "url": "shaders/neon-edge-diffusion.wgsl",
-    "description": "Sobel edge detection with neon-diffusion and color bleeding.",
+    "description": "Shared-memory Sobel edge detection with hex-bokeh neon glow, ACES tone mapping, and semantic alpha emission.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "tags": [
       "filter",
@@ -3139,24 +3198,24 @@
     ],
     "params": [
       {
-        "id": "viscosity",
-        "name": "Viscosity",
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
-        "description": "Liquid thickness/resistance"
+        "description": "Overall neon glow intensity"
       },
       {
-        "id": "turbulence",
-        "name": "Turbulence",
+        "id": "bloom_radius",
+        "name": "Bloom Radius",
         "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.y",
-        "description": "Chaotic flow intensity"
+        "description": "Hex bokeh diffusion radius"
       },
       {
         "id": "ripple_strength",
@@ -3166,7 +3225,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.z",
-        "description": "Wave distortion amount"
+        "description": "Audio-reactive ripple contribution"
       },
       {
         "id": "color_shift",
@@ -3176,7 +3235,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Color manipulation amount"
+        "description": "Neon hue shift amount"
       }
     ]
   },
@@ -3281,6 +3340,13 @@
     "id": "parallax_depth_layers",
     "name": "Parallax Layers RGBA",
     "url": "shaders/parallax_depth_layers.wgsl",
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
     "description": "5 depth layers with parallax displacement. Each layer has independent alpha for occlusion. Atmospheric perspective and depth of field.",
     "tags": [
       "parallax",
@@ -3332,12 +3398,53 @@
         "step": 0.1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Parallax",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Layer Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Depth of Field",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Fog",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
     "target_rating": 4.6
   },
   {
     "id": "particle_dreams_alpha",
     "name": "Particle Dreams RGBA",
     "url": "shaders/particle_dreams_alpha.wgsl",
+    "updated": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
     "description": "80+ particles with alpha-based lifetime, trail accumulation, birth/death fades. Alpha channel stores particle density for blending.",
     "tags": [
       "particles",
@@ -3380,6 +3487,40 @@
       },
       {
         "id": "param4",
+        "name": "Chaos",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Particle Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Trail Persistence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 3,
         "name": "Chaos",
         "default": 0.2,
         "min": 0,
@@ -3637,14 +3778,17 @@
   {
     "id": "polka-dot-reveal",
     "name": "Polka Dot Reveal",
-    "url": "shaders/polka-dot-reveal.wgsl",
-    "description": "Optimized interactive halftone effect with 16x16 workgroups, spring-damped mouse follow, attack/release audio envelope, depth-aware dot radius, per-cell hash jitter to reduce banding, and temporal feedback trails where alpha encodes trail age and interaction intensity.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/polka-dot-reveal.wgsl",
+    "description": "Phase-B advanced-alpha halftone effect with 16x16 workgroups, spring-damped mouse follow, attack/release audio envelope, per-cell hash jitter, and temporal feedback trails. Alpha is now composited through depth-layered fade, luminance keying, edge-preservation, and an interaction-energy boost so the 3-slot chain blends meaningfully.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "temporal",
       "upgraded-rgba",
       "depth-aware",
+      "alpha-layered",
+      "edge-preserve",
+      "luminance-key",
       "optimized"
     ],
     "tags": [
@@ -3654,7 +3798,10 @@
       "audio-reactive",
       "temporal",
       "trails",
-      "depth-aware"
+      "depth-aware",
+      "alpha-layered",
+      "edge-preserve",
+      "luminance-key"
     ],
     "params": [
       {
@@ -5088,41 +5235,64 @@
   {
     "id": "thermal-vision",
     "name": "Thermal Vision",
+    "category": "artistic",
     "url": "shaders/thermal-vision.wgsl",
-    "description": "Heat signature camera view.",
+    "description": "Heat-signature camera with FBM sensor noise, audio-reactive sensitivity, depth-aware fade, ACES tone mapping, IGN dither, blackbody temperature, split-tone, hue-preserve clamp and vignette.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "sensitivity",
         "name": "Heat Sensitivity",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
         "id": "color_range",
         "name": "Color Range",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "noise",
         "name": "Sensor Noise",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "blur",
         "name": "Thermal Blur",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
       }
     ],
     "features": [
+      "upgraded-rgba",
       "color-remap",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "aces-tone-map",
+      "ign-dither",
+      "blackbody-temperature",
+      "split-tone",
+      "hue-preserve-clamp",
+      "vignette"
     ],
     "tags": [
       "filter",

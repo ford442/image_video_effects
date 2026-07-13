@@ -242,4 +242,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = pow(col, vec3<f32>(0.4545));
 
     textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

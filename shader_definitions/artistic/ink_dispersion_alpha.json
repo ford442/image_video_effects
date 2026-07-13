@@ -2,6 +2,13 @@
   "id": "ink_dispersion_alpha",
   "name": "Ink Dispersion RGBA",
   "url": "shaders/ink_dispersion_alpha.wgsl",
+  "updated": true,
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "supportsDepth": true,
   "description": "Ink in water simulation with Navier-Stokes velocity field. Alpha = ink density/concentration. Multiple colors, chemical reactions.",
   "tags": [
     "ink",
@@ -46,6 +53,40 @@
     },
     {
       "id": "param4",
+      "name": "Reaction",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Diffusion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "name": "Viscosity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "index": 2,
+      "name": "Intensity",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.1
+    },
+    {
+      "index": 3,
       "name": "Reaction",
       "default": 0.2,
       "min": 0,

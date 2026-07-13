@@ -84,7 +84,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let mouse  = u.zoom_config.yz;
     let panX   = (mouse.x - 0.5) * 24.0;
-    let panZ   = (mouse.y - 0.5) * 24.0;
+    let panZ   = (0.5 - mouse.y) * 24.0;
 
     let viewX = (uv.x - 0.5) * 50.0 + panX;
     let viewZ =  uv.y         * 50.0 -  2.0 + panZ;

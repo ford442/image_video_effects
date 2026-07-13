@@ -29,20 +29,22 @@ that it works end-to-end.
 
 ---
 
-## Current known reliability caveats (June 2026)
+## Current known reliability caveats (July 2026)
 
 The C++ renderer has a **real compute + present pipeline** (`Render()` →
-`PresentToSurface()`). The June 2026 reliability pass ([#799](https://github.com/ford442/image_video_effects/issues/799),
-[roadmap](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584))
-hardened init/format/limits (#817–#822 ✅). A new contributor picking up WASM
-work should read:
+`PresentToSurface()`). Init/format/limits (#817–#822 ✅) and July integration
+work (#886–#889 ✅) are in tree.
 
-- [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) — accurate gap analysis + tracking table
-- [`wasm_renderer/STATUS.md`](./wasm_renderer/STATUS.md) — implementation status + remaining glue work
+**Support tier:** **B — experimental opt-in.** TypeScript WebGPU is the production default.
 
-**Not yet done:** `RendererManager` WASM forwarding, `setInputSource` wiring,
-live-browser verification on edge GPUs. These are separate from the #817–#822
-C++ reliability batch.
+Read next:
+
+- [`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md) — Tier B policy
+- [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) — gaps + July 2026 status
+- [`wasm_renderer/STATUS.md`](./wasm_renderer/STATUS.md) — implementation snapshot
+- [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md) — promotion gates ([#890](https://github.com/ford442/image_video_effects/issues/890))
+
+**Still open:** promotion evidence (bench JSON, multi-GPU parity, 4-week CI green streak), edge-GPU manual verification, automated visual pixel-diff.
 
 ---
 
@@ -266,27 +268,28 @@ To run the automated WASM renderer tests on your machine:
 
 ### What the Tests Validate
 
-The automated test suite (`tests/wasm-renderer.smoke.spec.ts`) includes:
+See [`WASM_TEST_SUITE.md`](./WASM_TEST_SUITE.md) for the full command matrix. Summary:
 
-| Test | Purpose |
+| Spec | Purpose |
 |------|---------|
-| `WASM renderer initializes successfully` | Verifies `?renderer=wasm` forces WASM and initializes with `getDiagnostics().wasm.initialized === true` and `fps > 0` |
-| `WASM renderer loads single shader without errors` | Tests single-shader loading with 2-second render |
-| `WASM renderer loads multiple shaders (multi-slot stack)` | Tests 3-shader stack (multi-slot chain) with 3-second render |
-| `WASM renderer handles shader loading with minimal console errors` | Verifies no device-lost, shader-compile-error, or critical device errors |
-| `WASM renderer collects performance metrics` | Logs frame time, module status, and diagnostics for CI metrics tracking |
+| `tests/wasm-renderer.smoke.spec.ts` | `?renderer=wasm&testMode=1`, 5-shader matrix, multi-slot, FPS/canvas health |
+| `tests/renderer-parity.spec.ts` | WASM vs WebGPU luminance parity (`WASM_GPU_TESTS=1`) |
+| `tests/wasm-benchmark.spec.ts` | FPS/frame-time bench → `test-results/wasm-benchmark-report.json` |
+| `tests/layerChain.smoke.spec.ts` | Multi-slot stack smoke |
+
+**Soft mode (CI default):** tolerates JS fallback when no WebGPU adapter.  
+**Strict mode:** `WASM_GPU_TESTS=1` requires active `wasm` backend.
 
 ### CI Integration
 
-The `.github/workflows/ci.yml` includes a `test-wasm-e2e` job that:
+The `.github/workflows/ci.yml` `test-wasm-e2e` job:
 
-- **Depends on:** `wasm` build job + `test` job
-- **Runs after:** WASM module successfully builds
-- **Runs:** Full Playwright suite against `?renderer=wasm&testMode=1`
-- **Reports:** Pass/fail + artifacts (HTML report, videos on failure)
-- **Fails CI if:** Any critical console errors, device-lost events, or renderer initialization fails
+- **Depends on:** `wasm` + `test` jobs
+- **Runs:** `test:wasm:e2e` (soft) then `test:wasm:gpu` (strict; skips without adapter)
+- **Artifacts:** Playwright report, benchmark JSON when produced
+- **Manual GPU run:** `wasm-gpu-manual` workflow dispatch → `test:wasm:full`
 
-**NOTE:** The `test-wasm-e2e` job requires [Emscripten SDK](https://emscripten.org) to be available. In CI, this is set up automatically via the `mymindstorm/setup-emsdk@v14` action. If the WASM build fails, the E2E tests are skipped.
+Promotion evidence: [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md)
 
 ### Performance Metrics
 
@@ -305,13 +308,13 @@ These metrics can be used to detect performance regressions.
 
 ---
 
-## Known Limitations (June 2026)
+## Known Limitations (July 2026)
 
-- The WASM binary may not be committed; build locally with Emscripten before testing.
-- `build.sh` exits 0 when `emcc` is missing — run `npm run wasm:build` on a machine with emsdk for a real build.
-- Automated Playwright tests require a successful WASM build.
-- `RendererManager` does not forward all slot/param APIs to WASM yet (see GAP analysis §3.2).
-- Performance benchmarks vs the TypeScript renderer are not yet automated.
+- WASM is **Tier B experimental** — not production default ([`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md)).
+- `build.sh` fails when `emcc` is missing unless `SKIP_WASM_BUILD=1` — see [`wasm_renderer/ARTIFACTS.md`](./wasm_renderer/ARTIFACTS.md).
+- Playwright GPU tests skip on headless CI without a WebGPU adapter; use `WASM_GPU_TESTS=1` on a GPU machine.
+- Promotion requires attached benchmark JSON — see [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md).
+- WASM `getGPUTimings()` reports wall-clock ms only (no GPU timestamp queries).
 
 ---
 

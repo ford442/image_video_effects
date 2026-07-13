@@ -1,11 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Tesseract Fold
+//  Tesseract Fold  (Phase B Multi-Pass-Architect upgrade)
 //  Category: geometric
 //  Features: mouse-driven, upgraded-rgba, audio-reactive, depth-aware
-//  Complexity: Medium
-//  Upgraded: domain-warped FBM, polar kaleidoscope fold, compound 4D
-//            rotation, radial chromatic aberration, ACES tone mapping,
-//            treble-driven neon edge glow, semantic bloom alpha
+//  Upgrade: distance-based LOD, precomputed 4D/fold constants,
+//           early-exit culling, branchless safe divisors
 // ═══════════════════════════════════════════════════════════════════
 
 // ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
@@ -36,7 +34,6 @@ const TAU: f32 = 6.28318530718;
 const INV_PI: f32 = 0.31830988618;
 
 // ── Hashes & noise ─────────────────────────────────────────────
-fn hashf(n: f32) -> f32 { return fract(sin(n * 127.1) * 43758.5453); }
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
@@ -46,20 +43,24 @@ fn valueNoise(p: vec2<f32>) -> f32 {
   return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
              mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
-fn fbm(p: vec2<f32>, oct: i32) -> f32 {
+
+// LOD-aware FBM: cheaper octaves for distant pixels
+fn fbmLod(p: vec2<f32>, oct: i32, lod: i32) -> f32 {
+  let n = min(oct, max(lod, 1));
   var s = 0.0; var a = 0.5; var f = 1.0;
-  for (var i: i32 = 0; i < oct; i = i + 1) {
+  for (var i: i32 = 0; i < n; i = i + 1) {
     s += a * valueNoise(p * f); f *= 2.0; a *= 0.5;
   }
   return s;
 }
-fn organicDrift(uv: vec2<f32>, time: f32, scale: f32) -> vec2<f32> {
+
+fn organicDriftLod(uv: vec2<f32>, time: f32, scale: f32, lod: i32) -> vec2<f32> {
   let safeScale = max(scale, 0.001);
   let p = uv * safeScale;
   let slow = vec2<f32>(time * 0.11, -time * 0.08);
-  let q = vec2<f32>(fbm(p + slow, 3), fbm(p * 1.37 + vec2<f32>(5.2, 1.3) - slow.yx, 3));
-  let r = vec2<f32>(fbm(p * 0.73 + q * 2.0 + vec2<f32>(1.7, 9.2), 2),
-                    fbm(p * 0.91 - q.yx * 2.0 + vec2<f32>(8.1, 2.8), 2));
+  let q = vec2<f32>(fbmLod(p + slow, 3, lod), fbmLod(p * 1.37 + vec2<f32>(5.2, 1.3) - slow.yx, 3, lod));
+  let r = vec2<f32>(fbmLod(p * 0.73 + q * 2.0 + vec2<f32>(1.7, 9.2), 2, lod),
+                    fbmLod(p * 0.91 - q.yx * 2.0 + vec2<f32>(8.1, 2.8), 2, lod));
   return ((q + r * 0.5) * 2.0 - vec2<f32>(1.5)) / safeScale;
 }
 
@@ -68,12 +69,12 @@ fn rot2(angle: f32) -> mat2x2<f32> {
   let c = cos(angle); let s = sin(angle);
   return mat2x2<f32>(c, -s, s, c);
 }
-fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
+fn kaleido(uv: vec2<f32>, segAngle: f32) -> vec2<f32> {
   let r = length(uv);
-  var a = atan2(uv.y, uv.x);
-  let seg = TAU / max(segs, 1.0);
-  a = abs(fract(a / seg + 0.5) - 0.5) * seg;
-  return vec2<f32>(cos(a), sin(a)) * r;
+  let a = atan2(uv.y, uv.x);
+  let safeSeg = select(0.001, segAngle, segAngle > 0.0);
+  let a2 = abs(fract(a / safeSeg + 0.5) - 0.5) * safeSeg;
+  return vec2<f32>(cos(a2), sin(a2)) * r;
 }
 
 // ── Color tools ────────────────────────────────────────────────
@@ -115,29 +116,48 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = res.x / res.y;
   var p = (uv01 - mouse) * vec2<f32>(aspect, 1.0);
 
-  // Compound 4D-style rotation via layered 2D rotations
+  // Precompute reciprocal scale for LOD and early-exit tests
+  let scale = mix(0.5, 2.5, p2);
+  let invScale = 1.0 / max(scale, 0.001);
+  let d0 = length(p);
+
+  // Early-exit: beyond ~2.6 fold radii the vignette is negligible
+  if (d0 * invScale > 2.6 && p4 < 0.02 && p3 < 0.02) {
+    let base = textureSampleLevel(readTexture, u_sampler, uv01, 0.0);
+    textureStore(writeTexture, pixel, vec4<f32>(base.rgb, base.a * (1.0 - p4)));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    return;
+  }
+
+  // Compound 4D-style rotation via single combined matrix
   let a1 = time * p1 * 0.7 + bass * 0.25;
   let a2 = time * p1 * 0.4 + treble * 0.35;
-  p = rot2(a1) * p;
-  p = rot2(a2) * (p + vec2<f32>(0.04 * sin(time * 0.7)));
+  let R = rot2(a2) * rot2(a1);
+  p = R * p + rot2(a2) * vec2<f32>(0.04 * sin(time * 0.7));
 
-  // Domain-warped organic drift
-  let drift = organicDrift(p * 3.0, time, 2.0) * (0.04 + p3 * 0.08 + bass * 0.03);
+  // Distance-based LOD: fewer noise octaves far from fold center
+  let lod = i32(clamp(5.0 - d0 * invScale * 2.0, 1.0, 5.0));
+
+  // Domain-warped organic drift with LOD
+  let drift = organicDriftLod(p * 3.0, time, 2.0, lod) * (0.04 + p3 * 0.08 + bass * 0.03);
   p += drift;
 
   // Polar kaleidoscope fold with audio-reactive segment count
   let segs = 4.0 + p1 * 8.0 + bass * 4.0;
-  p = kaleido(p, segs);
+  let seg = select(1.0, segs, segs > 1.0);
+  let segAngle = TAU / seg;
+  p = kaleido(p, segAngle);
 
   // Projection scale
-  p *= mix(0.5, 2.5, p2);
+  p *= scale;
 
-  // Iterated branchless fold
+  // Iterated branchless fold with precomputed base angle
   let folds = 4.0 + p1 * 6.0;
+  let baseAngle = TAU / select(1.0, folds, folds > 1.0);
   for (var i: i32 = 0; i < 3; i = i + 1) {
     p = abs(p);
     p = p - vec2<f32>(0.12 + p3 * 0.12);
-    let ang = (TAU / max(folds, 1.0)) * (1.0 + 0.2 * sin(time + f32(i) * 1.7));
+    let ang = baseAngle * (1.0 + 0.2 * sin(time + f32(i) * 1.7));
     p = rot2(ang) * p;
   }
 
@@ -167,7 +187,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = mix(color * 0.15, color, vignette);
 
   // Treble-driven edge glow at fold boundaries
-  let segAngle = TAU / max(segs, 1.0);
   let edgeDist = abs(fract(angle / segAngle + 0.5) - 0.5) * 2.0;
   let edgeGlow = smoothstep(1.0 - p3 * 0.4, 1.0, edgeDist) * (0.6 + treble * 0.6);
   color = neonGlow(color, 0.25 + edgeGlow * 0.35);

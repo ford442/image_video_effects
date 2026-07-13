@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-06-07T04:44:57.535010+00:00",
-  "total": 1217,
-  "valid": 1217,
+  "timestamp": "2026-07-05T04:40:13.817580+00:00",
+  "total": 1273,
+  "valid": 1273,
   "invalid": 0,
   "shaders": [
     {
@@ -11,6 +11,11 @@
     },
     {
       "file": "public/shaders/_hash_library.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/_template_canonical_compute.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1715,7 +1720,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-astral-silk-chrono-weaver-arachnid.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-astro-kinetic-chrono-orrery.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-astro-mechanical-quantum-furnace-engine.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1771,6 +1786,11 @@
     },
     {
       "file": "public/shaders/gen-bio-luminescent-jelly.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-bioelectric-pulse.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1885,6 +1905,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-chromatic-glass-lattice.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-chromatic-metamorphosis.wgsl",
       "valid": true,
       "errors": []
@@ -1910,6 +1935,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-chrono-kitsune-prism-weaver.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-chrono-mycelial-tapestry.wgsl",
       "valid": true,
       "errors": []
@@ -1926,6 +1956,11 @@
     },
     {
       "file": "public/shaders/gen-chronos-labyrinth.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-chronos-monolith-resonator.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1951,6 +1986,11 @@
     },
     {
       "file": "public/shaders/gen-cosmic-web-filament.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1995,12 +2035,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-cycloid-bloom.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/gen-cymatic-plasma-mandalas.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-cymatic-quantum-silk-loom.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2080,6 +2130,26 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-ethereal-glass-flora-terrarium.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-ethereal-quantum-medusa.wgsl",
       "valid": true,
       "errors": []
@@ -2096,6 +2166,26 @@
     },
     {
       "file": "public/shaders/gen-feedback-echo-chamber.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-chrysanthemum.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-crackle-palm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-nocturne.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-willow-cascade.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2121,6 +2211,11 @@
     },
     {
       "file": "public/shaders/gen-fractured-monolith.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-galactic-aether-crystal-geode-core.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2165,6 +2260,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-holographic-fracture.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-holographic-lens-flare-matrix.wgsl",
       "valid": true,
       "errors": []
@@ -2186,6 +2286,16 @@
     },
     {
       "file": "public/shaders/gen-hopf-fibration-fiber-bundle.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-hyper-bismuth-clockwork.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2231,6 +2341,16 @@
     },
     {
       "file": "public/shaders/gen-ifs-fractal-flame.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-image-pixel-detonation.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-image-pyro.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2305,12 +2425,32 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-live-studio-tab.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-lorenz-attractor.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-luminescent-cyber-chrono-void-turtle.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-luminescent-quantum-glass-phoenix-egg.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2326,6 +2466,11 @@
     },
     {
       "file": "public/shaders/gen-magnetic-dipole-field.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-magnetic-ferrofluid-sculpture.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2450,6 +2595,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-neural-dust.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-neural-fractal-hdr.wgsl",
       "valid": true,
       "errors": []
@@ -2466,6 +2616,11 @@
     },
     {
       "file": "public/shaders/gen-neuro-cosmos.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-neuro-fluid-plasma-lotus.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2555,12 +2710,27 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-prismatic-cyber-auroral-manta-swarm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-prismatic-cyber-chrono-void-kitsune.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-prismatic-fractal-dunes.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/gen-prismatic-ion-cascade.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2595,12 +2765,22 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-quantum-chrome-serpent-ouroboros.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-quantum-entangled-ferrofluid-engine.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2630,6 +2810,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-quantum-singularity-forge.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-quantum-superposition.wgsl",
       "valid": true,
       "errors": []
@@ -2650,7 +2835,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-radiant-quantum-crystalline-forge.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2675,12 +2870,47 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-resonant-crystal-canyons.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-resonant-quantum-obsidian-scarab-engine.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-resonant-quantum-plasma-dragon-eye.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-rgb-diffraction.wgsl",
       "valid": true,
       "errors": []
     },
     {
       "file": "public/shaders/gen-sentient-aether-flora-biosphere.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-sentient-ferro-silicate-swarm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-sentient-liquid-neon-fractal-heart.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2795,6 +3025,16 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-symbiotic-plasma-reef-matrix.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-tectonic-plasma-crucible.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-temporal-motion-smear.wgsl",
       "valid": true,
       "errors": []
@@ -2866,6 +3106,11 @@
     },
     {
       "file": "public/shaders/gen-vortex-cathedral.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-wasm-hls-physarum-swarm.wgsl",
       "valid": true,
       "errors": []
     },
@@ -3276,6 +3521,41 @@
     },
     {
       "file": "public/shaders/honey-melt.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/hyb-chromatic-circuit.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/hyb-hex-voronoi-distort.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/hyb-iridescent-fbm-glow.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/hyb-kaleidoscope-pulse.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/hyb-neural-voronoi-feedback.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/hyb-spectral-fbm-displace.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/hyb-temporal-fbm-ghost.wgsl",
       "valid": true,
       "errors": []
     },

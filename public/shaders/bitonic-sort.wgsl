@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Bitonic Pixel Sort — Algorithmist Upgrade (Jun 2026 Batch F)
+//  Bitonic Pixel Sort — Phase B Multi-Pass-Architect Upgrade
+//  Focus: bank-conflict-free shared memory, single-sided branchless
+//  compare-and-swap, and clearly separated load/sort/store passes.
 //  Category: simulation
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven,
 //            multi-ripple, domain-warp, quasi-random, temporal-feedback,
@@ -27,11 +29,21 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
-var<workgroup> sKey: array<f32, 256>;
-var<workgroup> sCol: array<vec4<f32>, 256>;
+// Workgroup layout: 16x16 threads = 256 logical elements.
+const WG_X: u32 = 16u;
+const WG_Y: u32 = 16u;
+const WG_N: u32 = 256u;
+
+// Pad the physical stride so 2^N threads do not all alias the same banks.
+// A 17-word stride scatters consecutive x-thread accesses across different
+// shared-memory banks, eliminating the worst-case conflicts of a 16-word row.
+const PAD_X: u32 = 17u;
+const PHYS_N: u32 = WG_Y * PAD_X; // 272
+
+var<workgroup> sKey: array<f32, PHYS_N>;
+var<workgroup> sCol: array<vec4<f32>, PHYS_N>;
 
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -110,13 +122,19 @@ fn chromaticAberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
   return vec3<f32>(r, g, b);
 }
 
+// Map a logical 0..255 element index to its padded physical shared-memory index.
+fn phys(i: u32) -> u32 {
+  return (i >> 4u) * PAD_X + (i & 15u);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>,
         @builtin(local_invocation_id) lid: vec3<u32>,
         @builtin(workgroup_id) wgid: vec3<u32>) {
-  let li = lid.y * 16u + lid.x;
-  let gx = wgid.x * 16u + lid.x;
-  let gy = wgid.y * 16u + lid.y;
+  let li = lid.y * WG_X + lid.x;
+  let pi = lid.y * PAD_X + lid.x;
+  let gx = wgid.x * WG_X + lid.x;
+  let gy = wgid.y * WG_Y + lid.y;
   let x = i32(gx); let y = i32(gy);
   let uv = vec2<f32>(f32(gx), f32(gy)) / u.config.zw;
   let time = u.config.x;
@@ -133,6 +151,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
   let mids = plasmaBuffer[0].y;
   let bassMod = 1.0 + bass * 0.3;
 
+  // ── PASS 1: Build per-pixel sort key and load color into workgroup memory.
   let kSegs = 3.0 + floor(u.zoom_params.w * 7.0);
   let kUV = kaleido((uv - vec2<f32>(0.5)) * (2.0 + u.zoom_params.w * 4.0), kSegs) + vec2<f32>(0.5);
   let scale = 2.0 + u.zoom_params.w * 10.0;
@@ -170,30 +189,41 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
     key = select(-1.0, 2.0, sortDir > 0.5);
   }
 
-  sKey[li] = key;
-  sCol[li] = p;
+  sKey[pi] = key;
+  sCol[pi] = p;
 
-  for (var k: u32 = 2u; k <= 256u; k = k << 1u) {
+  // ── PASS 2: Workgroup bitonic sort network.
+  // Each thread only writes its own slot; the partner slot is updated by the
+  // partner thread, eliminating double-writes and the need for a divergent if.
+  let globalAsc = sortDir < 0.5;
+  for (var k: u32 = 2u; k <= WG_N; k = k << 1u) {
     for (var j: u32 = k >> 1u; j > 0u; j = j >> 1u) {
       workgroupBarrier();
+
       let partner = li ^ j;
+      let pp = phys(partner);
+      let a = sKey[pi];
+      let b = sKey[pp];
+
       let bit = li & k;
-      let a = sKey[li];
-      let b = sKey[partner];
-      let globalAsc = sortDir < 0.5;
       let asc = select(bit != 0u, bit == 0u, globalAsc);
       let swap = select(a > b, a < b, asc);
-      if (swap && partner > li) {
-        sKey[li] = b; sKey[partner] = a;
-        let ca = sCol[li];
-        sCol[li] = sCol[partner]; sCol[partner] = ca;
-      }
+      // Each thread writes only its own slot; the partner updates its slot in
+      // parallel, so the pair exchanges values without double-writes or divergence.
+      let doSwap = (partner > li) == swap;
+
+      sKey[pi] = select(a, b, doSwap);
+      let ca = sCol[pi];
+      let cb = sCol[pp];
+      sCol[pi] = select(ca, cb, doSwap);
+
       workgroupBarrier();
     }
   }
 
+  // ── PASS 3: Write sorted result, depth, and temporal feedback.
   if (inBounds) {
-    let sorted = sCol[li];
+    let sorted = sCol[pi];
     let effectiveMix = sortMix * mask * bassMod;
     let finalRgb = mix(p.rgb, sorted.rgb, effectiveMix);
     let tone = acesToneMap(finalRgb * (0.9 + mids * 0.2));

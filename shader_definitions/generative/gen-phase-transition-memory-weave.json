@@ -1,8 +1,6 @@
 {
-  "id": "gen-phase-transition-memory-weave",
   "name": "Phase-Transition Memory Weave",
-  "url": "shaders/gen-phase-transition-memory-weave.wgsl",
-  "description": "A viscous history-dependent field undergoing phase transitions between fluid, crystalline, and chaotic states with strong visual memory of past configurations. Audio controls phase transition thresholds. Mouse locally forces phase changes. Beautiful hysteresis and pattern retention.",
+  "category": "generative",
   "tags": [
     "generative",
     "phase-transition",
@@ -13,51 +11,50 @@
     "abstract",
     "music"
   ],
-  "features": [
-    "generative",
-    "audio-reactive",
-    "mouse-driven"
+  "description": "A viscous history-dependent field undergoing phase transitions between fluid, crystalline, and chaotic states with strong visual memory of past configurations. Audio controls phase transition thresholds. Mouse locally forces phase changes. Beautiful hysteresis and pattern retention.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "viscosity",
+      "index": 0,
       "name": "Viscosity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Material memory and viscous resistance to change",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "phaseScale",
+      "index": 1,
       "name": "Phase Scale",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Spatial scale of phase domain structures",
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "transitionSharpness",
+      "index": 2,
       "name": "Transition Sharpness",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Sharpness of phase boundary transitions",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "glow",
+      "index": 3,
       "name": "Glow Intensity",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "description": "Overall glow and luminosity of the material",
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-phase-transition-memory-weave",
+  "url": "shaders/gen-phase-transition-memory-weave.wgsl",
+  "features": []
 }

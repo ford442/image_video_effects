@@ -5,9 +5,55 @@
 
 ---
 
-## Recently Completed (55 shaders)
+## Recently Completed (80 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 8 (4 new generative geometry shaders) — 2026-07-12
+
+Colorful polyhedral geometry pass — spectral palettes, neon edges, iridescent surfaces, mouse 3D orbit, audio reactivity. Manifest now 1296 shaders.
+
+| # | Shader | Batch | Lines | Description |
+|---|--------|-------|-------|-------------|
+| 93 | `gen-rainbow-icosahedron-cascade` | 8 | ~168 | Nested icosahedral wireframe shells with spectral edge glow. |
+| 94 | `gen-chromatic-zonohedron` | 8 | ~130 | Rhombic zonohedron facet tiling with rainbow cells and neon edges. |
+| 95 | `gen-prismatic-mobius-helix` | 8 | ~132 | Möbius-strip helix with thin-film iridescence. |
+| 96 | `gen-neon-stellated-octahedron` | 8 | ~160 | Star tetrahedron with neon rainbow edges and kaleidoscopic symmetry. |
+
+### Batch 7 (5 shaders) — 2026-07-12
+
+Mixed pass: 3 remaining small fireworks upgraded to Batch 6 optimizer standard (hex-bokeh, star field, temporal persistence, semantic alpha); 1 new generative firework created; 1 visual-effect upgrade. All pass `naga` and `wgsl_precommit_gate.py`; manifest now 1292 shaders.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 88 | `gen-fireworks-strobe-shell` | 7 | 123→153 (+30) | Hex-bokeh flash cores, star field, camera blend, improved persistence/alpha. |
+| 89 | `gen-fireworks-crossette` | 7 | 116→153 (+37) | Hex-bokeh arm sparks, GRAVITY physics, star field, semantic alpha. |
+| 90 | `gen-fireworks-comet-trail` | 7 | 116→141 (+25) | Hex-bokeh head/trail, unified sparkPos gravity, star field, persistence. |
+| 91 | `gen-fireworks-dahlia-burst` | 7 | NEW→189 | **New shader.** Flat dahlia-disk petal rows, layered timing, mouse burst, audio reactivity. |
+| 92 | `phantom-lag` | 7 | 105→137 (+32) | Spring-damper bass, chromatic echo taps, ACES tone map, vec4 alpha preservation. |
+
+### Batch 6 (16 generative shaders) — 2026-07-12
+
+4-agent Kimi generative swarm: 4 fireworks optimizers, 4 visualists, 4 interactivists, 4 algorithmists. Expanded undersized generative shaders by **+52 to +115 lines** with canonical 13-binding compute pipeline, semantic alpha, audio/depth reactivity, and role-specific techniques (SDF/orbit traps, Fresnel/OkLab, spring-damper mouse, hex-bokeh fireworks). Post-dispatch fixes: `target` reserved keyword → `goal` in spring_damper helpers; `hash22` swizzle typo `p.yzx` → `p3.yzx`; completed `gen-sierpinski-tetrahedron` upgrade Kimi had not started. All 16 pass `naga` and `wgsl_precommit_gate.py`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 72 | `gen-ethereal-cyber-chrono-nebula-phoenix` | 6 | 55→144 (+89) | Clifford attractor orbit trap, phoenix SDF, domain-warped nebula, audio fracture. |
+| 73 | `gen-prismatic-cyber-aurora-astral-dragonfly` | 6 | 168→241 (+73) | Dragonfly SDF, Worley layers, strange-attractor crystals, iridescent orbit trap. |
+| 74 | `gen-physarum-sacred-geometry` | 6 | 190→242 (+52) | Curl-noise agents, hex sacred mask, Mandelbrot trap, extraBuffer simulation. |
+| 75 | `gen-sierpinski-tetrahedron` | 6 | 197→262 (+65) | 2nd-order domain warp, curl advection, Worley accent, Fresnel sheen, spring-damper audio. |
+| 76 | `gen-luminescent-aether-plasma-nebula-koi` | 6 | 199→301 (+102) | Fresnel rim, OkLab mixing, chromatic aberration, blackbody temperature. |
+| 77 | `gen-luminescent-quantum-glass-phoenix-egg` | 6 | 197→306 (+109) | Glass SDF refraction, thin-film iridescence, quantum orbit trap, split-tone. |
+| 78 | `gen-ethereal-chrono-plasma-void-manta` | 6 | 174→289 (+115) | Manta SDF glide, plasma void FBM, temporal feedback, hue-preserve clamp. |
+| 79 | `gen-quantum-fluorescent-nebula-anemone` | 6 | 171→260 (+89) | Anemone tentacle SDF, fluorescent palette, domain-warped nebula, vignette. |
+| 80 | `gen-cybernetic-mycelium-neural-web` | 6 | 191→249 (+58) | Spring-damper audio, click-seeded mutation, mycelial attraction, temporal feedback. |
+| 81 | `gen-neural-bioluminescence-matrix` | 6 | 191→260 (+69) | Neural graph Voronoi, click shockwave, gravity well, spring-damper envelopes. |
+| 82 | `gen-showcase-nebula-core` | 6 | 196→250 (+54) | Gravity-well mouse, Balmer-series palette, click bursts, spring-damper audio. |
+| 83 | `gen-worley-cellular-noise` | 6 | 171→224 (+53) | Spring-damper reactivity, mouse warp, cellular Worley layers, temporal feedback. |
+| 84 | `gen-fireworks-fan-shell` | 6 | 102→169 (+67) | Hex-bokeh fan glow, mouse personal fan, bass energy, temporal persistence. |
+| 85 | `gen-fireworks-horse-tail` | 6 | 104→170 (+66) | Hex-bokeh brocade trails, gravity fall, mouse burst, audio tail length. |
+| 86 | `gen-fireworks-kamuro-gold` | 6 | 111→173 (+62) | Hex-bokeh gold droplets, mouse cascade, branchless shell timing. |
+| 87 | `gen-fireworks-ring-shell` | 6 | 107→170 (+63) | Hex-bokeh ring glow, mouse ring, bass radius, gravity secondary sparks. |
 
 ### Batch 4 (10 shaders) — 2026-05-17
 
@@ -25,6 +71,29 @@ Full rewrites of raw Phase A/B shaders: added `plasmaBuffer` audio reactivity, r
 | 53 | `psychedelic-noise-flow` | 4 | Per-channel noise displacement with bass speed scaling, mids distortion strength, clamped UV sampling, alpha from displacement + mouse influence. |
 | 54 | `liquid-lens` | 4 | Spherical lens refraction with chromatic aberration, branchless rim darkening/specular via `select()`, bass strength boost, alpha from lens mask. |
 | 55 | `polka-wave` | 4 | Halftone dots with wave ripple from mouse, bass amplitude boost, alpha preserves source texture in dots + transparent background. |
+
+### Batch 5 (16 shaders) — 2026-07-12
+
+4-agent Kimi swarm pass on unclaimed small shaders. First pass compacted code too aggressively; a retry enforced original-functionality preservation and **+30 to +80 line expansion**. Each shader was assigned a primary role (Algorithmist / Visualist / Interactivist / Optimizer), upgraded with canonical 13-binding compute pipeline, semantic alpha, audio/depth reactivity, and ACES + IGN dither where appropriate. All 16 pass `naga` and `wgsl_precommit_gate.py`; `generate_shader_lists.js` and `check_duplicates.js` are clean.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 56 | `hyb-kaleidoscope-pulse` | 5 | 112→167 (+55) | Domain-warped FBM, SDF star, strange-attractor orbit-trap, phase kaleidoscope rings, chromatic split. |
+| 57 | `ambient-liquid` | 5 | 141→195 (+54) | Curl-noise advection, reaction-diffusion spots, SDF metaball ink, anisotropic specular, vignette/film grain. |
+| 58 | `rain-ripples` | 5 | 126→186 (+60) | Domain-warped FBM micro-ripples, Voronoi raindrops, caustic refraction, wet-area SDF, thin-film rainbow. |
+| 59 | `complex-exponent-warp` | 5 | 129→209 (+80) | Dual-layer domain-warped FBM, Julia orbit-trap, Newton fractal coloring, SDF cardioid, stereo chromatic split. |
+| 60 | `neon-edge-radar` | 5 | 102→141 (+39) | Fresnel rim, volumetric fog, hue-preserve clamp, blackbody temperature. |
+| 61 | `holographic-glitch` | 5 | 95→128 (+33) | Fresnel rim, split-tone, film grain, hue-preserve clamp. |
+| 62 | `hyb-iridescent-fbm-glow` | 5 | 85→147 (+62) | Chromatic aberration, Fresnel rim, OkLab mixing. |
+| 63 | `thermal-vision` | 5 | 102→143 (+41) | Blackbody temperature, split-tone, hue-preserve clamp, vignette. |
+| 64 | `mouse-ink-bleed` | 5 | 129→202 (+73) | Spring-damper mouse follow, gravity well, click shockwave, vortex ink splash, temporal feedback. |
+| 65 | `interactive-voronoi-lens` | 5 | 132→209 (+77) | Spring-damper follow, gravity on cell centers, neon shockwave, Voronoi lens distortion. |
+| 66 | `cyber-rain` | 5 | 130→205 (+75) | Bass-driven intensity, bending streaks/drops, thunder flash, parallax depth layers, temporal persistence. |
+| 67 | `optical-feedback` | 5 | 148→228 (+80) | Lagging feedback center, self-evolving hue phase, gravity well, click burst, emergent feedback loop. |
+| 68 | `focal-pixelate` | 5 | 77→152 (+75) | Hex-bokeh sampling, anti-moiré LOD bias, shared-memory tiling hint, branchless focus select, depth compositing. |
+| 69 | `neon-edge-diffusion` | 5 | 87→141 (+54) | Anti-moiré LOD, hex-bokeh glow, early-exit ripple gating, branchless select/mix, depth compositing. |
+| 70 | `radial-hex-lens` | 5 | 94→163 (+69) | Fractional hex LOD, weighted hex-bokeh sampling, shared-memory tiling hint, depth-aware focal plane. |
+| 71 | `temporal-halation-freeze` | 5 | 78→127 (+49) | LOD-biased hex-bokeh bloom, early-exit dark-pixel fallback, shared-memory tiling hint, branchless warm/cool selection. |
 
 ### Batch 3 (10 shaders) — 2026-05-17
 
@@ -644,7 +713,6 @@ For each shader in the Active Queue:
 ## Candidate Pool for Replenishment
 
 Next smallest shaders not yet in any batch:
-- `phosphor-decay` (3,215)
 - `bitonic-sort` (3,025)
 - `temporal-rgb-smear` (3,065)
 - `elastic-chromatic` (3,089)

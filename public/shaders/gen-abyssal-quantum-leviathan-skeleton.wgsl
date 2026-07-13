@@ -69,7 +69,7 @@ fn map(pos_in: vec3<f32>) -> vec2<f32> {
     let audio_react = u.zoom_params.w * u.config.y; // 1.0 default
 
     // Apply mouse interaction as a gravity well
-    let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 10.0, (u.zoom_config.z - 0.5) * 10.0, 0.0);
+    let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 10.0, (0.5 - u.zoom_config.z) * 10.0, 0.0);
     let dist_to_mouse = length(p - mouse_pos);
     if (dist_to_mouse < 5.0) {
         let pull = smoothstep(5.0, 0.0, dist_to_mouse) * 2.0;
@@ -206,4 +206,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let temporal = mix(prev.rgb * decay, color, 0.25);
     textureStore(dataTextureA, coords, vec4<f32>(temporal, 1.0));
     textureStore(writeTexture, coords, vec4<f32>(color, 1.0));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

@@ -103,7 +103,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Shift hue based on mouse Y
         hsv.x = fract(hsv.x + mouse.y * 0.5);
 
-        outputColor = vec4<f32>(hsv2rgb(hsv), 1.0);
+        outputColor = vec4<f32>(hsv2rgb(hsv), color.a);
 
     } else {
         // Shift history
@@ -124,4 +124,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     textureStore(dataTextureA, gid.xy, outputColor);
     textureStore(writeTexture, gid.xy, outputColor);
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(gid.xy) / vec2<f32>(textureDimensions(readTexture)), 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

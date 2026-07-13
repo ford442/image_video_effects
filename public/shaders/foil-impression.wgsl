@@ -2,7 +2,7 @@ struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 30>,
+  ripples: array<vec4<f32>, 50>,
 };
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -104,7 +104,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let final_normal = normalize(mix(foil_normal, image_normal, press_factor));
 
   // 4. Color
-  let img_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let img_color_sample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let img_color = img_color_sample.rgb;
   let foil_base = vec3<f32>(0.7, 0.7, 0.75); // Silver
 
   // If pressed, show more image color. If not, silver.
@@ -127,7 +128,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Tone mapping / clamp
   col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+  textureStore(writeTexture, coord, vec4<f32>(col, img_color_sample.a));
 
   // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;

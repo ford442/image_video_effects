@@ -78,7 +78,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var ro = vec3<f32>(0.0, 0.0, -5.0 + u.config.x) * camPulse;
     var rd = normalize(vec3<f32>(uv * 2.0 - 1.0, 1.0));
     rd = vec3<f32>(rd.xy * rotate((u.zoom_config.y - 0.5) * 3.14), rd.z);
-    let yz = rd.yz * rotate((u.zoom_config.z - 0.5) * 3.14);
+    let yz = rd.yz * rotate((0.5 - u.zoom_config.z) * 3.14);
     rd = vec3<f32>(rd.x, yz.x, yz.y);
 
     // Chromatic depth separation: R and B march at slightly different offsets

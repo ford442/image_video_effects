@@ -158,8 +158,8 @@
   {
     "id": "crt-magnet",
     "name": "CRT Magnet",
-    "url": "shaders/crt-magnet.wgsl",
-    "description": "Optimized CRT monitor degaussing magnetic distortion near the mouse. Uses canonical fbm/curl noise, unified audio-envelope and spring-damped mouse state, branchless aperture grille, hex-bloom, beam-purity RGB separation, and ACES tone mapping with semantic alpha blending.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/crt-magnet.wgsl",
+    "description": "Phase-B hybrid CRT monitor degaussing magnetic distortion near the mouse. Fuses crt-magnet distortion with temporal feedback echo, audio-driven cosine palette, domain-warped FBM, and a smooth SDF mask. Uses canonical fbm/curl noise, unified audio-envelope and spring-damped mouse state, branchless aperture grille, hex-bloom, beam-purity RGB separation, and ACES tone mapping with semantic alpha blending.",
     "params": [
       {
         "id": "magnet_strength",
@@ -195,7 +195,10 @@
       "audio-reactive",
       "depth-aware",
       "upgraded-rgba",
-      "aces-tone-map"
+      "aces-tone-map",
+      "feedback-echo",
+      "audio-palette",
+      "sdf-mask"
     ],
     "tags": [
       "filter",
@@ -205,7 +208,11 @@
       "fractal",
       "crt",
       "magnet",
-      "bloom"
+      "bloom",
+      "feedback",
+      "palette",
+      "sdf",
+      "hybrid"
     ]
   },
   {
@@ -976,46 +983,67 @@
   {
     "id": "holographic-glitch",
     "name": "Holographic Glitch",
+    "category": "retro-glitch",
     "url": "shaders/holographic-glitch.wgsl",
-    "description": "Futuristic holographic projection with RGB chromatic aberration, scanlines, digital artifacts, and unstable flickering. Perfect for sci-fi aesthetics.",
+    "description": "Sci-fi holographic projection with block glitch, chromatic aberration, depth-aware scanlines, temporal trails, ACES tone mapping, IGN dither, Fresnel rim, split-tone, film grain and hue-preserve clamp.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "glitchIntensity",
         "name": "Glitch Intensity",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
       },
       {
-        "id": "scanlineSpeed",
-        "name": "Scanline Speed",
+        "id": "holographicIntensity",
+        "name": "Holographic Intensity",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "rgbShift",
         "name": "RGB Shift",
         "default": 0.6,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "flicker",
         "name": "Flicker",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
       }
     ],
     "features": [
+      "upgraded-rgba",
       "depth-aware",
       "temporal-persistence",
       "chromatic-aberration",
       "sci-fi",
       "audio-reactive",
       "audio-driven",
-      "mouse-driven"
+      "mouse-driven",
+      "aces-tone-map",
+      "ign-dither",
+      "fresnel-rim",
+      "split-tone",
+      "film-grain",
+      "hue-preserve-clamp"
     ],
     "tags": [
       "filter",
@@ -1144,8 +1172,8 @@
   {
     "id": "phosphor-decay",
     "name": "Phosphor Decay",
-    "url": "shaders/phosphor-decay.wgsl",
-    "description": "CRT phosphor persistence with per-channel decay, OkLab-blended trails, audio-reactive bloom, shadow mask, scan-line blanking, depth haze, blackbody temperature grading, and IGN-dithered premultiplied output.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/phosphor-decay.wgsl",
+    "description": "CRT phosphor persistence with per-channel linear-feedback decay, OkLab-blended trails, audio-reactive bloom, branchless shadow mask, scan-line blanking, depth haze, blackbody temperature grading, and IGN-dithered premultiplied output.",
     "params": [
       {
         "id": "decay_rate",
@@ -1193,7 +1221,9 @@
       "bloom",
       "oklab",
       "blackbody",
-      "dithered"
+      "dithered",
+      "temporal-feedback",
+      "linear-feedback"
     ]
   },
   {
@@ -1703,7 +1733,7 @@
     "name": "Vinyl Scratch",
     "category": "retro-glitch",
     "url": "shaders/vinyl-scratch.wgsl",
-    "description": "Vintage vinyl record scratch with chromatic wobble. Bass drives rotation speed, mids warp the record, treble adds groove noise. Depth scales groove intensity.",
+    "description": "Vintage vinyl record scratch with chromatic wobble, animated dust particles, groove lighting with directional reflections, groove sparkle highlights, analog warmth, saturation roll-off, film grain with temporal coherence, radial chromatic aberration, vignette, and lens dirt. Bass drives rotation speed, mids warp the record, treble adds groove sparkle and dust. Depth scales groove intensity.",
     "params": [
       {
         "id": "scratch_density",
@@ -1741,7 +1771,13 @@
       "upgraded-rgba",
       "audio-reactive",
       "depth-aware",
-      "chromatic-wobble"
+      "chromatic-wobble",
+      "dust-particles",
+      "groove-lighting",
+      "analog-warmth",
+      "film-grain",
+      "vignette",
+      "lens-dirt"
     ],
     "tags": [
       "filter",
@@ -1757,8 +1793,8 @@
   {
     "id": "waveform-glitch",
     "name": "Waveform Glitch",
-    "url": "shaders/waveform-glitch.wgsl",
-    "description": "VHS waveform glitch driven by a Clifford strange attractor, domain-warped FBM, divergence-free curl flow, Voronoi F2-F1 ridge corruption, YUV chroma noise, CRT shadow mask, and temporal feedback persistence. Alpha encodes waveform displacement magnitude * block corruption intensity.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/waveform-glitch.wgsl",
+    "description": "VHS waveform glitch driven by a Clifford strange attractor, domain-warped FBM, divergence-free curl flow, Voronoi F2-F1 ridge corruption, YUV chroma noise, CRT shadow mask, temporal feedback persistence, SDF glitch masks, audio-driven cosine palette, and bass-envelope smoothing. Alpha encodes waveform displacement magnitude * block corruption intensity * SDF-mask proximity.",
     "features": [
       "temporal",
       "audio-reactive",
@@ -1768,7 +1804,11 @@
       "domain-warped-fbm",
       "curl-flow",
       "voronoi-ridge-corruption",
-      "yuv-chroma-noise"
+      "yuv-chroma-noise",
+      "sdf-mask",
+      "audio-palette",
+      "bass-env",
+      "advanced-hybrid"
     ],
     "params": [
       {
@@ -1821,7 +1861,10 @@
       "fractal",
       "crt",
       "attractor",
-      "chroma"
+      "chroma",
+      "sdf",
+      "audio-palette",
+      "hybrid"
     ]
   },
   {

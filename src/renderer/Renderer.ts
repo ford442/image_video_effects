@@ -1,3 +1,5 @@
+import type { InputSource } from './types';
+
 // Slot execution mode for inter-shader parallelization
 type SlotMode = 'chained' | 'parallel';
 
@@ -8,6 +10,19 @@ export type SlotZoomParamsUpdate = {
   zoomParam3?: number;
   zoomParam4?: number;
 };
+
+/** How getGPUTimings() values were produced. */
+export type GPUTimingSource = 'gpu-timestamp' | 'wall-clock' | 'unavailable';
+
+export interface GPUTimings {
+  parallelTime: number;
+  chainedTime: number;
+  totalTime: number;
+  /** True when GPU timestamp queries produced the numbers (TS WebGPU only). */
+  available: boolean;
+  /** Wall-clock timings may be present even when available is false (WASM path). */
+  timingSource: GPUTimingSource;
+}
 
 /** Shader-slot backends (WebGPU + WASM). Canvas2D does not implement these. */
 export interface ShaderSlotRenderer {
@@ -50,13 +65,14 @@ export interface Renderer {
   setParam(name: string, value: number): void;
 
   // Input source selection (for generative/procedural, image, video, webcam, or live)
-  setInputSource?: (source: 'image' | 'video' | 'webcam' | 'generative' | 'live') => void;
+  setInputSource?: (source: InputSource) => void;
+  getInputSource?: () => InputSource;
 
   // Slot management with parallelization support
   setSlotMode?: (index: number, mode: SlotMode) => void;
   getSlotMode?: (index: number) => SlotMode | null;
   getSlotState?: (index: number) => { shaderId: string | null; enabled: boolean; mode: SlotMode } | null;
-  getGPUTimings?: () => { parallelTime: number; chainedTime: number; totalTime: number; available: boolean };
+  getGPUTimings?: () => GPUTimings;
   /** Returns true when the GPU supports 16×16×4 (1024-invocation) workgroups. */
   getSupportsDeepWorkgroup?: () => boolean;
 
@@ -70,6 +86,10 @@ export interface Renderer {
   setMaskEnabled?: (enabled: boolean) => void;
   setRecording?: (isRecording: boolean) => void;
   setRecordingMode?: (mode: 'loop' | 'continuous') => void;
+  /** Optional: last audio analysis snapshot (WebGPU + WASM). */
+  getAudioData?: () => { bass: number; mid: number; treble: number; freqBins: Float32Array };
+  /** Optional: whether an internal recording flag is active (WASM). */
+  isRecording?: () => boolean;
   loadShader?: (id: string, url: string) => Promise<boolean>;
   setActiveShader?: (id: string) => void;
   setSlotShader?: (index: number, id: string) => void;
@@ -80,6 +100,9 @@ export interface Renderer {
 
   /** Optional: Return current FPS for performance comparison (used by dual-FPS toggle). */
   getFPS?: () => number;
+
+  /** Optional: Reload a single shader from a remote URL without rebuilding the entire pipeline. */
+  reloadShaderFromURL?: (id: string, url: string) => Promise<boolean>;
 }
 
 export interface RendererConfig {

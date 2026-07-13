@@ -2,6 +2,9 @@
 //  RD on Video (Pass 2: Turing Color Map)
 //  Category: simulation
 //  Features: multi-pass-2, temporal, turing-color-map
+//  Pass graph: Pass 2 reads the state from dataTextureC (copy of
+//              Pass 1's dataTextureA), color-maps it, and writes the
+//              colorized result to dataTextureB.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -68,7 +71,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let colorized = palette(fract(pattern + hueOffset));
 
   textureStore(dataTextureB, coord, vec4<f32>(colorized, pattern));
-  textureStore(writeTexture, coord, vec4<f32>(colorized, 1.0));
+  textureStore(writeTexture, coord, vec4<f32>(colorized, state.a));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

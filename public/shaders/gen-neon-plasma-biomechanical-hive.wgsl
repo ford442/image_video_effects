@@ -207,4 +207,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = col / (1.0 + col); // Tone mapping
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), applyGenerativePrimaryControls(vec4<f32>(col, 1.0)));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

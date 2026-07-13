@@ -2,7 +2,7 @@
   "id": "echo-ripple",
   "name": "Echo Ripple",
   "url": "shaders/echo-ripple.wgsl",
-  "description": "Mouse movement and click history spawn expanding ripples that echo through time. Audio-reactive envelopes smooth bass pulses, depth-aware parallax separates foreground from background, and chromatic aberration plus ACES tone mapping give the feedback loop a modern, saturated look.",
+  "description": "Mouse movement and click history spawn expanding ripples that echo through time. Audio-reactive envelopes smooth bass pulses, depth-aware parallax separates foreground from background, and chromatic aberration plus ACES tone mapping give the feedback loop a modern, saturated look. Phase B adds LOD noise and a cached displacement field for cleaner echo accumulation.",
   "params": [
     {
       "id": "freq",
@@ -41,7 +41,9 @@
     "depth-aware",
     "chromatic-aberration",
     "aces-tone-mapping",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "lod-noise",
+    "cached-displacement"
   ],
   "tags": [
     "filter",

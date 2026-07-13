@@ -191,7 +191,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Camera setup
     let mx = (u.zoom_config.y - 0.5) * 6.28;
-    let my = (u.zoom_config.z - 0.5) * 3.14;
+    let my = (0.5 - u.zoom_config.z) * 3.14;
 
     var ro = vec3<f32>(0.0, 0.0, -8.0);
     // Orbit camera based on mouse
@@ -299,4 +299,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let finalColor = vec4<f32>(col, 1.0);
     textureStore(writeTexture, gid.xy, finalColor);
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

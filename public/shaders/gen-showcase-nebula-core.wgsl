@@ -1,7 +1,7 @@
 // gen-showcase-nebula-core.wgsl
 // Showcase shader optimized for: idle animation + mouse claim + audio reactivity
 // Deep-space nebula core with layered plasma clouds, gravity-well mouse interaction,
-// and audio-reactive shockwaves / sparkles.
+// audio-reactive shockwaves / sparkles, and temporal feedback trails.
 // Enriched with Wolfram Alpha Hydrogen Balmer Series astrophysics data.
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -94,7 +94,13 @@ fn balmerNebula(dist: f32, nebula: f32, ionization: f32) -> vec3<f32> {
            * (0.3 + nebula * 1.4);
 }
 
-@compute @workgroup_size(8, 8)
+fn spring_damper(prev: f32, tgt: f32, vel: ptr<function, f32>, k: f32, d: f32) -> f32 {
+    let force = (tgt - prev) * k;
+    *vel = (*vel + force) * (1.0 - d);
+    return prev + *vel;
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = vec2<f32>(textureDimensions(writeTexture));
     let texel = vec2<f32>(id.xy);
@@ -102,8 +108,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let coords = vec2<i32>(id.xy);
 
     let t = u.config.x;
-    let mouseDown = u.zoom_config.w;
-    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.z;
+    let mouse = u.zoom_config.xy;
 
     // Audio data from plasmaBuffer
     let bass = plasmaBuffer[0].x;
@@ -117,23 +123,65 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let warpAmt = u.zoom_params.z;
     let speed = u.zoom_params.w;
 
+    // Spring-damper audio envelopes
+    var velBass = 0.0;
+    var velMid = 0.0;
+    var velTreble = 0.0;
+    let prevBass = extraBuffer[0];
+    let prevMid = extraBuffer[1];
+    let prevTreble = extraBuffer[2];
+    let bassSmooth = spring_damper(prevBass, bass, &velBass, 0.08, 0.05);
+    let midSmooth = spring_damper(prevMid, mids, &velMid, 0.10, 0.06);
+    let trebleSmooth = spring_damper(prevTreble, treble, &velTreble, 0.12, 0.07);
+    extraBuffer[0] = bassSmooth;
+    extraBuffer[1] = midSmooth;
+    extraBuffer[2] = trebleSmooth;
+
+    // Mouse state persistence
+    let prevMouseX = extraBuffer[3];
+    let prevMouseY = extraBuffer[4];
+    let clickCount = extraBuffer[5];
+    let clickHeld = extraBuffer[6];
+
+    let mouseDelta = length(mouse - vec2<f32>(prevMouseX, prevMouseY));
+    extraBuffer[3] = mouse.x;
+    extraBuffer[4] = mouse.y;
+
+    var newClickCount = clickCount;
+    var newClickHeld = clickHeld;
+    if (mouseDown > 0.5 && clickHeld < 0.5) {
+        newClickCount = clickCount + 1.0;
+        newClickHeld = 1.0;
+    }
+    if (mouseDown < 0.5) {
+        newClickHeld = 0.0;
+    }
+    extraBuffer[5] = newClickCount;
+    extraBuffer[6] = newClickHeld;
+
+    let clickBurst = exp(-mouseDelta * 12.0) * mouseDown * 2.0;
+    let mutationSeed = fract(newClickCount * 0.11 + t * 0.01);
+
     // Aspect-corrected centered coordinates
     var p = (uv - 0.5) * 2.0;
     let aspect = dims.x / dims.y;
     p.x *= aspect;
 
-    // Mouse interaction: gravity well when claimed
+    // Mouse interaction: gravity well when claimed, with velocity swirl
     var mousePos = (mouse - 0.5) * 2.0;
     mousePos.x *= aspect;
     let mDist = length(p - mousePos);
     let mousePull = exp(-mDist * 3.0) * mouseDown;
+    let mouseSwirl = mouseDelta * 10.0 * mouseDown;
 
     // Domain warp with mouse gravity + audio chaos
     var wp = p;
     if (mouseDown > 0.5) {
-        wp = p + (mousePos - p) * mousePull * 0.5;
+        let rotSwirl = mat2x2<f32>(cos(mouseSwirl), -sin(mouseSwirl), sin(mouseSwirl), cos(mouseSwirl));
+        let toMouse = mousePos - p;
+        wp = p + rotSwirl * toMouse * mousePull * 0.5;
     }
-    wp = warpDomain(wp * (1.0 + density * 2.0), t * speed * (1.0 + mids * 0.3));
+    wp = warpDomain(wp * (1.0 + density * 2.0), t * speed * (1.0 + midSmooth * 0.3 + clickBurst));
 
     // Layered nebula clouds (3 octaves of fBM for performance)
     let f1 = fbm(wp + t * 0.1 * speed, 5);
@@ -143,31 +191,31 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let nebula = f1 * 0.5 + f2 * 0.3 + f3 * 0.2;
 
     // Ionization front driven by bass
-    let ionization = smoothstep(0.3, 0.7, bass);
+    let ionization = smoothstep(0.3, 0.7, bassSmooth);
 
     // Balmer emission colors — H-alpha dominates core, H-beta in mid regions
     let dist = length(p);
     var col = balmerNebula(dist, nebula, ionization);
 
     // Treble adds chromatic sparkles / fine structure
-    col += vec3<f32>(treble * 0.3, treble * 0.1, treble * 0.5) * f2;
+    col += vec3<f32>(trebleSmooth * 0.3, trebleSmooth * 0.1, trebleSmooth * 0.5) * f2;
 
     // Bass shockwave rings (tinted with H-beta cyan)
-    let ringDist = length(p) * (1.0 + bass * 0.5);
-    let rings = sin(ringDist * 10.0 - t * 2.0 * speed) * exp(-ringDist * 2.0);
-    col += rings * bass * vec3<f32>(0.0, 0.8, 1.0);
+    let ringDist = length(p) * (1.0 + bassSmooth * 0.5);
+    let rings = sin(ringDist * 10.0 - t * 2.0 * speed + mutationSeed * 6.28) * exp(-ringDist * 2.0);
+    col += rings * bassSmooth * vec3<f32>(0.0, 0.8, 1.0);
 
     // Fine particles from treble (star-like)
     let particles = hash22(floor(p * 50.0 + t * 0.01)).x;
-    let particleGlow = smoothstep(0.98, 1.0, particles) * treble * 2.0;
+    let particleGlow = smoothstep(0.98, 1.0, particles) * trebleSmooth * 2.0;
     col += vec3<f32>(particleGlow);
 
     // Mouse glow when active — seeds new star formation
     if (mouseDown > 0.5) {
         let mouseGlow = exp(-mDist * 4.0) * 0.5;
         col += vec3<f32>(0.9, 0.95, 1.0) * mouseGlow;
-        // New star formation burst driven by bass
-        let starBurst = exp(-mDist * 12.0) * bass * 3.0;
+        // New star formation burst driven by bass + click velocity
+        let starBurst = exp(-mDist * 12.0) * bassSmooth * 3.0 * (1.0 + clickBurst);
         col += vec3<f32>(1.0, 0.8, 0.6) * starBurst;
     }
 
@@ -175,17 +223,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let vig = 1.0 - smoothstep(0.5, 1.5, length(p));
     col *= vig;
 
-    // Step 3: Temporal feedback
+    // Temporal feedback with audio-driven mix
     let prev = textureLoad(dataTextureC, coords, 0);
-    col = mix(prev.rgb * 0.96, col, 0.25);
+    let feedbackMix = 0.25 + bassSmooth * 0.08;
+    col = mix(prev.rgb * 0.96, col, feedbackMix);
 
-    // Step 4: Chromatic aberration
-    let caStr = 0.003 * (1.0 + bass);
+    // Chromatic aberration
+    let caStr = 0.003 * (1.0 + bassSmooth + clickBurst);
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
-    // Step 5: ACES tone mapping + semantic alpha
+    // Audio-driven film grain / sparkle pass
+    let grain = hash22(uv * 1000.0 + t * 0.1).x;
+    let sparkle = smoothstep(0.995, 1.0, grain) * trebleSmooth * 3.0;
+    col += vec3<f32>(sparkle * 0.8, sparkle, sparkle * 1.2);
+
+    // ACES tone mapping + semantic alpha
     col = acesToneMap(col * 1.1);
-    let alpha = clamp(length(col) * 1.2, 0.2, 0.95);
+    let alpha = clamp(length(col) * 1.2 + clickBurst * 0.2 + sparkle, 0.2, 0.95);
 
     let outColor = vec4<f32>(col * (0.8 + overall * 0.4), alpha);
     textureStore(writeTexture, coords, outColor);

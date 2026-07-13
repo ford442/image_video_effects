@@ -1,8 +1,9 @@
 // ═══ spec-distance-field-text ═══════════════════════════════════════════
 //  Category: generative
+//  Phase: B
 //  Features: SDF, procedural-text, glyph, audio-reactive, depth-aware,
 //            temporal-feedback, aces-tone-map, chromatic-aberration,
-//            signed-distance-field, slot-chain
+//            signed-distance-field, slot-chain, LOD
 //  Complexity: Medium
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,12 +29,13 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+const HASH_K: f32 = 43758.5453123;
 
 // ── Core math ─────────────────────────────────────────────────────────
 fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
 
 fn hash21(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * HASH_K);
 }
 
 fn valueNoise(p: vec2<f32>) -> f32 {
@@ -49,8 +51,9 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 {
     return s;
 }
 
-fn domainWarp(p: vec2<f32>, strength: f32) -> vec2<f32> {
-    let q = vec2<f32>(fbm(p, 3), fbm(p + vec2<f32>(5.2, 1.3), 3));
+// LOD-aware domain warp: fewer octaves far from the interest point.
+fn domainWarpLOD(p: vec2<f32>, strength: f32, oct: i32) -> vec2<f32> {
+    let q = vec2<f32>(fbm(p, oct), fbm(p + vec2<f32>(5.2, 1.3), oct));
     return p + strength * q;
 }
 
@@ -62,39 +65,43 @@ fn sdSegment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
 }
 
 fn sdGlyph0(p: vec2<f32>) -> f32 {
-    return min(min(sdSegment(p, vec2<f32>(-0.3, -0.3), vec2<f32>(0.3, -0.3)),
-                   sdSegment(p, vec2<f32>(0.3, -0.3), vec2<f32>(0.0, 0.4))),
-               min(sdSegment(p, vec2<f32>(0.0, 0.4), vec2<f32>(-0.3, -0.3)),
-                   sdSegment(p, vec2<f32>(0.0, -0.3), vec2<f32>(0.0, 0.15))));
+    let s1 = sdSegment(p, vec2<f32>(-0.3, -0.3), vec2<f32>(0.3, -0.3));
+    let s2 = sdSegment(p, vec2<f32>(0.3, -0.3), vec2<f32>(0.0, 0.4));
+    let s3 = sdSegment(p, vec2<f32>(0.0, 0.4), vec2<f32>(-0.3, -0.3));
+    let s4 = sdSegment(p, vec2<f32>(0.0, -0.3), vec2<f32>(0.0, 0.15));
+    return min(min(s1, s2), min(s3, s4));
 }
 
 fn sdGlyph1(p: vec2<f32>) -> f32 {
-    return min(min(abs(length(p) - 0.3),
-                   sdSegment(p, vec2<f32>(-0.3, 0.0), vec2<f32>(0.3, 0.0))),
-               sdSegment(p, vec2<f32>(0.0, -0.3), vec2<f32>(0.0, 0.3)));
+    let c = abs(length(p) - 0.3);
+    let h = sdSegment(p, vec2<f32>(-0.3, 0.0), vec2<f32>(0.3, 0.0));
+    let v = sdSegment(p, vec2<f32>(0.0, -0.3), vec2<f32>(0.0, 0.3));
+    return min(min(c, h), v);
 }
 
 fn sdGlyph2(p: vec2<f32>) -> f32 {
     let db = abs(p) - vec2<f32>(0.3);
-    return min(min(max(db.x, db.y), 0.0) + length(max(db, vec2<f32>(0.0))),
-               sdSegment(p, vec2<f32>(-0.3, -0.3), vec2<f32>(0.3, 0.3)));
+    let box = min(max(db.x, db.y), 0.0) + length(max(db, vec2<f32>(0.0)));
+    let diag = sdSegment(p, vec2<f32>(-0.3, -0.3), vec2<f32>(0.3, 0.3));
+    return min(box, diag);
 }
 
 fn sdGlyph3(p: vec2<f32>) -> f32 {
-    let d = min(min(min(sdSegment(p, vec2<f32>(0.0, 0.35), vec2<f32>(0.25, 0.0)),
-                        sdSegment(p, vec2<f32>(0.25, 0.0), vec2<f32>(0.0, -0.35))),
-                    sdSegment(p, vec2<f32>(0.0, -0.35), vec2<f32>(-0.25, 0.0))),
-                sdSegment(p, vec2<f32>(-0.25, 0.0), vec2<f32>(0.0, 0.35)));
-    return min(d, length(p) - 0.06);
+    let d1 = sdSegment(p, vec2<f32>(0.0, 0.35), vec2<f32>(0.25, 0.0));
+    let d2 = sdSegment(p, vec2<f32>(0.25, 0.0), vec2<f32>(0.0, -0.35));
+    let d3 = sdSegment(p, vec2<f32>(0.0, -0.35), vec2<f32>(-0.25, 0.0));
+    let d4 = sdSegment(p, vec2<f32>(-0.25, 0.0), vec2<f32>(0.0, 0.35));
+    return min(min(min(d1, d2), min(d3, d4)), length(p) - 0.06);
 }
 
-// Branchless glyph selection — computes all four distances and selects by index.
+// Branchless glyph selection via index weights.
 fn sdGlyph(p: vec2<f32>, idx: i32, scale: f32) -> f32 {
     let sp = p / scale;
     let d0 = sdGlyph0(sp); let d1 = sdGlyph1(sp);
     let d2 = sdGlyph2(sp); let d3 = sdGlyph3(sp);
-    let d = select(select(select(d3, d2, idx == 2), d1, idx == 1), d0, idx == 0);
-    return d * scale;
+    let w0 = f32(idx == 0); let w1 = f32(idx == 1);
+    let w2 = f32(idx == 2); let w3 = f32(idx == 3);
+    return (d0 * w0 + d1 * w1 + d2 * w2 + d3 * w3) * scale;
 }
 
 fn sdGlyphGrid(p: vec2<f32>, gridScale: f32, time: f32) -> f32 {
@@ -130,26 +137,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let p1 = u.zoom_params.x;
     let p2 = u.zoom_params.y;
     let p3 = u.zoom_params.z;
-    let p4 = u.zoom_params.w;
+    let overlayMix = u.zoom_params.w;
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
-    let prev = textureLoad(dataTextureC, pixel, 0);
 
     // Parameter mapping
     let glyphScale = mix(2.0, 12.0, p1);
     let glyphWidth = mix(0.003, 0.02, p2);
     let glowRadius = mix(0.0, 0.05, p3);
-    let overlayMix = p4;
 
     // Base image from slot chain
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb;
 
+    // Early exit when the overlay is disabled — keeps base image intact.
+    if (overlayMix < 0.001) {
+        let alpha = clamp(luma(baseColor) * 1.5, 0.2, 0.95) * (0.7 + depth * 0.3);
+        let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+        textureStore(writeTexture, pixel, vec4<f32>(baseColor, alpha));
+        textureStore(dataTextureA, pixel, vec4<f32>(0.0));
+        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
+        return;
+    }
+
+    // LOD: fewer FBM octaves far from the mouse (or screen center when idle).
+    let interestDist = length(uv01 - mix(vec2<f32>(0.5), mouse, step(0.5, u.zoom_config.w)));
+    let lodOct = i32(clamp(3.0 - interestDist * 4.0, 1.0, 3.0));
+
     // Domain-warp the glyph coordinate for organic audio-reactive motion
     let warpStr = 0.02 + bass * 0.03;
-    let warpedUV = domainWarp(uv, warpStr);
+    let warpedUV = domainWarpLOD(uv, warpStr, lodOct);
 
     // Glyph SDF
     var d = sdGlyphGrid(warpedUV, glyphScale, time);
@@ -194,10 +213,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     outColor = acesToneMap(outColor * (0.9 + mids * 0.2));
     let alpha = clamp(luma(outColor) * 1.5, 0.2, 0.95) * (0.7 + depth * 0.3);
 
-    // Temporal feedback trail
-    let decay = 0.97 - p4 * 0.02;
-    let trail = mix(prev.rgb * decay, outColor, 0.2 + bass * 0.1);
-
     textureStore(writeTexture, pixel, vec4<f32>(outColor, alpha));
     textureStore(dataTextureA, pixel, vec4<f32>(glyphColor, d));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

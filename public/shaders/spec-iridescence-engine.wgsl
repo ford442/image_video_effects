@@ -111,4 +111,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Alpha stores film thickness for downstream use
     textureStore(writeTexture, gid.xy, vec4<f32>(tonemapped, thickness / 1000.0));
     textureStore(dataTextureA, gid.xy, vec4<f32>(iridescent, thickness / 1000.0));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

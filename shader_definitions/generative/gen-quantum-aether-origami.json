@@ -1,59 +1,66 @@
 {
   "id": "gen-quantum-aether-origami",
-  "name": "Quantum Aether-Origami",
   "url": "shaders/gen-quantum-aether-origami.wgsl",
-  "description": "A hyper-dimensional expanse of iridescent, self-folding light-sheets that crease, snap, and unfold like cosmic origami, collapsing into singularities to the beat of sound.",
+  "name": "Quantum Aether Origami",
+  "category": "generative",
+  "filename": "gen-quantum-aether-origami.wgsl",
   "tags": [
-    "origami",
-    "quantum",
-    "geometry",
-    "interference",
-    "audio-reactive"
-  ],
-  "features": [
     "generative",
-    "mouse-driven",
+    "origami",
+    "kifs",
+    "fractal",
+    "thin-film",
+    "interference",
+    "fbm",
+    "domain-warping",
+    "curl-noise",
+    "fresnel",
     "audio-reactive",
-    "raymarched",
-    "depth-aware",
-    "upgraded-rgba"
+    "temporal",
+    "depth-aware"
   ],
-  "params": [
+  "description": "A quantum origami folding surface with 5-fold KIFS fractal iteration, domain-warped fold planes, FBM surface detail, multi-band thin-film interference via Fresnel-Schlick, curl-noise aether flow, and audio-reactive fold deformation. Mouse morphs between flat and folded states.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "foldComplexity",
+      "index": 0,
       "name": "Fold Complexity",
       "default": 5,
       "min": 1,
       "max": 10,
-      "step": 1,
-      "mapping": "zoom_params.x"
+      "step": 1
     },
     {
-      "id": "creaseGlow",
+      "index": 1,
       "name": "Crease Glow",
       "default": 1.5,
       "min": 0,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.y"
+      "step": 0.1
     },
     {
-      "id": "audioReactivity",
+      "index": 2,
       "name": "Audio Reactivity",
       "default": 1,
       "min": 0,
       "max": 2,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "interferenceShift",
+      "index": 3,
       "name": "Interference Shift",
       "default": 0.5,
       "min": 0,
       "max": 2,
-      "step": 0.05,
-      "mapping": "zoom_params.w"
+      "step": 0.1
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": []
 }

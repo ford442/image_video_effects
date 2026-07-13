@@ -2,23 +2,25 @@
   "id": "radial-hex-lens",
   "name": "Radial Hex Lens",
   "url": "shaders/radial-hex-lens.wgsl",
-  "description": "A hexagonal mosaic that distorts and magnifies around the mouse position.",
+  "description": "Interactive hexagonal mosaic lens with radial magnification, FBM organic warp, depth-aware fog, and semantic alpha for slot-chain compositing.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
-      "id": "scale",
+      "id": "hex_scale",
       "name": "Hex Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
-      "description": "Size of hexagonal pixels"
+      "description": "Size of hexagonal cells"
     },
     {
-      "id": "radius",
+      "id": "lens_radius",
       "name": "Lens Radius",
       "default": 0.4,
       "min": 0,
@@ -28,14 +30,14 @@
       "description": "Radius of the lens effect"
     },
     {
-      "id": "distortion",
-      "name": "Distortion",
+      "id": "magnification",
+      "name": "Magnification",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
-      "description": "Amount of magnification distortion"
+      "description": "Amount of radial magnification"
     },
     {
       "id": "edge_hardness",

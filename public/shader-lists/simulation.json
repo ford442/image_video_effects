@@ -750,13 +750,20 @@
     "name": "Ferrofluid Spikes",
     "category": "simulation",
     "url": "shaders/ferrofluid-spikes.wgsl",
-    "description": "Mouse-driven ferrofluid simulation. The cursor acts as a magnet, pulling up metallic spikes from a dark liquid surface. Audio adds turbulence.",
+    "description": "Mouse-driven ferrofluid simulation. The cursor acts as a magnet, pulling up metallic spikes from a dark liquid surface. Enhanced with full 3-point studio lighting (key/fill/rim), GGX PBR specular, Fresnel-Schlick reflections, anisotropic metallic sheen, ambient occlusion, and subsurface scattering glow.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
       "generative-surface",
-      "metallic-highlights"
+      "metallic-highlights",
+      "3-point-lighting",
+      "GGX-specular",
+      "Fresnel-Schlick",
+      "anisotropic-sheen",
+      "ambient-occlusion",
+      "subsurface-scattering",
+      "light-attenuation"
     ],
     "params": [
       {
@@ -795,7 +802,11 @@
       "liquid",
       "mouse-driven",
       "audio-reactive",
-      "metallic"
+      "metallic",
+      "PBR",
+      "3-point-lighting",
+      "anisotropic",
+      "ambient-occlusion"
     ]
   },
   {
@@ -1159,8 +1170,8 @@
   {
     "id": "pixel-sand",
     "name": "Pixel Sand",
-    "url": "shaders/pixel-sand.wgsl",
-    "description": "Falling granular automata with blackbody-warm spawn colors, OkLab video-to-sand blending, curl-noise force fields, height-field physics, mouse gravity wells, audio-reactive motion, depth shading, ACES tone mapping, and IGN dither.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-sand.wgsl",
+    "description": "Falling granular automata crossed with domain-warped FBM flow fields, temporal feedback echo, and an audio-driven palette. Warm blackbody spawns, OkLab video-to-sand blending, mouse gravity wells, ripple shockwaves, depth shading, ACES tone mapping, and IGN dither remain intact.",
     "features": [
       "upgraded-rgba",
       "mouse-driven",
@@ -1170,7 +1181,10 @@
       "aces-tone-map",
       "blackbody-warmth",
       "oklab-mix",
-      "ign-dither"
+      "ign-dither",
+      "domain-warped-fbm",
+      "feedback-echo",
+      "audio-palette"
     ],
     "tags": [
       "sand",
@@ -1180,10 +1194,15 @@
       "audio-reactive",
       "particles",
       "simulation",
+      "fbm",
+      "domain-warp",
       "curl-noise",
       "blackbody",
       "oklab",
-      "dither"
+      "dither",
+      "feedback",
+      "temporal-echo",
+      "palette"
     ],
     "params": [
       {
@@ -2702,35 +2721,47 @@
     "id": "wave-equation",
     "name": "Wave Tank",
     "url": "shaders/wave-equation.wgsl",
-    "description": "2D wave equation simulation with ripple physics, refraction effects, and rainbow phase coloring.",
+    "description": "Psychedelic ripple tank — click to drop interference rings, drag to stir, bass pulses the waves. Rainbow phase bands and caustic sparkles over your image.",
     "params": [
       {
         "id": "waveSpeed",
         "name": "Wave Speed",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Wave propagation speed (c² in the discrete equation)"
       },
       {
         "id": "damping",
         "name": "Damping",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Velocity decay per frame"
       },
       {
         "id": "sourceStrength",
         "name": "Source Strength",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Mouse, ripple, and audio injection strength"
       },
       {
         "id": "boundaryReflect",
         "name": "Boundary Reflect",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Edge absorption (0) vs reflection (1)"
       }
     ],
     "features": [
@@ -2738,7 +2769,9 @@
       "temporal-persistence",
       "interactive",
       "physics",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "simulation"
     ],
     "tags": [
       "filter",

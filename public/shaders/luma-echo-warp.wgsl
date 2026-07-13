@@ -5,7 +5,7 @@
 //  Complexity: High
 //  Chunks From: luma-echo-warp, bass_env, temporal-feedback
 //  Created: 2024-01-01
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-06-28
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -51,10 +51,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depthAtten = mix(1.0, 0.6, depth);
 
     let audioMod = bass_env(bass, mids);
-    let strength = u.zoom_params.x * 2.0 * audioMod * depthAtten;
-    let decay = 0.9 + u.zoom_params.y * 0.09;
-    let radius = 0.1 + u.zoom_params.z * 0.4;
-    let lumaWeight = u.zoom_params.w;
+    let strength = mix(0.0, 2.0, clamp(u.zoom_params.x, 0.0, 1.0)) * audioMod * depthAtten;
+    let decay = mix(0.9, 0.99, clamp(u.zoom_params.y, 0.0, 1.0));
+    let radius = mix(0.1, 0.5, clamp(u.zoom_params.z, 0.0, 1.0));
+    let lumaWeight = clamp(u.zoom_params.w, 0.0, 1.0);
 
     let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let luma = dot(current.rgb, vec3<f32>(0.299, 0.587, 0.114));
@@ -73,7 +73,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Temporal echo with chromatic trail
     let history = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-    let echoDecay = decay * (1.0 - bass * 0.05);
+    let echoDecay = clamp(decay * (1.0 - bass * 0.05), 0.0, 1.0);
     let mixed = mix(warpedColor, history, echoDecay);
     let outputColor = mix(mixed, warpedColor, isMouseDown * 0.5);
 

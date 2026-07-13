@@ -1,8 +1,6 @@
 {
-  "id": "gen-supernova-remnant",
   "name": "Supernova Remnant",
-  "url": "shaders/gen-supernova-remnant.wgsl",
-  "description": "Expanding shell structures with shockwave physics and Rayleigh-Taylor instability patterns, inspired by Hubble nebula images",
+  "category": "generative",
   "tags": [
     "generative",
     "nebula",
@@ -13,47 +11,50 @@
     "music",
     "reactive"
   ],
-  "features": [
-    "animated",
-    "audio-reactive",
-    "audio-driven"
+  "description": "Expanding shell structures with shockwave physics and Rayleigh-Taylor instability patterns, inspired by Hubble nebula images",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "explosionEnergy",
+      "index": 0,
       "name": "Explosion Energy",
       "default": 0.7,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "shellDensity",
+      "index": 1,
       "name": "Shell Density",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "chaos",
+      "index": 2,
       "name": "Turbulence/Chaos",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "gasOpacity",
+      "index": 3,
       "name": "Gas Opacity",
       "default": 1,
       "min": 0,
       "max": 3,
-      "step": 0.05,
-      "mapping": "zoom_params.w"
+      "step": 0.05
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-supernova-remnant",
+  "url": "shaders/gen-supernova-remnant.wgsl",
+  "features": []
 }

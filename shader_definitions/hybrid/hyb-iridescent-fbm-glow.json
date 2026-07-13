@@ -1,0 +1,80 @@
+{
+  "id": "hyb-iridescent-fbm-glow",
+  "name": "Iridescent FBM Glow",
+  "category": "hybrid",
+  "type": "compute",
+  "url": "shaders/hyb-iridescent-fbm-glow.wgsl",
+  "description": "Domain-warped FBM drives a thin-film iridescent glow with audio reactivity, depth-aware fog, ACES tone mapping, IGN dither, chromatic aberration, Fresnel rim and OkLab mixing.",
+  "features": [
+    "upgraded-rgba",
+    "hybrid",
+    "fbm-noise",
+    "iridescence",
+    "image-glow",
+    "alpha-passthrough",
+    "depth-aware",
+    "randomization-safe",
+    "aces-tone-map",
+    "ign-dither",
+    "chromatic-aberration",
+    "fresnel-rim",
+    "oklab-mix"
+  ],
+  "tags": [
+    "hybrid",
+    "fbm",
+    "iridescence",
+    "glow",
+    "noise"
+  ],
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {
+      "id": "fbm_scale",
+      "name": "FBM Scale",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Scale of the FBM noise domain"
+    },
+    {
+      "id": "fbm_octaves",
+      "name": "FBM Octaves",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Number of FBM noise octaves"
+    },
+    {
+      "id": "color_shift_speed",
+      "name": "Color Shift Speed",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Speed of the iridescent color cycling"
+    },
+    {
+      "id": "glow_mix",
+      "name": "Glow Mix",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Blend strength of the iridescent glow over the input"
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "chunks_used": [
+    "fbm2 (gen_grid.wgsl)",
+    "iridescence (gen-holographic-fracture.wgsl)"
+  ],
+  "updated": true
+}

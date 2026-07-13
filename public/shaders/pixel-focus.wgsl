@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Pixel Focus
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, filter, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, filter, pixelation, chromatic-aberration, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-28
+//  By: Agent 1a - Alpha Channel Specialist
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,7 +29,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
@@ -43,7 +44,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Params
     let mosaicSize = clamp(u.zoom_params.x, 0.0, 1.0);
-    let focusRadius = max(u.zoom_params.y, 0.001);
+    let focusRadius = mix(0.01, 0.5, clamp(u.zoom_params.y, 0.0, 1.0));
     let hardness = clamp(u.zoom_params.z, 0.0, 1.0);
     let chromatic = clamp(u.zoom_params.w + treble * 0.1, 0.0, 1.0);
 
@@ -63,8 +64,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     density = max(density, 1.0);
     let pixelUV = floor(uv * density) / density;
 
-    // Sample Clear
-    let colClear = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    // Sample Clear and preserve input alpha
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let colClear = baseColor.rgb;
 
     // Sample Pixelated — branchless chromatic aberration
     let useChromatic = step(0.05, chromatic);
@@ -80,9 +82,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalRGB = mix(colPixel, colClear, focus);
 
-    // Alpha: focus region = opaque, pixelated zone weighted by luma
+    // Alpha: preserve input alpha, modulated by focus region and luma
     let luma = dot(finalRGB, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(focus * 0.6 + luma * 0.3 + 0.1, 0.0, 1.0);
+    let alpha = clamp(baseColor.a * (focus * 0.6 + luma * 0.3 + 0.1), 0.0, 1.0);
     let finalColor = vec4<f32>(finalRGB, alpha);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

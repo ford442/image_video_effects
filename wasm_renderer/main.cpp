@@ -42,6 +42,12 @@ int loadShader(const char* id, const char* wgslCode) {
 }
 
 EMSCRIPTEN_KEEPALIVE
+int reloadShader(const char* id, const char* wgslCode) {
+    if (!g_renderer || !id || !wgslCode) return 0;
+    return g_renderer->ReloadShader(id, wgslCode) ? 1 : 0;
+}
+
+EMSCRIPTEN_KEEPALIVE
 void setActiveShader(const char* id) {
     if (g_renderer && id) {
         g_renderer->SetActiveShader(id);
@@ -94,8 +100,8 @@ void updateDepthMap(const float* data, int width, int height) {
     }
 }
 
-// Set the active input source (0=none, 1=image, 2=video, 3=webcam, 4=generative).
-// JS bridge maps 'live' → 2 (video). Generative clears readTexture_ to black.
+// Set the active input source (0=none, 1=image, 2=video, 3=webcam, 4=generative, 5=live).
+// Generative clears readTexture_ to black.
 EMSCRIPTEN_KEEPALIVE
 void setInputSource(int source) {
     if (g_renderer) {

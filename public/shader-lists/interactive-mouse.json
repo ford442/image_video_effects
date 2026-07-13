@@ -237,11 +237,16 @@
     "category": "interactive-mouse",
     "url": "shaders/block-distort-interactive.wgsl",
     "icon": "grid",
-    "description": "Cursor pressure shoves image blocks into a prismatic distortion field with beat-reactive grid highlights.",
+    "description": "Cursor pressure shoves image blocks into a prismatic distortion field with beat-reactive grid highlights. Enhanced with volumetric glow from mouse position, rim lighting on grid edges, audio-reactive light pulses, and warm/cool 3-point fill lighting.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "volumetric-glow",
+      "rim-lighting",
+      "3-point-lighting",
+      "audio-reactive-pulse",
+      "bloom-weighted-alpha"
     ],
     "params": [
       {
@@ -278,7 +283,10 @@
       "interactive",
       "grid",
       "glitch",
-      "audio-reactive"
+      "audio-reactive",
+      "volumetric-glow",
+      "rim-lighting",
+      "lighting"
     ]
   },
   {
@@ -331,6 +339,67 @@
       "reveal",
       "schematic"
     ]
+  },
+  {
+    "id": "brush-strokes",
+    "name": "Brush Strokes",
+    "url": "shaders/brush-strokes.wgsl",
+    "description": "Catalog entry for Brush Strokes.",
+    "tags": [
+      "mouse-driven",
+      "paint-brush",
+      "trail",
+      "organic",
+      "audio-reactive",
+      "semantic-alpha"
+    ],
+    "features": [
+      "mouse-driven",
+      "paint-brush",
+      "trail",
+      "organic",
+      "audio-reactive",
+      "semantic-alpha"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "bubble-wrap",
@@ -629,8 +698,8 @@
   {
     "id": "chromatic-mosaic-projector",
     "name": "Chromatic Mosaic Projector",
-    "url": "shaders/chromatic-mosaic-projector.wgsl",
-    "description": "Animated Voronoi cell mosaic with per-cell chromatic aberration, mouse gravity wells, audio-reactive cell pulsing, HDR ACES tone mapping, temporal trails, and dynamic blackbody color temperature.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-mosaic-projector.wgsl",
+    "description": "Animated Voronoi cell mosaic with per-cell chromatic aberration, mouse gravity wells, audio-reactive cell pulsing, HDR ACES tone mapping, temporal trails, dynamic blackbody color temperature, and layered alpha compositing.",
     "params": [
       {
         "id": "cellSize",
@@ -671,7 +740,10 @@
       "ign-dither",
       "temporal-feedback",
       "color-temperature",
-      "depth-aware"
+      "depth-aware",
+      "alpha-layered",
+      "edge-preserve",
+      "luminance-key"
     ],
     "tags": [
       "filter",
@@ -682,7 +754,10 @@
       "audio-reactive",
       "interactive",
       "hdr",
-      "temperature"
+      "temperature",
+      "alpha-layered",
+      "edge-preserve",
+      "luminance-key"
     ]
   },
   {
@@ -1499,7 +1574,7 @@
     "name": "Cyber Organic Scanner",
     "category": "interactive-mouse",
     "url": "shaders/cyber-organic.wgsl",
-    "description": "Biotech scan lines reveal pulsing synthetic veins beneath the image, concentrated around the cursor.",
+    "description": "Biotech scan lines reveal pulsing synthetic veins beneath the image, concentrated around the cursor. Enhanced with bioluminescent OkLab color mixing, blackbody warmth modulation, volumetric vein glow, split-tone grading, and ACES filmic tone mapping.",
     "params": [
       {
         "id": "scanSpeed",
@@ -1533,64 +1608,98 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "bioluminescent",
+      "oklab-mixing",
+      "blackbody-warmth",
+      "volumetric-glow",
+      "aces-tone-map",
+      "split-tone"
     ],
     "tags": [
       "scanner",
       "organic",
       "biotech",
       "pulse",
-      "audio-reactive"
-    ]
+      "audio-reactive",
+      "bioluminescent",
+      "atmospheric"
+    ],
+    "updated": true
   },
   {
     "id": "cyber-rain",
     "name": "Cyber Rain",
     "url": "shaders/cyber-rain.wgsl",
-    "description": "Neon rain on wet glass with mouse wiper.",
+    "category": "interactive-mouse",
+    "description": "Neon rain on wet glass with mouse wiper, audio-envelope intensity, temporal wetness accumulation, depth-aware rain occlusion, and chromatic-aberration glow.",
+    "tags": [
+      "rain",
+      "neon",
+      "wet-glass",
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-feedback",
+      "depth-aware",
+      "chromatic-aberration"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "semantic-alpha",
+      "upgraded-rgba",
+      "temporal-persistence",
+      "depth-aware"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "intensity",
         "name": "Rain Intensity",
         "default": 0.6,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.x"
       },
       {
         "id": "blur",
         "name": "Wet Blur",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.y"
       },
       {
         "id": "bloom",
         "name": "Neon Bloom",
         "default": 0.7,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.z"
       },
       {
         "id": "wiper",
         "name": "Wiper Size",
         "default": 0.4,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.w"
       }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
     "id": "cyber-ripples",
     "name": "Cyber Ripples",
-    "url": "shaders/cyber-ripples.wgsl",
-    "description": "Interactive cursor-driven ripples with click shockwaves, audio-reactive bass envelope, temporal feedback trails, depth-aware compositing, and ACES tone mapping.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-ripples.wgsl",
+    "description": "Interactive cursor-driven ripples fused with domain-warped FBM turbulence, audio-driven cyber palette shifting, SDF ring masking, click shockwaves, bass envelope feedback trails, depth-aware compositing, and ACES tone mapping.",
     "params": [
       {
         "id": "speed",
@@ -1630,14 +1739,20 @@
       "temporal-feedback",
       "depth-aware",
       "click-shockwave",
-      "aces-tone-map"
+      "aces-tone-map",
+      "domain-warped-fbm",
+      "audio-palette",
+      "sdf-ring-mask"
     ],
     "tags": [
       "filter",
       "image-processing",
       "audio-reactive",
       "interactive",
-      "feedback"
+      "feedback",
+      "fbm",
+      "palette",
+      "sdf"
     ]
   },
   {
@@ -2096,8 +2211,8 @@
   {
     "id": "directional-glitch",
     "name": "Directional Glitch",
-    "url": "shaders/directional-glitch.wgsl",
-    "description": "Voronoi-ridge and FBM domain-warped glitch bands radiate from the mouse, driven by curl-noise displacement, chromatic aberration, depth-aware masking, and temporal feedback.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/directional-glitch.wgsl",
+    "description": "SDF-masked Voronoi-ridge and FBM domain-warped glitch bands radiate from the mouse, driven by curl-noise displacement, audio-reactive cosine palette, chromatic aberration, depth-aware masking, and kaleidoscope temporal feedback.",
     "params": [
       {
         "id": "intensity",
@@ -2150,6 +2265,9 @@
       "curl-noise",
       "domain-warp",
       "voronoi-ridges",
+      "sdf-masking",
+      "audio-palette",
+      "kaleidoscope-echo",
       "upgraded-rgba"
     ],
     "tags": [
@@ -2162,7 +2280,10 @@
       "chromatic-aberration",
       "curl-noise",
       "voronoi",
-      "multi-scale"
+      "multi-scale",
+      "sdf",
+      "palette",
+      "kaleidoscope"
     ]
   },
   {
@@ -2268,8 +2389,8 @@
   {
     "id": "echo-ripple",
     "name": "Echo Ripple",
-    "url": "shaders/echo-ripple.wgsl",
-    "description": "Mouse movement and click history spawn expanding ripples that echo through time. Audio-reactive envelopes smooth bass pulses, depth-aware parallax separates foreground from background, and chromatic aberration plus ACES tone mapping give the feedback loop a modern, saturated look.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/echo-ripple.wgsl",
+    "description": "Mouse movement and click history spawn expanding ripples that echo through time. Audio-reactive envelopes smooth bass pulses, depth-aware parallax separates foreground from background, and chromatic aberration plus ACES tone mapping give the feedback loop a modern, saturated look. Phase B adds LOD noise and a cached displacement field for cleaner echo accumulation.",
     "params": [
       {
         "id": "freq",
@@ -2308,7 +2429,9 @@
       "depth-aware",
       "chromatic-aberration",
       "aces-tone-mapping",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "lod-noise",
+      "cached-displacement"
     ],
     "tags": [
       "filter",
@@ -2659,37 +2782,56 @@
     "name": "Focal Pixelate",
     "url": "shaders/focal-pixelate.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
-    "description": "Applies pixelation that varies based on distance from the mouse cursor, creating a focal point effect.",
+    "description": "Mouse-driven focal pixelation with FBM domain warp, depth-aware fog, IGN dither, and semantic alpha for slot-chain compositing.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
-        "id": "pixel_strength",
+        "id": "pixel_size",
         "name": "Pixel Size",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Size of pixelated blocks at the focus edge"
       },
       {
         "id": "focus_radius",
         "name": "Focus Radius",
         "default": 0.3,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Radius of the in-focus region"
       },
       {
-        "id": "focus_falloff",
+        "id": "focus_softness",
         "name": "Focus Softness",
         "default": 0.2,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Falloff between focus and pixelation"
       },
       {
-        "id": "invert",
+        "id": "invert_focus",
         "name": "Invert Focus",
         "default": 0,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Invert the focus region"
       }
     ],
     "tags": [
@@ -4000,8 +4142,8 @@
   {
     "id": "interactive-magnetic-ripple",
     "name": "Magnetic Ripple",
-    "url": "shaders/interactive-magnetic-ripple.wgsl",
-    "description": "Magnetic field distortion with curl-noise field lines, click-burst shockwaves, all 50 ripple point accumulation, FBM domain warping, depth-aware compositing, temporal motion trails, chromatic split, and glow-alpha at ripple peaks.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-magnetic-ripple.wgsl",
+    "description": "Phase B audio-reactive magnetic ripple. Bass-pulsed ripple frequency and field strength, mids-morphing hue-cycled glow, treble sparkle on field lines, plus curl-noise field lines, click-burst shockwaves, 50 ripple-point accumulation, FBM domain warping, depth-aware compositing, temporal motion trails, chromatic split, and semantic glow-alpha.",
     "params": [
       {
         "id": "ripple_freq",
@@ -4156,7 +4298,30 @@
     "id": "interactive-voronoi-lens",
     "name": "Interactive Voronoi Lens",
     "url": "shaders/interactive-voronoi-lens.wgsl",
-    "description": "Breaks the image into Voronoi cells that act as lenses. Mouse proximity intensifies the effect.",
+    "category": "interactive-mouse",
+    "description": "Voronoi cells act as audio-reactive lenses with mouse-driven focus, temporal trail accumulation, depth-aware edge fog, and neon cell-boundary accents.",
+    "tags": [
+      "voronoi",
+      "lens",
+      "distortion",
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-feedback",
+      "depth-aware"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "semantic-alpha",
+      "upgraded-rgba",
+      "temporal-persistence",
+      "depth-aware"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
         "id": "cell_density",
@@ -4165,8 +4330,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.x",
-        "description": "Density of Voronoi cells"
+        "param": "zoom_params.x"
       },
       {
         "id": "lens_strength",
@@ -4175,8 +4339,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.y",
-        "description": "Strength of the lens distortion"
+        "param": "zoom_params.y"
       },
       {
         "id": "chaos",
@@ -4185,8 +4348,7 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.z",
-        "description": "Randomness of cell point movement"
+        "param": "zoom_params.z"
       },
       {
         "id": "lens_curve",
@@ -4195,16 +4357,8 @@
         "min": 0,
         "max": 1,
         "step": 0.01,
-        "mapping": "zoom_params.w",
-        "description": "Curvature of the lens bulge effect"
+        "param": "zoom_params.w"
       }
-    ],
-    "features": [
-      "mouse-driven"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
@@ -5279,8 +5433,8 @@
   {
     "id": "magnetic-interference",
     "name": "Magnetic Interference",
-    "url": "shaders/magnetic-interference.wgsl",
-    "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, audio-reactive bass envelope, temporal feedback smearing, depth-aware compositing, chromatic aberration, and mouse-velocity trail drag.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/magnetic-interference.wgsl",
+    "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, canonical bass envelope, beat-pulsed magnetic field, mids-driven swirl and chromatic rotation, treble sparkle overlay, audio-amplified ripples, temporal feedback smearing, depth-aware compositing, chromatic aberration, and mouse-velocity trail drag.",
     "params": [
       {
         "id": "strength",
@@ -5314,6 +5468,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "bass-pulse",
+      "mids-morph",
+      "treble-sparkle",
       "ripple-integration",
       "upgraded-rgba",
       "depth-aware",
@@ -6059,7 +6216,7 @@
     "name": "Mouse Ink Bleed",
     "url": "shaders/mouse-ink-bleed.wgsl",
     "category": "interactive-mouse",
-    "description": "Organic ink that bleeds and diffuses outward from the mouse position with turbulent, painterly motion. Audio adds life to the spread and color.",
+    "description": "Organic ink that bleeds and diffuses outward from the mouse position with domain-warped FBM turbulence, temporal trails, audio envelope reactivity, and depth-aware compositing.",
     "tags": [
       "ink",
       "bleed",
@@ -6068,12 +6225,22 @@
       "diffusion",
       "artistic",
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "temporal-feedback",
+      "depth-aware"
     ],
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba",
+      "temporal-persistence",
+      "depth-aware"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "params": [
       {
@@ -6096,7 +6263,7 @@
       },
       {
         "id": "decay",
-        "name": "Edge Softness",
+        "name": "Trail Decay",
         "default": 0.5,
         "min": 0,
         "max": 1,
@@ -6838,42 +7005,64 @@
   {
     "id": "neon-edge-radar",
     "name": "Neon Edge Radar",
+    "category": "interactive-mouse",
     "url": "shaders/neon-edge-radar.wgsl",
-    "description": "A rotating radar scanner that highlights edges in neon colors as it passes, centered on the mouse.",
+    "description": "Mouse-centered radar sweep with depth-aware edge detection, audio-reactive neon emission, ACES tone mapping, IGN dither, Fresnel rim, volumetric fog, hue-preserve clamp and blackbody hotspots.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
+      {
+        "id": "threshold",
+        "name": "Edge Sensitivity",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
       {
         "id": "speed",
         "name": "Beam Speed",
-        "default": 1,
+        "default": 0.5,
         "min": 0.1,
-        "max": 5
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
       },
       {
         "id": "width",
         "name": "Beam Width",
         "default": 0.5,
         "min": 0,
-        "max": 1
-      },
-      {
-        "id": "threshold",
-        "name": "Edge Sensitivity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
       },
       {
         "id": "intensity",
         "name": "Neon Intensity",
-        "default": 2,
+        "default": 0.67,
         "min": 0,
-        "max": 5
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
       }
     ],
     "features": [
+      "upgraded-rgba",
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "depth-aware",
+      "aces-tone-map",
+      "ign-dither",
+      "fresnel-rim",
+      "volumetric-fog",
+      "hue-preserve-clamp",
+      "blackbody-temperature"
     ],
     "tags": [
       "mouse-driven",
@@ -7282,44 +7471,68 @@
     "id": "optical-feedback",
     "name": "Optical Feedback Loop",
     "url": "shaders/optical-feedback.wgsl",
-    "description": "Infinite video feedback loop centered on the mouse cursor.",
+    "category": "interactive-mouse",
+    "description": "Infinite video feedback loop centered on the mouse cursor with audio-pumped zoom, domain-warped drift, hue shifting, depth-aware fade, and temporal accumulation.",
+    "tags": [
+      "feedback",
+      "loop",
+      "infinite",
+      "mouse-driven",
+      "audio-reactive",
+      "domain-warp",
+      "depth-aware",
+      "hue-shift"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "semantic-alpha",
+      "upgraded-rgba",
+      "temporal-persistence",
+      "depth-aware"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
+      {
+        "id": "accumulation",
+        "name": "Accumulation Rate",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.x"
+      },
       {
         "id": "zoom",
         "name": "Feedback Zoom",
         "default": 0.6,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.y"
       },
       {
         "id": "rotation",
         "name": "Rotation",
         "default": 0.5,
         "min": 0,
-        "max": 1
-      },
-      {
-        "id": "decay",
-        "name": "Decay",
-        "default": 0.95,
-        "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.z"
       },
       {
         "id": "shift",
         "name": "Hue Shift",
         "default": 0.1,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "param": "zoom_params.w"
       }
-    ],
-    "features": [
-      "mouse-driven",
-      "temporal-persistence"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
     ]
   },
   {
@@ -7388,8 +7601,8 @@
   {
     "id": "oscilloscope-overlay",
     "name": "Oscilloscope Overlay",
-    "url": "shaders/oscilloscope-overlay.wgsl",
-    "description": "Overlays a real-time luminance waveform of the image scanline at the mouse cursor's vertical position, now with audio-reactive color temperature, HDR tone mapping, and IGN dithering.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/oscilloscope-overlay.wgsl",
+    "description": "Overlays a real-time luminance waveform of the image scanline at the mouse cursor's vertical position, now with a smoothed bass envelope, treble sparkle, audio-reactive color temperature, HDR tone mapping, and IGN dithering.",
     "params": [
       {
         "id": "amplitude",
@@ -7424,6 +7637,8 @@
       "mouse-driven",
       "overlay",
       "audio-reactive",
+      "audio-envelope",
+      "sparkle",
       "hdr",
       "aces-tone-map",
       "color-temperature",
@@ -7433,7 +7648,9 @@
       "filter",
       "image-processing",
       "overlay",
-      "audio-reactive"
+      "audio-reactive",
+      "audio-envelope",
+      "sparkle"
     ]
   },
   {
@@ -8052,8 +8269,8 @@
   {
     "id": "pixel-stretch-cross",
     "name": "Pixel Stretch Cross",
-    "url": "shaders/pixel-stretch-cross.wgsl",
-    "description": "Multi-direction pixel stretch using Fibonacci disk sampling, mouse gravity well, depth-aware attenuation, bass-envelope magnitude, click shockwaves, temporal trails, and effect-masked alpha.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-stretch-cross.wgsl",
+    "description": "Multi-direction pixel stretch using Fibonacci disk sampling, mouse gravity well, depth-aware attenuation, bass-envelope magnitude, click shockwaves, temporal trails, and layered alpha compositing with depth fading, luminance keying, and accumulative feedback.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -8061,7 +8278,8 @@
       "temporal-feedback",
       "click-shockwave",
       "aces-tone-map",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "alpha-layered"
     ],
     "params": [
       {
@@ -8100,7 +8318,8 @@
       "depth-aware",
       "stretch",
       "distortion",
-      "interactive-mouse"
+      "interactive-mouse",
+      "alpha-layered"
     ]
   },
   {
@@ -8396,8 +8615,8 @@
   {
     "id": "quad-mirror",
     "name": "Quad Mirror",
-    "url": "shaders/quad-mirror.wgsl",
-    "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, audio-reactive seam shimmer, chromatic aberration, ACES tone mapping, and temporal feedback trails.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/quad-mirror.wgsl",
+    "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, audio-reactive seam shimmer, chromatic aberration, ACES tone mapping, temporal feedback trails, and layered semantic alpha compositing.",
     "params": [
       {
         "id": "hOffset",
@@ -8438,7 +8657,8 @@
       "chromatic-aberration",
       "aces-tone-map",
       "temporal-feedback",
-      "depth-aware"
+      "depth-aware",
+      "alpha-layered"
     ],
     "tags": [
       "filter",
@@ -8449,7 +8669,8 @@
       "audio-reactive",
       "post-processing",
       "tone-map",
-      "temporal"
+      "temporal",
+      "alpha"
     ]
   },
   {
@@ -8645,8 +8866,8 @@
   {
     "id": "quantum-ripples",
     "name": "Quantum Ripples",
-    "url": "shaders/quantum-ripples.wgsl",
-    "description": "Mouse-driven quantum interference waves with domain-warped FBM, divergence-free curl turbulence, temporal feedback, depth-aware chromatic aberration and audio reactivity.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/quantum-ripples.wgsl",
+    "description": "Mouse-driven quantum interference waves with domain-warped FBM, divergence-free curl turbulence, Voronoi cellular displacement, SDF portal masking, audio-driven palette, temporal feedback, depth-aware chromatic aberration and audio reactivity.",
     "params": [
       {
         "id": "waveFreq",
@@ -8683,7 +8904,10 @@
       "audio-reactive",
       "temporal-feedback",
       "depth-aware",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "voronoi-displacement",
+      "sdf-masking",
+      "audio-palette"
     ],
     "tags": [
       "filter",
@@ -8692,7 +8916,10 @@
       "interference",
       "turbulence",
       "domain-warp",
-      "curl-noise"
+      "curl-noise",
+      "voronoi",
+      "sdf",
+      "palette"
     ]
   },
   {
@@ -8795,23 +9022,29 @@
     "id": "radial-hex-lens",
     "name": "Radial Hex Lens",
     "url": "shaders/radial-hex-lens.wgsl",
-    "description": "A hexagonal mosaic that distorts and magnifies around the mouse position.",
+    "description": "Interactive hexagonal mosaic lens with radial magnification, FBM organic warp, depth-aware fog, and semantic alpha for slot-chain compositing.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "params": [
       {
-        "id": "scale",
+        "id": "hex_scale",
         "name": "Hex Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
-        "description": "Size of hexagonal pixels"
+        "description": "Size of hexagonal cells"
       },
       {
-        "id": "radius",
+        "id": "lens_radius",
         "name": "Lens Radius",
         "default": 0.4,
         "min": 0,
@@ -8821,14 +9054,14 @@
         "description": "Radius of the lens effect"
       },
       {
-        "id": "distortion",
-        "name": "Distortion",
+        "id": "magnification",
+        "name": "Magnification",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.z",
-        "description": "Amount of magnification distortion"
+        "description": "Amount of radial magnification"
       },
       {
         "id": "edge_hardness",
@@ -8849,8 +9082,29 @@
   {
     "id": "radial-slit-scan",
     "name": "Radial Slit Scan",
+    "category": "interactive-mouse",
     "url": "shaders/radial-slit-scan.wgsl",
-    "description": "A time-displacement effect that radiates from the cursor.",
+    "description": "A time-displacement effect that radiates from the cursor, now enhanced with volumetric glow, cosine palette color cycling, chromatic aberration, split-tone grading, and ACES filmic tone mapping.",
+    "features": [
+      "mouse-driven",
+      "feedback",
+      "audio-reactive",
+      "upgraded-rgba",
+      "cosine-palette",
+      "volumetric-glow",
+      "aces-tone-map",
+      "oklab-mixing",
+      "split-tone",
+      "chromatic-aberration"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "slit-scan",
+      "color-cycling",
+      "volumetric",
+      "audio-reactive"
+    ],
     "params": [
       {
         "id": "speed",
@@ -8881,14 +9135,7 @@
         "max": 1
       }
     ],
-    "features": [
-      "mouse-driven",
-      "feedback"
-    ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
+    "updated": true
   },
   {
     "id": "rain-lens-wipe",
@@ -9552,8 +9799,8 @@
   {
     "id": "scanline-sorting",
     "name": "Scanline Sorting",
-    "url": "shaders/scanline-sorting.wgsl",
-    "description": "Sorts pixels by luminance within a moving scanline band controlled by the mouse. Reacts to audio bass for intensified sorting, applies ACES tone mapping, and uses an early-exit path for inactive pixels.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/scanline-sorting.wgsl",
+    "description": "Sorts pixels by luminance within a moving scanline band using a tile-wide early-exit and a shared-memory bitonic sort over local 16-pixel segments. Reacts to audio bass for intensified sorting, applies ACES tone mapping, and preserves depth and semantic alpha.",
     "params": [
       {
         "id": "thresh",
@@ -9597,7 +9844,9 @@
       "upgraded-rgba",
       "aces-tone-map",
       "early-exit",
-      "branchless"
+      "branchless",
+      "shared-memory",
+      "bitonic-sort"
     ],
     "tags": [
       "filter",
@@ -9671,6 +9920,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "audio-envelope",
+      "treble-sparkle",
       "temporal-persistence",
       "chromatic-CRT",
       "upgraded-rgba",
@@ -9679,7 +9930,7 @@
       "IGN-dither",
       "premultiplied-alpha"
     ],
-    "description": "Temporal scanline persistence with chromatic CRT aberration, audio roll, and HDR color grading. Each scanline undulates with bass-driven amplitude; mouse proximity boosts local distortion. Treble adds per-scanline chromatic shift, bass rolls the entire field vertically, and blackbody color temperature shifts the mood. ACES tone mapping, hue-preserving HDR clamp, and IGN dither finish the image.",
+    "description": "Temporal scanline persistence with chromatic CRT aberration, envelope-smoothed audio reactivity, and HDR color grading. Each scanline undulates with bass-driven amplitude; mouse proximity boosts local distortion. Treble adds per-scanline chromatic shift and high-frequency sparkle, while the smoothed bass envelope rolls the field and drives blackbody color temperature shifts. ACES tone mapping, hue-preserving HDR clamp, and IGN dither finish the image.",
     "params": [
       {
         "id": "waveAmount",
@@ -9703,8 +9954,8 @@
         "max": 1
       },
       {
-        "id": "rollSpeed",
-        "name": "Roll Speed",
+        "id": "audioMix",
+        "name": "Audio Mix",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -9718,6 +9969,9 @@
       "CRT",
       "temporal",
       "chromatic",
+      "audio-reactive",
+      "audio-envelope",
+      "treble-sparkle",
       "HDR",
       "ACES",
       "dither"
@@ -10213,9 +10467,11 @@
       "chromatic-aberration",
       "aces-tone-mapped",
       "premultiplied-alpha",
+      "alpha-layered",
+      "luminance-key",
       "upgraded-rgba"
     ],
-    "description": "Paints a spectral blackbody flame that follows the mouse, blended in OkLab and split-toned. Audio bass inflates the brush and bloom, while chromatic separation and depth diffusion add atmosphere.",
+    "description": "Paints a spectral blackbody flame that follows the mouse, blended in OkLab and split-toned. Audio bass inflates the brush and bloom, while chromatic separation, depth diffusion, and alpha-layered luminance-key compositing add atmosphere.",
     "params": [
       {
         "id": "brush-size",
@@ -10900,8 +11156,8 @@
   {
     "id": "tile-twist",
     "name": "Tile Twist",
-    "url": "shaders/tile-twist.wgsl",
-    "description": "Grid tiles twist and rotate based on mouse proximity, enhanced with FBM domain warping, hash-jittered organic tiling, and SDF edge masking.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/tile-twist.wgsl",
+    "description": "Grid tiles twist and rotate based on mouse proximity and an envelope-smoothed bass pulse, with mids-driven hue shifts, treble sparkle, FBM domain warping, and SDF edge masking.",
     "params": [
       {
         "id": "tileSize",

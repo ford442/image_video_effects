@@ -846,6 +846,61 @@
     ]
   },
   {
+    "id": "liquid-rainbow-prismatic",
+    "name": "Liquid Rainbow Prismatic",
+    "url": "shaders/liquid-rainbow-prismatic.wgsl",
+    "description": "Liquid Rainbow Prismatic",
+    "tags": [
+      "liquid-rainbow",
+      "prismatic-dispersion",
+      "upgraded-rgba"
+    ],
+    "features": [
+      "liquid-rainbow",
+      "prismatic-dispersion",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "liquid-rainbow",
     "name": "Liquid Rainbow",
     "url": "shaders/liquid-rainbow.wgsl",
@@ -1465,46 +1520,75 @@
   {
     "id": "rain-ripples",
     "name": "Rain Ripples",
+    "category": "liquid-effects",
+    "type": "compute",
     "url": "shaders/rain-ripples.wgsl",
-    "description": "Interactive water ripples and raindrops.",
+    "description": "Interactive water ripples and raindrops with FBM micro-ripples, depth-aware fog, displacement-driven chromatic aberration, specular highlights, and ACES tone mapping.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "depth-aware",
+      "voronoi-raindrops",
+      "caustics",
+      "thin-film-interference"
+    ],
+    "tags": [
+      "filter",
+      "image-processing",
+      "liquid",
+      "ripples"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "params": [
       {
-        "id": "param1",
+        "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Overall ripple displacement and depth-fog influence"
       },
       {
-        "id": "param2",
+        "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Ripple propagation speed"
       },
       {
-        "id": "param3",
+        "id": "scale",
         "name": "Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "FBM micro-ripple spatial scale"
       },
       {
-        "id": "param4",
+        "id": "detail",
         "name": "Detail",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Wave sharpness and chromatic aberration amount"
       }
     ],
-    "tags": [
-      "filter",
-      "image-processing"
-    ]
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true
   },
   {
     "id": "viscous-drag",

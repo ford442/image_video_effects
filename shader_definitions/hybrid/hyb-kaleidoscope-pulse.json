@@ -1,0 +1,78 @@
+{
+  "id": "hyb-kaleidoscope-pulse",
+  "name": "Kaleidoscope Pulse",
+  "category": "hybrid",
+  "type": "compute",
+  "url": "shaders/hyb-kaleidoscope-pulse.wgsl",
+  "description": "Mirrors the input image into FBM-domain-warped kaleidoscope segments, adds an ACES-tonemapped radial pulse, and writes semantic alpha encoding pulse energy and depth.",
+  "features": [
+    "hybrid",
+    "kaleidoscope",
+    "radial-pulse",
+    "image-remix",
+    "upgraded-rgba",
+    "depth-aware",
+    "randomization-safe",
+    "sdf-primitives",
+    "strange-attractor",
+    "chromatic-split"
+  ],
+  "tags": [
+    "hybrid",
+    "kaleidoscope",
+    "pulse",
+    "radial",
+    "mirror"
+  ],
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {
+      "id": "segments",
+      "name": "Mirror Segments",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Number of kaleidoscope mirror segments"
+    },
+    {
+      "id": "pulse_speed",
+      "name": "Pulse Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Propagation speed of the radial pulse"
+    },
+    {
+      "id": "pulse_width",
+      "name": "Pulse Width",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Width/decay of the radial glow"
+    },
+    {
+      "id": "effect_mix",
+      "name": "Effect Mix",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Blend strength of pulse, warp, and semantic alpha"
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "chunks_used": [
+    "kaleidoscope (kaleidoscope.wgsl)",
+    "rdPulse (gen-bioelectric-pulse.wgsl)",
+    "glow (anamorphic-flare.wgsl)"
+  ],
+  "updated": true
+}

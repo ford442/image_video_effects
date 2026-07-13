@@ -1,0 +1,74 @@
+{
+  "id": "hyb-hex-voronoi-distort",
+  "name": "Hex Voronoi Distort",
+  "category": "hybrid",
+  "type": "compute",
+  "url": "shaders/hyb-hex-voronoi-distort.wgsl",
+  "description": "Hexagonal grid mosaic distortion blended with animated 2D Voronoi cells. Samples the input image through distorted hex centers while preserving the original alpha channel.",
+  "features": [
+    "hybrid",
+    "hex-grid",
+    "voronoi",
+    "image-distortion",
+    "alpha-passthrough",
+    "depth-aware",
+    "randomization-safe"
+  ],
+  "tags": [
+    "hybrid",
+    "hex",
+    "voronoi",
+    "mosaic",
+    "distortion"
+  ],
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {
+      "id": "hex_scale",
+      "name": "Hex Scale",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Density of the hexagonal grid"
+    },
+    {
+      "id": "voronoi_density",
+      "name": "Voronoi Density",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Density of the Voronoi cell pattern"
+    },
+    {
+      "id": "distort_amount",
+      "name": "Distortion Amount",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Strength of hex/Voronoi-driven UV distortion"
+    },
+    {
+      "id": "effect_mix",
+      "name": "Effect Mix",
+      "default": 0.75,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Blend between original and distorted image"
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "chunks_used": [
+    "nearestHexCenter (hex-mosaic.wgsl)",
+    "voronoi2D (interactive-voronoi-lens.wgsl)"
+  ],
+  "updated": true
+}

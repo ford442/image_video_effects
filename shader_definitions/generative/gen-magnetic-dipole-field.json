@@ -1,16 +1,6 @@
 {
-  "id": "gen-magnetic-dipole-field",
   "name": "Magnetic Dipole Field Lines",
   "category": "generative",
-  "url": "shaders/gen-magnetic-dipole-field.wgsl",
-  "description": "Procedurally rendered magnetic dipole field lines with charged particle trajectories. Simulates iron filings aligning to field lines with glowing ionized particles tracing the magnetic topology. Mouse moves the dipole position and controls field strength.",
-  "features": [
-    "interactive",
-    "mouse-reactive",
-    "temporal",
-    "procedural",
-    "physics"
-  ],
   "tags": [
     "particles",
     "fieldlines",
@@ -20,42 +10,50 @@
     "glow",
     "scientific"
   ],
-  "params": [
+  "description": "Procedurally rendered magnetic dipole field lines with charged particle trajectories. Simulates iron filings aligning to field lines with glowing ionized particles tracing the magnetic topology. Mouse moves the dipole position and controls field strength.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "intensity",
+      "index": 0,
       "name": "Field Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Particle Speed",
       "default": 0.35,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 2,
       "name": "Line Density",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "colorshift",
+      "index": 3,
       "name": "Color Shift",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-magnetic-dipole-field",
+  "url": "shaders/gen-magnetic-dipole-field.wgsl",
+  "features": []
 }

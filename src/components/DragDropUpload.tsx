@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import React, { useState, useCallback } from 'react';
-import { StorageSaveResponse } from '../services/StorageService';
+import { StorageSaveResponse } from '../services/storage';
 import './DragDropUpload.css';
 
 export type UploadType = 'image' | 'video' | 'audio' | 'shader';

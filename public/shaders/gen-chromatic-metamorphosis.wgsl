@@ -144,7 +144,9 @@ fn vnoise_cm(p: vec2<f32>) -> f32 {
 //  Fresnel reflectance approximation (Schlick)
 // ─────────────────────────────────────────────────────────────────────────────
 fn fresnel(cosTheta: f32, F0: f32) -> f32 {
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+    let p = 1.0 - cosTheta;
+    let p5 = p * p * p * p * p;
+    return F0 + (1.0 - F0) * p5;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -250,8 +252,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Lighting
         let lightDir = normalize(vec3<f32>(sin(t * 0.2), 0.7, cos(t * 0.2)));
         let diff = max(dot(N, lightDir), 0.0);
-        let spec = pow(max(dot(reflect(-lightDir, N), -rd), 0.0), 32.0);
-        let rim  = pow(1.0 - max(dot(N, -rd), 0.0), 3.0);
+        let s = max(dot(reflect(-lightDir, N), -rd), 0.0);
+        let s2 = s * s;
+        let s4 = s2 * s2;
+        let s8 = s4 * s4;
+        let s16 = s8 * s8;
+        let s32 = s16 * s16;
+        let spec = s32;
+        let f = 1.0 - max(dot(N, -rd), 0.0);
+        let rim  = f * f * f;
 
         // AO approximation (catalyst perturbs)
         let ao = 1.0 - smoothstep(0.0, 0.3, abs(sceneSDF(hitP + N * 0.08, t, blendRadius, localMorph)));
@@ -262,13 +271,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             + vec3<f32>(1.0) * spec * 0.4
             + surfCol * rim * 0.35 * catBoost;
         col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
-    }
-
-    if (hit) {
-        let N2 = sceneNormal(hitP, t, blendRadius, localMorph);
 
         // ── Fresnel rim light (audio-reactive hue + catalyst spark) ────────
-        let NdotV = max(dot(N2, -rd), 0.0);
+        let NdotV = max(dot(N, -rd), 0.0);
         let fresnelW = fresnel(NdotV, 0.04);
         let rimHue = fract(t * 0.07 + 0.6 + hueDrift * 0.6 + catalyst * 1.2);
         let catSpark = 1.0 + catalyst * 2.5 * (0.4 + treble * 0.7);
@@ -280,13 +285,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         // ── GGX specular sheen (seasonal audio tint) ───────────────────────
         let halfV = normalize(normalize(vec3<f32>(sin(t*0.2), 0.7, cos(t*0.2))) + (-rd));
-        let NdotH = max(dot(N2, halfV), 0.0);
+        let NdotH = max(dot(N, halfV), 0.0);
         let roughness = 0.3 + matNoise * 0.4;
         let ggxSpec = ggxD(NdotH, roughness) * 0.15;
         col += hsv2rgb(fract(t * colorSpeed * 0.3 + 0.3 + season * 0.4), 0.75, 1.0) * ggxSpec * (0.9 + edgeEnergy * 0.4);
 
         // ── Full AO pass (catalyst aware) ──────────────────────────────────
-        let ao2 = ambientOcclusion(hitP, N2, t, blendRadius, localMorph);
+        let ao2 = ambientOcclusion(hitP, N, t, blendRadius, localMorph);
         col *= ao2;
 
         col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));

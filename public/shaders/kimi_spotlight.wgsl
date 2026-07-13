@@ -4,7 +4,8 @@
 //  Features: mouse-driven, interactive, spotlight, reveal, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-28
+//  By: Agent 1a - Alpha Channel Specialist
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,7 +29,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
     let coords = vec2<i32>(global_id.xy);
@@ -49,23 +50,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let dist = length(p - mousePos);
 
-    let spotSize = (u.zoom_params.x * 0.5 + 0.1) * (1.0 + bass * 0.15 + mids * 0.05);
-    let spotSoftness = max(u.zoom_params.y * 0.5 + 0.01, 0.001);
-    let edgeDarkness = u.zoom_params.z * 0.9 + 0.1;
-    let saturationBoost = u.zoom_params.w * 2.0 + 1.0;
+    let spotSize = mix(0.1, 0.6, clamp(u.zoom_params.x, 0.0, 1.0)) * (1.0 + bass * 0.15 + mids * 0.05);
+    let spotSoftness = max(mix(0.001, 0.5, clamp(u.zoom_params.y, 0.0, 1.0)), 0.001);
+    let edgeDarkness = mix(0.1, 1.0, clamp(u.zoom_params.z, 0.0, 1.0));
+    let saturationBoost = mix(1.0, 3.0, clamp(u.zoom_params.w, 0.0, 1.0));
 
     var spotlight = 1.0 - smoothstep(spotSize - spotSoftness, spotSize + spotSoftness, dist);
 
     let clickPulse = mouseDown * sin(time * 10.0) * 0.1;
     spotlight = clamp(min(1.0, spotlight + clickPulse), 0.0, 1.0);
 
-    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    let gray = dot(original, vec3<f32>(0.299, 0.587, 0.114));
+    let gray = dot(original.rgb, vec3<f32>(0.299, 0.587, 0.114));
     let desaturated = vec3<f32>(gray) * 0.3;
 
-    let luminance = dot(original, vec3<f32>(0.299, 0.587, 0.114));
-    let saturated = mix(vec3<f32>(luminance), original, saturationBoost);
+    let luminance = dot(original.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let saturated = mix(vec3<f32>(luminance), original.rgb, saturationBoost);
 
     var color = mix(desaturated * edgeDarkness, saturated, spotlight);
 
@@ -82,7 +83,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
 
-    let alpha = clamp(spotlight * 0.7 + hotspot * 0.2 + beam * 0.1 + 0.15 + treble * 0.05, 0.0, 1.0);
+    let alpha = clamp(original.a * (spotlight * 0.7 + hotspot * 0.2 + beam * 0.1 + 0.15 + treble * 0.05), 0.0, 1.0);
 
     let finalRGBA = vec4<f32>(color, alpha);
 

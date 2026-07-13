@@ -292,14 +292,21 @@
     "name": "Anaglyph 3D",
     "category": "visual-effects",
     "url": "shaders/anaglyph-3d.wgsl",
-    "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, and bass-pulsed split width.",
+    "description": "Red-cyan stereoscopic anaglyph with temporal ghost fringing persistence, chromatic separation enhancement per depth, mouse focal depth curve refinement, bass-pulsed split width, and cinematic post-processing: film grain with temporal coherence, radial chromatic aberration, vignette darkening, CRT barrel distortion, color grading with lift/gamma/gain, anamorphic light streaks from bright points, and lens dirt overlay.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "upgraded-rgba",
       "temporal",
-      "chromatic"
+      "chromatic",
+      "film-grain",
+      "chromatic-aberration",
+      "vignette",
+      "crt-barrel",
+      "color-grading",
+      "anamorphic-streaks",
+      "lens-dirt"
     ],
     "tags": [
       "anaglyph",
@@ -823,9 +830,13 @@
       "depth-aware",
       "upgraded-rgba",
       "temporal-scan-pass",
-      "chromatic-scan"
+      "chromatic-scan",
+      "holographic-scanlines",
+      "data-visualization",
+      "hex-grid",
+      "interference-patterns"
     ],
-    "description": "A digital scanning line follows the mouse with temporal smear and depth-based colorization. Audio drives scan speed; chromatic separation shifts RGB per treble intensity.",
+    "description": "A digital scanning ecosystem with triple-layer scan lines, holographic interference patterns, hex-grid data visualization, binary rain effects, and FBM noise corruption. Depth-based colorization with chromatic RGB separation driven by treble intensity.",
     "params": [
       {
         "id": "scanWidth",
@@ -864,7 +875,16 @@
       "audio-reactive",
       "depth-aware",
       "chromatic",
-      "temporal"
+      "temporal",
+      "holographic",
+      "hex-grid",
+      "interference",
+      "binary-rain"
+    ],
+    "updated": true,
+    "updatedParams": [
+      "scanWidth",
+      "edgeStrength"
     ]
   },
   {
@@ -919,8 +939,8 @@
   {
     "id": "elastic-chromatic",
     "name": "Elastic Chromatic",
-    "url": "shaders/elastic-chromatic.wgsl",
-    "description": "Elastic chromatic aberration with radial RGB shift, per-channel temporal lag, Lissajous mouse source, depth-aware audio reactivity, split-tone blackbody grading, ACES tone mapping and IGN dither.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/elastic-chromatic.wgsl",
+    "description": "Elastic chromatic aberration with radial RGB shift, per-channel temporal lag, Lissajous mouse source, depth-aware audio reactivity, split-tone blackbody grading, ACES tone mapping, IGN dither and advanced layered alpha compositing.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -932,7 +952,10 @@
       "blackbody-temperature",
       "aces-tone-map",
       "ign-dither",
-      "premultiplied-alpha"
+      "premultiplied-alpha",
+      "alpha-layered",
+      "luminance-key",
+      "accumulative-alpha"
     ],
     "params": [
       {
@@ -985,7 +1008,9 @@
       "mouse-driven",
       "hdr",
       "dither",
-      "split-tone"
+      "split-tone",
+      "alpha-layered",
+      "luminance-key"
     ]
   },
   {
@@ -1795,9 +1820,12 @@
     "url": "shaders/phantom-lag.wgsl",
     "features": [
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "chromatic-echo",
+      "spring-damper-bass",
+      "mouse-velocity"
     ],
-    "description": "Creates trailing echoes of movement by blending past frames with spatial offsets.",
+    "description": "Creates trailing echoes of movement with chromatic multi-tap delays, spring-damper bass smoothing, and velocity-stretched cursor ghosts.",
     "params": [
       {
         "name": "Decay Rate",
@@ -2208,8 +2236,8 @@
   {
     "id": "temporal-rgb-smear",
     "name": "Temporal RGB Smear",
-    "url": "shaders/temporal-rgb-smear.wgsl",
-    "description": "Directional RGB smear with curl-noise velocity field, domain-warped drift, Halton-jittered chromatic sampling, temporal feedback decay, ACES tone mapping, and semantic trail alpha.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-rgb-smear.wgsl",
+    "description": "Directional RGB smear with curl-noise velocity field, domain-warped drift, Halton-jittered chromatic sampling, temporal feedback decay, ACES tone mapping, and advanced layered alpha compositing (luminance key, edge preserve, effect intensity, depth layer, accumulative trails).",
     "params": [
       {
         "id": "smear_length",
@@ -2260,7 +2288,11 @@
       "curl-noise",
       "domain-warp",
       "aces-tone-mapping",
-      "semantic-alpha"
+      "semantic-alpha",
+      "alpha-layered",
+      "luminance-key",
+      "edge-preserve",
+      "accumulative"
     ],
     "tags": [
       "filter",
@@ -2273,7 +2305,11 @@
       "curl-noise",
       "domain-warp",
       "depth-aware",
-      "tone-mapping"
+      "tone-mapping",
+      "alpha-layered",
+      "luminance-key",
+      "edge-preserve",
+      "accumulative"
     ]
   },
   {
@@ -2344,7 +2380,12 @@
       "depth-aware",
       "aces-tone-map",
       "chromatic-aberration",
-      "semantic-alpha"
+      "semantic-alpha",
+      "raymarching",
+      "sdf",
+      "early-exit",
+      "lod-noise",
+      "branchless"
     ],
     "params": [
       {

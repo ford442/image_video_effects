@@ -1,9 +1,6 @@
 {
-  "id": "gen-abyssal-chrono-coral",
   "name": "Abyssal Chrono-Coral",
-  "url": "shaders/gen-abyssal-chrono-coral.wgsl",
   "category": "generative",
-  "description": "A vast abyssal coral reef drifting through gravitational time. Slow geological growth rings expand over eons. Mids and treble drive bioluminescent pulses. Mouse clicks create sediment disturbance events that trigger sudden bloom explosions across the reef. Gravitational lensing bends light around dense coral structures.",
   "tags": [
     "organic",
     "fractal",
@@ -14,54 +11,50 @@
     "audio-reactive",
     "sediment-bloom"
   ],
-  "features": [
-    "mouse-keystone",
-    "audio-seasonal-pulses",
-    "gravitational-lensing",
-    "time-dilated-rings",
-    "raymarched",
-    "temporal"
+  "description": "A vast abyssal coral reef drifting through gravitational time. Slow geological growth rings expand over eons. Mids and treble drive bioluminescent pulses. Mouse clicks create sediment disturbance events that trigger sudden bloom explosions across the reef. Gravitational lensing bends light around dense coral structures.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "coralDensity",
+      "index": 0,
       "name": "Coral Density",
       "default": 0.5,
       "min": 0.1,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Overall density and thickness of the coral structures"
+      "step": 0.01
     },
     {
-      "id": "branchComplexity",
+      "index": 1,
       "name": "Branch Complexity",
       "default": 4,
       "min": 1,
       "max": 8,
-      "step": 1,
-      "mapping": "zoom_params.y",
-      "description": "How many iterative folds the fractal coral performs"
+      "step": 1
     },
     {
-      "id": "bioluminescenceGlow",
+      "index": 2,
       "name": "Bioluminescence Intensity",
       "default": 1,
       "min": 0,
       "max": 3,
-      "step": 0.1,
-      "mapping": "zoom_params.z",
-      "description": "Base strength of the glowing nodes (further driven by mids/treble)"
+      "step": 0.1
     },
     {
-      "id": "timeDilationField",
+      "index": 3,
       "name": "Time Dilation Field",
       "default": 0.2,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "How strongly the mouse slows local geological time"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-abyssal-chrono-coral",
+  "url": "shaders/gen-abyssal-chrono-coral.wgsl",
+  "features": []
 }

@@ -1,0 +1,81 @@
+{
+  "id": "hyb-chromatic-circuit",
+  "name": "Chromatic Circuit",
+  "category": "hybrid",
+  "type": "compute",
+  "url": "shaders/hyb-chromatic-circuit.wgsl",
+  "description": "Opal-circuit style hex-grid trace edges, radial pulse glow, and chromatic aberration are layered over the input image while preserving alpha.",
+  "features": [
+    "hybrid",
+    "hex-grid",
+    "trace-edges",
+    "pulse-glow",
+    "chromatic-aberration",
+    "image-distortion",
+    "alpha-passthrough",
+    "depth-aware",
+    "randomization-safe"
+  ],
+  "tags": [
+    "hybrid",
+    "hex",
+    "circuit",
+    "chromatic",
+    "glow",
+    "pulse",
+    "edges"
+  ],
+  "workgroup_size": [16, 16, 1],
+  "params": [
+    {
+      "id": "grid_scale",
+      "name": "Grid Scale",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Density of the hexagonal circuit grid"
+    },
+    {
+      "id": "trace_width",
+      "name": "Trace Width",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Thickness and glow radius of hex-cell trace lines"
+    },
+    {
+      "id": "chroma_spread",
+      "name": "Chroma Spread",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Amount of RGB chromatic separation along the hex gradient"
+    },
+    {
+      "id": "effect_mix",
+      "name": "Effect Mix",
+      "default": 0.75,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Blend strength of the chromatic circuit layer over the input"
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "chunks_used": [
+    "nearestHexCenter (hex-mosaic.wgsl / quantum-prism.wgsl)",
+    "sdSegment (gen-holographic-fracture.wgsl)",
+    "glow (anamorphic-flare.wgsl)",
+    "hsv2rgb (chronos-brush.wgsl)"
+  ],
+  "created_by": "Agent 4c - Advanced Hybrid Effect Creator",
+  "updated": true
+}

@@ -40,10 +40,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mouse = u.zoom_config.yz;
 
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
-    let intensity = u.zoom_params.x * 0.5 * max(1.0 + bass * 0.2, 0.001);
-    let sliceCount = 10.0 + u.zoom_params.y * 190.0;
-    let rgbShift = u.zoom_params.z * 0.05;
-    let phase = u.zoom_params.w;
+    let intensity = clamp(u.zoom_params.x, 0.0, 1.0) * 0.5 * max(1.0 + bass * 0.2, 0.001);
+    let sliceCount = 10.0 + clamp(u.zoom_params.y, 0.0, 1.0) * 190.0;
+    let rgbShift = clamp(u.zoom_params.z, 0.0, 1.0) * 0.05;
+    let phase = clamp(u.zoom_params.w, 0.0, 1.0);
 
     let sliceHeight = 1.0 / sliceCount;
     let sliceIndex = floor(uv.y * sliceCount);
@@ -70,10 +70,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalColor = vec3<f32>(r, g, b) * scanline;
 
-    // Alpha encodes slice displacement: active slices blend more strongly
-    let slice_activity = clamp(abs(offsetBase) * 4.0 + rgbShift * 10.0, 0.0, 1.0);
-    let final_luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.45 + slice_activity * 0.35 + final_luma * 0.2, 0.0, 1.0);
+    // Preserve the input alpha from the unshifted source pixel
+    let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let alpha = current.a;
 
     textureStore(writeTexture, coords, vec4<f32>(finalColor, alpha));
 

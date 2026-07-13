@@ -72,7 +72,7 @@ fn map(p_in: vec3<f32>) -> MapResult {
     let mousePos = vec3<f32>(
         (u.zoom_config.y - 0.5) * 20.0,
         0.0,
-        (u.zoom_config.z - 0.5) * 20.0
+        (0.5 - u.zoom_config.z) * 20.0
     );
     let distToMouse = length(p.xz - mousePos.xz);
     let warpStrength = u.zoom_params.w;
@@ -164,7 +164,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Mouse influence on camera
     let mx = (u.zoom_config.y - 0.5) * 12.0;
-    let my = (u.zoom_config.z - 0.5) * 8.0;
+    let my = (0.5 - u.zoom_config.z) * 8.0;
     ro.x += mx;
     ro.y += my * 0.6;
 
@@ -249,4 +249,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = pow(col, vec3<f32>(0.4545));
 
     textureStore(writeTexture, vec2<i32>(id.xy), applyGenerativePrimaryControls(vec4<f32>(col, 1.0)));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

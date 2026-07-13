@@ -211,9 +211,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let edgeB = smoothstep(edgeThresh * 0.5, edgeThresh, sobelEdge(uv, tx, 2));
 
     // ── Compute bleed amounts per channel ─────────────────────────────────
-    let bleedR = channelBleed(uv + rippleDisp(uv, t, u32(u.config.y)), dirR, bleedRadius, 0) * edgeR;
-    let bleedG = channelBleed(uv + rippleDisp(uv, t, u32(u.config.y)), dirG, bleedRadius, 1) * edgeG;
-    let bleedB = channelBleed(uv + rippleDisp(uv, t, u32(u.config.y)), dirB, bleedRadius, 2) * edgeB;
+    let ripD = rippleDisp(uv, t, u32(u.config.y));
+    let bleedR = channelBleed(uv + ripD, dirR, bleedRadius, 0) * edgeR;
+    let bleedG = channelBleed(uv + ripD, dirG, bleedRadius, 1) * edgeG;
+    let bleedB = channelBleed(uv + ripD, dirB, bleedRadius, 2) * edgeB;
 
     // ── Original color ────────────────────────────────────────────────────
     let orig = textureSampleLevel(readTexture, u_sampler, uv, 0.0);

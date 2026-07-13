@@ -89,21 +89,26 @@ fn map(p_in: vec3<f32>, is_light: ptr<function, f32>) -> f32 {
     let t = u.config.x * 0.5;
     let audio = u.config.y;
 
-    // UI Sliders mapped
-    let twist_amount = u.zoom_params.x; // Tentacle Twist
-    let core_heat = u.zoom_params.z;    // Core Heat
+    // UI Sliders mapped (clamp zoom_params to normalized range)
+    let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let twist_amount = mix(0.0, 1.0, zparams.x); // Tentacle Twist
+    let core_heat = mix(0.0, 1.0, zparams.z);    // Core Heat
 
     // Mouse Interaction (Gravitational distortion)
     let mx = (u.zoom_config.y - 0.5) * 2.0;
-    let my = (u.zoom_config.z - 0.5) * 2.0;
+    let my = (0.5 - u.zoom_config.z) * 2.0;
     let click_pull = smoothstep(0.0, 1.0, length(vec2<f32>(mx, my)) * 2.0); // Simple proxy for intensity based on mouse distance from center
 
     // Add overall temporal and mouse rotation
     let rotY = rot(t * 0.2 + mx * 2.0);
     let rotX = rot(t * 0.1 + my * 2.0);
     var p_rot = p;
-    p_rot.xz = rotY * p_rot.xz;
-    p_rot.yz = rotX * p_rot.yz;
+    let p_rot_xz = rotY * p_rot.xz;
+    p_rot.x = p_rot_xz.x;
+    p_rot.z = p_rot_xz.y;
+    let p_rot_yz = rotX * p_rot.yz;
+    p_rot.y = p_rot_yz.x;
+    p_rot.z = p_rot_yz.y;
 
     // Distort space slightly based on audio and noise
     let n1 = fbm(p_rot * 1.5 + vec3<f32>(t)) * 0.5;
@@ -125,13 +130,17 @@ fn map(p_in: vec3<f32>, is_light: ptr<function, f32>) -> f32 {
         var p_tentacle = p_rot;
 
         // Rotate local space for this tentacle
-        p_tentacle.xz = rot(angle) * p_tentacle.xz;
+        let p_tentacle_xz = rot(angle) * p_tentacle.xz;
+        p_tentacle.x = p_tentacle_xz.x;
+        p_tentacle.z = p_tentacle_xz.y;
 
         // Twist tentacle along its length
         let tentacle_length_pos = p_tentacle.x;
         // Domain warping / Twisting
         let twist = (t + click_pull * 2.0) * 0.5 * twist_amount;
-        p_tentacle.yz = rot(tentacle_length_pos * 0.5 + twist) * p_tentacle.yz;
+        let p_tentacle_yz = rot(tentacle_length_pos * 0.5 + twist) * p_tentacle.yz;
+        p_tentacle.y = p_tentacle_yz.x;
+        p_tentacle.z = p_tentacle_yz.y;
 
         // Wavy motion (bioluminescent waves)
         p_tentacle.y = p_tentacle.y + sin(p_tentacle.x * 2.0 - t * 3.0) * 0.3 * (1.0 + audio);
@@ -186,8 +195,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let t = u.config.x;
     let audio = u.config.y;
 
-    let plasma_glow = u.zoom_params.y; // Plasma Glow
-    let void_depth = u.zoom_params.w;  // Void Depth
+    let zparams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let plasma_glow = mix(0.0, 2.0, zparams.y); // Plasma Glow
+    let void_depth = mix(0.0, 1.0, zparams.w);  // Void Depth
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, 10.0 + (void_depth * 5.0)); // Zoom out based on void depth
@@ -275,4 +285,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col = pow(col, vec3<f32>(1.0 / 2.2));
 
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(1.0 - clamp(d / 30.0, 0.0, 1.0), 0.0, 0.0, 1.0));
 }

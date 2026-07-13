@@ -2,42 +2,54 @@
   "id": "cyber-rain",
   "name": "Cyber Rain",
   "url": "shaders/cyber-rain.wgsl",
-  "description": "Neon rain on wet glass with mouse wiper.",
+  "category": "interactive-mouse",
+  "description": "Neon rain on wet glass with mouse wiper, audio-envelope intensity, temporal wetness accumulation, depth-aware rain occlusion, and chromatic-aberration glow.",
+  "tags": ["rain", "neon", "wet-glass", "mouse-driven", "audio-reactive", "temporal-feedback", "depth-aware", "chromatic-aberration"],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "semantic-alpha",
+    "upgraded-rgba",
+    "temporal-persistence",
+    "depth-aware"
+  ],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "intensity",
       "name": "Rain Intensity",
       "default": 0.6,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.x"
     },
     {
       "id": "blur",
       "name": "Wet Blur",
       "default": 0.5,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.y"
     },
     {
       "id": "bloom",
       "name": "Neon Bloom",
       "default": 0.7,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.z"
     },
     {
       "id": "wiper",
       "name": "Wiper Size",
       "default": 0.4,
-      "min": 0,
-      "max": 1
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "param": "zoom_params.w"
     }
-  ],
-  "features": [
-    "mouse-driven"
-  ],
-  "tags": [
-    "filter",
-    "image-processing"
   ]
 }

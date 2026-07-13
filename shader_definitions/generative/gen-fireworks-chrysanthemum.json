@@ -1,0 +1,64 @@
+{
+  "name": "4th of July \u2014 Chrysanthemum Burst",
+  "category": "generative",
+  "tags": [
+    "fireworks",
+    "chrysanthemum",
+    "peony",
+    "pyrotechnics",
+    "spherical",
+    "dense",
+    "rings",
+    "audio-reactive",
+    "generative",
+    "celebration",
+    "4th-of-july",
+    "july-4"
+  ],
+  "description": "Dense spherical chrysanthemum and peony shells with hundreds of sparks arranged in concentric rings. Each burst flashes brilliant white at the core then blooms into layered color rings \u2014 crimson inner petals fading to electric blue and gold at the edges. Multiple timed ring layers create depth within each explosion. Bass expands burst radius, mids add secondary ring shells, treble crackles the outer petals. Mouse detonates a massive peony at the cursor.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Burst Size",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Ring Layers",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Spark Density",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Color Spread",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-fireworks-chrysanthemum",
+  "url": "shaders/gen-fireworks-chrysanthemum.wgsl",
+  "features": []
+}

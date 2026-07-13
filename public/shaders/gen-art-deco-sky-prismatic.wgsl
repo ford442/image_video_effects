@@ -158,7 +158,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fogDensity = u.zoom_params.w;
     var time = u.config.x;
     var mouse = u.zoom_config.yz;
-    let cam_radius = 20.0 + (mouse.y - 0.5) * 10.0;
+    let cam_radius = 20.0 + (0.5 - mouse.y) * 10.0;
     let cam_angle = (mouse.x - 0.5) * 6.28 + time * 0.05;
     let ro = vec3<f32>(sin(cam_angle) * cam_radius, -5.0, cos(cam_angle) * cam_radius);
     let ta = vec3<f32>(0.0, 5.0, 0.0);

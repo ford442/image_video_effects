@@ -1,9 +1,6 @@
 {
-  "id": "gen-protocell-division",
   "name": "Protocell Division",
-  "url": "shaders/gen-protocell-division.wgsl",
   "category": "generative",
-  "description": "Synthetic biology oil droplets in water that divide and merge like protocells. Rainbow-colored oil slicks on spherical membranes, organic blob shapes deforming under surface tension, and sudden division events where one cell splits into two. Bass triggers division events, mids control surface tension, treble adds membrane vibration ripples, and mouse attracts nearby blobs.",
   "tags": [
     "organic",
     "biology",
@@ -14,56 +11,50 @@
     "division",
     "smin-blobs"
   ],
-  "features": [
-    "audio-reactive",
-    "mouse-driven",
-    "temporal",
-    "upgraded-rgba",
-    "aces-tone-map",
-    "temporal-feedback",
-    "chromatic-aberration",
-    "depth-aware"
+  "description": "Synthetic biology oil droplets in water that divide and merge like protocells. Rainbow-colored oil slicks on spherical membranes, organic blob shapes deforming under surface tension, and sudden division events where one cell splits into two. Bass triggers division events, mids control surface tension, treble adds membrane vibration ripples, and mouse attracts nearby blobs.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "cellCount",
+      "index": 0,
       "name": "Cell Count",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Number of protocells visible in the field"
+      "step": 0.01
     },
     {
-      "id": "surfaceTension",
+      "index": 1,
       "name": "Surface Tension",
       "default": 0.6,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Roundness vs amoeboid deformation of cell membranes"
+      "step": 0.01
     },
     {
-      "id": "iridescence",
+      "index": 2,
       "name": "Iridescence",
       "default": 0.7,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Intensity of thin-film interference rainbow colors"
+      "step": 0.01
     },
     {
-      "id": "divisionRate",
+      "index": 3,
       "name": "Division Rate",
       "default": 0.4,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Speed of cell division and merging cycles"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-protocell-division",
+  "url": "shaders/gen-protocell-division.wgsl",
+  "features": []
 }

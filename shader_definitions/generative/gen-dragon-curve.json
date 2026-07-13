@@ -1,23 +1,6 @@
 {
-  "id": "gen-dragon-curve",
   "name": "Dragon Curve",
-  "url": "shaders/gen-dragon-curve.wgsl",
   "category": "generative",
-  "description": "Heighway dragon curve — a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon line with iteration-depth coloring from red to violet. Audio drives fold depth, mouse zooms into detail, and depth controls line thickness perspective.",
-  "features": [
-    "procedural",
-    "fractal",
-    "dragon-curve",
-    "l-system",
-    "neon-line",
-    "audio-reactive",
-    "mouse-driven",
-    "aces-tonemap",
-    "chromatic-aberration",
-    "temporal-feedback",
-    "depth-aware",
-    "upgraded-rgba"
-  ],
   "tags": [
     "fractal",
     "neon",
@@ -28,46 +11,50 @@
     "abstract",
     "colorful"
   ],
-  "params": [
+  "description": "Heighway dragon curve \u2014 a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon line with iteration-depth coloring from red to violet. Audio drives fold depth, mouse zooms into detail, and depth controls line thickness perspective.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "zoom",
+      "index": 0,
       "name": "Zoom Detail",
       "default": 0.2,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Zoom into curve detail"
+      "step": 0.01
     },
     {
-      "id": "glow",
+      "index": 1,
       "name": "Neon Glow Width",
       "default": 0.5,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Thickness of the neon glow"
+      "step": 0.01
     },
     {
-      "id": "chromatic",
+      "index": 2,
       "name": "Fold Chromatic Aberration",
       "default": 0.3,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Color split on tight folds"
+      "step": 0.01
     },
     {
-      "id": "feedback",
+      "index": 3,
       "name": "Temporal Feedback",
       "default": 0.2,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Trail persistence from previous frames"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-dragon-curve",
+  "url": "shaders/gen-dragon-curve.wgsl",
+  "features": []
 }

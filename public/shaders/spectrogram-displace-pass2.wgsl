@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Spectrogram Displace – Pass 2: Displacement & Compositing
 //  Category: artistic
-//  Features: multi-pass-2, image displacement, color grading,, upgraded-rgba
-//            vignette, audio-reactive
+//  Features: multi-pass-2, image-displacement, color-grading, vignette, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
-//  By: Phase A Upgrade Swarm
+//  Upgraded: 2026-06-28
+//  By: Agent 1a - Alpha Channel Specialist
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -46,7 +45,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let spectroColor = field.rgb;
   let magnitude = max(field.a, 0.001);
 
-  let effectiveMag = select(u.zoom_params.z, 1.0, u.zoom_params.z < 0.01);
+  let effectiveMag = mix(0.1, 2.0, clamp(u.zoom_params.z, 0.0, 1.0));
 
   let bass = plasmaBuffer[0].x;
   let audioBoost = 1.0 + bass * 0.8;
@@ -77,7 +76,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
   let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = clamp(magnitude * 0.6 + luma * 0.3 + 0.1, 0.0, 1.0);
+  let alpha = clamp(displacedColor.a * (magnitude * 0.6 + luma * 0.3 + 0.1), 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), vec4<f32>(finalColor, alpha));
 

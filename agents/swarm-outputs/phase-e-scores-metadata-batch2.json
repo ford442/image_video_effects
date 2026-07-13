@@ -1,0 +1,530 @@
+{
+  "evaluator": "Agent 3e - Metadata & Documentation Evaluator",
+  "batch": 2,
+  "rubric_max": 15,
+  "date": "2026-06-29",
+  "notes": "Valid categories are the 14 directories under shader_definitions/ (advanced-hybrid, artistic, distortion, generative, geometric, hybrid, image, interactive-mouse, lighting-effects, liquid-effects, post-processing, retro-glitch, simulation, visual-effects). The registry mentions 15 allowed categories but only 14 exist on disk; all evaluated shaders reside in valid categories.",
+  "scores": [
+    {
+      "rank": 31,
+      "shader_id": "gemstone-fractures",
+      "name": "Gemstone Fractures",
+      "path_category": "distortion",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 2
+      },
+      "total": 13,
+      "grade": "B",
+      "notes": "Missing category field. Params lack step. Listed features are accurate."
+    },
+    {
+      "rank": 32,
+      "shader_id": "gen-chromatic-metamorphosis",
+      "name": "Chromatic Metamorphosis",
+      "path_category": "generative",
+      "json_category": "generative",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 0
+      },
+      "total": 11,
+      "grade": "C",
+      "notes": "updatedParams use 'index' instead of 'id'. Features array is empty despite shader supporting audio/mouse/depth."
+    },
+    {
+      "rank": 33,
+      "shader_id": "gen-chronos-labyrinth",
+      "name": "Chronos Labyrinth",
+      "path_category": "generative",
+      "json_category": "generative",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 0
+      },
+      "total": 11,
+      "grade": "C",
+      "notes": "updatedParams use 'index' instead of 'id'. Features array is empty despite shader supporting mouse/audio/depth."
+    },
+    {
+      "rank": 34,
+      "shader_id": "gen-ethereal-silk-veil",
+      "name": "Ethereal Silk Veil",
+      "path_category": "generative",
+      "json_category": "generative",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 0
+      },
+      "total": 11,
+      "grade": "C",
+      "notes": "updatedParams use 'index' instead of 'id'. Features array is empty despite shader supporting audio/mouse/depth."
+    },
+    {
+      "rank": 35,
+      "shader_id": "gen-gravitational-strain",
+      "name": "Gravitational Strain Field",
+      "path_category": "generative",
+      "json_category": "generative",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 0
+      },
+      "total": 11,
+      "grade": "C",
+      "notes": "updatedParams use 'index' instead of 'id'. Features array is empty despite shader supporting audio."
+    },
+    {
+      "rank": 36,
+      "shader_id": "gen-inverse-mandelbrot",
+      "name": "Inverse Mandelbrot Realm",
+      "path_category": "generative",
+      "json_category": "generative",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 0
+      },
+      "total": 11,
+      "grade": "C",
+      "notes": "updatedParams use 'index' instead of 'id'. Features array is empty despite shader supporting audio."
+    },
+    {
+      "rank": 37,
+      "shader_id": "gen-prismatic-bismuth-lattice",
+      "name": "Prismatic Bismuth Lattice",
+      "path_category": "generative",
+      "json_category": "generative",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 0
+      },
+      "total": 11,
+      "grade": "C",
+      "notes": "updatedParams use 'index' instead of 'id'. Features array is empty despite shader supporting alpha-transmission."
+    },
+    {
+      "rank": 38,
+      "shader_id": "gen-quantum-fluorescent-aether-moth-swarm",
+      "name": "Quantum-Fluorescent Aether-Moth Swarm",
+      "path_category": "generative",
+      "json_category": "generative",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 0
+      },
+      "total": 11,
+      "grade": "C",
+      "notes": "updatedParams use 'index' instead of 'id'. Features array is empty despite shader using depth."
+    },
+    {
+      "rank": 39,
+      "shader_id": "gen-topological-acoustic-knots",
+      "name": "Topological Acoustic Knots",
+      "path_category": "generative",
+      "json_category": "generative",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 0
+      },
+      "total": 11,
+      "grade": "C",
+      "notes": "updatedParams use 'index' instead of 'id'. Features array is empty despite shader supporting audio/mouse/depth."
+    },
+    {
+      "rank": 40,
+      "shader_id": "glass-bead-curtain-iridescence",
+      "name": "Glass Bead Curtain Iridescence",
+      "path_category": "advanced-hybrid",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Missing category field; path category is valid. Params and features are complete and accurate."
+    },
+    {
+      "rank": 41,
+      "shader_id": "gravito-phononic-accretion",
+      "name": "Gravito-Phononic Accretion",
+      "path_category": "generative",
+      "json_category": "generative",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Complete metadata; feature flags match shader header."
+    },
+    {
+      "rank": 42,
+      "shader_id": "hex-mosaic",
+      "name": "Hexagon Mosaic",
+      "path_category": "interactive-mouse",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Missing category field; path category is valid. Features match shader header."
+    },
+    {
+      "rank": 43,
+      "shader_id": "honey-melt",
+      "name": "Honey Melt",
+      "path_category": "image",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 2
+      },
+      "total": 13,
+      "grade": "B",
+      "notes": "Missing category field. Params lack step. mouse-driven feature is accurate."
+    },
+    {
+      "rank": 44,
+      "shader_id": "hyb-chromatic-circuit",
+      "name": "Chromatic Circuit",
+      "path_category": "hybrid",
+      "json_category": "hybrid",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Complete and accurate metadata."
+    },
+    {
+      "rank": 45,
+      "shader_id": "hyb-kaleidoscope-pulse",
+      "name": "Kaleidoscope Pulse",
+      "path_category": "hybrid",
+      "json_category": "hybrid",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Complete and accurate metadata."
+    },
+    {
+      "rank": 46,
+      "shader_id": "hyb-spectral-fbm-displace",
+      "name": "Spectral FBM Displace",
+      "path_category": "hybrid",
+      "json_category": "hybrid",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Complete and accurate metadata."
+    },
+    {
+      "rank": 47,
+      "shader_id": "hyb-temporal-fbm-ghost",
+      "name": "Temporal FBM Ghost",
+      "path_category": "hybrid",
+      "json_category": "hybrid",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Complete and accurate metadata."
+    },
+    {
+      "rank": 48,
+      "shader_id": "hybrid-cyber-organic",
+      "name": "Hybrid Cyber-Organic",
+      "path_category": "hybrid",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Missing category field; path category is valid. Feature flags are consistent with shader."
+    },
+    {
+      "rank": 49,
+      "shader_id": "hybrid-noise-kaleidoscope",
+      "name": "Hybrid Noise Kaleidoscope",
+      "path_category": "hybrid",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 0
+      },
+      "total": 12,
+      "grade": "B",
+      "notes": "Missing category field. Features overclaim audio-reactive, depth-aware, and upgraded-rgba; shader header lists only hybrid, fbm-noise, kaleidoscope, chromatic-aberration, hue-shift."
+    },
+    {
+      "rank": 50,
+      "shader_id": "ink-marbling",
+      "name": "Ink Marbling",
+      "path_category": "liquid-effects",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Missing category field; path category is valid. mouse-driven feature is accurate."
+    },
+    {
+      "rank": 51,
+      "shader_id": "interactive-voronoi-lens",
+      "name": "Interactive Voronoi Lens",
+      "path_category": "interactive-mouse",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Missing category field; path category is valid. Features are accurate."
+    },
+    {
+      "rank": 52,
+      "shader_id": "kaleido-scope",
+      "name": "Kaleido-Scope",
+      "path_category": "geometric",
+      "json_category": "geometric",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 2
+      },
+      "total": 12,
+      "grade": "B",
+      "notes": "Params lack step. Features match shader header."
+    },
+    {
+      "rank": 53,
+      "shader_id": "liquid-displacement",
+      "name": "Liquid Displacement",
+      "path_category": "liquid-effects",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Missing category field; path category is valid. Features match shader header."
+    },
+    {
+      "rank": 54,
+      "shader_id": "liquid-metal",
+      "name": "Liquid Metal",
+      "path_category": "liquid-effects",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Missing category field; path category is valid. Features are accurate."
+    },
+    {
+      "rank": 55,
+      "shader_id": "liquid-tensor-vortex",
+      "name": "Liquid Tensor Vortex",
+      "path_category": "liquid-effects",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Missing category field; path category is valid. Features match description."
+    },
+    {
+      "rank": 56,
+      "shader_id": "liquid-time-warp",
+      "name": "Liquid Time Warp",
+      "path_category": "interactive-mouse",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 2
+      },
+      "total": 12,
+      "grade": "B",
+      "notes": "Params lack step. Missing category field; path category is valid. Features are plausible."
+    },
+    {
+      "rank": 57,
+      "shader_id": "liquid-viscous",
+      "name": "Liquid Viscous",
+      "path_category": "liquid-effects",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 4,
+        "features": 2
+      },
+      "total": 15,
+      "grade": "A",
+      "notes": "Missing category field; path category is valid. mouse-driven flag is accurate."
+    },
+    {
+      "rank": 58,
+      "shader_id": "luma-magnetism",
+      "name": "Luma Magnetism",
+      "path_category": "interactive-mouse",
+      "json_category": "interactive-mouse",
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 2
+      },
+      "total": 12,
+      "grade": "B",
+      "notes": "Params lack step. Features match shader header. Note: WGSL header claims Category: distortion while JSON/path say interactive-mouse."
+    },
+    {
+      "rank": 59,
+      "shader_id": "luma-slice-interactive",
+      "name": "Luma Slice Interactive",
+      "path_category": "interactive-mouse",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 2
+      },
+      "total": 13,
+      "grade": "B",
+      "notes": "Missing category field. Params lack step. Features match shader header."
+    },
+    {
+      "rank": 60,
+      "shader_id": "neon-poly-grid",
+      "name": "Neon Poly Grid",
+      "path_category": "geometric",
+      "json_category": null,
+      "scores": {
+        "exists": 4,
+        "id_url": 3,
+        "category": 2,
+        "params": 2,
+        "features": 2
+      },
+      "total": 12,
+      "grade": "B",
+      "notes": "Missing category field. Params lack step. mouse-driven feature is accurate."
+    }
+  ],
+  "summary": {
+    "count": 30,
+    "average": 13.23,
+    "max": 15,
+    "min": 11,
+    "a_count": 14,
+    "b_count": 8,
+    "c_count": 8,
+    "d_count": 0,
+    "f_count": 0
+  }
+}

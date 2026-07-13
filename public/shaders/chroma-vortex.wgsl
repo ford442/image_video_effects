@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chroma Vortex
 //  Category: visual-effects
-//  Features: mouse-driven, audio-reactive, audio-driven, upgraded-rgba
-//  Complexity: Medium
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
+//  Features: mouse-driven, audio-reactive, audio-driven,
+//            spiral-sdf, multi-vortex, spectral-ramp, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-06-28
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,10 +28,40 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530717958647692;
+
 fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
     let s = sin(angle);
     let c = cos(angle);
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
+fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
+    let c = hsv.z * hsv.y;
+    let h = hsv.x * 6.0;
+    let x = c * (1.0 - abs(fract(h) * 2.0 - 1.0));
+    var rgb = vec3<f32>(0.0);
+    if (h < 1.0)      { rgb = vec3<f32>(c, x, 0.0); }
+    else if (h < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
+    else if (h < 3.0) { rgb = vec3<f32>(0.0, c, x); }
+    else if (h < 4.0) { rgb = vec3<f32>(0.0, x, c); }
+    else if (h < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
+    else              { rgb = vec3<f32>(c, 0.0, x); }
+    return rgb + vec3<f32>(hsv.z - c);
+}
+
+// ── Spiral SDF mask for vortex feathering ────────────────────────
+fn sdSpiral(p: vec2<f32>, arms: f32, tightness: f32) -> f32 {
+    let r = length(p);
+    let a = atan2(p.y, p.x);
+    let spiralTarget = arms * r * tightness;
+    let seg = abs(fract((a + spiralTarget) / TAU) - 0.5) * TAU;
+    return seg;
+}
+
+// ── Spectral color ramp for vortex tinting ───────────────────────
+fn spectralRamp(t: f32) -> vec3<f32> {
+    return hsv2rgb(vec3<f32>(fract(t), 0.85, 1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -41,61 +71,90 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     let coord = vec2<i32>(global_id.xy);
-    var uv = vec2<f32>(global_id.xy) / resolution;
-    var mousePos = u.zoom_config.yz;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
+    let mousePos = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let twist = u.zoom_params.x * 3.14159 * 2.0 * (1.0 + bass * 0.2 + mids * 0.1);
-    let spread = u.zoom_params.y * 0.1 * (1.0 + treble * 0.1);
-    let radius = max(u.zoom_params.z, 0.01);
-    let centerBias = u.zoom_params.w;
+    let nParams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let twist = nParams.x * TAU * 2.0 * (1.0 + bass * 0.2 + mids * 0.1);
+    let spread = nParams.y * 0.1 * (1.0 + treble * 0.1);
+    let radius = max(nParams.z, 0.01);
+    let centerBias = nParams.w;
 
     // Base color for alpha preservation
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-    let diff = uv - mousePos;
-    let dist = length(vec2<f32>(diff.x * aspect, diff.y));
-
-    var factor = smoothstep(radius, 0.0, dist);
-    let power = centerBias * 4.8 + 0.2;
-    factor = pow(factor, power);
-
-    let angleBase = factor * twist;
-    let angleR = angleBase - spread * factor * 10.0;
-    let angleG = angleBase;
-    let angleB = angleBase + spread * factor * 10.0;
-
-    let diffSq = vec2<f32>(diff.x * aspect, diff.y);
-
-    let rotR_sq = rotate(diffSq, angleR);
-    let rotG_sq = rotate(diffSq, angleG);
-    let rotB_sq = rotate(diffSq, angleB);
-
-    let rotR = vec2<f32>(rotR_sq.x / aspect, rotR_sq.y);
-    let rotG = vec2<f32>(rotG_sq.x / aspect, rotG_sq.y);
-    let rotB = vec2<f32>(rotB_sq.x / aspect, rotB_sq.y);
-
-    let uvR = clamp(mousePos + rotR, vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvG = clamp(mousePos + rotG, vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvB = clamp(mousePos + rotB, vec2<f32>(0.0), vec2<f32>(1.0));
-
-    let colR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
-    let colG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
-    let colB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
-
-    let chromaSplit = length(uvR - uvB);
-
-    // Alpha: preserve input transparency while blending vortex intensity
-    let finalAlpha = mix(baseColor.a, 1.0, factor * 0.7);
-
-    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, coord, vec4<f32>(colR, colG, colB, finalAlpha));
+    // Multi-vortex centers: mouse + an orbiting secondary center
+    let c1 = mousePos;
+    let c2 = vec2<f32>(0.5) + 0.35 * vec2<f32>(cos(time * 0.4 + bass * 2.0),
+                                                 sin(time * 0.3 + mids * 2.0));
+    let centers = array<vec2<f32>, 2>(c1, c2);
+    let weights = array<f32, 2>(1.0, 0.6);
+
+    var accColor = vec3<f32>(0.0);
+    var accWeight = 0.0;
+    var totalFactor = 0.0;
+
+    for (var i = 0; i < 2; i = i + 1) {
+        let center = centers[i];
+        let diff = uv - center;
+        let dist = length(vec2<f32>(diff.x * aspect, diff.y));
+
+        var factor = smoothstep(radius, 0.0, dist);
+        let power = centerBias * 4.8 + 0.2;
+        factor = pow(factor, power);
+
+        let angleBase = factor * twist;
+        let angleR = angleBase - spread * factor * 10.0;
+        let angleG = angleBase;
+        let angleB = angleBase + spread * factor * 10.0;
+
+        let diffA = vec2<f32>(diff.x * aspect, diff.y);
+        let rotR_sq = rotate(diffA, angleR);
+        let rotG_sq = rotate(diffA, angleG);
+        let rotB_sq = rotate(diffA, angleB);
+
+        let uvR = clamp(center + vec2<f32>(rotR_sq.x / aspect, rotR_sq.y),
+                        vec2<f32>(0.0), vec2<f32>(1.0));
+        let uvG = clamp(center + vec2<f32>(rotG_sq.x / aspect, rotG_sq.y),
+                        vec2<f32>(0.0), vec2<f32>(1.0));
+        let uvB = clamp(center + vec2<f32>(rotB_sq.x / aspect, rotB_sq.y),
+                        vec2<f32>(0.0), vec2<f32>(1.0));
+
+        let col = vec3<f32>(
+            textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
+            textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
+            textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
+        );
+
+        let w = weights[i] * (0.3 + factor);
+        accColor = accColor + col * w;
+        accWeight = accWeight + w;
+        totalFactor = totalFactor + factor * weights[i];
+    }
+
+    var color = accColor / max(accWeight, 1e-4);
+
+    // Spiral SDF mask overlaid across the frame
+    let spiralCenter = (uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+    let spiralDist = sdSpiral(spiralCenter, 3.0 + centerBias * 5.0,
+                              8.0 + twist * 0.5);
+    let spiralMask = smoothstep(0.15, 0.0, spiralDist);
+
+    // Spectral ramp driven by depth and vortex intensity
+    let ramp = spectralRamp(depth + totalFactor * 0.5 + time * 0.02);
+    color = mix(color, color * ramp + ramp * 0.2, spiralMask * 0.5 + totalFactor * 0.3);
+
+    // Alpha: preserve input transparency while blending vortex intensity
+    let finalAlpha = mix(baseColor.a, 1.0, clamp(totalFactor * 0.7, 0.0, 1.0));
+
+    textureStore(writeTexture, coord, vec4<f32>(color, finalAlpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0, 0, 1));
-    textureStore(dataTextureA, coord, vec4<f32>(colR, colG, colB, finalAlpha));
+    textureStore(dataTextureA, coord, vec4<f32>(color, finalAlpha));
 }

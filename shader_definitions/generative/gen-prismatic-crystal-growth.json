@@ -1,17 +1,6 @@
 {
-  "id": "gen-prismatic-crystal-growth",
   "name": "Prismatic Crystal Growth",
-  "url": "shaders/gen-prismatic-crystal-growth.wgsl",
-  "description": "SDF crystal lattice that grows over time with Fresnel reflectance for glass-like translucency. Alpha encodes crystal thickness \u2014 thin edges are transparent, thick centers opaque. Audio drives growth rate and crystal rotation.",
-  "features": [
-    "audio-reactive",
-    "chromatic-aberration",
-    "mouse-driven",
-    "raymarched",
-    "temporal",
-    "upgraded-rgba",
-    "distance-lod"
-  ],
+  "category": "generative",
   "tags": [
     "crystal",
     "prismatic",
@@ -20,42 +9,50 @@
     "growth",
     "sdf"
   ],
-  "params": [
+  "description": "SDF crystal lattice that grows over time with Fresnel reflectance for glass-like translucency. Alpha encodes crystal thickness \u2014 thin edges are transparent, thick centers opaque. Audio drives growth rate and crystal rotation.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "growth_rate",
+      "index": 0,
       "name": "Growth Rate",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "density",
+      "index": 1,
       "name": "Crystal Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "prism",
+      "index": 2,
       "name": "Prism Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "caustics",
+      "index": 3,
       "name": "Caustic Strength",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-prismatic-crystal-growth",
+  "url": "shaders/gen-prismatic-crystal-growth.wgsl",
+  "features": []
 }

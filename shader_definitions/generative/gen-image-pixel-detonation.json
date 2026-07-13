@@ -1,0 +1,63 @@
+{
+  "name": "4th of July \u2014 Pixel Detonation",
+  "category": "generative",
+  "tags": [
+    "fireworks",
+    "image-reactive",
+    "pixel-flight",
+    "detonation",
+    "pyrotechnics",
+    "photo-burst",
+    "depth-aware",
+    "audio-reactive",
+    "celebration",
+    "4th-of-july",
+    "july-4"
+  ],
+  "description": "Your image detonates from within. Bright pixels and edges become launch cores \u2014 each spark lifts a fragment of the source photo into gravity arcs, recoloring and fading as it falls. Foreground depth elements launch higher and faster. The picture progressively dissolves into its own celebratory fireworks while revealing ghostly trails of what was there. Bass triggers larger detonations, treble adds pixel crackle. Mouse ignites a focused pixel barrage at the cursor.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Burst Power",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Ignition",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Pixel Lift",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Trail Fade",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-image-pixel-detonation",
+  "url": "shaders/gen-image-pixel-detonation.wgsl",
+  "features": []
+}

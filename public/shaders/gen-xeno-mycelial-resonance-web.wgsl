@@ -2,10 +2,10 @@
 // Xeno-Mycelial Resonance-Web
 // Category: generative
 // Features: raymarched, mouse-driven, audio-reactive, depth-aware,
-//           upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
+//           upgraded-rgba, aces-tone-map, temporal-feedback, gravity-wells,
+//           mouse-attractors, feedback-accumulation, chromatic-aberration
 // Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-// Upgraded: 2026-06-14
-// By: Claude Code Batch 3B
+// Upgraded: 2026-06-28 — Interactivist Batch (gravity wells + feedback loops)
 // ----------------------------------------------------------------
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -67,21 +67,41 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-// Organic Mycelial SDF
-fn map(pos: vec3<f32>) -> f32 {
+// ─── Gravity well: pulls SDF space toward mouse ───
+fn gravityWell(p: vec3<f32>, mousePos: vec3<f32>, strength: f32) -> vec3<f32> {
+    let d = length(p - mousePos);
+    let pull = strength / (d * d + 0.5);
+    return p - normalize(p - mousePos + 0.001) * pull;
+}
+
+// Organic Mycelial SDF with gravity and attractor
+fn map(pos: vec3<f32>, time: f32) -> f32 {
     var p = pos;
+    // Mouse in 3D: screen-top (zoom_config.z=0) = +Y/up
+    let mousePos = vec3<f32>((u.zoom_config.y - 0.5) * 8.0, (0.5 - u.zoom_config.z) * 8.0, 0.0);
+
+    // Gravity well + mouse attractor
+    let gravStrength = u.zoom_params.w * 2.0 + plasmaBuffer[0].x * 1.5;
+    p = gravityWell(p, mousePos, gravStrength);
+
+    // Audio-reactive mouse repulsion rings
+    let mouseDist = length(p.xy - mousePos.xy);
+    let repulseRing = sin(mouseDist * 5.0 - time * 3.0) * 0.1 * plasmaBuffer[0].x;
+    p.z += repulseRing * u.zoom_params.w;
+
     // Domain repetition
     p = (fract(p / u.zoom_params.x + 0.5) - 0.5) * u.zoom_params.x;
 
     var d = 100.0;
 
-    // Branching KIFS
+    // Branching KIFS with audio-reactive angle
+    let bassAngle = plasmaBuffer[0].x * 0.3;
     for (var i = 0; i < 4; i++) {
         p = abs(p) - 0.3;
-        let pXY = rot2(0.5) * p.xy;
+        let pXY = rot2(0.5 + bassAngle) * p.xy;
         p.x = pXY.x;
         p.y = pXY.y;
-        let pYZ = rot2(1.2) * p.yz;
+        let pYZ = rot2(1.2 + bassAngle * 0.5) * p.yz;
         p.y = pYZ.x;
         p.z = pYZ.y;
 
@@ -91,20 +111,20 @@ fn map(pos: vec3<f32>) -> f32 {
 
     // Audio reactive swelling — bass via plasmaBuffer
     let bassMap = plasmaBuffer[0].x;
-    let pulse = sin(pos.z * 5.0 - u.config.x * u.zoom_params.w) * 0.5 + 0.5;
+    let pulse = sin(pos.z * 5.0 - time * u.zoom_params.w) * 0.5 + 0.5;
     d -= pulse * bassMap * 0.15;
 
     return d;
 }
 
 // Normal Calculation
-fn calcNormal(p: vec3<f32>) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>, time: f32) -> vec3<f32> {
     let e = vec2<f32>(1.0, -1.0) * 0.5773 * 0.0005;
     return normalize(
-        e.xyy * map(p + e.xyy) +
-        e.yyx * map(p + e.yyx) +
-        e.yxy * map(p + e.yxy) +
-        e.xxx * map(p + e.xxx)
+        e.xyy * map(p + e.xyy, time) +
+        e.yyx * map(p + e.yyx, time) +
+        e.yxy * map(p + e.yxy, time) +
+        e.xxx * map(p + e.xxx, time)
     );
 }
 
@@ -115,16 +135,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (coords.x >= i32(res.x) || coords.y >= i32(res.y)) { return; }
 
     let uv = (vec2<f32>(coords) - 0.5 * res) / res.y;
+    let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
 
     // Camera setup
-    var ro = vec3<f32>(0.0, 0.0, -3.0 + u.config.x * 0.5);
+    var ro = vec3<f32>(0.0, 0.0, -3.0 + time * 0.5);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
-    let bass = plasmaBuffer[0].x;
-
-    // Mouse Rotation
+    // Mouse Rotation (Y-flipped: screen-top = +Y/up)
     let mouseX = (u.zoom_config.y - 0.5) * TAU;
-    let mouseY = (u.zoom_config.z - 0.5) * PI;
+    let mouseY = (0.5 - u.zoom_config.z) * PI;
 
     let roYZ = rot2(-mouseY) * ro.yz;
     ro.y = roYZ.x;
@@ -146,9 +167,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var d = 0.0;
     for (var i = 0; i < 80; i++) {
         let p = ro + rd * t;
-        d = map(p);
+        d = map(p, time);
         if (d < 0.001 || t > max_t) { break; }
-        t += d * 0.7; // step cautiously for smin
+        t += d * 0.7;
     }
 
     var col = vec3<f32>(0.0);
@@ -158,13 +179,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (t < max_t) {
         hit = 1.0;
         let p = ro + rd * t;
-        let n = calcNormal(p);
+        let n = calcNormal(p, time);
 
         // Base color based on hue slider — TAU constant
         let base_col = 0.5 + 0.5 * cos(TAU * (u.zoom_params.z + vec3<f32>(0.0, 0.33, 0.67)));
 
         // Bioluminescent Glow — bass-driven from plasmaBuffer
-        let pulse = sin(p.z * 5.0 - u.config.x * u.zoom_params.w) * 0.5 + 0.5;
+        let pulse = sin(p.z * 5.0 - time * u.zoom_params.w) * 0.5 + 0.5;
         glow = pow(pulse, 4.0) * (0.5 + bass * 2.0);
 
         col = base_col * (0.2 + glow);
@@ -174,13 +195,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let diff = max(dot(n, lightDir), 0.0);
         col += diff * 0.1 * base_col;
 
+        // Mouse-proximity chromatic enhancement
+        let mousePos = vec3<f32>((u.zoom_config.y - 0.5) * 8.0, (0.5 - u.zoom_config.z) * 8.0, 0.0);
+        let mDist = length(p - mousePos);
+        let mProx = exp(-mDist * 1.5);
+        col += vec3<f32>(0.4, 0.1, 0.3) * mProx * bass * 2.0;
+
         // Beer-Lambert fog
         col = mix(col, vec3<f32>(0.01, 0.0, 0.02), 1.0 - exp(-0.15 * t));
     }
 
     // ═══ CHUNK: temporal-feedback (dataTextureC → dataTextureA) ═══
     let prev = textureLoad(dataTextureC, coords, 0);
-    col = mix(col, prev.rgb * 0.92, 0.05 + bass * 0.01);
+    // Feedback accumulation with audio-reactive blend
+    let fbStrength = 0.05 + bass * 0.02 + mids * 0.01;
+    col = mix(col, prev.rgb * 0.92, fbStrength);
 
     // ═══ CHUNK: chromatic-aberration ═══
     let caStr = 0.003 * (1.0 + bass) + glow * 0.001;

@@ -243,6 +243,65 @@
     ]
   },
   {
+    "id": "anamorphic-flare-iridescence",
+    "name": "Anamorphic Flare Iridescence",
+    "url": "shaders/anamorphic-flare-iridescence.wgsl",
+    "description": "Anamorphic Flare Iridescence",
+    "tags": [
+      "lens-flare",
+      "thin-film-interference",
+      "spectral-render",
+      "mouse-driven",
+      "HDR"
+    ],
+    "features": [
+      "lens-flare",
+      "thin-film-interference",
+      "spectral-render",
+      "mouse-driven",
+      "HDR"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "anisotropic-kuwahara-nlm",
     "name": "Anisotropic Kuwahara + NLM",
     "url": "shaders/anisotropic-kuwahara-nlm.wgsl",
@@ -354,6 +413,63 @@
       }
     ],
     "target_rating": 4.5
+  },
+  {
+    "id": "astral-kaleidoscope-julia",
+    "name": "Astral Kaleidoscope Julia",
+    "url": "shaders/astral-kaleidoscope-julia.wgsl",
+    "description": "Astral Kaleidoscope Julia",
+    "tags": [
+      "kaleidoscope",
+      "quaternion-julia",
+      "raymarching",
+      "depth-aware"
+    ],
+    "features": [
+      "kaleidoscope",
+      "quaternion-julia",
+      "raymarching",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "astral-kaleidoscope-morph",
@@ -974,6 +1090,61 @@
     "target_rating": 4.8
   },
   {
+    "id": "bismuth-crystal-growth",
+    "name": "Bismuth Crystal Growth",
+    "url": "shaders/bismuth-crystal-growth.wgsl",
+    "description": "Bismuth Crystal Growth",
+    "tags": [
+      "phase-field-crystal",
+      "hopper-crystals",
+      "iridescence"
+    ],
+    "features": [
+      "phase-field-crystal",
+      "hopper-crystals",
+      "iridescence"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "black-hole-iridescence",
     "name": "Black Hole Iridescence",
     "url": "shaders/black-hole-iridescence.wgsl",
@@ -1189,6 +1360,65 @@
         "step": 0.01
       }
     ]
+  },
+  {
+    "id": "breathing-kaleidoscope-morph",
+    "name": "Breathing Kaleidoscope Morph",
+    "url": "shaders/breathing-kaleidoscope-morph.wgsl",
+    "description": "Breathing Kaleidoscope Morph",
+    "tags": [
+      "kaleidoscope",
+      "morphological",
+      "erosion-dilation",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "features": [
+      "kaleidoscope",
+      "morphological",
+      "erosion-dilation",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "bubble-lens-coupled",
@@ -1439,6 +1669,340 @@
     "target_rating": 4.5
   },
   {
+    "id": "chroma-depth-tunnel-prismatic",
+    "name": "Chroma Depth Tunnel Prismatic",
+    "url": "shaders/chroma-depth-tunnel-prismatic.wgsl",
+    "description": "Chroma Depth Tunnel Prismatic",
+    "tags": [
+      "chroma-depth-tunnel",
+      "spec-prismatic-dispersion",
+      "depth-aware"
+    ],
+    "features": [
+      "chroma-depth-tunnel",
+      "spec-prismatic-dispersion",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "chroma-kinetic-blackbody",
+    "name": "Chroma Kinetic Blackbody",
+    "url": "shaders/chroma-kinetic-blackbody.wgsl",
+    "description": "Chroma Kinetic Blackbody",
+    "tags": [
+      "chroma-kinetic",
+      "blackbody-thermal",
+      "physical-color"
+    ],
+    "features": [
+      "chroma-kinetic",
+      "blackbody-thermal",
+      "physical-color"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "chroma-lens-iridescence",
+    "name": "Chroma Lens Iridescence",
+    "url": "shaders/chroma-lens-iridescence.wgsl",
+    "description": "Chroma Lens Iridescence",
+    "tags": [
+      "chroma-lens",
+      "thin-film-interference",
+      "depth-aware",
+      "mouse-driven"
+    ],
+    "features": [
+      "chroma-lens",
+      "thin-film-interference",
+      "depth-aware",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "chroma-threads-gabor",
+    "name": "Chroma Threads Gabor",
+    "url": "shaders/chroma-threads-gabor.wgsl",
+    "description": "Catalog entry for Chroma Threads Gabor.",
+    "tags": [
+      "chroma-threads",
+      "gabor-texture-analysis",
+      "mouse-driven"
+    ],
+    "features": [
+      "chroma-threads",
+      "gabor-texture-analysis",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "chroma-vortex-coupled",
+    "name": "Chroma Vortex Coupled",
+    "url": "shaders/chroma-vortex-coupled.wgsl",
+    "description": "Chroma Vortex Coupled",
+    "tags": [
+      "chroma-vortex",
+      "fluid-coupling",
+      "mouse-driven",
+      "temporal"
+    ],
+    "features": [
+      "chroma-vortex",
+      "fluid-coupling",
+      "mouse-driven",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "chromatic-crawler-structure",
+    "name": "Chromatic Crawler Structure",
+    "url": "shaders/chromatic-crawler-structure.wgsl",
+    "description": "Chromatic Crawler Structure",
+    "tags": [
+      "chromatic-crawler",
+      "structure-tensor-flow",
+      "temporal"
+    ],
+    "features": [
+      "chromatic-crawler",
+      "structure-tensor-flow",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "chromatic-focus-coupled",
     "name": "Chromatic Focus Coupled",
     "url": "shaders/chromatic-focus-coupled.wgsl",
@@ -1486,6 +2050,116 @@
       "depth-of-field",
       "interactive"
     ]
+  },
+  {
+    "id": "chromatic-focus-guided",
+    "name": "Chromatic Focus Guided",
+    "url": "shaders/chromatic-focus-guided.wgsl",
+    "description": "Chromatic Focus Guided",
+    "tags": [
+      "chromatic-focus",
+      "guided-filter-depth",
+      "depth-aware"
+    ],
+    "features": [
+      "chromatic-focus",
+      "guided-filter-depth",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "chromatic-folds-bilateral",
+    "name": "Chromatic Folds Bilateral",
+    "url": "shaders/chromatic-folds-bilateral.wgsl",
+    "description": "Chromatic Folds Bilateral",
+    "tags": [
+      "chromatic-folds",
+      "bilateral-dream",
+      "hue-manipulation"
+    ],
+    "features": [
+      "chromatic-folds",
+      "bilateral-dream",
+      "hue-manipulation"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "chromatic-reaction-diffusion",
@@ -1556,6 +2230,63 @@
       "music",
       "reactive"
     ]
+  },
+  {
+    "id": "chronos-brush-explosion",
+    "name": "Chronos Brush Explosion",
+    "url": "shaders/chronos-brush-explosion.wgsl",
+    "description": "Chronos Brush Explosion",
+    "tags": [
+      "time-freeze",
+      "chromatic-explosion",
+      "mouse-driven",
+      "temporal"
+    ],
+    "features": [
+      "time-freeze",
+      "chromatic-explosion",
+      "mouse-driven",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "circuit-breaker-explosion",
@@ -1656,6 +2387,118 @@
     ]
   },
   {
+    "id": "cosmic-jellyfish-coupled",
+    "name": "Cosmic Jellyfish Coupled",
+    "url": "shaders/cosmic-jellyfish-coupled.wgsl",
+    "description": "Cosmic Jellyfish Coupled",
+    "tags": [
+      "raymarching",
+      "fluid-coupling",
+      "mouse-driven",
+      "bioluminescent"
+    ],
+    "features": [
+      "raymarching",
+      "fluid-coupling",
+      "mouse-driven",
+      "bioluminescent"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "cosmic-web-structure",
+    "name": "Cosmic Web Structure",
+    "url": "shaders/cosmic-web-structure.wgsl",
+    "description": "Catalog entry for Cosmic Web Structure.",
+    "tags": [
+      "voronoi-filaments",
+      "structure-tensor",
+      "lic-flow"
+    ],
+    "features": [
+      "voronoi-filaments",
+      "structure-tensor",
+      "lic-flow"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "crt-tv-stipple",
     "name": "CRT TV Stipple",
     "url": "shaders/crt-tv-stipple.wgsl",
@@ -1728,6 +2571,684 @@
       "phosphor",
       "vintage"
     ]
+  },
+  {
+    "id": "crystal-illuminator-iridescence",
+    "name": "Crystal Illuminator Iridescence",
+    "url": "shaders/crystal-illuminator-iridescence.wgsl",
+    "description": "Crystal Illuminator Iridescence",
+    "tags": [
+      "voronoi-facets",
+      "thin-film-interference",
+      "fresnel"
+    ],
+    "features": [
+      "voronoi-facets",
+      "thin-film-interference",
+      "fresnel"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "cursor-aura-explosion",
+    "name": "Cursor Aura Explosion",
+    "url": "shaders/cursor-aura-explosion.wgsl",
+    "description": "Cursor Aura Explosion",
+    "tags": [
+      "mouse-driven",
+      "chromatic-aberration",
+      "prism",
+      "glow"
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic-aberration",
+      "prism",
+      "glow"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "cyber-lattice-bilateral",
+    "name": "Cyber Lattice Bilateral",
+    "url": "shaders/cyber-lattice-bilateral.wgsl",
+    "description": "Cyber Lattice Bilateral",
+    "tags": [
+      "mouse-driven",
+      "bilateral-filter",
+      "grid-distortion",
+      "dreamy"
+    ],
+    "features": [
+      "mouse-driven",
+      "bilateral-filter",
+      "grid-distortion",
+      "dreamy"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "cyber-organic-ecosystem",
+    "name": "Cyber Organic Ecosystem",
+    "url": "shaders/cyber-organic-ecosystem.wgsl",
+    "description": "Cyber Organic Ecosystem",
+    "tags": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine",
+      "organic"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine",
+      "organic"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "cyber-rain-em",
+    "name": "Cyber Rain Em",
+    "url": "shaders/cyber-rain-em.wgsl",
+    "description": "Catalog entry for Cyber Rain Em.",
+    "tags": [
+      "mouse-driven",
+      "cyber-rain",
+      "electromagnetic-field",
+      "chromatic"
+    ],
+    "features": [
+      "mouse-driven",
+      "cyber-rain",
+      "electromagnetic-field",
+      "chromatic"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "cyber-ripples-coupled",
+    "name": "Cyber Ripples Coupled",
+    "url": "shaders/cyber-ripples-coupled.wgsl",
+    "description": "Cyber Ripples Coupled",
+    "tags": [
+      "mouse-driven",
+      "digital-ripples",
+      "fluid-coupling",
+      "temporal"
+    ],
+    "features": [
+      "mouse-driven",
+      "digital-ripples",
+      "fluid-coupling",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "cyber-scan-gabor",
+    "name": "Cyber Scan Gabor",
+    "url": "shaders/cyber-scan-gabor.wgsl",
+    "description": "Catalog entry for Cyber Scan Gabor.",
+    "tags": [
+      "cyber-scan",
+      "gabor-filter-bank",
+      "advanced-convolution",
+      "mouse-driven"
+    ],
+    "features": [
+      "cyber-scan",
+      "gabor-filter-bank",
+      "advanced-convolution",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "cyber-trace-structure",
+    "name": "Cyber Trace Structure",
+    "url": "shaders/cyber-trace-structure.wgsl",
+    "description": "Cyber Trace Structure",
+    "tags": [
+      "mouse-driven",
+      "cyber-trace",
+      "structure-tensor",
+      "lic-flow"
+    ],
+    "features": [
+      "mouse-driven",
+      "cyber-trace",
+      "structure-tensor",
+      "lic-flow"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "data-scanner-gabor",
+    "name": "Data Scanner Gabor",
+    "url": "shaders/data-scanner-gabor.wgsl",
+    "description": "Catalog entry for Data Scanner Gabor.",
+    "tags": [
+      "mouse-driven",
+      "gabor-filter-bank",
+      "edge-detection"
+    ],
+    "features": [
+      "mouse-driven",
+      "gabor-filter-bank",
+      "edge-detection"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "data-stream-corruption-hdr",
+    "name": "Data Stream Corruption Hdr",
+    "url": "shaders/data-stream-corruption-hdr.wgsl",
+    "description": "Data Stream Corruption Hdr",
+    "tags": [
+      "mouse-driven",
+      "data-stream-corruption",
+      "hdr-bloom",
+      "temporal"
+    ],
+    "features": [
+      "mouse-driven",
+      "data-stream-corruption",
+      "hdr-bloom",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "data-stream-spectral",
+    "name": "Data Stream Spectral",
+    "url": "shaders/data-stream-spectral.wgsl",
+    "description": "Catalog entry for Data Stream Spectral.",
+    "tags": [
+      "mouse-driven",
+      "data-stream",
+      "spectral-decomposition"
+    ],
+    "features": [
+      "mouse-driven",
+      "data-stream",
+      "spectral-decomposition"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "data-stream-structure",
+    "name": "Data Stream Structure",
+    "url": "shaders/data-stream-structure.wgsl",
+    "description": "Data Stream Structure",
+    "tags": [
+      "mouse-driven",
+      "structure-tensor",
+      "LIC",
+      "glitch"
+    ],
+    "features": [
+      "mouse-driven",
+      "structure-tensor",
+      "LIC",
+      "glitch"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "datamosh-brush-diffusion",
@@ -1926,6 +3447,405 @@
     ]
   },
   {
+    "id": "digital-glitch-explosion",
+    "name": "Digital Glitch Explosion",
+    "url": "shaders/digital-glitch-explosion.wgsl",
+    "description": "Digital Glitch Explosion",
+    "tags": [
+      "mouse-driven",
+      "digital-glitch",
+      "chromatic-explosion",
+      "bit-corruption"
+    ],
+    "features": [
+      "mouse-driven",
+      "digital-glitch",
+      "chromatic-explosion",
+      "bit-corruption"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "digital-lens-prismatic",
+    "name": "Digital Lens Prismatic",
+    "url": "shaders/digital-lens-prismatic.wgsl",
+    "description": "Digital Lens Prismatic",
+    "tags": [
+      "mouse-driven",
+      "spectral-rendering",
+      "pixelation",
+      "physical-dispersion"
+    ],
+    "features": [
+      "mouse-driven",
+      "spectral-rendering",
+      "pixelation",
+      "physical-dispersion"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "digital-moss-rgba",
+    "name": "Digital Moss Rgba",
+    "url": "shaders/digital-moss-rgba.wgsl",
+    "description": "Catalog entry for Digital Moss Rgba.",
+    "tags": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine",
+      "organic"
+    ],
+    "features": [
+      "mouse-driven",
+      "temporal",
+      "rgba-state-machine",
+      "organic"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "digital-reveal-guided",
+    "name": "Digital Reveal Guided",
+    "url": "shaders/digital-reveal-guided.wgsl",
+    "description": "Digital Reveal Guided",
+    "tags": [
+      "mouse-driven",
+      "digital-reveal",
+      "guided-filter",
+      "depth-aware"
+    ],
+    "features": [
+      "mouse-driven",
+      "digital-reveal",
+      "guided-filter",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "dimension-slicer-guided",
+    "name": "Dimension Slicer Guided",
+    "url": "shaders/dimension-slicer-guided.wgsl",
+    "description": "Dimension Slicer Guided",
+    "tags": [
+      "dimensional-slice",
+      "guided-filter",
+      "depth-aware",
+      "edge-preserving",
+      "mouse-driven"
+    ],
+    "features": [
+      "dimensional-slice",
+      "guided-filter",
+      "depth-aware",
+      "edge-preserving",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "distortion-gravitational-prismatic",
+    "name": "Distortion Gravitational Prismatic",
+    "url": "shaders/distortion-gravitational-prismatic.wgsl",
+    "description": "Distortion Gravitational Prismatic",
+    "tags": [
+      "gravitational-lensing",
+      "spectral-dispersion",
+      "physical-refraction"
+    ],
+    "features": [
+      "gravitational-lensing",
+      "spectral-dispersion",
+      "physical-refraction"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "divine-light-iridescence",
+    "name": "Divine Light Iridescence",
+    "url": "shaders/divine-light-iridescence.wgsl",
+    "description": "Divine Light Iridescence",
+    "tags": [
+      "god-rays",
+      "thin-film-interference",
+      "volumetric-light",
+      "mouse-driven"
+    ],
+    "features": [
+      "god-rays",
+      "thin-film-interference",
+      "volumetric-light",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "double-exposure-hdr",
     "name": "Double Exposure HDR",
     "url": "shaders/double-exposure-hdr.wgsl",
@@ -1975,6 +3895,177 @@
       "ghostly"
     ],
     "target_rating": 4.5
+  },
+  {
+    "id": "dynamic-lens-flares-prismatic",
+    "name": "Dynamic Lens Flares Prismatic",
+    "url": "shaders/dynamic-lens-flares-prismatic.wgsl",
+    "description": "Dynamic Lens Flares Prismatic",
+    "tags": [
+      "lens-flares",
+      "prismatic-dispersion",
+      "spectral-rendering",
+      "mouse-driven"
+    ],
+    "features": [
+      "lens-flares",
+      "prismatic-dispersion",
+      "spectral-rendering",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "edge-glow-mouse-em",
+    "name": "Edge Glow Mouse Em",
+    "url": "shaders/edge-glow-mouse-em.wgsl",
+    "description": "Catalog entry for Edge Glow Mouse Em.",
+    "tags": [
+      "edge-detection",
+      "electromagnetic-field",
+      "mouse-driven",
+      "chromatic"
+    ],
+    "features": [
+      "edge-detection",
+      "electromagnetic-field",
+      "mouse-driven",
+      "chromatic"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "elastic-chromatic-explosion",
+    "name": "Elastic Chromatic Explosion",
+    "url": "shaders/elastic-chromatic-explosion.wgsl",
+    "description": "Elastic Chromatic Explosion",
+    "tags": [
+      "chromatic-lag",
+      "prism-explosion",
+      "mouse-driven",
+      "temporal"
+    ],
+    "features": [
+      "chromatic-lag",
+      "prism-explosion",
+      "mouse-driven",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "encaustic-wax-blackbody",
@@ -2029,6 +4120,63 @@
     "target_rating": 4.6
   },
   {
+    "id": "energy-shield-blackbody",
+    "name": "Energy Shield Blackbody",
+    "url": "shaders/energy-shield-blackbody.wgsl",
+    "description": "Energy Shield Blackbody",
+    "tags": [
+      "hex-grid",
+      "blackbody-thermal",
+      "mouse-driven",
+      "HDR"
+    ],
+    "features": [
+      "hex-grid",
+      "blackbody-thermal",
+      "mouse-driven",
+      "HDR"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "engraving-stipple-blue-noise",
     "name": "Engraving Stipple Blue Noise",
     "url": "shaders/engraving-stipple-blue-noise.wgsl",
@@ -2078,6 +4226,65 @@
       "dithering"
     ],
     "target_rating": 4.6
+  },
+  {
+    "id": "ethereal-swirl-coupled",
+    "name": "Ethereal Swirl Coupled",
+    "url": "shaders/ethereal-swirl-coupled.wgsl",
+    "description": "Ethereal Swirl Coupled",
+    "tags": [
+      "fluid-coupling",
+      "fractal-swirl",
+      "temporal",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "features": [
+      "fluid-coupling",
+      "fractal-swirl",
+      "temporal",
+      "mouse-driven",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "fabric-step-gabor",
@@ -2131,6 +4338,179 @@
       "physics"
     ],
     "target_rating": 4.6
+  },
+  {
+    "id": "ferrofluid-em",
+    "name": "Ferrofluid Em",
+    "url": "shaders/ferrofluid-em.wgsl",
+    "description": "Catalog entry for Ferrofluid Em.",
+    "tags": [
+      "ferrofluid-distortion",
+      "em-field-visualization",
+      "mouse-driven"
+    ],
+    "features": [
+      "ferrofluid-distortion",
+      "em-field-visualization",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "fire-smoke-volumetric-fog",
+    "name": "Fire Smoke Volumetric Fog",
+    "url": "shaders/fire-smoke-volumetric-fog.wgsl",
+    "description": "Fire Smoke Volumetric Fog",
+    "tags": [
+      "fire",
+      "smoke",
+      "volumetric-fog",
+      "blackbody",
+      "depth-aware",
+      "atmospheric"
+    ],
+    "features": [
+      "fire",
+      "smoke",
+      "volumetric-fog",
+      "blackbody",
+      "depth-aware",
+      "atmospheric"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "fluid-grid-rgba-fluid",
+    "name": "Fluid Grid Rgba Fluid",
+    "url": "shaders/fluid-grid-rgba-fluid.wgsl",
+    "description": "Fluid Grid Rgba Fluid",
+    "tags": [
+      "fluid-simulation",
+      "grid-distortion",
+      "rgba-state-machine",
+      "mouse-driven"
+    ],
+    "features": [
+      "fluid-simulation",
+      "grid-distortion",
+      "rgba-state-machine",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "fractal-boids-field-coupled",
@@ -2282,6 +4662,460 @@
       "music",
       "reactive"
     ]
+  },
+  {
+    "id": "fractal-glass-distort-bilateral",
+    "name": "Fractal Glass Distort Bilateral",
+    "url": "shaders/fractal-glass-distort-bilateral.wgsl",
+    "description": "Fractal Glass Distort Bilateral",
+    "tags": [
+      "fractal-glass-distortion",
+      "bilateral-filter",
+      "mouse-driven"
+    ],
+    "features": [
+      "fractal-glass-distortion",
+      "bilateral-filter",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "fractal-noise-dissolve-nlm",
+    "name": "Fractal Noise Dissolve Nlm",
+    "url": "shaders/fractal-noise-dissolve-nlm.wgsl",
+    "description": "Fractal Noise Dissolve Nlm",
+    "tags": [
+      "fractal-dissolve",
+      "non-local-means",
+      "self-similarity-map"
+    ],
+    "features": [
+      "fractal-dissolve",
+      "non-local-means",
+      "self-similarity-map"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "frost-reveal-crystal",
+    "name": "Frost Reveal Crystal",
+    "url": "shaders/frost-reveal-crystal.wgsl",
+    "description": "Catalog entry for Frost Reveal Crystal.",
+    "tags": [
+      "frost-reveal",
+      "crystal-growth",
+      "temporal",
+      "mouse-driven"
+    ],
+    "features": [
+      "frost-reveal",
+      "crystal-growth",
+      "temporal",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "frosted-glass-lens-iridescence",
+    "name": "Frosted Glass Lens Iridescence",
+    "url": "shaders/frosted-glass-lens-iridescence.wgsl",
+    "description": "Frosted Glass Lens Iridescence",
+    "tags": [
+      "frosted-glass",
+      "thin-film-interference",
+      "depth-aware",
+      "mouse-driven"
+    ],
+    "features": [
+      "frosted-glass",
+      "thin-film-interference",
+      "depth-aware",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "gamma-ray-burst-blackbody",
+    "name": "Gamma Ray Burst Blackbody",
+    "url": "shaders/gamma-ray-burst-blackbody.wgsl",
+    "description": "Gamma Ray Burst Blackbody",
+    "tags": [
+      "radial-blur",
+      "blackbody-thermal",
+      "mouse-driven",
+      "HDR",
+      "exposure-burst"
+    ],
+    "features": [
+      "radial-blur",
+      "blackbody-thermal",
+      "mouse-driven",
+      "HDR",
+      "exposure-burst"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "gemstone-fractures-crystal",
+    "name": "Gemstone Fractures Crystal",
+    "url": "shaders/gemstone-fractures-crystal.wgsl",
+    "description": "Gemstone Fractures Crystal",
+    "tags": [
+      "voronoi-shards",
+      "crystal-growth",
+      "physical-refraction",
+      "temporal"
+    ],
+    "features": [
+      "voronoi-shards",
+      "crystal-growth",
+      "physical-refraction",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "gen-abyssal-leviathan-iridescence",
+    "name": "Gen Abyssal Leviathan Iridescence",
+    "url": "shaders/gen-abyssal-leviathan-iridescence.wgsl",
+    "description": "Gen Abyssal Leviathan Iridescence",
+    "tags": [
+      "raymarching",
+      "thin-film-interference",
+      "spectral-render",
+      "mouse-driven"
+    ],
+    "features": [
+      "raymarching",
+      "thin-film-interference",
+      "spectral-render",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "gen-art-deco-sky-prismatic",
+    "name": "Gen Art Deco Sky Prismatic",
+    "url": "shaders/gen-art-deco-sky-prismatic.wgsl",
+    "description": "Gen Art Deco Sky Prismatic",
+    "tags": [
+      "raymarching",
+      "spectral-dispersion",
+      "physical-refraction",
+      "mouse-driven"
+    ],
+    "features": [
+      "raymarching",
+      "spectral-dispersion",
+      "physical-refraction",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "gen-astro-orrery-blackbody",
@@ -2447,6 +5281,179 @@
     ]
   },
   {
+    "id": "gen-bismuth-citadel-crystal",
+    "name": "Gen Bismuth Citadel Crystal",
+    "url": "shaders/gen-bismuth-citadel-crystal.wgsl",
+    "description": "Gen Bismuth Citadel Crystal",
+    "tags": [
+      "raymarching",
+      "crystal-growth",
+      "phase-field",
+      "iridescence",
+      "temporal"
+    ],
+    "features": [
+      "raymarching",
+      "crystal-growth",
+      "phase-field",
+      "iridescence",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "gen-neural-fractal-hdr",
+    "name": "Gen Neural Fractal Hdr",
+    "url": "shaders/gen-neural-fractal-hdr.wgsl",
+    "description": "Gen Neural Fractal Hdr",
+    "tags": [
+      "generative",
+      "neural-fractal",
+      "HDR-bloom",
+      "tone-mapped"
+    ],
+    "features": [
+      "generative",
+      "neural-fractal",
+      "HDR-bloom",
+      "tone-mapped"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "gen-quasicrystal-iridescence",
+    "name": "Gen Quasicrystal Iridescence",
+    "url": "shaders/gen-quasicrystal-iridescence.wgsl",
+    "description": "Gen Quasicrystal Iridescence",
+    "tags": [
+      "generative",
+      "quasicrystal",
+      "thin-film-interference",
+      "spectral"
+    ],
+    "features": [
+      "generative",
+      "quasicrystal",
+      "thin-film-interference",
+      "spectral"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "gen-raptor-mini-flow",
     "name": "Raptor Mini Flow",
     "url": "shaders/gen-raptor-mini-flow.wgsl",
@@ -2499,6 +5506,120 @@
         "step": 0.01
       }
     ]
+  },
+  {
+    "id": "gen-singularity-forge-blackbody",
+    "name": "Gen Singularity Forge Blackbody",
+    "url": "shaders/gen-singularity-forge-blackbody.wgsl",
+    "description": "Gen Singularity Forge Blackbody",
+    "tags": [
+      "generative",
+      "raymarched",
+      "blackbody-radiation",
+      "HDR"
+    ],
+    "features": [
+      "generative",
+      "raymarched",
+      "blackbody-radiation",
+      "HDR"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "gen-string-theory-structure",
+    "name": "Gen String Theory Structure",
+    "url": "shaders/gen-string-theory-structure.wgsl",
+    "description": "Gen String Theory Structure",
+    "tags": [
+      "generative",
+      "wave-equation",
+      "structure-tensor",
+      "LIC"
+    ],
+    "features": [
+      "generative",
+      "wave-equation",
+      "structure-tensor",
+      "LIC"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "gen-xeno-botanical-ecosystem",
@@ -3041,6 +6162,118 @@
     ]
   },
   {
+    "id": "gravity-well-em",
+    "name": "Gravity Well Em",
+    "url": "shaders/gravity-well-em.wgsl",
+    "description": "Catalog entry for Gravity Well Em.",
+    "tags": [
+      "gravitational-lensing",
+      "electromagnetic-fields",
+      "chromatic"
+    ],
+    "features": [
+      "gravitational-lensing",
+      "electromagnetic-fields",
+      "chromatic"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "heat-haze-volumetric",
+    "name": "Heat Haze Volumetric",
+    "url": "shaders/heat-haze-volumetric.wgsl",
+    "description": "Catalog entry for Heat Haze Volumetric.",
+    "tags": [
+      "heat-diffusion",
+      "volumetric-fog",
+      "refraction",
+      "depth-aware"
+    ],
+    "features": [
+      "heat-diffusion",
+      "volumetric-fog",
+      "refraction",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "holographic-failure-iridescence",
     "name": "Holographic Failure Iridescence",
     "url": "shaders/holographic-failure-iridescence.wgsl",
@@ -3288,6 +6521,63 @@
     ]
   },
   {
+    "id": "honey-melt-blackbody",
+    "name": "Honey Melt Blackbody",
+    "url": "shaders/honey-melt-blackbody.wgsl",
+    "description": "Catalog entry for Honey Melt Blackbody.",
+    "tags": [
+      "hex-grid",
+      "blackbody-radiation",
+      "viscous-material",
+      "subsurface"
+    ],
+    "features": [
+      "hex-grid",
+      "blackbody-radiation",
+      "viscous-material",
+      "subsurface"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "hybrid-spectral-decomposed",
     "name": "Hybrid Spectral Decomposed",
     "url": "shaders/hybrid-spectral-decomposed.wgsl",
@@ -3360,6 +6650,63 @@
     ],
     "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
     "created_date": "2026-04-18"
+  },
+  {
+    "id": "hyper-space-jump-blackbody",
+    "name": "Hyper Space Jump Blackbody",
+    "url": "shaders/hyper-space-jump-blackbody.wgsl",
+    "description": "Hyper Space Jump Blackbody",
+    "tags": [
+      "radial-streaks",
+      "blackbody-radiation",
+      "relativistic",
+      "HDR"
+    ],
+    "features": [
+      "radial-streaks",
+      "blackbody-radiation",
+      "relativistic",
+      "HDR"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "hyper-tensor-fluid-coupled",
@@ -3513,6 +6860,234 @@
     ]
   },
   {
+    "id": "hyperbolic-dreamweaver-julia",
+    "name": "Hyperbolic Dreamweaver Julia",
+    "url": "shaders/hyperbolic-dreamweaver-julia.wgsl",
+    "description": "Hyperbolic Dreamweaver Julia",
+    "tags": [
+      "hyperbolic-geometry",
+      "quaternion-julia",
+      "raymarched",
+      "depth-aware"
+    ],
+    "features": [
+      "hyperbolic-geometry",
+      "quaternion-julia",
+      "raymarched",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "impasto-swirl-bilateral",
+    "name": "Impasto Swirl Bilateral",
+    "url": "shaders/impasto-swirl-bilateral.wgsl",
+    "description": "Impasto Swirl Bilateral",
+    "tags": [
+      "bilateral-filter",
+      "halftone-impasto",
+      "edge-aware",
+      "hue-shift"
+    ],
+    "features": [
+      "bilateral-filter",
+      "halftone-impasto",
+      "edge-aware",
+      "hue-shift"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "infinite-fractal-feedback-hdr",
+    "name": "Infinite Fractal Feedback Hdr",
+    "url": "shaders/infinite-fractal-feedback-hdr.wgsl",
+    "description": "Infinite Fractal Feedback Hdr",
+    "tags": [
+      "fractal-feedback",
+      "HDR-bloom",
+      "accumulative-alpha",
+      "temporal"
+    ],
+    "features": [
+      "fractal-feedback",
+      "HDR-bloom",
+      "accumulative-alpha",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "ink-bleed-fluid",
+    "name": "Ink Bleed Fluid",
+    "url": "shaders/ink-bleed-fluid.wgsl",
+    "description": "Catalog entry for Ink Bleed Fluid.",
+    "tags": [
+      "fluid-simulation",
+      "ink-diffusion",
+      "physical-media",
+      "temporal"
+    ],
+    "features": [
+      "fluid-simulation",
+      "ink-diffusion",
+      "physical-media",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "ink-dispersion-guided",
     "name": "Ink Dispersion Guided",
     "url": "shaders/ink-dispersion-guided.wgsl",
@@ -3584,6 +7159,342 @@
       "artistic",
       "paper"
     ]
+  },
+  {
+    "id": "interactive-magnetic-ripple-em",
+    "name": "Interactive Magnetic Ripple Em",
+    "url": "shaders/interactive-magnetic-ripple-em.wgsl",
+    "description": "Interactive Magnetic Ripple Em",
+    "tags": [
+      "mouse-driven",
+      "field-simulation",
+      "chromatic",
+      "ripple"
+    ],
+    "features": [
+      "mouse-driven",
+      "field-simulation",
+      "chromatic",
+      "ripple"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "interactive-origami-coupled",
+    "name": "Interactive Origami Coupled",
+    "url": "shaders/interactive-origami-coupled.wgsl",
+    "description": "Interactive Origami Coupled",
+    "tags": [
+      "mouse-driven",
+      "fluid-simulation",
+      "geometric"
+    ],
+    "features": [
+      "mouse-driven",
+      "fluid-simulation",
+      "geometric"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "interactive-pixel-wind-structure",
+    "name": "Interactive Pixel Wind Structure",
+    "url": "shaders/interactive-pixel-wind-structure.wgsl",
+    "description": "Interactive Pixel Wind Structure",
+    "tags": [
+      "mouse-driven",
+      "feedback",
+      "structure-tensor",
+      "flow"
+    ],
+    "features": [
+      "mouse-driven",
+      "feedback",
+      "structure-tensor",
+      "flow"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "interactive-rgb-split-explosion",
+    "name": "Interactive Rgb Split Explosion",
+    "url": "shaders/interactive-rgb-split-explosion.wgsl",
+    "description": "Interactive Rgb Split Explosion",
+    "tags": [
+      "mouse-driven",
+      "chromatic",
+      "prism",
+      "ripple"
+    ],
+    "features": [
+      "mouse-driven",
+      "chromatic",
+      "prism",
+      "ripple"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "kimi-flock-symphony-em",
+    "name": "Kimi Flock Symphony Em",
+    "url": "shaders/kimi-flock-symphony-em.wgsl",
+    "description": "Kimi Flock Symphony Em",
+    "tags": [
+      "flocking-particles",
+      "electromagnetic-fields"
+    ],
+    "features": [
+      "flocking-particles",
+      "electromagnetic-fields"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "liquid-jelly-fluid",
+    "name": "Liquid Jelly Fluid",
+    "url": "shaders/liquid-jelly-fluid.wgsl",
+    "description": "Catalog entry for Liquid Jelly Fluid.",
+    "tags": [
+      "liquid-jelly",
+      "fluid-simulation",
+      "elastic-bounce",
+      "subsurface-scattering"
+    ],
+    "features": [
+      "liquid-jelly",
+      "fluid-simulation",
+      "elastic-bounce",
+      "subsurface-scattering"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "liquid-magnetic-ferro-em",
@@ -3714,6 +7625,179 @@
       }
     ],
     "target_rating": 4.8
+  },
+  {
+    "id": "liquid-oil-iridescence",
+    "name": "Liquid Oil Iridescence",
+    "url": "shaders/liquid-oil-iridescence.wgsl",
+    "description": "Liquid Oil Iridescence",
+    "tags": [
+      "liquid-oil",
+      "thin-film-interference",
+      "depth-aware",
+      "spectral-render"
+    ],
+    "features": [
+      "liquid-oil",
+      "thin-film-interference",
+      "depth-aware",
+      "spectral-render"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "liquid-smear-structure",
+    "name": "Liquid Smear Structure",
+    "url": "shaders/liquid-smear-structure.wgsl",
+    "description": "Liquid Smear Structure",
+    "tags": [
+      "liquid-smear",
+      "structure-tensor",
+      "LIC",
+      "temporal",
+      "mouse-driven"
+    ],
+    "features": [
+      "liquid-smear",
+      "structure-tensor",
+      "LIC",
+      "temporal",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "melting-oil-blackbody",
+    "name": "Melting Oil Blackbody",
+    "url": "shaders/melting-oil-blackbody.wgsl",
+    "description": "Melting Oil Blackbody",
+    "tags": [
+      "melting-oil",
+      "blackbody-radiation",
+      "HDR",
+      "gradient-flow"
+    ],
+    "features": [
+      "melting-oil",
+      "blackbody-radiation",
+      "HDR",
+      "gradient-flow"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "multi-fractal-compositor-lens",
@@ -4233,6 +8317,63 @@
       "dreamy",
       "volumetric"
     ]
+  },
+  {
+    "id": "phantom-lag-history",
+    "name": "Phantom Lag History",
+    "url": "shaders/phantom-lag-history.wgsl",
+    "description": "Catalog entry for Phantom Lag History.",
+    "tags": [
+      "temporal-echo",
+      "luminance-history",
+      "rgba-state-machine",
+      "mouse-driven"
+    ],
+    "features": [
+      "temporal-echo",
+      "luminance-history",
+      "rgba-state-machine",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "photonic-caustics-iridescence",
@@ -5052,6 +9193,57 @@
     "target_rating": 4.9
   },
   {
+    "id": "spectral-bleed-confine",
+    "name": "Spectral Bleed Confine",
+    "url": "shaders/spectral-bleed-confine.wgsl",
+    "description": "Spectral Bleed Confine",
+    "tags": [
+      "advanced hybrid"
+    ],
+    "features": [
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "spectral-flow-sorting",
     "name": "Spectral Flow Sorting",
     "url": "shaders/spectral-flow-sorting.wgsl",
@@ -5197,6 +9389,63 @@
     ],
     "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
     "created_date": "2026-04-18"
+  },
+  {
+    "id": "steamy-glass-volumetric",
+    "name": "Steamy Glass Volumetric",
+    "url": "shaders/steamy-glass-volumetric.wgsl",
+    "description": "Steamy Glass Volumetric",
+    "tags": [
+      "steamy-glass",
+      "depth-fog",
+      "volumetric",
+      "mouse-driven"
+    ],
+    "features": [
+      "steamy-glass",
+      "depth-fog",
+      "volumetric",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "stellar-plasma-blackbody",
@@ -5486,6 +9735,63 @@
     "target_rating": 4.7
   },
   {
+    "id": "vaporwave-horizon-prismatic",
+    "name": "Vaporwave Horizon Prismatic",
+    "url": "shaders/vaporwave-horizon-prismatic.wgsl",
+    "description": "Vaporwave Horizon Prismatic",
+    "tags": [
+      "vaporwave-horizon",
+      "spectral-dispersion",
+      "physical-dispersion",
+      "mouse-driven"
+    ],
+    "features": [
+      "vaporwave-horizon",
+      "spectral-dispersion",
+      "physical-dispersion",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "vhs-tracking-bilateral",
     "name": "VHS Tracking Bilateral",
     "url": "shaders/vhs-tracking-bilateral.wgsl",
@@ -5555,6 +9861,179 @@
       "noise",
       "smoothing"
     ]
+  },
+  {
+    "id": "viscous-drag-bilateral",
+    "name": "Viscous Drag Bilateral",
+    "url": "shaders/viscous-drag-bilateral.wgsl",
+    "description": "Viscous Drag Bilateral",
+    "tags": [
+      "viscous-drag",
+      "bilateral-filter",
+      "mouse-driven",
+      "ripple-shockwaves"
+    ],
+    "features": [
+      "viscous-drag",
+      "bilateral-filter",
+      "mouse-driven",
+      "ripple-shockwaves"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "vortex-warp-coupled",
+    "name": "Vortex Warp Coupled",
+    "url": "shaders/vortex-warp-coupled.wgsl",
+    "description": "Catalog entry for Vortex Warp Coupled.",
+    "tags": [
+      "vortex-warp",
+      "fluid-simulation",
+      "mouse-driven",
+      "temporal"
+    ],
+    "features": [
+      "vortex-warp",
+      "fluid-simulation",
+      "mouse-driven",
+      "temporal"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
+    "id": "warp-drive-blackbody",
+    "name": "Warp Drive Blackbody",
+    "url": "shaders/warp-drive-blackbody.wgsl",
+    "description": "Catalog entry for Warp Drive Blackbody.",
+    "tags": [
+      "radial-blur",
+      "blackbody-radiation",
+      "HDR",
+      "physical-color",
+      "mouse-driven"
+    ],
+    "features": [
+      "radial-blur",
+      "blackbody-radiation",
+      "HDR",
+      "physical-color",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "wave-equation-rgba-fluid",

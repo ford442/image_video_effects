@@ -19,6 +19,22 @@ import { decodeChain, buildSharedChain } from '../services/layerChainShare';
 import type { SharedChain } from '../services/layerChainShare';
 import { buildCatalog, CatalogShader } from '../services/shaderCatalog';
 import { VariationGrid } from './VariationGrid';
+import {
+  ControlBinding,
+  ControlBindingRegistry,
+  ControlEvent,
+  ControlAction,
+  ControlTrigger,
+  LiveActionsHandle,
+  loadBindings,
+  saveBindings,
+} from '../services/controlBindings';
+import {
+  MidiControlAdapter,
+  MIDIDevice,
+  subscribeKeyEvents,
+  captureKeyOnce,
+} from '../services/midiControl';
 import '../styles/gold-glass-theme.css';
 
 // --- Types for Coordinate System ---
@@ -107,6 +123,7 @@ interface ControlsProps {
     recordingCountdown?: number;
     onStartRecording?: () => void;
     onStopRecording?: () => void;
+    onTakeScreenshot?: () => void;
     // Live Stream Props
     liveStreamUrl?: string;
     onLiveStreamLoaded?: (url: string) => void;
@@ -121,6 +138,10 @@ interface ControlsProps {
     // Multi-Slot Chain Sharing Props
     onCopyChainShareLink?: () => void;
     onApplySharedChain?: (chain: SharedChain) => void;
+    // Live Control Props
+    onTriggerNextTransition?: () => Promise<void> | void;
+    onRandomizeSlot?: (slot: number) => void;
+    onSetSlotParam?: (slot: number, param: string, value: number) => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -178,6 +199,7 @@ const Controls: React.FC<ControlsProps> = ({
     recordingCountdown = 8,
     onStartRecording,
     onStopRecording,
+    onTakeScreenshot,
     liveStreamUrl,
     onLiveStreamLoaded,
     onExitLiveStream,
@@ -186,7 +208,10 @@ const Controls: React.FC<ControlsProps> = ({
     onSwitchRenderer,
     onOpenStorageBrowser,
     onCopyChainShareLink,
-    onApplySharedChain
+    onApplySharedChain,
+    onTriggerNextTransition,
+    onRandomizeSlot,
+    onSetSlotParam,
 }) => {
     // --- Coordinate System State ---
     const [showCoordinateBrowser, setShowCoordinateBrowser] = useState(false);
@@ -230,6 +255,29 @@ const Controls: React.FC<ControlsProps> = ({
     const [remixCatalog, setRemixCatalog] = useState<CatalogShader[] | null>(null);
     const [remixLoading, setRemixLoading] = useState(false);
 
+    // --- Live Control State ---
+    const [liveControlOpen, setLiveControlOpen] = useState(false);
+    const [midiEnabled, setMidiEnabled] = useState(false);
+    const [midiDevices, setMidiDevices] = useState<MIDIDevice[]>([]);
+    const [armed, setArmed] = useState<null | 'midi' | 'key'>(null);
+    const [learnedTrigger, setLearnedTrigger] = useState<ControlTrigger | null>(null);
+    const [pendingAction, setPendingAction] = useState<ControlAction>({ type: 'triggerTransition' });
+    const [pendingSlot, setPendingSlot] = useState(0);
+    const [pendingParam, setPendingParam] = useState('zoomParam1');
+    const [bindings, setBindings] = useState<ControlBinding[]>(() => loadBindings());
+
+    const midiAdapterRef = React.useRef<MidiControlAdapter | null>(null);
+    const keyUnsubscribeRef = React.useRef<(() => void) | null>(null);
+    const keyCaptureUnsubscribeRef = React.useRef<(() => void) | null>(null);
+    const registryRef = React.useRef(new ControlBindingRegistry(bindings));
+    const liveHandleRef = React.useRef<LiveActionsHandle>({
+        setSlotParam: () => {},
+        randomizeSlot: () => {},
+        randomizeAll: () => {},
+        triggerTransition: () => {},
+        toggleAutoTransition: () => {},
+    });
+
     const stopAutoTransitionRef = React.useRef(onStopAutoTransition);
 
     useEffect(() => {
@@ -263,6 +311,117 @@ const Controls: React.FC<ControlsProps> = ({
             stopAutoTransitionRef.current?.();
         };
     }, []);
+
+    // --- Live Control: registry + persistence ---
+    useEffect(() => {
+        registryRef.current = new ControlBindingRegistry(bindings);
+    }, [bindings]);
+
+    useEffect(() => {
+        saveBindings(bindings);
+    }, [bindings]);
+
+    // --- Live Control: build dispatch handle ---
+    useEffect(() => {
+        liveHandleRef.current = {
+            setSlotParam: (slot, param, value) => {
+                onSetSlotParam?.(slot, param, value);
+            },
+            randomizeSlot: (slot) => {
+                onRandomizeSlot?.(slot);
+            },
+            randomizeAll: () => {
+                onRandomizeAllSlots?.();
+            },
+            triggerTransition: () => {
+                onTriggerNextTransition?.();
+            },
+            toggleAutoTransition: () => {
+                if (autoTransitionEnabled) {
+                    setAutoTransitionEnabled(false);
+                    onStopAutoTransition?.();
+                } else if (isAiVjMode) {
+                    setAutoTransitionEnabled(true);
+                }
+            },
+        };
+    }, [
+        onSetSlotParam,
+        onRandomizeSlot,
+        onRandomizeAllSlots,
+        onTriggerNextTransition,
+        onStartAutoTransition,
+        onStopAutoTransition,
+        autoTransitionEnabled,
+        isAiVjMode,
+    ]);
+
+    // --- Live Control: MIDI adapter ---
+    useEffect(() => {
+        if (!liveControlOpen || !midiEnabled) {
+            midiAdapterRef.current?.disable();
+            midiAdapterRef.current = null;
+            setMidiDevices([]);
+            return;
+        }
+
+        const adapter = new MidiControlAdapter();
+        midiAdapterRef.current = adapter;
+        adapter.requestAccess().then((ok) => {
+            if (!ok) return;
+            setMidiDevices(adapter.getDevices());
+            adapter.subscribe((event: ControlEvent) => handleControlEventRef.current(event));
+        });
+
+        return () => {
+            adapter.disable();
+            midiAdapterRef.current = null;
+        };
+    }, [liveControlOpen, midiEnabled]);
+
+    // --- Live Control: global keyboard subscription ---
+    useEffect(() => {
+        if (!liveControlOpen) return;
+        keyUnsubscribeRef.current = subscribeKeyEvents((event: ControlEvent) =>
+            handleControlEventRef.current(event)
+        );
+        return () => {
+            keyUnsubscribeRef.current?.();
+            keyUnsubscribeRef.current = null;
+        };
+    }, [liveControlOpen]);
+
+    // --- Live Control: one-shot key capture when armed ---
+    useEffect(() => {
+        if (armed !== 'key') return;
+        keyCaptureUnsubscribeRef.current = captureKeyOnce((event: ControlEvent) => {
+            setLearnedTrigger({ source: event.source, id: event.id });
+            setArmed(null);
+        });
+        return () => {
+            keyCaptureUnsubscribeRef.current?.();
+            keyCaptureUnsubscribeRef.current = null;
+        };
+    }, [armed]);
+
+    const handleControlEventRef = React.useRef((event: ControlEvent) => {
+        // Default no-op; replaced below.
+        void event;
+    });
+
+    handleControlEventRef.current = (event: ControlEvent) => {
+        if (armed === 'midi' && (event.source === 'midi-cc' || event.source === 'midi-note')) {
+            setLearnedTrigger({ source: event.source, id: event.id });
+            setArmed(null);
+            return;
+        }
+        if (armed === 'key' && event.source === 'key') {
+            setLearnedTrigger({ source: event.source, id: event.id });
+            setArmed(null);
+            return;
+        }
+        registryRef.current.dispatch(event, liveHandleRef.current);
+    };
 
     useEffect(() => {
         setHistory(loadVJHistory());
@@ -695,6 +854,226 @@ const Controls: React.FC<ControlsProps> = ({
                 </div>
             </div>
 
+            {/* --- 🎛️ Live Control Panel --- */}
+            <div className="control-group glass-panel" style={{ padding: '12px', marginTop: '10px' }}>
+                <div
+                    className="gold-section-header"
+                    style={{ fontSize: '12px', marginTop: '0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+                    onClick={() => setLiveControlOpen(o => !o)}
+                >
+                    <span>🎛️ Live Control</span>
+                    <span style={{ transform: liveControlOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+                </div>
+
+                {liveControlOpen && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
+                            <span>Enable MIDI</span>
+                            <input
+                                type="checkbox"
+                                checked={midiEnabled}
+                                onChange={(e) => setMidiEnabled(e.target.checked)}
+                            />
+                        </label>
+
+                        {midiEnabled && (
+                            <div style={{ fontSize: '11px', color: '#a0a0b0' }}>
+                                {midiDevices.length === 0 ? 'No MIDI devices detected.' : (
+                                    <ul style={{ margin: '4px 0', paddingLeft: '16px' }}>
+                                        {midiDevices.map(d => (
+                                            <li key={d.id}>{d.name}</li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
+
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                className={`gold-outline-btn ${armed === 'midi' ? 'gold-active' : ''}`}
+                                style={{ flex: 1, fontSize: '11px' }}
+                                onClick={() => {
+                                    setArmed(armed === 'midi' ? null : 'midi');
+                                    setLearnedTrigger(null);
+                                }}
+                                disabled={!midiEnabled}
+                            >
+                                {armed === 'midi' ? ' Armed MIDI' : 'Arm MIDI'}
+                            </button>
+                            <button
+                                className={`gold-outline-btn ${armed === 'key' ? 'gold-active' : ''}`}
+                                style={{ flex: 1, fontSize: '11px' }}
+                                onClick={() => {
+                                    setArmed(armed === 'key' ? null : 'key');
+                                    setLearnedTrigger(null);
+                                }}
+                            >
+                                {armed === 'key' ? 'Armed Key' : 'Arm Key'}
+                            </button>
+                        </div>
+
+                        {armed && (
+                            <div style={{ fontSize: '11px', color: '#FFD700', textAlign: 'center' }}>
+                                {armed === 'midi' ? 'Move a MIDI knob or press a pad…' : 'Press a key…'}
+                            </div>
+                        )}
+
+                        {learnedTrigger && (
+                            <div style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: '6px', padding: '10px' }}>
+                                <div style={{ fontSize: '12px', color: '#FFD700', marginBottom: '8px' }}>
+                                    Captured: <code style={{ background: 'rgba(0,0,0,0.3)', padding: '2px 4px', borderRadius: '4px' }}>{learnedTrigger.source} {learnedTrigger.id}</code>
+                                </div>
+
+                                <label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
+                                    Action
+                                    <select
+                                        className="glass-select"
+                                        style={{ width: '100%', marginTop: '4px' }}
+                                        value={pendingAction.type}
+                                        onChange={(e) => {
+                                            const type = e.target.value as ControlAction['type'];
+                                            if (type === 'setSlotParam') {
+                                                setPendingAction({ type, slot: pendingSlot, param: pendingParam });
+                                            } else if (type === 'randomizeSlot') {
+                                                setPendingAction({ type, slot: pendingSlot });
+                                            } else {
+                                                setPendingAction({ type } as ControlAction);
+                                            }
+                                        }}
+                                    >
+                                        <option value="setSlotParam">Set Slot Parameter</option>
+                                        <option value="randomizeSlot">Randomize Slot</option>
+                                        <option value="randomizeAll">Randomize All Slots</option>
+                                        <option value="triggerTransition">Trigger Transition</option>
+                                        <option value="toggleAutoTransition">Toggle Auto Transition</option>
+                                    </select>
+                                </label>
+
+                                {(pendingAction.type === 'setSlotParam' || pendingAction.type === 'randomizeSlot') && (
+                                    <label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
+                                        Slot
+                                        <select
+                                            className="glass-select"
+                                            style={{ width: '100%', marginTop: '4px' }}
+                                            value={pendingSlot}
+                                            onChange={(e) => {
+                                                const slot = Number(e.target.value);
+                                                setPendingSlot(slot);
+                                                if (pendingAction.type === 'setSlotParam') {
+                                                    setPendingAction({ ...pendingAction, slot });
+                                                } else if (pendingAction.type === 'randomizeSlot') {
+                                                    setPendingAction({ ...pendingAction, slot });
+                                                }
+                                            }}
+                                        >
+                                            {modes.map((_, i) => (
+                                                <option key={i} value={i}>Slot {i + 1}</option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                )}
+
+                                {pendingAction.type === 'setSlotParam' && (
+                                    <label style={{ fontSize: '12px', display: 'block', marginBottom: '10px' }}>
+                                        Parameter
+                                        <select
+                                            className="glass-select"
+                                            style={{ width: '100%', marginTop: '4px' }}
+                                            value={pendingParam}
+                                            onChange={(e) => {
+                                                const param = e.target.value;
+                                                setPendingParam(param);
+                                                setPendingAction({ ...pendingAction, param });
+                                            }}
+                                        >
+                                            <option value="zoomParam1">Zoom Param 1</option>
+                                            <option value="zoomParam2">Zoom Param 2</option>
+                                            <option value="zoomParam3">Zoom Param 3</option>
+                                            <option value="zoomParam4">Zoom Param 4</option>
+                                            <option value="lightStrength">Light Strength</option>
+                                            <option value="ambient">Ambient</option>
+                                            <option value="normalStrength">Normal Strength</option>
+                                            <option value="fogFalloff">Fog Falloff</option>
+                                            <option value="depthThreshold">Depth Threshold</option>
+                                        </select>
+                                    </label>
+                                )}
+
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                        className="gold-outline-btn"
+                                        style={{ flex: 1, fontSize: '11px' }}
+                                        onClick={() => {
+                                            if (!learnedTrigger) return;
+                                            setBindings(prev => {
+                                                const registry = new ControlBindingRegistry(prev);
+                                                registry.addBinding(learnedTrigger, pendingAction);
+                                                return registry.getBindings();
+                                            });
+                                            setLearnedTrigger(null);
+                                        }}
+                                    >
+                                        Save Binding
+                                    </button>
+                                    <button
+                                        className="gold-outline-btn"
+                                        style={{ fontSize: '11px' }}
+                                        onClick={() => setLearnedTrigger(null)}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {bindings.length > 0 && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+                                <div style={{ fontSize: '11px', color: '#a0a0b0' }}>Bindings ({bindings.length})</div>
+                                {bindings.map((binding, idx) => (
+                                    <div
+                                        key={`${binding.trigger.source}-${binding.trigger.id}-${idx}`}
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            background: 'rgba(20,20,30,0.6)',
+                                            border: '1px solid rgba(255,215,0,0.1)',
+                                            borderRadius: '6px',
+                                            padding: '6px 8px',
+                                            fontSize: '11px',
+                                        }}
+                                    >
+                                        <div>
+                                            <span style={{ color: '#FFD700', fontFamily: 'monospace' }}>{binding.trigger.id}</span>
+                                            <span style={{ color: '#a0a0b0', marginLeft: '6px' }}>
+                                                → {binding.action.type === 'setSlotParam'
+                                                    ? `set slot ${binding.action.slot}.${binding.action.param}`
+                                                    : binding.action.type === 'randomizeSlot'
+                                                        ? `randomize slot ${binding.action.slot}`
+                                                        : binding.action.type.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                                            </span>
+                                        </div>
+                                        <button
+                                            className="gold-outline-btn"
+                                            style={{ fontSize: '10px', padding: '2px 6px' }}
+                                            onClick={() => {
+                                                setBindings(prev => {
+                                                    const registry = new ControlBindingRegistry(prev);
+                                                    registry.removeBinding(binding.trigger);
+                                                    return registry.getBindings();
+                                                });
+                                            }}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
                         
             {/* --- Renderer Switcher --- */}
             {onSwitchRenderer && (
@@ -1061,6 +1440,18 @@ const Controls: React.FC<ControlsProps> = ({
                         </>
                     )}
                 </button>
+
+                {onTakeScreenshot && (
+                    <button
+                        type="button"
+                        onClick={onTakeScreenshot}
+                        className="gold-outline-btn"
+                        style={{ width: '100%', marginTop: '10px' }}
+                        disabled={isRecording}
+                    >
+                        📸 Save Screenshot
+                    </button>
+                )}
                 
                 {isRecording && (
                     <div style={{marginTop: '10px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden'}}>
@@ -1770,7 +2161,7 @@ const Controls: React.FC<ControlsProps> = ({
                                                     letterSpacing: '0.05em',
                                                 }}
                                             >
-                                                {type}
+                                                {type === 'wasm' ? 'wasm (exp)' : type}
                                             </button>
                                         ))}
                                     </div>

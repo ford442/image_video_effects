@@ -8,7 +8,7 @@ struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 30>,
+  ripples: array<vec4<f32>, 50>,
 };
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -112,7 +112,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (current_ink < 0.001) { current_ink = 0.0; }
 
   // 5. Store state
-  textureStore(dataTextureA, coord, vec4<f32>(current_ink, 0.0, 0.0, 1.0));
+  textureStore(dataTextureA, coord, vec4<f32>(current_ink, 0.0, 0.0, current_ink));
 
   // 6. Render with PHYSICAL MEDIA ALPHA
   let video_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;

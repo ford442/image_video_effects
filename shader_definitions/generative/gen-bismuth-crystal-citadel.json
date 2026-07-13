@@ -1,8 +1,6 @@
 {
-  "id": "gen-bismuth-crystal-citadel",
   "name": "Bismuth Crystal Citadel",
-  "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
-  "description": "Endless procedural canyon of iridescent bismuth crystals with physical light transmission. Features metallic Fresnel reflection, thin-film interference, and oxide layer transmission.",
+  "category": "generative",
   "tags": [
     "generative",
     "raymarch",
@@ -17,54 +15,50 @@
     "audio",
     "music"
   ],
-  "features": [
-    "raymarched",
-    "mouse-driven",
-    "physical-transmission",
-    "audio-reactive",
-    "audio-driven"
+  "description": "Endless procedural canyon of iridescent bismuth crystals with physical light transmission. Features metallic Fresnel reflection, thin-film interference, and oxide layer transmission.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "author": "AI",
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Terrace Step Size",
+      "default": 0.5,
       "min": 0,
       "max": 1,
-      "default": 0.5,
-      "step": 0.01,
-      "description": "Size of stepped terraces characteristic of bismuth crystals",
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Ascension Speed",
-      "min": 0,
-      "max": 2,
       "default": 0.5,
-      "step": 0.01,
-      "description": "Camera movement speed through the crystal citadel",
-      "mapping": "zoom_params.y"
-    },
-    {
-      "id": "param3",
-      "name": "Metallic Shine",
       "min": 0,
       "max": 2,
-      "default": 0.8,
-      "step": 0.01,
-      "description": "Specular highlight intensity on metallic surfaces",
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "param4",
+      "index": 2,
+      "name": "Metallic Shine",
+      "default": 0.8,
+      "min": 0,
+      "max": 2,
+      "step": 0.01
+    },
+    {
+      "index": 3,
       "name": "Iridescence Shift",
+      "default": 1,
       "min": 0,
       "max": 5,
-      "default": 1,
-      "step": 0.1,
-      "description": "Thin-film interference color shift on crystal surfaces",
-      "mapping": "zoom_params.w"
+      "step": 0.1
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-bismuth-crystal-citadel",
+  "url": "shaders/gen-bismuth-crystal-citadel.wgsl",
+  "features": []
 }

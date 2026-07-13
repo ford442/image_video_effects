@@ -1,8 +1,6 @@
 {
-  "id": "gen-singularity-forge",
   "name": "Singularity Forge",
-  "url": "shaders/gen-singularity-forge.wgsl",
-  "description": "A hyper-dense, gravity-warped crucible of collapsing stars and chaotic plasma rings, endlessly generating and consuming geometric artifacts.",
+  "category": "generative",
   "tags": [
     "cosmic",
     "black-hole",
@@ -13,47 +11,50 @@
     "music",
     "reactive"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-driven",
-    "audio-reactive"
+  "description": "A hyper-dense, gravity-warped crucible of collapsing stars and chaotic plasma rings, endlessly generating and consuming geometric artifacts.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "diskDensity",
+      "index": 0,
       "name": "Disk Density",
       "default": 1,
       "min": 0.1,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.x"
+      "step": 0.1
     },
     {
-      "id": "jetIntensity",
+      "index": 1,
       "name": "Jet Intensity",
       "default": 0.5,
       "min": 0,
       "max": 2,
-      "step": 0.05,
-      "mapping": "zoom_params.y"
+      "step": 0.05
     },
     {
-      "id": "gravityWarp",
+      "index": 2,
       "name": "Gravity Warp",
       "default": 1,
       "min": 0,
       "max": 3,
-      "step": 0.1,
-      "mapping": "zoom_params.z"
+      "step": 0.1
     },
     {
-      "id": "timeDilation",
+      "index": 3,
       "name": "Time Dilation",
       "default": 1,
       "min": 0.1,
       "max": 2,
-      "step": 0.1,
-      "mapping": "zoom_params.w"
+      "step": 0.1
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-singularity-forge",
+  "url": "shaders/gen-singularity-forge.wgsl",
+  "features": []
 }

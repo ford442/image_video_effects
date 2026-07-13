@@ -1,6 +1,6 @@
 {
-  "id": "gen-radiant-quantum-crystalline-forge",
   "name": "Radiant Quantum-Crystalline Forge",
+  "category": "generative",
   "tags": [
     "fractal",
     "crystal",
@@ -9,52 +9,49 @@
     "volumetric"
   ],
   "description": "A majestic, zero-gravity forge where infinite quantum crystals self-assemble into intricate fractal geometries, pulsating with radiant chromatic energy and refracting light in a dazzling abyssal void.",
-  "params": [
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Crystallization Density",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Controls the overall strength of the generated effect."
+      "step": 0.01
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Chromatic Aberration",
       "default": 1,
       "min": 0,
       "max": 5,
-      "step": 0.1,
-      "mapping": "zoom_params.y",
-      "description": "Controls animation and temporal evolution speed."
+      "step": 0.1
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Fog Intensity",
       "default": 0.8,
       "min": 0,
       "max": 2,
-      "step": 0.05,
-      "mapping": "zoom_params.z",
-      "description": "Controls spatial scale, frequency, or detail contrast."
+      "step": 0.05
     },
     {
-      "id": "mouseInfluence",
+      "index": 3,
       "name": "Mouse Influence",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Controls mouse-driven or secondary variation influence."
+      "step": 0.01
     }
   ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-radiant-quantum-crystalline-forge",
   "url": "shaders/gen-radiant-quantum-crystalline-forge.wgsl",
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "upgraded-rgba"
-  ]
+  "features": []
 }

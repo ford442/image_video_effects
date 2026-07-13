@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Neon Edge Radar
 //  Category: interactive-mouse
-//  Features: advanced-alpha, radar-sweep, edge-detection, mouse-driven, audio-reactive
+//  Features: upgraded-rgba, radar-sweep, edge-detection, mouse-driven,
+//            audio-reactive, aces-tone-map, ign-dither, depth-aware,
+//            fresnel-rim, volumetric-fog, hue-preserve-clamp,
+//            blackbody-temperature
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
+//  Upgraded: 2026-07-12 (retry)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,76 +24,118 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=EdgeThreshold, y=RadarSpeed, z=SweepWidth, w=Intensity
+  config: vec4<f32>,       // .x = time, .y = delta_time, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = zoom, .yz = mouse_uv, .w = mouse_down
+  zoom_params: vec4<f32>,  // .xyzw = user params p1..p4
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI:  f32 = 3.14159265358979323846;
-const TAU: f32 = 6.28318530717958647692;
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
 
-// ═══ ADVANCED ALPHA FUNCTIONS ═══
-
-// Mode 2: Edge-Preserve Alpha
-fn edgePreserveAlpha(uv: vec2<f32>, pixelSize: vec2<f32>, edgeThreshold: f32) -> f32 {
+fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123); }
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p); let f = fract(p); let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x), mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+fn fbm(p: vec2<f32>, oct: i32) -> f32 { var s = 0.0; var a = 0.5; var f = 1.0; for (var i = 0; i < oct; i = i + 1) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; } return s; }
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0)); }
+fn ign(p: vec2<f32>) -> f32 { return fract(52.9829181 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715)))); }
+fn luma(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722)); }
+fn edgeMetric(uv: vec2<f32>, ps: vec2<f32>) -> f32 {
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).r;
-    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).r;
-    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).r;
-    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, pixelSize.y), 0.0).r;
+    let dx = vec2<f32>(ps.x, 0.0); let dy = vec2<f32>(0.0, ps.y);
+    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + dx, 0.0).r;
+    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - dx, 0.0).r;
+    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + dy, 0.0).r;
+    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - dy, 0.0).r;
     let depthEdge = length(vec2<f32>(dR - dL, dU - dD));
-    let edgeMask = smoothstep(edgeThreshold * 0.5, edgeThreshold, depthEdge);
-    return mix(0.2, 1.0, edgeMask);
+    let lR = luma(textureSampleLevel(readTexture, u_sampler, uv + dx, 0.0).rgb);
+    let lL = luma(textureSampleLevel(readTexture, u_sampler, uv - dx, 0.0).rgb);
+    let lU = luma(textureSampleLevel(readTexture, u_sampler, uv + dy, 0.0).rgb);
+    let lD = luma(textureSampleLevel(readTexture, u_sampler, uv - dy, 0.0).rgb);
+    let lumaEdge = length(vec2<f32>(lR - lL, lU - lD));
+    return smoothstep(0.02, 0.25, lumaEdge + depthEdge * 2.0);
+}
+fn neonSpectrum(t: f32) -> vec3<f32> { return 0.5 + 0.5 * cos(vec3<f32>(t, t + 2.094, t + 4.189)); }
+
+// Preserve hue when channels exceed the display range by normalising the
+// brightest channel back to 1.0 instead of clipping individual channels.
+fn huePreserveClamp(c: vec3<f32>) -> vec3<f32> {
+    let mx = max(max(c.r, c.g), c.b);
+    return c / max(mx, 1.0);
 }
 
-// Mode 5: Effect Intensity Alpha
-fn effectIntensityAlpha(intensity: f32, falloff: f32) -> f32 {
-    return mix(0.3, 1.0, intensity * falloff);
+// Subtle Fresnel-style rim that brightens the edge of the viewport,
+// giving the radar overlay a curved-screen feel.
+fn fresnelRim(uv: vec2<f32>, bias: f32, power: f32) -> f32 {
+    let d = distance(uv, vec2<f32>(0.5));
+    let f = 1.0 - pow(clamp(d * 2.0, 0.0, 1.0), power);
+    return bias + (1.0 - bias) * f;
+}
+
+// Exponential volumetric fog that lets the radar glow soften as depth grows.
+fn volumetricFog(depth: f32, density: f32) -> f32 { return exp(-depth * density); }
+
+// Approximate blackbody emission for hot radar contact points.
+fn blackbody(t: f32) -> vec3<f32> {
+    let k = mix(1000.0, 10000.0, clamp(t, 0.0, 1.0));
+    let k2 = k * k;
+    let k3 = k2 * k;
+    let r = 1.0;
+    let g = clamp(-4.959e-12 * k3 + 6.351e-8 * k2 - 0.0002776 * k + 0.4756, 0.0, 1.0);
+    let b = clamp(4.22e-12 * k3 - 2.55e-7 * k2 + 0.0005156 * k - 0.3266, 0.0, 1.0);
+    return vec3<f32>(r, g, b);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let pixelSize = 1.0 / resolution;
+    let pixel = vec2<i32>(global_id.xy);
+    let res = vec2<f32>(u.config.zw);
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+    let uv = vec2<f32>(pixel) / res;
+    let ps = 1.0 / res;
     let time = u.config.x;
-    let audioBass = plasmaBuffer[0].x;
-    let audioReactivity = 1.0 + audioBass * 0.5;
-
-    let edgeThreshold = u.zoom_params.x * 0.1 + 0.02;
-    let radarSpeed = u.zoom_params.y * 2.0 * audioReactivity;
-    let sweepWidth = u.zoom_params.z * 0.3;
-    let intensity = u.zoom_params.w * 2.0;
-
-    // Radar centered on mouse — drag the radar around
+    let bass = plasmaBuffer[0].x;
     let mouse = u.zoom_config.yz;
+
+    let p1 = clamp(u.zoom_params.x, 0.0, 1.0);
+    let p2 = clamp(u.zoom_params.y, 0.0, 1.0);
+    let p3 = clamp(u.zoom_params.z, 0.0, 1.0);
+    let p4 = clamp(u.zoom_params.w, 0.0, 1.0);
+
+    let threshold = mix(0.02, 0.3, p1);
+    let radarSpeed = p2 * 2.0 * (1.0 + bass * 0.5);
+    let sweepWidth = mix(0.05, 0.5, p3);
+    let intensity = p4 * 3.0;
+
     let centered = uv - mix(vec2<f32>(0.5), mouse, 0.6);
     let angle = atan2(centered.y, centered.x);
     let sweepAngle = fract(time * radarSpeed) * TAU - PI;
-    let angleDiff = abs(angle - sweepAngle);
-    let sweep = exp(-angleDiff * angleDiff / (sweepWidth * sweepWidth));
-    
-    let baseAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
-    
-    // Edge detection
-    let l = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
-    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
-    let edge = length(r - l);
-    
-    // Neon color
-    let neonColor = vec3<f32>(0.0, 1.0, 0.5);
-    let emission = neonColor * edge * sweep * intensity;
-    
-    let edgeAlpha = edgePreserveAlpha(uv, pixelSize, edgeThreshold);
-    let effectAlpha = effectIntensityAlpha(sweep * edge, intensity);
-    let alpha = clamp(edgeAlpha * effectAlpha, 0.0, 1.0);
-    let finalAlpha = mix(baseAlpha, 1.0, sweep * edge * intensity * 0.7);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
-    
+    let diff = abs(fract((angle - sweepAngle) / TAU + 0.5) - 0.5) * TAU;
+    let sweep = exp(-diff * diff / (sweepWidth * sweepWidth));
+
+    let edgeRaw = edgeMetric(uv, ps);
+    let edge = smoothstep(threshold, threshold + 0.05, edgeRaw);
+    let hue = time * 0.3 + bass * 0.5 + fbm(uv * 3.0 + time * 0.1, 3) * 0.4;
+    let neon = neonSpectrum(hue) * intensity;
+    let emission = neon * edge * sweep;
+
+    // Visual upgrades layered on top of the original radar look.
+    let rim = fresnelRim(uv, 0.12, 2.5) * intensity * 0.35;
+    let rimColor = neonSpectrum(hue + 0.5) * rim * (0.7 + bass * 0.3);
+    let hotSpot = blackbody(mix(0.3, 0.9, p3)) * smoothstep(0.82, 1.0, sweep) * edge * 0.25;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let fog = volumetricFog(depth, 0.4 + p2 * 0.6);
+
+    var color = huePreserveClamp(emission + rimColor + hotSpot) * (1.0 + bass) * fog;
+    color = acesToneMap(color);
+    color += (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
+
+    let energy = edge * sweep * intensity + rim;
+    let alpha = clamp(energy * (0.6 + depth * 0.4), 0.0, 0.98);
+
+    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

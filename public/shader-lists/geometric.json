@@ -116,13 +116,19 @@
     "name": "Crystal Mosaic",
     "category": "geometric",
     "url": "shaders/crystal-mosaic.wgsl",
-    "description": "Image broken into triangular mosaic tiles that rotate based on mouse proximity. Chromatic edges at tile boundaries with depth parallax shifting.",
+    "description": "Image broken into triangular mosaic tiles that rotate based on mouse proximity. Enhanced with crystal Fresnel refraction lighting, caustics projection, rim lighting on tile edges, subsurface scattering glow, light attenuation, and chromatic aberration at tile boundaries.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "upgraded-rgba",
-      "chromatic-edges"
+      "chromatic-edges",
+      "crystal-refraction",
+      "caustics",
+      "rim-lighting",
+      "subsurface-scattering",
+      "light-attenuation",
+      "Fresnel-reflections"
     ],
     "params": [
       {
@@ -162,7 +168,10 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "chromatic"
+      "chromatic",
+      "caustics",
+      "refraction",
+      "subsurface-scattering"
     ]
   },
   {

@@ -1,15 +1,26 @@
 {
   "id": "ambient-liquid",
   "name": "Ambient Liquid",
+  "category": "artistic",
+  "type": "compute",
   "url": "shaders/ambient-liquid.wgsl",
-  "description": "Gentle ambient liquid motion effects.",
+  "description": "Curl-noise-driven ambient liquid distortion with mouse attraction, branchless ripple eddies, HSV color shift, depth-aware semantic alpha, and ACES tone mapping.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba",
+    "depth-aware",
+    "audio-reactive",
+    "reaction-diffusion",
+    "sdf-metaballs",
+    "anisotropic-specular"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "liquid",
+    "noise"
   ],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "viscosity",
@@ -51,5 +62,8 @@
       "mapping": "zoom_params.w",
       "description": "Color manipulation amount"
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
 }

@@ -1,19 +1,59 @@
 {
-  "timestamp": "2026-06-25T08:03:23.592183",
-  "naga_bin": "/home/jules/.cargo/bin/naga",
-  "total": 1,
-  "passed": 1,
+  "timestamp": "2026-07-12T10:01:34.863883",
+  "naga_bin": "/root/.cargo/bin/naga",
+  "naga_available": true,
+  "total": 4,
+  "passed": 4,
   "failed": 0,
   "skipped": 0,
+  "workgroup_failures": 0,
   "results": [
     {
-      "file": "public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
+      "file": "public/shaders/gen-chromatic-zonohedron.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": null,
+      "naga_skipped": true,
+      "naga_error": null,
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_issues": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-neon-stellated-octahedron.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
+      "naga_skipped": false,
       "naga_error": "",
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
+      "workgroup_issues": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-prismatic-mobius-helix.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_issues": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-rainbow-icosahedron-cascade.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_issues": [],
       "ok": true
     }
   ]

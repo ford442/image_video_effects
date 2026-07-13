@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: crt-magnet
-- **Agent Role**: Optimizer
+- **Agent Role**: Advanced-Hybrid
 - **Current Size**: 3230 bytes
-- **Target Line Count**: ~180 lines
+- **Target Line Count**: ~220 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -41,16 +41,14 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
-// ═══════════════════════════════════════════════════════════════════
-//  CRT Magnet - Alpha Translucency Edition
-//  Category: retro-glitch
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
-//  Complexity: High
-//  Transform: Replaced RGB channel splitting with unified magnetic
-//             displacement + spectral tint. Added spring-damper mouse
-//             tracking and bass envelope attack/release.
-// ═══════════════════════════════════════════════════════════════════
+// CRT Magnet - Optimized Edition
+// Category: retro-glitch
+// Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, aces-tone-map
+// Complexity: Medium
+// Transform: canonical noise/fbm, 16x16 workgroup, unified envelope/mouse state,
+//            branchless aperture grille, hex-bloom, ACES tone map.
 
+// ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -66,80 +64,71 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-fn hash22(p: vec2<f32>) -> vec2<f32> {
-  var pp = p * 0.1031;
-  let d = fract(pp.x * pp.y * 23.4517 + pp.y * 37.2314);
-  let s = vec2<f32>(d + 0.113, d + 0.257);
-  return fract(s * s * 43758.5453);
-}
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
 
-fn noise2(p: vec2<f32>) -> f32 {
-  let i = floor(p);
-  let f = fract(p);
+fn hashf(n: f32) -> f32 { return fract(sin(n * 127.1) * 43758.5453); }
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p); let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
-  return mix(
-    mix(hash22(i).x, hash22(i + vec2<f32>(1.0, 0.0)).x, u.x),
-    mix(hash22(i + vec2<f32>(0.0, 1.0)).x, hash22(i + vec2<f32>(1.0, 1.0)).x, u.x),
-    u.y
-  );
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+fn fbm(p: vec2<f32>, oct: i32) -> f32 {
+  var s = 0.0; var a = 0.5; var f = 1.0;
+  for (var i = 0; i < oct; i++) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; }
+  return s;
 }
 
-fn fbm(p: vec2<f32>) -> f32 {
-  var v = 0.0;
-  var a = 0.5;
-  var pp = p;
-  for (var i: i32 = 0; i < 4; i = i + 1) {
-    v = v + a * noise2(pp);
-    pp = pp * 2.03;
-    a = a * 0.5;
-  }
-  return v;
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn curl2(p: vec2<f32>, t: f32) -> vec2<f32> {
-  let e = 0.02;
-  let n1 = fbm(p + vec2<f32>(e, 0.0) + t);
-  let n2 = fbm(p - vec2<f32>(e, 0.0) + t);
-  let n3 = fbm(p + vec2<f32>(0.0, e) + t);
-  let n4 = fbm(p - vec2<f32>(0.0, e) + t);
-  let dx = (n1 - n2) / (2.0 * e);
-  let dy = (n3 - n4) / (2.0 * e);
-  return vec2<f32>(dy, -dx);
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+  let k = select(release, attack, bass > prev);
+  return mix(prev, bass, k);
+}
+
+fn spring(current: vec2<f32>, targetPos: vec2<f32>, velocity: ptr<function, vec2<f32>>, k: f32, damping: f32, dt: f32) -> vec2<f32> {
+  let force = (targetPos - current) * k - *velocity * damping;
+  *velocity = *velocity + force * dt;
+  return current + *velocity * dt;
 }
 
 fn barrel(uv: vec2<f32>, k: f32) -> vec2<f32> {
   let d = uv - 0.5;
   let r2 = dot(d, d);
-  let f = 1.0 + k * r2 + k * k * r2 * r2;
-  return 0.5 + d * f;
+  return 0.5 + d * (1.0 + k * r2 + k * k * r2 * r2);
 }
 
-// ═══ Audio envelope (smooth attack/release) ═══
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-    let k = select(release, attack, bass > prev);
-    return mix(prev, bass, k);
+fn curl2(p: vec2<f32>, t: f32) -> vec2<f32> {
+  let e = 0.02;
+  let n1 = fbm(p + vec2<f32>(e, 0.0) + t, 4);
+  let n2 = fbm(p - vec2<f32>(e, 0.0) + t, 4);
+  let n3 = fbm(p + vec2<f32>(0.0, e) + t, 4);
+  let n4 = fbm(p - vec2<f32>(0.0, e) + t, 4);
+  return vec2<f32>((n3 - n4) / (2.0 * e), (n2 - n1) / (2.0 * e));
 }
 
-// ═══ Spring-damper (smooth mouse follow) ═══
-fn spring(current: vec2<f32>, targetPos: vec2<f32>, velocity: ptr<function,vec2<f32>>, k: f32, damping: f32, dt: f32) -> vec2<f32> {
-    let force = (targetPos - current) * k - *velocity * damping;
-    *velocity = *velocity + force * dt;
-    return current + *velocity * dt;
-}
+fn luma(rgb: vec3<f32>) -> f32 { return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722)); }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+  let pixel = vec2<i32>(global_id.xy);
+  let res = vec2<f32>(u.config.zw);
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-  let resolution = u.config.zw;
   let time = u.config.x;
-  let uvRaw = vec2<f32>(global_id.xy) / resolution;
+  let uv01 = vec2<f32>(pixel) / res;
   let mousePos = u.zoom_config.yz;
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
@@ -150,115 +139,81 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let colorShift = u.zoom_params.z;
   let distortionRadius = u.zoom_params.w;
 
-  // ─── Audio envelope with attack/release ───
-  var prevEnv = 0.0;
-  if (global_id.x == 0u && global_id.y == 0u) {
-      prevEnv = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(0.0), 0.0).r;
-  }
-  let env = bass_env(prevEnv, bass, 0.8, 0.15);
-
-  // ─── Spring-damper smooth mouse tracking (read previous from dataTextureC) ───
-  let smoothMouse = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(0.0), 0.0).gb;
+  let prevState = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let env = bass_env(prevState.r, bass, 0.8, 0.15);
+  let smoothMouse = prevState.gb;
 
   if (global_id.x == 0u && global_id.y == 0u) {
-      var prevVel = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(1.0) / resolution, 0.0).rg;
-      var vel = prevVel;
-      let newPos = spring(smoothMouse, mousePos, &vel, 8.0, 0.85, 0.016);
-      textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(env, newPos.x, newPos.y, 0.0));
-      textureStore(dataTextureA, vec2<i32>(1, 0), vec4<f32>(vel.x, vel.y, 0.0, 0.0));
+    var prevVel = textureLoad(dataTextureC, vec2<i32>(1, 0), 0).rg;
+    var vel = prevVel;
+    let newPos = spring(smoothMouse, mousePos, &vel, 8.0, 0.85, 0.016);
+    textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(env, newPos.x, newPos.y, 0.0));
+    textureStore(dataTextureA, vec2<i32>(1, 0), vec4<f32>(vel.x, vel.y, 0.0, 0.0));
   }
 
-  // SDF barrel distortion for CRT curvature
-  let uv = barrel(uvRaw, 0.15);
-
-  let aspect = resolution.x / resolution.y;
+  let uv = barrel(uv01, 0.15);
+  let aspect = res.x / res.y;
   let dVec = uv - smoothMouse;
   let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
-  // FBM-perturbed magnetic falloff with temporal drift
-  let fbmWarp = fbm(uv * 8.0 + time * 0.3) * 0.3 + 0.7;
+  let fbmWarp = fbm(uv * 8.0 + time * 0.3, 4) * 0.3 + 0.7;
   let radius = distortionRadius * 0.4 + 0.05;
   let falloff = exp(-dist * dist / (radius * radius * fbmWarp));
 
-  // Depth-aware field attenuation
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvRaw, 0.0).r;
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthAtten = mix(0.7, 1.0, depth);
 
-  // Audio-reactive pulse: bass drives magnet strength
-  let audioPulse = env * 2.0;
+  let field = magnetStrength * falloff * depthAtten * (1.0 + env * 2.0);
 
-  // Degaussing radial magnetic field
-  let field = magnetStrength * falloff * depthAtten * (1.0 + audioPulse);
-
-  // Curl-noise magnetic field lines
   let curl = curl2(uv * 6.0 + smoothMouse * 3.0, time * 0.2);
+  let displacement = dVec * field * 4.0 + curl * field * 0.4;
 
-  // Divergence-free displacement: radial + curl swirl
-  let radial = dVec * field * 4.0;
-  let swirl = curl * field * 0.4;
-  let displacement = radial + swirl;
-
-  // Unified displacement — single UV sample
-  let displacedUV = clamp(uv - displacement, vec2<f32>(0.0), vec2<f32>(1.0));
-  let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
-
-  // Spectral variation via mix(), NOT per-channel sampling
-  let tint = vec3<f32>(1.0 + colorShift * 0.3, 1.0, 1.0 - colorShift * 0.3);
-  let tintedColor = mix(baseColor, baseColor * tint, field * 0.5);
-
-  // Bloom via single-UV blur kernel
-  let bloomSize = 0.008 * bloomIntensity;
-  var bloom = vec3<f32>(0.0);
-  bloom += textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + vec2<f32>(bloomSize, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.25;
-  bloom += textureSampleLevel(readTexture, u_sampler, clamp(displacedUV - vec2<f32>(bloomSize, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.25;
-  bloom += textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + vec2<f32>(0.0, bloomSize), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.25;
-  bloom += textureSampleLevel(readTexture, u_sampler, clamp(displacedUV - vec2<f32>(0.0, bloomSize), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.25;
-
-  let luma = dot(tintedColor, vec3<f32>(0.299, 0.587, 0.114));
-  let bloomThreshold = smoothstep(0.6, 1.0, luma);
-  var finalColor = tintedColor + bloom * bloomThreshold * bloomIntensity * (2.0 + mids * 1.5) + vec3<f32>(treble * 0.05);
-
-  // ═══ UNIQUE VISUAL IDEA: shadow-mask beam purity error + aperture grille ═══
-  // A magnet near a CRT deflects the three electron beams by DIFFERENT amounts, so
-  // each lands on the wrong colour phosphor stripe — the iconic rainbow purity
-  // blotch. We sample R/G/B along progressively different deflections, scaled by
-  // the field, so the channels fan apart into colour fringes only near the magnet.
   let beamR = clamp(uv - displacement * 1.35, vec2<f32>(0.0), vec2<f32>(1.0));
   let beamG = clamp(uv - displacement * 1.00, vec2<f32>(0.0), vec2<f32>(1.0));
   let beamB = clamp(uv - displacement * 0.70, vec2<f32>(0.0), vec2<f32>(1.0));
-  let purityCol = vec3<f32>(
-      textureSampleLevel(readTexture, u_sampler, beamR, 0.0).r,
-      textureSampleLevel(readTexture, u_sampler, beamG, 0.0).g,
-      textureSampleLevel(readTexture, u_sampler, beamB, 0.0).b
+  var color = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, beamR, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, beamG, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, beamB, 0.0).b
   );
-  // Blend toward the purity-separated colour where the field is strong.
-  finalColor = mix(finalColor, purityCol, clamp(field * 1.6, 0.0, 0.85));
 
-  // Aperture-grille: the physical screen is vertical R/G/B phosphor stripes. Each
-  // column lights only its own phosphor, so the magnet's purity error reads against
-  // a real CRT substructure. A subtle effect that vanishes when the field is calm.
-  let stripe = u32(global_id.x) % 3u;
-  var grille = vec3<f32>(0.85);
-  if (stripe == 0u) { grille = vec3<f32>(1.15, 0.8, 0.8); }
-  else if (stripe == 1u) { grille = vec3<f32>(0.8, 1.15, 0.8); }
-  else { grille = vec3<f32>(0.8, 0.8, 1.15); }
-  let grilleAmt = clamp(field * 1.2, 0.0, 0.5);
-  finalColor = finalColor * mix(vec3<f32>(1.0), grille, grilleAmt);
+  let tint = vec3<f32>(1.0 + colorShift * 0.3, 1.0, 1.0 - colorShift * 0.3);
+  color = mix(color, color * tint, field * 0.5);
 
-  // SDF vignette with smooth radial falloff
-  let vigUV = uvRaw - 0.5;
-  let vigR2 = dot(vigUV, vigUV);
-  let vignette = 1.0 - smoothstep(0.25, 0.55, vigR2) * 0.6;
+  const HEX_TAPS = array<vec2<f32>, 7>(
+    vec2<f32>(0.0, 0.0),
+    vec2<f32>(1.0, 0.0), vec2<f32>(0.5, 0.866),
+    vec2<f32>(-0.5, 0.866), vec2<f32>(-1.0, 0.0),
+    vec2<f32>(-0.5, -0.866), vec2<f32>(0.5, -0.866)
+  );
+  let bloomSize = (1.0 + bloomIntensity * 5.0) / max(res.x, res.y);
+  var bloom = vec3<f32>(0.0);
+  for (var i: i32 = 0; i < 7; i++) {
+    let tapUV = clamp(uv - displacement + HEX_TAPS[i] * bloomSize, vec2<f32>(0.0), vec2<f32>(1.0));
+    bloom += textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb;
+  }
+  bloom *= 0.142857;
 
-  // Alpha = field strength (magnetic field intensity)
+  let bloomThreshold = smoothstep(0.6, 1.0, luma(color));
+  color += bloom * bloomThreshold * bloomIntensity * (2.0 + mids * 1.5) + vec3<f32>(treble * 0.05);
+
+  let stripe = f32(global_id.x % 3u);
+  let grille = mix(mix(vec3<f32>(0.8, 0.8, 1.15), vec3<f32>(0.8, 1.15, 0.8), step(1.0, stripe)),
+                   vec3<f32>(1.15, 0.8, 0.8), step(2.0, stripe));
+  color *= mix(vec3<f32>(1.0), grille, clamp(field * 1.2, 0.0, 0.5));
+
+  let vigUV = uv01 - 0.5;
+  color *= 1.0 - smoothstep(0.25, 0.55, dot(vigUV, vigUV)) * 0.6;
+
+  color = acesToneMap(color * (0.9 + mids * 0.2));
+
   let alpha = clamp(field * 1.5 + env * 0.3, 0.0, 1.0);
-  let outColor = finalColor * vignette;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, alpha));
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
   if (global_id.x != 0u || global_id.y != 0u) {
-      textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(outColor, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
   }
 }
 
@@ -270,7 +225,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "crt-magnet",
   "name": "CRT Magnet",
   "url": "shaders/crt-magnet.wgsl",
-  "description": "Simulates a CRT monitor with degaussing magnetic distortion near the mouse using unified displacement fields and alpha translucency blending. Features spring-damper mouse tracking, bass-driven magnet pulse via audio envelope, curl-noise field lines, barrel distortion, and bloom.",
+  "description": "Optimized CRT monitor degaussing magnetic distortion near the mouse. Uses canonical fbm/curl noise, unified audio-envelope and spring-damped mouse state, branchless aperture grille, hex-bloom, beam-purity RGB separation, and ACES tone mapping with semantic alpha blending.",
   "params": [
     {
       "id": "magnet_strength",
@@ -305,7 +260,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "aces-tone-map"
   ],
   "tags": [
     "filter",
@@ -324,105 +280,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 ---
 
 ## Agent Specialization
-# Agent Role: The Optimizer
+# Agent Role: Advanced Hybrid Creator (Phase B)
 
 ## Identity
-You are **The Optimizer**, a shader architect focused on performance, elegance, and pipeline integration.
+You are the **Advanced Hybrid Creator**. Your job is to upgrade the shader by combining two or more distinct techniques into a single, cohesive effect.
 
-## Upgrade Toolkit
-
-### Performance Techniques
-- Brute force → Early exit conditions
-- Full resolution → Quarter-res blur + full-res combine
-- Per-pixel pseudo-random → **Blue noise or Halton sequence** (same cost, less banding)
-- Redundant texture samples → Bilinear LOD
-- Nested loops → Unrolled small kernels
-- Expensive trig → Precomputed or polynomial approximations:
-  ```wgsl
-  // Fast atan2 approximation (max error ~0.0015 rad)
-  fn fast_atan2(y: f32, x: f32) -> f32 {
-      let a = min(abs(x), abs(y)) / (max(abs(x), abs(y)) + 1e-6);
-      let s = a * a;
-      var r = ((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a;
-      if (abs(y) > abs(x)) { r = 1.5707963 - r; }
-      if (x < 0.0) { r = 3.1415927 - r; }
-      if (y < 0.0) { r = -r; }
-      return r;
-  }
-  // Fast exp approximation
-  fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
-  ```
-
-#### 7-tap hex bokeh kernel (perceptually equals 19-tap circular at lower cost)
-```wgsl
-const HEX_TAPS = array<vec2<f32>, 7>(
-    vec2<f32>( 0.0,  0.0),
-    vec2<f32>( 1.0,  0.0), vec2<f32>( 0.5,  0.866),
-    vec2<f32>(-0.5,  0.866), vec2<f32>(-1.0,  0.0),
-    vec2<f32>(-0.5, -0.866), vec2<f32>( 0.5, -0.866),
-);
-```
-Use for radial-blur, DOF, and glow shaders. Scale each tap by `radius / res` before sampling `readTexture`.
-
-#### Anti-moiré LOD bias for procedural noise
-```wgsl
-let lod = clamp(log2(max(fwidth(uv).x, fwidth(uv).y) * cell_freq), 0.0, 4.0);
-let p = uv * (cell_freq * exp2(-lod));
-```
-Kills the shimmer that plagues high-frequency procedural patterns (fractal / kaleidoscope shaders) when zoomed out. `cell_freq` is the base tile frequency.
-
-### Workgroup Shared Memory (tiling pattern for blur/filter kernels)
-```wgsl
-var<workgroup> tile: array<array<vec4<f32>, 18>, 18>; // 16x16 + 1px border
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>,
-        @builtin(local_invocation_id) lid: vec3<u32>) {
-    // Load tile including borders, then sync
-    tile[lid.y+1][lid.x+1] = textureSampleLevel(readTexture, u_sampler,
-        vec2<f32>(gid.xy) / vec2<f32>(u.config.zw), 0.0);
-    workgroupBarrier();
-    // All accesses to tile[] now L1-cached — no global texture reads in hot loop
-}
-```
-
-### Code Elegance
-- Magic numbers → Named constants (see Algorithmist for PI/TAU/PHI/etc.)
-- Duplicated code → Helper functions
-- Long functions → Logical sections with comments
-- Hard-coded params → Uniform-based tuning via `zoom_params`
-- GPU-unfriendly ops → Precomputed lookups
-
-### Pipeline Integration
-- Standalone → Designed for slot chaining
-- No feedback → Uses dataTextureA/B for state
-- LDR only → HDR output ready for tone map
-- Single pass → Multi-pass decomposition hint
-- Fixed quality → Level-of-detail scaling
-
-### Post-Process Ready
-- Expose bloom threshold via alpha channel (`alpha = bloom_weight`)
-- Tag as "expects pp-tone-map" if HDR
-- Document slot recommendations
-- Provide quality presets (low/medium/high)
-
-## Quality Checklist
-- [ ] No per-pixel branching on uniforms
-- [ ] Texture samples minimized (caching used)
-- [ ] Workgroup size optimized (16x16 for Pixelocity)
-- [ ] Early exit for sky/background pixels
-- [ ] LOD quality scaling based on frame time
-- [ ] Anti-moiré LOD bias applied for high-frequency procedural patterns
-- [ ] Hex bokeh kernel used in place of naive circular sampling where applicable
+## Hybrid Strategies
+- Combine the base effect with a second technique from this list: reaction-diffusion, domain-warped FBM, SDF masking, chromatic aberration, feedback echo, Voronoi displacement, or audio-driven palette.
+- Reuse existing chunks/patterns already in the codebase (`smin`, `kaleido`, `warppedFBM`, `bass_env`).
+- Keep the result slot-chain safe: write meaningful alpha and respect the 13-binding contract.
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it production-ready.
-- Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
-- Do NOT modify the 13-binding header or the Uniforms struct.
-- Preserve or enhance RGBA channel usage.
-- Add JSON params if new tunable values are introduced (max 4 params mapped to zoom_params).
-
-## Performance Constraint
-This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
+- The upgraded shader must show ≥2 clearly identifiable techniques working together.
+- Add a header comment listing the combined techniques.
+- Update JSON `features` and `tags` to reflect new techniques.
+- Do NOT modify the 13-binding header or `Uniforms` struct.
+- Workgroup size stays `@workgroup_size(16, 16, 1)`.
+- Return exactly one ```` ```wgsl ```` block.
 
 
 ---
@@ -431,7 +305,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 180 lines (±20%).
+4. Ensure the upgraded shader is roughly 220 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

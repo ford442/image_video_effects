@@ -1,5 +1,3 @@
-import { pipeline, env } from '@xenova/transformers';
-import * as webllm from "@mlc-ai/web-llm";
 import { buildCatalog, CatalogShader } from './services/shaderCatalog';
 import { saveVJStack } from './services/vjHistory';
 import { loadPresets, randomizeParams } from './services/vjPresets';
@@ -7,9 +5,10 @@ import { connectSource, disposeAudioGraph } from './services/audioGraph';
 import { BeatDetector } from './services/beatDetector';
 import { TransitionOrchestrator, TransitionSchemaSlot } from './services/transitionOrchestrator';
 import { ParamMap, snapToStep } from './utils/transitionMath';
+import { loadTransformersModule } from './services/aiModels/transformersLoader';
+import { loadWebLlmModule } from './services/aiModels/webLlmLoader';
 
 // --- Configuration ---
-env.allowLocalModels = false;
 const CAPTIONER_ID = 'Xenova/vit-gpt2-image-captioning';
 const LLM_ID = 'gemma-2-2b-it-q4f32_1-MLC';
 
@@ -31,6 +30,29 @@ export interface ShaderRecord {
 
 export type AIStatus = 'idle' | 'loading-models' | 'ready' | 'generating' | 'error';
 
+export interface CaptionResult {
+  generated_text: string;
+}
+
+export interface ImageCaptionPipeline {
+  (url: string, options?: { max_new_tokens?: number }): Promise<CaptionResult[]>;
+}
+
+export interface LlmChatCompletion {
+  choices: Array<{ message: { content: string | null } }>;
+}
+
+export interface LlmEngine {
+  chat: {
+    completions: {
+      create(options: {
+        messages: Array<{ role: string; content: string }>;
+        temperature?: number;
+      }): Promise<LlmChatCompletion>;
+    };
+  };
+}
+
 export interface AutoTransitionConfig {
   source: 'timer' | 'beat';
   intervalMs?: number;
@@ -51,9 +73,9 @@ export class Alucinate {
   private shaderManifest: ShaderRecord[] = [];
   private imageThemes: string[] = [];
 
-  // AI Models
-  private captioner: any = null;
-  private llm: webllm.MLCEngine | null = null;
+  // AI Models (lazy-loaded)
+  private captioner: ImageCaptionPipeline | null = null;
+  private llm: LlmEngine | null = null;
 
   // State
   private loopInterval: number | null = null;
@@ -123,33 +145,55 @@ export class Alucinate {
         this.setStatus('loading-models', 'Loading shader manifest...');
         this.shaderManifest = await Alucinate.buildShaderManifest();
 
+        this.setStatus('loading-models', 'Loading AI libraries...');
+        const transformers = await loadTransformersModule();
+        const webllm = await loadWebLlmModule();
+
         this.setStatus('loading-models', 'Loading image captioning model...');
-        this.captioner = await pipeline('image-to-text', CAPTIONER_ID, {
-             progress_callback: (progress: any) => {
-                this.setStatus('loading-models', `Captioner: ${progress.status} (${(progress.progress || 0).toFixed(2)}%)`);
-            }
-        });
+        this.captioner = (await transformers.pipeline('image-to-text', CAPTIONER_ID, {
+          progress_callback: (progress: { status?: string; progress?: number }) => {
+            const pct =
+              typeof progress.progress === 'number'
+                ? ` (${(progress.progress * 100).toFixed(2)}%)`
+                : '';
+            this.setStatus('loading-models', `Captioner: ${progress.status || '...'}${pct}`);
+          },
+        })) as ImageCaptionPipeline;
 
         this.setStatus('loading-models', 'Loading large language model...');
-        this.llm = await webllm.CreateMLCEngine(LLM_ID, {
-            initProgressCallback: (progress: webllm.InitProgressReport) => {
-                this.setStatus('loading-models', `LLM: ${progress.text.replace('[...]', `(${(progress.progress * 100).toFixed(2)}%)`)}`);
-            },
-            appConfig: {
-                model_list: [
-                    {
-                        "model": "https://huggingface.co/mlc-ai/gemma-2-2b-it-q4f32_1-MLC",
-                        "model_id": "gemma-2-2b-it-q4f32_1-MLC",
-                        "model_lib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_80/gemma-2-2b-it-q4f32_1-ctx4k_cs1k-webgpu.wasm",
-                    }
-                ]
-            }
-        });
+        this.llm = (await webllm.CreateMLCEngine(LLM_ID, {
+          initProgressCallback: (progress: { text: string; progress: number }) => {
+            this.setStatus(
+              'loading-models',
+              `LLM: ${progress.text.replace('[...]', `(${(progress.progress * 100).toFixed(2)}%)`)}`
+            );
+          },
+          appConfig: {
+            model_list: [
+              {
+                model: 'https://huggingface.co/mlc-ai/gemma-2-2b-it-q4f32_1-MLC',
+                model_id: 'gemma-2-2b-it-q4f32_1-MLC',
+                model_lib:
+                  'https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/web-llm-models/v0_2_80/gemma-2-2b-it-q4f32_1-ctx4k_cs1k-webgpu.wasm',
+              },
+            ],
+          },
+        })) as LlmEngine;
 
         this.setStatus('ready', 'AI models initialized successfully.');
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        this.setStatus('error', `Initialization failed: ${errorMessage}`);
+        const lower = errorMessage.toLowerCase();
+        const offline =
+          lower.includes('failed to fetch') ||
+          lower.includes('network') ||
+          lower.includes('offline');
+        this.setStatus(
+          'error',
+          offline
+            ? `AI init failed: model download blocked (offline/restricted network). ${errorMessage}`
+            : `Initialization failed: ${errorMessage}`
+        );
         console.error("Failed to initialize Alucinate:", error);
     }
   }

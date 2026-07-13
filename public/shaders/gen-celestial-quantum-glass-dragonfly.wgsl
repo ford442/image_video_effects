@@ -284,4 +284,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let final_col = mix(prev_col, col, 0.5); // Temporal smoothing
 
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(final_col, 1.0));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

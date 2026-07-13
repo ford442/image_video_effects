@@ -1929,6 +1929,231 @@
     ]
   },
   {
+    "id": "fireworks-depth-parade",
+    "name": "4th of July — Depth Parade",
+    "url": "shaders/fireworks-depth-parade.wgsl",
+    "description": "Depth layers of your image launch fireworks in parade sequence — foreground detonates first, then midground, then background. Creates a cinematic 3D-ish celebration where near elements pop before far ones. Image colors tint each layer's shells. Bass amplifies foreground launches. Mouse triggers a depth-sorted barrage.",
+    "tags": [
+      "fireworks",
+      "depth",
+      "parade",
+      "layered",
+      "pyrotechnics",
+      "july-4",
+      "image-reactive",
+      "audio-reactive",
+      "4th-of-july"
+    ],
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "layers",
+        "name": "Layer Separation",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Launch Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "boost",
+        "name": "Depth Boost",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "trail",
+        "name": "Trail Length",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "fireworks-edge-ignite",
+    "name": "4th of July — Edge Ignite",
+    "url": "shaders/fireworks-edge-ignite.wgsl",
+    "description": "Image contours and edges become ignition lines for a fireworks show. Bright boundaries spark and launch colored shells along the detected edges of your photo. The picture's outlines trace themselves in pyrotechnic light. Bass deepens edge bursts, treble adds crackle along contours. Mouse ignites edges at the cursor.",
+    "tags": [
+      "fireworks",
+      "edge",
+      "contour",
+      "pyrotechnics",
+      "july-4",
+      "image-reactive",
+      "audio-reactive",
+      "4th-of-july"
+    ],
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "edge",
+        "name": "Edge Sensitivity",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "power",
+        "name": "Launch Power",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "trail",
+        "name": "Trail Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "boost",
+        "name": "Color Boost",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "fireworks-patriotic-july4",
+    "name": "4th of July — Patriotic Pyro",
+    "url": "shaders/fireworks-patriotic-july4.wgsl",
+    "description": "Happy July 4th! Your image fuels a red, white, and blue fireworks spectacular. Bright regions launch patriotic shells cycling through crimson, silver-white, and electric blue. Image hues blend with the classic American palette for a backyard celebration feel. Bass booms the big shells, treble crackles the finale. Mouse fires a patriotic barrage.",
+    "tags": [
+      "fireworks",
+      "patriotic",
+      "july-4",
+      "red-white-blue",
+      "pyrotechnics",
+      "image-reactive",
+      "audio-reactive",
+      "4th-of-july"
+    ],
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "patriot",
+        "name": "Patriot Mix",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "power",
+        "name": "Burst Power",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "wave",
+        "name": "Stripe Wave",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "sparkle",
+        "name": "Sparkle",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
+    "id": "fireworks-portrait-burst",
+    "name": "4th of July — Portrait Burst",
+    "url": "shaders/fireworks-portrait-burst.wgsl",
+    "description": "Bright regions of your image become the cores of spectacular firework detonations. Faces, skylines, and luminous highlights erupt in bursts that inherit the source colors. The photo celebrates itself — portraits explode in their own palette. Bass triggers larger cores, treble adds sparkle. Mouse detonates at the cursor.",
+    "tags": [
+      "fireworks",
+      "portrait",
+      "bright-region",
+      "pyrotechnics",
+      "july-4",
+      "image-reactive",
+      "audio-reactive",
+      "4th-of-july"
+    ],
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "params": [
+      {
+        "id": "thresh",
+        "name": "Brightness",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "size",
+        "name": "Burst Size",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "dissolve",
+        "name": "Dissolve",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "warmth",
+        "name": "Warmth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "id": "fractal-noise-dissolve",
     "name": "Fractal Noise Dissolve",
     "url": "shaders/fractal-noise-dissolve.wgsl",
@@ -2306,7 +2531,7 @@
     "name": "Hex Lens Interactive",
     "category": "image",
     "url": "shaders/hex-lens.wgsl",
-    "description": "Honeycomb microlenses rotate and refract toward the cursor while audio adds prismatic shimmer to each cell.",
+    "description": "Honeycomb microlenses with hexagonal bokeh blur, wavelength-dependent chromatic dispersion, hexagonal aperture diffraction starbursts, FBM domain warping, and 6-fold/12-fold star patterns. Audio-reactive lens rotation and prismatic shimmer.",
     "params": [
       {
         "id": "param1",
@@ -2341,14 +2566,26 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "hexagonal-bokeh",
+      "chromatic-dispersion",
+      "diffraction-patterns"
     ],
     "tags": [
       "hex",
       "lens",
       "honeycomb",
       "prismatic",
-      "audio-reactive"
+      "audio-reactive",
+      "bokeh",
+      "dispersion",
+      "diffraction",
+      "fbm"
+    ],
+    "updated": true,
+    "updatedParams": [
+      "param2",
+      "param4"
     ]
   },
   {
@@ -4485,7 +4722,7 @@
     "name": "VHS Chroma Bleed",
     "category": "image",
     "url": "shaders/vhs-chroma-bleed.wgsl",
-    "description": "VHS tape aesthetic with audio-reactive jitter: bass drives line dropouts, treble adds micro-glitch. Chromatic bleed with depth-scatter. RGB channels shift independently for analog decay.",
+    "description": "VHS tape aesthetic with authentic tape degradation: time-varying chromatic aberration, tape tracking error with horizontal wobble and jitter, audio-reactive line dropouts, compression artifacts, analog warmth, saturation roll-off, noise bands, film grain, scanlines, CRT barrel distortion, and vignette. Chromatic bleed with depth-scatter. Bass drives line dropouts, treble adds micro-glitch.",
     "tags": [
       "vhs",
       "retro",
@@ -4505,7 +4742,15 @@
       "glitch",
       "audio-reactive",
       "depth-aware",
-      "chromatic-bleed"
+      "chromatic-bleed",
+      "film-grain",
+      "scanlines",
+      "crt-barrel",
+      "tape-tracking",
+      "compression-artifacts",
+      "analog-warmth",
+      "vignette",
+      "noise-bands"
     ],
     "params": [
       {

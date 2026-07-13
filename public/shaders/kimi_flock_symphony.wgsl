@@ -90,6 +90,8 @@ fn hsl_to_rgb(h: f32, s: f32, l: f32) -> vec3<f32> {
     return rgb + vec3<f32>(m);
 }
 
+// 1D particle dispatch: one thread per boid. Must stay (64, 1, 1) because the
+// flocking kernel indexes boids by gid.x and is dispatched as a 1D range.
 @compute @workgroup_size(64, 1, 1)
 fn update_boids(@builtin(global_invocation_id) gid: vec3<u32>) {
     let idx = gid.x;
@@ -257,4 +259,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Output RGBA
     let output = vec4<f32>(accumulated_color, clamp(final_alpha, 0.0, 1.0));
     textureStore(writeTexture, coord, applyGenerativePrimaryControls(output));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

@@ -42,7 +42,7 @@ fn value_noise(st: vec2<f32>) -> f32 {
                    noise(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 

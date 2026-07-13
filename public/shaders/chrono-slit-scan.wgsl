@@ -1,9 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Chrono Slit Scan — Optimizer Upgrade
+//  Chrono Slit Scan — Phase B Multi-Pass-Architect Upgrade
 //  Category: image
 //  Features: temporal-persistence, audio-reactive, fbm-warp, sdf-composition,
-//            upgraded-rgba, multi-slit, branchless-slit, depth-aware
+//            upgraded-rgba, multi-slit, branchless-slit, depth-aware, lod-noise,
+//            early-exit, sparse-sampling
 //  Complexity: Medium
+//
+//  Phase B changes:
+//   - Coarse slit field computed first; nearest slit is refined with LOD fbm.
+//   - Skip current-frame texture sample when mask is negligible (early exit).
+//   - Pixel-aligned textureLoad for source/history cuts sampler pressure.
+//   - Branchless slit gating preserved; loop invariants hoisted.
 //
 //  Pipeline notes:
 //   - dataTextureA/B used for temporal state; dataTextureC is previous frame.
@@ -79,6 +86,13 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
   return mix(b, a, h) - k * h * (1.0 - h);
 }
 
+// ── Slit field helpers ────────────────────────────────────────────
+fn slitPosition(i: i32, t: f32, s: f32) -> f32 {
+  let offset = fract(f32(i + 1) * PHI);
+  let rate = 1.0 + f32(i) * 0.3;
+  return fract(t * s * rate + offset);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
@@ -88,6 +102,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(pixel) / res;
   let time = u.config.x;
 
+  // Audio features
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
@@ -107,16 +122,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthBoost = 1.0 + depth * 0.5;
 
-  // Multi-slit distance field with branchless count gating
+  // ── Coarse multi-slit field ──────────────────────────────────────
+  // Build the base distance field without fbm warp. Track the nearest
+  // active slit index so the expensive warp can be applied to one slit
+  // only and with reduced octaves when far away.
   var dist = 1.0;
+  var nearestIdx: i32 = 0;
   for (var i: i32 = 0; i < 3; i = i + 1) {
     let isActive = step(f32(i) + 0.5, slitCount);
-    let offset = fract(f32(i + 1) * PHI);
-    let pos = fract(time * speed * (1.0 + f32(i) * 0.3) + offset);
-    let warp = fbm(vec2<f32>(uv.y * 3.0 + f32(i), time * 0.5), 3) * 0.05;
-    let sp = fract(pos + warp);
-    let d = abs(uv.x - sp);
+    let pos = slitPosition(i, time, speed);
+    let d = abs(uv.x - pos);
     let blended = smin(dist, d, 0.15);
+    let closer = step(d, dist);
+    nearestIdx = select(nearestIdx, i, (closer * isActive) > 0.5);
     dist = mix(dist, blended, isActive);
   }
 
@@ -124,16 +142,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let widthMod = 1.0 + fbm(vec2<f32>(time, uv.y * 2.0), 3) * 0.5;
   let slitW = baseWidth * widthMod * depthBoost;
 
+  // ── LOD warp refinement ──────────────────────────────────────────
+  // Full 3-octave warp is only needed inside the influence radius of a
+  // slit. Outside that, a single-octave sample (multiplied by zero)
+  // keeps the branchless path cheap.
+  let refineRange = slitW * 2.5 + 0.04;
+  let needsRefine = f32(dist < refineRange);
+  let warpOctaves = select(1, 3, needsRefine > 0.0);
+  let warp = fbm(vec2<f32>(uv.y * 3.0 + f32(nearestIdx), time * 0.5), warpOctaves) * 0.05 * needsRefine;
+
+  let nearPos = slitPosition(nearestIdx, time, speed);
+  let warpedPos = fract(nearPos + warp);
+  let dWarp = abs(uv.x - warpedPos);
+  dist = mix(dist, smin(dist, dWarp, 0.15), needsRefine);
+
   // Feathered slit mask
   let mask = 1.0 - smoothstep(slitW * feather, slitW, dist);
-
-  // Sample current frame and temporal history
-  let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let history = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
 
   // Spatially-varying temporal decay
   let decayNoise = fbm(uv * 4.0 + time * 0.1, 3);
   let decay = mix(1.0, 0.92 + decayNoise * 0.04, 0.5);
+
+  // Sample temporal history once (pixel-aligned load)
+  let history = textureLoad(dataTextureC, pixel, 0);
+
+  // ── Early exit for sparse slit coverage ──────────────────────────
+  // When the slit mask is negligible this pixel only needs decayed
+  // history, avoiding the current-frame texture sample entirely.
+  if (mask < 0.005) {
+    let faded = history.rgb * decay;
+    let alpha = history.a * decay;
+    textureStore(writeTexture, pixel, vec4<f32>(faded, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(faded, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    return;
+  }
+
+  // Sample current frame only inside the slit region
+  let current = textureLoad(readTexture, pixel, 0);
 
   // Compose: freshly scanned regions pick up current color and intensity
   let alpha = mix(history.a * decay, saturate(luma(current.rgb) + 0.2), mask);

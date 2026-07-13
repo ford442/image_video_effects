@@ -1,0 +1,47 @@
+{
+    "id": "gen-prismatic-cyber-chrono-void-kitsune",
+    "name": "Prismatic Cyber-Chrono Void-Kitsune",
+    "url": "shaders/gen-prismatic-cyber-chrono-void-kitsune.wgsl",
+    "category": "generative",
+    "tags": [
+        "cosmic",
+        "kitsune",
+        "quantum",
+        "crystal",
+        "organic",
+        "mechanical",
+        "audio-reactive",
+        "volumetric"
+    ],
+    "description": "A hyper-majestic, nine-tailed cybernetic space-fox woven from shattering prismatic quantum glass and glowing liquid-aurora.",
+    "params": [
+        {
+            "name": "Tail Dispersion",
+            "default": 1.0,
+            "min": 0.1,
+            "max": 3.0,
+            "step": 0.1
+        },
+        {
+            "name": "Rift Density",
+            "default": 0.8,
+            "min": 0.1,
+            "max": 2.0,
+            "step": 0.05
+        },
+        {
+            "name": "Rune Intensity",
+            "default": 1.5,
+            "min": 0.5,
+            "max": 5.0,
+            "step": 0.1
+        },
+        {
+            "name": "Glass Refraction",
+            "default": 0.7,
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        }
+    ]
+}

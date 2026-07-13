@@ -222,3 +222,158 @@ export function generateChainVariationChains(
 ): SharedChain[] {
   return generateChainVariations(baseChain, count, catalog, options).map(v => v.chain);
 }
+
+// ─── Genetic breed / crossover ────────────────────────────────────────────────
+
+function snapAndClamp(value: number, param: CatalogShader['params'][number]): number {
+  let result = value;
+  if (param.step !== undefined && param.step > 0) {
+    const steps = Math.round((result - param.min) / param.step);
+    result = param.min + steps * param.step;
+  }
+  return Math.max(param.min, Math.min(param.max, result));
+}
+
+function getParamValueForShader(
+  parentSlot: { shaderId: string | null },
+  expandedParams: SlotParams,
+  shaderId: string,
+  paramId: string,
+  orderedIds: string[]
+): number | undefined {
+  if (parentSlot.shaderId !== shaderId) return undefined;
+  const index = orderedIds.indexOf(paramId);
+  if (index < 0) return undefined;
+  const slotKey = `zoomParam${index + 1}` as keyof SlotParams;
+  const value = expandedParams[slotKey];
+  return typeof value === 'number' ? value : undefined;
+}
+
+/**
+ * Breed two parent chains into `count` child variations using deterministic,
+ * seedable crossover.
+ *
+ * Rules:
+ *  - Slot count is the minimum of the two parents (clamped to MAX_SHARED_SLOTS).
+ *  - `enabled` / `mode` flags are inherited from parent A.
+ *  - Per slot, the child shader is chosen 50/50 from parent A or parent B.
+ *  - Per-slot params are blended linearly between matching parent params.
+ *  - If `shaderSwap: 'sameCategory'`, a child slot has a 25% chance of mutating
+ *    to another shader in the same category, with fresh randomized params.
+ *  - The same seed always produces the same children.
+ */
+export function breedVariations(
+  parentA: SharedChain,
+  parentB: SharedChain,
+  count: number,
+  catalog: CatalogShader[],
+  options: VariationOptions
+): ChainVariation[] {
+  if (!Number.isFinite(count) || count <= 0) return [];
+
+  const slotsA = (parentA.slots || []).slice(0, MAX_SHARED_SLOTS);
+  const slotsB = (parentB.slots || []).slice(0, MAX_SHARED_SLOTS);
+  const slotCount = Math.min(slotsA.length, slotsB.length);
+  if (slotCount === 0) return [];
+
+  const defaultsLookup = buildCatalogDefaultsLookup(catalog);
+  const expandedA = expandSharedChain({ v: parentA.v, slots: slotsA }, defaultsLookup);
+  const expandedB = expandSharedChain({ v: parentB.v, slots: slotsB }, defaultsLookup);
+
+  const byId = new Map(catalog.map(s => [s.id, s]));
+  const children: ChainVariation[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const seed = options.seed !== undefined ? `${options.seed}:breed:${i}` : undefined;
+    const rng = createRng(seed);
+
+    const slotModes: SlotMode[] = [];
+    const enabled: boolean[] = [];
+    const modes: Array<string | null> = [];
+    const slotParams: SlotParams[] = [];
+
+    for (let slotIndex = 0; slotIndex < slotCount; slotIndex++) {
+      const slotA = slotsA[slotIndex];
+      const slotB = slotsB[slotIndex];
+
+      enabled.push(slotA.enabled !== false);
+      slotModes.push(slotA.mode === 'parallel' ? 'parallel' : 'chained');
+
+      // 50/50 shader pick from parent A or B.
+      let shaderId = rng() < 0.5 ? slotA.shaderId : slotB.shaderId;
+
+      // Optional same-category mutation.
+      if (options.shaderSwap === 'sameCategory' && shaderId) {
+        if (rng() < 0.25) {
+          shaderId = pickSameCategoryShader(shaderId, catalog, rng);
+        }
+      }
+
+      modes.push(shaderId);
+
+      let params: SlotParams;
+      if (shaderId) {
+        const meta = byId.get(shaderId);
+        const orderedIds = meta?.params.map(p => p.id) ?? [];
+        const blended: Record<string, number> = {};
+
+        if (meta) {
+          for (const param of meta.params) {
+            const valA = getParamValueForShader(
+              slotA,
+              expandedA.slotParams[slotIndex],
+              shaderId,
+              param.id,
+              orderedIds
+            );
+            const valB = getParamValueForShader(
+              slotB,
+              expandedB.slotParams[slotIndex],
+              shaderId,
+              param.id,
+              orderedIds
+            );
+
+            let raw: number;
+            if (valA !== undefined && valB !== undefined) {
+              const t = rng();
+              raw = valA + (valB - valA) * t;
+            } else if (valA !== undefined) {
+              raw = valA;
+            } else if (valB !== undefined) {
+              raw = valB;
+            } else {
+              raw = param.default;
+            }
+
+            blended[param.id] = snapAndClamp(raw, param);
+          }
+        }
+
+        const mapped = mapOrderedParamsToSlotParams(blended, orderedIds);
+        params = { ...expandedA.slotParams[slotIndex], ...mapped };
+      } else {
+        params = expandedA.slotParams[slotIndex];
+      }
+
+      slotParams.push(params);
+    }
+
+    const chain = buildSharedChain(modes, slotParams, {
+      enabled,
+      slotModes,
+      defaultsLookup,
+    });
+
+    const summary: VariationSummary = {
+      slots: chain.slots.map(slot => ({
+        shaderId: slot.shaderId,
+        params: slot.params ?? {},
+      })),
+    };
+
+    children.push({ chain, summary });
+  }
+
+  return children;
+}

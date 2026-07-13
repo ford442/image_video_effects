@@ -5,6 +5,14 @@ import ShaderScanner from './components/ShaderScanner';
 import LiveStudioTab from './components/LiveStudioTab';
 import { StorageBrowser } from './components/StorageBrowser';
 import { RendererToggle } from './components/RendererToggle';
+import { PerformanceStatusHUD } from './components/PerformanceStatusHUD';
+import { RenderQualityMode } from './config/performancePolicy';
+import { loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
+import { RendererType, RendererManager } from './renderer/RendererManager';
+import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from './AutoDJ';
+import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
+import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
+import { resolveShaderUrl } from './utils/resolveShaderUrl';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { RendererType, RendererManager } from './renderer/RendererManager';
 import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from './AutoDJ';
@@ -286,6 +294,8 @@ function MainApp() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const wasmRecordingPromiseRef = useRef<Promise<Blob> | null>(null);
+    const recordingFinishedRef = useRef(false);
 
     // --- State: Mouse Control ---
     const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 });
@@ -302,7 +312,7 @@ function MainApp() {
     const [audioReactiveAmount, setAudioReactiveAmount] = useState(0.8); // master 0-1 mix
 
     // --- Audio Analyzer Hook ---
-    const { startAudio: startAudioAnalyzer, stopAudio: stopAudioAnalyzer, getAudioData: getAudioAnalyzerData } = useAudioAnalyzer();
+    const { startAudio: startAudioAnalyzer, stopAudio: stopAudioAnalyzer, getAudioData: getAudioAnalyzerData, getAudioBins } = useAudioAnalyzer();
 
     // --- Refs for audio-reactive param smoothing ---
     const audioParamSmoothedRef = useRef<[number, number, number, number]>([0.5, 0.5, 0.5, 0.5]);
@@ -314,6 +324,17 @@ function MainApp() {
 
     // --- State: GPU Capabilities ---
     const [supportsDeepWorkgroup, setSupportsDeepWorkgroup] = useState(false);
+
+    // --- State: Render quality ---
+    const [renderQualityMode, setRenderQualityMode] = useState<RenderQualityMode>(() => loadRenderQualityMode());
+    const [performanceHud, setPerformanceHud] = useState({
+        internalWidth: 2048,
+        internalHeight: 2048,
+        scale: 1,
+        targetFps: 60,
+        adaptive: true,
+        maxActiveSlots: 3,
+    });
 
     // --- Refs ---
     const rendererRef = useRef<RendererManager | null>(null);
@@ -347,7 +368,84 @@ function MainApp() {
 
         if (ok) {
             setActiveRendererType(type);
-            setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
+            setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM (experimental)' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
+
+            // Re-bind shaders + params so the new backend matches the UI state
+            if (type === 'wasm' || type === 'webgpu') {
+                await manager.resyncShaderStack({
+                    modes: modesRef.current,
+                    slotParams: slotParamsRef.current,
+                    resolveShader: (shaderId) => availableModesRef.current.find(s => s.id === shaderId),
+                    inputSource: inputSourceRef.current,
+                });
+            }
+        } else {
+            setStatus(`⚠️ Failed to switch to ${type} renderer — staying on ${activeRendererType}.`);
+        }
+        setIsRendererSwitching(false);
+    }, [activeRendererType]);
+
+    // Poll real FPS from the active renderer and keep separate buckets for comparison
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const manager = rendererRef.current;
+            if (!manager) return;
+            const fps = manager.getCurrentFPS?.() ?? 0;
+            if (activeRendererType === 'wasm') {
+                setWasmFps(fps);
+            } else {
+                setJsFps(fps);
+            }
+        }, 800);
+        return () => clearInterval(interval);
+    }, [activeRendererType]);
+    const fileInputImageRef = useRef<HTMLInputElement>(null);
+    const fileInputVideoRef = useRef<HTMLInputElement>(null);
+    const channelRef = useRef<BroadcastChannel | null>(null);
+    const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const rouletteFlashRef = useRef<HTMLDivElement | null>(null);
+    // Mirrors slotShaderStatus state so setMode can read it without being in its dep array
+    const slotShaderStatusRef = useRef<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle', 'idle', 'idle', 'idle']);
+    // Direct ref to the WebGPU canvas — set via onCanvasRef callback (avoids fragile querySelector)
+    const webgpuCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+    const {
+        depthEstimator,
+        isModelLoaded,
+        loadDepthModel,
+        runDepthAnalysis,
+    } = useDepthEstimation({
+        rendererRef,
+        currentImageUrl,
+        setStatus,
+    });
+
+    // --- Renderer backend state ---
+    const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
+    const [jsFps, setJsFps] = useState(0);
+    const [wasmFps, setWasmFps] = useState(0);
+    const [isRendererSwitching, setIsRendererSwitching] = useState(false);
+
+    const handleSwitchRenderer = useCallback(async (type: RendererType) => {
+        const manager = rendererRef.current;
+        if (!manager) return;
+
+        setIsRendererSwitching(true);
+        setStatus(`Switching to ${type} renderer…`);
+
+        // Snapshot current FPS into the correct bucket before switching
+        const currentFps = manager.getCurrentFPS?.() ?? 0;
+        if (activeRendererType === 'webgpu' || activeRendererType === 'js') {
+            setJsFps(currentFps);
+        } else if (activeRendererType === 'wasm') {
+            setWasmFps(currentFps);
+        }
+
+        const ok = await manager.switchRenderer(type);
+
+        if (ok) {
+            setActiveRendererType(type);
+            setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM (experimental)' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
 
             // Re-bind shaders + params so the new backend matches the UI state
             if (type === 'wasm' || type === 'webgpu') {
@@ -405,6 +503,13 @@ function MainApp() {
         inputSourceRef.current = inputSource;
     }, [inputSource]);
 
+    /** Push input-source changes to the active renderer (WebGPU, WASM, or JS). */
+    const syncInputSourceToRenderer = useCallback((source: InputSource) => {
+        inputSourceRef.current = source;
+        setInputSource(source);
+        rendererRef.current?.setInputSource(source);
+    }, []);
+
     const mapShaderParamUpdates = useCallback((slotParamsUpdates: Record<string, number>, slotIndex: number): Partial<SlotParams> => {
         const shaderId = modesRef.current[slotIndex];
         const shaderEntry = availableModesRef.current.find(m => m.id === shaderId);
@@ -428,6 +533,12 @@ function MainApp() {
     }, [mapShaderParamUpdates]);
 
     const setMode = useCallback(async (index: number, mode: RenderMode) => {
+        const maxSlots = rendererRef.current?.getMaxActiveSlots?.() ?? 3;
+        if (mode !== 'none' && index >= maxSlots) {
+            setStatus(`Quality cap: only ${maxSlots} slot(s) active — raise quality in Render Quality panel.`);
+            return;
+        }
+
         // Guard: if a shader is already compiling on this slot, skip to prevent chaos-mode pile-up
         if (slotShaderStatusRef.current[index] === 'loading') return;
 
@@ -459,7 +570,11 @@ function MainApp() {
                 let shaderUrl = shaderEntry.url;
                 
                 // Load the shader
-                const ok = await rendererRef.current.loadShader(shaderEntry.id, shaderUrl);
+                const ok = await rendererRef.current.loadShader(
+                    shaderEntry.id,
+                    shaderUrl,
+                    { requiresDeepWorkgroup: shaderEntry.requiresDeepWorkgroup },
+                );
                 
                 // Activate the shader on the specified slot
                 if (ok && rendererRef.current) {
@@ -516,6 +631,62 @@ function MainApp() {
             return next;
         });
     }, []);
+    const {
+        activeRendererType,
+        jsFps,
+        wasmFps,
+        isRendererSwitching,
+        rendererReady,
+        supportsDeepWorkgroup,
+        handleSwitchRenderer,
+        onInitCanvas,
+    } = useRendererBackend({
+        rendererRef,
+        modesRef,
+        slotParamsRef,
+        availableModesRef,
+        inputSourceRef,
+        setStatus,
+    });
+
+    useEffect(() => { modesRef.current = modes; }, [modes]);
+    useEffect(() => { availableModesRef.current = availableModes; }, [availableModes]);
+    useEffect(() => { slotParamsRef.current = slotParams; }, [slotParams]);
+    useEffect(() => { inputSourceRef.current = inputSource; }, [inputSource]);
+
+    const {
+        setMode,
+        updateSlotParam,
+        mapShaderParamUpdates,
+        handleApplyParamsDirect,
+        syncInputSourceToRenderer,
+    } = useShaderMode({
+        rendererRef,
+        availableModes,
+        availableModesRef,
+        modesRef,
+        slotParamsRef,
+        inputSourceRef,
+        slotShaderStatusRef,
+        setModes,
+        setSlotParams,
+        setSlotShaderStatus,
+        setInputSource,
+    });
+
+    const {
+        audioReactiveParams,
+        setAudioReactiveParams,
+        audioReactiveAmount,
+        setAudioReactiveAmount,
+    } = useAudioReactiveParams({
+        rendererRef,
+        modes,
+        availableModes,
+        updateSlotParam,
+        getShaderDefaults,
+        setStatus,
+    });
 
     const handleUpdateStack = useCallback((ids: string[]) => {
         setModes(prev => {
@@ -541,7 +712,7 @@ function MainApp() {
     useEffect(() => {
         if (shaderCategory === 'generative') {
             // When user selects "Procedural Generation", force input source to generative
-            setInputSource('generative');
+            syncInputSourceToRenderer('generative');
             setStatus('Switched to Generative Input');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -586,9 +757,7 @@ function MainApp() {
 
             // Push images to Renderer
             if (rendererRef.current) {
-                if (rendererRef.current.setImageList) {
-                    rendererRef.current.setImageList(content.manifest.map(m => m.url));
-                }
+                rendererRef.current.setImageList(content.manifest.map(m => m.url));
             }
         };
         fetchManifests();
@@ -716,9 +885,7 @@ function MainApp() {
             for (let i = 0; i < data.length; ++i) {
                 normalizedData[i] = 1.0 - ((data[i] - min) / range);
             }
-            if (rendererRef.current.updateDepthMap) {
-                rendererRef.current.updateDepthMap(normalizedData, width, height);
-            }
+            rendererRef.current.updateDepthMap(normalizedData, width, height);
             setStatus('Depth map updated.');
         } catch (e: any) {
             console.error("Error during analysis:", e);
@@ -727,14 +894,13 @@ function MainApp() {
     }, [depthEstimator]);
 
     const handleLoadImage = useCallback(async (url: string) => {
-        if (!rendererRef.current) return;
-        if (rendererRef.current.loadImage) {
-            const newImageUrl = await rendererRef.current.loadImage(url);
-            if (newImageUrl) {
-                setCurrentImageUrl(newImageUrl);
-                if (depthEstimator) {
-                    await runDepthAnalysis(newImageUrl);
-                }
+        const manager = rendererRef.current;
+        if (!manager) return;
+        const newImageUrl = await manager.loadImage(url);
+        if (newImageUrl) {
+            setCurrentImageUrl(newImageUrl);
+            if (depthEstimator) {
+                await runDepthAnalysis(newImageUrl);
             }
         }
     }, [depthEstimator, runDepthAnalysis]);
@@ -894,6 +1060,11 @@ function MainApp() {
         await aiVj.randomizeActiveParams();
     }, [aiVj]);
 
+    const handleTriggerNextTransition = useCallback(async () => {
+        if (!aiVj) return;
+        await aiVj.triggerNextTransition();
+    }, [aiVj]);
+
     const handleSavePreset = useCallback((name: string) => {
         if (!aiVj) return;
         const shaderIds = aiVj.getActiveShaderIds();
@@ -934,6 +1105,234 @@ function MainApp() {
         setShareVibeText(aiVj?.getLastVibeText() ?? '');
         setShowShareModal(true);
     }, [buildVjChainString, aiVj]);
+    const startAutoTransition = useCallback(async (config: AutoTransitionConfig) => {
+        if (!aiVj) return false;
+        return aiVj.startAutoTransition(config);
+    }, [aiVj]);
+
+    const stopAutoTransition = useCallback(() => {
+        aiVj?.stopAutoTransition();
+    }, [aiVj]);
+    
+    const onInitCanvas = useCallback(() => {
+        const manager = rendererRef.current;
+        if (!manager) return;
+        setActiveRendererType(manager.getActiveRendererType());
+        const deep = manager.getSupportsDeepWorkgroup();
+        setSupportsDeepWorkgroup(deep);
+        manager.setRenderQuality(renderQualityMode, { supportsDeepWorkgroup: deep });
+        manager.setInputSource(inputSourceRef.current);
+        setRendererReady(true);
+    }, [renderQualityMode]);
+
+    const handleRenderQualityChange = useCallback((mode: RenderQualityMode) => {
+        setRenderQualityMode(mode);
+        saveRenderQualityMode(mode);
+        const manager = rendererRef.current;
+        if (manager) {
+            manager.setRenderQuality(mode, { supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup() });
+        }
+    }, []);
+
+    // Poll internal resolution + backend for status HUD
+    useEffect(() => {
+        if (!rendererReady) return;
+        const tick = () => {
+            const manager = rendererRef.current;
+            if (!manager) return;
+            const status = manager.getPerformanceStatus();
+            setPerformanceHud({
+                internalWidth: status.internalWidth,
+                internalHeight: status.internalHeight,
+                scale: status.scale,
+                targetFps: status.targetFps,
+                adaptive: status.adaptive,
+                maxActiveSlots: status.maxActiveSlots,
+            });
+        };
+        tick();
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [rendererReady, activeRendererType, renderQualityMode]);
+
+    // --- Test Mode Hook (exposes renderer for Playwright harness) ---
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('testMode') === '1' && rendererRef.current) {
+            const manager = rendererRef.current;
+            const loadShaderTracked = async (id: string, url: string) => {
+                const ok = await manager.loadShader(id, url) ?? false;
+                if (params.get('shaderHotReload') === '1') {
+                    import('./dev/shaderHotReload').then(({ trackShaderForHotReload }) => {
+                        trackShaderForHotReload(id, url);
+                    });
+                }
+                return ok;
+            };
+            (window as any).__pixelocity__ = {
+                renderer: manager,
+                getRendererType: () => manager.getActiveRendererType(),
+                setSlotShader: (index: number, id: string) => {
+                    manager.setSlotShader(index, id);
+                },
+                loadShader: loadShaderTracked,
+                reloadShader: (id: string, url: string) => manager.reloadShader(id, url),
+                setInputSource: (source: Parameters<typeof manager.setInputSource>[0]) => {
+                    manager.setInputSource(source);
+                },
+                setTestRenderState: (state: Parameters<typeof manager.applyTestRenderState>[0]) => {
+                    manager.applyTestRenderState(state);
+                },
+                captureCanvasScreenshot: async () => {
+                    const canvas = document.querySelector('canvas');
+                    if (!canvas) return null;
+                    return canvas.toDataURL('image/png');
+                },
+                runBenchmark: async (frameCount = 90) => {
+                    const samples: Array<{ fps: number; gpu: ReturnType<typeof manager.getGPUTimings> }> = [];
+                    for (let i = 0; i < frameCount; i++) {
+                        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+                        samples.push({
+                            fps: manager.getMetrics().fps,
+                            gpu: manager.getGPUTimings(),
+                        });
+                    }
+                    const totals = samples.map((s) => s.gpu.totalTime).filter((t) => t > 0);
+                    const avgTotalMs = totals.length
+                        ? totals.reduce((a, b) => a + b, 0) / totals.length
+                        : 0;
+                    return {
+                        frames: frameCount,
+                        avgFps: samples.reduce((a, s) => a + s.fps, 0) / frameCount,
+                        avgTotalMs,
+                        gpuTimingsAvailable: samples.some((s) => s.gpu.available),
+                        rendererType: manager.getActiveRendererType(),
+                        samples: samples.slice(-5),
+                    };
+                },
+                updateAudioFrequencyBins: (bins: Float32Array) => {
+                    manager.updateAudioFrequencyBins(bins);
+                },
+                getSlotState: (index: number) => manager.getSlotState(index),
+                getGPUTimings: () => manager.getGPUTimings(),
+                getSupportsDeepWorkgroup: () => manager.getSupportsDeepWorkgroup(),
+                takeScreenshot: (filename?: string) => manager.takeScreenshot(filename),
+                refreshFrameImage: () => manager.refreshFrameImage(),
+                getFrameImage: () => manager.getFrameImage(),
+            };
+        }
+    }, [rendererReady]);
+    useContentManifest({
+        rendererRef,
+        setImageManifest,
+        setVideoList,
+        setStatus,
+    });
+
+    useShaderCatalogLoad({
+        setAvailableModes,
+        setShadersReady,
+        setStatus,
+        rendererReady,
+        supportsDeepWorkgroup,
+        availableModes,
+    });
+
+    const { handleLoadImage, handleNewRandomImage } = useImageLoading({
+        rendererRef,
+        depthEstimator,
+        runDepthAnalysis,
+        imageManifest,
+        setCurrentImageUrl,
+        setStatus,
+    });
+
+    useShaderBoot({
+        rendererReady,
+        shadersReady,
+        modes,
+        setMode,
+        setStatus,
+        imageManifest,
+        currentImageUrl,
+        inputSource,
+        handleNewRandomImage,
+        availableModes,
+        autoChangeEnabled,
+        autoChangeDelay,
+        shaderCategory,
+        syncInputSourceToRenderer,
+    });
+
+    const {
+        aiVj,
+        aiVjStatus,
+        aiVjMessage,
+        isAiVjMode,
+        toggleAiVj,
+        handleGenerateFromVibe,
+        handleRandomizeParams,
+        handleTriggerNextTransition,
+        handleSavePreset,
+        startAutoTransition,
+        stopAutoTransition,
+    } = useAiVjHandlers({
+        imageManifest,
+        availableModes,
+        modes,
+        currentImageUrl,
+        handleLoadImage,
+        handleUpdateStack,
+        handleUpdateParams,
+        handleApplyParamsDirect,
+        setStatus,
+    });
+
+    const {
+        isWebcamActive,
+        webcamError,
+        showWebcamShaderSuggestions,
+        videoElementRef,
+        startWebcam,
+        stopWebcam,
+        applyWebcamFunShader,
+    } = useWebcam({
+        syncInputSourceToRenderer,
+        setShaderCategory,
+        setStatus,
+        setMode,
+        setActiveSlot,
+    });
+
+    const {
+        showShareModal,
+        setShowShareModal,
+        shareableLink,
+        shareVibeText,
+        buildVjChainString,
+        handleShareVjSet,
+        applySharedChain,
+        copyChainShareLink,
+        openRecordingShareModal,
+    } = useShareChain({
+        modes,
+        activeSlot,
+        slotParams,
+        inputSource,
+        currentImageUrl,
+        activeGenerativeShader,
+        availableModesRef,
+        aiVj,
+        setMode,
+        setActiveSlot,
+        updateSlotParam,
+        syncInputSourceToRenderer,
+        setActiveGenerativeShader,
+        handleLoadImage,
+        startWebcam,
+        setStatus,
+    });
 
     const handleSaveVjSet = useCallback(async (name: string) => {
         const encoded = await buildVjChainString();
@@ -955,16 +1354,12 @@ function MainApp() {
     }, [aiVj]);
     
     const onInitCanvas = useCallback(() => {
-        if (rendererRef.current) {
-            setActiveRendererType(rendererRef.current.getActiveRendererType());
-            if (rendererRef.current.getAvailableModes) {
-                setAvailableModes(rendererRef.current.getAvailableModes());
-            }
-            // Record deep-workgroup hardware capability so we can filter shaders
-            const deepWg = rendererRef.current.getSupportsDeepWorkgroup?.() ?? false;
-            setSupportsDeepWorkgroup(deepWg);
-            setRendererReady(true);
-        }
+        const manager = rendererRef.current;
+        if (!manager) return;
+        setActiveRendererType(manager.getActiveRendererType());
+        setSupportsDeepWorkgroup(manager.getSupportsDeepWorkgroup());
+        manager.setInputSource(inputSourceRef.current);
+        setRendererReady(true);
     }, []);
 
     // --- Test Mode Hook (exposes renderer for Playwright harness) ---
@@ -972,16 +1367,90 @@ function MainApp() {
         if (typeof window === 'undefined') return;
         const params = new URLSearchParams(window.location.search);
         if (params.get('testMode') === '1' && rendererRef.current) {
+            const manager = rendererRef.current;
+            const loadShaderTracked = async (id: string, url: string) => {
+                const ok = await manager.loadShader(id, url) ?? false;
+                if (params.get('shaderHotReload') === '1') {
+                    import('./dev/shaderHotReload').then(({ trackShaderForHotReload }) => {
+                        trackShaderForHotReload(id, url);
+                    });
+                }
+                return ok;
+            };
             (window as any).__pixelocity__ = {
-                renderer: rendererRef.current,
+                renderer: manager,
+                getRendererType: () => manager.getActiveRendererType(),
                 setSlotShader: (index: number, id: string) => {
-                    rendererRef.current?.setSlotShader(index, id);
+                    manager.setSlotShader(index, id);
                 },
-                loadShader: async (id: string, url: string) => {
-                    return rendererRef.current?.loadShader(id, url) ?? false;
+                loadShader: loadShaderTracked,
+                reloadShader: (id: string, url: string) => manager.reloadShader(id, url),
+                setInputSource: (source: Parameters<typeof manager.setInputSource>[0]) => {
+                    manager.setInputSource(source);
                 },
+                setTestRenderState: (state: Parameters<typeof manager.applyTestRenderState>[0]) => {
+                    manager.applyTestRenderState(state);
+                },
+                captureCanvasScreenshot: async () => {
+                    const canvas = document.querySelector('canvas');
+                    if (!canvas) return null;
+                    return canvas.toDataURL('image/png');
+                },
+                runBenchmark: async (frameCount = 90) => {
+                    const samples: Array<{ fps: number; gpu: ReturnType<typeof manager.getGPUTimings> }> = [];
+                    for (let i = 0; i < frameCount; i++) {
+                        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+                        samples.push({
+                            fps: manager.getMetrics().fps,
+                            gpu: manager.getGPUTimings(),
+                        });
+                    }
+                    const totals = samples.map((s) => s.gpu.totalTime).filter((t) => t > 0);
+                    const avgTotalMs = totals.length
+                        ? totals.reduce((a, b) => a + b, 0) / totals.length
+                        : 0;
+                    return {
+                        frames: frameCount,
+                        avgFps: samples.reduce((a, s) => a + s.fps, 0) / frameCount,
+                        avgTotalMs,
+                        gpuTimingsAvailable: samples.some((s) => s.gpu.available),
+                        rendererType: manager.getActiveRendererType(),
+                        samples: samples.slice(-5),
+                    };
+                },
+                updateAudioFrequencyBins: (bins: Float32Array) => {
+                    manager.updateAudioFrequencyBins(bins);
+                },
+                getSlotState: (index: number) => manager.getSlotState(index),
+                getGPUTimings: () => manager.getGPUTimings(),
+                getSupportsDeepWorkgroup: () => manager.getSupportsDeepWorkgroup(),
+                takeScreenshot: (filename?: string) => manager.takeScreenshot(filename),
+                refreshFrameImage: () => manager.refreshFrameImage(),
+                getFrameImage: () => manager.getFrameImage(),
             };
         }
+    }, [rendererReady]);
+
+    // --- Dev shader hot-reload (?renderer=wasm&shaderHotReload=1) ---
+    useEffect(() => {
+        if (typeof window === 'undefined' || !rendererRef.current) return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('shaderHotReload') !== '1') return;
+        if (params.get('renderer') !== 'wasm') return;
+
+        let cleanup: (() => void) | undefined;
+        import('./dev/shaderHotReload').then(({ attachShaderHotReload, wrapLoadShaderForHotReload }) => {
+            const manager = rendererRef.current!;
+            const wrapped = wrapLoadShaderForHotReload(manager);
+            (window as any).__pixelocity__ = {
+                ...(window as any).__pixelocity__,
+                loadShader: wrapped,
+                reloadShader: (id: string, url: string) => manager.reloadShader(id, url),
+            };
+            cleanup = attachShaderHotReload(manager);
+            console.log('[HotReload] Enabled — edit files in public/shaders/ to reload pipelines');
+        });
+        return () => cleanup?.();
     }, [rendererReady]);
 
     // --- Webcam Handlers ---
@@ -1017,7 +1486,7 @@ function MainApp() {
             await videoElementRef.current.play();
             
             setIsWebcamActive(true);
-            setInputSource('webcam');
+            syncInputSourceToRenderer('webcam');
             setShaderCategory('image');
             setShowWebcamShaderSuggestions(true);
             setStatus('📹 Webcam active! Try fun shaders below.');
@@ -1028,7 +1497,7 @@ function MainApp() {
                 : 'Failed to access webcam. Please check your camera.');
             setStatus('❌ Camera permission denied');
         }
-    }, []);
+    }, [syncInputSourceToRenderer]);
 
     const stopWebcam = useCallback(() => {
         if (streamRef.current) {
@@ -1040,10 +1509,10 @@ function MainApp() {
             videoElementRef.current.srcObject = null;
         }
         setIsWebcamActive(false);
-        setInputSource('image');
+        syncInputSourceToRenderer('image');
         setShowWebcamShaderSuggestions(false);
         setStatus('Webcam stopped');
-    }, []);
+    }, [syncInputSourceToRenderer]);
 
     const applyWebcamFunShader = useCallback((shaderId: string) => {
         setMode(0, shaderId as RenderMode);
@@ -1152,6 +1621,26 @@ function MainApp() {
         };
     }, []);
 
+    const handleRandomizeSlot = useCallback((slot: number) => {
+        const randomShader = getRandomShader();
+        if (!randomShader) {
+            setStatus('No shaders available for randomize.');
+            return;
+        }
+        setMode(slot, randomShader.id as RenderMode);
+        const newParams = randomizeSlotParams();
+        updateSlotParam(slot, newParams);
+        setStatus(`🎲 Randomized slot ${slot + 1}: ${randomShader.name}`);
+        setIsRouletteActive(true);
+        setTimeout(() => setIsRouletteActive(false), 500);
+    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam]);
+
+    const handleSetSlotParam = useCallback((slot: number, param: string, value: number) => {
+        const updates: Partial<SlotParams> = { [param]: value };
+        updateSlotParam(slot, updates);
+        rendererRef.current?.updateSlotParams(updates, slot);
+    }, [updateSlotParam]);
+
     const triggerRoulette = useCallback(() => {
         const randomShader = getRandomShader();
         if (!randomShader) {
@@ -1248,7 +1737,7 @@ function MainApp() {
         if (!nextShader) return;
 
         // Switch to generative input source if not already
-        setInputSource('generative');
+        syncInputSourceToRenderer('generative');
         setActiveGenerativeShader(nextShader.id);
 
         // Load the shader into slot 0
@@ -1264,15 +1753,15 @@ function MainApp() {
         });
 
         setStatus(`🎨 Generative Showcase: ${nextShader.name}`);
-    }, [getGenerativeShaders, setMode, updateSlotParam, setInputSource, setActiveGenerativeShader]);
+    }, [getGenerativeShaders, setMode, updateSlotParam, syncInputSourceToRenderer, setActiveGenerativeShader]);
 
     const startGenerativeShowcase = useCallback(() => {
         setGenerativeShowcaseLocked(false);
         setGenerativeShowcaseActive(true);
-        setInputSource('generative');
+        syncInputSourceToRenderer('generative');
         advanceGenerativeShowcase(); // First one immediately
         setStatus('🎨 Generative Showcase started! Click or press SPACE to lock the current shader.');
-    }, [advanceGenerativeShowcase, setInputSource]);
+    }, [advanceGenerativeShowcase, syncInputSourceToRenderer]);
 
     const stopGenerativeShowcase = useCallback(() => {
         setGenerativeShowcaseActive(false);
@@ -1343,6 +1832,9 @@ function MainApp() {
         if (!audioData) return;
 
         const { bass, mid, treble } = audioData;
+        manager.updateAudioData(bass, mid, treble);
+        manager.updateAudioFrequencyBins(getAudioBins());
+
         const overall = (bass + mid + treble) / 3.0;
         const amount = audioReactiveAmount;
 
@@ -1371,7 +1863,20 @@ function MainApp() {
             updateSlotParam(0, modulated);
             rendererRef.current?.updateSlotParams(modulated, 0);
         }
-    }, [audioReactiveParams, audioReactiveAmount, modes, availableModes, updateSlotParam, getAudioAnalyzerData]);
+    }, [audioReactiveParams, audioReactiveAmount, modes, availableModes, updateSlotParam, getAudioAnalyzerData, getAudioBins]);
+
+    const handleTakeScreenshot = useCallback(async () => {
+        const manager = rendererRef.current;
+        if (!manager) return;
+        try {
+            const filename = `pixelocity-${Date.now()}.png`;
+            await manager.takeScreenshot(filename);
+            setStatus(`📸 Screenshot saved (${filename})`);
+        } catch (err) {
+            console.error('Screenshot failed:', err);
+            setStatus('❌ Screenshot failed');
+        }
+    }, []);
 
     // Animation-frame callback for audio-reactive params (runs every frame)
     useEffect(() => {
@@ -1545,7 +2050,7 @@ function MainApp() {
             // Restore input source
             const source = params.get('source');
             if (source) {
-                setInputSource(source as InputSource);
+                syncInputSourceToRenderer(source as InputSource);
                 if (source === 'webcam') {
                     // Will need to trigger webcam start separately
                     setTimeout(() => startWebcam(), 1000);
@@ -1562,14 +2067,14 @@ function MainApp() {
             const gen = params.get('gen');
             if (gen) {
                 setActiveGenerativeShader(gen);
-                setInputSource('generative');
+                syncInputSourceToRenderer('generative');
             }
             
             setStatus('🎉 Shared state restored!');
         } catch (e) {
             console.error('Failed to restore state from hash:', e);
         }
-    }, [setMode, setActiveSlot, updateSlotParam, setInputSource, setActiveGenerativeShader, handleLoadImage, startWebcam]);
+    }, [setMode, setActiveSlot, updateSlotParam, syncInputSourceToRenderer, setActiveGenerativeShader, handleLoadImage, startWebcam]);
 
     // Restore state from URL hash on load
     useEffect(() => {
@@ -1650,10 +2155,46 @@ function MainApp() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const stopRecording = useCallback(() => {
+    const finishRecordingBlob = useCallback((blob: Blob) => {
+        if (recordingFinishedRef.current) return;
+        recordingFinishedRef.current = true;
+
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pixelocity-clip-${Date.now()}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        const link = generateShareableLink();
+        setShareableLink(link);
+        setShareVibeText('');
+        setShowShareModal(true);
+
+        setStatus('✅ Recording saved! Download started.');
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, [generateShareableLink]);
+
+    const clearRecordingTimer = useCallback(() => {
         if (recordingTimerRef.current) {
             clearInterval(recordingTimerRef.current);
             recordingTimerRef.current = null;
+        }
+    }, []);
+
+    const stopRecording = useCallback(() => {
+        clearRecordingTimer();
+
+        const manager = rendererRef.current;
+        if (manager?.usesInternalRecording()) {
+            manager.stopRendererRecording();
+            manager.setRecording(false);
+            wasmRecordingPromiseRef.current = null;
+            setIsRecording(false);
+            setRecordingCountdown(8);
+            return;
         }
 
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
@@ -1663,21 +2204,68 @@ function MainApp() {
         setIsRecording(false);
         setRecordingCountdown(8);
         rendererRef.current?.setRecording?.(false);
-    }, []);
+    }, [clearRecordingTimer]);
 
     const startRecording = useCallback(async () => {
-        // Use the canvas ref exposed by WebGPUCanvas (avoids fragile DOM querySelector)
         const canvas = webgpuCanvasRef.current;
+        const manager = rendererRef.current;
         if (!canvas) {
             setStatus('❌ Canvas not found for recording');
             return;
         }
-        
+        if (!manager) {
+            setStatus('❌ Renderer not ready for recording');
+            return;
+        }
+
+        recordingFinishedRef.current = false;
+
         try {
-            // Capture stream at 60fps
+            if (manager.usesInternalRecording()) {
+                setIsRecording(true);
+                setRecordingCountdown(8);
+                setStatus('🔴 Recording (WASM)… 8s');
+                manager.setRecording(true);
+
+                const recordingPromise = manager.startRecording(canvas, {
+                    durationMs: 8000,
+                    frameRate: 60,
+                    videoBitsPerSecond: 8_000_000,
+                });
+                wasmRecordingPromiseRef.current = recordingPromise;
+
+                recordingPromise
+                    .then((blob) => {
+                        finishRecordingBlob(blob);
+                    })
+                    .catch((e) => {
+                        console.error('WASM recording failed:', e);
+                        setStatus('❌ Recording failed. WASM readback may be unavailable.');
+                    })
+                    .finally(() => {
+                        wasmRecordingPromiseRef.current = null;
+                        setIsRecording(false);
+                        setRecordingCountdown(8);
+                        manager.setRecording(false);
+                    });
+
+                let count = 8;
+                recordingTimerRef.current = setInterval(() => {
+                    count -= 1;
+                    setRecordingCountdown(count);
+                    setStatus(`🔴 Recording (WASM)… ${count}s`);
+
+                    if (count <= 0) {
+                        stopRecording();
+                    }
+                }, 1000);
+
+                return;
+            }
+
+            // TS WebGPU path: capture the visible WebGPU canvas directly.
             const stream = canvas.captureStream(60);
-            
-            // Try VP9 first, fall back to VP8 or default
+
             let mimeType = 'video/webm;codecs=vp9';
             if (!MediaRecorder.isTypeSupported(mimeType)) {
                 mimeType = 'video/webm;codecs=vp8';
@@ -1685,81 +2273,60 @@ function MainApp() {
                     mimeType = 'video/webm';
                 }
             }
-            
+
             const mediaRecorder = new MediaRecorder(stream, {
                 mimeType,
-                videoBitsPerSecond: 8000000 // 8 Mbps for good quality
+                videoBitsPerSecond: 8000000,
             });
-            
+
             mediaRecorderRef.current = mediaRecorder;
             recordedChunksRef.current = [];
-            
+
             mediaRecorder.ondataavailable = (e) => {
                 if (e.data.size > 0) {
                     recordedChunksRef.current.push(e.data);
                 }
             };
-            
+
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-                const url = URL.createObjectURL(blob);
-                
-                // Auto-download
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `pixelocity-clip-${Date.now()}.webm`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                
-                // Generate shareable link
-                const link = generateShareableLink();
-                setShareableLink(link);
-                setShareVibeText('');
-                setShowShareModal(true);
-                
-                setStatus('✅ Recording saved! Download started.');
-                
-                // Cleanup
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                finishRecordingBlob(blob);
             };
-            
-            // Start recording
-            mediaRecorder.start(100); // Collect data every 100ms
+
+            mediaRecorder.start(100);
             rendererRef.current?.setRecording?.(true);
             setIsRecording(true);
             setRecordingCountdown(8);
-            setStatus('🔴 Recording... 8s');
-            
-            // Countdown timer
+            setStatus('🔴 Recording… 8s');
+
             let count = 8;
             recordingTimerRef.current = setInterval(() => {
                 count -= 1;
                 setRecordingCountdown(count);
-                setStatus(`🔴 Recording... ${count}s`);
-                
+                setStatus(`🔴 Recording… ${count}s`);
+
                 if (count <= 0) {
                     stopRecording();
                 }
             }, 1000);
-            
         } catch (e) {
             console.error('Recording failed:', e);
             setStatus('❌ Recording failed. Browser may not support this feature.');
         }
-    }, [generateShareableLink, stopRecording]);
+    }, [finishRecordingBlob, stopRecording]);
 
     // Cleanup recording on unmount
     useEffect(() => {
         return () => {
-            if (recordingTimerRef.current) {
-                clearInterval(recordingTimerRef.current);
-            }
-            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            clearRecordingTimer();
+            const manager = rendererRef.current;
+            if (manager?.usesInternalRecording()) {
+                manager.stopRendererRecording();
+            } else if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                 mediaRecorderRef.current.stop();
             }
         };
-    }, []);
+    }, [clearRecordingTimer]);
 
     // --- Remote Control Sync ---
     // Build full state object for syncing
@@ -1821,7 +2388,7 @@ function MainApp() {
             } else if (msg.type === 'CMD_SET_SHADER_CATEGORY') {
                 setShaderCategory(msg.payload);
             } else if (msg.type === 'CMD_SET_INPUT_SOURCE') {
-                setInputSource(msg.payload);
+                syncInputSourceToRenderer(msg.payload);
             } else if (msg.type === 'CMD_SET_AUTO_CHANGE') {
                 setAutoChangeEnabled(msg.payload);
             } else if (msg.type === 'CMD_SET_AUTO_CHANGE_DELAY') {
@@ -1913,7 +2480,7 @@ function MainApp() {
                         autoChangeEnabled={autoChangeEnabled} setAutoChangeEnabled={setAutoChangeEnabled}
                         autoChangeDelay={autoChangeDelay} setAutoChangeDelay={setAutoChangeDelay}
                         onLoadModel={loadDepthModel} isModelLoaded={!!depthEstimator} availableModes={availableModes}
-                        inputSource={inputSource} setInputSource={setInputSource} videoList={videoList}
+                        inputSource={inputSource} setInputSource={syncInputSourceToRenderer} videoList={videoList}
                         selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo}
                         videoB3hdMode={videoB3hdMode} setVideoB3hdMode={setVideoB3hdMode}
                         b3hdSegmentLength={b3hdSegmentLength} setB3hdSegmentLength={setB3hdSegmentLength}
@@ -1928,6 +2495,9 @@ function MainApp() {
                         onUpdateStack={handleUpdateStack} onUpdateParams={handleUpdateParams}
                         onRandomizeParams={handleRandomizeParams}
                         onSavePreset={handleSavePreset}
+                        onTriggerNextTransition={handleTriggerNextTransition}
+                        onRandomizeSlot={handleRandomizeSlot}
+                        onSetSlotParam={handleSetSlotParam}
                         onShareVjSet={handleShareVjSet}
                         onSaveVjSet={handleSaveVjSet}
                         onStartAutoTransition={startAutoTransition}
@@ -1955,6 +2525,7 @@ function MainApp() {
                         recordingCountdown={recordingCountdown}
                         onStartRecording={startRecording}
                         onStopRecording={stopRecording}
+                        onTakeScreenshot={handleTakeScreenshot}
                         // Dev Tools props
                         onOpenShaderScanner={() => setShowShaderScanner(true)}
                         // Renderer switch props
@@ -1965,6 +2536,10 @@ function MainApp() {
                         // Multi-Slot Chain Sharing props
                         onCopyChainShareLink={copyChainShareLink}
                         onApplySharedChain={applySharedChain}
+                        renderQualityMode={renderQualityMode}
+                        onRenderQualityChange={handleRenderQualityChange}
+                        maxActiveSlots={performanceHud.maxActiveSlots}
+                        performanceHud={performanceHud}
                     />
                 </aside>
                 <main className="canvas-container">
@@ -1974,7 +2549,7 @@ function MainApp() {
                         mousePosition={mousePosition} setMousePosition={setMousePosition}
                         isMouseDown={isMouseDown} setIsMouseDown={setIsMouseDown} onInit={onInitCanvas}
                         inputSource={inputSource} videoSourceUrl={videoSourceUrl}
-                        isMuted={isMuted} setInputSource={setInputSource}
+                        isMuted={isMuted} setInputSource={syncInputSourceToRenderer}
                         activeSlot={activeSlot}
                         activeGenerativeShader={activeGenerativeShader}
                         selectedVideo={selectedVideo}
@@ -1983,6 +2558,7 @@ function MainApp() {
                         isWebcamActive={isWebcamActive}
                         webcamVideoElement={videoElementRef.current}
                         onCanvasRef={(el) => { webgpuCanvasRef.current = el; }}
+                        shaderCatalog={availableModes}
                     />
                     <div className="status-bar">
                         <span>{isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}</span>
@@ -2000,7 +2576,11 @@ function MainApp() {
                         {/* Current Renderer Badge (clickable for cycling) */}
                         <span
                             className={`renderer-badge renderer-badge--${activeRendererType}`}
-                            title="Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)"
+                            title={
+                                activeRendererType === 'wasm'
+                                    ? 'Experimental C++ WASM — click to cycle renderer'
+                                    : 'Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)'
+                            }
                             onClick={() => {
                                 const cycle: Record<RendererType, RendererType> = {
                                     webgpu: 'wasm',
@@ -2010,8 +2590,21 @@ function MainApp() {
                                 handleSwitchRenderer(cycle[activeRendererType]);
                             }}
                         >
-                            {activeRendererType === 'wasm' ? '⚡ C++ WASM' : activeRendererType === 'js' ? '🎨 Canvas2D' : '🔷 WebGPU'}
+                            {activeRendererType === 'wasm'
+                                ? '⚡ WASM (exp.)'
+                                : activeRendererType === 'js'
+                                  ? '🎨 Canvas2D'
+                                  : '🔷 WebGPU'}
                         </span>
+
+                        <PerformanceStatusHUD
+                            backend={activeRendererType}
+                            internalWidth={performanceHud.internalWidth}
+                            internalHeight={performanceHud.internalHeight}
+                            scale={performanceHud.scale}
+                            fps={activeRendererType === 'wasm' ? wasmFps : jsFps}
+                            qualityLabel={renderQualityMode}
+                        />
 
                         {/* FPS Comparison + Switch Toggle (JS WebGPU vs C++ WASM) */}
                         <RendererToggle
@@ -2047,6 +2640,104 @@ function MainApp() {
                     zIndex: 9999,
                     transition: 'opacity 0.15s ease-out'
                 }}
+            <AppShell
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                showSidebar={showSidebar}
+                setShowSidebar={setShowSidebar}
+                modes={modes}
+                setMode={setMode}
+                activeSlot={activeSlot}
+                setActiveSlot={setActiveSlot}
+                slotParams={slotParams}
+                updateSlotParam={updateSlotParam}
+                slotShaderStatus={slotShaderStatus}
+                shaderCategory={shaderCategory}
+                setShaderCategory={setShaderCategory}
+                handleNewRandomImage={handleNewRandomImage}
+                autoChangeEnabled={autoChangeEnabled}
+                setAutoChangeEnabled={setAutoChangeEnabled}
+                autoChangeDelay={autoChangeDelay}
+                setAutoChangeDelay={setAutoChangeDelay}
+                loadDepthModel={loadDepthModel}
+                isModelLoaded={isModelLoaded}
+                availableModes={availableModes}
+                inputSource={inputSource}
+                syncInputSourceToRenderer={syncInputSourceToRenderer}
+                videoList={videoList}
+                selectedVideo={selectedVideo}
+                setSelectedVideo={setSelectedVideo}
+                videoB3hdMode={videoB3hdMode}
+                setVideoB3hdMode={setVideoB3hdMode}
+                b3hdSegmentLength={b3hdSegmentLength}
+                setB3hdSegmentLength={setB3hdSegmentLength}
+                b3hdIntervalSeconds={b3hdIntervalSeconds}
+                setB3hdIntervalSeconds={setB3hdIntervalSeconds}
+                currentSegment={currentSegment}
+                isMuted={isMuted}
+                setIsMuted={setIsMuted}
+                activeGenerativeShader={activeGenerativeShader}
+                setActiveGenerativeShader={setActiveGenerativeShader}
+                fileInputImageRef={fileInputImageRef}
+                fileInputVideoRef={fileInputVideoRef}
+                isAiVjMode={isAiVjMode}
+                toggleAiVj={toggleAiVj}
+                aiVjStatus={aiVjStatus}
+                aiVjMessage={aiVjMessage}
+                handleGenerateFromVibe={handleGenerateFromVibe}
+                handleUpdateStack={handleUpdateStack}
+                handleUpdateParams={handleUpdateParams}
+                handleRandomizeParams={handleRandomizeParams}
+                handleSavePreset={handleSavePreset}
+                handleTriggerNextTransition={handleTriggerNextTransition}
+                handleRandomizeSlot={handleRandomizeSlot}
+                handleSetSlotParam={handleSetSlotParam}
+                handleShareVjSet={handleShareVjSet}
+                handleSaveVjSet={handleSaveVjSet}
+                startAutoTransition={startAutoTransition}
+                stopAutoTransition={stopAutoTransition}
+                isWebcamActive={isWebcamActive}
+                startWebcam={startWebcam}
+                stopWebcam={stopWebcam}
+                webcamError={webcamError}
+                showWebcamShaderSuggestions={showWebcamShaderSuggestions}
+                webcamFunShaders={WEBCAM_FUN_SHADERS}
+                applyWebcamFunShader={applyWebcamFunShader}
+                triggerRoulette={triggerRoulette}
+                triggerRandomizeAllSlots={triggerRandomizeAllSlots}
+                isRouletteActive={isRouletteActive}
+                chaosModeEnabled={chaosModeEnabled}
+                setChaosModeEnabled={setChaosModeEnabled}
+                audioReactiveParams={audioReactiveParams}
+                setAudioReactiveParams={setAudioReactiveParams}
+                audioReactiveAmount={audioReactiveAmount}
+                setAudioReactiveAmount={setAudioReactiveAmount}
+                isRecording={isRecording}
+                recordingCountdown={recordingCountdown}
+                startRecording={startRecording}
+                stopRecording={stopRecording}
+                handleTakeScreenshot={handleTakeScreenshot}
+                setShowShaderScanner={setShowShaderScanner}
+                activeRendererType={activeRendererType}
+                handleSwitchRenderer={handleSwitchRenderer}
+                setShowStorageBrowser={setShowStorageBrowser}
+                copyChainShareLink={copyChainShareLink}
+                applySharedChain={applySharedChain}
+                rendererRef={rendererRef}
+                mousePosition={mousePosition}
+                setMousePosition={setMousePosition}
+                isMouseDown={isMouseDown}
+                setIsMouseDown={setIsMouseDown}
+                onInitCanvas={onInitCanvas}
+                videoSourceUrl={videoSourceUrl}
+                webgpuCanvasRef={webgpuCanvasRef}
+                videoElementRef={videoElementRef}
+                status={status}
+                generativeShowcaseActive={generativeShowcaseActive}
+                generativeShowcaseLocked={generativeShowcaseLocked}
+                isRendererSwitching={isRendererSwitching}
+                jsFps={jsFps}
+                wasmFps={wasmFps}
             />
             
             {/* Confetti Container */}
@@ -2258,7 +2949,7 @@ function MainApp() {
                             }}
                             onSelectVideo={(video) => {
                                 setSelectedVideo(video.url);
-                                setInputSource('video');
+                                syncInputSourceToRenderer('video');
                                 setStatus(`Selected video: ${video.title}`);
                                 setShowStorageBrowser(false);
                             }}
@@ -2272,7 +2963,7 @@ function MainApp() {
                                 if (config.slotParams) {
                                     setSlotParams(config.slotParams);
                                 }
-                                if (config.inputSource) setInputSource(config.inputSource);
+                                if (config.inputSource) syncInputSourceToRenderer(config.inputSource);
                                 if (config.currentImageUrl) handleLoadImage(config.currentImageUrl);
                                 setStatus('Loaded effect configuration from VPS');
                                 setShowStorageBrowser(false);

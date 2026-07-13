@@ -8,7 +8,7 @@ struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
   zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 30>,
+  ripples: array<vec4<f32>, 50>,
 };
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -153,7 +153,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Write State for next frame
-    textureStore(dataTextureA, coord, vec4<f32>(grown, 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(grown, 0.0, 0.0, grown));
 
     // Calculate moss material properties
     let mossThickness = calculateMossThickness(grown, grown * time * 0.1);

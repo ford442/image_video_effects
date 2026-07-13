@@ -1,6 +1,6 @@
-import { Renderer, RendererConfig } from './Renderer';
+import { IRenderer, RendererConfig } from './Renderer';
 
-export class JSRenderer implements Renderer {
+export class JSRenderer implements IRenderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private config: RendererConfig;
@@ -8,6 +8,7 @@ export class JSRenderer implements Renderer {
   private image: HTMLImageElement | null = null;
   private animationId: number | null = null;
   private showDebugInfo: boolean = true;
+  private inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live' = 'image';
 
   // Sim params
   private params = {
@@ -50,6 +51,10 @@ export class JSRenderer implements Renderer {
     this.image = null; // Clear image when video is set
   }
 
+  getVideo(): HTMLVideoElement | null {
+    return this.video;
+  }
+
   updateVideoFrame(): void {
     // Video is sampled directly in render loop
   }
@@ -85,7 +90,7 @@ export class JSRenderer implements Renderer {
 
   setParam(name: string, value: number): void {
     if (name in this.params) {
-      (this.params as any)[name] = value;
+      (this.params as Record<string, number>)[name] = value;
     }
   }
 
@@ -97,6 +102,7 @@ export class JSRenderer implements Renderer {
    * @param source - The input source type: 'image', 'video', 'webcam', 'generative', or 'live'
    */
   setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
+    this.inputSource = source;
     // For generative mode, clear both image and video (will show black canvas with audio visualization)
     if (source === 'generative') {
       this.image = null;
@@ -106,6 +112,10 @@ export class JSRenderer implements Renderer {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[JSRenderer] Input source set to: ${source}`);
     }
+  }
+
+  getInputSource(): 'image' | 'video' | 'webcam' | 'generative' | 'live' {
+    return this.inputSource;
   }
 
   render = (): void => {

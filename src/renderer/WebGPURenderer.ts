@@ -28,7 +28,7 @@
  *  13  texture_2d_array<f32> historyTexture  (HISTORY_DEPTH=8 past frames; opt-in)
  */
 
-import { Renderer, RendererConfig } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
 import { resolveMultipassChain } from './multipassRegistry';
 import { createUniformBufferView, UniformBufferView, Ripple, UNIFORM_FLOATS, MAX_RIPPLES } from './UniformBuffer';
 import { reportError, getBrowserWarning } from './ErrorHandling';
@@ -112,7 +112,7 @@ interface ShaderSlot {
 
 // ── Renderer class ───────────────────────────────────────────────────────────
 
-export class WebGPURenderer implements Renderer {
+export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   // WebGPU core
   private device: GPUDevice | null = null;
@@ -154,7 +154,11 @@ export class WebGPURenderer implements Renderer {
   private blitPipeline!: GPURenderPipeline;
   private generativeBlitPipeline!: GPURenderPipeline;
   private blitBindGroupLayout!: GPUBindGroupLayout;
-  private blitBindGroup!: GPUBindGroup;  // reads readTex
+  private blitBindGroup!: GPUBindGroup;  // reads blitReadTex
+  private blitReadTex!: GPUTexture;      // readTex normally, writeTex when single-slot copy is skipped
+  private lastBlitReadTex: GPUTexture | null = null;   // cache key for bind-group recreation
+  private lastBlitScaledW = 0;                         // cached dimensions to avoid recreating bind group
+  private lastBlitScaledH = 0;
 
   // Shader pipeline cache: shader-id → GPUComputePipeline
   private pipelines = new Map<string, GPUComputePipeline>();
@@ -479,6 +483,8 @@ export class WebGPURenderer implements Renderer {
     });
     // Reset ring head whenever textures are (re)created (e.g. resolution change)
     this.historyHead = 0;
+    // After recreation, the default blit source is readTex until a frame decides otherwise.
+    this.blitReadTex = this.readTex;
 
     // Depth textures
     this.depthRead = d.createTexture({
@@ -647,12 +653,16 @@ export class WebGPURenderer implements Renderer {
       primitive: { topology: 'triangle-list' },
     });
 
-    // Blit reads from readTex (always holds the latest output after per-slot copies)
+    // Blit reads from blitReadTex (readTex by default; writeTex when the single
+    // active chained slot skips the redundant writeTex→readTex copy).
     this.blitBindGroup = d.createBindGroup({
       label: 'blitBG',
       layout: this.blitBindGroupLayout,
-      entries: [{ binding: 0, resource: this.readTex.createView() }],
+      entries: [{ binding: 0, resource: this.blitReadTex.createView() }],
     });
+    this.lastBlitReadTex = this.blitReadTex;
+    this.lastBlitScaledW = this.scaledW;
+    this.lastBlitScaledH = this.scaledH;
 
     // ── Zero-copy video pipeline ─────────────────────────────────────────────
     // Check if importExternalTexture is supported
@@ -719,11 +729,33 @@ export class WebGPURenderer implements Renderer {
   }
 
   /** Get GPU timing data for performance analysis */
-  getGPUTimings(): { parallelTime: number; chainedTime: number; totalTime: number; available: boolean } {
-    return { 
-      ...this.gpuTimings, 
-      available: this.supportsTimestampQuery 
+  getGPUTimings(): GPUTimings {
+    return {
+      ...this.gpuTimings,
+      available: this.supportsTimestampQuery,
+      timingSource: this.supportsTimestampQuery ? 'gpu-timestamp' : 'wall-clock',
     };
+  }
+
+  /** Test hook: pin uniforms and render one frame. */
+  applyTestRenderState(state: {
+    time?: number;
+    mouseX?: number;
+    mouseY?: number;
+    bass?: number;
+    mid?: number;
+    treble?: number;
+  }): void {
+    if (state.time !== undefined) this.currentTime = state.time;
+    if (state.mouseX !== undefined) this.mouseX = state.mouseX;
+    if (state.mouseY !== undefined) {
+      this.mouseYBrowser = state.mouseY;
+      this.mouseYShader = 1.0 - state.mouseY;
+    }
+    if (state.bass !== undefined) {
+      this.updateAudioData(state.bass, state.mid ?? 0, state.treble ?? 0);
+    }
+    this.renderFrame();
   }
 
   // ── Shader management ──────────────────────────────────────────────────────
@@ -844,7 +876,7 @@ export class WebGPURenderer implements Renderer {
   getFPS(): number { return this.fps; }
 
   /** Get audio analysis data for external consumers (e.g. audio-reactive params). */
-  getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } | null {
+  getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } {
     return {
       bass: this.audioBass,
       mid: this.audioMid,
@@ -1249,7 +1281,7 @@ export class WebGPURenderer implements Renderer {
     if (params.zoomParam4 !== undefined) this.zoomParams[3] = params.zoomParam4;
   }
 
-  /** Set the active input source (generative, image, video, webcam, or live). */
+  /** Set the active input source for generative/procedural, image, video, webcam, or live. */
   setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
     this.inputSource = source;
     
@@ -1261,6 +1293,10 @@ export class WebGPURenderer implements Renderer {
     if (process.env.NODE_ENV === 'development') {
       console.log(`[WebGPU] Input source set to: ${source}`);
     }
+  }
+
+  getInputSource(): 'image' | 'video' | 'webcam' | 'generative' | 'live' {
+    return this.inputSource;
   }
 
   /** render() is a no-op; actual rendering is driven by the internal RAF loop. */
@@ -1356,6 +1392,7 @@ export class WebGPURenderer implements Renderer {
 
     if (enabled.length === 0) {
       // No active shader — show whatever is in readTex (black initially)
+      this.blitReadTex = this.readTex;
       this.blitToCanvas();
       return;
     }
@@ -1409,6 +1446,12 @@ export class WebGPURenderer implements Renderer {
     const parallelSlots = enabled.filter(s => s.mode === 'parallel');
     const chainedSlots = enabled.filter(s => s.mode === 'chained');
 
+    // Safe optimization: when exactly one slot is active and it is chained, the
+    // final result can stay in writeTex and the blit reads from there, saving
+    // one redundant copyTextureToTexture per frame.
+    const singleChained = enabled.length === 1 && enabled[0].mode === 'chained';
+    this.blitReadTex = this.readTex;
+
     if (this.frameCount % 60 === 0) {
       console.log(`[WebGPURenderer] Parallel slots: ${parallelSlots.length}, Chained slots: ${chainedSlots.length}`);
       if (chainedSlots.length > 0) {
@@ -1439,12 +1482,18 @@ export class WebGPURenderer implements Renderer {
       }
       this.dispatchSlot(encoder, slot, 'chained');
 
-      // Copy output to input for next chained slot (always copy so blit reads correct tex)
-      encoder.copyTextureToTexture(
-        { texture: this.writeTex },
-        { texture: this.readTex },
-        [this.scaledW, this.scaledH, 1],
-      );
+      if (singleChained) {
+        // Single active chained slot: the final output is already in writeTex.
+        // Skip the redundant writeTex→readTex copy and have the blit read writeTex directly.
+        this.blitReadTex = this.writeTex;
+      } else {
+        // Copy output to input for next chained slot (always copy so blit reads correct tex)
+        encoder.copyTextureToTexture(
+          { texture: this.writeTex },
+          { texture: this.readTex },
+          [this.scaledW, this.scaledH, 1],
+        );
+      }
 
       // Carry dataTexA forward into dataTexC for next frame's feedback reads
       encoder.copyTextureToTexture(
@@ -1462,9 +1511,9 @@ export class WebGPURenderer implements Renderer {
     }
 
     // Post-chain: archive the final composited frame into the history ring.
-    // Same encoder as the slot chain — no extra queue.submit() needed.
+    // Use blitReadTex so history stores whichever texture was actually presented.
     encoder.copyTextureToTexture(
-      { texture: this.readTex },
+      { texture: this.blitReadTex },
       { texture: this.historyTex, origin: [0, 0, this.historyHead] },
       [this.scaledW, this.scaledH, 1],
     );
@@ -1499,6 +1548,9 @@ export class WebGPURenderer implements Renderer {
       return;
     }
 
+    // Recreate blit bind group only when source texture or scaled dimensions changed.
+    this.updateBlitBindGroup();
+
     const encoder = this.device.createCommandEncoder({ label: 'blit' });
     const pipeline = this.inputSource === 'generative'
       ? this.generativeBlitPipeline
@@ -1518,14 +1570,30 @@ export class WebGPURenderer implements Renderer {
     this.device.queue.submit([encoder.finish()]);
   }
 
-  /** Update blit bind group after texture recreation (e.g., resolution change) */
+  /**
+   * Update blit bind group when the source texture or dimensions actually changed.
+   * Caches the previous source and scaled dimensions to avoid recreating an
+   * identical bind group every frame.
+   */
   private updateBlitBindGroup(): void {
     if (!this.device) return;
+    if (
+      this.blitBindGroup &&
+      this.blitReadTex === this.lastBlitReadTex &&
+      this.scaledW === this.lastBlitScaledW &&
+      this.scaledH === this.lastBlitScaledH
+    ) {
+      return;
+    }
+
     this.blitBindGroup = this.device.createBindGroup({
       label: 'blitBG',
       layout: this.blitBindGroupLayout,
-      entries: [{ binding: 0, resource: this.readTex.createView() }],
+      entries: [{ binding: 0, resource: this.blitReadTex.createView() }],
     });
+    this.lastBlitReadTex = this.blitReadTex;
+    this.lastBlitScaledW = this.scaledW;
+    this.lastBlitScaledH = this.scaledH;
   }
 
   private uniformView: UniformBufferView = createUniformBufferView();

@@ -45,10 +45,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     // Params (mids speeds hue shift, treble lifts smear intensity)
-    let trailDecay = u.zoom_params.x;
-    let brushSize = u.zoom_params.y * (1.0 + bass * 0.2);
-    let shiftSpeed = u.zoom_params.z * (1.0 + mids * 0.8);
-    let intensity = u.zoom_params.w * (1.0 + treble * 0.5);
+    let trailDecay = clamp(u.zoom_params.x, 0.0, 1.0);
+    let brushSize = clamp(u.zoom_params.y, 0.0, 1.0) * (1.0 + bass * 0.2);
+    let shiftSpeed = clamp(u.zoom_params.z, 0.0, 1.0) * (1.0 + mids * 0.8);
+    let intensity = clamp(u.zoom_params.w, 0.0, 1.0) * (1.0 + treble * 0.5);
 
     // Check mouse distance
     let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);

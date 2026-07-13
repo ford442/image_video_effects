@@ -1,8 +1,6 @@
 {
-  "id": "gen-sentient-liquid-neon-fractal-heart",
   "name": "Sentient Liquid-Neon Fractal-Heart",
-  "url": "shaders/gen-sentient-liquid-neon-fractal-heart.wgsl",
-  "description": "A hyper-organic, pulsating biomechanical heart composed entirely of intertwined, liquid-neon fractal arteries that endlessly fold inward upon themselves, beating in perfect sync with ambient cosmic acoustic frequencies.",
+  "category": "generative",
   "tags": [
     "organic",
     "biomechanical",
@@ -10,48 +8,50 @@
     "neon",
     "plasma"
   ],
-  "features": [
-    "raymarched",
-    "mouse-driven",
-    "audio-reactive"
+  "description": "A hyper-organic, pulsating biomechanical heart composed entirely of intertwined, liquid-neon fractal arteries that endlessly fold inward upon themselves, beating in perfect sync with ambient cosmic acoustic frequencies.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "param1",
+      "index": 0,
       "name": "Fractal Complexity",
-      "defaultValue": 0.5,
+      "default": 0.5,
       "min": 0.1,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "param2",
+      "index": 1,
       "name": "Pulse Intensity",
-      "defaultValue": 0.8,
+      "default": 0.5,
       "min": 0.0,
       "max": 2.0,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "param3",
+      "index": 2,
       "name": "Neon Saturation",
-      "defaultValue": 0.7,
+      "default": 0.5,
       "min": 0.0,
       "max": 1.5,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "param4",
+      "index": 3,
       "name": "Bioluminescent Fog",
-      "defaultValue": 0.4,
+      "default": 0.5,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
   ],
-  "category": "generative"
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-sentient-liquid-neon-fractal-heart",
+  "url": "shaders/gen-sentient-liquid-neon-fractal-heart.wgsl",
+  "features": []
 }

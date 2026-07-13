@@ -1,8 +1,6 @@
 {
-  "id": "gen-plasma-mandala",
   "name": "Plasma Mandala",
-  "url": "shaders/gen-plasma-mandala.wgsl",
-  "description": "A psychedelic plasma mandala with audio-driven radial symmetry, spinning petal folds, and mouse-attracted center. Bass drives spin speed, mids shift hue, treble adds sparkle.",
+  "category": "generative",
   "tags": [
     "mandala",
     "plasma",
@@ -14,47 +12,50 @@
     "abstract",
     "neon"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "upgraded-rgba"
+  "description": "A psychedelic plasma mandala with audio-driven radial symmetry, spinning petal folds, and mouse-attracted center. Bass drives spin speed, mids shift hue, treble adds sparkle.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "symmetry",
+      "index": 0,
       "name": "Symmetry",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "spinSpeed",
+      "index": 1,
       "name": "Spin Speed",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "zoom",
+      "index": 2,
       "name": "Zoom",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "glowScale",
+      "index": 3,
       "name": "Glow Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-plasma-mandala",
+  "url": "shaders/gen-plasma-mandala.wgsl",
+  "features": []
 }

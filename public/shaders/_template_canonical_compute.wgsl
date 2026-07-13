@@ -1,15 +1,8 @@
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  Canonical Compute Shader Template
-//
-//  Start here for every new Pixelocity compute effect. This file is pre-wired
-//  to the renderer's immutable bind-group contract and uses the canonical
-//  (16, 16, 1) workgroup size.
-//
-//  DO NOT change the binding numbers, types, or Uniforms struct layout below.
-//  Variable names may be flexible, but the contract is not. Run
-//    python scripts/wgsl_precommit_gate.py --files this_file.wgsl
-//  before committing.
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Category: template
+//  Features: canonical-bindings, alpha-passthrough, depth-passthrough
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -32,21 +25,20 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//  STUB EFFECT — replace everything below this line with your real algorithm.
-// ═══════════════════════════════════════════════════════════════════════════════
-
 @compute @workgroup_size(16, 16, 1)
 fn main_compute(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = textureDimensions(writeTexture);
   let coord = vec2<i32>(gid.xy);
   let dimsI = vec2<i32>(dims);
 
-  // Stay inside image bounds.
   if (any(coord >= dimsI)) {
     return;
   }
 
-  // Minimal valid write so naga and the bindgroup gate see a real compute path.
-  textureStore(writeTexture, coord, vec4<f32>(u.config.rgb, 1.0));
+  let uv = (vec2<f32>(coord) + 0.5) / vec2<f32>(dims);
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+  textureStore(writeTexture, coord, vec4<f32>(src.rgb, src.a));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -2,7 +2,7 @@
   "id": "cyber-ripples",
   "name": "Cyber Ripples",
   "url": "shaders/cyber-ripples.wgsl",
-  "description": "Interactive cursor-driven ripples with click shockwaves, audio-reactive bass envelope, temporal feedback trails, depth-aware compositing, and ACES tone mapping.",
+  "description": "Interactive cursor-driven ripples fused with domain-warped FBM turbulence, audio-driven cyber palette shifting, SDF ring masking, click shockwaves, bass envelope feedback trails, depth-aware compositing, and ACES tone mapping.",
   "params": [
     {
       "id": "speed",
@@ -42,13 +42,19 @@
     "temporal-feedback",
     "depth-aware",
     "click-shockwave",
-    "aces-tone-map"
+    "aces-tone-map",
+    "domain-warped-fbm",
+    "audio-palette",
+    "sdf-ring-mask"
   ],
   "tags": [
     "filter",
     "image-processing",
     "audio-reactive",
     "interactive",
-    "feedback"
+    "feedback",
+    "fbm",
+    "palette",
+    "sdf"
   ]
 }

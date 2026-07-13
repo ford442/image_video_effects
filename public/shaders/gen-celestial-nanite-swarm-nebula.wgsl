@@ -72,7 +72,7 @@ fn map_density(p: vec3<f32>) -> f32 {
     pos.z += cos(t * 0.3) * 2.0;
 
     let mx = (u.zoom_config.y - 0.5) * 10.0;
-    let my = (u.zoom_config.z - 0.5) * 10.0;
+    let my = (0.5 - u.zoom_config.z) * 10.0;
     let mouse_pos = vec3<f32>(mx, my, 0.0);
     let dist_to_mouse = length(pos - mouse_pos);
     let pull = exp(-dist_to_mouse * 0.5) * 2.0;

@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Pixel Stretch Cross — Interactivist Upgrade
+//  Pixel Stretch Cross — Phase B Alpha Compositor Upgrade
 //  Category: interactive-mouse / distortion
 //  Features: mouse-driven, audio-reactive, depth-aware,
 //            temporal-feedback, click-shockwave, aces-tone-map,
-//            upgraded-rgba
-//  Upgraded: 2026-06-14
+//            upgraded-rgba, alpha-layered
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -79,6 +79,11 @@ fn rot2(a: f32) -> mat2x2<f32> {
 // ── Safe mouse UV (fallback to center before first input) ─────────
 fn get_mouse() -> vec2<f32> {
     return select(vec2<f32>(0.5, 0.5), u.zoom_config.yz, u.zoom_config.y >= 0.0);
+}
+
+// ── Luminance for alpha keying ────────────────────────────────────
+fn luminance(c: vec3<f32>) -> f32 {
+    return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -186,10 +191,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let exposure = 0.95 + smoothBass * 0.15;
     color = acesToneMap(trail * exposure);
 
-    // Semantic alpha: source alpha modulated by effect intensity and trail presence
-    let alpha = src.a * (1.0 - maxStretch * 0.2) * (0.85 + smoothBass * 0.15);
+    // ── Layered alpha compositing ───────────────────────────────────
+    // Depth-layered: far pixels fade, near pixels remain solid
+    let depthAlpha = mix(0.35, 1.0, depth);
+
+    // Luminance key: dark stretched regions become transparent
+    let luma = luminance(color);
+    let lumaAlpha = smoothstep(0.04, 0.22, luma);
+
+    // Effect-intensity: high stretch contributions slightly reduce opacity
+    let stretchAlpha = 1.0 - clamp(maxStretch * 0.35, 0.0, 0.45);
+
+    // Audio-reactive opacity envelope
+    let bassAlpha = 0.8 + smoothBass * 0.2;
+
+    // Blend depth/luminance keys via depth-influence parameter
+    let keyedAlpha = mix(lumaAlpha, depthAlpha, depthInfluence);
+
+    // Source alpha composited with layered keys and effect intensity
+    var alpha = src.a * keyedAlpha * stretchAlpha * bassAlpha;
+
+    // Accumulative trail: feedback builds alpha like paint while preserving motion
+    alpha = mix(prev.a * 0.96, alpha, 0.2 + maxStretch * 0.35);
+
+    // Keep a small floor so the chain never fully vanishes
+    alpha = clamp(alpha, 0.06, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, pixel, vec4<f32>(smoothBass, 0.0, 0.0, prev.a * 0.97 + 0.03));
+    textureStore(dataTextureA, pixel, vec4<f32>(smoothBass, 0.0, 0.0, alpha * 0.97 + 0.03));
 }

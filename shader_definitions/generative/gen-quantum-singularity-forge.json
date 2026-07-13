@@ -1,0 +1,60 @@
+{
+  "name": "Quantum Singularity-Forge",
+  "category": "generative",
+  "tags": [
+    "cosmic",
+    "quantum",
+    "gravity",
+    "fractal",
+    "audio-reactive",
+    "raymarched",
+    "black-hole",
+    "accretion-disk"
+  ],
+  "description": "A colossal cosmic forge where swirling accretion disks of superheated stardust collide around a hyper-dense singularity, ejecting crystalline constellations in sync with bass frequencies.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Singularity Gravity",
+      "default": 0.36,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Accretion Speed",
+      "default": 0.33,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Ejection Rate",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Lensing Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-quantum-singularity-forge",
+  "url": "shaders/gen-quantum-singularity-forge.wgsl",
+  "features": []
+}

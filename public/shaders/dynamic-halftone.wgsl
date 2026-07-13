@@ -29,6 +29,25 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+fn palette(t: f32) -> vec3<f32> {
+  return vec3<f32>(0.50, 0.49, 0.47) +
+         vec3<f32>(0.48, 0.43, 0.38) *
+         cos(6.28318 * (vec3<f32>(1.0, 0.76, 0.48) * t + vec3<f32>(0.03, 0.28, 0.56)));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -40,10 +59,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   var mouse = u.zoom_config.yz;
 
+  let time = u.config.x;
   let bass = plasmaBuffer[0].x;
-  let density = max(20.0 + u.zoom_params.x * 100.0, 0.001);
-  let influenceRadius = u.zoom_params.y * (1.0 + bass * 0.2);
-  let contrast = max(0.5 + u.zoom_params.z * 2.0, 0.001);
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+  let density = max(20.0 + zp.x * 100.0, 0.001);
+  let influenceRadius = zp.y * (1.0 + bass * 0.2);
+  let contrast = max(0.5 + zp.z * 2.0, 0.001);
 
   let aspectUV = vec2<f32>(uv.x * aspect, uv.y);
   let scale = vec2<f32>(density, density);
@@ -68,18 +91,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edgeSharpnessFactor = mix(2.0, 0.1, clamp(u.zoom_params.w, 0.0, 1.0));
   let edgeWidth = 0.05 * (1.0 + influence) * max(edgeSharpnessFactor, 0.001);
 
-  let distToDotCenter = length(cellLocalUV - cellCenter);
+  let centeredCell = cellLocalUV - cellCenter;
+  let plateAngle = sin(time * 0.17 + cellIndex.x * 0.07) * 0.22 + influence * 0.45;
+  let rot = mat2x2<f32>(cos(plateAngle), -sin(plateAngle), sin(plateAngle), cos(plateAngle));
+  let ovalCell = rot * centeredCell * vec2<f32>(1.0 + influence * 0.55, 1.0 - influence * 0.22);
+  let distToDotCenter = length(ovalCell);
   let dot_alpha = 1.0 - smoothstep(radius - edgeWidth, radius + edgeWidth, distToDotCenter);
+  let inkRim = smoothstep(radius + edgeWidth * 2.2, radius - edgeWidth * 0.25, abs(distToDotCenter - radius));
+  let paper = 0.88 + (ign(vec2<f32>(global_id.xy) * 0.37 + time) - 0.5) * 0.08;
 
-  var finalColor = mix(vec3<f32>(0.0), color.rgb, dot_alpha);
-  finalColor = pow(max(finalColor, vec3<f32>(0.0)), vec3<f32>(contrast));
+  var hdr = mix(vec3<f32>(0.022, 0.020, 0.018) * paper, color.rgb * paper, dot_alpha);
+  hdr = pow(max(hdr, vec3<f32>(0.0)), vec3<f32>(contrast));
+  let spectralInk = palette(luma + time * 0.03 + mids * 0.18 + ign(cellIndex));
+  hdr = hdr + spectralInk * inkRim * (0.30 + treble * 0.75) * (0.35 + luma);
+  hdr = hdr + vec3<f32>(1.0, 0.82, 0.45) * pow(influence, 2.6) * dot_alpha * (0.22 + bass * 0.45);
+
+  let radial = length(uv - vec2<f32>(0.5)) * 1.414;
+  hdr = hdr * mix(1.08, 0.68, smoothstep(0.45, 1.0, radial));
+  let dither = (ign(vec2<f32>(global_id.xy) + time * 11.0) - 0.5) / 255.0;
+  let finalColor = clamp(aces(hdr * 1.22) + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
 
   // Alpha encodes dot coverage: filled dots = high weight, empty cells = transparent
-  let alpha = clamp(dot_alpha * (0.5 + luma * 0.4) + influence * 0.1, 0.0, 1.0);
+  let hdrLuma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let alpha = clamp(0.12 + dot_alpha * (0.42 + luma * 0.32) + pow(max(0.0, hdrLuma - 0.55), 2.0) * 2.4, 0.0, 1.0);
 
-  textureStore(writeTexture, coords, vec4<f32>(finalColor, alpha));
+  textureStore(writeTexture, coords, vec4<f32>(finalColor * alpha, alpha));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coords, vec4<f32>(finalColor, alpha));
+    textureStore(dataTextureA, coords, vec4<f32>(finalColor * alpha, alpha));
 }

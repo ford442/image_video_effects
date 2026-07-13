@@ -121,7 +121,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // camera rotation based on mouse
-    let mouse_y = u.zoom_config.z * 2.0 - 1.0;
+    let mouse_y = 1.0 - u.zoom_config.z * 2.0;  // Flip Y: screen top = look up
     let rot = rotate2D(mouse_y);
     rd = vec3<f32>(rd.x, rot[0][0]*rd.y + rot[0][1]*rd.z, rot[1][0]*rd.y + rot[1][1]*rd.z);
 
@@ -208,4 +208,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // 6. Output to writeTexture
     let finalColor = vec4<f32>(color, 1.0);
     textureStore(writeTexture, coords, applyGenerativePrimaryControls(finalColor));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

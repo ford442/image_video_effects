@@ -1,0 +1,59 @@
+{
+  "name": "Neuro-Fluid Plasma-Lotus",
+  "category": "generative",
+  "tags": [
+    "organic",
+    "floral",
+    "plasma",
+    "audio-reactive",
+    "liquid-neon",
+    "volumetric",
+    "raymarched"
+  ],
+  "description": "A majestic, hyper-organic lotus flower suspended in zero-gravity, blooming endlessly with translucent liquid-neon neuro-fluid petals that ripple with bioluminescent plasma in sync with ambient cosmic frequencies.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Petal Curl",
+      "default": 0.36,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Bloom Pulse",
+      "default": 0.33,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Core Heat",
+      "default": 0.25,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Dispersion",
+      "default": 0.29,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-neuro-fluid-plasma-lotus",
+  "url": "shaders/gen-neuro-fluid-plasma-lotus.wgsl",
+  "features": []
+}

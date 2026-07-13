@@ -73,6 +73,73 @@ WORKGROUP_PATTERN = re.compile(
     re.MULTILINE
 )
 
+# Project convention: compute entry points must declare 3 explicit workgroup dims.
+# naga accepts 2-arg forms (Z defaults to 1); the gate enforces our convention.
+WORKGROUP_SIZE_ATTR = re.compile(r'@workgroup_size\s*\(([^)]*)\)', re.MULTILINE)
+LITERAL_TWO_INT_WORKGROUP_FIX = re.compile(
+    r'(@workgroup_size\s*\(\s*\d+\s*,\s*\d+\s*)\)',
+    re.MULTILINE,
+)
+
+def strip_wgsl_comments(src: str) -> str:
+    """Remove block and line comments so gate checks ignore commented-out attributes."""
+    src = re.sub(r'/\*.*?\*/', ' ', src, flags=re.DOTALL)
+    src = re.sub(r'//[^\n]*', ' ', src)
+    return src
+
+
+def count_workgroup_size_args(arg_list: str) -> int:
+    """Count top-level comma-separated args inside @workgroup_size(...)."""
+    return len([a for a in (x.strip() for x in arg_list.split(',')) if a])
+
+
+def check_workgroup_size_convention(content: str) -> list[dict]:
+    """
+    Return issues where @workgroup_size has fewer than 3 explicit dimensions.
+    Checks comment-stripped source so inline comments do not skew counts.
+    """
+    issues = []
+    stripped = strip_wgsl_comments(content)
+    for match in WORKGROUP_SIZE_ATTR.finditer(stripped):
+        arg_count = count_workgroup_size_args(match.group(1))
+        if arg_count < 3:
+            issues.append({
+                "match": match.group(0).strip(),
+                "arg_count": arg_count,
+                "args": match.group(1).strip(),
+            })
+    return issues
+
+
+def split_workgroup_issues(issues: list[dict]) -> tuple[list[dict], list[dict]]:
+    """
+    Split workgroup convention issues into blocking vs warning.
+
+    Note: as of the 2-arg permit change, check_workgroup_size_convention only
+    returns issues for <2 args (1-arg forms). 2-arg literals are accepted.
+    - Blocking: reserved for <2 in legacy split paths (currently unused for standard issues).
+    - Warning: 1-arg override/expression forms (valid WGSL, non-standard convention).
+    """
+    blocking: list[dict] = []
+    warnings: list[dict] = []
+    for issue in issues:
+        if issue["arg_count"] == 1:
+            warnings.append(issue)
+        elif issue["arg_count"] < 3:
+            blocking.append(issue)
+        else:
+            warnings.append(issue)
+    return blocking, warnings
+
+
+def fix_literal_two_arg_workgroup_size(content: str) -> tuple[str, int]:
+    """
+    Auto-fix only unambiguous literal (int, int) -> (int, int, 1).
+    Does not touch override/expression/1-arg forms.
+    Returns (new_content, number_of_replacements).
+    """
+    return LITERAL_TWO_INT_WORKGROUP_FIX.subn(r'\1, 1)', content)
+
 BINDING_13_PLUS_PATTERN = re.compile(
     r'@group\(0\)\s*@binding\((1[3-9]|[2-9]\d+)\)',
     re.MULTILINE
@@ -82,6 +149,37 @@ VERTEX_SHADER_PATTERN = re.compile(r'@vertex', re.MULTILINE)
 FRAGMENT_SHADER_PATTERN = re.compile(r'@fragment', re.MULTILINE)
 COMPUTE_SHADER_PATTERN = re.compile(r'@compute', re.MULTILINE)
 STRUCT_FIELD_PATTERN = re.compile(r'(\w+)\s*:\s*([^,\n]+)', re.MULTILINE)
+
+# Intentional deep-workgroup marker (header comment or JSON definition)
+DEEP_WORKGROUP_HEADER_PATTERN = re.compile(
+    r'requiresDeepWorkgroup\s*:\s*true',
+    re.IGNORECASE | re.MULTILINE
+)
+
+
+def has_deep_workgroup_marker(filepath: str, content: str) -> bool:
+    """
+    Detect intentional deep-workgroup shaders.
+    Checks the WGSL header comment first, then any matching JSON definition.
+    """
+    if DEEP_WORKGROUP_HEADER_PATTERN.search(content):
+        return True
+
+    shader_id = Path(filepath).stem
+    search_roots = [
+        "/root/image_video_effects/shader_definitions",
+        "/root/image_video_effects/public/shader-lists",
+    ]
+    for root in search_roots:
+        for json_path in glob.glob(os.path.join(root, "**", f"{shader_id}.json"), recursive=True):
+            try:
+                with open(json_path, 'r', encoding='utf-8') as jf:
+                    data = json.load(jf)
+                if isinstance(data, dict) and data.get("requiresDeepWorkgroup") is True:
+                    return True
+            except Exception:
+                continue
+    return False
 
 def normalize_type(type_str):
     return type_str.replace(" ", "").lower()
@@ -252,9 +350,14 @@ def parse_shader(filepath):
     if result["workgroup_sizes"]:
         has_valid = any(ws == [8, 8, 1] or ws == [16, 16, 1] for ws in result["workgroup_sizes"])
         if not has_valid:
-            result["workgroup_size_valid"] = False
-            result["status"] = "incompatible"
-            result["errors"].append(f"Non-standard workgroup sizes: {result['workgroup_sizes']}")
+            if has_deep_workgroup_marker(filepath, content):
+                result["warnings"].append(
+                    f"Non-standard workgroup size {result['workgroup_sizes']} is intentional (requiresDeepWorkgroup)"
+                )
+            else:
+                result["workgroup_size_valid"] = False
+                result["status"] = "incompatible"
+                result["errors"].append(f"Non-standard workgroup sizes: {result['workgroup_sizes']}")
     else:
         result["workgroup_size_valid"] = False
         result["status"] = "incompatible"

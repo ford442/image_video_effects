@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Lens v3
+//  Digital Lens v3.1 — Advanced Alpha
 //  Category: image
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
 //            barrel-distortion, chromatic-dispersion, anamorphic,
-//            temporal-feedback, gravity-well
+//            temporal-feedback, gravity-well, alpha-layered, luminance-key
 //  Complexity: High
 //  Created: 2026-05-10
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -62,6 +62,39 @@ fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
   let d = wellPos - pos;
   let dist2 = dot(d, d) + 0.001;
   return normalize(d) * strength / dist2;
+}
+
+fn luminance(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
+// Advanced alpha compositor: depth-layered + luminance-key + effect intensity.
+fn compositeAlpha(
+  color: vec3<f32>,
+  depth: f32,
+  k1: f32,
+  dispersion: f32,
+  squeeze: f32,
+  bassEnv: f32,
+  vignette: f32,
+  clickPulse: f32
+) -> f32 {
+  // Luminance key: very dark pixels let the underlying layer show through.
+  let luma = luminance(color);
+  let lumaAlpha = smoothstep(0.04, 0.28, luma);
+
+  // Depth-layered: foreground pixels stay opaque, background pixels fade.
+  let depthAlpha = mix(0.25, 1.0, depth);
+
+  // Blend the two keying strategies by depth itself.
+  let keyAlpha = mix(lumaAlpha, depthAlpha, depth);
+
+  // Effect-intensity alpha: stronger distortion/dispersion = more opaque.
+  let warp = abs(k1) * 0.55 + dispersion * 9.0 + squeeze * 0.35;
+  let effectAlpha = clamp(0.18 + warp, 0.0, 1.0);
+
+  // Vignette fades the edges; audio adds a subtle transient lift.
+  return clamp(keyAlpha * effectAlpha * vignette + clickPulse * 0.35 + bassEnv * 0.1, 0.08, 1.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -146,7 +179,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── Vignette (Param3) ────────────────────────────────────────────
   let vignetteStrength = p3 * 0.8;
   let vignette = 1.0 - vignetteStrength * dot(uv01 - 0.5, uv01 - 0.5) * 2.0;
-  color *= clamp(vignette, 0.0, 1.0);
+  let vignetteFactor = clamp(vignette, 0.0, 1.0);
+  color *= vignetteFactor;
 
   // ── ACES tone mapping ────────────────────────────────────────────
   color = acesToneMap(color * 1.1);
@@ -158,10 +192,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Persist envelope in R and this frame's color in GBA for next frame.
   textureStore(dataTextureA, pixel, vec4<f32>(bassEnv, color));
 
-  // ── Semantic alpha: interaction intensity ────────────────────────
-  let distStrength = abs(k1) * 0.5 + 0.3;
-  let chromSep = dispersion * 2.0;
-  let alpha = clamp(distStrength * chromSep * (0.3 + depth * 0.7) * (0.7 + bassEnv * 0.5), 0.0, 1.0);
+  // ── Semantic alpha: depth-layered + luminance-key + effect intensity
+  let alpha = compositeAlpha(color, depth, k1, dispersion, anamorphicSqueeze, bassEnv, vignetteFactor, clickPulse);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

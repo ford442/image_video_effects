@@ -2,9 +2,11 @@
 //  Prism Displacement
 //  Category: image
 //  Features: audio-reactive, chromatic-aberration, upgraded-rgba,
-//            temporal-lens-rotation, chromatic-angular-dispersion, depth-magnification
-//  Complexity: Medium
-//  Upgraded: 2026-05-31
+//            temporal-lens-rotation, chromatic-angular-dispersion,
+//            depth-magnification, spectral-wavelength-sampling,
+//            lens-distortion, anamorphic-streak
+//  Complexity: Medium-High
+//  Upgraded: 2026-06-28
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -35,6 +37,45 @@ fn hash11(p: f32) -> f32 {
     return fract(sin(p * 12.9898) * 43758.5453);
 }
 
+// ── Radial lens distortion (barrel / pincushion) ─────────────────
+fn lensDistort(uv: vec2<f32>, center: vec2<f32>, k1: f32, k2: f32) -> vec2<f32> {
+    let d = uv - center;
+    let r2 = dot(d, d);
+    let factor = 1.0 + k1 * r2 + k2 * r2 * r2;
+    return center + d * factor;
+}
+
+// ── Approximate wavelength → RGB (380‑780 nm) ────────────────────
+fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
+    if (lambda < 440.0) {
+        return vec3<f32>(-(lambda - 440.0) / 60.0, 0.0, 1.0);
+    } else if (lambda < 490.0) {
+        return vec3<f32>(0.0, (lambda - 440.0) / 50.0, 1.0);
+    } else if (lambda < 510.0) {
+        return vec3<f32>(0.0, 1.0, -(lambda - 510.0) / 20.0);
+    } else if (lambda < 580.0) {
+        return vec3<f32>((lambda - 510.0) / 70.0, 1.0, 0.0);
+    } else if (lambda < 645.0) {
+        return vec3<f32>(1.0, -(lambda - 645.0) / 65.0, 0.0);
+    } else {
+        return vec3<f32>(1.0, 0.0, 0.0);
+    }
+}
+
+// ── Spectral sampling with anamorphic dispersion direction ───────
+fn sampleSpectral(uv: vec2<f32>, dir: vec2<f32>, dispersion: f32) -> vec3<f32> {
+    var acc = vec3<f32>(0.0);
+    for (var i = 0; i < 7; i = i + 1) {
+        let t = f32(i) / 6.0;
+        let lambda = 380.0 + t * 400.0;
+        let shift = dir * (lambda - 550.0) * dispersion;
+        let sample = textureSampleLevel(readTexture, u_sampler,
+                                        clamp(uv + shift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        acc = acc + sample * wavelengthToRGB(lambda);
+    }
+    return acc / 7.0;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -45,10 +86,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let zoomAmount = u.zoom_params.x;
-    let chromaticAmount = u.zoom_params.y;
-    let rotationSpeed = u.zoom_params.z;
-    let depthWeight = u.zoom_params.w;
+    let nParams = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));
+    let zoomAmount = nParams.x;
+    let chromaticAmount = nParams.y;
+    let rotationSpeed = nParams.z;
+    let depthWeight = nParams.w;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -71,22 +113,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Depth-weighted magnification: deeper = more zoom
     let z = len * zoomAmount * (1.0 + depth * depthWeight * 0.5) * (1.0 + bass * 0.2);
-
     let zoomedUV = mouse + (rotatedUV - mouse) * (1.0 - z);
 
-    // Chromatic angular dispersion
-    let chromaShift = chromaticAmount * 0.02 * (1.0 + treble * 0.3);
-    let dir = normalize(p + vec2<f32>(1e-4));
-    let rUV = zoomedUV + dir * chromaShift * 1.5;
-    let gUV = zoomedUV + dir * chromaShift * 0.0;
-    let bUV = zoomedUV - dir * chromaShift * 1.2;
+    // Lens distortion (barrel / pincushion) tied to zoom parameter
+    let k1 = (zoomAmount - 0.5) * 0.3;
+    let k2 = -zoomAmount * 0.1;
+    let lensedUV = lensDistort(zoomedUV, mouse, k1, k2);
 
-    let baseColor = textureSampleLevel(readTexture, u_sampler, clamp(zoomedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    // Anamorphic dispersion direction: stretch horizontally
+    var dispDir = normalize(p + vec2<f32>(1e-4));
+    dispDir.x *= aspect;
+    dispDir = normalize(dispDir);
+    dispDir.x *= 1.0 + chromaticAmount * 3.0;
 
-    var color = vec3<f32>(0.0);
-    color.r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    color.g = textureSampleLevel(readTexture, u_sampler, clamp(gUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-    color.b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    let dispersion = chromaticAmount * 0.00005 * (1.0 + treble * 0.3);
+    var color = sampleSpectral(lensedUV, dispDir, dispersion);
+
+    let baseColor = textureSampleLevel(readTexture, u_sampler,
+                                       clamp(lensedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
     let edgeDist = len;
     let edgeGlow = smoothstep(0.5, 0.0, edgeDist) * smoothstep(0.2, 0.5, zoomAmount);

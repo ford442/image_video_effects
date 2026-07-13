@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Quantum Prism
+//  Category: image
+//  Features: image, hex-prism, chromatic-aberration, mouse-driven, rotation
+//  Complexity: Medium
+//  Upgraded: 2026-06-28
+//  By: Agent 1a - Alpha Channel Specialist
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture:    texture_2d<f32>;
 @group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
@@ -110,7 +119,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Highlight active cells
     color += vec3<f32>(0.2, 0.5, 1.0) * influence * 0.2;
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(color, 1.0));
+    // Preserve the input alpha from the unshifted sample location
+    let centerSample = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+
+    textureStore(writeTexture, gid.xy, vec4<f32>(color, centerSample.a));
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

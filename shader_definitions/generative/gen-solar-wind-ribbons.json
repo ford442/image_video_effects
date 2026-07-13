@@ -1,9 +1,6 @@
 {
-  "id": "gen-solar-wind-ribbons",
   "name": "Solar Wind Ribbons",
-  "url": "shaders/gen-solar-wind-ribbons.wgsl",
   "category": "generative",
-  "description": "Magnetised plasma ribbons stream like coronal mass ejections caught mid-flight. Bass swells ribbon width, treble brightens edges, mouse steers the aurora curtain.",
   "tags": [
     "solar",
     "aurora",
@@ -14,47 +11,50 @@
     "cosmic",
     "abstract"
   ],
-  "features": [
-    "mouse-driven",
-    "audio-reactive",
-    "upgraded-rgba"
+  "description": "Magnetised plasma ribbons stream like coronal mass ejections caught mid-flight. Bass swells ribbon width, treble brightens edges, mouse steers the aurora curtain.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "ribbonCount",
+      "index": 0,
       "name": "Ribbon Count",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "twist",
+      "index": 1,
       "name": "Twist",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 2,
       "name": "Speed",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "glow",
+      "index": 3,
       "name": "Glow",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-solar-wind-ribbons",
+  "url": "shaders/gen-solar-wind-ribbons.wgsl",
+  "features": []
 }

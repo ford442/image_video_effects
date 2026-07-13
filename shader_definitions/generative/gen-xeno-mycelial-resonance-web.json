@@ -1,10 +1,6 @@
 {
-  "id": "gen-xeno-mycelial-resonance-web",
   "name": "Xeno-Mycelial Resonance-Web",
-  "coordinate": 867,
-  "type": "compute",
-  "url": "shaders/gen-xeno-mycelial-resonance-web.wgsl",
-  "description": "An infinite, subterranean expanse of bioluminescent, hyper-dimensional mycelium that rhythmically pulses, grows, and interconnects its glowing neural networks in response to audio frequencies.",
+  "category": "generative",
   "tags": [
     "organic",
     "mycelium",
@@ -13,90 +9,50 @@
     "audio-reactive",
     "raymarching"
   ],
-  "features": [
-    "raymarched",
-    "mouse-driven",
-    "audio-reactive",
-    "depth-aware",
-    "upgraded-rgba",
-    "aces-tone-map",
-    "temporal-feedback",
-    "chromatic-aberration"
+  "description": "An infinite, subterranean expanse of bioluminescent, hyper-dimensional mycelium that rhythmically pulses, grows, and interconnects its glowing neural networks in response to audio frequencies.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "sliders": [
+  "updatedParams": [
     {
-      "name": "Network Density",
-      "param": "zoom_params.x",
-      "default": 2,
-      "min": 0.5,
-      "max": 5,
-      "step": 0.1
-    },
-    {
-      "name": "Branch Thickness",
-      "param": "zoom_params.y",
-      "default": 0.15,
-      "min": 0.05,
-      "max": 0.5,
-      "step": 0.01
-    },
-    {
-      "name": "Bioluminescence Hue",
-      "param": "zoom_params.z",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "name": "Pulse Speed",
-      "param": "zoom_params.w",
-      "default": 1,
-      "min": 0.1,
-      "max": 5,
-      "step": 0.1
-    }
-  ],
-  "params": [
-    {
-      "id": "intensity",
+      "index": 0,
       "name": "Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x",
-      "description": "Controls the overall strength of the generated effect."
+      "step": 0.01
     },
     {
-      "id": "speed",
+      "index": 1,
       "name": "Speed",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y",
-      "description": "Controls animation and temporal evolution speed."
+      "step": 0.01
     },
     {
-      "id": "scale",
+      "index": 2,
       "name": "Scale",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z",
-      "description": "Controls spatial scale, frequency, or detail contrast."
+      "step": 0.01
     },
     {
-      "id": "mouseInfluence",
+      "index": 3,
       "name": "Mouse Influence",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w",
-      "description": "Controls mouse-driven or secondary variation influence."
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-xeno-mycelial-resonance-web",
+  "url": "shaders/gen-xeno-mycelial-resonance-web.wgsl",
+  "features": []
 }

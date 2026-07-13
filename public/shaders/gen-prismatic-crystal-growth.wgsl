@@ -204,7 +204,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mousePos = u.zoom_config.yz;
   let lightDir = normalize(vec3<f32>(
     (mousePos.x - 0.5) * 3.0,
-    0.8 + (mousePos.y - 0.5) * 0.5,
+    0.8 + (0.5 - mousePos.y) * 0.5,
     -1.0
   ));
 

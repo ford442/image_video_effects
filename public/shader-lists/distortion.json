@@ -142,11 +142,30 @@
   {
     "id": "complex-exponent-warp",
     "name": "Complex Exponent Warp",
+    "category": "distortion",
+    "type": "compute",
     "url": "shaders/complex-exponent-warp.wgsl",
-    "description": "Applies a complex domain distortion z -> z^p where p is controlled by mouse position. Creates spirals, fractals, and inversions.",
+    "description": "Applies a complex domain distortion z -> z^p with FBM pre-warp, mouse-driven exponent, depth-aware fog, chromatic aberration, and ACES tone mapping.",
     "features": [
       "mouse-driven",
-      "complex-math"
+      "audio-reactive",
+      "complex-math",
+      "upgraded-rgba",
+      "depth-aware",
+      "julia-orbit-trap",
+      "sdf-cardioid",
+      "newton-fractal"
+    ],
+    "tags": [
+      "warp",
+      "distort",
+      "transform",
+      "complex"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "params": [
       {
@@ -187,14 +206,12 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Scale of the UV warp output"
+        "description": "Scale of the FBM domain warp and output UV warp"
       }
     ],
-    "tags": [
-      "warp",
-      "distort",
-      "transform"
-    ]
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true
   },
   {
     "id": "crystal-facets",
@@ -312,7 +329,7 @@
     "name": "Data Slicer",
     "category": "distortion",
     "url": "shaders/data-slicer.wgsl",
-    "description": "Beat-reactive tape-slice glitch that jitters horizontal bands around the cursor with chromatic scan glow.",
+    "description": "Beat-reactive fractal tape-slice glitch with FBM domain warping, Voronoi cellular cracks, quasicrystal patterns, and 6-octave temporal jitter. Slices distort organically with curl-noise chromatic aberration and audio-reactive sparkle trails.",
     "params": [
       {
         "id": "slideSpeed",
@@ -347,14 +364,25 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
-      "distortion"
+      "fractal-slicing",
+      "fbm-warping",
+      "voronoi-patterns"
     ],
     "tags": [
       "glitch",
       "slice",
       "chromatic",
       "audio-reactive",
-      "scanline"
+      "scanline",
+      "fractal",
+      "fbm",
+      "voronoi",
+      "quasicrystal"
+    ],
+    "updated": true,
+    "updatedParams": [
+      "chaos",
+      "aberration"
     ]
   },
   {
@@ -951,19 +979,27 @@
     "name": "Glass Brick Wall",
     "category": "distortion",
     "url": "shaders/glass-brick-wall.wgsl",
-    "description": "Transforms the source image into a wall of refractive glass bricks with beat-driven caustics and dense absorption control.",
+    "description": "Refractive glass brick wall with FBM-perturbed normals, multi-frequency caustic patterns, chromatic dispersion through wavelength-dependent refraction, depth-layer compositing, and internal reflections. Beat-driven caustics and Voronoi cellular caustic enhancement.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "caustic-refraction",
+      "depth-layers",
+      "chromatic-dispersion",
+      "fbm-texture"
     ],
     "tags": [
       "glass",
       "brick",
       "caustic",
       "refraction",
-      "audio-reactive"
+      "audio-reactive",
+      "chromatic",
+      "fbm",
+      "voronoi",
+      "dispersion"
     ],
     "params": [
       {
@@ -994,6 +1030,11 @@
         "min": 0,
         "max": 1
       }
+    ],
+    "updated": true,
+    "updatedParams": [
+      "distortion",
+      "glass_density"
     ]
   },
   {
@@ -2116,6 +2157,63 @@
     ]
   },
   {
+    "id": "pixelate-blast",
+    "name": "Pixelate Blast",
+    "url": "shaders/pixelate-blast.wgsl",
+    "description": "Catalog entry for Pixelate Blast.",
+    "tags": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "voronoi-cells"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "voronoi-cells"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "predator-camouflage",
     "name": "Predator Camouflage",
     "category": "distortion",
@@ -2401,8 +2499,8 @@
   {
     "id": "scan-distort-gpt52",
     "name": "Scan Distort Matrix gpt52",
-    "url": "shaders/scan-distort-gpt52.wgsl",
-    "description": "High-density scanlines with 3-band frequency distortion, FBM-perturbed scan positions, rolling jitter, curvature, chromatic tearing, and mids-driven band distortion.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/scan-distort-gpt52.wgsl",
+    "description": "High-density scanlines with 3-band frequency distortion, FBM-perturbed scan positions, rolling jitter, curvature, chromatic tearing, mids-driven band distortion, domain-warped FBM displacement, and an audio-reactive color palette.",
     "params": [
       {
         "id": "scan_intensity",
@@ -2438,7 +2536,9 @@
       "animated",
       "depth-aware",
       "upgraded-rgba",
-      "audio-reactive"
+      "audio-reactive",
+      "domain-warp",
+      "palette"
     ],
     "tags": [
       "filter",
@@ -2447,7 +2547,10 @@
       "vintage",
       "atmospheric",
       "fbm",
-      "bands"
+      "bands",
+      "domain-warp",
+      "audio-palette",
+      "hybrid"
     ]
   },
   {
@@ -2677,6 +2780,9 @@
       "audio-reactive",
       "depth-aware",
       "upgraded-rgba",
+      "alpha-layered",
+      "edge-preserve",
+      "effect-intensity",
       "archimedean-spiral",
       "chromatic-dispersion",
       "domain-warp",
@@ -2786,6 +2892,61 @@
       "depth-aware",
       "freeze"
     ]
+  },
+  {
+    "id": "tensor-flow-sculpt",
+    "name": "Tensor Flow Sculpt",
+    "url": "shaders/tensor-flow-sculpt.wgsl",
+    "description": "Catalog entry for Tensor Flow Sculpt.",
+    "tags": [
+      "depth-aware",
+      "tensor-warp",
+      "audio-reactive"
+    ],
+    "features": [
+      "depth-aware",
+      "tensor-warp",
+      "audio-reactive"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
   },
   {
     "id": "voronoi-chaos",

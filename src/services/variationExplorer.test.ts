@@ -1,6 +1,7 @@
 import {
   generateChainVariations,
   generateChainVariationChains,
+  breedVariations,
   VariationOptions,
 } from './variationExplorer';
 import { SharedChain, MAX_SHARED_SLOTS, expandSharedChain } from './layerChainShare';
@@ -242,5 +243,158 @@ describe('variationExplorer', () => {
     for (const chain of result) {
       expect(chain.slots.length).toBe(MAX_SHARED_SLOTS);
     }
+  });
+
+  describe('breedVariations', () => {
+    const PARENT_A: SharedChain = {
+      v: 1,
+      slots: [
+        { shaderId: 'liquid-a', params: { zoomParam1: 0.8, zoomParam2: 0.2 } },
+        { shaderId: 'distort-a', params: { zoomParam1: 0.3 } },
+      ],
+    };
+
+    const PARENT_B: SharedChain = {
+      v: 1,
+      slots: [
+        { shaderId: 'liquid-b', params: { zoomParam1: 0.2 } },
+        { shaderId: 'distort-b', params: { zoomParam1: 0.9 } },
+      ],
+    };
+
+    it('returns exactly count children', () => {
+      const result = breedVariations(PARENT_A, PARENT_B, 6, CATALOG, {
+        paramJitter: false,
+        shaderSwap: 'none',
+        seed: 'count',
+      });
+      expect(result).toHaveLength(6);
+    });
+
+    it('is deterministic for the same seed', () => {
+      const opts: VariationOptions = {
+        paramJitter: false,
+        shaderSwap: 'sameCategory',
+        seed: 'breed-deterministic',
+      };
+      const first = breedVariations(PARENT_A, PARENT_B, 6, CATALOG, opts);
+      const second = breedVariations(PARENT_A, PARENT_B, 6, CATALOG, opts);
+      expect(first).toEqual(second);
+    });
+
+    it('produces different children for different seeds', () => {
+      const a = breedVariations(PARENT_A, PARENT_B, 6, CATALOG, {
+        paramJitter: false,
+        shaderSwap: 'sameCategory',
+        seed: 'breed-a',
+      });
+      const b = breedVariations(PARENT_A, PARENT_B, 6, CATALOG, {
+        paramJitter: false,
+        shaderSwap: 'sameCategory',
+        seed: 'breed-b',
+      });
+      expect(a).not.toEqual(b);
+    });
+
+    it('inherits slot count from the shorter parent', () => {
+      const short: SharedChain = {
+        v: 1,
+        slots: [{ shaderId: 'liquid-a' }],
+      };
+      const result = breedVariations(PARENT_A, short, 4, CATALOG, {
+        paramJitter: false,
+        shaderSwap: 'none',
+        seed: 'short',
+      });
+      for (const child of result) {
+        expect(child.chain.slots).toHaveLength(1);
+      }
+    });
+
+    it('produces valid chains that round-trip through expandSharedChain', () => {
+      const result = breedVariations(PARENT_A, PARENT_B, 10, CATALOG, {
+        paramJitter: false,
+        shaderSwap: 'sameCategory',
+        seed: 'roundtrip',
+      });
+      for (const child of result) {
+        const expanded = expandSharedChain(child.chain, defaultsLookup);
+        expect(expanded.modes).toHaveLength(child.chain.slots.length);
+        expect(expanded.slotParams).toHaveLength(child.chain.slots.length);
+      }
+    });
+
+    it('keeps mutated shaders within the original slot category', () => {
+      const result = breedVariations(PARENT_A, PARENT_B, 40, CATALOG, {
+        paramJitter: false,
+        shaderSwap: 'sameCategory',
+        seed: 'category-mutation',
+      });
+      for (const child of result) {
+        for (let i = 0; i < child.chain.slots.length; i++) {
+          const slot = child.chain.slots[i];
+          if (!slot.shaderId) continue;
+          const originalId = PARENT_A.slots[i].shaderId ?? PARENT_B.slots[i].shaderId;
+          if (!originalId) continue;
+          const originalCategory = CATALOG.find(s => s.id === originalId)?.category;
+          const childCategory = CATALOG.find(s => s.id === slot.shaderId)?.category;
+          expect(childCategory).toBe(originalCategory);
+        }
+      }
+    });
+
+    it('preserves enabled / mode flags from parent A', () => {
+      const a: SharedChain = {
+        v: 1,
+        slots: [
+          { shaderId: 'liquid-a', enabled: false, mode: 'parallel' },
+          { shaderId: 'distort-a' },
+        ],
+      };
+      const b: SharedChain = {
+        v: 1,
+        slots: [
+          { shaderId: 'liquid-b' },
+          { shaderId: 'distort-b' },
+        ],
+      };
+      const result = breedVariations(a, b, 4, CATALOG, {
+        paramJitter: false,
+        shaderSwap: 'none',
+        seed: 'flags',
+      });
+      for (const child of result) {
+        expect(child.chain.slots[0].enabled).toBe(false);
+        expect(child.chain.slots[0].mode).toBe('parallel');
+      }
+    });
+
+    it('keeps blended params within catalog ranges', () => {
+      const result = breedVariations(PARENT_A, PARENT_B, 20, CATALOG, {
+        paramJitter: false,
+        shaderSwap: 'sameCategory',
+        seed: 'ranges',
+      });
+      for (const child of result) {
+        const expanded = expandSharedChain(child.chain, defaultsLookup);
+        for (let i = 0; i < child.chain.slots.length; i++) {
+          const slot = child.chain.slots[i];
+          if (!slot.shaderId) continue;
+          const meta = CATALOG.find(s => s.id === slot.shaderId)!;
+          const params = expanded.slotParams[i];
+          const values = [
+            params.zoomParam1,
+            params.zoomParam2,
+            params.zoomParam3,
+            params.zoomParam4,
+          ];
+          for (let pIndex = 0; pIndex < meta.params.length; pIndex++) {
+            const val = values[pIndex];
+            expect(val).toBeGreaterThanOrEqual(meta.params[pIndex].min);
+            expect(val).toBeLessThanOrEqual(meta.params[pIndex].max);
+          }
+        }
+      }
+    });
   });
 });

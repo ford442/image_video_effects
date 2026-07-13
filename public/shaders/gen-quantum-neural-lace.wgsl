@@ -153,7 +153,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Orbit controls
     let radius = 8.0;
     let yaw = (mouse.x - 0.5) * 6.28;
-    let pitch = (mouse.y - 0.5) * 3.14;
+    let pitch = ((0.5 - mouse.y)) * 3.14;
 
     // Limit pitch to avoid flipping
     let safe_pitch = clamp(pitch, -1.5, 1.5);

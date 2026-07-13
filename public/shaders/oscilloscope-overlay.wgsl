@@ -1,9 +1,9 @@
 // ═══ Oscilloscope Overlay ═══════════════════════════════════════════
 //  Category: image
-//  Features: mouse-driven, overlay, audio-reactive, hdr, aces-tone-map,
-//            color-temperature, dither
+//  Features: mouse-driven, overlay, audio-reactive, audio-envelope,
+//            hdr, aces-tone-map, color-temperature, dither, sparkle
 //  Complexity: Medium
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -104,6 +104,12 @@ fn gridIntensity(uv: vec2<f32>, spacing: f32, thick: f32) -> f32 {
   return smoothstep(thick, 0.0, d);
 }
 
+// Envelope follower: fast attack on bass transients, slow decay.
+fn bass_env(prev: f32, bass: f32) -> f32 {
+  let k = select(0.15, 0.8, bass > prev);
+  return mix(prev, bass, k);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
@@ -118,10 +124,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids   = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  let amplitude   = u.zoom_params.x * (1.0 + bass * 0.6);
-  let thickness   = max(0.0005, u.zoom_params.y * 0.02);
-  let waveOpacity = u.zoom_params.z;
-  let scanAlpha   = u.zoom_params.w;
+  // Smooth bass envelope persists across frames in extraBuffer[0].
+  var env = extraBuffer[0];
+  env = bass_env(env, bass);
+  extraBuffer[0] = env;
+
+  let amplitude   = u.zoom_params.x * (1.0 + env * 0.75);
+  let thickness   = max(0.0003, u.zoom_params.y * 0.02 * (1.0 + env * 0.35));
+  let waveOpacity = u.zoom_params.z * (1.0 + env * 0.25);
+  let scanAlpha   = u.zoom_params.w * (1.0 + env * 0.15);
 
   // Sample background once; work in linear light for correct compositing.
   let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -132,7 +143,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let scanLuma = luma(toLinear(scanSample));
 
   // Audio-reactive color temperature: warm scan, shifting phosphor, desaturated grid.
-  let temp = 2200.0 + 2600.0 * (0.5 + 0.5 * sin(time * 0.22)) + bass * 1600.0;
+  let temp = 2200.0 + 2600.0 * (0.5 + 0.5 * sin(time * 0.22 + mids * 1.5)) + env * 2000.0;
   let scanCol = toLinear(blackbodyRGB(temp));
   let phosphorCol = mixOkLab(toLinear(vec3<f32>(0.15, 0.95, 0.35)), toLinear(vec3<f32>(0.25, 0.75, 1.0)), 0.35 + mids * 0.35);
   let gridCol = toLinear(vec3<f32>(0.14, 0.30, 0.16)) * (0.7 + treble * 0.5);
@@ -152,15 +163,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Subtle oscilloscope grid.
   let gridVal = gridIntensity(uv, 0.1, 0.001) * 0.12;
 
+  // Treble sparkle on bright waveform peaks.
+  let peak = smoothstep(0.55, 0.95, scanLuma) * smoothstep(0.6, 1.8, treble);
+  let sparkle = peak * ign(uv * 512.0 + time) * 0.35;
+  col = col + vec3<f32>(sparkle);
+
   // Composite in linear HDR space.
-  col = mix(col, scanCol * (1.0 + bass * 0.35), scanLine + scanHalo);
+  col = mix(col, scanCol * (1.0 + env * 0.45), scanLine + scanHalo);
   col = col + phosphorCol * waveVal * (1.0 + treble * 0.45);
   col = col + gridCol * gridVal;
 
   // Depth-aware falloff keeps the overlay from flattening distant content.
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let effectIntensity = scanLine + scanHalo + waveVal * 0.85 + gridVal * 0.2;
-  let bloomWeight = clamp(effectIntensity * (0.75 + depth * 0.45), 0.0, 1.0);
+  let effectIntensity = scanLine + scanHalo + waveVal * 0.85 + gridVal * 0.2 + sparkle;
+  let bloomWeight = clamp(effectIntensity * (0.75 + depth * 0.45) * (0.85 + env * 0.25), 0.0, 1.0);
 
   // Tone map + dither stack.
   col = huePreserveClamp(col, 2.8);

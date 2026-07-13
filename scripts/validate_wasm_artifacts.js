@@ -135,11 +135,12 @@ artifacts.forEach(artifact => {
 });
 
 /**
- * Fail if canonical wasm_renderer bridge copies drift from src/wasm/ (dev import path).
+ * Fail if canonical wasm_renderer bridge copies drift from runtime/deploy paths.
  */
 function checkBridgeSkew() {
   const pairs = [
     ['wasm_renderer/wasm_bridge.js', 'src/wasm/wasm_bridge.js'],
+    ['wasm_renderer/wasm_bridge.js', 'public/wasm/wasm_bridge.js'],
     ['wasm_renderer/wasm_bridge.d.ts', 'src/wasm/wasm_bridge.d.ts'],
   ];
 

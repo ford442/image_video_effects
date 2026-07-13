@@ -96,7 +96,7 @@ var sharp_visual_depth = clamp(sharp_visual_depth_original + z_waver_amount, 0.0
 // --- END OF Z-AXIS MODIFICATION ---
 
   // --- Atmospheric Effects ---
-  let bg_shadow_color = vec4<f32>(0.12, 0.12, 0.15, 1.0);  
+  let bg_shadow_color = vec4<f32>(0.12, 0.12, 0.15, color.a);  
   let bg_shadow_intensity = smoothstep(0.4, 0.9, aa_visual_depth) * 0.777;
   color = mix(color, bg_shadow_color, bg_shadow_intensity);
   let foreground_fog_color = vec3<f32>(0.6, 0.6, 0.7);
@@ -104,7 +104,7 @@ var sharp_visual_depth = clamp(sharp_visual_depth_original + z_waver_amount, 0.0
   let new_rgb_with_fog = color.rgb + (foreground_fog_color * foreground_fog_intensity);
   color = vec4<f32>(new_rgb_with_fog, color.a);
   
-  let foreground_shadow_color = vec4<f32>(0.02, 0.02, 0.05, 1.0);
+  let foreground_shadow_color = vec4<f32>(0.02, 0.02, 0.05, 0.0);
   let foreground_shadow_intensity = smoothstep(0.75, 0.0, aa_visual_depth) * 0.95;
 
   // --- Shared Light Calculations (Unchanged) ---
@@ -185,4 +185,6 @@ let tonemapped_rgb = aces_tonemap(exposed_rgb);
 
   color = vec4<f32>(tonemapped_rgb, color.a);
   textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

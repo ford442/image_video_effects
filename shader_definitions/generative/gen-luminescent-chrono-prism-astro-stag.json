@@ -1,0 +1,48 @@
+{
+  "id": "gen-luminescent-chrono-prism-astro-stag",
+  "name": "Luminescent Chrono-Prism Astro-Stag",
+  "category": "generative",
+  "tags": [
+    "organic",
+    "quantum",
+    "cosmic",
+    "mechanical",
+    "volumetric"
+  ],
+  "description": "A hyper-majestic, biomechanical celestial stag woven from shattered chrono-prisms and glowing liquid-aurora, elegantly galloping through a volumetric cosmic-rift while its crystalline antlers carve temporal geometric fractals into the void.",
+  "url": "shaders/gen-luminescent-chrono-prism-astro-stag.wgsl",
+  "updatedParams": [
+    {
+      "name": "Temporal Distortion",
+      "index": 0,
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "name": "Rift Density",
+      "index": 1,
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "name": "Fractal Intensity",
+      "index": 2,
+      "default": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05
+    },
+    {
+      "name": "Prismatic Refraction",
+      "index": 3,
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    }
+  ]
+}

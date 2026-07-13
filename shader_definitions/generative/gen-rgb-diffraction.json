@@ -1,16 +1,6 @@
 {
-  "id": "gen-rgb-diffraction",
   "name": "RGB Diffraction",
-  "url": "shaders/gen-rgb-diffraction.wgsl",
-  "description": "Simulates a multi-slit diffraction grating where separate red, green, and blue wavelengths produce offset interference fringe patterns. Six-fold rotational symmetry creates a spectral starburst. Slit orientation and frequency pulse to audio for reactive prism effects.",
-  "features": [
-    "audio-reactive",
-    "audio-driven",
-    "procedural",
-    "temporal",
-    "chromatic",
-    "depth-aware"
-  ],
+  "category": "generative",
   "tags": [
     "psychedelic",
     "colorful",
@@ -22,42 +12,50 @@
     "generative",
     "abstract"
   ],
-  "params": [
+  "description": "Simulates a multi-slit diffraction grating where separate red, green, and blue wavelengths produce offset interference fringe patterns. Six-fold rotational symmetry creates a spectral starburst. Slit orientation and frequency pulse to audio for reactive prism effects.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
     {
-      "id": "speed",
+      "index": 0,
       "name": "Evolution Speed",
       "default": 0.35,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "freq",
+      "index": 1,
       "name": "Fringe Frequency",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "chromab",
+      "index": 2,
       "name": "Chromatic Spread",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "brightness",
+      "index": 3,
       "name": "Brightness",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-rgb-diffraction",
+  "url": "shaders/gen-rgb-diffraction.wgsl",
+  "features": []
 }

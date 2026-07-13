@@ -39,7 +39,7 @@ fn map(p: vec3<f32>) -> f32 {
 
     // Mouse anomaly
     let mx = (u.zoom_config.y - 0.5) * 5.0;
-    let my = (u.zoom_config.z - 0.5) * 5.0;
+    let my = (0.5 - u.zoom_config.z) * 5.0;
     let warp_dist = length(q.xy - vec2<f32>(mx, my));
     let pull = exp(-warp_dist * 1.5) * 2.0;
 
@@ -110,7 +110,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Mouse camera sweep
     let mx = (u.zoom_config.y - 0.5) * 3.14 * 0.5;
-    let my = (u.zoom_config.z - 0.5) * 3.14 * 0.5;
+    let my = (0.5 - u.zoom_config.z) * 3.14 * 0.5;
     let rd_yz = rot(-my) * rd.yz;
     rd.y = rd_yz.x;
     rd.z = rd_yz.y;
