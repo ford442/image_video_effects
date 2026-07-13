@@ -152,6 +152,7 @@ emcc -std=c++20 -O2 \
     -sNO_EXIT_RUNTIME=1 \
     -sMODULARIZE=1 \
     -sEXPORT_NAME=PixelocityWASM \
+    -sGROWABLE_ARRAYBUFFERS=0 \
     -sASYNCIFY \
     -o "$BUILD_DIR/pixelocity_wasm.js"
 

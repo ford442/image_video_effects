@@ -87,6 +87,8 @@
     "customize-cra": "^1.0.0",
     "patch-package": "^8.0.1",
     "playwright": "^1.57.0",
+    "react-scripts": "^5.0.1",
+    "text-encoding": "^0.7.0",
     "react-app-rewired": "^2.2.1",
     "tsx": "^4.22.1",
     "webpack-cli": "^7.1.0",

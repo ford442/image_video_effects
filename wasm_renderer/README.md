@@ -416,3 +416,6 @@ See [`STATUS.md`](STATUS.md) for the authoritative current-state document.
 ## License
 
 Same as parent project
+
+### Emscripten Build Notes & TextDecoder
+The WASM build script (`build.sh`) utilizes the `-sGROWABLE_ARRAYBUFFERS=0` compiler flag. This suppresses a critical runtime error where `TextDecoder` fails when interacting with WebAssembly resizable `ArrayBuffer` instances in Chromium/Edge. See `WASM_BUILD_CI_GUIDE.md` for details.
