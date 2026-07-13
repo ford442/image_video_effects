@@ -2,7 +2,18 @@
   "id": "gen-prismatic-cyber-chrono-nebula-peacock",
   "name": "Prismatic Cyber-Chrono Nebula-Peacock",
   "category": "generative",
+  "description": "A hyper-majestic, biomechanical celestial peacock woven from shattered quantum glass and glowing liquid-aurora.",
+  "author": "Jules",
   "url": "shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
+  "tags": [
+    "organic",
+    "quantum",
+    "cosmic",
+    "mechanical",
+    "peacock",
+    "audio-reactive",
+    "fractal"
+  ],
   "params": [
     {
       "name": "Plumage Spread",

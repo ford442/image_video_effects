@@ -1769,6 +1769,65 @@
     ]
   },
   {
+    "id": "gen-alien-flora-ecosystem",
+    "name": "Gen Alien Flora Ecosystem",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-alien-flora-ecosystem.wgsl",
+    "description": "Gen Alien Flora Ecosystem",
+    "tags": [
+      "multi-species-flora",
+      "audio-seasons",
+      "mouse-pollinator",
+      "depth-canopy",
+      "symbiotic"
+    ],
+    "features": [
+      "multi-species-flora",
+      "audio-seasons",
+      "mouse-pollinator",
+      "depth-canopy",
+      "symbiotic"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "name": "Alien Flora",
     "category": "generative",
     "tags": [
@@ -3208,6 +3267,65 @@
     "features": []
   },
   {
+    "name": "Bismuth Singularity-Loom Engine",
+    "category": "generative",
+    "tags": [
+      "geometric",
+      "crystal",
+      "iridescent",
+      "singularity",
+      "fractal",
+      "audio-reactive",
+      "bismuth"
+    ],
+    "description": "A hyper-dimensional, continually self-assembling bismuth crystal matrix orbiting a microscopic gravitational singularity, its iridescent geometric steps carving sharp staircases into the fabric of spacetime. The scene blends hard-edged, prismatic synthetic-architecture with chaotic fluid distortions driven by an intense sub-bass core.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bismuth-singularity-loom-engine.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-bismuth-singularity-loom-engine",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Singularity Mass",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bismuth Iterations",
+        "default": 5,
+        "min": 1,
+        "max": 10,
+        "step": 1
+      },
+      {
+        "index": 2,
+        "name": "Iridescence Frequency",
+        "default": 2,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Acoustic Extrusion Force",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.05
+      }
+    ],
+    "features": []
+  },
+  {
     "name": "Brutalist Monument",
     "category": "generative",
     "tags": [
@@ -4208,6 +4326,62 @@
     "id": "gen-chromodynamic-plasma-collider",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-chromodynamic-plasma-collider.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-chrono-kitsune-prism-weaver",
+    "name": "Chrono-Kitsune Prism Weaver",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-chrono-kitsune-prism-weaver.wgsl",
+    "category": "generative",
+    "description": "A living prismatic kitsune spirit weaving through a chrono-void lattice with deep temporal feedback and audio reactivity.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "updated": true,
+    "updatedParams": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "params": [
+      {
+        "name": "Prism Hue Shift",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Tail Count",
+        "default": 0.8,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "name": "Weave Tightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "name": "Chrono Echo",
+        "default": 0.95,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "features": [
+      "audio-reactive",
+      "interactive-mouse",
+      "raymarching",
+      "volumetric"
+    ]
   },
   {
     "name": "Chrono-Mycelial Tapestry",
@@ -6494,6 +6668,47 @@
     "features": []
   },
   {
+    "id": "gen-ethereal-chrono-plasma-void-manta",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
+    "name": "Ethereal Chrono-Plasma Void-Manta",
+    "category": "generative",
+    "description": "A majestic, hyper-organic cybernetic space-manta ray gliding through a dark-matter ocean, its translucent biomimetic wings rippling with shifting auroral temporal energy as it consumes deep acoustic bass frequencies.",
+    "parameters": [
+      {
+        "name": "Manta Speed",
+        "uniform": "zoom_params.x",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Bio-Luminescence Intensity",
+        "uniform": "zoom_params.y",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "name": "Wing Ripple Frequency",
+        "uniform": "zoom_params.z",
+        "default": 2,
+        "min": 0.5,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Dark Matter Density",
+        "uniform": "zoom_params.w",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      }
+    ]
+  },
+  {
     "name": "Ethereal Cyber-Aurora Hummingbird-Core",
     "category": "generative",
     "tags": [
@@ -6551,6 +6766,49 @@
     "features": []
   },
   {
+    "id": "gen-ethereal-cyber-chrono-nebula-phoenix",
+    "name": "Ethereal Cyber-Chrono Nebula-Phoenix",
+    "description": "A majestic, hyper-organic cybernetic phoenix rising from a deep-space nebula, its wings woven from liquid auroral plasma and shattered quantum glass that burst into geometric temporal fractals upon acoustic climax.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-cyber-chrono-nebula-phoenix.wgsl",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "quantum",
+      "cosmic",
+      "biomechanical",
+      "phoenix",
+      "audio-reactive"
+    ],
+    "controls": [
+      {
+        "id": "wingspan",
+        "name": "Wingspan",
+        "type": "range",
+        "min": 0.05,
+        "max": 0.5,
+        "step": 0.01,
+        "default": 0.1,
+        "uniformMapping": {
+          "struct": "zoom_params",
+          "field": "x"
+        }
+      },
+      {
+        "id": "plasma_intensity",
+        "name": "Plasma Intensity",
+        "type": "range",
+        "min": 0.1,
+        "max": 1,
+        "step": 0.05,
+        "default": 0.2,
+        "uniformMapping": {
+          "struct": "zoom_params",
+          "field": "y"
+        }
+      }
+    ]
+  },
+  {
     "name": "Ethereal Cyber-Chrono Void-Whale",
     "category": "generative",
     "tags": [
@@ -6606,6 +6864,63 @@
     "id": "gen-ethereal-cyber-chrono-void-whale",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-ethereal-cyber-plasma-void-dragon",
+    "name": "Ethereal Cyber-Plasma Void-Dragon",
+    "category": "generative",
+    "tags": [
+      "dragon",
+      "plasma",
+      "organic",
+      "quantum",
+      "audio-reactive",
+      "cybernetic",
+      "void"
+    ],
+    "description": "A majestic, hyper-dimensional cyber-dragon forged from flowing quantum plasma and crystalline temporal scales, soaring through a massive, slowly collapsing dark-matter nebula while radiating bioluminescent shockwaves synced to heavy acoustic bass drops.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Plasma Intensity",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Dragon Undulation Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Body Segment Density",
+        "default": 20,
+        "min": 10,
+        "max": 40,
+        "step": 1
+      },
+      {
+        "index": 3,
+        "name": "Nebula Density",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ]
   },
   {
     "name": "Ethereal Glass-Flora Terrarium",
@@ -6963,6 +7278,937 @@
     "updated": true,
     "id": "gen-feedback-echo-chamber",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-feedback-echo-chamber.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Audio Symphony",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "audio-reactive",
+      "music-sync",
+      "spectrum",
+      "pyrotechnics",
+      "mouse-driven",
+      "trails",
+      "generative",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ],
+    "description": "A fireworks display conducted by the music. A smoothed bass envelope triggers bigger, faster launches on transients; mids layer in secondary shells; treble crackles a cloud of micro-sparks. Mouse click or hold launches a personal synced shell at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Launch Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bass Drive",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Mids Layering",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Treble Sparkle",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-audio-symphony",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-audio-symphony.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Chrysanthemum Burst",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "chrysanthemum",
+      "peony",
+      "pyrotechnics",
+      "spherical",
+      "dense",
+      "rings",
+      "audio-reactive",
+      "generative",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ],
+    "description": "Dense spherical chrysanthemum and peony shells with hundreds of sparks arranged in concentric rings. Each burst flashes brilliant white at the core then blooms into layered color rings — crimson inner petals fading to electric blue and gold at the edges. Multiple timed ring layers create depth within each explosion. Bass expands burst radius, mids add secondary ring shells, treble crackles the outer petals. Mouse detonates a massive peony at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Burst Size",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ring Layers",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spark Density",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Spread",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-chrysanthemum",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-chrysanthemum.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Comet Trail",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "comet",
+      "trail",
+      "streak",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ],
+    "description": "Blazing comet shells with brilliant heads and long luminous tails that streak across the night sky. Each shell launches upward then leaves a glowing path as sparks peel off the main trajectory. Bass makes bigger comet heads, treble adds sparkle along the trail. Mouse fires a comet from the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Comet Speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Trail Length",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Head Brightness",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-comet-trail",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-comet-trail.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Crackle Palm",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "crackle",
+      "palm",
+      "multi-stage",
+      "pyrotechnics",
+      "audio-reactive",
+      "generative",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ],
+    "description": "Multi-stage pyrotechnic shells that bloom in two acts. A primary burst erupts first, then delayed secondary crackle and palm fronds spawn from sub-points along the fading sparks. Treble drives thousands of micro-crackle pops; mids trigger the second-stage palm arms. Bass deepens the initial detonation. Mouse launches a triple-stage command shell at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Shell Energy",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Stage Delay",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Crackle",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Palm Spread",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-crackle-palm",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-crackle-palm.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Crossette Split",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "crossette",
+      "split",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ],
+    "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Shell Power",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Split Delay",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Arm Spread",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hue Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-crossette",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-crossette.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Fan Shell",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "fan",
+      "spread",
+      "hemisphere",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ],
+    "description": "Wide fan shells that burst into a sweeping hemisphere of colored sparks, like a peacock tail opening in the sky. Sparks spread in a broad arc with strong horizontal bias before falling. Mids widen the fan angle, bass deepens the colors. Mouse opens a personal fan at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fan Angle",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Shell Power",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spark Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hue Cycle",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-fan-shell",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-fan-shell.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Horse Tail Brocade",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "horse-tail",
+      "brocade",
+      "streamers",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ],
+    "description": "Classic horse tail and brocade shells rain long, straight golden streamers from a single burst point. Each spark traces a tight gravity arc with minimal spread, creating luminous waterfalls of light. Bass lengthens the tails, treble adds silver micro-dust along the streams. Mouse launches a personal brocade cascade.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Tail Length",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Stream Width",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Gold Intensity",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Fall Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-horse-tail",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-horse-tail.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Kamuro Gold",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "kamuro",
+      "gold",
+      "glitter",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ],
+    "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Glitter Density",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fall Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Gold Mix",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hang Time",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-kamuro-gold",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-kamuro-gold.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Fireworks Nocturne",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "pyrotechnics",
+      "celebration",
+      "sparks",
+      "gravity",
+      "particles",
+      "night-sky",
+      "audio-reactive",
+      "generative",
+      "explosive",
+      "4th-of-july",
+      "july-4"
+    ],
+    "description": "A living fireworks display over a dark velvet night. Multiple mortar shells launch, burst in jewel and gold colors with realistic gravity arcs and lingering ember trails. Bass detonates bigger shells and richer bursts, treble crackles extra sparks. Mouse click or hold launches a personal command shell at the cursor. Temporal glow and soft smoke persist between explosions for cinematic long-exposure feel.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Energy",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Tempo",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Density",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Drift",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-nocturne",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-nocturne.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Ring Shell",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "ring",
+      "halo",
+      "donut",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ],
+    "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ring Radius",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Thickness",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spark Count",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Cycle",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-ring-shell",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-ring-shell.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Roman Candle",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "roman-candle",
+      "barrage",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ],
+    "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Each tube shoots a sequence of colored stars straight upward with comet trails. Bass makes bigger stars, treble increases fire rate. The quintessential backyard July 4th barrage. Mouse aims a personal roman candle at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fire Rate",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Star Size",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Tube Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trail Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-roman-candle",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-roman-candle.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Smoke Bloom",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "smoke",
+      "bloom",
+      "volumetric",
+      "pyrotechnics",
+      "audio-reactive",
+      "mouse-driven",
+      "trails",
+      "generative",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ],
+    "description": "Soft volumetric smoke gathers around bursts and along falling sparks, while a feedback light bloom adds luminous halos to the brightest areas. Bass swells the smoky glow, mids add secondary burst layers, and treble scatters micro-sparks. Mouse launches a smoky peony at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Smoke Density",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bloom Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Burst Energy",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trail Decay",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-smoke-bloom",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-smoke-bloom.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Strobe Shell",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "strobe",
+      "blink",
+      "flash",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "psychedelic",
+      "4th-of-july"
+    ],
+    "description": "Hypnotic strobe shells that flash multiple times before dissolving into falling sparks. Each burst pulses with rhythmic white-hot flashes synced to the beat, then blooms into color. Treble drives flash rate, bass amplifies each pulse. A psychedelic July 4th finale feel. Mouse triggers a strobe barrage at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flash Rate",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Pulse Power",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Afterglow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Flash",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-strobe-shell",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-strobe-shell.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Willow Cascade",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "willow",
+      "pyrotechnics",
+      "trails",
+      "golden",
+      "long-exposure",
+      "gravity",
+      "audio-reactive",
+      "generative",
+      "cinematic",
+      "4th-of-july",
+      "july-4"
+    ],
+    "description": "Classic willow-style fireworks with long, drooping golden and silver trails that hang in the night sky like luminous weeping branches. Fewer shells but each one paints a slow-falling curtain of sparks with gentle wind drift. Strong temporal persistence creates a cinematic long-exposure feel. Bass deepens the droop, treble adds silver micro-sparkle along the trails. Mouse launches a personal willow shell at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Trail Length",
+        "default": 0.72,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Droop",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Wind",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Warmth",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-willow-cascade",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-willow-cascade.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Wind & Ripple",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "wind",
+      "ripple",
+      "pyrotechnics",
+      "audio-reactive",
+      "mouse-driven",
+      "trails",
+      "generative",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ],
+    "description": "Sparks drift on a time-varying wind while ripple events ignite directed radial barrages. Bass deepens the shells, mids add secondary gusts, and treble scatters silver micro-sparkle through the air. Mouse click or hold launches a personal wind-swept shell at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wind Energy",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ripple Sensitivity",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Trail Length",
+        "default": 0.72,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Drift",
+        "default": 0.15,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-fireworks-wind-ripple",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-wind-ripple.wgsl",
     "features": []
   },
   {
@@ -8831,6 +10077,132 @@
     "features": []
   },
   {
+    "name": "4th of July — Pixel Detonation",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "image-reactive",
+      "pixel-flight",
+      "detonation",
+      "pyrotechnics",
+      "photo-burst",
+      "depth-aware",
+      "audio-reactive",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ],
+    "description": "Your image detonates from within. Bright pixels and edges become launch cores — each spark lifts a fragment of the source photo into gravity arcs, recoloring and fading as it falls. Foreground depth elements launch higher and faster. The picture progressively dissolves into its own celebratory fireworks while revealing ghostly trails of what was there. Bass triggers larger detonations, treble adds pixel crackle. Mouse ignites a focused pixel barrage at the cursor.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Burst Power",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ignition",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Pixel Lift",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trail Fade",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-image-pixel-detonation",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-image-pixel-detonation.wgsl",
+    "features": []
+  },
+  {
+    "name": "4th of July — Image Pyro",
+    "category": "generative",
+    "tags": [
+      "fireworks",
+      "image-reactive",
+      "pyrotechnics",
+      "photo-burst",
+      "sparks",
+      "gravity",
+      "audio-reactive",
+      "celebration",
+      "color-sampling",
+      "4th-of-july",
+      "july-4"
+    ],
+    "description": "Your photo or video frame becomes the fuel for a fireworks show. Bright regions of the image launch colored mortar shells and sparks that inherit the source hues. Explosions paint over the image with gravity arcs and glowing trails while the original image provides the palette. Bass triggers larger detonations, treble adds crackling highlights. Mouse directs a focused barrage.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Burst Power",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ignition",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Trail Length",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Hue Twist",
+        "default": 0,
+        "min": -1,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-image-pyro",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-image-pyro.wgsl",
+    "features": []
+  },
+  {
     "name": "Inverse Mandelbrot Realm",
     "category": "generative",
     "tags": [
@@ -9853,6 +11225,58 @@
     "features": []
   },
   {
+    "id": "gen-luminescent-aether-plasma-nebula-koi",
+    "name": "Luminescent Aether-Plasma Nebula-Koi",
+    "category": "generative",
+    "description": "A hyper-organic, glowing biomechanical space-koi woven from flowing aether-plasma and shattered chromatic crystal, swimming gracefully through a volumetric quantum nebula while reacting dynamically to ambient acoustic frequencies.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-aether-plasma-nebula-koi.wgsl",
+    "tags": [
+      "organic",
+      "quantum",
+      "cosmic",
+      "particle systems",
+      "audio-reactive"
+    ],
+    "parameters": [
+      {
+        "name": "zoom_params.x",
+        "label": "plasma_intensity",
+        "type": "float",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "name": "zoom_params.y",
+        "label": "koi_speed",
+        "type": "float",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "zoom_params.z",
+        "label": "nebula_density",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "name": "zoom_params.w",
+        "label": "tail_length",
+        "type": "float",
+        "default": 1.5,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "name": "Luminescent Chrono-Fluid Astrolabe",
     "category": "generative",
     "tags": [
@@ -9908,6 +11332,54 @@
     "id": "gen-luminescent-chrono-fluid-astrolabe",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-luminescent-chrono-prism-astro-stag",
+    "name": "Luminescent Chrono-Prism Astro-Stag",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "quantum",
+      "cosmic",
+      "mechanical",
+      "volumetric"
+    ],
+    "description": "A hyper-majestic, biomechanical celestial stag woven from shattered chrono-prisms and glowing liquid-aurora, elegantly galloping through a volumetric cosmic-rift while its crystalline antlers carve temporal geometric fractals into the void.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-chrono-prism-astro-stag.wgsl",
+    "updatedParams": [
+      {
+        "name": "Temporal Distortion",
+        "index": 0,
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Rift Density",
+        "index": 1,
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "name": "Fractal Intensity",
+        "index": 2,
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "name": "Prismatic Refraction",
+        "index": 3,
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      }
+    ]
   },
   {
     "name": "Luminescent Cyber-Chrono Void-Turtle",
@@ -10076,6 +11548,63 @@
     "updated": true,
     "id": "gen-luminescent-quantum-void-anglerfish",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
+    "features": []
+  },
+  {
+    "name": "Luminescent Quantum-Void Astral-Turtle",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "quantum",
+      "cosmic",
+      "animal",
+      "volumetric"
+    ],
+    "description": "A hyper-organic, glowing biomechanical space-turtle drifting through a volumetric quantum nebula, its shell woven from shattered chromatic crystal and liquid-plasma that intensely reacts to deep bass frequencies.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fractal Detail",
+        "default": 3,
+        "min": 1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Plasma Glow",
+        "default": 1.5,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Void Density",
+        "default": 0.8,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 3,
+        "name": "Acoustic Reactivity",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      }
+    ],
+    "supportsDepth": false,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-luminescent-quantum-void-astral-turtle",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-quantum-void-astral-turtle.wgsl",
     "features": []
   },
   {
@@ -13131,6 +14660,33 @@
     "features": []
   },
   {
+    "id": "gen-prismatic-cyber-aurora-astral-dragonfly",
+    "name": "Prismatic Cyber-Aurora Astral-Dragonfly",
+    "description": "A majestic, hyper-organic biomechanical dragonfly forged from liquid auroral plasma and shattered chromatic crystal.",
+    "category": "generative",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
+    "uniforms": [
+      {
+        "name": "Wingspan",
+        "type": "float",
+        "min": 0.05,
+        "max": 0.5,
+        "default": 0.1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "name": "Plasma Intensity",
+        "type": "float",
+        "min": 0.1,
+        "max": 1,
+        "default": 0.2,
+        "step": 0.05,
+        "mapping": "zoom_params.y"
+      }
+    ]
+  },
+  {
     "name": "Prismatic Cyber-Auroral Manta-Swarm",
     "category": "generative",
     "tags": [
@@ -13192,7 +14748,18 @@
     "id": "gen-prismatic-cyber-chrono-nebula-peacock",
     "name": "Prismatic Cyber-Chrono Nebula-Peacock",
     "category": "generative",
+    "description": "A hyper-majestic, biomechanical celestial peacock woven from shattered quantum glass and glowing liquid-aurora.",
+    "author": "Jules",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
+    "tags": [
+      "organic",
+      "quantum",
+      "cosmic",
+      "mechanical",
+      "peacock",
+      "audio-reactive",
+      "fractal"
+    ],
     "params": [
       {
         "name": "Plumage Spread",

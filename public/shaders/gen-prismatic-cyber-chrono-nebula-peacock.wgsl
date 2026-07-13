@@ -3,21 +3,16 @@
 // Category: generative
 // ----------------------------------------------------------------
 
+struct Uniforms {
+    config: vec4<f32>,       // x=Time, y=Audio, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    zoom_params: vec4<f32>,  // x=Plumage, y=Refraction, z=Nebula, w=AudioReact
+    ripples: array<vec4<f32>, 50>,
+};
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-
-struct Uniforms {
-    resolution: vec2<f32>,
-    mouse: vec2<f32>,
-    config: vec4<f32>, // x: time, y: audio, z/w: unused
-    zoom_params: vec4<f32>, // custom UI slider parameters
-    camera_pos: vec3<f32>,
-    camera_dir: vec3<f32>,
-    zoom_config: vec4<f32>,
-    ripples: vec4<f32>,
-}
-
 @group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
@@ -30,36 +25,36 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 // ----------------------------------------------------------------
-// HELPER FUNCTIONS
+// CONSTANTS & HELPERS
 // ----------------------------------------------------------------
+const PI: f32 = 3.14159265359;
+const MAX_STEPS: i32 = 100;
+const MAX_DIST: f32 = 20.0;
+const SURF_DIST: f32 = 0.001;
+
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     let c = cos(a);
     return mat2x2<f32>(c, -s, s, c);
 }
 
+// 3D Noise for Nebula
+fn hash33(p3: vec3<f32>) -> vec3<f32> {
+    var p = fract(p3 * vec3<f32>(0.1031, 0.1030, 0.0973));
+    p += dot(p, p.yxz + 33.33);
+    return fract((p.xxy + p.yxx) * p.zyx);
+}
+
 fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-    return mix(b, a, h) - k * h * (1.0 - h);
+    let res = exp2(-k * a) + exp2(-k * b);
+    return -log2(res) / k;
 }
 
 // ----------------------------------------------------------------
-// SDF & DOMAIN FUNCTIONS
+// SDFs
 // ----------------------------------------------------------------
 fn sdSphere(p: vec3<f32>, s: f32) -> f32 {
     return length(p) - s;
-}
-
-fn sdCylinder(p: vec3<f32>, h: vec2<f32>) -> f32 {
-    let d = abs(vec2<f32>(length(p.xz), p.y)) - h;
-    return min(max(d.x, d.y), 0.0) + length(max(d, vec2<f32>(0.0)));
-}
-
-fn sdCapsule(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
-    let pa = p - a;
-    let ba = b - a;
-    let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-    return length(pa - ba * h) - r;
 }
 
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
@@ -67,168 +62,135 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     return length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
-struct MapResult {
-    d: f32,
-    mat: f32,
-    glow: f32
+fn sdCylinder(p: vec3<f32>, h: vec2<f32>) -> f32 {
+    let d = abs(vec2<f32>(length(p.xz), p.y)) - h;
+    return min(max(d.x, d.y), 0.0) + length(max(d, vec2<f32>(0.0)));
 }
 
-fn map(pos: vec3<f32>) -> MapResult {
+// ----------------------------------------------------------------
+// MAPPING & DOMAIN WARPING
+// ----------------------------------------------------------------
+
+// Returns vec3: x=distance, y=material_id, z=glow_intensity
+fn map(pos: vec3<f32>) -> vec3<f32> {
     var p = pos;
     let time = u.config.x;
-    let audio = u.config.y;
+    let audio = u.config.y * u.zoom_params.w;
 
-    // Sliders
     let plumageSpread = u.zoom_params.x;
-    let refraction = u.zoom_params.y;
-    let nebulaDensity = u.zoom_params.z;
-    let audioReact = u.zoom_params.w;
 
-    // 1. Mouse rotation & distortion
-    let mouse = (u.mouse / u.resolution) * 2.0 - 1.0;
-    let new_xz = rot(mouse.x * 3.1415 + time * 0.2) * p.xz;
-    p.x = new_xz.x;
-    p.z = new_xz.y;
+    // Mouse Interaction (Gravitational Singularity)
+    // Convert mouse to world space roughly
+    let mx = (u.zoom_config.y * 2.0 - 1.0) * (u.config.z / u.config.w);
+    let my = (u.zoom_config.z * 2.0 - 1.0) * -1.0;
 
-    let new_yz = rot(mouse.y * 3.1415) * p.yz;
-    p.y = new_yz.x;
-    p.z = new_yz.y;
+    let mouseDist = length(p.xy - vec2<f32>(mx, my));
+    let gravity = exp(-mouseDist * 2.0) * 0.5;
 
+    p.x += sin(time * 0.5 + p.y) * gravity;
+    p.y += cos(time * 0.5 + p.x) * gravity;
+
+    // --- Core Body (Quantum Glass) ---
+    var bodyP = p;
+    bodyP.y += sin(time * 0.3) * 0.1; // Gentle bobbing
+    // Slightly rotate body
+    var temp_xz = rot(time * 0.1) * bodyP.xz;
+    bodyP.x = temp_xz.x;
+    bodyP.z = temp_xz.y;
+
+    var dBody = sdCylinder(bodyP, vec2<f32>(0.2, 0.8));
+    var temp_yz = rot(0.2) * bodyP.yz;
+    bodyP.y = temp_yz.x;
+    bodyP.z = temp_yz.y;
+    dBody = smin(dBody, sdSphere(bodyP - vec3<f32>(0.0, 0.9, 0.3), 0.25), 8.0); // Head
+
+    // --- Fractal Plumage (Feathers) ---
+    var tailP = p;
+    tailP.y -= 0.5; // Offset to attach to body
+
+    // Rotate tail based on spread
+    var temp_yz2 = rot(-0.5 - plumageSpread * 0.5) * tailP.yz;
+    tailP.y = temp_yz2.x;
+    tailP.z = temp_yz2.y;
+
+    // Polar domain repetition for the feathers
+    let angle = atan2(tailP.x, tailP.y);
+    let r = length(tailP.xy);
+
+    let featherCount = 12.0 + plumageSpread * 8.0;
+    let sector = (2.0 * PI) / featherCount;
+    let aID = floor(angle / sector + 0.5);
+    let aMod = (fract(angle / sector + 0.5) - 0.5) * sector;
+
+    tailP.x = r * sin(aMod);
+    tailP.y = r * cos(aMod);
+
+    // Fractal fold
+    var foldP = tailP;
     var glow = 0.0;
-
-    // 2. Peacock cyber-body SDF
-    // Central core / body
-    let bodyRadius = 0.6;
-    let bodyHeight = 1.2;
-    var dBody = sdCapsule(p, vec3<f32>(0.0, -bodyHeight, 0.0), vec3<f32>(0.0, bodyHeight, 0.0), bodyRadius);
-
-    // Cyber-ribs
-    var pBody = p;
-    pBody.y = pBody.y - bodyHeight * floor(pBody.y / bodyHeight); // repetition along y
-
-    // 3. Fractal plumage via folding
-    var pTail = p;
-
-    // Move tail back
-    pTail.z -= 1.5;
-
-    // Gravitational warping from mouse dist to center
-    let centerDist = length(u.mouse / u.resolution - vec2<f32>(0.5));
-    pTail.y -= sin(pTail.x * 2.0) * plumageSpread * centerDist;
-    pTail.z -= cos(pTail.y * 2.0) * plumageSpread * centerDist;
-
-    var scale = 1.0;
-    var dFeathers = 100.0;
-
     for (var i = 0; i < 4; i++) {
-        // Polar repeat
-        let angle = atan2(pTail.y, pTail.x);
-        let radius = length(pTail.xy);
+        foldP.x = abs(foldP.x) - 0.1 * (1.0 + plumageSpread);
+        foldP.z = abs(foldP.z) - 0.05;
 
-        let segments = 8.0;
-        let segmentAngle = 6.28318 / segments;
-        // manually calculate modulo for f32
-        let angleMod = angle - segmentAngle * floor(angle/segmentAngle);
-        let a = angleMod - segmentAngle * 0.5;
+        var temp_xy = rot(0.2 + sin(time * 0.2 + f32(i)) * 0.1) * foldP.xy;
+        foldP.x = temp_xy.x;
+        foldP.y = temp_xy.y;
 
-        pTail.x = cos(a) * radius;
-        pTail.y = sin(a) * radius;
-
-        // Fold
-        pTail.x = abs(pTail.x) - 0.5 * scale;
-        pTail.z = abs(pTail.z) - 0.1 * scale;
-
-        let new_xy = rot(0.2) * pTail.xy;
-        pTail.x = new_xy.x;
-        pTail.y = new_xy.y;
-
-        let new_yz2 = rot(0.1 + sin(time * 0.5) * 0.05) * pTail.yz;
-        pTail.y = new_yz2.x;
-        pTail.z = new_yz2.y;
-
-        scale *= 0.8;
-
-        // Feather stem
-        let dStem = sdCapsule(pTail, vec3<f32>(0.0, -2.0, 0.0), vec3<f32>(0.0, 2.0, 0.0), 0.05 * scale);
-
-        // Eye spots
-        var pEye = pTail;
-        pEye.y -= 1.0 * scale;
-        let dEye = sdSphere(pEye, 0.2 * scale);
-
-        // Accumulate glow for eye spots (audio reactive)
-        let eyeIntensity = clamp(1.0 - dEye * 2.0, 0.0, 1.0) * audio * audioReact;
-        glow += eyeIntensity * 2.0;
-
-        dFeathers = min(dFeathers, min(dStem, dEye));
+        // Add tiny 'eye-spots' inside the fractal
+        if (i == 3) {
+            let eyeDist = sdSphere(foldP - vec3<f32>(0.0, 0.5, 0.0), 0.05 + audio * 0.05);
+            glow += 0.01 / (eyeDist * eyeDist + 0.001) * audio;
+        }
     }
 
-    dFeathers = dFeathers * 0.6; // Correct for scaling artifacts
+    let dTail = sdBox(foldP, vec3<f32>(0.05, 1.5, 0.02));
 
-    // Combine body and feathers
-    var d = smin(dBody, dFeathers, 0.3);
-
-    // Add some noise displacement to the body
-    d -= sin(p.x * 10.0) * sin(p.y * 10.0) * sin(p.z * 10.0) * 0.05;
-
-    var mat = 1.0; // Cyber glass
-    if (dFeathers < dBody) {
-        mat = 2.0; // Feathers
+    var d = min(dBody, dTail);
+    var mat = 0.0; // 0 for body, 1 for feathers
+    if (dTail < dBody) {
+        mat = 1.0;
     }
 
-    return MapResult(d, mat, glow);
+    return vec3<f32>(d, mat, glow);
+}
+
+fn getNormal(p: vec3<f32>) -> vec3<f32> {
+    let e = vec2<f32>(0.001, 0.0);
+    return normalize(vec3<f32>(
+        map(p + e.xyy).x - map(p - e.xyy).x,
+        map(p + e.yxy).x - map(p - e.yxy).x,
+        map(p + e.yyx).x - map(p - e.yyx).x
+    ));
 }
 
 // ----------------------------------------------------------------
-// SHADING & RAYMARCHING
+// NEBULA / VOLUMETRICS
 // ----------------------------------------------------------------
-fn calcNormal(p: vec3<f32>) -> vec3<f32> {
-    let e = vec2<f32>(1.0, -1.0) * 0.5773 * 0.0005;
-    return normalize(
-        e.xyy * map(p + e.xyy).d +
-        e.yyx * map(p + e.yyx).d +
-        e.yxy * map(p + e.yxy).d +
-        e.xxx * map(p + e.xxx).d
-    );
-}
-
-// Simple 3D hash for noise
-fn hash33(p3_in: vec3<f32>) -> vec3<f32> {
-    var p3 = fract(p3_in * vec3<f32>(0.1031, 0.1030, 0.0973));
-    p3 = p3 + dot(p3, p3.yxz + 33.33);
-    return fract((p3.xxy + p3.yxx) * p3.zyx);
-}
-
-// Value noise
-fn noise(x: vec3<f32>) -> f32 {
-    let i = floor(x);
-    let f = fract(x);
-    let u = f * f * (vec3<f32>(3.0) - vec3<f32>(2.0) * f);
-
-    return mix(mix(mix(hash33(i + vec3<f32>(0.0,0.0,0.0)).x,
-                       hash33(i + vec3<f32>(1.0,0.0,0.0)).x, u.x),
-                   mix(hash33(i + vec3<f32>(0.0,1.0,0.0)).x,
-                       hash33(i + vec3<f32>(1.0,1.0,0.0)).x, u.x), u.y),
-               mix(mix(hash33(i + vec3<f32>(0.0,0.0,1.0)).x,
-                       hash33(i + vec3<f32>(1.0,0.0,1.0)).x, u.x),
-                   mix(hash33(i + vec3<f32>(0.0,1.0,1.0)).x,
-                       hash33(i + vec3<f32>(1.0,1.0,1.0)).x, u.x), u.y), u.z);
-}
-
-fn fbm(x_in: vec3<f32>) -> f32 {
-    var v = 0.0;
+fn nebulaFBM(p: vec3<f32>) -> f32 {
+    var q = p;
+    var f = 0.0;
     var a = 0.5;
-    var shift = vec3<f32>(100.0);
-    var x = x_in;
     for (var i = 0; i < 4; i++) {
-        v += a * noise(x);
-        x = x * 2.0 + shift;
+        let h = hash33(floor(q));
+        let fr = fract(q);
+        let sm = fr * fr * (3.0 - 2.0 * fr);
+        // extremely crude noise approximation
+        let val = mix(
+            mix(mix(h.x, hash33(floor(q) + vec3<f32>(1.,0.,0.)).x, sm.x),
+                mix(hash33(floor(q) + vec3<f32>(0.,1.,0.)).x, hash33(floor(q) + vec3<f32>(1.,1.,0.)).x, sm.x), sm.y),
+            mix(mix(hash33(floor(q) + vec3<f32>(0.,0.,1.)).x, hash33(floor(q) + vec3<f32>(1.,0.,1.)).x, sm.x),
+                mix(hash33(floor(q) + vec3<f32>(0.,1.,1.)).x, hash33(floor(q) + vec3<f32>(1.,1.,1.)).x, sm.x), sm.y), sm.z);
+
+        f += a * val;
+        q = q * 2.0;
         a *= 0.5;
     }
-    return v;
+    return f;
 }
 
-
+// ----------------------------------------------------------------
+// MAIN COMPUTE
+// ----------------------------------------------------------------
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dimensions = textureDimensions(writeTexture);
@@ -236,97 +198,96 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
+    let res = vec2<f32>(f32(dimensions.x), f32(dimensions.y));
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
-    let uv = (fragCoord * 2.0 - u.resolution.xy) / u.resolution.y;
+    var uv = (fragCoord * 2.0 - res) / res.y;
 
     let time = u.config.x;
     let audio = u.config.y;
 
-    // Ray setup
-    let ro = vec3<f32>(0.0, 0.0, -8.0); // Adjust camera to see the full entity
+    // Parameters
+    let ior = u.zoom_params.y;
+    let nebDensity = u.zoom_params.z;
+
+    // Camera
+    let ro = vec3<f32>(0.0, 0.0, -4.0);
     let rd = normalize(vec3<f32>(uv, 1.5));
 
-    // Raymarching
+    // Raymarch
     var t = 0.0;
-    var tMax = 20.0;
-    var res: MapResult;
+    var dInfo = vec3<f32>(0.0);
+    var hit = false;
     var totalGlow = 0.0;
 
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < MAX_STEPS; i++) {
         let p = ro + rd * t;
-        res = map(p);
-
-        if (res.d < 0.001 || t > tMax) { break; }
-        t += res.d;
-        totalGlow += res.glow * 0.01;
+        dInfo = map(p);
+        totalGlow += dInfo.z;
+        if (dInfo.x < SURF_DIST) {
+            hit = true;
+            break;
+        }
+        if (t > MAX_DIST) {
+            break;
+        }
+        t += dInfo.x;
     }
 
     var col = vec3<f32>(0.0);
 
-    // Background / Nebula
-    if (t > tMax) {
-        // Volumetric nebula
-        let nebulaDensityParam = u.zoom_params.z;
-        let rd_noise = rd + vec3<f32>(time * 0.1);
-        let density = fbm(rd_noise * 3.0) * nebulaDensityParam;
-        col = mix(vec3<f32>(0.01, 0.02, 0.05), vec3<f32>(0.1, 0.5, 0.8), density);
+    // Volumetric Nebula Background (simplified)
+    var nebAcc = 0.0;
+    for(var i=0; i<5; i++) {
+        let np = ro + rd * (t + f32(i) * 0.5);
+        nebAcc += nebulaFBM(np + time * 0.1) * nebDensity;
+    }
+    col += vec3<f32>(0.1, 0.3, 0.6) * (nebAcc / 5.0) * (1.0 + audio * 0.5);
 
-        // Add some stars
-        if (hash33(rd * 1000.0).x > 0.99) {
-            col += vec3<f32>(1.0);
-        }
-    } else {
-        // Object Shading
+    if (hit) {
         let p = ro + rd * t;
-        let n = calcNormal(p);
-        let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
+        let n = getNormal(p);
+        let v = -rd;
+
+        let lightPos = vec3<f32>(2.0, 4.0, -3.0);
+        let l = normalize(lightPos - p);
+
         let diff = max(dot(n, l), 0.0);
-        let viewDir = normalize(ro - p);
-        let fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), 4.0);
+        let r = reflect(-l, n);
+        let spec = pow(max(dot(v, r), 0.0), 32.0);
+        let fresnel = pow(1.0 - max(dot(n, v), 0.0), 5.0);
 
-        if (res.mat == 1.0) {
-            // Cyber glass body
-            let refraction = u.zoom_params.y;
-            let glassCol = vec3<f32>(0.2, 0.8, 1.0); // Teal
-            col = glassCol * diff * 0.5 + glassCol * fresnel * refraction;
+        if (dInfo.y < 0.5) {
+            // Body: Quantum Glass
+            let glassCol = vec3<f32>(0.8, 0.9, 1.0);
 
-            // Fake internal reflection/chromatic abberation
-            let refDirR = refract(-viewDir, n, 1.0/1.1);
-            let refDirG = refract(-viewDir, n, 1.0/1.2);
-            let refDirB = refract(-viewDir, n, 1.0/1.3);
+            // Fake refraction / chromatic aberration based on IOR param
+            let refractDirR = refract(rd, n, 1.0 / ior);
+            let refractDirG = refract(rd, n, 1.0 / (ior + 0.02));
+            let refractDirB = refract(rd, n, 1.0 / (ior + 0.04));
 
-            // Sample background slightly
-            col += vec3<f32>(
-                fbm(refDirR * 5.0 + time),
-                fbm(refDirG * 5.0 + time),
-                fbm(refDirB * 5.0 + time)
-            ) * 0.2;
+            // Simple fake environment lookup
+            let bgR = nebulaFBM(p + refractDirR * 2.0);
+            let bgG = nebulaFBM(p + refractDirG * 2.0);
+            let bgB = nebulaFBM(p + refractDirB * 2.0);
 
+            let refrCol = vec3<f32>(bgR, bgG, bgB) * 2.0;
+
+            col = mix(refrCol, glassCol, fresnel) + spec;
+            col *= vec3<f32>(0.5, 0.8, 1.0); // Tint
         } else {
-            // Feathers (Liquid-Aurora Luminescence)
-            // Use polar coords for iridescent map
-            let r = length(p.xy);
-            let a = atan2(p.y, p.x);
-            let iridescent = vec3<f32>(
-                sin(r * 5.0 + time) * 0.5 + 0.5,
-                sin(a * 3.0 - time) * 0.5 + 0.5,
-                sin(p.z * 2.0 + time) * 0.5 + 0.5
-            );
+            // Feathers: Iridescent Metallic
+            let iridMix = fract(length(p) * 2.0 - time);
+            let baseCol = mix(vec3<f32>(0.0, 0.8, 0.8), vec3<f32>(0.8, 0.0, 0.8), iridMix); // Teal to Magenta
 
-            let featherBase = mix(vec3<f32>(0.8, 0.2, 0.8), vec3<f32>(1.0, 0.8, 0.2), iridescent.x);
-            col = featherBase * diff * 0.8 + featherBase * fresnel * 0.5;
+            col = baseCol * diff + spec * vec3<f32>(1.0, 0.8, 0.4) + fresnel * baseCol;
         }
     }
 
-    // Add accumulated glow (bloom)
-    let glowColor = mix(vec3<f32>(1.0, 0.2, 0.5), vec3<f32>(0.2, 1.0, 0.8), sin(time)*0.5+0.5);
-    col += totalGlow * glowColor * u.zoom_params.w; // Audio reactivity multiplier
+    // Add eye-spot glow
+    col += vec3<f32>(1.0, 0.8, 0.2) * totalGlow * 0.05;
 
-    // Tone mapping (ACES approx)
-    col = (col*(2.51*col+0.03))/(col*(2.43*col+0.59)+0.14);
-
-    // Gamma correction
-    col = pow(col, vec3<f32>(1.0 / 2.2));
+    // Tone mapping (ACES)
+    col = (col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14);
 
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
 }

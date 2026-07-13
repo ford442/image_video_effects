@@ -88,6 +88,7 @@ using WGPUBindGroupHandle        = WGPUHandle<WGPUBindGroup,        wgpuBindGrou
 using WGPUComputePipelineHandle  = WGPUHandle<WGPUComputePipeline,  wgpuComputePipelineRelease>;
 using WGPURenderPipelineHandle   = WGPUHandle<WGPURenderPipeline,   wgpuRenderPipelineRelease>;
 using WGPUShaderModuleHandle     = WGPUHandle<WGPUShaderModule,     wgpuShaderModuleRelease>;
+using WGPUQuerySetHandle         = WGPUHandle<WGPUQuerySet,         wgpuQuerySetRelease>;
 
 // Slot execution mode: chained feeds output of slot N into slot N+1;
 // parallel makes every slot read from the same original source texture.
@@ -249,13 +250,16 @@ public:
     int  GetSlotMode(int slotIndex) const;  // 0=chained, 1=parallel
     bool GetSupportsDeepWorkgroup() const { return supportsDeepWorkgroup_; }
 
-    // CPU wall-clock timings from the last Render() call (ms). GPU timestamp
-    // queries are not available in the WASM/Dawn path; available()==false.
+    // Render timings from the last frame (ms). GPU timestamp queries when
+    // supported; otherwise CPU wall-clock with available()==false.
     void GetGPUTimings(float* parallelMs, float* chainedMs, float* totalMs, int* available) const;
 
     // Recording flag (used by JS MediaRecorder integration).
     void SetRecording(bool recording);
     bool IsRecording() const { return isRecording_; }
+
+    /** Internal: device-lost callback entry (called from device.cpp). */
+    static void MarkDeviceLostFromCallback(void* userdata);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // RENDERING
@@ -342,7 +346,15 @@ private:
                              WGPUComputePipeline pipeline,
                              WGPUBindGroup bindGroup,
                              uint32_t workgroupX = 16,
-                             uint32_t workgroupY = 16);
+                             uint32_t workgroupY = 16,
+                             int32_t timestampStartIndex = -1,
+                             int32_t timestampEndIndexA = -1,
+                             int32_t timestampEndIndexB = -1);
+
+    bool CreateTimestampQueries();
+    void ResetTimestampFrameState();
+    void ResolveTimestampQueries();
+    static void OnTimestampReadback(WGPUMapAsyncStatus status, void* userdata);
 
     // ═══════════════════════════════════════════════════════════════════════════
     // WebGPU OBJECTS  (RAII-managed via WGPUHandle<> wrappers)
@@ -432,10 +444,25 @@ private:
     uint32_t maxComputeInvocations_ = 256;
     bool     supportsDeepWorkgroup_ = false;
 
-    // CPU render timings from last frame (ms)
+    // Wall-clock render timings from last frame (ms) — always updated.
     float lastParallelTimeMs_ = 0.0f;
     float lastChainedTimeMs_  = 0.0f;
     float lastTotalTimeMs_    = 0.0f;
+
+    // GPU timestamp query resources (when adapter supports timestamp-query).
+    bool supportsTimestampQuery_ = false;
+    WGPUQuerySetHandle timestampQuerySet_;
+    WGPUBufferHandle timestampResolveBuffer_;
+    WGPUBufferHandle timestampReadbackBuffer_;
+    uint64_t timestampPeriodNs_ = 0;
+    bool gpuTimingsResolved_ = false;
+    bool timestampReadbackPending_ = false;
+    float gpuParallelTimeMs_ = 0.0f;
+    float gpuChainedTimeMs_  = 0.0f;
+    float gpuTotalTimeMs_    = 0.0f;
+    bool tsFrameStartWritten_ = false;
+    bool tsParallelStartWritten_ = false;
+    bool tsChainedStartWritten_ = false;
 
     bool isRecording_ = false;
 
