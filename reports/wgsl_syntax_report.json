@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-06-14T11:01:35.020217+00:00",
-  "total_shaders": 1224,
-  "valid_count": 80,
-  "warning_count": 1141,
+  "timestamp": "2026-07-12T03:37:20.258917+00:00",
+  "total_shaders": 1294,
+  "valid_count": 59,
+  "warning_count": 1232,
   "error_count": 3,
   "shaders": [
     {
@@ -294,7 +294,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 32: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 89: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -304,7 +304,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 31: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 111: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -544,7 +544,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 72: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -864,7 +864,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 37: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 68: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -904,8 +904,8 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 54: [WARNING] Workgroup size is (64, 1, 1), expected (8, 8, 1)",
-        "line 106: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 56: [WARNING] Workgroup size is (64, 1, 1), expected (8, 8, 1)",
+        "line 108: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -935,7 +935,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 46: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 71: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -1143,7 +1143,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 37: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 67: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -1203,7 +1203,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 36: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 131: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -1499,13 +1499,11 @@
     {
       "shader_id": "complex-exponent-warp",
       "file": "public/shaders/complex-exponent-warp.wgsl",
-      "status": "error",
+      "status": "warning",
       "shader_type": "compute",
-      "errors": [
-        "line 0: [CRITICAL] Unmatched parentheses: 87 opening, 88 closing"
-      ],
+      "errors": [],
       "warnings": [
-        "line 49: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 67: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -1899,7 +1897,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 42: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 110: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -1955,10 +1953,12 @@
     {
       "shader_id": "cursor-aura",
       "file": "public/shaders/cursor-aura.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 31: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "cyber-focus",
@@ -2067,7 +2067,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 48: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 153: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -2107,7 +2107,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 39: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 56: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -2147,7 +2147,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 36: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 121: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -2253,7 +2253,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 37: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 120: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -2349,7 +2349,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 76: [WARNING] Workgroup size is (16, 16, 4), expected (8, 8, 1)"
+        "line 77: [WARNING] Workgroup size is (16, 16, 4), expected (8, 8, 1)"
       ]
     },
     {
@@ -2535,7 +2535,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 40: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 102: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -2555,7 +2555,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 110: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 134: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -2651,7 +2651,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 32: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 51: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -2929,7 +2929,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 55: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 174: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -2993,6 +2993,46 @@
       ]
     },
     {
+      "shader_id": "fireworks-depth-parade",
+      "file": "public/shaders/fireworks-depth-parade.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 39: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "fireworks-edge-ignite",
+      "file": "public/shaders/fireworks-edge-ignite.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 43: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "fireworks-patriotic-july4",
+      "file": "public/shaders/fireworks-patriotic-july4.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 47: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "fireworks-portrait-burst",
+      "file": "public/shaders/fireworks-portrait-burst.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 36: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "flip-matrix",
       "file": "public/shaders/flip-matrix.wgsl",
       "status": "warning",
@@ -3049,7 +3089,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 30: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 49: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3329,7 +3369,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 63: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 125: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3423,6 +3463,16 @@
       ]
     },
     {
+      "shader_id": "gen-astro-mechanical-quantum-furnace-engine",
+      "file": "public/shaders/gen-astro-mechanical-quantum-furnace-engine.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 182: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-astro-orrery-blackbody",
       "file": "public/shaders/gen-astro-orrery-blackbody.wgsl",
       "status": "warning",
@@ -3459,7 +3509,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 80: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 138: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3479,7 +3529,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 76: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 129: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3530,6 +3580,16 @@
       "errors": [],
       "warnings": [
         "line 89: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-bioelectric-pulse",
+      "file": "public/shaders/gen-bioelectric-pulse.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 81: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3599,7 +3659,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 58: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 113: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3709,7 +3769,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 54: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 99: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3753,13 +3813,23 @@
       ]
     },
     {
+      "shader_id": "gen-chromatic-glass-lattice",
+      "file": "public/shaders/gen-chromatic-glass-lattice.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 299: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-chromatic-metamorphosis",
       "file": "public/shaders/gen-chromatic-metamorphosis.wgsl",
       "status": "warning",
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 179: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 181: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3800,6 +3870,16 @@
       "errors": [],
       "warnings": [
         "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-chrono-kitsune-prism-weaver",
+      "file": "public/shaders/gen-chrono-kitsune-prism-weaver.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 98: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3846,6 +3926,16 @@
       ]
     },
     {
+      "shader_id": "gen-chronos-monolith-resonator",
+      "file": "public/shaders/gen-chronos-monolith-resonator.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 228: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-conway-game-of-life",
       "file": "public/shaders/gen-conway-game-of-life.wgsl",
       "status": "warning",
@@ -3872,7 +3962,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 99: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 237: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3892,7 +3982,17 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 129: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 221: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-cryogenic-frost-plasma-matrix",
+      "file": "public/shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 168: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3922,7 +4022,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 86: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 164: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -3976,6 +4076,16 @@
       ]
     },
     {
+      "shader_id": "gen-cybernetic-mycelium-neural-web",
+      "file": "public/shaders/gen-cybernetic-mycelium-neural-web.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 85: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-cycloid-bloom",
       "file": "public/shaders/gen-cycloid-bloom.wgsl",
       "status": "warning",
@@ -3992,6 +4102,16 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": []
+    },
+    {
+      "shader_id": "gen-cymatic-quantum-silk-loom",
+      "file": "public/shaders/gen-cymatic-quantum-silk-loom.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 278: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "gen-de-jong-attractor",
@@ -4058,7 +4178,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 60: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 86: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4142,13 +4262,85 @@
       ]
     },
     {
+      "shader_id": "gen-ethereal-chrono-plasma-void-manta",
+      "file": "public/shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 100: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-ethereal-cyber-aurora-hummingbird-core",
+      "file": "public/shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 174: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-ethereal-cyber-chrono-nebula-phoenix",
+      "file": "public/shaders/gen-ethereal-cyber-chrono-nebula-phoenix.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-ethereal-cyber-chrono-void-whale",
+      "file": "public/shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 179: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-ethereal-cyber-plasma-void-dragon",
+      "file": "public/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
+      "status": "error",
+      "shader_type": "compute",
+      "errors": [
+        "line 0: [CRITICAL] Unmatched braces: 28 opening, 27 closing"
+      ],
+      "warnings": [
+        "line 196: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-ethereal-glass-flora-terrarium",
+      "file": "public/shaders/gen-ethereal-glass-flora-terrarium.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 352: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-ethereal-quantum-hologram-bonsai",
+      "file": "public/shaders/gen-ethereal-quantum-hologram-bonsai.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 170: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-ethereal-quantum-medusa",
       "file": "public/shaders/gen-ethereal-quantum-medusa.wgsl",
       "status": "warning",
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 111: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 132: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4179,6 +4371,156 @@
       "errors": [],
       "warnings": [
         "line 101: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-audio-symphony",
+      "file": "public/shaders/gen-fireworks-audio-symphony.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 85: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-chrysanthemum",
+      "file": "public/shaders/gen-fireworks-chrysanthemum.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 82: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-comet-trail",
+      "file": "public/shaders/gen-fireworks-comet-trail.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-crackle-palm",
+      "file": "public/shaders/gen-fireworks-crackle-palm.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 133: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-crossette",
+      "file": "public/shaders/gen-fireworks-crossette.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 38: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-fan-shell",
+      "file": "public/shaders/gen-fireworks-fan-shell.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-horse-tail",
+      "file": "public/shaders/gen-fireworks-horse-tail.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-kamuro-gold",
+      "file": "public/shaders/gen-fireworks-kamuro-gold.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 43: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-nocturne",
+      "file": "public/shaders/gen-fireworks-nocturne.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 129: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-ring-shell",
+      "file": "public/shaders/gen-fireworks-ring-shell.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 42: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-roman-candle",
+      "file": "public/shaders/gen-fireworks-roman-candle.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 36: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-smoke-bloom",
+      "file": "public/shaders/gen-fireworks-smoke-bloom.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 92: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-strobe-shell",
+      "file": "public/shaders/gen-fireworks-strobe-shell.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 43: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-willow-cascade",
+      "file": "public/shaders/gen-fireworks-willow-cascade.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 86: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-fireworks-wind-ripple",
+      "file": "public/shaders/gen-fireworks-wind-ripple.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 87: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4268,7 +4610,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 75: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 140: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4278,7 +4620,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 175: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 310: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4322,13 +4664,23 @@
       ]
     },
     {
+      "shader_id": "gen-holographic-fracture",
+      "file": "public/shaders/gen-holographic-fracture.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 88: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-holographic-lens-flare-matrix",
       "file": "public/shaders/gen-holographic-lens-flare-matrix.wgsl",
       "status": "warning",
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 61: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 72: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4372,6 +4724,26 @@
       ]
     },
     {
+      "shader_id": "gen-hyper-bismuth-clockwork",
+      "file": "public/shaders/gen-hyper-bismuth-clockwork.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 209: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-hyper-dimensional-bismuth-matrix",
+      "file": "public/shaders/gen-hyper-dimensional-bismuth-matrix.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 210: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-hyper-dimensional-tesseract-labyrinth",
       "file": "public/shaders/gen-hyper-dimensional-tesseract-labyrinth.wgsl",
       "status": "warning",
@@ -4408,7 +4780,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 176: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 205: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4459,6 +4831,26 @@
       "errors": [],
       "warnings": [
         "line 77: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-image-pixel-detonation",
+      "file": "public/shaders/gen-image-pixel-detonation.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 81: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-image-pyro",
+      "file": "public/shaders/gen-image-pyro.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 78: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4600,6 +4992,16 @@
       ]
     },
     {
+      "shader_id": "gen-live-studio-tab",
+      "file": "public/shaders/gen-live-studio-tab.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 132: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-lorenz-attractor",
       "file": "public/shaders/gen-lorenz-attractor.wgsl",
       "status": "warning",
@@ -4607,6 +5009,16 @@
       "errors": [],
       "warnings": [
         "line 66: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-luminescent-aether-plasma-nebula-koi",
+      "file": "public/shaders/gen-luminescent-aether-plasma-nebula-koi.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 118: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4620,6 +5032,16 @@
       ]
     },
     {
+      "shader_id": "gen-luminescent-cyber-chrono-void-turtle",
+      "file": "public/shaders/gen-luminescent-cyber-chrono-void-turtle.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 199: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-luminescent-quantum-glass-phoenix-egg",
       "file": "public/shaders/gen-luminescent-quantum-glass-phoenix-egg.wgsl",
       "status": "warning",
@@ -4630,13 +5052,23 @@
       ]
     },
     {
+      "shader_id": "gen-luminescent-quantum-void-anglerfish",
+      "file": "public/shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 189: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-luminous-cauldron",
       "file": "public/shaders/gen-luminous-cauldron.wgsl",
       "status": "warning",
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 54: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 100: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4655,6 +5087,16 @@
       "errors": [],
       "warnings": [
         "line 135: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-magnetic-ferrofluid-sculpture",
+      "file": "public/shaders/gen-magnetic-ferrofluid-sculpture.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 183: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4692,7 +5134,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 54: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 86: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4742,7 +5184,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 59: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 172: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4802,7 +5244,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 51: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 103: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4812,7 +5254,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 124: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 132: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4872,7 +5314,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 58: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 86: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4896,6 +5338,16 @@
       ]
     },
     {
+      "shader_id": "gen-neural-dust",
+      "file": "public/shaders/gen-neural-dust.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 72: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-neural-fractal-hdr",
       "file": "public/shaders/gen-neural-fractal-hdr.wgsl",
       "status": "warning",
@@ -4912,7 +5364,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 99: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 131: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4931,6 +5383,16 @@
       "errors": [],
       "warnings": [
         "line 125: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-neuro-fluid-plasma-lotus",
+      "file": "public/shaders/gen-neuro-fluid-plasma-lotus.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 276: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4960,7 +5422,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 62: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 127: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -4980,7 +5442,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 54: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 104: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5010,7 +5472,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 106: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 147: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5070,7 +5532,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 60: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 158: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5105,6 +5567,16 @@
       ]
     },
     {
+      "shader_id": "gen-prismatic-cyber-aurora-astral-dragonfly",
+      "file": "public/shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 65: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-prismatic-cyber-auroral-manta-swarm",
       "file": "public/shaders/gen-prismatic-cyber-auroral-manta-swarm.wgsl",
       "status": "warning",
@@ -5112,6 +5584,26 @@
       "errors": [],
       "warnings": [
         "line 233: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-prismatic-cyber-chrono-nebula-peacock",
+      "file": "public/shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 194: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-prismatic-cyber-chrono-void-kitsune",
+      "file": "public/shaders/gen-prismatic-cyber-chrono-void-kitsune.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 164: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5132,6 +5624,16 @@
       "errors": [],
       "warnings": [
         "line 67: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-prismatic-quantum-fractal-nautilus-engine",
+      "file": "public/shaders/gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 296: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5161,7 +5663,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 48: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 110: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5191,7 +5693,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 91: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 152: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5225,6 +5727,14 @@
       ]
     },
     {
+      "shader_id": "gen-quantum-fluorescent-nebula-anemone",
+      "file": "public/shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
+      "status": "valid",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": []
+    },
+    {
       "shader_id": "gen-quantum-foam-alpha",
       "file": "public/shaders/gen-quantum-foam-alpha.wgsl",
       "status": "warning",
@@ -5241,7 +5751,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 93: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 142: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5271,7 +5781,17 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 65: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 135: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-quantum-singularity-forge",
+      "file": "public/shaders/gen-quantum-singularity-forge.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 288: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5299,7 +5819,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 98: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 203: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5313,6 +5833,16 @@
       ]
     },
     {
+      "shader_id": "gen-radiant-cyber-chrono-void-stag",
+      "file": "public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 334: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-radiant-quantum-crystalline-forge",
       "file": "public/shaders/gen-radiant-quantum-crystalline-forge.wgsl",
       "status": "warning",
@@ -5320,6 +5850,16 @@
       "errors": [],
       "warnings": [
         "line 95: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-radiant-quantum-plasma-kraken-core",
+      "file": "public/shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 185: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5363,6 +5903,16 @@
       ]
     },
     {
+      "shader_id": "gen-resonant-crystal-canyons",
+      "file": "public/shaders/gen-resonant-crystal-canyons.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 222: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-resonant-quantum-obsidian-scarab-engine",
       "file": "public/shaders/gen-resonant-quantum-obsidian-scarab-engine.wgsl",
       "status": "warning",
@@ -5370,6 +5920,16 @@
       "errors": [],
       "warnings": [
         "line 97: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-resonant-quantum-plasma-dragon-eye",
+      "file": "public/shaders/gen-resonant-quantum-plasma-dragon-eye.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 322: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5390,6 +5950,46 @@
       "errors": [],
       "warnings": [
         "line 111: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-sentient-cyber-aurora-void-owl",
+      "file": "public/shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 183: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-sentient-ferro-silicate-swarm",
+      "file": "public/shaders/gen-sentient-ferro-silicate-swarm.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 134: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-sentient-liquid-neon-fractal-heart",
+      "file": "public/shaders/gen-sentient-liquid-neon-fractal-heart.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 137: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-sentient-quantum-chrono-leviathan-moth",
+      "file": "public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 199: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5415,10 +6015,12 @@
     {
       "shader_id": "gen-showcase-nebula-core",
       "file": "public/shaders/gen-showcase-nebula-core.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 97: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "gen-sierpinski-tetrahedron",
@@ -5477,7 +6079,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 67: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 206: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5527,7 +6129,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 91: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 146: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5611,6 +6213,26 @@
       ]
     },
     {
+      "shader_id": "gen-symbiotic-plasma-reef-matrix",
+      "file": "public/shaders/gen-symbiotic-plasma-reef-matrix.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 283: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-tectonic-plasma-crucible",
+      "file": "public/shaders/gen-tectonic-plasma-crucible.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 250: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
       "shader_id": "gen-temporal-motion-smear",
       "file": "public/shaders/gen-temporal-motion-smear.wgsl",
       "status": "warning",
@@ -5667,7 +6289,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 55: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 180: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5727,7 +6349,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 72: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 146: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5757,7 +6379,17 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 50: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 111: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "gen-wasm-hls-physarum-swarm",
+      "file": "public/shaders/gen-wasm-hls-physarum-swarm.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 73: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -5797,7 +6429,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 111: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 131: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -6045,7 +6677,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 65: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 109: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -6085,7 +6717,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 37: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -6209,10 +6841,12 @@
     {
       "shader_id": "glitch-slice-mirror",
       "file": "public/shaders/glitch-slice-mirror.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 35: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "graphic_novel",
@@ -6367,16 +7001,18 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 38: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 147: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
       "shader_id": "hex-mosaic",
       "file": "public/shaders/hex-mosaic.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 31: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "hex-pulse",
@@ -6395,7 +7031,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 48: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -6425,7 +7061,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 30: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 170: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -6445,7 +7081,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 41: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 67: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -6455,7 +7091,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 56: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 54: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -6566,6 +7202,76 @@
       "errors": [],
       "warnings": [
         "line 93: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "hyb-chromatic-circuit",
+      "file": "public/shaders/hyb-chromatic-circuit.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 73: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "hyb-hex-voronoi-distort",
+      "file": "public/shaders/hyb-hex-voronoi-distort.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 79: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "hyb-iridescent-fbm-glow",
+      "file": "public/shaders/hyb-iridescent-fbm-glow.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 43: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "hyb-kaleidoscope-pulse",
+      "file": "public/shaders/hyb-kaleidoscope-pulse.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 75: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "hyb-neural-voronoi-feedback",
+      "file": "public/shaders/hyb-neural-voronoi-feedback.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 107: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "hyb-spectral-fbm-displace",
+      "file": "public/shaders/hyb-spectral-fbm-displace.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 85: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
+    },
+    {
+      "shader_id": "hyb-temporal-fbm-ghost",
+      "file": "public/shaders/hyb-temporal-fbm-ghost.wgsl",
+      "status": "warning",
+      "shader_type": "compute",
+      "errors": [],
+      "warnings": [
+        "line 86: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -6903,16 +7609,18 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 48: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
       "shader_id": "interactive-emboss",
       "file": "public/shaders/interactive-emboss.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 22: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "interactive-film-burn",
@@ -6927,10 +7635,12 @@
     {
       "shader_id": "interactive-fisheye",
       "file": "public/shaders/interactive-fisheye.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 37: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "interactive-fresnel",
@@ -6945,10 +7655,12 @@
     {
       "shader_id": "interactive-glitch-brush",
       "file": "public/shaders/interactive-glitch-brush.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 35: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "interactive-glitch-cubes",
@@ -7055,7 +7767,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 45: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 76: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -7095,7 +7807,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 28: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 51: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -7233,8 +7945,8 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 93: [WARNING] Workgroup size is (64, 1, 1), expected (8, 8, 1)",
-        "line 183: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 95: [WARNING] Workgroup size is (64, 1, 1), expected (8, 8, 1)",
+        "line 185: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -7290,10 +8002,12 @@
     {
       "shader_id": "kimi_spotlight",
       "file": "public/shaders/kimi_spotlight.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 32: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "kinetic-dispersion",
@@ -7626,7 +8340,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders"
+        "line 48: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1) for standard shaders"
       ]
     },
     {
@@ -8146,10 +8860,12 @@
     {
       "shader_id": "melting-oil",
       "file": "public/shaders/melting-oil.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 35: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "mercury-temporal-mirror",
@@ -8236,7 +8952,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 54: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 61: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -8282,10 +8998,12 @@
     {
       "shader_id": "mouse-gravity",
       "file": "public/shaders/mouse-gravity.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "mouse-hyperbolic-navigator",
@@ -8304,7 +9022,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 44: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 70: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -8374,7 +9092,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 111: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -8583,7 +9301,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 106: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 39: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -8613,7 +9331,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 53: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 59: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -8663,7 +9381,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 41: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 65: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -8843,10 +9561,12 @@
     {
       "shader_id": "night-vision-scope",
       "file": "public/shaders/night-vision-scope.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 31: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "oil-slick-iridescence",
@@ -8865,7 +9585,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 55: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 89: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -8941,10 +9661,12 @@
     {
       "shader_id": "paper-cutout",
       "file": "public/shaders/paper-cutout.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 26: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "parallax-glow-compositor",
@@ -8973,7 +9695,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 134: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9013,7 +9735,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 139: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 134: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9039,10 +9761,12 @@
     {
       "shader_id": "phantom-lag",
       "file": "public/shaders/phantom-lag.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "phase-memory-weave",
@@ -9187,10 +9911,12 @@
     {
       "shader_id": "pixel-focus",
       "file": "public/shaders/pixel-focus.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 32: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "pixel-rain",
@@ -9247,9 +9973,9 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
+        "line 28: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)",
         "line 56: [WARNING] stride is deprecated, use array element type directly",
-        "line 63: [WARNING] stride is deprecated, use array element type directly"
+        "line 62: [WARNING] stride is deprecated, use array element type directly"
       ]
     },
     {
@@ -9559,7 +10285,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 38: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 79: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9657,10 +10383,12 @@
     {
       "shader_id": "quantum-cursor",
       "file": "public/shaders/quantum-cursor.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 37: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "quantum-field-visualizer",
@@ -9709,7 +10437,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 137: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 135: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9719,7 +10447,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 136: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 143: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9729,7 +10457,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 95: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 101: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9767,7 +10495,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 29: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 38: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9803,10 +10531,12 @@
     {
       "shader_id": "quantum-tunnel-interactive",
       "file": "public/shaders/quantum-tunnel-interactive.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 31: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "quantum-wormhole",
@@ -9835,7 +10565,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 48: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 54: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9855,7 +10585,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 24: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 122: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9897,7 +10627,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 30: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 56: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9947,7 +10677,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 36: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 39: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9957,7 +10687,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 43: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 46: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -9967,7 +10697,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 28: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 31: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -10027,7 +10757,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 45: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 64: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -10201,7 +10931,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 36: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -10221,7 +10951,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 46: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 147: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -10287,10 +11017,12 @@
     {
       "shader_id": "scan-slice",
       "file": "public/shaders/scan-slice.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 34: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "scanline-cyberpunk",
@@ -10385,10 +11117,12 @@
     {
       "shader_id": "signal-tuner",
       "file": "public/shaders/signal-tuner.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 44: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "silk-flow-advection",
@@ -10437,7 +11171,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 66: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 67: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -10447,7 +11181,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 35: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 37: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -10457,7 +11191,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 54: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 55: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -10657,7 +11391,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 44: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 154: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -10913,10 +11647,12 @@
     {
       "shader_id": "spectral-distortion",
       "file": "public/shaders/spectral-distortion.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 45: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "spectral-flow-sorting",
@@ -11001,10 +11737,12 @@
     {
       "shader_id": "spectral-waves",
       "file": "public/shaders/spectral-waves.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 54: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "spectrogram-displace-pass1",
@@ -11023,7 +11761,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 36: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 35: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -11305,7 +12043,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 51: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 93: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -11325,7 +12063,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 37: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 40: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -11355,7 +12093,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 50: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 112: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -11365,7 +12103,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 51: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 99: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -11435,7 +12173,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 141: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 143: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -11505,7 +12243,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 62: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 57: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -11629,10 +12367,12 @@
     {
       "shader_id": "velocity-field-paint",
       "file": "public/shaders/velocity-field-paint.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 55: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "velvet-scatter-bloom",
@@ -11679,7 +12419,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 47: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 127: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -11739,7 +12479,7 @@
       "shader_type": "compute",
       "errors": [],
       "warnings": [
-        "line 36: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+        "line 126: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
       ]
     },
     {
@@ -12075,10 +12815,12 @@
     {
       "shader_id": "xerox-degrade",
       "file": "public/shaders/xerox-degrade.wgsl",
-      "status": "valid",
+      "status": "warning",
       "shader_type": "compute",
       "errors": [],
-      "warnings": []
+      "warnings": [
+        "line 97: [WARNING] Workgroup size is (16, 16, 1), expected (8, 8, 1)"
+      ]
     },
     {
       "shader_id": "zipper-reveal",

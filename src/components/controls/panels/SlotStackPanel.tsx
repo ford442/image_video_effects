@@ -11,6 +11,7 @@ export interface SlotStackPanelProps {
     setActiveSlot: (index: number) => void;
     slotShaderStatus?: Array<'idle' | 'loading' | 'error'>;
     slotMenuOptions: ShaderMegaMenuOption[];
+    maxActiveSlots?: number;
 }
 
 export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
@@ -20,6 +21,7 @@ export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
     setActiveSlot,
     slotShaderStatus = ['idle', 'idle', 'idle', 'idle', 'idle', 'idle'],
     slotMenuOptions,
+    maxActiveSlots = 6,
 }) => {
     const [galleryOpenFor, setGalleryOpenFor] = useState<number | null>(null);
 
@@ -28,6 +30,7 @@ export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
             <div className="glass-panel" style={{ padding: '12px' }}>
                 <div className="gold-section-header" style={{ fontSize: '12px', marginTop: '0' }}>Shader Slots</div>
                 {modes.map((_, i) => {
+                    if (i >= maxActiveSlots) return null;
                     const slotStatus = slotShaderStatus[i] || 'idle';
                     const borderColor = slotStatus === 'error' ? '#ff4757'
                         : slotStatus === 'loading' ? '#ffa502'

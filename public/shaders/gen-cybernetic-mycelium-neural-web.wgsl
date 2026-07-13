@@ -4,7 +4,7 @@
 // ----------------------------------------------------------------
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
 //            organic, mycelium, neural-network, bioluminescence, particle-trails,
-//            upgraded-rgba
+//            upgraded-rgba, spring-damper envelopes, click-seeded mutation
 // ----------------------------------------------------------------
 
 struct Uniforms {
@@ -82,6 +82,12 @@ fn bass_env(prev: f32, curr: f32, att: f32, rel: f32) -> f32 {
   else { return mix(prev, curr, rel); }
 }
 
+fn spring_damper(prev: f32, goal: f32, vel: ptr<function, f32>, k: f32, d: f32) -> f32 {
+  let force = (goal - prev) * k;
+  *vel = (*vel + force) * (1.0 - d);
+  return prev + *vel;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = vec2<f32>(u.config.z, u.config.w);
@@ -92,24 +98,60 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
   let mid = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   let growthRate = u.zoom_params.x;
   let pulseIntensity = u.zoom_params.y;
   let decaySpeed = u.zoom_params.z;
   let complexity = u.zoom_params.w;
 
-  // ═══ CHUNK: bass_env smoothing ═══
+  // ═══ CHUNK: bass/mid spring-damper envelopes ═══
+  var velBass = 0.0;
+  var velMid = 0.0;
+  var velTreble = 0.0;
   let prevBass = extraBuffer[0];
-  let bassSmooth = bass_env(prevBass, bass, 0.08, 0.02);
+  let prevMid = extraBuffer[1];
+  let prevTreble = extraBuffer[2];
+  let bassSmooth = spring_damper(prevBass, bass, &velBass, 0.12, 0.08);
+  let midSmooth = spring_damper(prevMid, mid, &velMid, 0.14, 0.09);
+  let trebleSmooth = spring_damper(prevTreble, treble, &velTreble, 0.16, 0.10);
   extraBuffer[0] = bassSmooth;
+  extraBuffer[1] = midSmooth;
+  extraBuffer[2] = trebleSmooth;
 
-  // Mouse as nutrient source
+  // ═══ CHUNK: mouse state persistence (position + click/velocity) ═══
   let mouseUV = u.zoom_config.yz;
+  let mouseClick = u.zoom_config.w;
+  let prevMouseX = extraBuffer[3];
+  let prevMouseY = extraBuffer[4];
+  let clickCount = extraBuffer[5];
+  let clickHeld = extraBuffer[6];
+
+  let mouseDelta = length(mouseUV - vec2<f32>(prevMouseX, prevMouseY));
+  extraBuffer[3] = mouseUV.x;
+  extraBuffer[4] = mouseUV.y;
+
+  var newClickCount = clickCount;
+  var newClickHeld = clickHeld;
+  if (mouseClick > 0.5 && clickHeld < 0.5) {
+    newClickCount = clickCount + 1.0;
+    newClickHeld = 1.0;
+  }
+  if (mouseClick < 0.5) {
+    newClickHeld = 0.0;
+  }
+  extraBuffer[5] = newClickCount;
+  extraBuffer[6] = newClickHeld;
+
   let mousePos = (mouseUV - 0.5) * vec2<f32>(res.x / res.y, 1.0) * 2.5;
-  let mouseY = 1.0 - mouseUV.y;  // Flip Y
+  let mouseY = 1.0 - mouseUV.y;
   let mouseWorld = vec3<f32>(mousePos.x, mouseY * 2.0, 0.0);
 
-  // KIFS structural lattice (nutrient hotspots)
+  // Click velocity injects mutation bursts
+  let clickBurst = exp(-mouseDelta * 20.0) * mouseClick * 3.0;
+  let mutationSeed = fract(newClickCount * 0.17 + time * 0.01);
+
+  // KIFS structural lattice (nutrient hotspots) with audio chaos
   var z = vec3<f32>(uv.x, uv.y, 0.0) * complexity * 3.0;
   var dr = 1.0;
   for(var i = 0; i < 5; i++) {
@@ -125,21 +167,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let trailP = uv * 4.0 + time * 0.1 * growthRate;
   let trailDensity = fbm(trailP) * fbm(trailP * 1.5 + vec2<f32>(time * 0.2, -time * 0.15));
 
-  // Mouse attraction
+  // Mouse attraction modulated by click mutation
   let toMouse = mouseWorld.xy - uv;
   let mouseDist = length(toMouse);
-  let mouseAttraction = exp(-mouseDist * mouseDist * 2.0) * 3.0;
+  let mouseAttraction = exp(-mouseDist * mouseDist * 2.0) * (3.0 + clickBurst);
+
+  // Audio-reactive turbulence on trails
+  let audioTurbulence = fbm(uv * 8.0 + vec2<f32>(bassSmooth * 2.0, midSmooth * 2.0));
 
   // Data pulses traveling along high-density trails
-  let pulsePhase = fract(time * 0.5 * pulseIntensity + trailDensity * 3.0);
+  let pulsePhase = fract(time * 0.5 * pulseIntensity + trailDensity * 3.0 + mutationSeed);
   let pulse = exp(-pow(pulsePhase - 0.5, 2.0) * 50.0) * pulseIntensity;
 
   // Audio-reactive growth
-  let audioGrowth = 1.0 + bassSmooth * 2.0;
-  let totalDensity = trailDensity * audioGrowth + mouseAttraction;
+  let audioGrowth = 1.0 + bassSmooth * 2.0 + midSmooth * 0.8;
+  let totalDensity = trailDensity * audioGrowth + mouseAttraction + audioTurbulence * 0.3;
 
   // Decay
-  let age = fract(hash2(floor(uv * 20.0)) + time * decaySpeed);
+  let age = fract(hash2(floor(uv * 20.0)) + time * decaySpeed + mutationSeed);
   let alive = smoothstep(0.0, 0.3, age) * smoothstep(1.0, 0.7, age);
 
   // Color mapping
@@ -154,7 +199,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pulseCol = mix(
     vec3<f32>(0.0, 1.0, 0.4),
     vec3<f32>(0.0, 0.8, 1.0),
-    sin(time * 2.0 + uv.x * 5.0) * 0.5 + 0.5
+    sin(time * 2.0 + uv.x * 5.0 + trebleSmooth * 3.0) * 0.5 + 0.5
   ) * pulse;
 
   // Bioluminescence at intersections
@@ -176,16 +221,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Audio bloom
   col += vec3<f32>(0.0, 0.2, 0.1) * bassSmooth * bassSmooth * 0.3;
+  col += vec3<f32>(0.1, 0.0, 0.2) * midSmooth * 0.25;
 
   // Chromatic edge aberration on dense areas
-  let ca = totalDensity * 0.02;
+  let ca = totalDensity * 0.02 * (1.0 + trebleSmooth);
   col.r += noise2(uv + vec2<f32>(ca, 0.0)) * ca;
   col.b += noise2(uv - vec2<f32>(ca, 0.0)) * ca;
 
-  // Temporal feedback
-  let prevCol = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
-  col = mix(prevCol, col, 0.3);
+  // Depth sample for depth-aware feedback
+  let depthUV = clamp(fragCoord / res, vec2<f32>(0.0), vec2<f32>(1.0));
+  let depthSample = textureSampleLevel(readDepthTexture, non_filtering_sampler, depthUV, 0.0).r;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  // Temporal feedback from dataTextureC
+  let prevData = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+  let prevCol = prevData.rgb;
+  let feedbackMix = 0.25 + bassSmooth * 0.15;
+  col = mix(prevCol * 0.96, col, feedbackMix);
+
+  // Depth-aware alpha based on interaction intensity/density
+  let intensity = length(col) + totalDensity * 0.3 + bassSmooth * 0.2;
+  let alpha = clamp(intensity * 0.6 + depthSample * 0.2, 0.15, 0.95);
+
+  let outColor = vec4<f32>(col, alpha);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(hotspot * 0.5 + depthSample * 0.5, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
 }

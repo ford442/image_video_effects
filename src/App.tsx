@@ -5,6 +5,14 @@ import ShaderScanner from './components/ShaderScanner';
 import LiveStudioTab from './components/LiveStudioTab';
 import { StorageBrowser } from './components/StorageBrowser';
 import { RendererToggle } from './components/RendererToggle';
+import { PerformanceStatusHUD } from './components/PerformanceStatusHUD';
+import { RenderQualityMode } from './config/performancePolicy';
+import { loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
+import { RendererType, RendererManager } from './renderer/RendererManager';
+import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from './AutoDJ';
+import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
+import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
+import { resolveShaderUrl } from './utils/resolveShaderUrl';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { RendererType, RendererManager } from './renderer/RendererManager';
 import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from './AutoDJ';
@@ -317,12 +325,100 @@ function MainApp() {
     // --- State: GPU Capabilities ---
     const [supportsDeepWorkgroup, setSupportsDeepWorkgroup] = useState(false);
 
+    // --- State: Render quality ---
+    const [renderQualityMode, setRenderQualityMode] = useState<RenderQualityMode>(() => loadRenderQualityMode());
+    const [performanceHud, setPerformanceHud] = useState({
+        internalWidth: 2048,
+        internalHeight: 2048,
+        scale: 1,
+        targetFps: 60,
+        adaptive: true,
+        maxActiveSlots: 3,
+    });
+
     // --- Refs ---
     const rendererRef = useRef<RendererManager | null>(null);
     const modesRef = useRef<RenderMode[]>(modes);
     const availableModesRef = useRef<ShaderEntry[]>(availableModes);
     const slotParamsRef = useRef<SlotParams[]>(slotParams);
     const inputSourceRef = useRef<InputSource>(inputSource);
+
+    // --- Renderer backend state ---
+    const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
+    const [jsFps, setJsFps] = useState(0);
+    const [wasmFps, setWasmFps] = useState(0);
+    const [isRendererSwitching, setIsRendererSwitching] = useState(false);
+
+    const handleSwitchRenderer = useCallback(async (type: RendererType) => {
+        const manager = rendererRef.current;
+        if (!manager) return;
+
+        setIsRendererSwitching(true);
+        setStatus(`Switching to ${type} renderer…`);
+
+        // Snapshot current FPS into the correct bucket before switching
+        const currentFps = manager.getCurrentFPS?.() ?? 0;
+        if (activeRendererType === 'webgpu' || activeRendererType === 'js') {
+            setJsFps(currentFps);
+        } else if (activeRendererType === 'wasm') {
+            setWasmFps(currentFps);
+        }
+
+        const ok = await manager.switchRenderer(type);
+
+        if (ok) {
+            setActiveRendererType(type);
+            setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM (experimental)' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
+
+            // Re-bind shaders + params so the new backend matches the UI state
+            if (type === 'wasm' || type === 'webgpu') {
+                await manager.resyncShaderStack({
+                    modes: modesRef.current,
+                    slotParams: slotParamsRef.current,
+                    resolveShader: (shaderId) => availableModesRef.current.find(s => s.id === shaderId),
+                    inputSource: inputSourceRef.current,
+                });
+            }
+        } else {
+            setStatus(`⚠️ Failed to switch to ${type} renderer — staying on ${activeRendererType}.`);
+        }
+        setIsRendererSwitching(false);
+    }, [activeRendererType]);
+
+    // Poll real FPS from the active renderer and keep separate buckets for comparison
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const manager = rendererRef.current;
+            if (!manager) return;
+            const fps = manager.getCurrentFPS?.() ?? 0;
+            if (activeRendererType === 'wasm') {
+                setWasmFps(fps);
+            } else {
+                setJsFps(fps);
+            }
+        }, 800);
+        return () => clearInterval(interval);
+    }, [activeRendererType]);
+    const fileInputImageRef = useRef<HTMLInputElement>(null);
+    const fileInputVideoRef = useRef<HTMLInputElement>(null);
+    const channelRef = useRef<BroadcastChannel | null>(null);
+    const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const rouletteFlashRef = useRef<HTMLDivElement | null>(null);
+    // Mirrors slotShaderStatus state so setMode can read it without being in its dep array
+    const slotShaderStatusRef = useRef<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle', 'idle', 'idle', 'idle']);
+    // Direct ref to the WebGPU canvas — set via onCanvasRef callback (avoids fragile querySelector)
+    const webgpuCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+    const {
+        depthEstimator,
+        isModelLoaded,
+        loadDepthModel,
+        runDepthAnalysis,
+    } = useDepthEstimation({
+        rendererRef,
+        currentImageUrl,
+        setStatus,
+    });
 
     // --- Renderer backend state ---
     const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
@@ -437,6 +533,12 @@ function MainApp() {
     }, [mapShaderParamUpdates]);
 
     const setMode = useCallback(async (index: number, mode: RenderMode) => {
+        const maxSlots = rendererRef.current?.getMaxActiveSlots?.() ?? 3;
+        if (mode !== 'none' && index >= maxSlots) {
+            setStatus(`Quality cap: only ${maxSlots} slot(s) active — raise quality in Render Quality panel.`);
+            return;
+        }
+
         // Guard: if a shader is already compiling on this slot, skip to prevent chaos-mode pile-up
         if (slotShaderStatusRef.current[index] === 'loading') return;
 
@@ -468,7 +570,11 @@ function MainApp() {
                 let shaderUrl = shaderEntry.url;
                 
                 // Load the shader
-                const ok = await rendererRef.current.loadShader(shaderEntry.id, shaderUrl);
+                const ok = await rendererRef.current.loadShader(
+                    shaderEntry.id,
+                    shaderUrl,
+                    { requiresDeepWorkgroup: shaderEntry.requiresDeepWorkgroup },
+                );
                 
                 // Activate the shader on the specified slot
                 if (ok && rendererRef.current) {
@@ -525,6 +631,62 @@ function MainApp() {
             return next;
         });
     }, []);
+    const {
+        activeRendererType,
+        jsFps,
+        wasmFps,
+        isRendererSwitching,
+        rendererReady,
+        supportsDeepWorkgroup,
+        handleSwitchRenderer,
+        onInitCanvas,
+    } = useRendererBackend({
+        rendererRef,
+        modesRef,
+        slotParamsRef,
+        availableModesRef,
+        inputSourceRef,
+        setStatus,
+    });
+
+    useEffect(() => { modesRef.current = modes; }, [modes]);
+    useEffect(() => { availableModesRef.current = availableModes; }, [availableModes]);
+    useEffect(() => { slotParamsRef.current = slotParams; }, [slotParams]);
+    useEffect(() => { inputSourceRef.current = inputSource; }, [inputSource]);
+
+    const {
+        setMode,
+        updateSlotParam,
+        mapShaderParamUpdates,
+        handleApplyParamsDirect,
+        syncInputSourceToRenderer,
+    } = useShaderMode({
+        rendererRef,
+        availableModes,
+        availableModesRef,
+        modesRef,
+        slotParamsRef,
+        inputSourceRef,
+        slotShaderStatusRef,
+        setModes,
+        setSlotParams,
+        setSlotShaderStatus,
+        setInputSource,
+    });
+
+    const {
+        audioReactiveParams,
+        setAudioReactiveParams,
+        audioReactiveAmount,
+        setAudioReactiveAmount,
+    } = useAudioReactiveParams({
+        rendererRef,
+        modes,
+        availableModes,
+        updateSlotParam,
+        getShaderDefaults,
+        setStatus,
+    });
 
     const handleUpdateStack = useCallback((ids: string[]) => {
         setModes(prev => {
@@ -943,6 +1105,234 @@ function MainApp() {
         setShareVibeText(aiVj?.getLastVibeText() ?? '');
         setShowShareModal(true);
     }, [buildVjChainString, aiVj]);
+    const startAutoTransition = useCallback(async (config: AutoTransitionConfig) => {
+        if (!aiVj) return false;
+        return aiVj.startAutoTransition(config);
+    }, [aiVj]);
+
+    const stopAutoTransition = useCallback(() => {
+        aiVj?.stopAutoTransition();
+    }, [aiVj]);
+    
+    const onInitCanvas = useCallback(() => {
+        const manager = rendererRef.current;
+        if (!manager) return;
+        setActiveRendererType(manager.getActiveRendererType());
+        const deep = manager.getSupportsDeepWorkgroup();
+        setSupportsDeepWorkgroup(deep);
+        manager.setRenderQuality(renderQualityMode, { supportsDeepWorkgroup: deep });
+        manager.setInputSource(inputSourceRef.current);
+        setRendererReady(true);
+    }, [renderQualityMode]);
+
+    const handleRenderQualityChange = useCallback((mode: RenderQualityMode) => {
+        setRenderQualityMode(mode);
+        saveRenderQualityMode(mode);
+        const manager = rendererRef.current;
+        if (manager) {
+            manager.setRenderQuality(mode, { supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup() });
+        }
+    }, []);
+
+    // Poll internal resolution + backend for status HUD
+    useEffect(() => {
+        if (!rendererReady) return;
+        const tick = () => {
+            const manager = rendererRef.current;
+            if (!manager) return;
+            const status = manager.getPerformanceStatus();
+            setPerformanceHud({
+                internalWidth: status.internalWidth,
+                internalHeight: status.internalHeight,
+                scale: status.scale,
+                targetFps: status.targetFps,
+                adaptive: status.adaptive,
+                maxActiveSlots: status.maxActiveSlots,
+            });
+        };
+        tick();
+        const interval = setInterval(tick, 1000);
+        return () => clearInterval(interval);
+    }, [rendererReady, activeRendererType, renderQualityMode]);
+
+    // --- Test Mode Hook (exposes renderer for Playwright harness) ---
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('testMode') === '1' && rendererRef.current) {
+            const manager = rendererRef.current;
+            const loadShaderTracked = async (id: string, url: string) => {
+                const ok = await manager.loadShader(id, url) ?? false;
+                if (params.get('shaderHotReload') === '1') {
+                    import('./dev/shaderHotReload').then(({ trackShaderForHotReload }) => {
+                        trackShaderForHotReload(id, url);
+                    });
+                }
+                return ok;
+            };
+            (window as any).__pixelocity__ = {
+                renderer: manager,
+                getRendererType: () => manager.getActiveRendererType(),
+                setSlotShader: (index: number, id: string) => {
+                    manager.setSlotShader(index, id);
+                },
+                loadShader: loadShaderTracked,
+                reloadShader: (id: string, url: string) => manager.reloadShader(id, url),
+                setInputSource: (source: Parameters<typeof manager.setInputSource>[0]) => {
+                    manager.setInputSource(source);
+                },
+                setTestRenderState: (state: Parameters<typeof manager.applyTestRenderState>[0]) => {
+                    manager.applyTestRenderState(state);
+                },
+                captureCanvasScreenshot: async () => {
+                    const canvas = document.querySelector('canvas');
+                    if (!canvas) return null;
+                    return canvas.toDataURL('image/png');
+                },
+                runBenchmark: async (frameCount = 90) => {
+                    const samples: Array<{ fps: number; gpu: ReturnType<typeof manager.getGPUTimings> }> = [];
+                    for (let i = 0; i < frameCount; i++) {
+                        await new Promise<void>((r) => requestAnimationFrame(() => r()));
+                        samples.push({
+                            fps: manager.getMetrics().fps,
+                            gpu: manager.getGPUTimings(),
+                        });
+                    }
+                    const totals = samples.map((s) => s.gpu.totalTime).filter((t) => t > 0);
+                    const avgTotalMs = totals.length
+                        ? totals.reduce((a, b) => a + b, 0) / totals.length
+                        : 0;
+                    return {
+                        frames: frameCount,
+                        avgFps: samples.reduce((a, s) => a + s.fps, 0) / frameCount,
+                        avgTotalMs,
+                        gpuTimingsAvailable: samples.some((s) => s.gpu.available),
+                        rendererType: manager.getActiveRendererType(),
+                        samples: samples.slice(-5),
+                    };
+                },
+                updateAudioFrequencyBins: (bins: Float32Array) => {
+                    manager.updateAudioFrequencyBins(bins);
+                },
+                getSlotState: (index: number) => manager.getSlotState(index),
+                getGPUTimings: () => manager.getGPUTimings(),
+                getSupportsDeepWorkgroup: () => manager.getSupportsDeepWorkgroup(),
+                takeScreenshot: (filename?: string) => manager.takeScreenshot(filename),
+                refreshFrameImage: () => manager.refreshFrameImage(),
+                getFrameImage: () => manager.getFrameImage(),
+            };
+        }
+    }, [rendererReady]);
+    useContentManifest({
+        rendererRef,
+        setImageManifest,
+        setVideoList,
+        setStatus,
+    });
+
+    useShaderCatalogLoad({
+        setAvailableModes,
+        setShadersReady,
+        setStatus,
+        rendererReady,
+        supportsDeepWorkgroup,
+        availableModes,
+    });
+
+    const { handleLoadImage, handleNewRandomImage } = useImageLoading({
+        rendererRef,
+        depthEstimator,
+        runDepthAnalysis,
+        imageManifest,
+        setCurrentImageUrl,
+        setStatus,
+    });
+
+    useShaderBoot({
+        rendererReady,
+        shadersReady,
+        modes,
+        setMode,
+        setStatus,
+        imageManifest,
+        currentImageUrl,
+        inputSource,
+        handleNewRandomImage,
+        availableModes,
+        autoChangeEnabled,
+        autoChangeDelay,
+        shaderCategory,
+        syncInputSourceToRenderer,
+    });
+
+    const {
+        aiVj,
+        aiVjStatus,
+        aiVjMessage,
+        isAiVjMode,
+        toggleAiVj,
+        handleGenerateFromVibe,
+        handleRandomizeParams,
+        handleTriggerNextTransition,
+        handleSavePreset,
+        startAutoTransition,
+        stopAutoTransition,
+    } = useAiVjHandlers({
+        imageManifest,
+        availableModes,
+        modes,
+        currentImageUrl,
+        handleLoadImage,
+        handleUpdateStack,
+        handleUpdateParams,
+        handleApplyParamsDirect,
+        setStatus,
+    });
+
+    const {
+        isWebcamActive,
+        webcamError,
+        showWebcamShaderSuggestions,
+        videoElementRef,
+        startWebcam,
+        stopWebcam,
+        applyWebcamFunShader,
+    } = useWebcam({
+        syncInputSourceToRenderer,
+        setShaderCategory,
+        setStatus,
+        setMode,
+        setActiveSlot,
+    });
+
+    const {
+        showShareModal,
+        setShowShareModal,
+        shareableLink,
+        shareVibeText,
+        buildVjChainString,
+        handleShareVjSet,
+        applySharedChain,
+        copyChainShareLink,
+        openRecordingShareModal,
+    } = useShareChain({
+        modes,
+        activeSlot,
+        slotParams,
+        inputSource,
+        currentImageUrl,
+        activeGenerativeShader,
+        availableModesRef,
+        aiVj,
+        setMode,
+        setActiveSlot,
+        updateSlotParam,
+        syncInputSourceToRenderer,
+        setActiveGenerativeShader,
+        handleLoadImage,
+        startWebcam,
+        setStatus,
+    });
 
     const handleSaveVjSet = useCallback(async (name: string) => {
         const encoded = await buildVjChainString();
@@ -2146,6 +2536,10 @@ function MainApp() {
                         // Multi-Slot Chain Sharing props
                         onCopyChainShareLink={copyChainShareLink}
                         onApplySharedChain={applySharedChain}
+                        renderQualityMode={renderQualityMode}
+                        onRenderQualityChange={handleRenderQualityChange}
+                        maxActiveSlots={performanceHud.maxActiveSlots}
+                        performanceHud={performanceHud}
                     />
                 </aside>
                 <main className="canvas-container">
@@ -2203,6 +2597,15 @@ function MainApp() {
                                   : '🔷 WebGPU'}
                         </span>
 
+                        <PerformanceStatusHUD
+                            backend={activeRendererType}
+                            internalWidth={performanceHud.internalWidth}
+                            internalHeight={performanceHud.internalHeight}
+                            scale={performanceHud.scale}
+                            fps={activeRendererType === 'wasm' ? wasmFps : jsFps}
+                            qualityLabel={renderQualityMode}
+                        />
+
                         {/* FPS Comparison + Switch Toggle (JS WebGPU vs C++ WASM) */}
                         <RendererToggle
                             isWASM={activeRendererType === 'wasm'}
@@ -2237,6 +2640,104 @@ function MainApp() {
                     zIndex: 9999,
                     transition: 'opacity 0.15s ease-out'
                 }}
+            <AppShell
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                showSidebar={showSidebar}
+                setShowSidebar={setShowSidebar}
+                modes={modes}
+                setMode={setMode}
+                activeSlot={activeSlot}
+                setActiveSlot={setActiveSlot}
+                slotParams={slotParams}
+                updateSlotParam={updateSlotParam}
+                slotShaderStatus={slotShaderStatus}
+                shaderCategory={shaderCategory}
+                setShaderCategory={setShaderCategory}
+                handleNewRandomImage={handleNewRandomImage}
+                autoChangeEnabled={autoChangeEnabled}
+                setAutoChangeEnabled={setAutoChangeEnabled}
+                autoChangeDelay={autoChangeDelay}
+                setAutoChangeDelay={setAutoChangeDelay}
+                loadDepthModel={loadDepthModel}
+                isModelLoaded={isModelLoaded}
+                availableModes={availableModes}
+                inputSource={inputSource}
+                syncInputSourceToRenderer={syncInputSourceToRenderer}
+                videoList={videoList}
+                selectedVideo={selectedVideo}
+                setSelectedVideo={setSelectedVideo}
+                videoB3hdMode={videoB3hdMode}
+                setVideoB3hdMode={setVideoB3hdMode}
+                b3hdSegmentLength={b3hdSegmentLength}
+                setB3hdSegmentLength={setB3hdSegmentLength}
+                b3hdIntervalSeconds={b3hdIntervalSeconds}
+                setB3hdIntervalSeconds={setB3hdIntervalSeconds}
+                currentSegment={currentSegment}
+                isMuted={isMuted}
+                setIsMuted={setIsMuted}
+                activeGenerativeShader={activeGenerativeShader}
+                setActiveGenerativeShader={setActiveGenerativeShader}
+                fileInputImageRef={fileInputImageRef}
+                fileInputVideoRef={fileInputVideoRef}
+                isAiVjMode={isAiVjMode}
+                toggleAiVj={toggleAiVj}
+                aiVjStatus={aiVjStatus}
+                aiVjMessage={aiVjMessage}
+                handleGenerateFromVibe={handleGenerateFromVibe}
+                handleUpdateStack={handleUpdateStack}
+                handleUpdateParams={handleUpdateParams}
+                handleRandomizeParams={handleRandomizeParams}
+                handleSavePreset={handleSavePreset}
+                handleTriggerNextTransition={handleTriggerNextTransition}
+                handleRandomizeSlot={handleRandomizeSlot}
+                handleSetSlotParam={handleSetSlotParam}
+                handleShareVjSet={handleShareVjSet}
+                handleSaveVjSet={handleSaveVjSet}
+                startAutoTransition={startAutoTransition}
+                stopAutoTransition={stopAutoTransition}
+                isWebcamActive={isWebcamActive}
+                startWebcam={startWebcam}
+                stopWebcam={stopWebcam}
+                webcamError={webcamError}
+                showWebcamShaderSuggestions={showWebcamShaderSuggestions}
+                webcamFunShaders={WEBCAM_FUN_SHADERS}
+                applyWebcamFunShader={applyWebcamFunShader}
+                triggerRoulette={triggerRoulette}
+                triggerRandomizeAllSlots={triggerRandomizeAllSlots}
+                isRouletteActive={isRouletteActive}
+                chaosModeEnabled={chaosModeEnabled}
+                setChaosModeEnabled={setChaosModeEnabled}
+                audioReactiveParams={audioReactiveParams}
+                setAudioReactiveParams={setAudioReactiveParams}
+                audioReactiveAmount={audioReactiveAmount}
+                setAudioReactiveAmount={setAudioReactiveAmount}
+                isRecording={isRecording}
+                recordingCountdown={recordingCountdown}
+                startRecording={startRecording}
+                stopRecording={stopRecording}
+                handleTakeScreenshot={handleTakeScreenshot}
+                setShowShaderScanner={setShowShaderScanner}
+                activeRendererType={activeRendererType}
+                handleSwitchRenderer={handleSwitchRenderer}
+                setShowStorageBrowser={setShowStorageBrowser}
+                copyChainShareLink={copyChainShareLink}
+                applySharedChain={applySharedChain}
+                rendererRef={rendererRef}
+                mousePosition={mousePosition}
+                setMousePosition={setMousePosition}
+                isMouseDown={isMouseDown}
+                setIsMouseDown={setIsMouseDown}
+                onInitCanvas={onInitCanvas}
+                videoSourceUrl={videoSourceUrl}
+                webgpuCanvasRef={webgpuCanvasRef}
+                videoElementRef={videoElementRef}
+                status={status}
+                generativeShowcaseActive={generativeShowcaseActive}
+                generativeShowcaseLocked={generativeShowcaseLocked}
+                isRendererSwitching={isRendererSwitching}
+                jsFps={jsFps}
+                wasmFps={wasmFps}
             />
             
             {/* Confetti Container */}

@@ -9,6 +9,7 @@ file list). Skips known template files and vertex/fragment render shaders.
 Workgroup convention: compute shaders must use @workgroup_size with 3 explicit
 dimensions (e.g. 16, 16, 1). Two-arg forms are **blocking**; single-arg
 override/expression forms are **warnings** (valid WGSL, non-standard here).
+dimensions (e.g. 16, 16, 1). Two-arg forms fail the gate (use --fix locally).
 
 Usage:
     python scripts/wgsl_precommit_gate.py
@@ -248,8 +249,12 @@ def print_report(report: dict) -> None:
 
         for wg in entry.get("workgroup_warnings", []):
             print(
-                f"  [WARN] {file} — @workgroup_size has {wg['arg_count']} arg(s) "
-                f"(need 3): {wg['match']}"
+                f"  [ERROR] {file} — @workgroup_size has {wg['arg_count']} arg(s) "
+                f"(need 3 explicit dims): {wg['match']}"
+            )
+            print(
+                f"         Fix: python3 scripts/wgsl_precommit_gate.py "
+                f"--files {file} --fix"
             )
 
         if entry["ok"]:

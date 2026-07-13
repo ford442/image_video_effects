@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: procedural, cellular, worley, organic, audio-reactive,
 //            mouse-driven, chromatic-aberration, aces-tonemap,
-//            temporal-feedback, depth-aware
+//            temporal-feedback, depth-aware, spring-damper,
+//            click-mutation, emergent-tissue-drift
 //  Complexity: High
-//  Created: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -69,6 +69,12 @@ fn fbm(p: vec2<f32>) -> f32 {
   return v;
 }
 
+fn spring_damper(prev: f32, goal: f32, vel: ptr<function, f32>, k: f32, d: f32) -> f32 {
+  let force = (goal - prev) * k;
+  *vel = (*vel + force) * (1.0 - d);
+  return prev + *vel;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -81,18 +87,59 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz;
+  let mouseClick = u.zoom_config.w;
 
   let scale = mix(3.0, 12.0, u.zoom_params.x) * (1.0 + bass * 0.3);
   let speed = mix(0.05, 0.4, u.zoom_params.y);
   let caAmt = u.zoom_params.z;
   let organic = u.zoom_params.w;
 
+  // Spring-damper audio envelopes
+  var velBass = 0.0;
+  var velMid = 0.0;
+  var velTreble = 0.0;
+  let prevBass = extraBuffer[0];
+  let prevMid = extraBuffer[1];
+  let prevTreble = extraBuffer[2];
+  let bassSmooth = spring_damper(prevBass, bass, &velBass, 0.12, 0.08);
+  let midSmooth = spring_damper(prevMid, mids, &velMid, 0.14, 0.09);
+  let trebleSmooth = spring_damper(prevTreble, treble, &velTreble, 0.16, 0.10);
+  extraBuffer[0] = bassSmooth;
+  extraBuffer[1] = midSmooth;
+  extraBuffer[2] = trebleSmooth;
+
+  // Mouse state persistence
+  let prevMouseX = extraBuffer[3];
+  let prevMouseY = extraBuffer[4];
+  let clickCount = extraBuffer[5];
+  let clickHeld = extraBuffer[6];
+
+  let mouseDelta = length(mouse - vec2<f32>(prevMouseX, prevMouseY));
+  extraBuffer[3] = mouse.x;
+  extraBuffer[4] = mouse.y;
+
+  var newClickCount = clickCount;
+  var newClickHeld = clickHeld;
+  if (mouseClick > 0.5 && clickHeld < 0.5) {
+    newClickCount = clickCount + 1.0;
+    newClickHeld = 1.0;
+  }
+  if (mouseClick < 0.5) {
+    newClickHeld = 0.0;
+  }
+  extraBuffer[5] = newClickCount;
+  extraBuffer[6] = newClickHeld;
+
+  let clickBurst = exp(-mouseDelta * 15.0) * mouseClick * 3.0;
+  let mutationSeed = fract(newClickCount * 0.19 + time * 0.01);
+
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   var p = uv * vec2<f32>(aspect, 1.0) * scale;
 
-  // Mouse attracts feature points
+  // Mouse attracts feature points, click bursts repel them
   let mPos = mouse * vec2<f32>(aspect, 1.0) * scale;
-  p = p - mPos * 0.15;
+  let attraction = 0.15 + clickBurst * 0.2;
+  p = p - mPos * attraction + (p - mPos) * clickBurst * 0.1;
 
   // Depth controls cell size perspective
   let depthSample = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -108,10 +155,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var y = -1; y <= 1; y = y + 1) {
     for (var x = -1; x <= 1; x = x + 1) {
       let neighbor = cell + vec2<f32>(f32(x), f32(y));
-      let rnd = hash22(neighbor + vec2<f32>(time * speed * 10.0, 0.0));
+      let rnd = hash22(neighbor + vec2<f32>(time * speed * 10.0 + mutationSeed, 0.0));
       let feature = neighbor + rnd + vec2<f32>(
-        sin(time * speed + rnd.x * 6.28) * 0.15 * (1.0 + bass),
-        cos(time * speed + rnd.y * 6.28) * 0.15 * (1.0 + bass)
+        sin(time * speed + rnd.x * 6.28 + bassSmooth * 2.0) * 0.15 * (1.0 + bassSmooth + clickBurst),
+        cos(time * speed + rnd.y * 6.28 + midSmooth * 2.0) * 0.15 * (1.0 + bassSmooth)
       );
       let d = distance(p, feature);
       if d < f1 {
@@ -142,7 +189,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let taupe = vec3<f32>(0.55, 0.48, 0.42);
 
   // Subsurface scattering on cell boundaries
-  let scatter = exp(-boundary * 8.0) * (0.6 + mids * 0.4);
+  let scatter = exp(-boundary * 8.0) * (0.6 + midSmooth * 0.4 + clickBurst * 0.5);
   var color = mix(taupe, mix(tissue, ivory, smoothstep(0.0, 0.4, f1)), smoothstep(0.0, 0.6, f1));
   color = color + vec3<f32>(1.0, 0.7, 0.5) * scatter * 0.5;
 
@@ -151,21 +198,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = mix(color, color * (0.8 + org * 0.4), organic);
 
   // HDR boundary glow
-  let glow = exp(-boundary * 15.0) * (0.3 + treble * 0.5);
+  let glow = exp(-boundary * 15.0) * (0.3 + trebleSmooth * 0.5 + clickBurst);
   color = color + vec3<f32>(0.9, 0.75, 0.55) * glow;
 
+  // Audio-driven color shift on cell interiors
+  let audioTint = vec3<f32>(bassSmooth * 0.2, midSmooth * 0.1, trebleSmooth * 0.25);
+  color = color + audioTint * smoothstep(0.3, 0.0, f1);
+
   // Chromatic aberration on thin membranes
-  let caMask = smoothstep(0.0, 0.08, boundary) * (1.0 - smoothstep(0.08, 0.2, boundary)) * caAmt;
+  let caMask = smoothstep(0.0, 0.08, boundary) * (1.0 - smoothstep(0.08, 0.2, boundary)) * caAmt * (1.0 + trebleSmooth);
   let caR = acesToneMap(vec3<f32>(color.r * 1.1, color.g * 0.97, color.b * 0.9) * 1.2);
   let caB = acesToneMap(vec3<f32>(color.r * 0.9, color.g * 0.97, color.b * 1.1) * 1.2);
   color = mix(acesToneMap(color * 1.2), mix(caR, caB, caMask), caMask * 0.4);
 
-  // Alpha: cell_boundary_proximity × tissue_density × depth
+  // Alpha: cell_boundary_proximity × tissue_density × depth × interaction
   let tissueDensity = clamp(1.0 - f1 * 0.5, 0.0, 1.0);
-  let alpha = clamp(scatter * tissueDensity * depthSample, 0.0, 1.0);
-  let depthOut = clamp(0.2 + tissueDensity * 0.8, 0.0, 1.0);
+  let interaction = 1.0 + bassSmooth * 0.3 + clickBurst * 0.5;
+  let alpha = clamp(scatter * tissueDensity * depthSample * interaction, 0.0, 1.0);
+  let depthOut = clamp(0.2 + tissueDensity * 0.8 + bassSmooth * 0.1, 0.0, 1.0);
 
-  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  let outColor = vec4<f32>(color, alpha);
+  textureStore(writeTexture, coord, outColor);
   textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 1.0));
   textureStore(dataTextureA, coord, vec4<f32>(f1, boundary, scatter, alpha));
 }

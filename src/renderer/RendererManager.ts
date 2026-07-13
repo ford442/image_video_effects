@@ -4,12 +4,36 @@ import { WASMDiagnostics } from './WASMRenderer';
 import { WASMRenderer } from './WASMRenderer';
 import { WebGPURenderer } from './WebGPURenderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
+import {
+  computeInternalDimensions,
+  INTERNAL_RENDER_RESOLUTION,
+  RenderQualityMode,
+  ResolvedPerformancePolicy,
+  resolvePerformancePolicy,
+} from '../config/performancePolicy';
+import { AdaptivePerformanceController } from './adaptivePerformance';
 
 export interface RendererMetrics {
   fps: number;
   frameTime: number;
   agentCount: number;
   isWASM: boolean;
+}
+
+export interface RendererPerformanceStatus {
+  qualityMode: RenderQualityMode;
+  backend: RendererType;
+  scale: number;
+  internalWidth: number;
+  internalHeight: number;
+  maxActiveSlots: number;
+  targetFps: number;
+  adaptive: boolean;
+  fps: number;
+}
+
+export interface ShaderLoadMeta {
+  requiresDeepWorkgroup?: boolean;
 }
 
 export interface RendererDiagnostics {
@@ -61,6 +85,12 @@ export class RendererManager {
     isWASM: false,
   };
   private onMetricsUpdate?: (metrics: RendererMetrics) => void;
+  private performancePolicy: ResolvedPerformancePolicy = resolvePerformancePolicy('auto', {
+    supportsDeepWorkgroup: true,
+  });
+  private qualityMode: RenderQualityMode = 'auto';
+  private resolutionScale = 1.0;
+  private adaptiveController: AdaptivePerformanceController;
 
   /** Max shader slots shared by WebGPU and WASM backends. */
   private static readonly SLOT_COUNT = 3;
@@ -68,6 +98,11 @@ export class RendererManager {
   constructor(config: RendererConfig, onMetricsUpdate?: (metrics: RendererMetrics) => void) {
     this.config = config;
     this.onMetricsUpdate = onMetricsUpdate;
+    this.adaptiveController = new AdaptivePerformanceController({
+      getFps: () => this.getCurrentFPS(),
+      getScale: () => this.resolutionScale,
+      setScale: (scale) => this.applyResolutionScale(scale),
+    });
   }
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
@@ -133,6 +168,7 @@ export class RendererManager {
       if (type === 'wasm') this.lastFailedWasmRenderer = null;
 
       if (video) renderer.setVideo(video);
+      this.applyPerformancePolicyToRenderer();
       this.startMetricsCollection();
     } else {
       // If initialization failed, discard the new renderer.
@@ -211,9 +247,20 @@ export class RendererManager {
    * Works with both the TypeScript WebGPU renderer and the WASM renderer.
    * No-op when the Canvas2D fallback is active.
    */
-  async loadShader(id: string, url: string): Promise<boolean> {
+  async loadShader(id: string, url: string, meta?: ShaderLoadMeta): Promise<boolean> {
     const backend = this.getShaderBackend();
     if (!backend) return false;
+
+    if (
+      meta?.requiresDeepWorkgroup
+      && this.performancePolicy.preferNonDeepVariants
+    ) {
+      console.log(
+        `[RendererManager] Skipping "${id}" — deep-workgroup variant disabled by quality policy`,
+      );
+      return false;
+    }
+
     try {
       return await backend.loadShader(id, url);
     } catch (err) {
@@ -244,6 +291,12 @@ export class RendererManager {
 
   /** Assign a shader to a specific slot (0-2) without clearing other slots. */
   setSlotShader(index: number, id: string): void {
+    if (id && index >= this.performancePolicy.maxActiveSlots) {
+      console.warn(
+        `[RendererManager] Slot ${index} exceeds quality cap (${this.performancePolicy.maxActiveSlots} max)`,
+      );
+      return;
+    }
     this.getShaderBackend()?.setSlotShader(index, id);
   }
 
@@ -608,6 +661,84 @@ export class RendererManager {
     return this.metrics.fps || 0;
   }
 
+  /** Apply a user-facing quality preset (persisted by the UI layer). */
+  setRenderQuality(
+    mode: RenderQualityMode,
+    hints?: { supportsDeepWorkgroup?: boolean },
+  ): void {
+    this.qualityMode = mode;
+    const supportsDeep = hints?.supportsDeepWorkgroup ?? this.getSupportsDeepWorkgroup();
+    this.performancePolicy = resolvePerformancePolicy(mode, { supportsDeepWorkgroup: supportsDeep });
+    this.applyPerformancePolicyToRenderer();
+  }
+
+  getRenderQualityMode(): RenderQualityMode {
+    return this.qualityMode;
+  }
+
+  getMaxActiveSlots(): number {
+    return this.performancePolicy.maxActiveSlots;
+  }
+
+  getPerformanceStatus(): RendererPerformanceStatus {
+    const backend = this.getActiveRendererType();
+    const scaleInfo = this.readResolutionScale();
+    return {
+      qualityMode: this.qualityMode,
+      backend,
+      scale: scaleInfo.scale,
+      internalWidth: scaleInfo.scaled.w,
+      internalHeight: scaleInfo.scaled.h,
+      maxActiveSlots: this.performancePolicy.maxActiveSlots,
+      targetFps: this.performancePolicy.targetFps,
+      adaptive: this.performancePolicy.adaptive,
+      fps: this.getCurrentFPS(),
+    };
+  }
+
+  private readResolutionScale(): {
+    scale: number;
+    scaled: { w: number; h: number };
+  } {
+    const r = this.currentRenderer;
+    const fromRenderer = r && 'getResolutionScale' in r
+      ? (r as WebGPURenderer | WASMRenderer).getResolutionScale?.()
+      : undefined;
+    if (fromRenderer) {
+      this.resolutionScale = fromRenderer.scale;
+      return {
+        scale: fromRenderer.scale,
+        scaled: { w: fromRenderer.scaled.w, h: fromRenderer.scaled.h },
+      };
+    }
+    const base = this.config.width || INTERNAL_RENDER_RESOLUTION;
+    const dims = computeInternalDimensions(base, this.resolutionScale);
+    return {
+      scale: dims.scale,
+      scaled: { w: dims.width, h: dims.height },
+    };
+  }
+
+  private applyPerformancePolicyToRenderer(): void {
+    this.applyResolutionScale(this.performancePolicy.scale);
+    const r = this.currentRenderer;
+    if (r instanceof WebGPURenderer) {
+      r.setAdaptiveQuality(false);
+    }
+    this.adaptiveController.updatePolicy(this.performancePolicy);
+  }
+
+  private applyResolutionScale(scale: number): void {
+    this.resolutionScale = scale;
+    const r = this.currentRenderer;
+    if (r instanceof WebGPURenderer) {
+      r.setResolutionScale(scale);
+      r.setAdaptiveQuality(false);
+    } else if (r instanceof WASMRenderer) {
+      r.setResolutionScale(scale);
+    }
+  }
+
   /** Get audio analysis data from the active renderer when supported. */
   getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } | null {
     const r = this.currentRenderer as {
@@ -621,6 +752,7 @@ export class RendererManager {
   }
 
   destroy(): void {
+    this.adaptiveController.stop();
     this.currentRenderer?.destroy();
     this.currentRenderer = null;
   }

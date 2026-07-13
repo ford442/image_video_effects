@@ -66,12 +66,15 @@ python3 scripts/wgsl_precommit_gate.py --json
 It exits non-zero if any changed compute shader fails naga, bindgroup checks, or
 uses a **2-arg** `@workgroup_size` (blocking). **1-arg override** forms are
 reported as warnings only.
+It exits non-zero if any changed compute shader fails naga, bindgroup, or
+workgroup-size checks.
 
-### `@workgroup_size` convention (3 explicit dimensions)
+### `@workgroup_size` convention (3 explicit dimensions — **blocking**)
 
 Pixelocity requires **three explicit workgroup dimensions** on compute entry points
 (e.g. `@workgroup_size(16, 16, 1)`). WGSL allows two-arg forms (Z defaults to 1);
 naga accepts them, but the gate **blocks** 2-arg forms on changed compute shaders.
+naga accepts them, but the gate **fails** changed files with fewer than 3 args.
 
 | Form | Gate |
 |------|------|
@@ -87,6 +90,10 @@ Local auto-fix (literal `(int, int)` only):
 python3 scripts/wgsl_precommit_gate.py --files public/shaders/my-effect.wgsl --fix
 ```
 
+Only **changed** `.wgsl` files (vs `--base origin/main`) are enforced — legacy
+two-arg shaders in untouched files do not block unrelated PRs.
+```
+
 Never auto-fixes override or single-arg forms.
 
 ### Orphan shader definition audit
@@ -94,17 +101,18 @@ Never auto-fixes override or single-arg forms.
 Offline report for `shader_definitions/**/*.json` entries missing local WGSL:
 
 ```bash
-python3 scripts/audit_orphan_shader_defs.py
 python3 scripts/audit_orphan_shader_defs.py --ci-gate --base origin/main
+python3 scripts/audit_orphan_shader_defs.py --base origin/main
 ```
 
-Writes `reports/orphan_shader_defs.{json,md}`. Audits **both directions**:
+Writes `reports/orphan_shader_defs.{json,md}`. Audits **both directions** (full tree).
 
-- Definitions → WGSL (`local`, `storage-only`, `allowlisted`, `likely-broken`)
-- WGSL → definitions (`cataloged`, `template-prefix`, `multipass-secondary`, `orphan`)
+**Forward-only enforcement** (with `--base`): exits 1 only when a **changed**
+definition JSON is `likely-broken` or `parse-error`. `local`, `storage-only`, and
+`allowlisted` always pass. Intentional data-only definitions belong in
+`ALLOWLIST_IDS` / `ALLOWLIST_PREFIXES` inside `audit_orphan_shader_defs.py`.
 
-**Exits 1** when `only_def` or unexpected `only_wgsl` > 0 (CI gate). Use
-`--no-fail` for report-only runs.
+Use `--no-fail` for report-only runs. `--fail-all` restores legacy full-tree failure.
 
 Templates (`_*.wgsl`) and multipass secondaries are excluded — see
 `docs/SHADER_TEMPLATES.md`.
@@ -131,6 +139,7 @@ set -e
 # Run the WGSL gate against the merge base for the current branch.
 BASE="origin/main"
 python3 scripts/wgsl_precommit_gate.py --base "$BASE"
+python3 scripts/audit_orphan_shader_defs.py --base "$BASE"
 ```
 
 To use against `main` when on a feature branch:

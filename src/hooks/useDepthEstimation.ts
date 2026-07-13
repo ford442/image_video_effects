@@ -1,94 +1,138 @@
 import { useState, useCallback, RefObject } from 'react';
-import { pipeline, env } from '@xenova/transformers';
 import { RendererManager } from '../renderer/RendererManager';
+import {
+  cancelDepthPipelineLoad,
+  loadDepthPipeline,
+  runDepthInference,
+  classifyDepthLoadError,
+  type DepthLoadState,
+  type DepthEstimatorPipeline,
+} from '../services/depthEstimation';
 
-// Configure transformers.js once at module load (same as former App.tsx top-level)
-env.allowLocalModels = false;
-env.backends.onnx.logLevel = 'warning';
-
-const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
-
-/** Narrow surface over @xenova/transformers depth pipeline (avoids importing heavy lib types). */
-export interface DepthEstimatorPipeline {
-  (imageUrl: string): Promise<{
-    predicted_depth: { data: number[]; dims: number[] };
-  }>;
-}
+const INITIAL_LOAD_STATE: DepthLoadState = {
+  phase: 'idle',
+  message: 'Depth model not loaded.',
+};
 
 export interface UseDepthEstimationOptions {
-    rendererRef: RefObject<RendererManager | null>;
-    currentImageUrl: string | undefined;
-    setStatus: (status: string) => void;
+  rendererRef: RefObject<RendererManager | null>;
+  currentImageUrl: string | undefined;
+  setStatus: (status: string) => void;
 }
 
 export interface UseDepthEstimationReturn {
-    depthEstimator: DepthEstimatorPipeline | null;
-    isModelLoaded: boolean;
-    loadDepthModel: () => Promise<void>;
-    runDepthAnalysis: (imageUrl: string) => Promise<void>;
+  depthEstimator: DepthEstimatorPipeline | null;
+  isModelLoaded: boolean;
+  isLoadingModel: boolean;
+  loadState: DepthLoadState;
+  loadDepthModel: () => Promise<void>;
+  cancelLoadModel: () => void;
+  runDepthAnalysis: (imageUrl: string) => Promise<void>;
 }
 
 export function useDepthEstimation({
-    rendererRef,
-    currentImageUrl,
-    setStatus,
+  rendererRef,
+  currentImageUrl,
+  setStatus,
 }: UseDepthEstimationOptions): UseDepthEstimationReturn {
-    const [depthEstimator, setDepthEstimator] = useState<DepthEstimatorPipeline | null>(null);
+  const [depthEstimator, setDepthEstimator] = useState<DepthEstimatorPipeline | null>(null);
+  const [loadState, setLoadState] = useState<DepthLoadState>(INITIAL_LOAD_STATE);
+  const [isLoadingModel, setIsLoadingModel] = useState(false);
 
-    const runDepthAnalysis = useCallback(async (imageUrl: string) => {
-        if (!depthEstimator || !rendererRef.current) return;
-        setStatus('Analyzing image with depth model...');
-        try {
-            const result = await depthEstimator(imageUrl);
-            const { data, dims } = result.predicted_depth;
-            const [height, width] = [dims[dims.length - 2], dims[dims.length - 1]];
-            const normalizedData = new Float32Array(data.length);
-            let min = Infinity;
-            let max = -Infinity;
-            data.forEach((v: number) => {
-                min = Math.min(min, v);
-                max = Math.max(max, v);
-            });
-            const range = max - min;
-            for (let i = 0; i < data.length; ++i) {
-                normalizedData[i] = 1.0 - ((data[i] - min) / range);
-            }
-            if (rendererRef.current.updateDepthMap) {
-                rendererRef.current.updateDepthMap(normalizedData, width, height);
-            }
-            setStatus('Depth map updated.');
-        } catch (e: unknown) {
-            const message = e instanceof Error ? e.message : String(e);
-            console.error('Error during analysis:', e);
-            setStatus(`Failed to analyze image: ${message}`);
-        }
-    }, [depthEstimator, rendererRef, setStatus]);
+  const runDepthAnalysis = useCallback(async (imageUrl: string) => {
+    if (!depthEstimator || !rendererRef.current) return;
 
-    const loadDepthModel = useCallback(async () => {
-        if (depthEstimator) {
-            setStatus('Depth model already loaded.');
-            return;
-        }
-        try {
-            setStatus('Loading depth model...');
-            const estimator = await pipeline('depth-estimation', DEPTH_MODEL_ID, {
-                progress_callback: (p: { status?: string }) =>
-                    setStatus(`Loading depth model: ${p.status}...`),
-            });
-            setDepthEstimator(() => estimator as DepthEstimatorPipeline);
-            setStatus('Depth model loaded.');
-            if (currentImageUrl) await runDepthAnalysis(currentImageUrl);
-        } catch (e: unknown) {
-            const message = e instanceof Error ? e.message : String(e);
-            console.error(e);
-            setStatus(`Failed to load depth model: ${message}`);
-        }
-    }, [depthEstimator, currentImageUrl, runDepthAnalysis, setStatus]);
+    setStatus('Analyzing image with depth model...');
+    const result = await runDepthInference(depthEstimator, imageUrl);
 
-    return {
-        depthEstimator,
-        isModelLoaded: !!depthEstimator,
-        loadDepthModel,
-        runDepthAnalysis,
-    };
+    if (!result.ok) {
+      setStatus(result.message);
+      return;
+    }
+
+    try {
+      const { data, width, height } = result.map;
+      if (rendererRef.current.updateDepthMap) {
+        rendererRef.current.updateDepthMap(data, width, height);
+      }
+      setStatus('Depth map updated.');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      console.error('[depth] updateDepthMap failed:', e);
+      setStatus(`Depth map ready but upload failed: ${message}`);
+    }
+  }, [depthEstimator, rendererRef, setStatus]);
+
+  const loadDepthModel = useCallback(async () => {
+    if (depthEstimator) {
+      setStatus('Depth model already loaded.');
+      return;
+    }
+    if (isLoadingModel) {
+      setStatus('Depth model is already loading...');
+      return;
+    }
+
+    setIsLoadingModel(true);
+    setLoadState({ phase: 'loading', message: 'Loading depth model...' });
+    setStatus('Loading depth model...');
+
+    try {
+      const { pipeline, backend } = await loadDepthPipeline({
+        onProgress: (p) => {
+          const pct =
+            typeof p.progress === 'number' ? ` (${(p.progress * 100).toFixed(0)}%)` : '';
+          const msg = `Loading depth model: ${p.status || '...'}${pct}`;
+          setLoadState({ phase: 'loading', message: msg, progress: p.progress, backend });
+          setStatus(msg);
+        },
+        onStateChange: setLoadState,
+      });
+
+      setDepthEstimator(() => pipeline);
+      setLoadState({
+        phase: 'ready',
+        message: `Depth model loaded${backend === 'webgpu' ? ' (WebGPU)' : ''}.`,
+        backend,
+      });
+      setStatus(`Depth model loaded${backend === 'webgpu' ? ' (WebGPU)' : ''}.`);
+
+      if (currentImageUrl) {
+        await runDepthAnalysis(currentImageUrl);
+      }
+    } catch (e: unknown) {
+      console.error('[depth] load failed:', e);
+      const classified = classifyDepthLoadError(e);
+      setLoadState({
+        phase: classified.phase,
+        message: classified.message,
+        error: e instanceof Error ? e.message : String(e),
+      });
+      setStatus(classified.message);
+    } finally {
+      setIsLoadingModel(false);
+    }
+  }, [depthEstimator, isLoadingModel, currentImageUrl, runDepthAnalysis, setStatus]);
+
+  const cancelLoadModel = useCallback(() => {
+    cancelDepthPipelineLoad();
+    setIsLoadingModel(false);
+    setLoadState({ phase: 'cancelled', message: 'Depth model load cancelled.' });
+    setStatus('Depth model load cancelled.');
+  }, [setStatus]);
+
+  return {
+    depthEstimator,
+    isModelLoaded: !!depthEstimator,
+    isLoadingModel,
+    loadState,
+    loadDepthModel,
+    cancelLoadModel,
+    runDepthAnalysis,
+  };
 }
+
+export type {
+  DepthEstimatorPipeline,
+  DepthLoadState,
+} from '../services/depthEstimation';
