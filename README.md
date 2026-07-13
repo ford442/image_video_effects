@@ -6,7 +6,7 @@ A React-based web application that runs a wide variety of GPU shader effects (co
 
 - **Interactive Fluid Effects**: Click on images to create ripples and fluid-like distortions
 - **AI Depth Estimation**: Uses the DPT-Hybrid-MIDAS model for depth map generation
-- **680+ Shader Effects**: 678 shaders across 15 categories (fluid, simulation, audio-driven, feedback, sorting, distortion, generative, hybrid, and abstract visuals)
+- **1,290+ Shader Effects**: 1,291 shaders across 14 canonical categories (generative, interactive-mouse, image, distortion, simulation, hybrid, and more)
 - **Dynamic Shader Loading**: Shaders are loaded from a configuration file for easy extensibility
 - **WebGPU Powered**: High-performance compute shaders for real-time rendering
 
@@ -41,20 +41,29 @@ The application will open at `http://localhost:3000`.
 
 ## Available Effect Categories
 
+Counts from the latest manifest build (`npm run build:manifest`):
+
 | Category | Count | Description |
-|----------|-------|-------------|
-| **Image** | 405 | Image processing and filtering effects |
-| **Generative** | 97 | Procedural art, fractals, and generative patterns |
-| **Interactive** | 38 | Mouse and touch-driven interactions |
-| **Distortion** | 32 | Spatial warping and distortion effects |
-| **Simulation** | 30 | Physics simulations and cellular automata |
-| **Artistic** | 20 | Creative and artistic visual effects |
-| **Visual Effects** | 18 | Post-processing and visual enhancements |
-| **Hybrid** | 20 | Combined technique shaders (Phase A & B) |
-| **Retro/Glitch** | 13 | Retro aesthetics and glitch art |
-| **Lighting** | 14 | Volumetric lighting and glow effects |
-| **Geometric** | 9 | Geometric patterns and tessellations |
-| **Liquid** | 6 | Fluid and liquid simulations |
+|----------|------:|-------------|
+| **generative** | 393 | Procedural art, fractals, and generative patterns |
+| **interactive-mouse** | 239 | Mouse and touch-driven interactions |
+| **artistic** | 99 | Creative and artistic visual effects |
+| **image** | 93 | Image processing and filtering effects |
+| **advanced-hybrid** | 166 | Multi-technique / advanced hybrid stacks |
+| **distortion** | 63 | Spatial warping and distortion effects |
+| **simulation** | 47 | Physics simulations and cellular automata |
+| **visual-effects** | 46 | Post-processing and visual enhancements |
+| **retro-glitch** | 35 | Retro aesthetics and glitch art |
+| **liquid-effects** | 31 | Fluid and liquid simulations |
+| **post-processing** | 28 | Color grading, bloom, composite passes |
+| **hybrid** | 18 | Combined technique shaders |
+| **lighting-effects** | 17 | Volumetric lighting and glow effects |
+| **geometric** | 16 | Geometric patterns and tessellations |
+| **Total** | **1,291** | |
+
+**Canonical categories** (14): `advanced-hybrid`, `artistic`, `distortion`, `generative`, `geometric`, `hybrid`, `image`, `interactive-mouse`, `lighting-effects`, `liquid-effects`, `post-processing`, `retro-glitch`, `simulation`, `visual-effects`.
+
+Legacy list files (`interactive.json`, `liquid.json`) were removed — use `interactive-mouse.json` and `liquid-effects.json`.
 
 ### Featured Shader Examples
 
@@ -75,14 +84,12 @@ The application will open at `http://localhost:3000`.
 image_video_effects/
 ├── public/
 │   ├── index.html           # HTML entry point
-│   ├── shader-lists/        # Shader configurations (category-based)
-│   │   ├── liquid-effects.json       # Liquid shaders (16 entries)
-│   │   ├── interactive-mouse.json    # Mouse-driven shaders (49 entries)
-│   │   ├── visual-effects.json       # Glitch/CRT effects (26 entries)
-│   │   ├── lighting-effects.json     # Plasma/cosmic effects (14 entries)
-│   │   ├── distortion.json           # Spatial distortion (11 entries)
-│   │   └── artistic.json             # Creative effects (28 entries)
-│   └── shaders/             # WGSL compute shaders (680+ total)
+│   ├── shader-lists/        # Generated category JSON (from shader_definitions/)
+│   │   ├── generative.json           # Procedural / generative shaders
+│   │   ├── interactive-mouse.json    # Mouse-driven shaders
+│   │   ├── liquid-effects.json       # Fluid / liquid shaders
+│   │   └── …                         # 14 canonical category files total
+│   └── shaders/             # WGSL compute shaders (1,290+ total)
 │       ├── liquid.wgsl
 │       ├── liquid-*.wgsl    # Various liquid effects
 │       ├── plasma.wgsl
@@ -106,10 +113,27 @@ image_video_effects/
 ## Scripts
 
 ```bash
-npm start    # Start development server
-npm run build   # Build for production
-npm test     # Run tests
+npm start       # Start development server
+npm run build   # Production build (wasm:build once in prebuild → lists → manifest → craco)
+npm test        # Run tests
 ```
+
+Production build order: `wasm:build` → shader lists → manifest → `craco build`. WASM is **not** recompiled after CRA. Headless VMs without emcc: `SKIP_WASM_BUILD=1 npm run build`. See [`WASM_BUILD_CI_GUIDE.md`](./WASM_BUILD_CI_GUIDE.md).
+
+### AI Agent / Jules Setup (headless envs)
+
+For reproducible setup in Jules (or similar agent environments):
+
+```bash
+bash scripts/jules-setup.sh
+```
+
+- Uses `npm ci`, runs the shader list + manifest generators that `prestart`/`prebuild` rely on.
+- Sets `SKIP_WASM_BUILD=1` automatically (committed artifacts in `public/wasm/` are used).
+- Safe when there is no Emscripten / no GPU.
+- After setup: `BROWSER=none npm start` or `SKIP_WASM_BUILD=1 npm run build`.
+
+See `scripts/jules-setup.sh` (and the comments inside) for full details.
 
 ## Shader Categories
 
@@ -122,13 +146,13 @@ npm test     # Run tests
 
 1. Create a new `.wgsl` file in `public/shaders/`
 2. Follow the standard shader interface (see `AGENTS.md` for details)
-3. Add an entry to the appropriate category file in `public/shader-lists/`:
-   - `liquid-effects.json` - for liquid-* shaders
-   - `interactive-mouse.json` - for mouse-driven effects
-   - `visual-effects.json` - for glitch/CRT/chromatic effects
-   - `lighting-effects.json` - for plasma/cosmic/glow effects
-   - `distortion.json` - for spatial distortions
-   - `artistic.json` - for creative/artistic effects
+3. Add a JSON definition under `shader_definitions/<category>/` (category folder = source of truth), then regenerate lists:
+
+```bash
+node scripts/generate_shader_lists.js && npm run build:manifest
+```
+
+Canonical categories: `advanced-hybrid`, `artistic`, `distortion`, `generative`, `geometric`, `hybrid`, `image`, `interactive-mouse`, `lighting-effects`, `liquid-effects`, `post-processing`, `retro-glitch`, `simulation`, `visual-effects`.
 
 ```json
 {
@@ -145,7 +169,7 @@ This engine uses a "Universal BindGroup" architecture. You can drop in new `.wgs
 
 1.  **Create File:** Add `public/shaders/my-cool-effect.wgsl`.
 2.  **Paste Header:** Copy the standard uniform header from `AGENTS.md`.
-3.  **Register:** Add one entry to the appropriate category file in `public/shader-lists/`:
+3.  **Register:** Add `shader_definitions/<category>/my-cool-effect.json`, then run `node scripts/generate_shader_lists.js && npm run build:manifest`.
     ```json
     { "id": "cool-effect", "name": "My Cool Effect", "url": "shaders/my-cool-effect.wgsl", "category": "image" }
     ```

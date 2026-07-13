@@ -42,6 +42,8 @@ function makeMockWebGPU(): jest.Mocked<WebGPURenderer> {
     refreshFrameImage: jest.fn().mockResolvedValue(''),
     getFrameImage: jest.fn().mockReturnValue(''),
     getFPS: jest.fn().mockReturnValue(60),
+    loadImage: jest.fn().mockResolvedValue('https://example.com/webgpu.png'),
+    reloadShaderFromURL: jest.fn().mockResolvedValue(true),
   } as unknown as jest.Mocked<WebGPURenderer>;
 }
 
@@ -66,9 +68,15 @@ function makeMockWASM(): jest.Mocked<WASMRenderer> {
     refreshFrameImage: jest.fn().mockResolvedValue('data:image/png;base64,x'),
     getFrameImage: jest.fn().mockReturnValue(''),
     getSlotState: jest.fn().mockReturnValue({ shaderId: 'rain', enabled: true, mode: 'chained' }),
-    getGPUTimings: jest.fn().mockReturnValue({ parallelTime: 1, chainedTime: 2, totalTime: 3, available: false }),
+    getGPUTimings: jest.fn().mockReturnValue({ parallelTime: 1, chainedTime: 2, totalTime: 3, available: false, timingSource: 'wall-clock' }),
+    getAudioData: jest.fn().mockReturnValue({ bass: 0, mid: 0, treble: 0, freqBins: new Float32Array(128) }),
+    isRecording: jest.fn().mockReturnValue(false),
     getSupportsDeepWorkgroup: jest.fn().mockReturnValue(true),
     setRecording: jest.fn(),
+    startRecording: jest.fn().mockResolvedValue(new Blob()),
+    stopRecording: jest.fn(),
+    loadImage: jest.fn().mockResolvedValue('https://example.com/img.png'),
+    reloadShaderFromURL: jest.fn().mockResolvedValue(true),
     getFPS: jest.fn().mockReturnValue(55),
     getDiagnostics: jest.fn().mockReturnValue({ initialized: true }),
   } as unknown as jest.Mocked<WASMRenderer>;
@@ -356,5 +364,133 @@ describe('RendererManager shader forwarding', () => {
     expect(wasm.getSlotState).toHaveBeenCalledWith(0);
     expect(wasm.getGPUTimings).toHaveBeenCalled();
     expect(wasm.getSupportsDeepWorkgroup).toHaveBeenCalled();
+  });
+
+  it('delegates startRecording and stopRendererRecording to WASMRenderer', async () => {
+    const wasm = makeMockWASM();
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
+      init: jest.fn().mockResolvedValue(false),
+      destroy: jest.fn(),
+    }));
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(document.createElement('canvas'));
+    await manager.switchRenderer('wasm');
+
+    expect(manager.usesInternalRecording()).toBe(true);
+
+    const canvas = document.createElement('canvas');
+    await manager.startRecording(canvas, { durationMs: 8000 });
+    expect(wasm.startRecording).toHaveBeenCalledWith(canvas, { durationMs: 8000 });
+
+    manager.stopRendererRecording();
+    expect(wasm.stopRecording).toHaveBeenCalled();
+  });
+
+  it('delegates getAudioData and isRecording from WASMRenderer', async () => {
+    const wasm = makeMockWASM();
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
+      init: jest.fn().mockResolvedValue(false),
+      destroy: jest.fn(),
+    }));
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(document.createElement('canvas'));
+    await manager.switchRenderer('wasm');
+
+    manager.getAudioData();
+    manager.isRecording();
+
+    expect(wasm.getAudioData).toHaveBeenCalled();
+    expect(wasm.isRecording).toHaveBeenCalled();
+  });
+
+  it('delegates loadImage to WASMRenderer via duck-typed loadImage', async () => {
+    const wasm = makeMockWASM();
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
+      init: jest.fn().mockResolvedValue(false),
+      destroy: jest.fn(),
+    }));
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(document.createElement('canvas'));
+    await manager.switchRenderer('wasm');
+
+    const url = await manager.loadImage('https://example.com/a.png');
+    expect(wasm.loadImage).toHaveBeenCalledWith('https://example.com/a.png');
+    expect(url).toBe('https://example.com/img.png');
+  });
+
+  it('delegates loadImage to WebGPURenderer', async () => {
+    const webgpu = makeMockWebGPU();
+    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as jest.Mock).mockImplementation(() => ({
+      init: jest.fn().mockResolvedValue(false),
+      destroy: jest.fn(),
+    }));
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(document.createElement('canvas'));
+
+    const url = await manager.loadImage('https://example.com/b.png');
+    expect(webgpu.loadImage).toHaveBeenCalledWith('https://example.com/b.png');
+    expect(url).toBe('https://example.com/webgpu.png');
+  });
+
+  it('reloadShader prefers reloadShaderFromURL on shader backends', async () => {
+    const wasm = makeMockWASM();
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
+      init: jest.fn().mockResolvedValue(false),
+      destroy: jest.fn(),
+    }));
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(document.createElement('canvas'));
+    await manager.switchRenderer('wasm');
+
+    await manager.reloadShader('rain', '/shaders/rain.wgsl');
+    expect(wasm.reloadShaderFromURL).toHaveBeenCalledWith('rain', '/shaders/rain.wgsl');
+  });
+
+  it('firePlasma falls back to addRipple when backend has no firePlasma', async () => {
+    const wasm = makeMockWASM();
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
+      init: jest.fn().mockResolvedValue(false),
+      destroy: jest.fn(),
+    }));
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(document.createElement('canvas'));
+    await manager.switchRenderer('wasm');
+
+    manager.firePlasma(0.5, 0.5, 1, 0);
+    expect(wasm.addRipple).toHaveBeenCalledWith(0.5, 0.5);
+  });
+
+  it('reports renderer type from metrics rather than instanceof', async () => {
+    const wasm = makeMockWASM();
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as jest.Mock).mockImplementation(() => ({
+      init: jest.fn().mockResolvedValue(false),
+      destroy: jest.fn(),
+    }));
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(document.createElement('canvas'));
+    await manager.switchRenderer('wasm');
+
+    expect(manager.getActiveRendererType()).toBe('wasm');
   });
 });

@@ -5,6 +5,7 @@
 
 import { STORAGE_API_URL, API_BASE_URL, SHADER_FILES_BASE_URL } from '../config/appConfig';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
+import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || API_BASE_URL;
 
@@ -360,6 +361,28 @@ export interface ShaderCoordinateData {
 //  VPS Storage API Service Class
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/** API-only junk entries that should not appear in the shader browser or scanner. */
+const JUNK_SHADER_IDS = new Set(['test', 'test-shader-123', 'test-real-shader-456']);
+
+function isJunkShaderEntry(entry: ApiShaderEntry): boolean {
+  if (JUNK_SHADER_IDS.has(entry.id)) return true;
+  // Uploaded test stubs with no real WGSL backing.
+  if (entry.id.startsWith('test-') && (!entry.filename || entry.filename === `${entry.id}.json`)) {
+    const name = (entry.name || '').trim().toLowerCase();
+    if (name === 'test' || name === entry.id) return true;
+  }
+  return false;
+}
+
+function filterShaderList(entries: ApiShaderEntry[]): ApiShaderEntry[] {
+  const filtered = entries.filter((entry) => !isJunkShaderEntry(entry));
+  const removed = entries.length - filtered.length;
+  if (removed > 0) {
+    console.log(`[ShaderApi] Filtered ${removed} junk/test shader entr${removed === 1 ? 'y' : 'ies'}`);
+  }
+  return filtered;
+}
+
 class ShaderApiService {
   private baseUrl: string;
   private cache: Map<string, any>;
@@ -402,6 +425,8 @@ class ShaderApiService {
       }
       
       console.log(`[ShaderApi] Received ${data.length} shaders from API`);
+      
+      data = filterShaderList(data);
       
       // Count shaders with real (non-0.5) params
       const withRealParams = data.filter(s => 
@@ -527,16 +552,10 @@ class ShaderApiService {
     const cached = this.cache.get(`code:${shaderId}`);
     if (cached) return cached;
 
-    try {
-      const response = await fetch(`${this.baseUrl}/api/shaders/${shaderId}/code`);
-      if (!response.ok) throw new Error('API error');
-      const { code } = await response.json() as { id: string; code: string; name?: string };
-      this.cache.set(`code:${shaderId}`, code);
-      return code;
-    } catch (error) {
-      const response = await fetch(resolveShaderUrl(`shaders/${shaderId}.wgsl`));
-      return await response.text();
-    }
+    const code = await fetchShaderWgsl(shaderId);
+    if (!code) throw new Error(`Failed to fetch shader code for ${shaderId}`);
+    this.cache.set(`code:${shaderId}`, code);
+    return code;
   }
 
   clearCache() {

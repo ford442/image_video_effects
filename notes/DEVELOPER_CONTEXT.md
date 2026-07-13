@@ -48,7 +48,7 @@ It features a **Dual-Window** mode where a secondary "Remote" window can control
 **Why it's complex:** The renderer supports a "Stack" of 3 compute shaders.
 1.  **Chaining:** Output of Shader 1 -> Input of Shader 2.
 2.  **History:** Shaders can read the *previous frame's* output via `dataTextureC` (Binding 9) and write to `dataTextureA` (Binding 7).
-**Agent Warning:** The `dataTextureA` -> `dataTextureC` copy happens *once* at the end of the frame. If multiple shaders in the stack try to write to the history buffer (`dataTextureA`), they will overwrite each other. **Only one stateful shader should be active at a time.**
+**Agent Warning:** The `dataTextureA` -> `dataTextureC` copy happens after *each chained slot's* dispatch, and is **usage-gated**: the renderer statically analyzes each shader's WGSL (`analyzeShaderBindings()` in `src/renderer/ShaderCompilation.ts`) and only copies A→C / B→C when that slot's shaders actually write them (skipping both when no enabled shader reads `dataTextureC`). If a shader writes **both** A and B, the B copy lands last and wins. Multiple stateful shaders in a stack still share the single A/C pair and will overwrite each other's state — **only one stateful shader should be active at a time.**
 
 ### C. Remote Synchronization (Race Conditions)
 **Why it's complex:** The Main App is the "Source of Truth". The Remote App is a "Dumb Terminal".
