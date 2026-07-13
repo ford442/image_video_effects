@@ -11,7 +11,12 @@ export { useAudioAnalyzer } from './useAudioAnalyzer';
 export { usePerformanceMonitor } from './usePerformanceMonitor';
 
 export { useDepthEstimation } from './useDepthEstimation';
-export type { UseDepthEstimationOptions, UseDepthEstimationReturn } from './useDepthEstimation';
+export type {
+  UseDepthEstimationOptions,
+  UseDepthEstimationReturn,
+  DepthEstimatorPipeline,
+  DepthLoadState,
+} from './useDepthEstimation';
 
 export { useAudioReactiveParams } from './useAudioReactiveParams';
 export type { UseAudioReactiveParamsOptions, UseAudioReactiveParamsReturn } from './useAudioReactiveParams';

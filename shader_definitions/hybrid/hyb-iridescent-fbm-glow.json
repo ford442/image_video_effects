@@ -4,15 +4,21 @@
   "category": "hybrid",
   "type": "compute",
   "url": "shaders/hyb-iridescent-fbm-glow.wgsl",
-  "description": "Domain-warped FBM drives a thin-film iridescent glow layer that is blended over the input image while preserving alpha.",
+  "description": "Domain-warped FBM drives a thin-film iridescent glow with audio reactivity, depth-aware fog, ACES tone mapping, IGN dither, chromatic aberration, Fresnel rim and OkLab mixing.",
   "features": [
+    "upgraded-rgba",
     "hybrid",
     "fbm-noise",
     "iridescence",
     "image-glow",
     "alpha-passthrough",
     "depth-aware",
-    "randomization-safe"
+    "randomization-safe",
+    "aces-tone-map",
+    "ign-dither",
+    "chromatic-aberration",
+    "fresnel-rim",
+    "oklab-mix"
   ],
   "tags": [
     "hybrid",

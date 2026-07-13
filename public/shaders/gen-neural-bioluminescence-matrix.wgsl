@@ -2,7 +2,11 @@
 // Neural Bioluminescence Matrix
 // Category: generative
 // ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+//  Features: raymarched, audio-reactive, mouse-driven, temporal, chromatic,
+//            organic, neural-network, bioluminescence, spring-damper,
+//            click-mutation, feedback trails
+// ----------------------------------------------------------------
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -16,7 +20,6 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
@@ -77,7 +80,13 @@ fn rot(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-fn map(p_in: vec3<f32>) -> f32 {
+fn spring_damper(prev: f32, tgt: f32, vel: ptr<function, f32>, k: f32, d: f32) -> f32 {
+    let force = (tgt - prev) * k;
+    *vel = (*vel + force) * (1.0 - d);
+    return prev + *vel;
+}
+
+fn map(p_in: vec3<f32>, audioPulse: f32, clickPulse: f32) -> f32 {
     var p = p_in;
 
     // Magnetic mouse repulsion
@@ -85,11 +94,11 @@ fn map(p_in: vec3<f32>) -> f32 {
     let mouseY = u.zoom_config.z * 2.0 - 1.0;
     let mousePos = vec3<f32>(mouseX * 5.0, -mouseY * 5.0, p.z);
     let distToMouse = length(p.xy - mousePos.xy);
-    let repulsion = 2.0 * exp(-distToMouse * 1.5);
+    let repulsion = (2.0 + clickPulse * 3.0) * exp(-distToMouse * 1.5);
     p = p + normalize(vec3<f32>(p.xy - mousePos.xy, 0.0001)) * repulsion;
 
-    // Organic displacement using FBM
-    p += (vec3<f32>(fbm(p), fbm(p + 10.0), fbm(p + 20.0)) - 0.5) * 1.5;
+    // Organic displacement using FBM, audio modulated
+    p += (vec3<f32>(fbm(p), fbm(p + 10.0), fbm(p + 20.0)) - 0.5) * (1.5 + audioPulse * 0.5);
 
     let spacing = 4.0 / u.zoom_params.x; // Node Density
 
@@ -110,12 +119,12 @@ fn map(p_in: vec3<f32>) -> f32 {
     return d;
 }
 
-fn calcNormal(p: vec3<f32>) -> vec3<f32> {
+fn calcNormal(p: vec3<f32>, audioPulse: f32, clickPulse: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
-        map(p + e.xyy) - map(p - e.xyy),
-        map(p + e.yxy) - map(p - e.yxy),
-        map(p + e.yyx) - map(p - e.yyx)
+        map(p + e.xyy, audioPulse, clickPulse) - map(p - e.xyy, audioPulse, clickPulse),
+        map(p + e.yxy, audioPulse, clickPulse) - map(p - e.yxy, audioPulse, clickPulse),
+        map(p + e.yyx, audioPulse, clickPulse) - map(p - e.yyx, audioPulse, clickPulse)
     ));
 }
 
@@ -129,18 +138,64 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var uv = (fragCoord - 0.5 * vec2<f32>(texSize)) / f32(texSize.y);
 
     let time = u.config.x;
-    let audioPulse = plasmaBuffer[0].x * u.zoom_params.z; // Audio Reactivity
+    let mouseClick = u.zoom_config.w;
+    let mouseUV = u.zoom_config.yz;
+
+    let bass = plasmaBuffer[0].x;
+    let mid = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // Spring-damper audio envelopes
+    var velBass = 0.0;
+    var velMid = 0.0;
+    var velTreble = 0.0;
+    let prevBass = extraBuffer[0];
+    let prevMid = extraBuffer[1];
+    let prevTreble = extraBuffer[2];
+    let bassSmooth = spring_damper(prevBass, bass, &velBass, 0.10, 0.08);
+    let midSmooth = spring_damper(prevMid, mid, &velMid, 0.12, 0.09);
+    let trebleSmooth = spring_damper(prevTreble, treble, &velTreble, 0.14, 0.10);
+    extraBuffer[0] = bassSmooth;
+    extraBuffer[1] = midSmooth;
+    extraBuffer[2] = trebleSmooth;
+
+    // Mouse state persistence
+    let prevMouseX = extraBuffer[3];
+    let prevMouseY = extraBuffer[4];
+    let clickCount = extraBuffer[5];
+    let clickHeld = extraBuffer[6];
+
+    let mouseDelta = length(mouseUV - vec2<f32>(prevMouseX, prevMouseY));
+    extraBuffer[3] = mouseUV.x;
+    extraBuffer[4] = mouseUV.y;
+
+    var newClickCount = clickCount;
+    var newClickHeld = clickHeld;
+    if (mouseClick > 0.5 && clickHeld < 0.5) {
+        newClickCount = clickCount + 1.0;
+        newClickHeld = 1.0;
+    }
+    if (mouseClick < 0.5) {
+        newClickHeld = 0.0;
+    }
+    extraBuffer[5] = newClickCount;
+    extraBuffer[6] = newClickHeld;
+
+    let clickPulse = exp(-mouseDelta * 15.0) * mouseClick * 4.0;
+    let mutationSeed = fract(newClickCount * 0.13 + time * 0.02);
+
+    let audioPulse = bassSmooth * u.zoom_params.z; // Audio Reactivity
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, time * 2.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Slow camera rotation
-    let rd_xy = rot(time * 0.1) * vec2<f32>(rd.x, rd.y);
+    let rd_xy = rot(time * 0.1 + midSmooth * 0.2) * vec2<f32>(rd.x, rd.y);
     rd.x = rd_xy.x;
     rd.y = rd_xy.y;
 
-    let rd_xz = rot(sin(time * 0.05) * 0.2) * vec2<f32>(rd.x, rd.z);
+    let rd_xz = rot(sin(time * 0.05 + trebleSmooth * 0.3) * 0.2) * vec2<f32>(rd.x, rd.z);
     rd.x = rd_xz.x;
     rd.z = rd_xz.y;
 
@@ -152,10 +207,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     for (var i = 0; i < 80; i++) {
         p = ro + rd * t;
-        d = map(p);
+        d = map(p, audioPulse, clickPulse);
 
-        let pulseWave = sin(dot(p, vec3<f32>(0.5, 0.5, 0.5)) - time * u.zoom_params.y * 3.0) * 0.5 + 0.5; // Pulse Speed
-        let pulseIntensity = pow(pulseWave, 4.0) * (1.0 + audioPulse * 2.0);
+        let pulseWave = sin(dot(p, vec3<f32>(0.5, 0.5, 0.5)) - time * u.zoom_params.y * 3.0 + mutationSeed * 6.28) * 0.5 + 0.5; // Pulse Speed
+        let pulseIntensity = pow(pulseWave, 4.0) * (1.0 + audioPulse * 2.0 + clickPulse);
 
         glow += (0.02 / (0.01 + abs(d))) * pulseIntensity * u.zoom_params.w; // Bio-Glow Intensity
 
@@ -166,27 +221,40 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var color = vec3<f32>(0.01, 0.01, 0.02); // Deep void background
 
     if (t < 50.0) {
-        let n = calcNormal(p);
+        let n = calcNormal(p, audioPulse, clickPulse);
         let lightDir = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let diff = max(dot(n, lightDir), 0.0);
-        let ao = clamp(map(p + n * 0.5) * 2.0, 0.0, 1.0);
+        let ao = clamp(map(p + n * 0.5, audioPulse, clickPulse) * 2.0, 0.0, 1.0);
 
         let baseCol = vec3<f32>(0.05, 0.1, 0.15);
         color = baseCol * diff * ao;
 
-        let sss = max(0.0, map(p + rd * 0.5));
+        let sss = max(0.0, map(p + rd * 0.5, audioPulse, clickPulse));
         color += vec3<f32>(0.1, 0.3, 0.4) * sss * 0.5;
     }
 
-    let glowCol = mix(vec3<f32>(0.0, 0.8, 1.0), vec3<f32>(1.0, 0.0, 0.8), sin(p.z * 0.5 + time) * 0.5 + 0.5);
+    let glowCol = mix(vec3<f32>(0.0, 0.8, 1.0), vec3<f32>(1.0, 0.0, 0.8), sin(p.z * 0.5 + time + trebleSmooth * 2.0) * 0.5 + 0.5);
     color += glowCol * glow * 0.05 * exp(-t * 0.05);
 
     color = mix(color, vec3<f32>(0.01, 0.01, 0.02), 1.0 - exp(-t * 0.02));
 
-        let _luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, id.xy, vec4<f32>(color, _alpha));
+    // Chromatic aberration driven by audio + click bursts
+    let caStr = (0.01 + trebleSmooth * 0.02 + clickPulse * 0.03) * u.zoom_params.z;
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+    // Temporal feedback from dataTextureC
+    let prevData = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
+    let feedbackMix = 0.2 + bassSmooth * 0.1;
+    color = mix(prevData.rgb * 0.95, color, feedbackMix);
+
+    let _luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let _alpha = clamp(_luma * 0.7 + 0.2 + glow * 0.1, 0.0, 1.0);
+    let outColor = vec4<f32>(color, _alpha);
+    textureStore(writeTexture, id.xy, outColor);
+
     let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
     let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
+
+    textureStore(dataTextureA, vec2<i32>(id.xy), outColor);
 }

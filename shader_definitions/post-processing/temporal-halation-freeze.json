@@ -2,7 +2,7 @@
   "id": "temporal-halation-freeze",
   "name": "Temporal Halation Freeze",
   "url": "shaders/temporal-halation-freeze.wgsl",
-  "description": "Long-exposure style halation and light bloom that slowly accumulates and 'freezes' bright moments with beautiful decaying ghost echoes. Transforms video into dreamy, time-blurred poetry. Bass lengthens the exposure tail.",
+  "description": "Long-exposure halation and ghost echoes using a 7-tap hex-bokeh bloom, audio envelope, ACES tone mapping, depth-aware fog, and semantic alpha for dreamy time-blurred composites.",
   "tags": [
     "halation",
     "bloom",
@@ -17,8 +17,10 @@
     "audio-driven",
     "temporal",
     "semantic-alpha",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "exposure",
@@ -26,7 +28,9 @@
       "default": 0.7,
       "min": 0.0,
       "max": 1.5,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Length of the halation exposure"
     },
     {
       "id": "decay",
@@ -34,15 +38,19 @@
       "default": 0.86,
       "min": 0.6,
       "max": 0.97,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Temporal decay rate"
     },
     {
-      "id": "color",
+      "id": "color_temp",
       "name": "Bloom Color Temp",
       "default": 0.35,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Warm/cool bloom tint"
     },
     {
       "id": "ghost",
@@ -50,7 +58,9 @@
       "default": 0.55,
       "min": 0.0,
       "max": 1.0,
-      "step": 0.01
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Ghost echo strength"
     }
   ]
 }

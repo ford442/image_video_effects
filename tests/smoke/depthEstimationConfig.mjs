@@ -1,6 +1,6 @@
 /**
  * Shared depth-estimation smoke configuration.
- * Production model used by src/App.tsx loadDepthModel().
+ * Production model: Xenova/dpt-hybrid-midas (see src/services/depthEstimation/)
  */
 export const DEPTH_MODEL_ID = 'Xenova/dpt-hybrid-midas';
 export const DEPTH_PIPELINE_TASK = 'depth-estimation';

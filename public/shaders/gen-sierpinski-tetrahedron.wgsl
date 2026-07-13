@@ -60,7 +60,47 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 {
 
 fn domainWarp(p: vec2<f32>, t: f32) -> vec2<f32> {
   let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t), 3), fbm(p + vec2<f32>(5.2, 1.3), 3));
-  return p + 0.3 * q;
+  let r = vec2<f32>(fbm(p + 4.0 * q + vec2<f32>(1.7, 9.2), 3), fbm(p + 4.0 * q + vec2<f32>(8.3, 2.8), 3));
+  return p + 0.25 * q + 0.15 * r;
+}
+
+fn curlNoise(p: vec2<f32>, t: f32) -> vec2<f32> {
+  let e = 0.45;
+  let n0 = fbm(p + vec2<f32>(e, 0.0) + t, 4);
+  let n1 = fbm(p - vec2<f32>(e, 0.0) + t, 4);
+  let n2 = fbm(p + vec2<f32>(0.0, e) + t, 4);
+  let n3 = fbm(p - vec2<f32>(0.0, e) + t, 4);
+  return vec2<f32>(n3 - n2, n0 - n1) / (2.0 * e);
+}
+
+fn worley2(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  var md = 1.0;
+  for (var y = -1; y <= 1; y = y + 1) {
+    for (var x = -1; x <= 1; x = x + 1) {
+      let g = vec2<f32>(f32(x), f32(y));
+      let o = hash21(i + g);
+      let r = g + vec2<f32>(o, hash21(i + g + 17.3)) - f;
+      md = min(md, dot(r, r));
+    }
+  }
+  return sqrt(md);
+}
+
+fn schlickFresnel(cosTheta: f32, r0: f32) -> f32 {
+  return r0 + (1.0 - r0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn spring_damper(prev: f32, goal: f32, vel: ptr<function, f32>, k: f32, d: f32) -> f32 {
+  let force = (goal - prev) * k;
+  (*vel) = (*vel) + force;
+  (*vel) = (*vel) * (1.0 - d);
+  return prev + (*vel);
+}
+
+fn ignDither(pixel: vec2<i32>) -> f32 {
+  return fract(52.9829189 * fract(0.06711056 * f32(pixel.x) + 0.00583715 * f32(pixel.y))) * 2.0 / 255.0;
 }
 
 fn rotX(v: vec3<f32>, a: f32) -> vec3<f32> {
@@ -109,10 +149,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv01 = vec2<f32>(pixel) / res;
   let time = u.config.x;
-  let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
+  let bassRaw = plasmaBuffer[0].x;
+  let midsRaw = plasmaBuffer[0].y;
+  let trebleRaw = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz;
+
+  var bassVel = 0.0;
+  var midsVel = 0.0;
+  var trebleVel = 0.0;
+  let bass = spring_damper(extraBuffer[0], bassRaw, &bassVel, 0.12, 0.08);
+  let mids = spring_damper(extraBuffer[1], midsRaw, &midsVel, 0.1, 0.09);
+  let treble = spring_damper(extraBuffer[2], trebleRaw, &trebleVel, 0.14, 0.07);
+  extraBuffer[0] = bass;
+  extraBuffer[1] = mids;
+  extraBuffer[2] = treble;
+
+  let clickPulse = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  extraBuffer[3] = mix(extraBuffer[3], mouse.x, 0.15);
+  extraBuffer[4] = mix(extraBuffer[4], mouse.y, 0.15);
+  extraBuffer[5] = mix(extraBuffer[5], clickPulse, 0.2);
 
   let recursion = i32(mix(4.0, 10.0, clamp(u.zoom_params.x + bass * 0.25, 0.0, 1.0)));
   let rotSpeed = mix(0.1, 0.6, u.zoom_params.y) * (1.0 + bass * 0.5);
@@ -124,10 +179,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let warpUv = domainWarp(uv01 * 3.0 + vec2<f32>(time * 0.03), time * 0.05);
   let warpField = fbm(warpUv * 2.0, 4);
+  let curlField = curlNoise(uv01 * 4.0 + vec2<f32>(time * 0.02), time * 0.04);
+  let cellAccent = worley2(uv01 * 18.0 + curlField * 0.5);
 
   let aspect = res.x / max(res.y, 1.0);
   var p = (uv01 - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
   p += (warpField - 0.5) * (0.04 + bass * 0.04);
+  p += curlField * (0.03 + mids * 0.02);
+  p += (mouse - vec2<f32>(0.5)) * extraBuffer[5] * 0.08;
 
   let yaw = (mouse.x - 0.5) * TAU + time * rotSpeed;
   let pitch = ((0.5 - mouse.y)) * PI * 0.8 + sin(time * 0.3) * 0.2;
@@ -182,13 +241,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let spec = pow(edge, 4.0) * (0.8 + bass * 0.5);
   color = color + vec3<f32>(0.9, 0.85, 0.8) * spec;
 
+  let viewDir = normalize(vec3<f32>(p.x, p.y, 1.0));
+  let fresnel = schlickFresnel(clamp(dot(viewDir, vec3<f32>(0.0, 0.0, 1.0)), 0.0, 1.0), 0.04);
+  color = color + vec3<f32>(0.85, 0.92, 1.0) * fresnel * density * (0.35 + treble * 0.2);
+
   let bgGlow = vec3<f32>(0.05, 0.08, 0.12) * warpField * (1.0 - density);
   color = color + bgGlow;
+  color = color + vec3<f32>(0.12, 0.18, 0.28) * (1.0 - cellAccent) * 0.15 * (1.0 - density);
 
   color = genChromaticShift(color, uv01, caAmt * 0.02 * (1.0 + bass), time);
   color = acesToneMap(color * (1.2 + treble * 0.1));
+  color = color + vec3<f32>(ignDither(pixel));
 
-  let alpha = clamp(density * (f32(recursion) / 10.0) * depthFactor, 0.0, 1.0);
+  let alpha = clamp(density * (f32(recursion) / 10.0) * depthFactor * (0.85 + extraBuffer[5] * 0.15), 0.0, 1.0);
   let depthOut = clamp(0.3 + density * 0.7, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));

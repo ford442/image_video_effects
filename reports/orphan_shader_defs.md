@@ -1,6 +1,6 @@
 # Shader catalog hygiene audit
 
-Generated: 2026-07-11T11:19:31.983061+00:00
+Generated: 2026-07-12T03:01:06.451875+00:00
 
 ## Definition → WGSL
 

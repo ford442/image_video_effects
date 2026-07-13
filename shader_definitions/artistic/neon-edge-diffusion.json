@@ -2,12 +2,14 @@
   "id": "neon-edge-diffusion",
   "name": "Neon Edge Diffusion",
   "url": "shaders/neon-edge-diffusion.wgsl",
-  "description": "Sobel edge detection with neon-diffusion and color bleeding.",
+  "description": "Shared-memory Sobel edge detection with hex-bokeh neon glow, ACES tone mapping, and semantic alpha emission.",
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba"
   ],
+  "workgroup_size": [16, 16, 1],
   "tags": [
     "filter",
     "image-processing",
@@ -16,24 +18,24 @@
   ],
   "params": [
     {
-      "id": "viscosity",
-      "name": "Viscosity",
+      "id": "glow_intensity",
+      "name": "Glow Intensity",
       "default": 0.5,
       "min": 0,
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.x",
-      "description": "Liquid thickness/resistance"
+      "description": "Overall neon glow intensity"
     },
     {
-      "id": "turbulence",
-      "name": "Turbulence",
+      "id": "bloom_radius",
+      "name": "Bloom Radius",
       "default": 0.4,
       "min": 0,
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.y",
-      "description": "Chaotic flow intensity"
+      "description": "Hex bokeh diffusion radius"
     },
     {
       "id": "ripple_strength",
@@ -43,7 +45,7 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.z",
-      "description": "Wave distortion amount"
+      "description": "Audio-reactive ripple contribution"
     },
     {
       "id": "color_shift",
@@ -53,7 +55,7 @@
       "max": 1,
       "step": 0.01,
       "mapping": "zoom_params.w",
-      "description": "Color manipulation amount"
+      "description": "Neon hue shift amount"
     }
   ]
 }

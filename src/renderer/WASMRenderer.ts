@@ -3,6 +3,11 @@ import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
 import { InputSource } from './types';
 import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
+import {
+  computeInternalDimensions,
+  INTERNAL_RENDER_RESOLUTION,
+  snapRenderScale,
+} from '../config/performancePolicy';
 
 type SlotMode = 'chained' | 'parallel';
 
@@ -36,6 +41,7 @@ export class WASMRenderer implements IRenderer, ShaderSlotRenderer {
   private lastFrameDataUrl = '';
   private recording = false;
   private recordingMode: 'loop' | 'continuous' = 'loop';
+  private resolutionScale = 1.0;
   private audioBass = 0;
   private audioMid = 0;
   private audioTreble = 0;
@@ -66,6 +72,9 @@ export class WASMRenderer implements IRenderer, ShaderSlotRenderer {
 
       this.initialized = true;
       this.startTime = performance.now() / 1000;
+      if (this.resolutionScale !== 1.0) {
+        this.setResolutionScale(this.resolutionScale);
+      }
       this.startRenderLoop();
 
       console.log('✅ WASM Renderer initialized successfully');
@@ -189,6 +198,43 @@ export class WASMRenderer implements IRenderer, ShaderSlotRenderer {
    */
   resizeCanvas(newWidth: number, newHeight: number): void {
     WasmBridge.resizeCanvas(newWidth, newHeight);
+  }
+
+  /**
+   * Set internal render resolution scale (0.25–1.0) relative to INTERNAL_RENDER_RESOLUTION.
+   * Recreates WASM GPU textures via ResizeCanvas.
+   */
+  setResolutionScale(scale: number): void {
+    const snapped = snapRenderScale(scale);
+    if (snapped === this.resolutionScale && this.initialized) return;
+    this.resolutionScale = snapped;
+    if (!this.initialized) return;
+
+    const { width, height } = computeInternalDimensions(INTERNAL_RENDER_RESOLUTION, snapped);
+    this.resizeCanvas(width, height);
+  }
+
+  getResolutionScale(): {
+    scale: number;
+    full: { w: number; h: number };
+    scaled: { w: number; h: number };
+    pixelReduction: string;
+  } {
+    const full = INTERNAL_RENDER_RESOLUTION;
+    const dims = computeInternalDimensions(full, this.resolutionScale);
+    const fullPixels = full * full;
+    const scaledPixels = dims.width * dims.height;
+    return {
+      scale: dims.scale,
+      full: { w: full, h: full },
+      scaled: { w: dims.width, h: dims.height },
+      pixelReduction: `${Math.round((1 - scaledPixels / fullPixels) * 100)}%`,
+    };
+  }
+
+  /** Adaptive quality is driven by RendererManager; kept for API parity. */
+  setAdaptiveQuality(_enabled: boolean, _targetFps = 60): void {
+    // no-op — RendererManager AdaptivePerformanceController owns WASM scale changes
   }
 
   // ── Phase 2: Screenshot capture ───────────────────────────────────────────

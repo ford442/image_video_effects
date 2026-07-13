@@ -95,14 +95,14 @@ def count_workgroup_size_args(arg_list: str) -> int:
 
 def check_workgroup_size_convention(content: str) -> list[dict]:
     """
-    Return issues where @workgroup_size has fewer than 2 explicit dimensions.
+    Return issues where @workgroup_size has fewer than 3 explicit dimensions.
     Checks comment-stripped source so inline comments do not skew counts.
     """
     issues = []
     stripped = strip_wgsl_comments(content)
     for match in WORKGROUP_SIZE_ATTR.finditer(stripped):
         arg_count = count_workgroup_size_args(match.group(1))
-        if arg_count < 2:
+        if arg_count < 3:
             issues.append({
                 "match": match.group(0).strip(),
                 "arg_count": arg_count,
