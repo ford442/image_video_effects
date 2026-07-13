@@ -4,6 +4,8 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
+    "@craco/craco": "^7.1.0",
+    "@huggingface/transformers": "^4.2.0",
     "@mlc-ai/web-llm": "^0.2.80",
     "@types/node": "^16.18.126",
     "@types/react": "^19.1.11",
@@ -11,8 +13,10 @@
     "@webgpu/types": "^0.1.64",
     "@xenova/transformers": "npm:@huggingface/transformers@^4.2.0",
     "hls.js": "^1.6.15",
+    "patch-package": "^8.0.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-scripts": "^5.0.1",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
@@ -20,7 +24,7 @@
     "prestart": "node scripts/generate_shader_lists.js --base-url=https://test.1ink.us/image_video_effects/ && npm run build:manifest",
     "start": "craco start",
     "prebuild": "npm run wasm:build && node scripts/generate_shader_lists.js --base-url=https://test.1ink.us/image_video_effects/ && npm run build:manifest",
-    "build": "craco build",
+    "build": "craco build && npm run wasm:build",
     "build:manifest": "tsx --tsconfig scripts/tsconfig.scripts.json scripts/build-unified-manifest.ts",
     "test": "craco test",
     "eject": "craco eject",
@@ -59,6 +63,7 @@
   "browserslist": {
     "production": [
       ">0.2%",
+      "not ie <= 11",
       "not dead",
       "not op_mini all"
     ],
@@ -69,6 +74,8 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "@babel/plugin-syntax-import-meta": "^7.10.4",
     "@craco/craco": "^7.1.0",
     "@playwright/test": "^1.58.2",
     "@testing-library/dom": "^10.4.1",
@@ -80,8 +87,9 @@
     "customize-cra": "^1.0.0",
     "patch-package": "^8.0.1",
     "playwright": "^1.57.0",
-    "react-scripts": "^5.0.1",
+    "react-app-rewired": "^2.2.1",
     "tsx": "^4.22.1",
+    "webpack-cli": "^7.1.0",
     "xml2js": "^0.6.2",
     "yaml": "^2.8.2"
   }
