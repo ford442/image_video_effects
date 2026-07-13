@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: oscilloscope-overlay
-- **Agent Role**: Visualist
-- **Current Size**: 3340 bytes
-- **Target Line Count**: ~180 lines
+- **Agent Role**: Audio-Reactivity
+- **Current Size**: 175 bytes
+- **Target Line Count**: ~200 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -41,14 +41,12 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
-// ═══════════════════════════════════════════════════════════════════
-//  Oscilloscope Overlay
+// ═══ Oscilloscope Overlay ═══════════════════════════════════════════
 //  Category: image
-//  Features: mouse-driven, overlay, hdr-ready
-//  Complexity: Low
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
-// ═══════════════════════════════════════════════════════════════════
+//  Features: mouse-driven, overlay, audio-reactive, hdr, aces-tone-map,
+//            color-temperature, dither
+//  Complexity: Medium
+//  Upgraded: 2026-06-14
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -71,19 +69,78 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-const PI:  f32 = 3.14159265358979323846;
-const TAU: f32 = 6.28318530717958647692;
-const LUMA_WEIGHTS: vec3<f32> = vec3<f32>(0.299, 0.587, 0.114);
-const SCAN_COLOR: vec3<f32> = vec3<f32>(1.0, 0.2, 0.2);
-const PHOSPHOR_COLOR: vec3<f32> = vec3<f32>(0.2, 1.0, 0.5);
-const GRID_COLOR: vec3<f32> = vec3<f32>(0.12, 0.25, 0.12);
-const CENTER_Y: f32 = 0.5;
+const PI:  f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+const LUMA_W: vec3<f32> = vec3<f32>(0.2126, 0.7152, 0.0722);
 
-fn luma(color: vec3<f32>) -> f32 {
-  return dot(color, LUMA_WEIGHTS);
+fn luma(rgb: vec3<f32>) -> f32 {
+  return dot(rgb, LUMA_W);
 }
 
-// Branchless grid intensity for oscilloscope aesthetic
+fn toLinear(c: vec3<f32>) -> vec3<f32> {
+  return pow(max(c, vec3<f32>(0.0)), vec3<f32>(2.2));
+}
+
+fn toSRGB(c: vec3<f32>) -> vec3<f32> {
+  return pow(max(c, vec3<f32>(0.0)), vec3<f32>(1.0 / 2.2));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn huePreserveClamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
+  let L = luma(c);
+  let s = min(1.0, max_lum / max(L, 1e-4));
+  return c * s;
+}
+
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
+fn linearSrgbToOklab(c: vec3<f32>) -> vec3<f32> {
+  let l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
+  let m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
+  let s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
+  let l_ = pow(l, 1.0 / 3.0); let m_ = pow(m, 1.0 / 3.0); let s_ = pow(s, 1.0 / 3.0);
+  return vec3<f32>(
+    0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
+    1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
+    0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
+  );
+}
+
+fn oklabToLinearSrgb(c: vec3<f32>) -> vec3<f32> {
+  let l_ = c.x + 0.3963377774 * c.y + 0.2158037573 * c.z;
+  let m_ = c.x - 0.1055613458 * c.y - 0.0638541728 * c.z;
+  let s_ = c.x - 0.0894841775 * c.y - 1.2914855480 * c.z;
+  let l = l_ * l_ * l_; let m = m_ * m_ * m_; let s = s_ * s_ * s_;
+  return vec3<f32>(
+     4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+  );
+}
+
+fn mixOkLab(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
+  return oklabToLinearSrgb(mix(linearSrgbToOklab(a), linearSrgbToOklab(b), t));
+}
+
+fn blackbodyRGB(T: f32) -> vec3<f32> {
+  let t = clamp(T, 1000.0, 40000.0) / 100.0;
+  var r = 0.0; var g = 0.0; var b = 0.0;
+  if (t <= 66.0) { r = 1.0; }
+  else { r = clamp(329.698727446 * pow(t - 60.0, -0.1332047592) / 255.0, 0.0, 1.0); }
+  if (t <= 66.0) { g = clamp((99.4708025861 * log(t) - 161.1195681661) / 255.0, 0.0, 1.0); }
+  else { g = clamp(288.1221695283 * pow(t - 60.0, -0.0755148492) / 255.0, 0.0, 1.0); }
+  if (t >= 66.0) { b = 1.0; }
+  else if (t <= 19.0) { b = 0.0; }
+  else { b = clamp((138.5177312231 * log(t - 10.0) - 305.0447927307) / 255.0, 0.0, 1.0); }
+  return vec3<f32>(r, g, b);
+}
+
 fn gridIntensity(uv: vec2<f32>, spacing: f32, thick: f32) -> f32 {
   let g = fract(uv / spacing + 0.5);
   let d = min(min(g.x, 1.0 - g.x), min(g.y, 1.0 - g.y)) * spacing;
@@ -92,57 +149,72 @@ fn gridIntensity(uv: vec2<f32>, spacing: f32, thick: f32) -> f32 {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let pixel = vec2<i32>(global_id.xy);
   let res = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / res;
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-  if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) {
-    return;
-  }
-
-  let bass = plasmaBuffer[0].x;
-
-  // Parameters — bass amplifies waveform amplitude
-  let amplitude = u.zoom_params.x * (1.0 + bass * 0.5);
-  let thickness = max(0.001, u.zoom_params.y * 0.02);
-  let waveOpacity = u.zoom_params.z;
-  let scanAlpha = u.zoom_params.w;
+  let uv = vec2<f32>(pixel) / res;
+  let time = u.config.x;
   let scanY = u.zoom_config.z;
 
-  // Background sample
-  let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
-  // Shared scanline sample for scan indicator + waveform
-  let scanUV = vec2<f32>(uv.x, scanY);
-  let scanSample = textureSampleLevel(readTexture, u_sampler, scanUV, 0.0).rgb;
-  let scanLuma = luma(scanSample);
+  let amplitude   = u.zoom_params.x * (1.0 + bass * 0.6);
+  let thickness   = max(0.0005, u.zoom_params.y * 0.02);
+  let waveOpacity = u.zoom_params.z;
+  let scanAlpha   = u.zoom_params.w;
 
-  // Scan line indicator
+  // Sample background once; work in linear light for correct compositing.
+  let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  var col = toLinear(base.rgb);
+
+  // Shared scanline sample drives both the scan indicator and the waveform.
+  let scanSample = textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x, scanY), 0.0).rgb;
+  let scanLuma = luma(toLinear(scanSample));
+
+  // Audio-reactive color temperature: warm scan, shifting phosphor, desaturated grid.
+  let temp = 2200.0 + 2600.0 * (0.5 + 0.5 * sin(time * 0.22)) + bass * 1600.0;
+  let scanCol = toLinear(blackbodyRGB(temp));
+  let phosphorCol = mixOkLab(toLinear(vec3<f32>(0.15, 0.95, 0.35)), toLinear(vec3<f32>(0.25, 0.75, 1.0)), 0.35 + mids * 0.35);
+  let gridCol = toLinear(vec3<f32>(0.14, 0.30, 0.16)) * (0.7 + treble * 0.5);
+
+  // Scan indicator with a soft outer halo.
   let distScan = abs(uv.y - scanY);
   let scanLine = smoothstep(thickness, 0.0, distScan) * scanAlpha;
+  let scanHalo = smoothstep(thickness * 5.0, thickness, distScan) * scanAlpha * 0.25;
 
-  // Waveform: luma-driven Y displacement
-  let waveY = CENTER_Y + (scanLuma - CENTER_Y) * amplitude;
+  // Luminance-driven waveform with a subtle audio ripple and high-frequency jitter.
+  let ripple = sin(uv.x * TAU * 6.0 - time * 4.0) * 0.006 * mids;
+  let jitter = sin(uv.x * TAU * 18.0 + time * 7.0) * 0.002 * treble;
+  let waveY = 0.5 + (scanLuma - 0.5) * amplitude + ripple + jitter;
   let distWave = abs(uv.y - waveY);
-  let waveVal = smoothstep(thickness, 0.0, distWave) * waveOpacity;
+  let waveVal = smoothstep(thickness * 1.4, 0.0, distWave) * waveOpacity;
 
-  // Subtle branchless oscilloscope grid
+  // Subtle oscilloscope grid.
   let gridVal = gridIntensity(uv, 0.1, 0.001) * 0.12;
 
-  // Composite: mix scan line, add waveform and grid
-  var col = bg;
-  col = mix(col, SCAN_COLOR, scanLine);
-  col = col + PHOSPHOR_COLOR * waveVal;
-  col = col + GRID_COLOR * gridVal;
+  // Composite in linear HDR space.
+  col = mix(col, scanCol * (1.0 + bass * 0.35), scanLine + scanHalo);
+  col = col + phosphorCol * waveVal * (1.0 + treble * 0.45);
+  col = col + gridCol * gridVal;
 
-  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  // HDR-ready: bloom weight drives effect intensity
-  let effectIntensity = scanLine * 0.5 + waveVal * 0.8 + gridVal * 0.15;
-  let finalAlpha = mix(baseColor.a, 1.0, effectIntensity * 0.7);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, finalAlpha));
-
+  // Depth-aware falloff keeps the overlay from flattening distant content.
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 1.0));
+  let effectIntensity = scanLine + scanHalo + waveVal * 0.85 + gridVal * 0.2;
+  let bloomWeight = clamp(effectIntensity * (0.75 + depth * 0.45), 0.0, 1.0);
+
+  // Tone map + dither stack.
+  col = huePreserveClamp(col, 2.8);
+  col = acesToneMap(col * (0.9 + mids * 0.2));
+  col = toSRGB(col);
+  let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
+  col = col + vec3<f32>(dither);
+
+  // Premultiplied-alpha writeback: alpha carries the bloom/compositing weight.
+  textureStore(writeTexture, pixel, vec4<f32>(col * bloomWeight, bloomWeight));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }
 
 ```
@@ -153,7 +225,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "oscilloscope-overlay",
   "name": "Oscilloscope Overlay",
   "url": "shaders/oscilloscope-overlay.wgsl",
-  "description": "Overlays a real-time luminance waveform of the image scanline at the mouse cursor's vertical position.",
+  "description": "Overlays a real-time luminance waveform of the image scanline at the mouse cursor's vertical position, now with audio-reactive color temperature, HDR tone mapping, and IGN dithering.",
   "params": [
     {
       "id": "amplitude",
@@ -186,11 +258,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   ],
   "features": [
     "mouse-driven",
-    "overlay"
+    "overlay",
+    "audio-reactive",
+    "hdr",
+    "aces-tone-map",
+    "color-temperature",
+    "dither"
   ],
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "overlay",
+    "audio-reactive"
   ]
 }
 
@@ -199,169 +278,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 ---
 
 ## Agent Specialization
-# Agent Role: The Visualist
+# Agent Role: Audio Reactivity Specialist (Phase B)
 
 ## Identity
-You are **The Visualist**, a shader architect focused on color science, lighting, and emotional impact. You make shaders visually stunning.
+You are the **Audio Reactivity Specialist**. Your job is to make shaders respond musically to the audio stream already bound to `plasmaBuffer`.
 
-## Upgrade Toolkit
-
-### Color Science
-- SRGB → Linear workflow with proper gamma (`pow(c, 2.2)` in, `pow(c, 1/2.2)` out)
-- Clamped colors → HDR with values >1.0 before tone mapping
-- Static palettes → Dynamic temperature shifting
-- Solid fills → Subsurface scattering glow
-- Flat shading → Fresnel rim lighting
-
-#### OkLab — Perceptually Uniform Color Space (use for smooth gradients / mixing)
+## Audio Binding (canonical)
 ```wgsl
-fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
-    let l = 0.4122214708*c.r + 0.5363325363*c.g + 0.0514459929*c.b;
-    let m = 0.2119034982*c.r + 0.6806995451*c.g + 0.1073969566*c.b;
-    let s = 0.0883024619*c.r + 0.2817188376*c.g + 0.6299787005*c.b;
-    let l_ = pow(l, 1.0/3.0); let m_ = pow(m, 1.0/3.0); let s_ = pow(s, 1.0/3.0);
-    return vec3<f32>(0.2104542553*l_+0.7936177850*m_-0.0040720468*s_,
-                     1.9779984951*l_-2.4285922050*m_+0.4505937099*s_,
-                     0.0259040371*l_+0.7827717662*m_-0.8086757660*s_);
-}
-fn oklab_to_linear_srgb(c: vec3<f32>) -> vec3<f32> {
-    let l_ = c.x+0.3963377774*c.y+0.2158037573*c.z;
-    let m_ = c.x-0.1055613458*c.y-0.0638541728*c.z;
-    let s_ = c.x-0.0894841775*c.y-1.2914855480*c.z;
-    let l = l_*l_*l_; let m = m_*m_*m_; let s = s_*s_*s_;
-    return vec3<f32>(4.0767416621*l-3.3077115913*m+0.2309699292*s,
-                    -1.2684380046*l+2.6097574011*m-0.3413193965*s,
-                    -0.0041960863*l-0.7034186147*m+1.7076147010*s);
-}
-// Mix colors in OkLab (avoids the grey mud in mid-tones)
-fn mixOkLab(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
-    return oklab_to_linear_srgb(mix(linear_srgb_to_oklab(a), linear_srgb_to_oklab(b), t));
-}
+let bass   = plasmaBuffer[0].x;  // 20–200 Hz, ~0–2
+let mids   = plasmaBuffer[0].y;  // 200–2000 Hz, ~0–2
+let treble = plasmaBuffer[0].z;  // 2k–20k Hz, ~0–2
 ```
 
-#### Blackbody / Color Temperature
-```wgsl
-// Temperature in Kelvin → approximate RGB (1000K–40000K)
-fn blackbodyRGB(T: f32) -> vec3<f32> {
-    let t = clamp(T, 1000.0, 40000.0) / 100.0;
-    var r = 0.0; var g = 0.0; var b = 0.0;
-    if (t <= 66.0) { r = 1.0; }
-    else { r = clamp(329.698727446 * pow(t - 60.0, -0.1332047592) / 255.0, 0.0, 1.0); }
-    if (t <= 66.0) { g = clamp((99.4708025861 * log(t) - 161.1195681661) / 255.0, 0.0, 1.0); }
-    else { g = clamp(288.1221695283 * pow(t - 60.0, -0.0755148492) / 255.0, 0.0, 1.0); }
-    if (t >= 66.0) { b = 1.0; }
-    else if (t <= 19.0) { b = 0.0; }
-    else { b = clamp((138.5177312231 * log(t - 10.0) - 305.0447927307) / 255.0, 0.0, 1.0); }
-    return vec3<f32>(r, g, b);
-}
-```
-
-#### Cosine Palette (Inigo Quilez) — fast procedural gradients
-```wgsl
-fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
-    return a + b * cos(6.28318 * (c * t + d));
-}
-// Example fire: palette(t, (0.5,0.5,0.5),(0.5,0.5,0.5),(1,1,0.5),(0,0.1,0.2))
-// Example ice:  palette(t, (0.5,0.5,0.5),(0.5,0.5,0.5),(1,1,1),(0,0.33,0.67))
-```
-
-### Lighting Techniques
-- Single light → 3-point studio lighting (key + fill + rim, different color temps)
-- Diffuse only → Specular via GGX distribution + Fresnel-Schlick
-- Hard shadows → Soft penumbra: `smoothstep(penumbra, 0.0, shadowDist)`
-- Local lighting → Volumetric god rays (ray march toward light source)
-- Flat surface → Iridescent thin-film: `sin(d * freq + hue_offset) * fresnel`
-
-### Atmosphere
-- Clear → Volumetric fog: `exp(-density * dist)` (Beer-Lambert)
-- Sharp → Bokeh depth of field (hexagonal aperture SDF)
-- Static → Animated caustics: FBM of sinusoids, `sin(fbm(p)*8 + t)`
-- Clean → Rayleigh scattering: blue-bias sky, `pow(lambda, -4.0)` wavelength dependence
-- Mie scattering for haze: `(1-g²) / pow(1+g²-2g*cosθ, 1.5)`, g≈0.76 for aerosols
-
-### Color Grading
-- Raw output → ACES tone mapped (apply last, after all HDR work)
-- Static → Audio-reactive temperature (`blackbodyRGB(3000 + bass * 4000)`)
-- Monochrome → Split-tone: shadows in complementary hue, highlights warm
-- Natural → Iridescent thin-film: wavelength-dependent phase shift
-- Flat mix → OkLab interpolation (prevents muddy mid-tone blending)
-
-### Tonemap & Dither Stack (kimi-cli reference snippets)
-
-Always process in this order: accumulate HDR → hue-preserve clamp → ACES tonemap → dither → premultiplied write.
-
-#### 1. Hue-preserving HDR clamp (prevents desaturation on bright highlights)
-```wgsl
-fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
-    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let s = min(1.0, max_lum / max(l, 1e-4));
-    return c * s;
-}
-```
-Apply after additive accumulation, before ACES. Beats `min(c, 1.0)` which desaturates to white.
-
-#### 2. ACES filmic tonemap (drop-in, no LUT required)
-```wgsl
-fn aces(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
-    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-```
-Pair with sRGB gamma `pow(c, vec3<f32>(1.0/2.2))` on write if the display is sRGB.
-
-#### 3. Interleaved-gradient (IGN) blue-noise dither (kills 8-bit banding)
-```wgsl
-fn ign(p: vec2<f32>) -> f32 {
-    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
-}
-// before textureStore:
-let dither = (ign(vec2<f32>(gid.xy)) - 0.5) / 255.0;
-let outRGB = aces(hdr) + vec3<f32>(dither);
-```
-Cheaper than a blue-noise texture lookup and visually identical at 8-bit precision.
-
-#### Premultiplied-alpha writeback — tactic #12 (correct compositing in the slot chain)
-```wgsl
-let a = clamp(alpha, 0.0, 1.0);
-textureStore(writeTexture, gid.xy, vec4<f32>(rgb * a, a));
-```
-The renderer expects premultiplied output downstream of slot 1. Straight alpha causes dark fringes after the next slot's blur/blend.
-
-## RGBA Channel Strategy
-
-**Alpha = bloom weight** is the most useful convention for generative shaders:
-```wgsl
-let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
-let bloomWeight = pow(max(0.0, luma - 0.6), 2.0) * 3.0;  // only bright areas
-textureStore(writeTexture, coord, vec4<f32>(color, bloomWeight));
-```
-
-Other useful alpha encodings:
-- `alpha = depth` — for depth-aware compositing in the next slot
-- `alpha = effectStrength` — transparent where effect is absent (compositing-friendly)
-- `alpha = fresnel` — glass/water reflectance mask
-
-**Do NOT output `vec4(color, 1.0)` unless the shader is a pure background layer.**
-
-## Quality Checklist
-- [ ] HDR values exceed 1.0 in highlights before tone mapping
-- [ ] At least 2 light sources with different color temperatures
-- [ ] `hue_preserve_clamp` applied before ACES to avoid highlight desaturation
-- [ ] ACES tone mapping applied as the final step
-- [ ] IGN dither added before `textureStore` to kill 8-bit banding
-- [ ] Atmospheric depth (fog/haze/dust via Beer-Lambert or Rayleigh)
-- [ ] Color gradients use OkLab mixing to avoid muddy transitions
-- [ ] Alpha channel encodes bloom weight or compositing info
-- [ ] Premultiplied-alpha writeback (`vec4(rgb * a, a)`) when alpha < 1
+## Patterns
+- **Bass pulse**: scale/brightness/intensity *= `1.0 + bass * 0.5`.
+- **Mids morph**: rotation speed, pattern evolution, color cycling *= `1.0 + mids * 0.5`.
+- **Treble sparkle**: add high-frequency detail or shimmer.
+- **Envelope smoothing** (preferred over raw bass):
+  ```wgsl
+  fn bass_env(prev: f32, bass: f32) -> f32 {
+      let k = select(0.15, 0.8, bass > prev);
+      return mix(prev, bass, k);
+  }
+  ```
+  Store `prev` in `dataTextureA.r` if the shader has free feedback.
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it visually stunning.
-- Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
-- Do NOT modify the 13-binding header or the Uniforms struct.
-- **Alpha must carry semantic meaning** — bloom weight, depth, or Fresnel reflectance.
-
-## Performance Constraint
-This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
+- Add at least one musically coherent audio-driven parameter.
+- Update JSON `features` to include `audio-reactive`.
+- Do NOT modify the 13-binding header or `Uniforms` struct.
+- Workgroup size stays `@workgroup_size(16, 16, 1)`.
+- Return exactly one ```` ```wgsl ```` block.
 
 
 ---
@@ -370,7 +317,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 180 lines (±20%).
+4. Ensure the upgraded shader is roughly 200 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

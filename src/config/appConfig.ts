@@ -107,7 +107,7 @@ export const DEFAULT_SLOT_PARAMS: SlotParams = {
     depthThreshold: 0.5,
 };
 
-export const INTERNAL_RENDER_RESOLUTION = 2048;
+export { INTERNAL_RENDER_RESOLUTION } from './performancePolicy';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Storage Configuration

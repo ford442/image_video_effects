@@ -1,0 +1,19 @@
+{
+  "name": "Neon Stellated Octahedron",
+  "category": "generative",
+  "tags": ["generative", "geometry", "stellated", "octahedron", "star-tetrahedron", "neon", "kaleidoscope", "audio-reactive"],
+  "description": "A neon-lit stellated octahedron (star tetrahedron) — two interpenetrating tetrahedra with blazing rainbow edges and dual-color facet glow. Six-fold kaleidoscopic symmetry multiplies the geometry; bass pulses the star scale, treble ignites vertex spikes. Mouse spins the form through space.",
+  "workgroup_size": [16, 16, 1],
+  "updatedParams": [
+    { "index": 0, "name": "Star Scale", "default": 0.55, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Spin Speed", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Neon Power", "default": 0.65, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Color Shift", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-neon-stellated-octahedron",
+  "url": "shaders/gen-neon-stellated-octahedron.wgsl",
+  "features": ["generative", "geometry", "audio-reactive", "mouse-driven", "neon", "kaleidoscope"]
+}

@@ -4,9 +4,12 @@
   "url": "shaders/phantom-lag.wgsl",
   "features": [
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "chromatic-echo",
+    "spring-damper-bass",
+    "mouse-velocity"
   ],
-  "description": "Creates trailing echoes of movement by blending past frames with spatial offsets.",
+  "description": "Creates trailing echoes of movement with chromatic multi-tap delays, spring-damper bass smoothing, and velocity-stretched cursor ghosts.",
   "params": [
     {
       "name": "Decay Rate",

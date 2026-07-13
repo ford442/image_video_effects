@@ -2,7 +2,7 @@
   "id": "tile-twist",
   "name": "Tile Twist",
   "url": "shaders/tile-twist.wgsl",
-  "description": "Grid tiles twist and rotate based on mouse proximity, enhanced with FBM domain warping, hash-jittered organic tiling, and SDF edge masking.",
+  "description": "Grid tiles twist and rotate based on mouse proximity and an envelope-smoothed bass pulse, with mids-driven hue shifts, treble sparkle, FBM domain warping, and SDF edge masking.",
   "params": [
     {
       "id": "tileSize",

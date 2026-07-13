@@ -1,7 +1,7 @@
 // ═══ Cosmic Web Filament ═══════════════════════════════════════════
 //  Category: generative
 //  Features: mouse-driven, organic, temporal, audio-reactive, depth-aware,
-//            aces-tone-map, chromatic-aberration, semantic-alpha
+//            aces-tone-map, chromatic-aberration, alpha-layered
 
 // ── IMMUTABLE 13-BINDING CONTRACT ─────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
@@ -107,6 +107,15 @@ fn filamentDensity(border: f32, scale: f32) -> f32 {
     return smoothstep(0.0, 1.0, f * scale);
 }
 
+// Multi-factor alpha for the 3-slot compositor
+fn compositeAlpha(color: vec3<f32>, density: f32, galaxy: f32, node: f32, depth: f32) -> f32 {
+    let lumaKey = smoothstep(0.03, 0.24, luma(color));
+    let edgePreserve = smoothstep(0.0, 0.28, density) * (1.0 - smoothstep(0.78, 0.96, density) * 0.5);
+    let depthLayer = mix(0.25, 1.0, depth);
+    let base = clamp(density * 0.9 + galaxy * 0.55 + node * 0.65, 0.0, 1.0);
+    return clamp(base * lumaKey * edgePreserve * depthLayer, 0.0, 0.98);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
@@ -140,35 +149,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warp = fbm(p);
     p += vec3<f32>(warp * (warpStrength + bass * 0.15));
 
-    // Coarse Voronoi for early-exit culling of deep voids
-    let v0 = voronoi3(p);
-    let density0 = filamentDensity(v0.y - v0.x, densityScale);
-
-    if (density0 < VOID_CUTOFF) {
-        let voidColor = vec3<f32>(0.05, 0.0, 0.1);
-        textureStore(writeTexture, pixel, vec4<f32>(voidColor, 0.0));
-        textureStore(writeDepthTexture, pixel, vec4<f32>(0.0, 0.0, 0.0, 0.0));
-        textureStore(dataTextureA, pixel, vec4<f32>(voidColor, 0.0));
-        return;
-    }
-
-    // Full filament evaluation
+    // Voronoi evaluation (reused for filament and node pass)
     let v = voronoi3(p);
     let f1 = v.x;
     let f2 = v.y;
     let density = filamentDensity(f2 - f1, densityScale);
 
-    let colVoid = vec3<f32>(0.05, 0.0, 0.1);
+    let voidColor = vec3<f32>(0.05, 0.0, 0.1);
+
+    if (density < VOID_CUTOFF) {
+        textureStore(writeTexture, pixel, vec4<f32>(voidColor, 0.0));
+        textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+        textureStore(dataTextureA, pixel, vec4<f32>(voidColor, 0.0));
+        return;
+    }
+
     var colFilament = vec3<f32>(0.2, 0.6, 1.0);
     let colCore = vec3<f32>(1.0, 1.0, 1.0);
     colFilament = hueShift(colFilament, colorShift * TAU + bass * 0.3);
 
-    var color = mix(colVoid, colFilament, density);
+    var color = mix(voidColor, colFilament, density);
     color = mix(color, colCore, smoothstep(0.8, 1.0, density));
 
     // Cluster nodes at Voronoi vertices
     let nodeMetric = smoothstep(NODE_THRESHOLD, 0.0, f1) * density;
-    color += vec3<f32>(1.0, 0.85, 0.6) * (nodeMetric * nodeMetric) * (1.3 + treble * 0.5);
 
     // Galaxy point field along filaments
     let gCell = floor(uv * GALAXY_SCALE);
@@ -178,6 +182,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let twinkle = 0.6 + 0.4 * sin(time * 3.0 + gRand.z * TAU);
     let galaxy = smoothstep(0.006, 0.0, gd) * step(GALAXY_THRESH, gRand.z) * twinkle * density;
     let gTint = mix(vec3<f32>(0.7, 0.85, 1.0), vec3<f32>(1.0, 0.9, 0.7), gRand.x);
+
+    color += vec3<f32>(1.0, 0.85, 0.6) * (nodeMetric * nodeMetric) * (1.3 + treble * 0.5);
     color += gTint * galaxy * (1.5 + bass * 0.6);
 
     // Depth-aware intensity boost
@@ -190,10 +196,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = genChromaticShift(temporal, uv01, 0.003 * (1.0 + bass));
     color = acesToneMap(color * (0.9 + mids * 0.2));
 
-    // Semantic alpha = intensity/density
-    let alpha = clamp(luma(color) * 1.5 + density * 0.3 + galaxy, 0.0, 0.95);
+    // Layered alpha: luminance-keyed, edge-preserved, depth-layered
+    let alpha = compositeAlpha(color, density, galaxy, nodeMetric, depth);
+    let temporalAlpha = mix(prev.a * DECAY, alpha, FEEDBACK);
 
-    textureStore(dataTextureA, pixel, vec4<f32>(temporal, 1.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(temporal, temporalAlpha));
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(density, 0.0, 0.0, 0.0));
 }

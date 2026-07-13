@@ -1,11 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Hyperbolic Crystal Symbiosis v4 — Interactivist Upgrade
-//  Category: generative
-//  Features: poincare-disk, geodesic-voronoi, gray-scott,
-//            iridescent-facets, bass-envelope, gravity-seeds,
-//            shockwave-disrupt, ripple-waves, organic-drift,
-//            depth-aware, luma-spawn, chromatic-aberration,
-//            temporal-feedback, semantic-alpha
+//  Hyperbolic Crystal Symbiosis v5 — Advanced Hybrid
+//  Combined techniques: poincare-disk, geodesic-voronoi, gray-scott,
+//                       iridescent-facets, kaleidoscope-symmetry,
+//                       audio-palette, smin-blending, depth-aware,
+//                       temporal-feedback, semantic-alpha
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -55,6 +53,11 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+  let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+
 fn hyperbolicDist(a: vec2<f32>, b: vec2<f32>, center: vec2<f32>) -> f32 {
   let da = a - center; let db = b - center;
   let ra2 = clamp(dot(da, da), 0.0, 0.999); let rb2 = clamp(dot(db, db), 0.0, 0.999);
@@ -98,6 +101,21 @@ fn rippleDisrupt(uv: vec2<f32>, time: f32) -> f32 {
   return d;
 }
 
+fn kaleido(uv: vec2<f32>, segs: f32) -> vec2<f32> {
+  let c = uv - vec2<f32>(0.5);
+  let a = atan2(c.y, c.x);
+  let r = length(c);
+  let seg = TAU / max(segs, 1.0);
+  let m = fract((a + seg * 0.5) / seg) * seg;
+  let a2 = abs(m - seg * 0.5);
+  return vec2<f32>(0.5) + r * vec2<f32>(cos(a2), sin(a2));
+}
+
+fn audioPalette(bass: f32, mids: f32, treble: f32, t: f32) -> vec3<f32> {
+  let a = t + bass * 1.5;
+  return vec3<f32>(0.5 + 0.5 * cos(a + vec3<f32>(0.0, 2.1, 4.2))) * (0.5 + mids * 0.5 + treble * 0.3);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pixel = vec2<i32>(gid.xy);
@@ -116,11 +134,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let warpStrength = mouseDown * p4 * 0.35;
   let diskCenter = mix(vec2<f32>(0.5), mouse, warpStrength);
   let curvature = mix(0.0, 1.0, clamp(p1 + mids * 0.5 - 0.25, 0.0, 1.0));
-  let isEuclidean = curvature < 0.15; let isHyperbolic = curvature > 0.65;
 
   let drift = organicDrift(uv01, time, 8.0) * (0.02 + mids * 0.02);
   let gWell = gravityWell(uv01, mouse, 0.05 + mouseDown * 0.15);
   let uv = uv01 + drift + gWell * 0.1;
+
+  let segs = 3.0 + floor(p2 * 9.0 + bass * 4.0);
+  let kuv = kaleido(uv, segs);
 
   let seeds = array<vec2<f32>, 5>(vec2<f32>(0.3, 0.35) + gWell * 0.1, vec2<f32>(0.7, 0.3) + gWell * 0.08,
                                    vec2<f32>(0.5, 0.7) + gWell * 0.12, vec2<f32>(0.2, 0.65) + gWell * 0.06,
@@ -128,7 +148,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var minDist = 999.0; var secondMin = 999.0; var nearest = 0;
   for (var i: i32 = 0; i < 5; i = i + 1) {
-    let d = select(hyperbolicDist(uv, seeds[i], diskCenter), length(uv - seeds[i]), isEuclidean);
+    let dE = length(kuv - seeds[i]);
+    let dH = hyperbolicDist(kuv, seeds[i], diskCenter);
+    let d = smin(dE, dH, 0.1 + p1 * 0.2);
     if (d < minDist) { secondMin = minDist; minDist = d; nearest = i; }
     else if (d < secondMin) { secondMin = d; }
   }
@@ -151,6 +173,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lapU = rx.r + lx.r + uy.r + dy.r - 4.0 * uField;
   let lapV = rx.g + lx.g + uy.g + dy.g - 4.0 * vField;
 
+  let isHyperbolic = curvature > 0.65;
   let Du = select(0.18, 0.26, isHyperbolic); let Dv = select(0.09, 0.13, isHyperbolic);
   let F = 0.03 + treble * 0.02; let K = 0.056 + p3 * 0.02; let uv2 = uField * vField * vField;
 
@@ -165,7 +188,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let crystalPurity = smoothstep(0.1, 0.55, newU);
   let centrality = smoothstep(0.4, 0.0, minDist);
   let irid = iridescentFacet(facetPhase + minDist * 3.0, edge) * edge * 1.2;
-  let domainCol = mix(vec3<f32>(0.15, 0.45, 0.75), vec3<f32>(0.85, 0.55, 0.25), f32(nearest % 2));
+  let palette = audioPalette(bass, mids, treble, time * 0.5);
+  let baseCol = mix(vec3<f32>(0.15, 0.45, 0.75), vec3<f32>(0.85, 0.55, 0.25), f32(nearest % 2));
+  let domainCol = mix(baseCol, palette, 0.35 + p2 * 0.25);
   let fogDepth = smoothstep(0.0, 1.0, minDist * 2.0);
   let shade = domainCol * (0.4 + fogDepth * 0.6 + crystalPurity * 0.5);
   let sparkle = hash21(uv * 200.0 + time * 3.0) * edge * treble * 1.5;
@@ -176,21 +201,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var tone = acesToneMap((shade + irid + bloom + vec3<f32>(sparkle) + video.rgb * spawn) * (0.85 + p1 * 0.25 + bass * 0.15));
 
-  // Temporal feedback via dataTextureC blue channel as smoothed luma memory
   let smoothLuma = mix(prev.b, luma(tone), 0.08 + p4 * 0.12);
   tone = mix(tone, vec3<f32>(smoothLuma * 0.85), 0.12);
 
-  // Chromatic aberration radiating from disk center
   let caStr = 0.003 * (1.0 + bass) + fogDepth * 0.001;
   let dir = normalize(uv01 - diskCenter + vec2<f32>(0.001));
   tone = vec3<f32>(tone.r + dir.x * caStr, tone.g, tone.b - dir.y * caStr * 0.5);
 
-  // Depth-aware compositing
   let z = textureLoad(readDepthTexture, pixel, 0).r;
   let fog = 1.0 - exp(-z * p3 * 2.0);
   let depthAware = mix(tone, tone * 0.6, fog * 0.5);
 
-  // Semantic alpha: interaction intensity + temporal memory + depth
   let mouseProx = smoothstep(0.3, 0.0, clickDist);
   let alpha = clamp(centrality * 0.7 + crystalPurity * 0.5 + fogDepth * 0.3 + edge * 0.4 + mouseProx * 0.3 + smoothLuma * 0.2 + spawn, 0.0, 1.0);
 

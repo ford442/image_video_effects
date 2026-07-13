@@ -132,7 +132,7 @@ test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
       `${report.promotionGateMet ? 'MET' : 'NOT MET'} ` +
       `(${comparisons.filter((c) => c.meetsPromotionGate).length}/${comparisons.length} shaders)`
   );
-  console.log('Note: WASM timingSource is gpu-timestamp when timestamp-query is supported, else wall-clock.');
+  console.log('Note: WASM getGPUTimings().available is false — timingSource is wall-clock.');
   console.log('=============================\n');
 
   if (!gpuObserved) {

@@ -1,0 +1,5 @@
+{
+  "description": "Accepted likely-broken shader definition ids. CI fails when the orphan auditor finds ids not in this set (pre-existing orphans do not retroactively break builds). Update only when intentionally accepting a new orphan or after fixing entries (remove ids).",
+  "generated": "2026-07-04",
+  "ids": []
+}

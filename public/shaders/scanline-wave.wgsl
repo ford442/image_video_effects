@@ -1,12 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Scanline Wave
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, temporal-persistence, chromatic-CRT,
-//            HDR-color-grading, ACES-tone-map, IGN-dither, premultiplied-alpha
+//  Features: mouse-driven, audio-reactive, audio-envelope, treble-sparkle,
+//            temporal-persistence, chromatic-CRT, HDR-color-grading,
+//            ACES-tone-map, IGN-dither, premultiplied-alpha
 //  Complexity: High
 //  Chunks From: scanline-wave, bass_env, temporal-feedback
 //  Created: 2024-01-01
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -37,8 +38,13 @@ fn luma(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
-fn bass_env(bass: f32, mids: f32) -> f32 {
+fn audio_gain(bass: f32, mids: f32) -> f32 {
     return 1.0 + bass * 0.5 + mids * 0.2;
+}
+
+fn smooth_env(prev: f32, x: f32) -> f32 {
+    let k = select(0.15, 0.8, x > prev);
+    return mix(prev, x, k);
 }
 
 fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
@@ -114,26 +120,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth  = textureLoad(readDepthTexture, pixel, 0).r;
     let prev   = textureLoad(dataTextureC, pixel, 0);
 
-    let waveAmount  = u.zoom_params.x * bass_env(bass, mids);
+    let waveAmount  = u.zoom_params.x;
     let lineCount   = mix(50.0, 300.0, u.zoom_params.y);
     let persistence = u.zoom_params.z;
-    let rollSpeed   = u.zoom_params.w;
+    let audioMix    = u.zoom_params.w;
+
+    // Envelope-smoothed bass for musically coherent pulses
+    let prevEnv   = prev.a;
+    let smoothBass = smooth_env(prevEnv, bass);
+    let drive      = mix(bass, smoothBass, audioMix);
 
     // Mouse proximity boosts local distortion
     let mouseDist  = distance(uv01, mouse);
     let mouseBoost = (1.0 - smoothstep(0.0, 0.4, mouseDist)) * (0.5 + isMouseDown * 0.5);
-    let localWave  = waveAmount * (1.0 + mouseBoost);
+    let localWave  = waveAmount * audio_gain(drive, mids) * (1.0 + mouseBoost);
 
     let lineIdx    = floor(uv01.y * lineCount);
     let lineCenter = (lineIdx + 0.5) / lineCount;
+    let rollSpeed  = 0.5 + audioMix * 0.75 + drive * 0.25;
     let linePhase  = lineCenter * TAU + time * rollSpeed * 2.0;
 
-    // Horizontal scanline warp
-    let offset = sin(linePhase) * localWave * 0.02 * (1.0 + bass * 0.5);
+    // Horizontal scanline warp with bass pulse
+    let offset = sin(linePhase) * localWave * 0.02 * (1.0 + drive * 0.5);
     let waveUV = clamp(uv01 + vec2<f32>(offset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Chromatic CRT aberration
-    let chromaShift = localWave * 0.005 * (1.0 + treble) * (1.0 + mouseBoost);
+    // Chromatic CRT aberration, sharpened by treble
+    let chromaShift = localWave * 0.005 * (1.0 + treble * (0.5 + audioMix)) * (1.0 + mouseBoost);
     let base = textureSampleLevel(readTexture, u_sampler, waveUV, 0.0);
     let r = textureSampleLevel(readTexture, u_sampler, clamp(waveUV + vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let b = textureSampleLevel(readTexture, u_sampler, clamp(waveUV - vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
@@ -141,23 +153,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Temporal persistence with audio-driven blend
     let decay = persistence * 0.85 + 0.1;
-    let trail = mix(prev.rgb * decay, crt, 0.15 + isMouseDown * 0.2 + mouseBoost * 0.2);
+    let trail = mix(prev.rgb * decay, crt, 0.15 + isMouseDown * 0.2 + mouseBoost * 0.2 + drive * 0.15);
 
     // Scanline intensity modulation in OkLab
     let scanline = sin(uv01.y * lineCount * PI) * 0.5 + 0.5;
     let dimColor = trail * mix(1.0, 0.62, scanline * localWave);
 
-    // Audio vertical roll
-    let rollOffset = fract(uv01.y + bass * 0.05) - uv01.y;
+    // Audio vertical roll driven by smoothed bass
+    let rollOffset = fract(uv01.y + drive * 0.05 * audioMix) - uv01.y;
     let rolledUV   = clamp(uv01 + vec2<f32>(0.0, rollOffset), vec2<f32>(0.0), vec2<f32>(1.0));
     let rolled     = textureSampleLevel(readTexture, u_sampler, rolledUV, 0.0).rgb;
 
-    var color = mixOkLab(dimColor, rolled, bass * 0.25);
+    var color = mixOkLab(dimColor, rolled, drive * 0.3);
+
+    // Treble sparkle: high-frequency glitter on bright scanlines
+    let sparkleMask = pow(max(0.0, scanline * treble * audioMix), 2.0);
+    let sparkle = (ign(uv01 * res * 2.0 + time * 10.0) - 0.45) * sparkleMask * 0.35;
+    color = color + vec3<f32>(sparkle);
 
     // Blackbody color temperature grading: bass warms, treble cools
-    let temp  = mix(2800.0, 7800.0, 0.35 + treble * 0.35 - bass * 0.15);
+    let temp  = mix(2800.0, 7800.0, 0.35 + treble * 0.35 - drive * 0.15);
     let grade = blackbodyRGB(temp);
-    color = color * grade * (1.25 + bass * 0.35 + mids * 0.15);
+    color = color * grade * (1.25 + drive * 0.35 + mids * 0.15);
 
     // Depth-aware atmospheric haze
     let fog = exp(-depth * 2.5);
@@ -172,9 +189,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Semantic alpha = bloom weight + effect strength, premultiplied writeback
     let lum         = luma(color);
     let bloomWeight = pow(max(0.0, lum - 0.55), 2.0) * 2.5;
-    let effectAlpha = clamp(localWave * 0.25 + bass * 0.08 + bloomWeight, 0.0, 1.0);
+    let effectAlpha = clamp(localWave * 0.25 + drive * 0.08 + bloomWeight, 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(color * effectAlpha, effectAlpha));
-    textureStore(dataTextureA, pixel, vec4<f32>(color * effectAlpha, effectAlpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(color * effectAlpha, drive));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

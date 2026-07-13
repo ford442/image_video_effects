@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "performance_policy.h"
 #include "wasm_internal.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
@@ -18,6 +19,8 @@ using wasm_internal::CheckLimit;
 using wasm_internal::ParseWorkgroupSize;
 
 bool WebGPURenderer::CreateResources() {
+    // canvasWidth_/canvasHeight_ are set at init; defaults align with policy::kInternalRenderResolution.
+    (void)policy::kInternalRenderResolution;
     // Create samplers
     WGPUSamplerDescriptor samplerDesc = {};
     samplerDesc.nextInChain = nullptr;

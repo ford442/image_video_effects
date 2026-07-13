@@ -20,9 +20,12 @@ Outputs:
 
 Network-free; safe for CI per-PR gates.
 
-Exit code 1 when --fail (default in CI) and:
-  - any likely-broken definition (def without WGSL), or
-  - any unexpected orphan WGSL (only_wgsl)
+Exit code 1 when --base is set and any **changed** definition classifies as
+`likely-broken` or `parse-error`. Full-tree report is always written; only
+changed JSON under shader_definitions/ is enforced (forward-only).
+
+Without --base, exits 0 after writing reports (use --fail-all for legacy
+full-tree enforcement).
 
 Manifest sources for storage-only classification:
   - Primary: public/shader_coordinates.json (keys = shader ids used by the app)
@@ -36,6 +39,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -60,6 +65,45 @@ ALLOWLIST_PREFIXES = (
 )
 
 WGSL_IGNORE_PREFIXES = ("_",)
+
+
+def discover_changed_definition_paths(base_ref: str) -> set[Path]:
+    """Return shader_definitions JSON paths changed against base_ref (three-dot)."""
+    diff_ref = base_ref if "..." in base_ref else f"{base_ref}...HEAD"
+    result = subprocess.run(
+        ["git", "diff", "--name-only", "--diff-filter=ACMRT", diff_ref],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    changed: set[Path] = set()
+    for line in result.stdout.splitlines():
+        p = PROJECT_ROOT / line.strip()
+        if (
+            p.suffix == ".json"
+            and p.exists()
+            and DEFINITIONS_DIR in p.parents
+        ):
+            changed.add(p.resolve())
+    return changed
+
+
+def enforceable_failures(
+    entries: list[dict],
+    changed_paths: set[Path] | None,
+) -> list[dict]:
+    """Return definition rows that should fail the gate."""
+    if not changed_paths:
+        return []
+    failures = []
+    for row in entries:
+        if row["classification"] not in ("likely-broken", "parse-error"):
+            continue
+        def_path = (PROJECT_ROOT / row["def_path"]).resolve()
+        if def_path in changed_paths:
+            failures.append(row)
+    return failures
 
 
 def load_coordinates_ids() -> set[str]:
@@ -350,7 +394,7 @@ def write_markdown(report: dict, path: Path) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def print_summary(report: dict) -> None:
+def print_summary(report: dict, *, changed_failures: list[dict] | None = None) -> None:
     s = report["summary"]
     ws = report["wgsl_summary"]
     print("=" * 60)
@@ -358,6 +402,8 @@ def print_summary(report: dict) -> None:
     print("=" * 60)
     print(f"Definitions scanned: {report['definitions_scanned']}")
     print(f"WGSL files scanned:  {report['wgsl_files_scanned']}")
+    if report.get("changed_definitions_checked") is not None:
+        print(f"Changed definitions (enforced): {report['changed_definitions_checked']}")
     print("\nDefinitions → WGSL:")
     for key, count in s.items():
         marker = " [FAIL]" if key in ("likely-broken", "parse-error") and count else ""
@@ -367,13 +413,22 @@ def print_summary(report: dict) -> None:
         marker = " [FAIL]" if key == "orphan" and count else ""
         print(f"  {key}: {count}{marker}")
     print(f"\nonly_def={report['only_def_count']}  only_wgsl={report['only_wgsl_count']}")
-    if report["only_def_count"]:
-        print("\n[FAIL] Definitions missing WGSL:")
+    if changed_failures:
+        print("\n[FAIL] Changed definitions missing valid local WGSL:")
+        for r in changed_failures:
+            err = f" ({r['error']})" if r.get("error") else ""
+            print(f"  • {r['id']} ({r['def_path']}) -> {r['expected_wgsl']}{err}")
+            print(
+                "    Allowlist intentional data-only defs via ALLOWLIST_IDS in "
+                "scripts/audit_orphan_shader_defs.py"
+            )
+    elif report["only_def_count"]:
+        print("\n[INFO] Definitions missing WGSL (full tree; not blocking without --base):")
         for r in report["entries"]:
             if r["classification"] in ("likely-broken", "parse-error"):
                 print(f"  • {r['id']} ({r['def_path']}) -> {r['expected_wgsl']}")
     if report["only_wgsl_count"]:
-        print("\n[FAIL] Orphan WGSL (no catalog entry):")
+        print("\n[INFO] Orphan WGSL (no catalog entry):")
         for r in report["wgsl_entries"]:
             if r["classification"] == "orphan":
                 print(f"  • {r['wgsl']}")
@@ -384,10 +439,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Audit shader_definitions ↔ WGSL catalog pairing.")
     parser.add_argument("--json", action="store_true", help="Print JSON report to stdout")
     parser.add_argument(
-        "--fail",
+        "--base",
+        default=None,
+        help="Git ref for forward-only enforcement (e.g. origin/main). "
+        "Fails only on changed shader_definitions JSON classified likely-broken or parse-error.",
+    )
+    parser.add_argument(
+        "--fail-all",
         action="store_true",
-        default=True,
-        help="Exit 1 when only_def or unexpected only_wgsl > 0 (default: true)",
+        help="Legacy: exit 1 when any only_def or only_wgsl in the full tree",
     )
     parser.add_argument(
         "--no-fail",
@@ -398,6 +458,18 @@ def main() -> int:
 
     report = audit_definitions()
 
+    changed_paths: set[Path] | None = None
+    changed_failures: list[dict] = []
+    if args.base:
+        try:
+            changed_paths = discover_changed_definition_paths(args.base)
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print(f"ERROR: could not list changed definitions against '{args.base}': {e}", file=sys.stderr)
+            return 2
+        changed_failures = enforceable_failures(report["entries"], changed_paths)
+        report["changed_definitions_checked"] = len(changed_paths)
+        report["changed_definition_failures"] = len(changed_failures)
+
     REPORT_JSON.parent.mkdir(parents=True, exist_ok=True)
     REPORT_JSON.write_text(json.dumps(report, indent=2), encoding="utf-8")
     write_markdown(report, REPORT_MD)
@@ -405,13 +477,19 @@ def main() -> int:
     if args.json:
         print(json.dumps(report, indent=2))
     else:
-        print_summary(report)
+        print_summary(report, changed_failures=changed_failures or None)
         print(f"Wrote {REPORT_JSON.relative_to(PROJECT_ROOT)}")
         print(f"Wrote {REPORT_MD.relative_to(PROJECT_ROOT)}")
 
-    should_fail = args.fail and not args.no_fail
-    if should_fail and (report["only_def_count"] > 0 or report["only_wgsl_count"] > 0):
+    if args.no_fail:
+        return 0
+
+    if args.base and changed_failures:
         return 1
+
+    if args.fail_all and (report["only_def_count"] > 0 or report["only_wgsl_count"] > 0):
+        return 1
+
     return 0
 
 

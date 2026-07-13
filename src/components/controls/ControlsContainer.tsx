@@ -11,6 +11,7 @@ import { LiveControlPanel } from './panels/LiveControlPanel';
 import { RoulettePanel } from './panels/RoulettePanel';
 import { CoordinateBrowserOverlay } from './panels/CoordinateBrowserOverlay';
 import { AdvancedDebugPanel } from './panels/AdvancedDebugPanel';
+import { RenderQualityPanel } from './panels/RenderQualityPanel';
 import { EffectCategoryPanel } from './panels/EffectCategoryPanel';
 import { ImageAutoSwitchPanel } from './panels/ImageAutoSwitchPanel';
 import { CoordinateDisplayPanel } from './panels/CoordinateDisplayPanel';
@@ -90,6 +91,10 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onTriggerNextTransition,
     onRandomizeSlot,
     onSetSlotParam,
+    renderQualityMode = 'auto',
+    onRenderQualityChange,
+    maxActiveSlots = 3,
+    performanceHud,
 }) => {
     const [devToolsOpen, setDevToolsOpen] = useState(false);
     const [autoTransitionOpen, setAutoTransitionOpen] = useState(false);
@@ -208,6 +213,19 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 modes={modes}
             />
 
+            {onRenderQualityChange && performanceHud && (
+                <RenderQualityPanel
+                    qualityMode={renderQualityMode}
+                    onQualityChange={onRenderQualityChange}
+                    maxActiveSlots={maxActiveSlots}
+                    internalResolution={performanceHud.internalWidth}
+                    scale={performanceHud.scale}
+                    adaptive={performanceHud.adaptive}
+                    targetFps={performanceHud.targetFps}
+                />
+            )}
+
+            {/* --- Renderer Switcher --- */}
             {onSwitchRenderer && activeRendererType && (
                 <RendererBackendPanel
                     activeRendererType={activeRendererType}
@@ -251,6 +269,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 setActiveSlot={setActiveSlot}
                 slotShaderStatus={slotShaderStatus}
                 slotMenuOptions={slotMenuOptions}
+                maxActiveSlots={maxActiveSlots}
             />
 
             <ParamSlidersPanel

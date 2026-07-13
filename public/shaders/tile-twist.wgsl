@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Tile Twist (Algorithmist Upgrade)
+//  Tile Twist (Phase B Audio-Reactivity Upgrade)
 //  Category: distortion
 //  Features: upgraded-rgba, mouse-driven, audio-reactive, depth-aware,
 //            temporal-feedback, aces-tone-map, chromatic-aberration
@@ -100,8 +100,20 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn luma(rgb: vec3<f32>) -> f32 {
-  return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+// ── Audio helpers ─────────────────────────────────────────────────
+fn bass_env(prev: f32, bass: f32) -> f32 {
+  let k = select(0.15, 0.8, bass > prev);
+  return mix(prev, bass, k);
+}
+
+fn hueRotate(rgb: vec3<f32>, angle: f32) -> vec3<f32> {
+  let cosA = cos(angle);
+  let sinA = sin(angle);
+  return vec3<f32>(
+    rgb.x * (cosA + 0.189 * sinA) + rgb.y * (-0.189 * sinA) + rgb.z * (0.0),
+    rgb.x * (-0.168 * sinA) + rgb.y * (cosA + 0.168 * sinA) + rgb.z * (0.0),
+    rgb.x * (0.0) + rgb.y * (0.0) + rgb.z * (cosA + 1.0 * sinA)
+  );
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -125,8 +137,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
+  // Envelope-smoothed bass for musical pulse
+  let prev = textureLoad(dataTextureC, pixel, 0);
+  let env = bass_env(prev.r, bass);
+  let pulse = 1.0 + env * 0.6;
+
   // Audio-driven oscillation speed
-  let oscSpeed = 1.0 + mids * 2.0 + bass * 0.5;
+  let oscSpeed = 1.0 + mids * 2.0 + env * 0.5;
 
   // Aspect-correct tile grid with double-domain warp
   let n = 2.0 + tileSize * 18.0;
@@ -151,11 +168,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let jitter = hash22(tIdx) * 0.25 * (1.0 + ridge);
   let tCenter = (tIdx + 0.5 + jitter) * tSize;
 
-  // Lissajous + hash + mouse-driven twist angle
+  // Lissajous + hash + mouse-driven twist angle, pulsed by bass envelope
   let lissA = sin(time * oscSpeed * 2.0 + tileHash * TAU);
   let lissB = sin(time * oscSpeed + tileHash * TAU * 0.7);
   let lissajousAngle = atan2(lissB, lissA) * 0.5;
-  let tileTwist = tileHash * twist * (1.0 + ridge + influence * 2.0 + treble);
+  let tileTwist = tileHash * twist * pulse * (1.0 + ridge + influence * 2.0 + treble);
   let angle = lissajousAngle + tileTwist;
 
   // Rotate pixel around jittered tile center
@@ -172,20 +189,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Source sample + chromatic aberration driven by bass & mouse influence
   let src = textureSampleLevel(readTexture, u_sampler, rotUV, 0.0);
   let caDir = normalize(rotUV - vec2<f32>(0.5) + vec2<f32>(0.001));
-  let caStr = 0.002 * (1.0 + bass) + influence * 0.005;
+  let caStr = 0.002 * pulse + influence * 0.005;
   let r = textureSampleLevel(readTexture, u_sampler, clamp(rotUV + caDir * caStr, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let b = textureSampleLevel(readTexture, u_sampler, clamp(rotUV - caDir * caStr * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   var color = vec3<f32>(r, src.g, b);
 
-  // ACES tone map and semantic alpha
-  color = acesToneMap(color * (0.9 + mids * 0.2));
-  let alpha = src.a * mix(0.55, 1.0, edgeMask) * (0.7 + influence * 0.3);
+  // Mids-driven hue rotation + treble sparkle
+  color = acesToneMap(color * (0.9 + mids * 0.2) * pulse);
+  color = hueRotate(color, time * 0.1 + mids * 0.8 + tileHash * 0.3);
+  let sparkle = hash21(uv01 * 200.0 + time) * treble * 0.25;
+  color = color + vec3<f32>(sparkle);
+
+  // Semantic alpha pulsed by bass envelope
+  let alpha = src.a * mix(0.55, 1.0, edgeMask) * (0.7 + influence * 0.3) * (0.85 + env * 0.25);
 
   // Temporal feedback trail
-  let prev = textureLoad(dataTextureC, pixel, 0);
   let decay = 0.96 - edgeSmooth * 0.03;
-  let trail = mix(prev.rgb * decay, color, 0.25 + bass * 0.1);
-  textureStore(dataTextureA, pixel, vec4<f32>(trail, prev.a));
+  let trail = mix(prev.rgb * decay, color, 0.25 + env * 0.1);
+  textureStore(dataTextureA, pixel, vec4<f32>(env, trail.g, trail.b, prev.a));
 
   // Depth passthrough
   let depth = textureLoad(readDepthTexture, pixel, 0).r;

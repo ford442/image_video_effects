@@ -1,13 +1,14 @@
 // ═══ Waveform Glitch ═══════════════════════════════════════════════
-//  Category: retro-glitch
+//  Category: advanced-hybrid
 //  Features: glitch, waveform, retro, rgb-tear, scanline, depth-jitter,
 //            clifford-attractor, domain-warped-fbm, curl-flow,
 //            voronoi-ridge-corruption, yuv-chroma-noise, aces-tone-map,
-//            chromatic-aberration, temporal-feedback
-//  Complexity: Medium
-//  Updated: 2026-06-14
-//  By: Algorithmist — Clifford strange attractor, domain-warped FBM,
-//      divergence-free curl flow, Voronoi F2-F1 ridges, YUV chroma noise
+//            chromatic-aberration, temporal-feedback, sdf-mask,
+//            audio-palette, bass-env
+//  Complexity: Medium-High
+//  Updated: 2026-07-08
+//  By: Advanced Hybrid Creator — hybrid upgrade: SDF glitch masks,
+//      audio-driven cosine palette, bass-envelope smoothing
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -79,7 +80,9 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn wavelengthToRGB(w: f32) -> vec3<f32> { return 0.5 + 0.5 * cos(vec3<f32>(w, w + 2.09, w + 4.18)); }
+fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
+  return a + b * cos(TAU * (c * t + d));
+}
 
 fn rgbToYuv(rgb: vec3<f32>) -> vec3<f32> {
   return vec3<f32>(0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b,
@@ -119,6 +122,26 @@ fn clifford(p: vec2<f32>, a: f32, b: f32, c: f32, d: f32) -> vec2<f32> {
   return vec2<f32>(sin(a * p.y) + c * cos(a * p.x), sin(b * p.x) + d * cos(b * p.y));
 }
 
+// ── Audio Envelope ────────────────────────────────────────────────
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+  let k = select(release, attack, bass > prev);
+  return mix(prev, bass, k);
+}
+
+// ── SDF Masking ───────────────────────────────────────────────────
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+  let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+fn sdCircle(p: vec2<f32>, r: f32) -> f32 { return length(p) - r; }
+
+fn sdSegment(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+  let pa = p - a; let ba = b - a;
+  let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+  return length(pa - ba * h);
+}
+
 // ── Main ──────────────────────────────────────────────────────────
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -142,14 +165,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mousePos = u.zoom_config.yz;
   let mouseZone = exp(-length(uv - mousePos) * 6.0) * (1.0 + u.zoom_config.w);
 
-  let frameIdx = u32(floor(time * 60.0)) % 4u;
-  extraBuffer[frameIdx] = bass;
-  let transient = max(bass - extraBuffer[(frameIdx + 3u) % 4u], 0.0) * 4.0;
+  // Bass-envelope smoothing (replaces raw-bass strobing)
+  let prevBass = extraBuffer[0];
+  let smoothBass = bass_env(prevBass, bass, 0.35, 0.08);
+  extraBuffer[0] = smoothBass;
+  let transient = max(smoothBass - prevBass, 0.0) * 5.0;
+
+  // SDF glitch-mask: a pulsing circle blended with a roaming segment
+  let aspect = res.x / res.y;
+  let suv = vec2<f32>((uv.x - 0.5) * aspect, uv.y - 0.5);
+  let pulse = 0.22 + 0.12 * sin(time * 0.7 + smoothBass * 3.0);
+  let dCircle = sdCircle(suv + vec2<f32>(sin(time * 0.3) * 0.15, cos(time * 0.25) * 0.1), pulse);
+  let segA = vec2<f32>(-0.4, sin(time * 0.5) * 0.25);
+  let segB = vec2<f32>(0.4, cos(time * 0.4 + mids) * 0.25);
+  let dSeg = sdSegment(suv, segA, segB) - 0.06;
+  let sdfRaw = smin(dCircle, dSeg, 0.18);
+  let sdfMask = smoothstep(0.25, -0.05, sdfRaw);
 
   let depthScale = mix(1.0, 0.3, depth);
-  let glitchAmt = vhsIntensity * depthScale * (1.0 + mouseZone * 2.0 + transient * 3.0);
+  let glitchAmt = vhsIntensity * depthScale * (1.0 + mouseZone * 2.0 + transient * 3.0 + sdfMask * 1.5);
 
-  let chaotic = clifford(uv * TAU + time * 0.1, 1.7 + bass * 0.3, -0.7, 1.4, 1.6);
+  let chaotic = clifford(uv * TAU + time * 0.1, 1.7 + smoothBass * 0.3, -0.7, 1.4, 1.6);
   let attractorWarp = chaotic * glitchAmt * 0.015;
 
   var warped = vhsTracking(uv, time, glitchAmt) + attractorWarp;
@@ -165,7 +201,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let quant = step(0.5, hash21(vec2<f32>(scanQ, floor(time * 8.0)))) * 0.06 * vhsIntensity;
   let displacedUV = clamp(warped + vec2<f32>(quant, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let caAmt = 0.003 * (1.0 + bass) + glitchMag * 0.01;
+  let caAmt = 0.003 * (1.0 + smoothBass) + glitchMag * 0.01;
   let r = textureSampleLevel(readTexture, u_sampler, displacedUV + vec2<f32>(caAmt, 0.0), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, displacedUV - vec2<f32>(caAmt * 0.6, 0.0), 0.0).b;
@@ -189,11 +225,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = col * mix(1.0, shadowMask, shadowMaskAmount);
   col = col + vec3<f32>(bandNoise * 0.5, bandNoise * 0.3, bandNoise * 0.1);
 
-  let spectralTint = wavelengthToRGB(time * 0.4 + glitchMag * 20.0 + clifford(uv * PI, 1.5, -1.8, 1.2, -1.5).x);
-  col = mix(col, col * spectralTint, glitchMag * 0.5);
+  // Audio-driven cosine palette replaces the old wavelength tint
+  let palT = time * 0.15 + glitchMag * 12.0 + smoothBass * 1.5 + mids * 0.8;
+  let audioPal = palette(palT,
+    vec3<f32>(0.5, 0.5, 0.5),
+    vec3<f32>(0.5 + treble * 0.25, 0.45, 0.4 + smoothBass * 0.2),
+    vec3<f32>(1.0, 0.95, 0.85),
+    vec3<f32>(0.0, 0.33, 0.67));
+  col = mix(col, col * audioPal, glitchMag * 0.55 + sdfMask * 0.25);
 
   let decay = 0.94;
-  let trail = mix(prev.rgb * decay, col, 0.2 + bass * 0.1);
+  let trail = mix(prev.rgb * decay, col, 0.2 + smoothBass * 0.1);
   textureStore(dataTextureA, pixel, vec4<f32>(trail, prev.a));
 
   let bloom = max(lum - 0.6, 0.0) * 0.4;
@@ -203,7 +245,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   col = acesToneMap(col * (0.9 + mids * 0.2));
 
-  let alpha = clamp(glitchMag * 5.0 * blockCorrup * (1.0 + transient) * (1.0 + mouseZone), 0.0, 1.0);
+  let alpha = clamp(glitchMag * 5.0 * blockCorrup * (1.0 + transient) * (1.0 + mouseZone + sdfMask), 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

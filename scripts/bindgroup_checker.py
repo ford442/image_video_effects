@@ -95,20 +95,41 @@ def count_workgroup_size_args(arg_list: str) -> int:
 
 def check_workgroup_size_convention(content: str) -> list[dict]:
     """
-    Return issues where @workgroup_size has fewer than 2 explicit dimensions.
+    Return issues where @workgroup_size has fewer than 3 explicit dimensions.
     Checks comment-stripped source so inline comments do not skew counts.
     """
     issues = []
     stripped = strip_wgsl_comments(content)
     for match in WORKGROUP_SIZE_ATTR.finditer(stripped):
         arg_count = count_workgroup_size_args(match.group(1))
-        if arg_count < 2:
+        if arg_count < 3:
             issues.append({
                 "match": match.group(0).strip(),
                 "arg_count": arg_count,
                 "args": match.group(1).strip(),
             })
     return issues
+
+
+def split_workgroup_issues(issues: list[dict]) -> tuple[list[dict], list[dict]]:
+    """
+    Split workgroup convention issues into blocking vs warning.
+
+    Note: as of the 2-arg permit change, check_workgroup_size_convention only
+    returns issues for <2 args (1-arg forms). 2-arg literals are accepted.
+    - Blocking: reserved for <2 in legacy split paths (currently unused for standard issues).
+    - Warning: 1-arg override/expression forms (valid WGSL, non-standard convention).
+    """
+    blocking: list[dict] = []
+    warnings: list[dict] = []
+    for issue in issues:
+        if issue["arg_count"] == 1:
+            warnings.append(issue)
+        elif issue["arg_count"] < 3:
+            blocking.append(issue)
+        else:
+            warnings.append(issue)
+    return blocking, warnings
 
 
 def fix_literal_two_arg_workgroup_size(content: str) -> tuple[str, int]:

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Quantum Ripples
 //  Category: image
-//  Features: mouse-driven, interactive, audio-reactive, temporal-feedback,
-//            depth-aware, chromatic-aberration, domain-warped-fbm, curl-turbulence
-//  Complexity: Medium
-//  Upgraded: 2026-06-14
+//  Techniques: mouse-driven, interactive, audio-reactive, temporal-feedback,
+//             depth-aware, chromatic-aberration, domain-warped-fbm, curl-turbulence,
+//             voronoi-displacement, sdf-masking, audio-palette
+//  Complexity: Medium-High
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -39,6 +40,10 @@ fn hash21(p: vec2<f32>) -> f32 {
     let h = dot(p, vec2<f32>(127.1, 311.7));
     return fract(sin(h) * 43758.5453123);
 }
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+    let h = p * mat2x2<f32>(vec2<f32>(127.1, 311.7), vec2<f32>(269.5, 183.3));
+    return fract(sin(h) * 43758.5453123);
+}
 fn valueNoise(p: vec2<f32>) -> f32 {
     let i = floor(p);
     let f = fract(p);
@@ -68,6 +73,9 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
+fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
+    return a + b * cos(TAU * (c * t + d));
+}
 
 // ── Divergence-free velocity field ────────────────────────────────
 fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
@@ -75,6 +83,32 @@ fn curl2D(p: vec2<f32>, t: f32) -> vec2<f32> {
     let nx = fbm(p + vec2<f32>(0.0, eps), 4) - fbm(p - vec2<f32>(0.0, eps), 4);
     let ny = fbm(p + vec2<f32>(eps, 0.0), 4) - fbm(p - vec2<f32>(eps, 0.0), 4);
     return vec2<f32>(nx, -ny) / (2.0 * eps + t * 0.0);
+}
+
+// ── Voronoi displacement with jittered, time-evolving cells ───────
+fn voronoi(p: vec2<f32>, t: f32) -> vec2<f32> {
+    let k = floor(p);
+    var md = 1e5;
+    var cell = 0.0;
+    for (var j = -1; j <= 1; j++) {
+        for (var i = -1; i <= 1; i++) {
+            let g = vec2<f32>(f32(i), f32(j));
+            let o = hash22(k + g) * 2.0 - 1.0;
+            let r = g + 0.5 + 0.35 * sin(t * 0.4 + TAU * o);
+            let d = dot(p - (k + r), p - (k + r));
+            if (d < md) {
+                md = d;
+                cell = hashf(dot(k + g, vec2<f32>(12.9898, 78.233)));
+            }
+        }
+    }
+    return vec2<f32>(sqrt(md), cell);
+}
+
+// ── SDF rounded-box mask for spatial shaping ──────────────────────
+fn sdRoundedBox(p: vec2<f32>, b: vec2<f32>, r: f32) -> f32 {
+    let q = abs(p) - b + vec2<f32>(r);
+    return min(max(q.x, q.y), 0.0) + length(max(q, vec2<f32>(0.0))) - r;
 }
 
 // ── Chromatic aberration for texture-backed shaders ───────────────
@@ -132,7 +166,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let curl = curl2D(uv * 4.0 + time * 0.1, time) * (0.02 + bass * 0.02);
     let sampleUv = clamp(uv01 + curl, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    var disp = waveField(sampleUv, mouse, aspect, time, freq, spd, 0.5 + bass * 0.2);
+    // Voronoi displacement perturbs the wave lattice into cellular interference
+    let voroScale = 6.0 + mids * 4.0;
+    let voro = voronoi(uv * voroScale + time * 0.2, time);
+    let voroDisp = (voro.x - 0.45) * 0.03 * (1.0 + bass);
+
+    var disp = waveField(sampleUv + voroDisp, mouse, aspect, time, freq, spd, 0.5 + bass * 0.2);
 
     // Superpose historical ripple sources (max 8 for performance)
     let rippleCount = u32(u.config.y);
@@ -140,16 +179,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let rp = u.ripples[i];
         let age = time - rp.z;
         let rf = freq * (1.0 + hash21(rp.xy) * 0.3);
-        disp += waveField(sampleUv, rp.xy, aspect, time, rf, spd * 0.7, 0.25) *
+        disp += waveField(sampleUv + voroDisp, rp.xy, aspect, time, rf, spd * 0.7, 0.25) *
                 exp(-age * 2.0) * 0.5;
     }
 
     let activeAmp = select(1.0, 2.0, u.zoom_config.w > 0.5);
     disp *= amp * activeAmp;
 
+    // SDF mask centered on mouse shapes the ripple domain into a soft portal
+    let boxUv = (uv01 - mouse) * vec2<f32>(aspect, 1.0);
+    let boxSize = vec2<f32>(0.25 + bass * 0.08, 0.18 + treble * 0.05);
+    let sdf = sdRoundedBox(boxUv, boxSize, 0.08);
+    let mask = 1.0 - smoothstep(0.0, 0.35, sdf);
+
     // Depth-aware refraction sharpens the lensing at foreground edges
     let depthOffset = (uv01 - vec2<f32>(0.5)) * depth * 0.02;
-    let srcUV = clamp(uv01 - disp + depthOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+    let srcUV = clamp(uv01 - disp * mask + depthOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Color from displaced source + chromatic aberration
     let base = textureSampleLevel(readTexture, u_sampler, srcUV, 0.0);
@@ -158,8 +203,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ca = chromaticAberration(srcUV, caAmt);
     color = mix(color, ca, clamp(csh + depth * 0.3, 0.0, 1.0));
 
-    // Energy-based hue shift + audio glow
+    // Audio-driven palette + energy-based hue shift
     let energy = length(disp) / (amp * activeAmp + 0.001);
+    let palT = energy * 0.6 + time * 0.08 + voro.y * 0.2 + mids * 0.3;
+    let pal = palette(palT,
+                      vec3<f32>(0.5, 0.5, 0.5),
+                      vec3<f32>(0.5, 0.5, 0.5),
+                      vec3<f32>(1.0, 1.0, 0.9),
+                      vec3<f32>(0.0, 0.33, 0.67));
+    color = mix(color, color * pal * (1.0 + bass * 0.4), clamp(csh * energy + bass * 0.2, 0.0, 1.0));
+
     let shift = energy * csh * sin(time * 0.5) * 0.3;
     color.r += shift + energy * treble * 0.08;
     color.b -= shift;
@@ -172,7 +225,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ACES tone map + semantic alpha
     color = acesToneMap(color * (0.9 + mids * 0.2));
-    let effectIntensity = energy * (0.5 + bass * 0.5);
+    let effectIntensity = energy * (0.5 + bass * 0.5) * mask;
     let alpha = mix(base.a, clamp(effectIntensity, 0.0, 0.95), 0.7);
 
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));

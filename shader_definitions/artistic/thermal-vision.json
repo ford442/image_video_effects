@@ -1,41 +1,60 @@
 {
   "id": "thermal-vision",
   "name": "Thermal Vision",
+  "category": "artistic",
   "url": "shaders/thermal-vision.wgsl",
-  "description": "Heat signature camera view.",
+  "description": "Heat-signature camera with FBM sensor noise, audio-reactive sensitivity, depth-aware fade, ACES tone mapping, IGN dither, blackbody temperature, split-tone, hue-preserve clamp and vignette.",
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "sensitivity",
       "name": "Heat Sensitivity",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
     },
     {
       "id": "color_range",
       "name": "Color Range",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
     },
     {
       "id": "noise",
       "name": "Sensor Noise",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
     },
     {
       "id": "blur",
       "name": "Thermal Blur",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
     }
   ],
   "features": [
+    "upgraded-rgba",
     "color-remap",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "aces-tone-map",
+    "ign-dither",
+    "blackbody-temperature",
+    "split-tone",
+    "hue-preserve-clamp",
+    "vignette"
   ],
   "tags": [
     "filter",

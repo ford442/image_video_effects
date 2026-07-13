@@ -2,7 +2,7 @@
   "id": "temporal-rgb-smear",
   "name": "Temporal RGB Smear",
   "url": "shaders/temporal-rgb-smear.wgsl",
-  "description": "Directional RGB smear with curl-noise velocity field, domain-warped drift, Halton-jittered chromatic sampling, temporal feedback decay, ACES tone mapping, and semantic trail alpha.",
+  "description": "Directional RGB smear with curl-noise velocity field, domain-warped drift, Halton-jittered chromatic sampling, temporal feedback decay, ACES tone mapping, and advanced layered alpha compositing (luminance key, edge preserve, effect intensity, depth layer, accumulative trails).",
   "params": [
     {
       "id": "smear_length",
@@ -53,7 +53,11 @@
     "curl-noise",
     "domain-warp",
     "aces-tone-mapping",
-    "semantic-alpha"
+    "semantic-alpha",
+    "alpha-layered",
+    "luminance-key",
+    "edge-preserve",
+    "accumulative"
   ],
   "tags": [
     "filter",
@@ -66,6 +70,10 @@
     "curl-noise",
     "domain-warp",
     "depth-aware",
-    "tone-mapping"
+    "tone-mapping",
+    "alpha-layered",
+    "luminance-key",
+    "edge-preserve",
+    "accumulative"
   ]
 }

@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Gen Feedback Echo Chamber v4 — Interactivist Upgrade
+//  Gen Feedback Echo Chamber v5 — Multi-Pass-Architect Optimized
 //  Category: feedback/temporal
-//  Features: gravity-well, shockwave, bass-envelope, domain-warp, depth-fog,
-//            psychedelic-palette, chromatic-aberration, temporal-echo
+//  Focus: cached fBM, distance-aware LOD, branchless feedback envelope,
+//         tighter temporal accumulation loop.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -81,14 +81,6 @@ fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
     return d * (strength / dist2);
 }
 
-fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32) -> vec3<f32> {
-    let delta = uv - vec2<f32>(0.5);
-    let lenSq = max(dot(delta, delta), 0.000001);
-    let dir = delta * (1.0 / sqrt(lenSq));
-    let shift = dir * strength;
-    return vec3<f32>(color.r + shift.x, color.g, color.b - shift.y * 0.5);
-}
-
 fn psychedelicPalette(t: f32) -> vec3<f32> {
     let hue = fract(t);
     let sat = clamp(0.72 + 0.28 * sin(TAU * (t * 0.137 + 0.19)), 0.45, 1.0);
@@ -109,9 +101,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
-    let bassRaw = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
+    let audio = plasmaBuffer[0];
+    let bassRaw = audio.x;
+    let mids = audio.y;
+    let treble = audio.z;
     let prevEnv = extraBuffer[0];
     let bass = bass_env(prevEnv, bassRaw, 0.8, 0.15);
 
@@ -130,10 +123,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse gravity well + fBM domain-warped drift
     let gWell = gravityWell(uv01, mouse, 0.015 + mouseDown * 0.055);
     var warpedUV = uv01 + gWell * (0.02 + echoScale * 2.0);
-    let drift = vec2<f32>(
-        fbm(warpedUV * 8.0 + time * 0.2, 3),
-        fbm(warpedUV * 8.0 - time * 0.17 + vec2<f32>(5.2, 1.3), 3)
-    );
+
+    // Distance-aware LOD: fewer octaves in the periphery
+    let focusDist = length(uv01 - vec2<f32>(0.5));
+    let lodOct = i32(clamp(3.0 - focusDist * 2.0, 1.0, 3.0));
+
+    // Cached fBM: one noise field drives both drift and palette
+    let driftTime = time * 0.2;
+    let noiseBase = warpedUV * 8.0;
+    let driftA = fbm(noiseBase + vec2<f32>(driftTime, 0.0), lodOct);
+    let driftB = fbm(noiseBase + vec2<f32>(5.2 - driftTime * 0.85, 1.3), lodOct);
+    let drift = vec2<f32>(driftA, driftB);
     warpedUV += drift * (0.015 + mids * 0.02);
 
     // Echo displacement from feedback
@@ -144,8 +144,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let echoUV = fract(warpedUV + wobble);
     let echo = textureSampleLevel(dataTextureC, u_sampler, echoUV, 0.0);
 
-    // Psychedelic generative color
-    let paletteT = time * 0.08 + fbm(warpedUV * 5.0 + bass * 0.5, 3) + colorShift;
+    // Psychedelic generative color (reuses cached drift noise)
+    let paletteT = time * 0.08 + driftA * 0.7 + driftB * 0.3 + bass * 0.5 + colorShift;
     let genColor = psychedelicPalette(paletteT) * intensity;
 
     // Depth-aware blend: effect breathes in background, foreground stays crisp
@@ -161,14 +161,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Treble sparkle
     color += hash21(uv01 * 200.0 + time * 3.0) * treble * 1.5;
 
-    // Temporal accumulation
+    // Temporal accumulation with stable branchless feedback
     let prev = textureLoad(dataTextureC, pixel, 0);
     let trailFade = 0.92 - accumulationRate * 0.08;
-    let accColor = mix(prev.rgb, color, 0.08 + accumulationRate * 0.05) * trailFade;
+    let accMix = 0.08 + accumulationRate * 0.05;
+    let accColor = mix(prev.rgb, color, accMix) * trailFade;
 
     // Chromatic aberration + tone map
+    let delta = uv01 - vec2<f32>(0.5);
+    let lenSq = max(dot(delta, delta), 0.000001);
+    let dir = delta * (1.0 / sqrt(lenSq));
     let caStr = 0.0025 * (1.0 + bass) + depth * 0.0015;
-    color = genChromaticShift(accColor, uv01, caStr);
+    let shift = dir * caStr;
+    color = vec3<f32>(accColor.r + shift.x, accColor.g, accColor.b - shift.y * 0.5);
     color = acesToneMap(color * (1.1 + bass * 0.25));
 
     // Semantic alpha: interaction intensity + trail density

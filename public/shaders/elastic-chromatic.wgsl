@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Elastic Chromatic — Visualist Upgrade
+//  Elastic Chromatic — Advanced Alpha Upgrade
 //  Category: distortion
 //  Features: mouse-driven, depth-aware, audio-reactive, chromatic-aberration,
 //            temporal-feedback, split-tone, blackbody-temperature, aces-tone-map,
-//            ign-dither, premultiplied-alpha
+//            ign-dither, premultiplied-alpha, alpha-layered, luminance-key,
+//            accumulative-alpha
 //  Complexity: Medium
 // ═══════════════════════════════════════════════════════════════════
 
@@ -91,6 +92,34 @@ fn chromaticAberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b);
 }
 
+// ── Advanced alpha compositor ──────────────────────────────────────
+fn composeAlpha(
+    intensity: f32,
+    depth: f32,
+    lum: f32,
+    historyA: f32,
+    lag: f32,
+    treble: f32
+) -> f32 {
+    // Depth-layered: distant pixels dissolve
+    let depthAlpha = mix(0.28, 1.0, depth);
+
+    // Luminance-key: suppress smearing in dark regions
+    let lumaAlpha = smoothstep(0.04, 0.26, lum);
+
+    // Effect-intensity base modulated by luminance key
+    let baseAlpha = clamp(intensity * lumaAlpha, 0.06, 0.96);
+
+    // Blend depth layering with intensity
+    let layered = mix(baseAlpha, depthAlpha, 0.3);
+
+    // Accumulative temporal alpha for feedback continuity
+    let accum = ema(layered, historyA, clamp(lag * 0.9, 0.0, MAX_LAG));
+
+    // Treble briefly increases temporal mix for audio reactivity
+    return clamp(mix(layered, accum, 0.45 + treble * 0.1), 0.08, 0.98);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
@@ -132,7 +161,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Chromatic input sample with radial RGB shift
     let caAmount = 0.003 * (1.0 + bass) + depth * 0.002 + chromaticScale * 0.004;
     let source = srgbToLinear(chromaticAberration(uv01, caAmount));
-    let sourceA = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).a;
 
     // Influences
     let influence = mouseInfluence(uv01, mouse, aspect, elasticity);
@@ -151,10 +179,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color.b = ema(source.b, prev.b, lagB);
 
     // Audio-reactive split-tone temperature grading
-    let lum = luma(color);
+    let lumPre = luma(color);
     let shadowK = 2200.0 + depth * 1500.0;
     let highlightK = 5500.0 + bass * 6500.0;
-    let tone = smoothstep(0.18, 0.72, lum);
+    let tone = smoothstep(0.18, 0.72, lumPre);
     let toneColor = mix(blackbodyRGB(shadowK), blackbodyRGB(highlightK), tone);
     color = color * toneColor;
 
@@ -163,14 +191,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let linearOut = acesToneMap(color * (0.95 + treble * 0.15));
 
     // Write linear history for next-frame feedback
-    textureStore(dataTextureA, pixel, vec4<f32>(linearOut, sourceA));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-    // IGN dither + premultiplied semantic alpha
+    // Advanced semantic alpha: depth-layered + luminance-key + accumulative
+    let lum = luma(linearOut);
     let aberration = abs(lagR - lagB) + lissInfluence;
-    let effectAlpha = clamp(0.35 + aberration * 2.0 + treble * 0.1, 0.0, 0.95);
+    let intensity = 0.26 + aberration * 2.2 + treble * 0.12;
+    let effectAlpha = composeAlpha(intensity, depth, lum, prev.a, max(lagR, lagB), treble);
+
     let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
     let srgbOut = linearToSrgb(linearOut) + vec3<f32>(dither);
 
+    textureStore(dataTextureA, pixel, vec4<f32>(linearOut, effectAlpha));
     textureStore(writeTexture, pixel, vec4<f32>(srgbOut * effectAlpha, effectAlpha));
 }

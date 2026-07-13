@@ -2,6 +2,7 @@ import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from
 import { AIStatus, AutoTransitionConfig } from '../../AutoDJ';
 import { VideoRecord } from '../../syncTypes';
 import type { SharedChain } from '../../services/layerChainShare';
+import type { RenderQualityMode } from '../../config/performancePolicy';
 
 export interface ShaderCoordData {
     coordinate: number;
@@ -93,4 +94,14 @@ export interface ControlsProps {
     onTriggerNextTransition?: () => Promise<void> | void;
     onRandomizeSlot?: (slot: number) => void;
     onSetSlotParam?: (slot: number, param: string, value: number) => void;
+    renderQualityMode?: RenderQualityMode;
+    onRenderQualityChange?: (mode: RenderQualityMode) => void;
+    maxActiveSlots?: number;
+    performanceHud?: {
+        internalWidth: number;
+        internalHeight: number;
+        scale: number;
+        targetFps: number;
+        adaptive: boolean;
+    };
 }
