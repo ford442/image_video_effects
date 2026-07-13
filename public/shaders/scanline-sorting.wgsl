@@ -2,10 +2,11 @@
 //  Scanline Sorting
 //  Category: interactive-mouse
 //  Features: mouse-driven, sorting, audio-reactive, palette-mapped,
-//            chromatic-edge, aces-tone-map, early-exit, branchless
+//            chromatic-edge, aces-tone-map, early-exit, branchless,
+//            shared-memory, bitonic-sort
 //  Complexity: Medium
 //  Created: 2026-01-01
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -43,16 +44,17 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 
 fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
 
-fn dimmer(a: vec3<f32>, b: vec3<f32>) -> vec3<f32> {
-    return select(b, a, luma(a) <= luma(b));
-}
+// ── Shared scanline tile ─────────────────────────────────────────
+var<workgroup> s_tile: array<vec3<f32>, 256>;
+var<workgroup> s_active: atomic<u32>;
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>,
+        @builtin(local_invocation_id) local_id: vec3<u32>) {
     // ── Pixel setup ────────────────────────────────────────────────
     let res = u.config.zw;
     let pixel = vec2<i32>(global_id.xy);
-    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+    let inside = pixel.x < i32(res.x) && pixel.y < i32(res.y);
     let uv = vec2<f32>(pixel) / res;
     let time = u.config.x;
 
@@ -82,37 +84,80 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dMouse = length((uv - mouse) * vec2<f32>(aspect, 1.0));
     let cursorBoost = fast_exp(-dMouse * dMouse * 6.0) * (0.4 + mouseDown * 0.6);
 
-    // ── Shared samples ─────────────────────────────────────────────
-    let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    // ── Load one texel per thread into shared tile ─────────────────
+    var original = vec3<f32>(0.0);
+    var depth = 0.0;
+    if (inside) {
+        original = textureLoad(readTexture, pixel, 0).rgb;
+        depth = textureLoad(readDepthTexture, pixel, 0).r;
+    }
 
-    // Early exit: most pixels are outside the band; skip expensive sorting samples
-    if (band_t < EPS) {
-        let alpha = clamp(0.55 + cursorBoost * 0.2 + treble * 0.05, 0.0, 1.0);
-        let finalColor = vec4<f32>(original.rgb, alpha);
-        textureStore(writeTexture, pixel, finalColor);
-        textureStore(dataTextureA, pixel, finalColor);
-        textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let li = local_id.y * 16u + local_id.x;
+    s_tile[li] = original;
+
+    // Zero the activity counter before the tile-wide vote
+    atomicStore(&s_active, 0u);
+
+    // Vote on whether this tile needs sorting at all
+    if (band_t >= EPS && inside) {
+        atomicAdd(&s_active, 1u);
+    }
+    workgroupBarrier();
+
+    let tile_active = atomicLoad(&s_active) > 0u;
+
+    // ── Early tile-wide exit: most tiles are outside the scan band ─
+    if (!tile_active) {
+        if (inside) {
+            let alpha = clamp(0.55 + cursorBoost * 0.2 + treble * 0.05, 0.0, 1.0);
+            let finalColor = vec4<f32>(original.rgb, alpha);
+            textureStore(writeTexture, pixel, finalColor);
+            textureStore(dataTextureA, pixel, finalColor);
+            textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+        }
         return;
     }
 
-    // ── Luminance sort ─────────────────────────────────────────────
-    var color = original.rgb;
-    let lf = luma(color);
+    // ── Bitonic sort of the local 16-pixel scanline ────────────────
+    // Map lane/base to either rows (horizontal) or columns (vertical)
+    let lane = select(local_id.y, local_id.x, direction_toggle > 0.5);
+    let base = select(local_id.y * 16u, local_id.x, direction_toggle > 0.5);
+    let stride = select(16u, 1u, direction_toggle > 0.5);
+
+    for (var stage: u32 = 2u; stage <= 16u; stage = stage << 1u) {
+        for (var step: u32 = stage >> 1u; step > 0u; step = step >> 1u) {
+            let partner = lane ^ step;
+            if (partner > lane) {
+                let idxA = base + lane * stride;
+                let idxB = base + partner * stride;
+                let a = s_tile[idxA];
+                let b = s_tile[idxB];
+                let ascending = (lane & stage) == 0u;
+                let swap = (luma(a) > luma(b)) == ascending;
+                s_tile[idxA] = select(a, b, swap);
+                s_tile[idxB] = select(b, a, swap);
+            }
+            workgroupBarrier();
+        }
+    }
+
+    // ── Luminance sort blend ───────────────────────────────────────
+    var color = original;
+    let lf = luma(original);
     let sort_strength = smoothstep(sort_threshold, 1.0, lf)
                         * (20.0 + bass * 20.0 + mids * 10.0)
                         * (1.0 + cursorBoost);
 
+    let sorted = s_tile[base + lane * stride];
+    let sortMix = band_t * clamp(sort_strength * 0.05, 0.0, 1.0);
+    color = mix(color, sorted, sortMix);
+
+    // ── Chromatic edge shift ───────────────────────────────────────
     let pix = mix(vec2<f32>(0.0, -1.0 / res.y),
                   vec2<f32>(-1.0 / res.x, 0.0),
                   direction_toggle);
     let sample_pos = clamp(uv + pix * sort_strength, vec2<f32>(0.0), vec2<f32>(1.0));
-    let neighbor = textureSampleLevel(readTexture, u_sampler, sample_pos, 0.0).rgb;
 
-    let sorted = dimmer(color, neighbor);
-    color = mix(color, sorted, band_t);
-
-    // ── Chromatic edge shift ───────────────────────────────────────
     let ghost = (1.0 - band_t) * scan_width * 8.0;
     let r_uv = sample_pos + pix * ghost;
     let b_uv = sample_pos - pix * ghost;
@@ -135,7 +180,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                       + cursorBoost * 0.2 + treble * 0.05, 0.0, 1.0);
     let finalColor = vec4<f32>(color, alpha);
 
-    textureStore(writeTexture, pixel, finalColor);
-    textureStore(dataTextureA, pixel, finalColor);
-    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    if (inside) {
+        textureStore(writeTexture, pixel, finalColor);
+        textureStore(dataTextureA, pixel, finalColor);
+        textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    }
 }

@@ -2,9 +2,10 @@
 //  Page Curl Interactive
 //  Category: image
 //  Features: upgraded-rgba, mouse-driven, audio-reactive, temporal,
-//            depth-aware, aces-tone-map, chromatic-aberration, oklab-mix
+//            depth-aware, aces-tone-map, chromatic-aberration, oklab-mix,
+//            lod-noise, branchless-page-mask
 //  Complexity: Medium
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -29,22 +30,30 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+const EPS: f32 = 0.001;
 
-// ── Hash & noise ───────────────────────────────────────────────────
+// ── Hash & LOD noise ───────────────────────────────────────────────
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
 fn valueNoise(p: vec2<f32>) -> f32 {
-  let i = floor(p); let f = fract(p);
+  let i = floor(p);
+  let f = fract(p);
   let u = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
              mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
 
-fn fbm(p: vec2<f32>, oct: i32) -> f32 {
-  var s = 0.0; var a = 0.5; var f = 1.0;
-  for (var i = 0; i < oct; i = i + 1) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; }
+fn fbmLod(p: vec2<f32>, oct: i32) -> f32 {
+  var s = 0.0;
+  var a = 0.5;
+  var f = 1.0;
+  for (var i = 0; i < oct; i = i + 1) {
+    s = s + a * valueNoise(p * f);
+    f = f * 2.0;
+    a = a * 0.5;
+  }
   return s;
 }
 
@@ -57,7 +66,9 @@ fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
   let l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
   let m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
   let s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
-  let l_ = pow(l, 1.0 / 3.0); let m_ = pow(m, 1.0 / 3.0); let s_ = pow(s, 1.0 / 3.0);
+  let l_ = pow(l, 1.0 / 3.0);
+  let m_ = pow(m, 1.0 / 3.0);
+  let s_ = pow(s, 1.0 / 3.0);
   return vec3<f32>(0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
                    1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
                    0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_);
@@ -67,7 +78,9 @@ fn oklab_to_linear_srgb(c: vec3<f32>) -> vec3<f32> {
   let l_ = c.x + 0.3963377774 * c.y + 0.2158037573 * c.z;
   let m_ = c.x - 0.1055613458 * c.y - 0.0638541728 * c.z;
   let s_ = c.x - 0.0894841775 * c.y - 1.2914855480 * c.z;
-  let l = l_ * l_ * l_; let m = m_ * m_ * m_; let s = s_ * s_ * s_;
+  let l = l_ * l_ * l_;
+  let m = m_ * m_ * m_;
+  let s = s_ * s_ * s_;
   return vec3<f32>(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
                   -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
                   -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s);
@@ -85,12 +98,18 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
-  let lum = luma(c);
-  return c * min(1.0, max_lum / max(lum, 1e-4));
+  return c * min(1.0, max_lum / max(luma(c), 1e-4));
 }
 
 fn ign(p: vec2<f32>) -> f32 {
   return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
+fn curlSample(uv: vec2<f32>, off: f32) -> vec3<f32> {
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(off, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(off, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  return vec3<f32>(r, g, b);
 }
 
 // ── Main ───────────────────────────────────────────────────────────
@@ -113,14 +132,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = textureLoad(readDepthTexture, coord, 0).r;
   let prev = textureLoad(dataTextureC, coord, 0);
 
-  let EPSILON = 0.001;
   let snap = 1.0 + bass * 0.4 * step(0.6, bass);
-  let mouse = u.zoom_config.yz;
-  let curlX = clamp(mouse.x, 0.05, 0.95);
+  let curlX = clamp(u.zoom_config.y, 0.05, 0.95);
   let dx = uv.x - curlX;
   let radius = curlRadius * snap;
+  let rSafe = max(radius, EPS);
 
-  // Click shockwaves
+  // Branchless page masks
+  let frontMask = 1.0 - step(0.0, dx);              // dx < 0
+  let curlMask = step(0.0, dx) * (1.0 - step(radius, dx)); // 0 <= dx < radius
+
+  // Click shockwaves (branchless)
   var shockDisp = 0.0;
   let rippleCount = u32(u.config.y);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
@@ -129,54 +151,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rAge = time - rp.z;
     let rRad = rAge * 0.45;
     let rBand = abs(rDist - rRad);
-    let isActive = select(0.0, 1.0, rBand < 0.04 && rAge >= 0.0 && rAge < 1.2);
+    let rippleActive = f32(rBand < 0.04 && rAge >= 0.0 && rAge < 1.2);
     let decay = clamp(1.0 - rAge / 1.2, 0.0, 1.0);
-    shockDisp += isActive * decay * 0.025 * sin(rDist * 40.0 - rAge * 12.0);
+    shockDisp = shockDisp + rippleActive * decay * 0.025 * sin(rDist * 40.0 - rAge * 12.0);
   }
 
-  // Front page
-  let frontSampUV = clamp(uv + vec2<f32>(shockDisp, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-  let frontColor = textureSampleLevel(readTexture, u_sampler, frontSampUV, 0.0);
-  let frontLin = srgb_to_linear(frontColor.rgb);
-  let frontShadow = (1.0 - smoothstep(0.0, max(radius, EPSILON), -dx)) * 0.5
-                    * shadowIntensity * (1.0 + depth * depthInfluence);
-  let frontRGB = frontLin * (1.0 - frontShadow);
+  // Front page (masked shadow)
+  let frontUV = clamp(uv + vec2<f32>(shockDisp, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let frontLin = srgb_to_linear(textureSampleLevel(readTexture, u_sampler, frontUV, 0.0).rgb);
+  let frontShadow = (1.0 - smoothstep(0.0, rSafe, -dx)) * 0.5 * shadowIntensity * (1.0 + depth * depthInfluence);
+  let frontRGB = frontLin * (1.0 - frontShadow * frontMask);
 
-  // Curl cylinder
-  let theta = asin(clamp(dx / max(radius, EPSILON), -1.0, 1.0));
+  // Curl cylinder: only meaningful inside curlMask, kept branchless
+  let theta = asin(clamp(dx / rSafe, -1.0, 1.0)) * curlMask;
   let srcX = clamp(curlX + radius * theta, 0.0, 1.0);
   let srcUV = vec2<f32>(srcX, uv.y);
-  let paperNoise = fbm(srcUV * 40.0 + vec2<f32>(time * 0.01, 0.0), 3) * 0.15;
-  let chromaOff = mids * 0.01;
-  let curlR = textureSampleLevel(readTexture, u_sampler,
-    clamp(srcUV + vec2<f32>(chromaOff, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let curlG = textureSampleLevel(readTexture, u_sampler, srcUV, 0.0).g;
-  let curlB = textureSampleLevel(readTexture, u_sampler,
-    clamp(srcUV - vec2<f32>(chromaOff, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-  var curlLin = srgb_to_linear(vec3<f32>(curlR, curlG, curlB) * 0.55 + vec3<f32>(paperNoise));
 
-  // 3-point lighting on curl: warm key, cool fill, audio-reactive rim
+  // LOD noise: more octaves near the fold, fewer near the back edge
+  let lod = clamp(dx / rSafe, 0.0, 1.0);
+  let oct = select(1, select(2, 3, lod < 0.5), lod < 0.75);
+  let paperNoise = fbmLod(srcUV * 40.0 + vec2<f32>(time * 0.01, 0.0), oct) * 0.15 * curlMask;
+  let chromaOff = mids * 0.01;
+  var curlLin = srgb_to_linear(curlSample(srcUV, chromaOff) * 0.55 + vec3<f32>(paperNoise));
+
+  // 3-point lighting on curl
   let normalZ = cos(theta);
   let key = warmLight(treble) * pow(max(normalZ, 0.0), 2.0) * 0.55;
   let fill = coolLight(0.0) * pow(max(-normalZ * 0.5 + 0.5, 0.0), 2.0) * 0.25;
   let rim = mixOkLab(warmLight(0.0), coolLight(0.0), mids) * pow(1.0 - abs(normalZ), 3.0) * 0.4;
-  curlLin = curlLin * (1.0 + key + fill) + rim;
+  curlLin = curlLin * (1.0 + (key + fill) * curlMask) + rim * curlMask;
 
+  // Fold shadow into curl (previously computed but discarded)
   let foldShadow = smoothstep(0.0, radius * 0.3, dx) * shadowIntensity;
+  curlLin = curlLin * (1.0 - foldShadow * curlMask);
 
   // Background
   let bgDark = vec3<f32>(0.02, 0.025, 0.035);
   let bgEdge = smoothstep(0.0, 0.6, uv.y + sin(uv.x * TAU + time * 0.2) * 0.05);
   let bgLin = mixOkLab(bgDark, vec3<f32>(0.08, 0.1, 0.14), bgEdge * 0.6);
 
-  // Blend zones branchless
-  let isFront = dx < 0.0;
-  let isCurl = dx >= 0.0 && dx < radius;
-  var rgb = mixOkLab(bgLin, curlLin, f32(isCurl));
-  rgb = mixOkLab(rgb, frontRGB, f32(isFront));
+  // Branchless blend: front > curl > background
+  var rgb = mixOkLab(bgLin, curlLin, curlMask);
+  rgb = mixOkLab(rgb, frontRGB, frontMask);
 
-  // Temporal feedback
-  let fbBlend = feedbackAmt * 0.25 * (1.0 - select(0.0, 0.7, isFront));
+  // Temporal feedback (weaker on front page to keep it crisp)
+  let fbBlend = feedbackAmt * 0.25 * (1.0 - frontMask * 0.7);
   var hdr = mix(rgb, prev.rgb, fbBlend);
 
   // Chromatic aberration
@@ -191,7 +210,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dither = (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
   let outRGB = srgb + vec3<f32>(dither);
   let bloomWeight = pow(max(0.0, luma(outRGB) - 0.55), 2.0) * 2.5;
-  let alpha = clamp(max(bloomWeight, 0.85 * (1.0 - f32(isFront) * 0.3)), 0.0, 1.0);
+  let alpha = clamp(max(bloomWeight, 0.85 * (1.0 - frontMask * 0.3)), 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(outRGB * alpha, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

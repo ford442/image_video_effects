@@ -2861,11 +2861,12 @@
   {
     "id": "mosaic-reveal",
     "name": "Mosaic Reveal",
-    "url": "shaders/mosaic-reveal.wgsl",
-    "description": "Mosaic reveal with hexagonal/square grids, flood-fill reveal from the mouse, OkLab perceptual blending, audio-reactive blackbody rim glow, temporal trails, and ACES tone mapping.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/mosaic-reveal.wgsl",
+    "description": "Mosaic reveal with hexagonal/square grids, flood-fill reveal from the mouse, OkLab perceptual blending, audio-reactive blackbody rim glow, temporal trails, ACES tone mapping, and advanced layered alpha compositing.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
+      "alpha-layered",
       "mosaic",
       "interactive-reveal",
       "mouse-driven",
@@ -3777,14 +3778,17 @@
   {
     "id": "polka-dot-reveal",
     "name": "Polka Dot Reveal",
-    "url": "shaders/polka-dot-reveal.wgsl",
-    "description": "Optimized interactive halftone effect with 16x16 workgroups, spring-damped mouse follow, attack/release audio envelope, depth-aware dot radius, per-cell hash jitter to reduce banding, and temporal feedback trails where alpha encodes trail age and interaction intensity.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/polka-dot-reveal.wgsl",
+    "description": "Phase-B advanced-alpha halftone effect with 16x16 workgroups, spring-damped mouse follow, attack/release audio envelope, per-cell hash jitter, and temporal feedback trails. Alpha is now composited through depth-layered fade, luminance keying, edge-preservation, and an interaction-energy boost so the 3-slot chain blends meaningfully.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "temporal",
       "upgraded-rgba",
       "depth-aware",
+      "alpha-layered",
+      "edge-preserve",
+      "luminance-key",
       "optimized"
     ],
     "tags": [
@@ -3794,7 +3798,10 @@
       "audio-reactive",
       "temporal",
       "trails",
-      "depth-aware"
+      "depth-aware",
+      "alpha-layered",
+      "edge-preserve",
+      "luminance-key"
     ],
     "params": [
       {

@@ -2,9 +2,9 @@
 //  Category: geometric
 //  Features: mouse-driven, geometry, upgraded-rgba, fbm-domain-warp,
 //            audio-reactive, seam-warp, chromatic-aberration,
-//            aces-tone-map, temporal-feedback, depth-aware
+//            aces-tone-map, temporal-feedback, depth-aware, alpha-layered
 //  Complexity: Medium
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -30,6 +30,15 @@ struct Uniforms {
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const MIN_ZOOM: f32 = 0.1;
+
+// ── Alpha tuning constants ────────────────────────────────────────
+const LUMA_KEY_LOW: f32 = 0.04;
+const LUMA_KEY_HIGH: f32 = 0.22;
+const DEPTH_FADE_NEAR: f32 = 0.35;
+const DEPTH_FADE_FAR: f32 = 1.0;
+const EFFECT_ALPHA_FLOOR: f32 = 0.25;
+const ALPHA_FLOOR: f32 = 0.12;
+const ALPHA_CEIL: f32 = 0.98;
 
 // ── Canonical noise library ───────────────────────────────────────
 fn hashf(n: f32) -> f32 { return fract(sin(n * 127.1) * 43758.5453); }
@@ -69,6 +78,29 @@ fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32, time: f32) 
         color.g,
         color.b * (1.0 - shift.y * 0.5)
     );
+}
+
+// ── Advanced alpha compositor ─────────────────────────────────────
+// Combines luminance keying, depth layering, effect-intensity fade,
+// and accumulative temporal feedback into a single semantic alpha.
+fn compositeAlpha(lum: f32, depth: f32, warpIntensity: f32,
+                  prevAlpha: f32, bass: f32, treble: f32) -> f32 {
+    // Luminance key: dark pixels become transparent.
+    let lumaAlpha = smoothstep(LUMA_KEY_LOW, LUMA_KEY_HIGH, lum);
+
+    // Depth layering: far pixels hold more weight in the composite.
+    let depthAlpha = mix(DEPTH_FADE_NEAR, DEPTH_FADE_FAR, depth);
+    let sceneAlpha = mix(lumaAlpha, depthAlpha, depth);
+
+    // Effect intensity: heavy warp makes seams more ghostly/transparent.
+    let effectAlpha = clamp(1.0 - warpIntensity * 3.0, EFFECT_ALPHA_FLOOR, 1.0);
+    var a = clamp(sceneAlpha * effectAlpha, 0.15, ALPHA_CEIL);
+
+    // Accumulative feedback: alpha builds and fades like paint over time.
+    let feedback = 0.25 + bass * 0.15;
+    let decay = 0.94 - treble * 0.03;
+    a = mix(prevAlpha * decay, a, feedback);
+    return clamp(a, ALPHA_FLOOR, ALPHA_CEIL);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -136,8 +168,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = vec4<f32>(acesToneMap(color.rgb * (0.9 + mids * 0.2)), color.a);
 
     // ── Semantic alpha & temporal feedback ────────────────────────
-    let seamAlphaReduction = warpShimmer * nearSeam * 2.0;
-    let alpha = clamp(max(0.25, color.a - seamAlphaReduction) * (0.6 + depth * 0.4), 0.2, 0.98);
+    let warpIntensity = warpShimmer * nearSeam;
+    let alpha = compositeAlpha(y, depth, warpIntensity, prev.a, bass, treble);
 
     let decay = 0.96 - treble * 0.02;
     let trail = mix(prev.rgb * decay, color.rgb, 0.2 + bass * 0.1);

@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Temporal RGB Smear — Algorithmist Upgrade
+//  Temporal RGB Smear — Advanced Alpha Compositor Upgrade
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, temporal, depth-aware,
-//            curl-noise, domain-warp, aces-tone-map, semantic-alpha
+//            curl-noise, domain-warp, aces-tone-map, semantic-alpha,
+//            alpha-layered, luminance-key, edge-preserve, accumulative
 //  Complexity: Medium
 // ═══════════════════════════════════════════════════════════════════
 
@@ -96,6 +97,34 @@ fn luma(rgb: vec3<f32>) -> f32 {
     return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
+// ── Advanced alpha compositing ────────────────────────────────────
+fn compositeAlpha(color: vec3<f32>, depth: f32, motion: f32,
+                  displ: f32, split: f32, historyA: f32, decay: f32) -> f32 {
+    let Y = luma(color);
+
+    // Luminance key: dark trails recede
+    let lumaKey = smoothstep(0.03, 0.22, Y);
+
+    // Edge preserve: high motion / gradient regions stay opaque
+    let edgeMask = smoothstep(0.0, 0.08, motion + displ * 5.0);
+
+    // Effect intensity: alpha scales with displacement and chromatic split
+    let effectAlpha = smoothstep(0.0, 0.14, displ + split * 0.6);
+
+    // Depth-layered: far pixels fade to let background breathe
+    let depthAlpha = mix(0.5, 1.0, 1.0 - depth * 0.4);
+
+    // Accumulative paint: previous frame alpha feeds back like pigment
+    let trailAlpha = historyA * decay * 0.96;
+
+    var alpha = lumaKey;
+    alpha = mix(alpha, edgeMask, 0.35);
+    alpha = mix(alpha, effectAlpha, 0.25);
+    alpha = alpha * depthAlpha;
+    alpha = max(alpha, trailAlpha * 0.9);
+    return clamp(alpha, 0.12, 0.98);
+}
+
 // ═══════════════════════════════════════════════════════════════════
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -164,6 +193,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let colB = textureSampleLevel(readTexture, u_sampler, offB, 0.0).b;
     let sampleRGB = vec3<f32>(colR, colG, colB);
 
+    // Effect displacement magnitude drives intensity alpha
+    let displ = length(offG - uv01);
+
     // Temporal feedback with per-channel decay variation
     let smearDecay = mix(0.3, 0.98, p2);
     let fb = clamp(smearDecay * (1.0 + bass * 0.08), 0.0, 0.995);
@@ -174,12 +206,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sparkle = treble * 0.25 * smoothstep(0.25, 0.0, distance(uv01, mouse));
     history += vec3<f32>(sparkle);
 
-    // Store history ping for next frame (pre-tone-map keeps trails lively)
-    textureStore(dataTextureA, pixel, vec4<f32>(history, clamp(luma(history) * 1.5, 0.2, 0.95)));
-
     // Final color: ACES tone map + semantic alpha driven by luma and depth
-    var color = acesToneMap(history * (1.0 + mids * 0.15));
-    let alpha = clamp(luma(color) * 1.6, 0.25, 0.95) * mix(0.75, 1.0, 1.0 - depth * 0.35);
+    let color = acesToneMap(history * (1.0 + mids * 0.15));
+
+    // Layered alpha: luminance key + edge preserve + effect intensity + depth layer + accumulation
+    let alpha = compositeAlpha(color, depth, motionStrength, displ, chromaticSplit, prev.a, smearDecay);
+
+    // Store history ping for next frame, carrying the layered alpha for accumulation
+    textureStore(dataTextureA, pixel, vec4<f32>(history, alpha));
 
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

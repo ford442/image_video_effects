@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Pixel Sand — Batch 4 Visualist Upgrade
+//  Pixel Sand — Phase B Advanced-Hybrid Upgrade
+//  Combined techniques: falling-sand automata + domain-warped FBM
+//  flow field + temporal feedback echo + audio-driven palette
 //  Category: simulation
-//  Features: upgraded-rgba, mouse-driven, audio-reactive, depth-aware,
-//            temporal, aces-tone-map, blackbody-warmth, oklab-mix, ign-dither
 //  Complexity: Medium
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -27,6 +27,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530718;
+
 fn hashf(n: f32) -> f32 { return fract(sin(n * 127.1) * 43758.5453); }
 fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123); }
 fn valueNoise(p: vec2<f32>) -> f32 {
@@ -35,13 +37,19 @@ fn valueNoise(p: vec2<f32>) -> f32 {
   return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
              mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
 }
-fn curlForce(p: vec2<f32>, t: f32) -> vec2<f32> {
-  let eps = 0.05;
-  let n1 = valueNoise(p * 3.0 + vec2<f32>(eps, 0.0) + t * 0.1);
-  let n2 = valueNoise(p * 3.0 - vec2<f32>(eps, 0.0) + t * 0.1);
-  let n3 = valueNoise(p * 3.0 + vec2<f32>(0.0, eps) + t * 0.1);
-  let n4 = valueNoise(p * 3.0 - vec2<f32>(0.0, eps) + t * 0.1);
-  return vec2<f32>((n3 - n4) / (2.0 * eps), -(n1 - n2) / (2.0 * eps));
+fn fbm(p: vec2<f32>, oct: i32) -> f32 {
+  var s = 0.0; var a = 0.5; var f = 1.0;
+  for (var i: i32 = 0; i < oct; i = i + 1) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; }
+  return s;
+}
+fn domainWarp(p: vec2<f32>, strength: f32, oct: i32) -> vec2<f32> {
+  let q = vec2<f32>(fbm(p, oct), fbm(p + vec2<f32>(5.2, 1.3), oct));
+  return p + strength * q;
+}
+fn flowField(uv: vec2<f32>, time: f32, strength: f32) -> vec2<f32> {
+  let w = domainWarp(uv * 4.0 + vec2<f32>(time * 0.1), 0.6, 4);
+  let a = TAU * fract(w.x + w.y);
+  return vec2<f32>(cos(a), sin(a)) * strength;
 }
 fn luma(rgb: vec3<f32>) -> f32 { return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722)); }
 fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
@@ -76,6 +84,9 @@ fn blackbodyRGB(T: f32) -> vec3<f32> {
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
+fn audioPalette(t: f32) -> vec3<f32> {
+  return 0.5 + 0.5 * cos(TAU * (vec3<f32>(t) + vec3<f32>(0.0, 0.33, 0.67)));
+}
 fn ign(p: vec2<f32>) -> f32 { return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715)))); }
 fn readState(cx: i32, cy: i32) -> vec4<f32> {
   let gw = i32(u.config.z); let gh = i32(u.config.w);
@@ -102,6 +113,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var cell = readState(pixel.x, pixel.y);
   let spawnR = hashf(f32(global_id.x) * 73.0 + f32(global_id.y) * 37.0 + 1.0 + time);
 
+  // Domain-warped FBM flow field
+  let flow = flowField(uv01, time, p3 * 0.5);
+
+  // Temporal feedback echo seeds grains from the previous frame
+  let echo = textureSampleLevel(readTexture, u_sampler, uv01 + flow * 0.03, 0.0);
+
   // Warm blackbody spawn under cursor
   let mDist = distance(uv01, mouse);
   let mRad = 0.015 + p3 * 0.06;
@@ -114,6 +131,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (cell.a < 0.5 && vidLuma > 0.5 && spawnR < p2 * 0.3) {
     let hot = blackbodyRGB(3000.0 + treble * 5000.0);
     cell = vec4<f32>(mixOkLab(video.rgb, hot, 0.35) * (1.0 + treble), 1.0);
+  }
+
+  // Feedback echo deposits trailing grains
+  if (cell.a < 0.5 && echo.a > 0.15 && spawnR < p2 * 0.25) {
+    cell = vec4<f32>(echo.rgb * (1.0 + mids * 0.5), 1.0);
   }
 
   // Ripple shockwaves deposit hot grains
@@ -138,8 +160,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var vy = cell.b + grav * (0.04 + p2 * 0.08);
   var vx = cell.g;
 
-  let curl = curlForce(uv01 * 5.0, time) * p3 * 0.5;
-  vx += curl.x; vy += curl.y;
+  vx += flow.x; vy += flow.y;
 
   let toM = mouse - uv01;
   if (mDown && length(toM) < 0.25) { vx += toM.x * 0.15; vy += toM.y * 0.15; }
@@ -175,10 +196,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     cell.g = vx * -bounceDamping; cell.b = vy * -bounceDamping;
   }
 
-  // Color: heat-tint via OkLab, ACES, IGN dither
+  // Color: heat-tint via OkLab, audio palette, ACES, IGN dither
   let speed = sqrt(cell.g * cell.g + cell.b * cell.b);
   let heatTint = blackbodyRGB(2200.0 + particleLuma * 3000.0 + speed * 800.0 + bass * 1200.0);
   var col = mixOkLab(cell.rgb * shade, heatTint, 0.25);
+  col = mix(col, audioPalette(particleLuma + bass + time * 0.05), 0.15 + treble * 0.35);
   col = acesToneMap(col * 1.1);
   col += vec3<f32>((ign(vec2<f32>(pixel.xy)) - 0.5) / 255.0);
 

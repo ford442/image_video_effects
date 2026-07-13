@@ -1,4 +1,4 @@
-import { IRenderer, RendererConfig, ShaderSlotRenderer, GPUTimings, WASMDiagnostics } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
 import { InputSource } from './types';
@@ -14,9 +14,30 @@ type SlotMode = 'chained' | 'parallel';
 /** FFT bins mirrored in extraBuffer[5..132] (matches TS WebGPURenderer). */
 const AUDIO_FFT_BINS = 128;
 
-export type { WASMDiagnostics } from './Renderer';
+/**
+ * Diagnostic information from the WASM renderer.
+ */
+export interface WASMDiagnostics {
+  initialized: boolean;
+  initAttempts: number;
+  errorCount: number;
+  lastErrorTime: string | null;
+  fps: number;
+  hasModule: boolean;
+  adapterInfo: string;
+  /** WebGPURenderer::InitStage of the last Initialize() attempt (0=None, 8=Ready). */
+  failedStage: number;
+  /** Human-readable reason for the last Initialize() failure, or '' if none. */
+  lastInitError: string;
+  /** InitStage name from C++ (e.g. 'Device', 'Surface'). */
+  failedStageName: string;
+  /** Bridge-layer load/init failures (from wasm_bridge.js getDiagnostics). */
+  loadErrorCount: number;
+  lastLoadError: string | null;
+  initTime: string;
+}
 
-export class WASMRenderer implements IRenderer, ShaderSlotRenderer {
+export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   private config: RendererConfig;
   private video: HTMLVideoElement | null = null;
   private animationId: number | null = null;
@@ -120,9 +141,7 @@ export class WASMRenderer implements IRenderer, ShaderSlotRenderer {
    * Must be called before setActiveShader().
    */
   async loadShader(id: string, url: string): Promise<boolean> {
-    const wgsl = await fetchShaderWgsl(id, url);
-    if (!wgsl) return false;
-    return WasmBridge.loadShader(id, wgsl);
+    return WasmBridge.loadShaderFromURL(id, url);
   }
 
   /** Switch to a previously loaded shader (legacy single-shader API). */
@@ -292,10 +311,6 @@ export class WASMRenderer implements IRenderer, ShaderSlotRenderer {
     this.video = video;
   }
 
-  getVideo(): HTMLVideoElement | null {
-    return this.video;
-  }
-
   updateVideoFrame(): void {
     if (!this.usesVideoInput()) return;
     if (!this.video || this.video.readyState < 2) return;
@@ -392,9 +407,7 @@ export class WASMRenderer implements IRenderer, ShaderSlotRenderer {
   }
 
   async reloadShaderFromURL(id: string, url: string): Promise<boolean> {
-    const wgsl = await fetchShaderWgsl(id, url);
-    if (!wgsl) return false;
-    return WasmBridge.reloadShader(id, wgsl);
+    return WasmBridge.reloadShaderFromURL(id, url);
   }
 
   /** Test hook: pin uniforms and render one WASM frame. */

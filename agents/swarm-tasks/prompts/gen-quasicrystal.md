@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: gen-quasicrystal
-- **Agent Role**: Optimizer
+- **Agent Role**: Audio-Reactivity
 - **Current Size**: 1199 bytes
-- **Target Line Count**: ~180 lines
+- **Target Line Count**: ~200 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -41,19 +41,17 @@ struct Uniforms {
 
 ## Current WGSL Source
 ```wgsl
-// ═══ gen-quasicrystal ═══════════════════════════════════════════════
+// ═══ gen-quasicrystal — Algorithmist Upgrade ═══════════════════════════
 //  Category: generative
 //  Features: quasicrystal, n-fold symmetry, projection-method,
-//            audio-reactive, temporal-feedback, anti-moire, neon-glow,
-//            chromatic-aberration, aces-tone-map, semantic-alpha,
-//            slot-chain
-//  Upgraded: 2026-06-14 by The Optimizer
+//            domain-warped FBM, Voronoi texture, audio-reactive,
+//            temporal-feedback, Fresnel gem surfaces, anti-moire,
+//            neon-glow, chromatic-aberration, aces-tone-map, semantic-alpha
+//  Upgraded: 2026-06-28 by The Algorithmist
 // ═══════════════════════════════════════════════════════════════════
-//  Penrose tiling-inspired aperiodic patterns. Upgrades: canonical
-//  13-binding header, bounds guard, resolution-aware LOD anti-moiré,
-//  temporal feedback via dataTextureC, neon glow, generative CA, and
-//  ACES tone mapping with semantic alpha for slot-chain compositing.
-// ═══════════════════════════════════════════════════════════════════
+//  Penrose tiling-inspired aperiodic patterns with enhanced mathematical
+//  depth: domain-warped FBM, Voronoi/Worley noise, Fresnel gem surfaces,
+//  and physical light transport for crystalline appearance.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -78,6 +76,7 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+const PHI: f32 = 1.618033988749894;
 
 // ── Core helpers ──────────────────────────────────────────────────
 fn luma(rgb: vec3<f32>) -> f32 {
@@ -113,29 +112,135 @@ fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32) -> vec3<f32
     );
 }
 
-// ── Quasicrystal ──────────────────────────────────────────────────
-fn quasicrystal(uv: vec2<f32>, n: i32, t: f32, angle: f32) -> f32 {
+// ── Hash / Noise ──
+fn h2(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(127.1, 311.7));
+    q += dot(q, q + 19.19);
+    return fract(q.x * q.y);
+}
+fn h3(p: vec3<f32>) -> f32 {
+    var q = fract(p * vec3<f32>(127.1, 311.7, 74.7));
+    q += dot(q, q + 19.19);
+    return fract(q.x * q.y * q.z);
+}
+
+fn vnoise2(p: vec2<f32>) -> f32 {
+    let i = floor(p); let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(h2(i), h2(i+vec2<f32>(1,0)), u.x),
+               mix(h2(i+vec2<f32>(0,1)), h2(i+vec2<f32>(1,1)), u.x), u.y);
+}
+
+fn fbm_dw(p: vec2<f32>, t: f32) -> f32 {
+    var v = 0.0; var a = 0.5; var pp = p;
+    for (var i = 0; i < 5; i++) {
+        v += a * vnoise2(pp);
+        let warp = v * 0.3;
+        pp = pp * 2.1 + vec2<f32>(1.7 + warp, 9.2 - warp) + vec2<f32>(t * 0.01, -t * 0.007);
+        a *= 0.5;
+    }
+    return v;
+}
+
+// ── Voronoi / Worley Noise ──
+fn voronoi(p: vec2<f32>) -> vec2<f32> {
+    let i = floor(p);
+    let f = fract(p);
+    var minDist = 999.0;
+    var secondDist = 999.0;
+    var cellId = vec2<f32>(0.0);
+    for (var y: i32 = -1; y <= 1; y++) {
+        for (var x: i32 = -1; x <= 1; x++) {
+            let neighbor = vec2<f32>(f32(x), f32(y));
+            let point = neighbor + vec2<f32>(h2(i + neighbor), h2(i + neighbor + 7.31));
+            let diff = neighbor + point - f;
+            let d = dot(diff, diff);
+            if (d < minDist) {
+                secondDist = minDist;
+                minDist = d;
+                cellId = i + neighbor;
+            } else if (d < secondDist) {
+                secondDist = d;
+            }
+        }
+    }
+    return vec2<f32>(sqrt(minDist), sqrt(secondDist));
+}
+
+fn voronoi3(p: vec3<f32>) -> vec2<f32> {
+    let i = floor(p);
+    let f = fract(p);
+    var minDist = 999.0;
+    var secondDist = 999.0;
+    for (var z: i32 = -1; z <= 1; z++) {
+        for (var y: i32 = -1; y <= 1; y++) {
+            for (var x: i32 = -1; x <= 1; x++) {
+                let neighbor = vec3<f32>(f32(x), f32(y), f32(z));
+                let point = neighbor + vec3<f32>(h3(i + neighbor), h3(i + neighbor + 7.31), h3(i + neighbor + 13.17));
+                let diff = neighbor + point - f;
+                let d = dot(diff, diff);
+                if (d < minDist) {
+                    secondDist = minDist;
+                    minDist = d;
+                } else if (d < secondDist) {
+                    secondDist = d;
+                }
+            }
+        }
+    }
+    return vec2<f32>(sqrt(minDist), sqrt(secondDist));
+}
+
+// ── Fresnel-Schlick for gem surfaces ──
+fn fresnelSchlick(cosTheta: f32, f0: vec3<f32>) -> vec3<f32> {
+    return f0 + (vec3<f32>(1.0) - f0) * pow(1.0 - cosTheta, 5.0);
+}
+
+// ── Enhanced Quasicrystal with n-fold symmetry ──
+fn quasicrystal(uv: vec2<f32>, n: i32, t: f32, angle: f32, warp: f32) -> f32 {
     var value = 0.0;
     let invN = 1.0 / f32(n);
     for (var i: i32 = 0; i < n; i = i + 1) {
         let theta = angle + TAU * f32(i) * invN;
-        value += cos(dot(uv, vec2<f32>(cos(theta), sin(theta))) * 10.0 + t);
+        let freq = 10.0 + warp * sin(t * 0.1 + f32(i) * 0.5);
+        value += cos(dot(uv, vec2<f32>(cos(theta), sin(theta))) * freq + t * (1.0 + f32(i) * 0.1));
     }
     return value * invN;
 }
 
-// Branchless tri-color metallic cycle
-fn metallicColor(pattern: f32, t: f32) -> vec3<f32> {
+// ── Enhanced quasicrystal with second-order harmonics ──
+fn quasicrystal2(uv: vec2<f32>, n: i32, t: f32, angle: f32) -> f32 {
+    let q1 = quasicrystal(uv, n, t, angle, 1.0);
+    let q2 = quasicrystal(uv * 1.618, n, t * 0.7, angle + PI * 0.1, 0.5);
+    let q3 = quasicrystal(uv * 0.618, n, t * 1.3, angle - PI * 0.05, 0.3);
+    return q1 * 0.6 + q2 * 0.3 + q3 * 0.1;
+}
+
+// Branchless tri-color metallic cycle with audio reactivity
+fn metallicColor(pattern: f32, t: f32, bass: f32) -> vec3<f32> {
     let gold   = vec3<f32>(1.0, 0.84, 0.0);
     let silver = vec3<f32>(0.75, 0.75, 0.75);
     let bronze = vec3<f32>(0.8, 0.5, 0.2);
-    let m = fract(pattern + t * 0.05) * 3.0;
+    let m = fract(pattern + t * 0.05 + bass * 0.2) * 3.0;
     let s1 = step(1.0, m);
     let s2 = step(2.0, m);
     let c0 = mix(gold, silver, m);
     let c1 = mix(silver, bronze, m - 1.0);
     let c2 = mix(bronze, gold, m - 2.0);
     return mix(mix(c0, c1, s1), c2, s2);
+}
+
+// Gem-like Fresnel surface color
+fn gemColor(normal: vec3<f32>, viewDir: vec3<f32>, baseColor: vec3<f32>, t: f32) -> vec3<f32> {
+    let cosTheta = max(dot(normal, viewDir), 0.0);
+    let f0 = vec3<f32>(0.17, 0.35, 0.45); // Gem-like F0
+    let fresnel = fresnelSchlick(cosTheta, f0);
+    let dispersion = vec3<f32>(
+        1.0 + 0.1 * sin(t * 0.3),
+        1.0 + 0.05 * sin(t * 0.3 + 1.0),
+        1.0 + 0.15 * sin(t * 0.3 + 2.0)
+    );
+    return baseColor * (1.0 - fresnel) + fresnel * dispersion;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -149,8 +254,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time  = u.config.x;
     let bass  = plasmaBuffer[0].x;
     let mids  = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let depthIn = textureLoad(readDepthTexture, pixel, 0).r;
     let prev  = textureLoad(dataTextureC, pixel, 0);
+
+    // Mouse Y-flip: screen-top = +Y/up
+    let mouseY = 1.0 - u.zoom_config.z;
+    let mousePos = vec2<f32>(u.zoom_config.y, mouseY);
 
     let symmetry   = i32(mix(5.0, 13.0, u.zoom_params.x));
     let density    = mix(3.0, 15.0, u.zoom_params.y);
@@ -162,36 +272,55 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shimmerFreq  = mix(10.0, 6.0, smoothstep(8.0, 14.0, density));
 
     var p = uv * density * densityScale;
-    p = rot2(time * 0.05 + projAngle) * p;
+    // Mouse warps the crystal field
+    let mouseWarp = (mousePos - 0.5) * 2.0;
+    p = rot2(time * 0.05 + projAngle + bass * 0.1) * p;
+    p += mouseWarp * 0.1 * sin(time * 0.3);
 
-    // Primary + secondary quasicrystal layers
-    let qc = quasicrystal(p, symmetry, time * 0.2, projAngle);
+    // Domain-warped background
+    let bgWarp = fbm_dw(p * 2.0 + time * 0.02, time);
+    p += bgWarp * 0.05;
+
+    // Primary + secondary quasicrystal layers with enhanced harmonics
+    let qc = quasicrystal2(p, symmetry, time * 0.2, projAngle);
     let pattern = smoothstep(-0.2, 0.2, qc);
 
-    let qc2 = quasicrystal(p * 1.5 + 0.5, symmetry, time * 0.15, projAngle + 0.1);
+    let qc2 = quasicrystal2(p * 1.5 + 0.5, symmetry, time * 0.15, projAngle + 0.1);
     let pattern2 = smoothstep(-0.1, 0.1, qc2);
 
-    // Metallic base with audio reactivity
-    var col = metallicColor(qc + qc2, time * colorCycle) * (1.0 + bass * 0.3);
+    // Metallic base with audio reactivity and gem-like Fresnel
+    let metallicBase = metallicColor(qc + qc2, time * colorCycle, bass);
+    let viewDir = normalize(vec3<f32>(uv, 1.0));
+    let crystalNormal = normalize(vec3<f32>(qc, qc2, 1.0));
+    var col = gemColor(crystalNormal, viewDir, metallicBase, time) * (1.0 + bass * 0.3 + treble * 0.1);
 
-    // Gem accents — compact branchless palette
-    let gemLocations = fract(qc * 5.0 + qc2 * 3.0);
+    // Gem accents with Voronoi texture
+    let gemVoro = voronoi(p * 8.0 + time * 0.05);
+    let gemLocations = fract(qc * 5.0 + qc2 * 3.0 + gemVoro.x);
     let gemMask = smoothstep(0.48, 0.5, gemLocations) * smoothstep(0.52, 0.5, gemLocations);
-    let gemIdx = i32(fract(qc * 10.0) * 5.0);
+    let gemIdx = i32(fract(qc * 10.0 + gemVoro.x) * 5.0);
     let gemPal = array<vec3<f32>, 5>(
         vec3<f32>(0.9, 0.1, 0.2), vec3<f32>(0.1, 0.6, 0.9),
         vec3<f32>(0.1, 0.8, 0.3), vec3<f32>(0.9, 0.5, 0.1),
         vec3<f32>(0.7, 0.2, 0.8)
     );
-    col = mix(col, gemPal[gemIdx], gemMask * 0.6);
+    let gemFresnel = fresnelSchlick(max(dot(crystalNormal, viewDir), 0.0), vec3<f32>(0.1, 0.2, 0.3));
+    col = mix(col, gemPal[gemIdx] * (1.0 + gemFresnel), gemMask * 0.6);
 
-    // Edge highlights
+    // Edge highlights with Voronoi crackle
     let edgeMask = smoothstep(0.05, 0.0, abs(qc));
-    col += vec3<f32>(1.0, 0.95, 0.8) * edgeMask * 0.4;
+    let crackle = smoothstep(0.02, 0.0, gemVoro.y - gemVoro.x);
+    col += vec3<f32>(1.0, 0.95, 0.8) * edgeMask * 0.4 * (1.0 + crackle);
 
-    // Subtle shimmer
+    // Subtle shimmer with domain-warped FBM
     let shimmer = sin(p.x * shimmerFreq * 2.0 + time) * sin(p.y * shimmerFreq * 2.0 + time * 1.3);
-    col += vec3<f32>(0.02) * shimmer;
+    let shimmerDetail = fbm_dw(p * 4.0 + time * 0.1, time);
+    col += vec3<f32>(0.02, 0.015, 0.025) * shimmer * (1.0 + shimmerDetail);
+
+    // Voronoi-based surface texture
+    let voroSurface = voronoi(p * 3.0 + time * 0.02);
+    let surfaceBump = smoothstep(0.05, 0.0, voroSurface.x) * 0.1;
+    col += surfaceBump * vec3<f32>(0.9, 0.85, 0.7);
 
     // Vignette
     col *= 1.0 - length(uv01 - 0.5) * 0.5;
@@ -207,7 +336,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let trail = mix(prev.rgb * decay, col, 0.25 + bass * 0.1);
 
     // Depth-aware semantic alpha
-    let depth = pattern * 0.5 + pattern2 * 0.3;
+    let depth = pattern * 0.5 + pattern2 * 0.3 + gemMask * 0.2;
     let bloom = smoothstep(0.5, 1.2, luma(col));
     let alpha = clamp(luma(trail) * 1.2 + depth * 0.2, 0.25, 0.95);
 
@@ -224,8 +353,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 {
   "id": "gen-quasicrystal",
   "name": "Quasicrystal",
-  "url": "shaders/gen-quasicrystal.wgsl",
-  "description": "Penrose tiling-inspired quasicrystal patterns with n-fold symmetry using the projection method from higher-dimensional lattices",
+  "category": "generative",
   "tags": [
     "generative",
     "quasicrystal",
@@ -234,163 +362,94 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     "procedural",
     "audio",
     "music",
-    "reactive"
+    "reactive",
+    "domain-warping",
+    "voronoi",
+    "fresnel",
+    "gem"
   ],
-  "features": [
-    "generative",
-    "animated",
-    "audio-reactive",
-    "temporal",
-    "upgraded-rgba",
-    "aces-tone-map",
-    "chromatic-aberration",
-    "neon-glow",
-    "anti-moire"
+  "description": "Penrose tiling-inspired quasicrystal patterns with n-fold symmetry using the projection method from higher-dimensional lattices. Upgraded with domain-warped FBM, Voronoi/Worley noise, Fresnel-Schlick gem surfaces, enhanced harmonics, and deep audio reactivity.",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "symmetry",
+      "index": 0,
       "name": "Symmetry Order",
       "default": 0,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "density",
+      "index": 1,
       "name": "Pattern Density",
       "default": 0.6,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "colorCycle",
+      "index": 2,
       "name": "Color Cycling",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "projAngle",
+      "index": 3,
       "name": "Projection Angle",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "url": "shaders/gen-quasicrystal.wgsl",
+  "features": []
 }
-
 ```
 
 ---
 
 ## Agent Specialization
-# Agent Role: The Optimizer
+# Agent Role: Audio Reactivity Specialist (Phase B)
 
 ## Identity
-You are **The Optimizer**, a shader architect focused on performance, elegance, and pipeline integration.
+You are the **Audio Reactivity Specialist**. Your job is to make shaders respond musically to the audio stream already bound to `plasmaBuffer`.
 
-## Upgrade Toolkit
+## Audio Binding (canonical)
+```wgsl
+let bass   = plasmaBuffer[0].x;  // 20–200 Hz, ~0–2
+let mids   = plasmaBuffer[0].y;  // 200–2000 Hz, ~0–2
+let treble = plasmaBuffer[0].z;  // 2k–20k Hz, ~0–2
+```
 
-### Performance Techniques
-- Brute force → Early exit conditions
-- Full resolution → Quarter-res blur + full-res combine
-- Per-pixel pseudo-random → **Blue noise or Halton sequence** (same cost, less banding)
-- Redundant texture samples → Bilinear LOD
-- Nested loops → Unrolled small kernels
-- Expensive trig → Precomputed or polynomial approximations:
+## Patterns
+- **Bass pulse**: scale/brightness/intensity *= `1.0 + bass * 0.5`.
+- **Mids morph**: rotation speed, pattern evolution, color cycling *= `1.0 + mids * 0.5`.
+- **Treble sparkle**: add high-frequency detail or shimmer.
+- **Envelope smoothing** (preferred over raw bass):
   ```wgsl
-  // Fast atan2 approximation (max error ~0.0015 rad)
-  fn fast_atan2(y: f32, x: f32) -> f32 {
-      let a = min(abs(x), abs(y)) / (max(abs(x), abs(y)) + 1e-6);
-      let s = a * a;
-      var r = ((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a;
-      if (abs(y) > abs(x)) { r = 1.5707963 - r; }
-      if (x < 0.0) { r = 3.1415927 - r; }
-      if (y < 0.0) { r = -r; }
-      return r;
+  fn bass_env(prev: f32, bass: f32) -> f32 {
+      let k = select(0.15, 0.8, bass > prev);
+      return mix(prev, bass, k);
   }
-  // Fast exp approximation
-  fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
   ```
-
-#### 7-tap hex bokeh kernel (perceptually equals 19-tap circular at lower cost)
-```wgsl
-const HEX_TAPS = array<vec2<f32>, 7>(
-    vec2<f32>( 0.0,  0.0),
-    vec2<f32>( 1.0,  0.0), vec2<f32>( 0.5,  0.866),
-    vec2<f32>(-0.5,  0.866), vec2<f32>(-1.0,  0.0),
-    vec2<f32>(-0.5, -0.866), vec2<f32>( 0.5, -0.866),
-);
-```
-Use for radial-blur, DOF, and glow shaders. Scale each tap by `radius / res` before sampling `readTexture`.
-
-#### Anti-moiré LOD bias for procedural noise
-```wgsl
-let lod = clamp(log2(max(fwidth(uv).x, fwidth(uv).y) * cell_freq), 0.0, 4.0);
-let p = uv * (cell_freq * exp2(-lod));
-```
-Kills the shimmer that plagues high-frequency procedural patterns (fractal / kaleidoscope shaders) when zoomed out. `cell_freq` is the base tile frequency.
-
-### Workgroup Shared Memory (tiling pattern for blur/filter kernels)
-```wgsl
-var<workgroup> tile: array<array<vec4<f32>, 18>, 18>; // 16x16 + 1px border
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>,
-        @builtin(local_invocation_id) lid: vec3<u32>) {
-    // Load tile including borders, then sync
-    tile[lid.y+1][lid.x+1] = textureSampleLevel(readTexture, u_sampler,
-        vec2<f32>(gid.xy) / vec2<f32>(u.config.zw), 0.0);
-    workgroupBarrier();
-    // All accesses to tile[] now L1-cached — no global texture reads in hot loop
-}
-```
-
-### Code Elegance
-- Magic numbers → Named constants (see Algorithmist for PI/TAU/PHI/etc.)
-- Duplicated code → Helper functions
-- Long functions → Logical sections with comments
-- Hard-coded params → Uniform-based tuning via `zoom_params`
-- GPU-unfriendly ops → Precomputed lookups
-
-### Pipeline Integration
-- Standalone → Designed for slot chaining
-- No feedback → Uses dataTextureA/B for state
-- LDR only → HDR output ready for tone map
-- Single pass → Multi-pass decomposition hint
-- Fixed quality → Level-of-detail scaling
-
-### Post-Process Ready
-- Expose bloom threshold via alpha channel (`alpha = bloom_weight`)
-- Tag as "expects pp-tone-map" if HDR
-- Document slot recommendations
-- Provide quality presets (low/medium/high)
-
-## Quality Checklist
-- [ ] No per-pixel branching on uniforms
-- [ ] Texture samples minimized (caching used)
-- [ ] Workgroup size optimized (16x16 for Pixelocity)
-- [ ] Early exit for sky/background pixels
-- [ ] LOD quality scaling based on frame time
-- [ ] Anti-moiré LOD bias applied for high-frequency procedural patterns
-- [ ] Hex bokeh kernel used in place of naive circular sampling where applicable
+  Store `prev` in `dataTextureA.r` if the shader has free feedback.
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it production-ready.
-- Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
-- Do NOT modify the 13-binding header or the Uniforms struct.
-- Preserve or enhance RGBA channel usage.
-- Add JSON params if new tunable values are introduced (max 4 params mapped to zoom_params).
-
-## Performance Constraint
-This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
+- Add at least one musically coherent audio-driven parameter.
+- Update JSON `features` to include `audio-reactive`.
+- Do NOT modify the 13-binding header or `Uniforms` struct.
+- Workgroup size stays `@workgroup_size(16, 16, 1)`.
+- Return exactly one ```` ```wgsl ```` block.
 
 
 ---
@@ -399,7 +458,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 180 lines (±20%).
+4. Ensure the upgraded shader is roughly 200 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

@@ -939,8 +939,8 @@
   {
     "id": "elastic-chromatic",
     "name": "Elastic Chromatic",
-    "url": "shaders/elastic-chromatic.wgsl",
-    "description": "Elastic chromatic aberration with radial RGB shift, per-channel temporal lag, Lissajous mouse source, depth-aware audio reactivity, split-tone blackbody grading, ACES tone mapping and IGN dither.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/elastic-chromatic.wgsl",
+    "description": "Elastic chromatic aberration with radial RGB shift, per-channel temporal lag, Lissajous mouse source, depth-aware audio reactivity, split-tone blackbody grading, ACES tone mapping, IGN dither and advanced layered alpha compositing.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -952,7 +952,10 @@
       "blackbody-temperature",
       "aces-tone-map",
       "ign-dither",
-      "premultiplied-alpha"
+      "premultiplied-alpha",
+      "alpha-layered",
+      "luminance-key",
+      "accumulative-alpha"
     ],
     "params": [
       {
@@ -1005,7 +1008,9 @@
       "mouse-driven",
       "hdr",
       "dither",
-      "split-tone"
+      "split-tone",
+      "alpha-layered",
+      "luminance-key"
     ]
   },
   {
@@ -2231,8 +2236,8 @@
   {
     "id": "temporal-rgb-smear",
     "name": "Temporal RGB Smear",
-    "url": "shaders/temporal-rgb-smear.wgsl",
-    "description": "Directional RGB smear with curl-noise velocity field, domain-warped drift, Halton-jittered chromatic sampling, temporal feedback decay, ACES tone mapping, and semantic trail alpha.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-rgb-smear.wgsl",
+    "description": "Directional RGB smear with curl-noise velocity field, domain-warped drift, Halton-jittered chromatic sampling, temporal feedback decay, ACES tone mapping, and advanced layered alpha compositing (luminance key, edge preserve, effect intensity, depth layer, accumulative trails).",
     "params": [
       {
         "id": "smear_length",
@@ -2283,7 +2288,11 @@
       "curl-noise",
       "domain-warp",
       "aces-tone-mapping",
-      "semantic-alpha"
+      "semantic-alpha",
+      "alpha-layered",
+      "luminance-key",
+      "edge-preserve",
+      "accumulative"
     ],
     "tags": [
       "filter",
@@ -2296,7 +2305,11 @@
       "curl-noise",
       "domain-warp",
       "depth-aware",
-      "tone-mapping"
+      "tone-mapping",
+      "alpha-layered",
+      "luminance-key",
+      "edge-preserve",
+      "accumulative"
     ]
   },
   {
@@ -2367,7 +2380,12 @@
       "depth-aware",
       "aces-tone-map",
       "chromatic-aberration",
-      "semantic-alpha"
+      "semantic-alpha",
+      "raymarching",
+      "sdf",
+      "early-exit",
+      "lod-noise",
+      "branchless"
     ],
     "params": [
       {

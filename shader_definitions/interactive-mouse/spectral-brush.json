@@ -11,9 +11,11 @@
     "chromatic-aberration",
     "aces-tone-mapped",
     "premultiplied-alpha",
+    "alpha-layered",
+    "luminance-key",
     "upgraded-rgba"
   ],
-  "description": "Paints a spectral blackbody flame that follows the mouse, blended in OkLab and split-toned. Audio bass inflates the brush and bloom, while chromatic separation and depth diffusion add atmosphere.",
+  "description": "Paints a spectral blackbody flame that follows the mouse, blended in OkLab and split-toned. Audio bass inflates the brush and bloom, while chromatic separation, depth diffusion, and alpha-layered luminance-key compositing add atmosphere.",
   "params": [
     {
       "id": "brush-size",

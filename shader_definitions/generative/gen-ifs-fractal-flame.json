@@ -8,9 +8,11 @@
     "organic",
     "fire",
     "bloom",
-    "abstract"
+    "abstract",
+    "translucent",
+    "alpha-layered"
   ],
-  "description": "Iterated Function System fractal flame with probabilistic affine transforms, non-linear variations, and flame palette rendering. Features organic fbm drift, temporal accumulation trails, HDR bloom, chromatic aberration, and audio-reactive morphing.",
+  "description": "Iterated Function System fractal flame with probabilistic affine transforms, non-linear variations, and flame palette rendering. Features organic fbm drift, temporal accumulation trails, HDR bloom, chromatic aberration, audio-reactive morphing, and advanced alpha compositing via Beer-Lambert transmittance, luminance keying, and depth-layered fade.",
   "workgroup_size": [
     16,
     16,
@@ -55,5 +57,10 @@
   "updated": true,
   "id": "gen-ifs-fractal-flame",
   "url": "shaders/gen-ifs-fractal-flame.wgsl",
-  "features": []
+  "features": [
+    "depth-aware",
+    "alpha-layered",
+    "temporal-feedback",
+    "audio-reactive"
+  ]
 }
