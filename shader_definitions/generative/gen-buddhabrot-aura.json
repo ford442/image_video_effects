@@ -10,7 +10,9 @@
     "mouse-interactive",
     "orbit-trap",
     "HDR",
-    "bloom"
+    "bloom",
+    "temporal",
+    "attack-release"
   ],
   "description": "Upgraded Buddhabrot fractal with proper escaping-orbit trajectory accumulation, importance sampling, orbit-trap iridescence, HDR bloom, ACES tone mapping, and chromatic aberration on high-density regions. Bass drives orbit iteration count, mouse zooms into fractal regions, and depth controls orbit density perspective.",
   "workgroup_size": [
@@ -57,5 +59,10 @@
   "updated": true,
   "id": "gen-buddhabrot-aura",
   "url": "shaders/gen-buddhabrot-aura.wgsl",
-  "features": []
+  "features": [
+    "mouse-gravity-well",
+    "click-shockwaves",
+    "attack-release-envelopes",
+    "temporal-feedback"
+  ]
 }

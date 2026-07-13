@@ -56,5 +56,18 @@
   "updated": true,
   "id": "gen-aperiodic-monotile",
   "url": "shaders/gen-aperiodic-monotile.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-rotation",
+    "chromatic-edge-bloom",
+    "bass-scale-pulse",
+    "edge-glow",
+    "hex-bokeh",
+    "semantic-alpha",
+    "lod-scaling",
+    "branchless-hot-path"
+  ]
 }

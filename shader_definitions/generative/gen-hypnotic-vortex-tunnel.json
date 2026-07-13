@@ -56,5 +56,13 @@
   "updated": true,
   "id": "gen-hypnotic-vortex-tunnel",
   "url": "shaders/gen-hypnotic-vortex-tunnel.wgsl",
-  "features": []
+  "features": [
+    "hdr-aces",
+    "oklab-mix",
+    "blackbody-temperature",
+    "fresnel-rim",
+    "atmospheric-fog",
+    "volumetric-glow",
+    "hue-preserving-clamp"
+  ]
 }

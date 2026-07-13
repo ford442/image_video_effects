@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Buddhabrot Aura
 //  Category: generative
-//  Features: buddhabrot, fractal, generative, audio-reactive, mouse-interactive, semantic-alpha, upgraded-rgba, temporal
+//  Features: buddhabrot, fractal, generative, audio-reactive, mouse-interactive,
+//            semantic-alpha, upgraded-rgba, temporal, mouse-gravity-well,
+//            click-shockwaves, attack-release-envelopes
 //  Complexity: Very High
 //  Created: 2026-05-30
-//  Updated: 2026-06-01
+//  Updated: 2026-07-13
 //  By: Kimi Agent (4-Agent Swarm Upgrade)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -29,6 +31,8 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const TAU: f32 = 6.28318530718;
+
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   let h = vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)));
   return fract(sin(h) * 43758.5453123);
@@ -46,10 +50,32 @@ fn orbitTrapColor(z: vec2<f32>, trapCenter: vec2<f32>) -> vec3<f32> {
   return vec3<f32>(t * 1.2, t * t * 0.9, t * t * t * 1.4);
 }
 
+// Attack/release envelope follower — state carried through dataTextureC -> dataTextureA
+fn envFollow(prev: f32, raw: f32, attack: f32, release: f32) -> f32 {
+    let delta = raw - prev;
+    let rate = select(release, attack, delta > 0.0);
+    return clamp(prev + delta * rate, 0.0, 2.0);
+}
+
+// Click bursts / shockwaves from ripple buffer
+fn shockwave(uv: vec2<f32>, time: f32) -> f32 {
+    var shock = 0.0;
+    for (var i: i32 = 0; i < 50; i = i + 1) {
+        let rp = u.ripples[i];
+        let rippleActive = rp.w > 0.001 && rp.z > 0.0;
+        let age = max(time - rp.z, 0.0);
+        let d = length(uv - rp.xy);
+        let wave = rp.w * exp(-age * 1.8) * exp(-(d - age * 0.22) * (d - age * 0.22) / 0.003);
+        shock = shock + wave * f32(rippleActive);
+    }
+    return clamp(shock, 0.0, 1.0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+  let pixel = vec2<i32>(global_id.xy);
 
   let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
   let uv01 = vec2<f32>(global_id.xy) / resolution;
@@ -58,18 +84,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
+  // Envelope state carried through dataTextureC -> dataTextureA
+  let prevData = textureLoad(dataTextureC, pixel, 0);
+  let eBass   = envFollow(prevData.r, bass,   0.28, 0.035);
+  let eMids   = envFollow(prevData.g, mids,   0.24, 0.04);
+  let eTreble = envFollow(prevData.b, treble, 0.30, 0.03);
+
   let orbitThreshold = u.zoom_params.x;
   let densityScale = u.zoom_params.y;
   let mouseZoom = u.zoom_params.z;
   let aura = u.zoom_params.w;
 
   let mouse = u.zoom_config.yz;
+  let mouseDown = u.zoom_config.w > 0.5;
   let mouseC = (mouse - 0.5) * 2.2 * mouseZoom;
   let depth = smoothstep(0.0, 1.0, u.config.w / resolution.y);
 
-  let baseIter = i32(20.0 + orbitThreshold * 120.0 + bass * 40.0);
+  // Mouse gravity well warps iteration budget and focal center
+  let mouseVec = uv01 - mouse;
+  let mouseDist = length(mouseVec);
+  let gravity = 1.0 / (mouseDist + 0.1);
+  let gravityWell = clamp(gravity * 0.06, 0.0, 1.0);
+  let shock = shockwave(uv01, time) * (1.0 + f32(mouseDown) * 0.5);
+
+  let baseIter = i32(20.0 + orbitThreshold * 120.0 + eBass * 40.0 + gravityWell * 30.0);
   let scale = 2.0 + mouseZoom * 2.0;
-  let center = uv * scale + mouseC;
+  let center = uv * scale + mouseC + normalize(mouseVec + vec2<f32>(0.0001)) * gravityWell * 0.15;
 
   var density = 0.0;
   var escapeVel = 0.0;
@@ -104,8 +144,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       if (dist > 4.0) {
         escapeVel = escapeVel + 1.0;
         let esc = f32(i) / f32(baseIter);
-        density += esc * (1.0 + bass * 0.5);
-        bloom += orbit * esc * esc * (0.3 + treble * 0.4);
+        density += esc * (1.0 + eBass * 0.5);
+        bloom += orbit * esc * esc * (0.3 + eTreble * 0.4);
         break;
       }
     }
@@ -119,32 +159,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let dMap = density * densityScale * 3.0;
   let nebula = vec3<f32>(
-    fract(dMap * 1.6 + mids * 0.25 + time * 0.02),
-    fract(dMap * 1.05 + treble * 0.15),
-    fract(dMap * 0.7 + bass * 0.12 + time * 0.015)
+    fract(dMap * 1.6 + eMids * 0.25 + time * 0.02),
+    fract(dMap * 1.05 + eTreble * 0.15),
+    fract(dMap * 0.7 + eBass * 0.12 + time * 0.015)
   );
 
   var color = mix(nebula, orbitColor, 0.35) * (0.5 + aura * 1.2);
   color += bloom * aura * 2.5;
+  color = color + vec3<f32>(0.4, 0.5, 0.7) * shock * 0.5;
 
   let centerGlow = length(uv - mouseC * 0.25);
-  color += vec3<f32>(0.2, 0.15, 0.35) * smoothstep(0.9, 0.15, centerGlow) * aura * (0.6 + bass * 0.4);
+  color += vec3<f32>(0.2, 0.15, 0.35) * smoothstep(0.9, 0.15, centerGlow) * aura * (0.6 + eBass * 0.4);
+
+  // Temporal feedback trail via readTexture
+  let prevColor = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb;
+  let decay = 0.94 - aura * 0.02;
+  let trailBlend = 0.18 + eBass * 0.12 + shock * 0.15;
+  color = mix(prevColor * decay, color, trailBlend);
 
   // Standard chromatic aberration
-  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  let caStr = 0.003 * (1.0 + eBass) + depth * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
   color = acesToneMap(color * (1.0 + densityScale * 0.4));
 
-  let semantic_alpha = clamp(density * escapeVel * (0.4 + depth * 0.6), 0.25, 0.98);
+  let semantic_alpha = clamp(density * escapeVel * (0.4 + depth * 0.6) + shock * 0.15, 0.25, 0.98);
 
-  // Temporal feedback
-  let coord = vec2<i32>(global_id.xy);
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
-  let decay = 0.96;
-  let temporal = mix(prev.rgb * decay, color, 0.25);
+  let interaction = clamp(gravityWell * 0.5 + shock, 0.0, 1.0);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(temporal, semantic_alpha));
-  textureStore(dataTextureA, coord, vec4<f32>(temporal, semantic_alpha));
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(density * 0.7, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, pixel, vec4<f32>(color, semantic_alpha));
+  textureStore(dataTextureA, pixel, vec4<f32>(eBass, eMids, eTreble, interaction));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(density * 0.7, 0.0, 0.0, 0.0));
 }

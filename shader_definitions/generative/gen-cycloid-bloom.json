@@ -57,5 +57,12 @@
   "updated": true,
   "id": "gen-cycloid-bloom",
   "url": "shaders/gen-cycloid-bloom.wgsl",
-  "features": []
+  "features": [
+    "hdr-aces",
+    "oklab-mix",
+    "blackbody-core",
+    "fresnel-rim",
+    "volumetric-glow",
+    "hue-preserving-clamp"
+  ]
 }

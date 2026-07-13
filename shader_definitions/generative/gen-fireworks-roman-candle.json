@@ -56,5 +56,16 @@
   "updated": true,
   "id": "gen-fireworks-roman-candle",
   "url": "shaders/gen-fireworks-roman-candle.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "hex-bokeh-glow",
+    "semantic-alpha",
+    "depth-output",
+    "lod-scaling",
+    "branchless-hot-path"
+  ]
 }

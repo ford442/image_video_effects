@@ -7,7 +7,9 @@
     "de-jong",
     "temporal",
     "fractal",
-    "audio-reactive"
+    "audio-reactive",
+    "mouse-interactive",
+    "attack-release"
   ],
   "description": "Strange attractor density accumulation for the 2D Peter de Jong map: x' = sin(a\u00b7y)\u2212cos(b\u00b7x), y' = sin(c\u00b7x)\u2212cos(d\u00b7y). Parameters slowly morph through time, continuously transforming the attractor topology through butterflies, snowflakes, spirographs, and alien lace-work. Temporal Monte Carlo builds density; bass warps the geometry; mouse pans and click-zooms.",
   "workgroup_size": [
@@ -54,5 +56,10 @@
   "updated": true,
   "id": "gen-de-jong-attractor",
   "url": "shaders/gen-de-jong-attractor.wgsl",
-  "features": []
+  "features": [
+    "mouse-gravity-well",
+    "click-shockwaves",
+    "attack-release-envelopes",
+    "temporal-feedback"
+  ]
 }

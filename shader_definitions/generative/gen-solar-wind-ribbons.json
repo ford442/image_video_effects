@@ -56,5 +56,13 @@
   "updated": true,
   "id": "gen-solar-wind-ribbons",
   "url": "shaders/gen-solar-wind-ribbons.wgsl",
-  "features": []
+  "features": [
+    "hdr-aces",
+    "oklab-mix",
+    "blackbody-plasma",
+    "fresnel-rim",
+    "atmospheric-fog",
+    "volumetric-glow",
+    "hue-preserving-clamp"
+  ]
 }

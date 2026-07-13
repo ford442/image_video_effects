@@ -55,5 +55,17 @@
   "updated": true,
   "id": "gen-chaos-game-ifs",
   "url": "shaders/gen-chaos-game-ifs.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-ghosting",
+    "chromatic-attractors",
+    "bass-scale-pulse",
+    "depth-aware",
+    "hex-bokeh",
+    "semantic-alpha",
+    "lod-scaling",
+    "branchless-ifs"
+  ]
 }

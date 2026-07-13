@@ -2006,7 +2006,20 @@
     "updated": true,
     "id": "gen-aperiodic-monotile",
     "url": "shaders/gen-aperiodic-monotile.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "temporal-rotation",
+      "chromatic-edge-bloom",
+      "bass-scale-pulse",
+      "edge-glow",
+      "hex-bokeh",
+      "semantic-alpha",
+      "lod-scaling",
+      "branchless-hot-path"
+    ]
   },
   {
     "name": "Apollonian Gasket",
@@ -3337,7 +3350,9 @@
       "mouse-interactive",
       "orbit-trap",
       "HDR",
-      "bloom"
+      "bloom",
+      "temporal",
+      "attack-release"
     ],
     "description": "Upgraded Buddhabrot fractal with proper escaping-orbit trajectory accumulation, importance sampling, orbit-trap iridescence, HDR bloom, ACES tone mapping, and chromatic aberration on high-density regions. Bass drives orbit iteration count, mouse zooms into fractal regions, and depth controls orbit density perspective.",
     "workgroup_size": [
@@ -3384,7 +3399,12 @@
     "updated": true,
     "id": "gen-buddhabrot-aura",
     "url": "shaders/gen-buddhabrot-aura.wgsl",
-    "features": []
+    "features": [
+      "mouse-gravity-well",
+      "click-shockwaves",
+      "attack-release-envelopes",
+      "temporal-feedback"
+    ]
   },
   {
     "name": "Celestial Aether-Seraphim Wings",
@@ -3965,7 +3985,19 @@
     "updated": true,
     "id": "gen-chaos-game-ifs",
     "url": "shaders/gen-chaos-game-ifs.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "temporal-ghosting",
+      "chromatic-attractors",
+      "bass-scale-pulse",
+      "depth-aware",
+      "hex-bokeh",
+      "semantic-alpha",
+      "lod-scaling",
+      "branchless-ifs"
+    ]
   },
   {
     "name": "Chromatic Acid Drip",
@@ -5656,7 +5688,14 @@
     "updated": true,
     "id": "gen-cycloid-bloom",
     "url": "shaders/gen-cycloid-bloom.wgsl",
-    "features": []
+    "features": [
+      "hdr-aces",
+      "oklab-mix",
+      "blackbody-core",
+      "fresnel-rim",
+      "volumetric-glow",
+      "hue-preserving-clamp"
+    ]
   },
   {
     "name": "Cymatic Plasma-Mandalas",
@@ -5790,7 +5829,9 @@
       "de-jong",
       "temporal",
       "fractal",
-      "audio-reactive"
+      "audio-reactive",
+      "mouse-interactive",
+      "attack-release"
     ],
     "description": "Strange attractor density accumulation for the 2D Peter de Jong map: x' = sin(a·y)−cos(b·x), y' = sin(c·x)−cos(d·y). Parameters slowly morph through time, continuously transforming the attractor topology through butterflies, snowflakes, spirographs, and alien lace-work. Temporal Monte Carlo builds density; bass warps the geometry; mouse pans and click-zooms.",
     "workgroup_size": [
@@ -5837,7 +5878,12 @@
     "updated": true,
     "id": "gen-de-jong-attractor",
     "url": "shaders/gen-de-jong-attractor.wgsl",
-    "features": []
+    "features": [
+      "mouse-gravity-well",
+      "click-shockwaves",
+      "attack-release-envelopes",
+      "temporal-feedback"
+    ]
   },
   {
     "name": "Depth-Refracted Liquid Stained Glass",
@@ -8030,7 +8076,18 @@
     "updated": true,
     "id": "gen-fireworks-roman-candle",
     "url": "shaders/gen-fireworks-roman-candle.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "temporal-feedback",
+      "hex-bokeh-glow",
+      "semantic-alpha",
+      "depth-output",
+      "lod-scaling",
+      "branchless-hot-path"
+    ]
   },
   {
     "name": "4th of July — Smoke Bloom",
@@ -8764,7 +8821,15 @@
     "updated": true,
     "id": "gen-glacial-aether-quantum-cavern",
     "url": "shaders/gen-glacial-aether-quantum-cavern.wgsl",
-    "features": []
+    "features": [
+      "hdr-aces",
+      "oklab-mix",
+      "blackbody-aether",
+      "fresnel-rim",
+      "volumetric-glow",
+      "atmospheric-fog",
+      "hue-preserving-clamp"
+    ]
   },
   {
     "id": "gen-glass-mosaic-liquid-refraction",
@@ -10089,7 +10154,15 @@
     "updated": true,
     "id": "gen-hypnotic-vortex-tunnel",
     "url": "shaders/gen-hypnotic-vortex-tunnel.wgsl",
-    "features": []
+    "features": [
+      "hdr-aces",
+      "oklab-mix",
+      "blackbody-temperature",
+      "fresnel-rim",
+      "atmospheric-fog",
+      "volumetric-glow",
+      "hue-preserving-clamp"
+    ]
   },
   {
     "name": "IFS Fractal Flame",
@@ -10524,12 +10597,15 @@
       "3d",
       "surface",
       "audio",
-      "music"
+      "music",
+      "mouse-interactive",
+      "temporal",
+      "attack-release"
     ],
     "description": "Parametric walk across a Klein bottle surface with FBM texture, diffuse/specular lighting, and audio-reactive color modulation.",
     "workgroup_size": [
-      8,
-      8,
+      16,
+      16,
       1
     ],
     "updatedParams": [
@@ -10571,7 +10647,12 @@
     "updated": true,
     "id": "gen-klein-bottle-walk",
     "url": "shaders/gen-klein-bottle-walk.wgsl",
-    "features": []
+    "features": [
+      "mouse-gravity-well",
+      "click-shockwaves",
+      "attack-release-envelopes",
+      "temporal-feedback"
+    ]
   },
   {
     "name": "Koch Snowflake Storm",
@@ -11249,7 +11330,9 @@
       "lorenz",
       "temporal",
       "physics",
-      "audio-reactive"
+      "audio-reactive",
+      "mouse-interactive",
+      "attack-release"
     ],
     "description": "Strange attractor density accumulation. Each pixel seeds a short Lorenz trajectory near an equilibrium lobe; Gaussian kernel splatting onto the x-z projection builds the iconic butterfly over many frames of temporal Monte Carlo integration. Bass widens the rho parameter for more chaotic spread; mouse pans the view.",
     "workgroup_size": [
@@ -11296,7 +11379,12 @@
     "updated": true,
     "id": "gen-lorenz-attractor",
     "url": "shaders/gen-lorenz-attractor.wgsl",
-    "features": []
+    "features": [
+      "mouse-gravity-well",
+      "click-shockwaves",
+      "attack-release-envelopes",
+      "temporal-feedback"
+    ]
   },
   {
     "id": "gen-luminescent-aether-plasma-nebula-koi",
@@ -17641,7 +17729,15 @@
     "updated": true,
     "id": "gen-solar-wind-ribbons",
     "url": "shaders/gen-solar-wind-ribbons.wgsl",
-    "features": []
+    "features": [
+      "hdr-aces",
+      "oklab-mix",
+      "blackbody-plasma",
+      "fresnel-rim",
+      "atmospheric-fog",
+      "volumetric-glow",
+      "hue-preserving-clamp"
+    ]
   },
   {
     "id": "gen-sonic-lava-flow",
@@ -19760,7 +19856,19 @@
     "updated": true,
     "id": "gen-zeta-function-landscape",
     "url": "shaders/gen-zeta-function-landscape.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "upgraded-rgba",
+      "aces-tone-map",
+      "temporal-smoothing",
+      "chromatic-zeros",
+      "bass-term-modulation",
+      "depth-output",
+      "hex-bokeh",
+      "semantic-alpha",
+      "lod-scaling",
+      "branchless-hot-path"
+    ]
   },
   {
     "id": "gen-capabilities",

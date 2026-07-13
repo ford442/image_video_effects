@@ -56,5 +56,17 @@
   "updated": true,
   "id": "gen-zeta-function-landscape",
   "url": "shaders/gen-zeta-function-landscape.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-smoothing",
+    "chromatic-zeros",
+    "bass-term-modulation",
+    "depth-output",
+    "hex-bokeh",
+    "semantic-alpha",
+    "lod-scaling",
+    "branchless-hot-path"
+  ]
 }

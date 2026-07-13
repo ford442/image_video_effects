@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Klein Bottle Walk
 //  Category: generative
-//  Features: generative, audio-reactive, upgraded-rgba
+//  Features: generative, audio-reactive, upgraded-rgba, mouse-gravity-well,
+//            click-shockwaves, attack-release-envelopes, temporal-feedback
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-07-13
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,6 +28,9 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -90,59 +94,108 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-@compute @workgroup_size(8, 8, 1)
+// Attack/release envelope follower — state carried through dataTextureC -> dataTextureA
+fn envFollow(prev: f32, raw: f32, attack: f32, release: f32) -> f32 {
+    let delta = raw - prev;
+    let rate = select(release, attack, delta > 0.0);
+    return clamp(prev + delta * rate, 0.0, 2.0);
+}
+
+// Click bursts / shockwaves from ripple buffer
+fn shockwave(uv: vec2<f32>, time: f32) -> f32 {
+    var shock = 0.0;
+    for (var i: i32 = 0; i < 50; i = i + 1) {
+        let rp = u.ripples[i];
+        let rippleActive = rp.w > 0.001 && rp.z > 0.0;
+        let age = max(time - rp.z, 0.0);
+        let d = length(uv - rp.xy);
+        let wave = rp.w * exp(-age * 1.8) * exp(-(d - age * 0.22) * (d - age * 0.22) / 0.003);
+        shock = shock + wave * f32(rippleActive);
+    }
+    return clamp(shock, 0.0, 1.0);
+}
+
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
-    
+    let pixel = vec2<i32>(global_id.xy);
+    let res = vec2<f32>(u.config.zw);
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
     let time = u.config.x;
-    let resolution = vec2<f32>(u.config.zw);
-    let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
-    
+    let uv01 = vec2<f32>(pixel) / res;
+    let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
+    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w > 0.5;
+
     let param1 = u.zoom_params.x;
     let param2 = u.zoom_params.y;
     let param3 = u.zoom_params.z;
     let param4 = u.zoom_params.w;
-    
-    // Walk position on Klein bottle surface
-    let walkSpeed = mix(0.1, 0.5, param2);
-    let walkU = time * walkSpeed + uv.x * 6.283185;
-    let walkV = time * walkSpeed * 0.7 + uv.y * 6.283185;
-    
-    let kb = kleinBottlePoint(walkU, walkV, 1.0 + bass * 0.3);
-    
+
+    // Envelope state carried through dataTextureC -> dataTextureA
+    let prevData = textureLoad(dataTextureC, pixel, 0);
+    let eBass = envFollow(prevData.r, bass, 0.28, 0.035);
+    let eMids = envFollow(prevData.g, mids, 0.24, 0.04);
+    let eTreble = envFollow(prevData.b, treble, 0.30, 0.03);
+
+    // Mouse gravity well and click shockwaves
+    let mouseVec = uv01 - mouse;
+    let mouseDist = length(mouseVec);
+    let gravity = 1.0 / (mouseDist + 0.12);
+    let gravityWell = clamp(gravity * 0.08, 0.0, 1.0) * (1.0 + f32(mouseDown) * 0.5);
+    let shock = shockwave(uv01, time) * (1.0 + f32(mouseDown) * 0.4);
+
+    // Walk position on Klein bottle surface — mouse gravity bends speed & radius
+    let walkSpeed = mix(0.1, 0.5, param2) * (1.0 + gravityWell * 0.35 + eBass * 0.15);
+    let walkU = time * walkSpeed + uv.x * TAU * 2.0 + gravityWell * 0.5;
+    let walkV = time * walkSpeed * 0.7 + uv.y * TAU * 2.0 + eMids * 0.2;
+    let baseRadius = 1.0 + eBass * 0.25 + shock * 0.15;
+    let radiusWarp = baseRadius + gravityWell * 0.35;
+
+    let kb = kleinBottlePoint(walkU, walkV, radiusWarp);
+
     // Surface texture from FBM
-    let texCoord = vec2<f32>(walkU / 6.283185, walkV / 6.283185);
-    let surfaceNoise = fbm(texCoord * mix(4.0, 16.0, param3) + vec2<f32>(time * 0.05), 4);
-    
+    let texCoord = vec2<f32>(walkU / TAU, walkV / TAU);
+    let surfaceNoise = fbm(texCoord * mix(4.0, 16.0, param3) + vec2<f32>(time * 0.05) + gravityWell, 4);
+
     // Curvature approximation for lighting
-    let kb_u = kleinBottlePoint(walkU + 0.01, walkV, 1.0);
-    let kb_v = kleinBottlePoint(walkU, walkV + 0.01, 1.0);
+    let kb_u = kleinBottlePoint(walkU + 0.01, walkV, radiusWarp);
+    let kb_v = kleinBottlePoint(walkU, walkV + 0.01, radiusWarp);
     let du = kb_u - kb;
     let dv = kb_v - kb;
     let normal = normalize(cross(du, dv));
-    
-    let lightDir = normalize(vec3<f32>(sin(time * 0.2), cos(time * 0.15), 0.8));
+
+    let lightDir = normalize(vec3<f32>(sin(time * 0.2 + eMids), cos(time * 0.15 + eTreble), 0.8));
     let diffuse = max(dot(normal, lightDir), 0.0);
     let specular = pow(max(dot(normal, normalize(lightDir + vec3<f32>(0.0, 0.0, 1.0))), 0.0), 32.0);
-    
-    // Audio-driven color
-    let hue = fract(kb.z * 0.3 + surfaceNoise * 0.4 + time * 0.02 + mids * 0.1);
-    let sat = mix(0.3, 0.85, param4 + treble * 0.2);
-    let val = mix(0.2, 1.0, diffuse + surfaceNoise * 0.3 + bass * 0.2);
-    
+
+    // Audio-driven color with envelope smoothing
+    let hue = fract(kb.z * 0.3 + surfaceNoise * 0.4 + time * 0.02 + eMids * 0.15 + gravityWell * 0.1);
+    let sat = mix(0.3, 0.85, param4 + eTreble * 0.25);
+    let val = mix(0.2, 1.0, diffuse + surfaceNoise * 0.3 + eBass * 0.3);
+
     let rgb = hue2rgb(hue) * sat + vec3<f32>(1.0 - sat) * val;
-    let specColor = vec3<f32>(1.0, 0.9, 0.7) * specular * (1.0 + treble);
-    
-    let finalRGB = rgb * val + specColor;
-    let alpha = clamp(diffuse * 0.5 + surfaceNoise * 0.3 + specular * 0.2 + 0.15, 0.0, 1.0);
+    let specColor = vec3<f32>(1.0, 0.9, 0.7) * specular * (1.0 + eTreble);
+
+    var finalRGB = rgb * val + specColor;
+    finalRGB = finalRGB + vec3<f32>(0.4, 0.5, 0.7) * shock * 0.6;
+
+    // Temporal feedback trails via readTexture
+    let decay = 0.94 - param4 * 0.03;
+    let prevColor = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb;
+    let blend = 0.18 + eBass * 0.12 + shock * 0.15;
+    finalRGB = mix(prevColor * decay, finalRGB, blend);
+
+    let alpha = clamp(diffuse * 0.4 + surfaceNoise * 0.25 + specular * 0.2 + shock * 0.25 + gravityWell * 0.1 + 0.12, 0.0, 1.0);
     let finalColor = vec4<f32>(acesToneMap(finalRGB * 1.1), alpha);
-    
-    let depth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, global_id.xy, finalColor);
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+
+    let depth = textureLoad(readDepthTexture, pixel, 0).r;
+    let interaction = clamp(gravityWell * 0.5 + shock, 0.0, 1.0);
+
+    textureStore(writeTexture, pixel, finalColor);
+    textureStore(dataTextureA, pixel, vec4<f32>(eBass, eMids, eTreble, interaction));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth * 0.5 + alpha * 0.3, 0.0, 0.0, 0.0));
 }

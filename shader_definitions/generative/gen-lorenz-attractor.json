@@ -7,7 +7,9 @@
     "lorenz",
     "temporal",
     "physics",
-    "audio-reactive"
+    "audio-reactive",
+    "mouse-interactive",
+    "attack-release"
   ],
   "description": "Strange attractor density accumulation. Each pixel seeds a short Lorenz trajectory near an equilibrium lobe; Gaussian kernel splatting onto the x-z projection builds the iconic butterfly over many frames of temporal Monte Carlo integration. Bass widens the rho parameter for more chaotic spread; mouse pans the view.",
   "workgroup_size": [
@@ -54,5 +56,10 @@
   "updated": true,
   "id": "gen-lorenz-attractor",
   "url": "shaders/gen-lorenz-attractor.wgsl",
-  "features": []
+  "features": [
+    "mouse-gravity-well",
+    "click-shockwaves",
+    "attack-release-envelopes",
+    "temporal-feedback"
+  ]
 }

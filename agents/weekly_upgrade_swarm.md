@@ -5,9 +5,32 @@
 
 ---
 
-## Recently Completed (80 shaders)
+## Recently Completed (96 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 9 (16 generative shaders) — 2026-07-13
+
+4-agent Kimi generative swarm on the next 16 smallest unclaimed generative shaders. Expanded each by **+41 to +87 lines** with canonical 13-binding compute pipeline, semantic alpha, audio/depth reactivity, ACES tone mapping, and role-specific techniques (domain-warped FBM / fractal orbit traps / SDFs, OkLab/blackbody/Fresnel, mouse gravity wells + attack/release envelopes, hex-bokeh + LOD + branchless refactoring). All 16 pass `naga` and `wgsl_precommit_gate.py`; manifest remains 1296 shaders.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 97 | `gen-chrono-erosion-feedback-melting` | 9 | 117→191 (+74) | Domain-warped erosion, feedback trails, orbit-trap minerals, semantic alpha. |
+| 98 | `gen-mandelbox-explorer` | 9 | 137→198 (+61) | Mandelbox SDF ray march, fold-box traps, curl-noise dust, ACES. |
+| 99 | `gen-koch-snowflake-storm` | 9 | 152→225 (+73) | Recursive Koch flakes, domain-warped storm, luma-alpha snow. |
+| 100 | `gen-apollonian-gasket` | 9 | 145→208 (+63) | Apollonian sphere packing SDF, orbit traps, chromatic caustics. |
+| 101 | `gen-glacial-aether-quantum-cavern` | 9 | 133→220 (+87) | OkLab ice gradients, blackbody glow, Fresnel rim, volumetric fog. |
+| 102 | `gen-hypnotic-vortex-tunnel` | 9 | 139→198 (+59) | ACES HDR vortex, hue-preserve clamp, depth-fog alpha. |
+| 103 | `gen-cycloid-bloom` | 9 | 133→208 (+75) | Cycloid petal SDFs, blackbody bloom, OkLab petal mixes, alpha from intensity. |
+| 104 | `gen-solar-wind-ribbons` | 9 | 142→192 (+50) | Solar magnetic ribbons, Fresnel sheen, HDR flare, atmospheric scattering. |
+| 105 | `gen-klein-bottle-walk` | 9 | 148→201 (+53) | Mouse-driven walk on Klein bottle, click shockwaves, bass envelope trails. |
+| 106 | `gen-de-jong-attractor` | 9 | 135→176 (+41) | Interactive de-Jong orbit density, gravity-well mouse, audio envelope. |
+| 107 | `gen-lorenz-attractor` | 9 | 140→183 (+43) | Lorenz orbit accumulation, mouse rho/param modulation, temporal feedback. |
+| 108 | `gen-buddhabrot-aura` | 9 | 150→193 (+43) | Click-seeded iteration count, gravity-well center, aura bloom envelope. |
+| 109 | `gen-fireworks-roman-candle` | 9 | 111→175 (+64) | Hex-bokeh candle stars, branchless shot culling, horizon early-exit, semantic alpha. |
+| 110 | `gen-zeta-function-landscape` | 9 | 127→170 (+43) | LOD-scaled Riemann landscape, hex-bokeh temporal smoothing, background fallback. |
+| 111 | `gen-aperiodic-monotile` | 9 | 138→183 (+45) | Hat/monotile SDF, hex-bokeh edge kernel, LOD tile scaling, vignette. |
+| 112 | `gen-chaos-game-ifs` | 9 | 134→179 (+45) | Branchless cascaded IFS, LOD iteration scaling, hex-bokeh glow, attractor helpers. |
 
 ### Batch 8 (4 new generative geometry shaders) — 2026-07-12
 

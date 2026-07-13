@@ -54,5 +54,13 @@
   "updated": true,
   "id": "gen-glacial-aether-quantum-cavern",
   "url": "shaders/gen-glacial-aether-quantum-cavern.wgsl",
-  "features": []
+  "features": [
+    "hdr-aces",
+    "oklab-mix",
+    "blackbody-aether",
+    "fresnel-rim",
+    "volumetric-glow",
+    "atmospheric-fog",
+    "hue-preserving-clamp"
+  ]
 }

@@ -2,14 +2,15 @@
 //  Lorenz Attractor
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba,
-//            chromatic-lobes, audio-decay-modulation, depth-output
+//            chromatic-lobes, audio-decay-modulation, depth-output,
+//            mouse-gravity-well, click-shockwaves, attack-release-envelopes
 //  Complexity: High
 //  Description: Strange attractor density accumulation via per-pixel
 //    Monte Carlo orbit integration. Each pixel seeds a short Lorenz
 //    trajectory near one of the two equilibrium points; Gaussian
 //    kernel splatting onto the x-z projection builds the butterfly.
 //    Temporal blending converges to the full attractor over frames.
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-07-13
 // ═══════════════════════════════════════════════════════════════════
 //  zoom_params: x=sigma(8–14), y=rho_mod(0–14), z=glow_radius, w=decay
 
@@ -33,6 +34,8 @@ struct Uniforms {
   zoom_params: vec4<f32>,
   ripples: array<vec4<f32>, 50>,
 };
+
+const TAU: f32 = 6.28318530718;
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -63,6 +66,27 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Attack/release envelope follower — state carried through dataTextureC -> dataTextureA
+fn envFollow(prev: f32, raw: f32, attack: f32, release: f32) -> f32 {
+    let delta = raw - prev;
+    let rate = select(release, attack, delta > 0.0);
+    return clamp(prev + delta * rate, 0.0, 2.0);
+}
+
+// Click bursts / shockwaves from ripple buffer
+fn shockwave(uv: vec2<f32>, time: f32) -> f32 {
+    var shock = 0.0;
+    for (var i: i32 = 0; i < 50; i = i + 1) {
+        let rp = u.ripples[i];
+        let rippleActive = rp.w > 0.001 && rp.z > 0.0;
+        let age = max(time - rp.z, 0.0);
+        let d = length(uv - rp.xy);
+        let wave = rp.w * exp(-age * 2.0) * exp(-(d - age * 0.2) * (d - age * 0.2) / 0.0025);
+        shock = shock + wave * f32(rippleActive);
+    }
+    return clamp(shock, 0.0, 1.0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
@@ -75,18 +99,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let sigma  = 8.0 + u.zoom_params.x * 6.0;
-    let rho    = 24.0 + u.zoom_params.y * 12.0 * (1.0 + bass * 0.5);
-    let beta   = 8.0 / 3.0;
+    // Envelope state carried through dataTextureC -> dataTextureA
+    let prevData = textureLoad(dataTextureC, coord, 0);
+    let eBass   = envFollow(prevData.g, bass,   0.30, 0.03);
+    let eMids   = envFollow(prevData.b, mids,   0.25, 0.035);
+    let eTreble = envFollow(prevData.a, treble, 0.28, 0.04);
 
-    let glowR  = max(0.5 + u.zoom_params.z * 1.8 + mids * 0.4, 0.1);
-    let decay  = 0.960 + u.zoom_params.w * 0.030 + bass * 0.005;
+    // Mouse gravity well and click shockwaves
+    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w > 0.5;
+    let mouseVec = uv - mouse;
+    let mouseDist = length(mouseVec);
+    let gravity = 1.0 / (mouseDist + 0.08);
+    let gravityWell = clamp(gravity * 0.04, 0.0, 1.0);
+    let shock = shockwave(uv, time) * (1.0 + f32(mouseDown) * 0.5);
 
-    let mouse  = u.zoom_config.yz;
     let panX   = (mouse.x - 0.5) * 24.0;
     let panZ   = (0.5 - mouse.y) * 24.0;
 
-    let viewX = (uv.x - 0.5) * 50.0 + panX;
+    let sigma  = 8.0 + u.zoom_params.x * 6.0;
+    let rho    = (24.0 + u.zoom_params.y * 12.0 * (1.0 + eBass * 0.5)) * (1.0 + gravityWell * 0.08);
+    let beta   = 8.0 / 3.0;
+
+    let glowR  = max(0.5 + u.zoom_params.z * 1.8 + eMids * 0.4, 0.1) * (1.0 - gravityWell * 0.25);
+    let decay  = 0.960 + u.zoom_params.w * 0.030 + eBass * 0.005;
+
+    let viewX = (uv.x - 0.5) * 50.0 + panX + gravityWell * 4.0;
     let viewZ =  uv.y         * 50.0 -  2.0 + panZ;
 
     let sq   = sqrt(beta * max(rho - 1.0, 0.1));
@@ -118,10 +156,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     contribR *= (1.0 / 52.0);
     contribB *= (1.0 / 52.0);
 
-    let prevDensity = textureLoad(dataTextureC, coord, 0).r;
-    let accumulated = mix(contribR + contribB, prevDensity, clamp(decay, 0.0, 0.999));
+    let prevDensity = prevData.r;
+    let accumulated = mix(contribR + contribB + shock * 0.5, prevDensity, clamp(decay, 0.0, 0.999));
 
-    let shimmer  = treble * 0.08 * sin(accumulated * 40.0 + time * 3.0);
+    let shimmer  = eTreble * 0.08 * sin(accumulated * 40.0 + time * 3.0);
     let density  = clamp(accumulated * 7.0 + shimmer, 0.0, 1.0);
 
     // Chromatic palette: warm for right lobe, cool for left
@@ -130,10 +168,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let lobeMix = smoothstep(-5.0, 5.0, viewX - panX);
     let col = mix(coolCol, warmCol, lobeMix);
 
-    let alpha    = clamp(density * 0.9 + bass * 0.08, 0.0, 1.0);
-    let finalOut = vec4<f32>(acesToneMap(col * 1.1), alpha);
+    // Temporal color feedback trail via readTexture
+    let prevColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let trailBlend = 0.12 + eBass * 0.08 + shock * 0.12;
+    let trail = mix(prevColor * decay, col, trailBlend);
 
-    textureStore(dataTextureA, coord, vec4<f32>(accumulated, 0.0, 0.0, 0.0));
+    let alpha    = clamp(density * 0.9 + eBass * 0.08 + shock * 0.15, 0.0, 1.0);
+    let finalOut = vec4<f32>(acesToneMap(trail * 1.1), alpha);
+
+    textureStore(dataTextureA, coord, vec4<f32>(accumulated, eBass, eMids, eTreble));
     textureStore(writeTexture, coord, finalOut);
     let depth = clamp(density * 0.8, 0.0, 1.0);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

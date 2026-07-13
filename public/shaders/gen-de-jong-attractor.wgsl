@@ -2,7 +2,8 @@
 //  Peter de Jong Attractor
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba,
-//            chromatic-parameters, audio-morph-speed, depth-from-density
+//            chromatic-parameters, audio-morph-speed, depth-from-density,
+//            mouse-gravity-well, click-shockwaves, attack-release-envelopes
 //  Complexity: High
 //  Description: Strange attractor density accumulation for the 2D
 //    Peter de Jong map: x' = sin(a·y)−cos(b·x), y' = sin(c·x)−cos(d·y).
@@ -10,7 +11,7 @@
 //    gallery of intricate lace-work patterns — butterflies, snowflakes,
 //    spirographs — as the attractor topology continuously transforms.
 //    Temporal Monte Carlo builds density per frame; bass warps geometry.
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-07-13
 // ═══════════════════════════════════════════════════════════════════
 //  zoom_params: x=speed_a, y=speed_b, z=glow_radius, w=decay
 
@@ -65,6 +66,27 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Attack/release envelope follower — state carried through dataTextureC -> dataTextureA
+fn envFollow(prev: f32, raw: f32, attack: f32, release: f32) -> f32 {
+    let delta = raw - prev;
+    let rate = select(release, attack, delta > 0.0);
+    return clamp(prev + delta * rate, 0.0, 2.0);
+}
+
+// Click bursts / shockwaves from ripple buffer
+fn shockwave(uv: vec2<f32>, time: f32) -> f32 {
+    var shock = 0.0;
+    for (var i: i32 = 0; i < 50; i = i + 1) {
+        let rp = u.ripples[i];
+        let rippleActive = rp.w > 0.001 && rp.z > 0.0;
+        let age = max(time - rp.z, 0.0);
+        let d = length(uv - rp.xy);
+        let wave = rp.w * exp(-age * 2.0) * exp(-(d - age * 0.2) * (d - age * 0.2) / 0.0025);
+        shock = shock + wave * f32(rippleActive);
+    }
+    return clamp(shock, 0.0, 1.0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
@@ -77,21 +99,36 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let amp    = 1.8 + bass * 0.4;
-    let sa     = 0.03 + u.zoom_params.x * 0.07;
-    let sb     = 0.02 + u.zoom_params.y * 0.06;
-    let a      = amp * sin(time * sa);
-    let b      = amp * sin(time * sb + 1.1);
-    let c      = amp * sin(time * sa * 1.33 + 2.2 + mids * 0.5);
-    let d      = amp * sin(time * sb * 1.57 + 3.3);
+    // Envelope state carried through dataTextureC -> dataTextureA
+    let prevData = textureLoad(dataTextureC, coord, 0);
+    let eBass   = envFollow(prevData.g, bass,   0.30, 0.03);
+    let eMids   = envFollow(prevData.b, mids,   0.25, 0.035);
+    let eTreble = envFollow(prevData.a, treble, 0.28, 0.04);
 
-    let glowR  = max(0.015 + u.zoom_params.z * 0.045, 0.005);
-    let decay  = 0.965 + u.zoom_params.w * 0.025;
+    // Mouse gravity well and click shockwaves
+    let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w > 0.5;
+    let mouseVec = uv - mouse;
+    let mouseDist = length(mouseVec);
+    let gravity = 1.0 / (mouseDist + 0.08);
+    let gravityWell = clamp(gravity * 0.05, 0.0, 1.0);
+    let shock = shockwave(uv, time) * (1.0 + f32(mouseDown) * 0.5);
 
-    let mouse  = u.zoom_config.yz;
     let zoom   = 1.0 + u.zoom_config.w * 1.5;
     let centre = (mouse - 0.5) * 2.0;
-    let viewPos = (uv - 0.5) * (4.0 / zoom) + centre;
+    var viewPos = (uv - 0.5) * (4.0 / zoom) + centre;
+    viewPos = viewPos + normalize(mouseVec + vec2<f32>(0.0001)) * gravityWell * 0.3;
+
+    let amp    = (1.8 + eBass * 0.4) * (1.0 + gravityWell * 0.25 + shock * 0.15);
+    let sa     = 0.03 + u.zoom_params.x * 0.07;
+    let sb     = 0.02 + u.zoom_params.y * 0.06;
+    let a      = amp * sin(time * sa + eMids * 0.3);
+    let b      = amp * sin(time * sb + 1.1 + gravityWell);
+    let c      = amp * sin(time * sa * 1.33 + 2.2 + eMids * 0.5);
+    let d      = amp * sin(time * sb * 1.57 + 3.3 + eTreble * 0.2);
+
+    let glowR  = max(0.015 + u.zoom_params.z * 0.045, 0.005) * (1.0 - gravityWell * 0.35);
+    let decay  = 0.965 + u.zoom_params.w * 0.025;
 
     let seed   = hash22(uv * 131.7 + vec2<f32>(fract(time * 0.031), fract(time * 0.041 + 0.5)));
     var p      = seed * 4.0 - 2.0;
@@ -100,7 +137,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var contribR = 0.0;
     var contribB = 0.0;
     let invR2   = 1.0 / (glowR * glowR);
-    let innerR2 = max(invR2 * 4.0, invR2);
 
     for (var i = 0u; i < 128u; i = i + 1u) {
         p = de_jong(p, a, b, c, d);
@@ -115,8 +151,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     contribR *= (1.0 / 128.0);
     contribB *= (1.0 / 128.0);
 
-    let prevDensity = textureLoad(dataTextureC, coord, 0).r;
-    let accumulated = mix(contribR + contribB, prevDensity, clamp(decay, 0.0, 0.999));
+    let prevDensity = prevData.r;
+    let accumulated = mix(contribR + contribB + shock * 0.5, prevDensity, clamp(decay, 0.0, 0.999));
 
     let hueOff  = fract(time * 0.015);
     let density = clamp(accumulated * 10.0, 0.0, 1.0);
@@ -125,10 +161,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let chromaMix = smoothstep(0.0, 1.0, contribR - contribB + 0.5);
     let col     = mix(coolCol, warmCol, chromaMix);
 
-    let alpha    = clamp(density * 0.85 + bass * 0.12, 0.0, 1.0);
-    let finalOut = vec4<f32>(acesToneMap(col * 1.1), alpha);
+    // Temporal color feedback trail via readTexture
+    let prevColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let trailBlend = 0.12 + eBass * 0.08 + shock * 0.12;
+    let trail = mix(prevColor * decay, col, trailBlend);
 
-    textureStore(dataTextureA, coord, vec4<f32>(accumulated, hueOff, 0.0, 0.0));
+    let alpha    = clamp(density * 0.85 + eBass * 0.12 + shock * 0.15, 0.0, 1.0);
+    let finalOut = vec4<f32>(acesToneMap(trail * 1.1), alpha);
+
+    textureStore(dataTextureA, coord, vec4<f32>(accumulated, eBass, eMids, eTreble));
     textureStore(writeTexture, coord, finalOut);
     let depth = clamp(density * 0.9, 0.0, 1.0);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

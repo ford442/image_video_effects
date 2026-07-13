@@ -8,12 +8,15 @@
     "3d",
     "surface",
     "audio",
-    "music"
+    "music",
+    "mouse-interactive",
+    "temporal",
+    "attack-release"
   ],
   "description": "Parametric walk across a Klein bottle surface with FBM texture, diffuse/specular lighting, and audio-reactive color modulation.",
   "workgroup_size": [
-    8,
-    8,
+    16,
+    16,
     1
   ],
   "updatedParams": [
@@ -55,5 +58,10 @@
   "updated": true,
   "id": "gen-klein-bottle-walk",
   "url": "shaders/gen-klein-bottle-walk.wgsl",
-  "features": []
+  "features": [
+    "mouse-gravity-well",
+    "click-shockwaves",
+    "attack-release-envelopes",
+    "temporal-feedback"
+  ]
 }

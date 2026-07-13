@@ -2,10 +2,12 @@
 //  Glacial-Aether Quantum-Cavern
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, chromatic-depth,
-//            temporal-ice-formation, audio-fracture, bass-fog
+//            temporal-ice-formation, audio-fracture, bass-fog,
+//            hdr-aces, oklab-mix, blackbody-aether, fresnel-rim,
+//            volumetric-glow, atmospheric-fog
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-07-13
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,6 +30,9 @@ struct Uniforms {
     zoom_params: vec4<f32>,
     ripples: array<vec4<f32>, 50>,
 };
+
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
 
 fn rotate(a: f32) -> mat2x2<f32> {
     let c = cos(a);
@@ -52,12 +57,77 @@ fn mapSDF(p: vec3<f32>, bass: f32) -> f32 {
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = 2.51;
-  let b = 0.03;
-  let c = 2.43;
-  let d = 0.59;
-  let e = 0.14;
-  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn huePreservingClamp(col: vec3<f32>, maxVal: f32) -> vec3<f32> {
+    let mx = max(max(col.r, col.g), col.b);
+    let scale = min(mx, maxVal) / max(mx, 0.0001);
+    return col * scale;
+}
+
+fn rgbToOkLab(c: vec3<f32>) -> vec3<f32> {
+    let lms = mat3x3<f32>(
+        0.8189330101, 0.3618667424, -0.1288597137,
+        0.0329845436, 0.9293118715, 0.0361456387,
+        0.0482003018, 0.2643662691, 0.6338517070
+    ) * c;
+    let lms_ = sign(lms) * pow(abs(lms), vec3<f32>(1.0 / 3.0));
+    return mat3x3<f32>(
+        0.2104542553, 0.7936177850, -0.0040720468,
+        1.9779984951, -2.4285922050, 0.4505937099,
+        0.0259040371, 0.7827717662, -0.8086757660
+    ) * lms_;
+}
+
+fn okLabToRgb(c: vec3<f32>) -> vec3<f32> {
+    let lms_ = mat3x3<f32>(
+        1.0, 0.3963377774, 0.2158037573,
+        1.0, -0.1055613458, -0.0638541728,
+        1.0, -0.0894841775, -1.2914855480
+    ) * c;
+    let lms = lms_ * lms_ * lms_;
+    return mat3x3<f32>(
+        4.0767416621, -3.3077115913, 0.2309699292,
+        -1.2684380046, 2.6097574011, -0.3413193965,
+        -0.0041960863, -0.7034186147, 1.7076147010
+    ) * lms;
+}
+
+fn blackbody(t: f32) -> vec3<f32> {
+    let T = mix(1800.0, 14000.0, clamp(t, 0.0, 1.0));
+    let g = clamp(0.0001 * T - 0.05, 0.0, 1.0);
+    let b = clamp(0.00004 * (T - 4200.0), 0.0, 1.0);
+    return vec3<f32>(1.0, g, b) * (T / 5000.0);
+}
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    let h = dot(i, vec2<f32>(127.1, 311.7));
+    let a = fract(sin(h) * 43758.5453123);
+    let b = fract(sin(h + 127.1) * 43758.5453123);
+    let c = fract(sin(h + 311.7) * 43758.5453123);
+    let d = fract(sin(h + 438.8) * 43758.5453123);
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+fn fbm(p: vec2<f32>, oct: i32) -> f32 {
+    var s = 0.0;
+    var a = 0.5;
+    var f = 1.0;
+    for (var i = 0; i < oct; i++) {
+        s += a * valueNoise(p * f);
+        f *= 2.0;
+        a *= 0.5;
+    }
+    return s;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -72,8 +142,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    var col = vec3<f32>(0.0);
-
     let camPulse = 1.0 + bass * 0.4;
     var ro = vec3<f32>(0.0, 0.0, -5.0 + u.config.x) * camPulse;
     var rd = normalize(vec3<f32>(uv * 2.0 - 1.0, 1.0));
@@ -81,7 +149,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let yz = rd.yz * rotate((0.5 - u.zoom_config.z) * 3.14);
     rd = vec3<f32>(rd.x, yz.x, yz.y);
 
-    // Chromatic depth separation: R and B march at slightly different offsets
     let rdR = normalize(rd + vec3<f32>(0.002 * bass, 0.0, 0.0));
     let rdB = normalize(rd - vec3<f32>(0.002 * treble, 0.0, 0.0));
 
@@ -106,27 +173,47 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let p = ro + rd * t;
     let fracture = fract(length(p) * u.zoom_params.z * 5.0 + u.config.y * 2.0);
 
-    let hitColor = vec3<f32>(0.1, 0.4, 0.8) * depth_fade * glow
-        + vec3<f32>(0.2, 0.8, 1.0) * step(0.95, fracture) * (u.config.y + treble) * depth_fade;
-    let missColor = vec3<f32>(0.05, 0.1, 0.2) * (1.0 / max(1.0 + min_dist * 10.0, 0.001)) * glow;
-    col = select(missColor, hitColor, hit);
+    let iceBase = vec3<f32>(0.08, 0.35, 0.75);
+    let aetherBase = vec3<f32>(0.25, 0.85, 1.05);
+    let hitColor = iceBase * depth_fade * glow
+        + aetherBase * step(0.95, fracture) * (u.config.y + treble) * depth_fade * 3.0;
+    let missColor = vec3<f32>(0.04, 0.09, 0.18) * (1.0 / max(1.0 + min_dist * 10.0, 0.001)) * glow;
+    var col = select(missColor, hitColor, hit);
+
+    let bb = blackbody(0.35 + treble * 0.35 + fracture * 0.2);
+    col = col + bb * step(0.93, fracture) * depth_fade * (1.0 + bass);
+
+    let normalApprox = normalize(p - ro);
+    let fresnel = pow(1.0 - abs(dot(rd, normalApprox)), 4.0);
+    let rimCol = vec3<f32>(0.4, 0.75, 0.95) * fresnel * glow * (1.0 + mids);
+    col = col + rimCol * depth_fade;
+
+    let fogDensity = 0.12 + bass * 0.05;
+    let fog = exp(-t * fogDensity);
+    let fogCol = vec3<f32>(0.03, 0.12, 0.22) * glow * 2.0;
+    col = mix(fogCol, col, fog);
+
     col += vec3<f32>(0.2, 0.5, 0.6) * (u.config.y + bass * 0.5) * 0.1;
 
-    // Temporal ice formation: previous frame crystallizes
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
     let iceForm = mix(col, prev * 0.92, 0.06 + bass * 0.02);
     col = mix(col, iceForm, 0.5);
 
-    // Audio-reactive fracture overlay
     let fractureOverlay = vec3<f32>(0.3, 0.6, 0.9) * step(0.97, fract(length(p) * 10.0 + bass * 5.0)) * treble;
     col += fractureOverlay;
+
+    let okIce = rgbToOkLab(col);
+    let okAurora = rgbToOkLab(vec3<f32>(0.2, 0.8, 1.0) * (1.0 + mids));
+    let okMix = mix(okIce, okAurora, 0.25 + bass * 0.15);
+    col = okLabToRgb(okMix);
 
     let hitMask = select(0.0, 1.0, hit);
     let alpha = clamp(0.25 + hitMask * 0.4 + depth_fade * 0.3 + bass * 0.15, 0.0, 1.0);
 
     let depthOut = clamp(t / max_dist, 0.0, 1.0);
 
-    col = acesToneMap(col * 1.1);
+    col = huePreservingClamp(col, 8.0);
+    col = acesToneMap(col * 1.15);
     textureStore(writeTexture, coord, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, vec4<f32>(col, alpha));
