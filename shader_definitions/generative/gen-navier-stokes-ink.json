@@ -12,7 +12,7 @@
     "audio-reactive",
     "vj"
   ],
-  "description": "2D Navier-Stokes fluid simulation with semi-Lagrangian advection, pressure projection, and ink injection. Bass drives injection rate, mouse injects ink and vortices, depth controls viscosity.",
+  "description": "2D Navier-Stokes fluid simulation with semi-Lagrangian advection, two Jacobi pressure-projection iterations, curl-noise perturbation, anisotropic density diffusion, and procedural dye SDFs. Bass drives injection rate, mouse injects ink and vortices, depth controls opacity.",
   "workgroup_size": [
     16,
     16,
@@ -57,5 +57,12 @@
   "updated": true,
   "id": "gen-navier-stokes-ink",
   "url": "shaders/gen-navier-stokes-ink.wgsl",
-  "features": []
+  "features": [
+    "jacobi-pressure",
+    "curl-noise",
+    "anisotropic-diffusion",
+    "dye-sdf",
+    "vorticity-confinement",
+    "domain-warped-advection"
+  ]
 }

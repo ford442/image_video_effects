@@ -5,9 +5,31 @@
 
 ---
 
-## Recently Completed (96 shaders)
+## Recently Completed (104 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 11 (4 generative shaders) — 2026-07-13
+
+Focused 4-agent Kimi generative swarm — one shader per role, strong upgrade each. Expanded by **+64 to +118 lines** with canonical 13-binding compute pipeline, semantic alpha, audio/depth reactivity, ACES tone mapping, and role-specific techniques (dual Jacobi pressure projection + curl advection, spectral wavelength mixing + volumetric light cones, click shockwave + gravity-well mouse + envelope followers, LOD band culling + smart depth compositing). All 4 pass `naga` and `wgsl_precommit_gate.py`; manifest remains 1296 shaders.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 117 | `gen-navier-stokes-ink` | 11 | 133→246 (+113) | Dual Jacobi pressure projection, curl-noise advection, anisotropic diffusion, filament SDFs. |
+| 118 | `gen-rgb-diffraction` | 11 | 141→259 (+118) | Spectral wavelength mixing, volumetric slit light cones, Fresnel glints, HDR bloom. |
+| 119 | `gen-neon-lotus` | 11 | 161→225 (+64) | Click shockwave, gravity-well mouse, envelope followers, temporal neon trails. |
+| 120 | `gen-prismatic-ion-cascade` | 11 | 147→230 (+83) | LOD band culling, early-exit radius, smart depth compositing, HDR metadata. |
+
+### Batch 10 (4 generative shaders) — 2026-07-13
+
+Focused 4-agent Kimi generative swarm — one shader per role, strong upgrade each. Expanded by **+78 to +129 lines** with canonical 13-binding compute pipeline, semantic alpha, audio/depth reactivity, ACES tone mapping, and role-specific techniques (dual RD species + curl advection, HDR vortex fog + Fresnel, gravity-well mouse + click shockwaves, LOD branch culling + hex-bokeh). All 4 pass `naga` and `wgsl_precommit_gate.py`; manifest remains 1296 shaders (one shader moved from distortion to generative).
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 113 | `gen-bioluminescent-reaction-diffusion` | 10 | 131→260 (+129) | Dual 3x3/5x5 Laplacian, two competing RD species, curl-noise advection, orbit-trap plankton SDF. |
+| 114 | `gen-chromatic-vortex` | 10 | 133→238 (+105) | ACES HDR vortex, volumetric fog, Fresnel rim, OkLab hue warp, alpha from energy. |
+| 115 | `gen-superfluid-quantum-foam` | 10 | 150→228 (+78) | Gravity-well mouse, click shockwaves, multi-band audio, temporal burst trails. |
+| 116 | `gen-crystal-lattice-growth` | 10 | 150→238 (+88) | LOD branch iterations, early-exit background, hex-bokeh glow, smart depth compositing. |
 
 ### Batch 9 (16 generative shaders) — 2026-07-13
 

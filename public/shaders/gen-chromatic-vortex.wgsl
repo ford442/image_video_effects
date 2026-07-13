@@ -1,9 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Chromatic Vortex — Polar Distortion + Color-Space Warp + Temporal
-//  Category: distortion
-//  Features: mouse-driven, audio-reactive, temporal, chromatic, depth-aware
+//  Chromatic Vortex — Polar Distortion + Color-Space Warp + Temporal + Visualist
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, temporal, chromatic, depth-aware,
+//            ACES tone mapping, volumetric fog, iridescent Fresnel, bloom
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-07-13
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,18 +32,107 @@ fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
 }
 
-fn rgb2yuv(c: vec3<f32>) -> vec3<f32> {
-    let y = dot(c, vec3<f32>(0.299, 0.587, 0.114));
-    let u_ = dot(c, vec3<f32>(-0.14713, -0.28886, 0.436));
-    let v = dot(c, vec3<f32>(0.615, -0.51499, -0.10001));
-    return vec3<f32>(y, u_, v);
+fn noise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let a = hash(i);
+    let b = hash(i + vec2<f32>(1.0, 0.0));
+    let c = hash(i + vec2<f32>(0.0, 1.0));
+    let d = hash(i + vec2<f32>(1.0, 1.0));
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-fn yuv2rgb(c: vec3<f32>) -> vec3<f32> {
-    let r = c.x + 1.13983 * c.z;
-    let g = c.x - 0.39465 * c.y - 0.58060 * c.z;
-    let b = c.x + 2.03211 * c.y;
-    return vec3<f32>(r, g, b);
+// ── Linear sRGB ↔ OkLab (simplified but perceptually uniform) ──
+fn srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
+    let lms = mat3x3<f32>(
+        0.8189330101, 0.3618667424, -0.1288597137,
+        0.0329845436, 0.9293118715, 0.0361456387,
+        0.0482003018, 0.2643662691, 0.6338517070
+    ) * c;
+    let lms_ = pow(abs(lms), vec3<f32>(1.0 / 3.0)) * sign(lms);
+    return mat3x3<f32>(
+        0.2104542553, 0.7936177850, -0.0040720468,
+        1.9779984951, -2.4285922050, 0.4505937099,
+        0.0259040371, 0.7827717662, -0.8086757660
+    ) * lms_;
+}
+
+fn oklab_to_srgb(c: vec3<f32>) -> vec3<f32> {
+    let lms_ = mat3x3<f32>(
+        1.0, 0.3963377774, 0.2158037573,
+        1.0, -0.1055613458, -0.0638541728,
+        1.0, -0.0894841775, -1.2914855480
+    ) * c;
+    let lms = lms_ * lms_ * lms_;
+    return mat3x3<f32>(
+        1.2270138510, -0.5577992887, 0.2812561490,
+        -0.0405801784, 1.1122568696, -0.0716766787,
+        -0.0763812845, -0.4214819784, 1.5861632204
+    ) * lms;
+}
+
+// ── ACES Filmic tone mapping (approx) ──
+fn aces_fitted(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c2 = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c2 * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ── Color temperature shift: warm/cool driven by audio ──
+fn color_temp(c: vec3<f32>, temp: f32) -> vec3<f32> {
+    let warm = vec3<f32>(1.14, 0.96, 0.78);
+    let cool = vec3<f32>(0.78, 0.92, 1.14);
+    let tint = mix(cool, warm, clamp(temp, 0.0, 1.0));
+    return c * tint;
+}
+
+// ── Thin-film iridescent Fresnel on vortex rim ──
+fn iridescent_fresnel(r: f32, time: f32, audio: f32) -> vec3<f32> {
+    let rim = pow(1.0 - clamp(r * 1.4, 0.0, 1.0), 3.0);
+    let phase = time * 0.5 + r * 12.0 + audio * 4.0;
+    let irid = vec3<f32>(
+        0.5 + 0.5 * cos(phase),
+        0.5 + 0.5 * cos(phase + 2.094),
+        0.5 + 0.5 * cos(phase + 4.189)
+    );
+    return irid * rim * (0.8 + audio * 0.6);
+}
+
+// ── Hex-bokeh-ish highlight bloom approximation ──
+fn hex_bloom(uv: vec2<f32>, radius: f32) -> vec3<f32> {
+    var acc = vec3<f32>(0.0);
+    let hex = array<vec2<f32>, 6>(
+        vec2<f32>(1.0, 0.0),
+        vec2<f32>(0.5, 0.866),
+        vec2<f32>(-0.5, 0.866),
+        vec2<f32>(-1.0, 0.0),
+        vec2<f32>(-0.5, -0.866),
+        vec2<f32>(0.5, -0.866)
+    );
+    for (var i: i32 = 0; i < 6; i = i + 1) {
+        let samp = uv + hex[i] * radius;
+        let col = textureSampleLevel(readTexture, u_sampler, clamp(samp, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        acc = acc + max(col - vec3<f32>(0.6), vec3<f32>(0.0));
+    }
+    return acc / 6.0;
+}
+
+// ── Volumetric fog / Mie scattering along tunnel ──
+fn volumetric_fog(uv: vec2<f32>, center: vec2<f32>, r: f32, time: f32, bass: f32) -> vec3<f32> {
+    var fog = vec3<f32>(0.0);
+    let steps = 8.0;
+    for (var t: f32 = 0.0; t < 1.0; t = t + 1.0 / steps) {
+        let p = mix(center, uv, t);
+        let d = length(p - center);
+        let ray = sin(d * 20.0 - time * 2.0 + bass * 4.0) * 0.5 + 0.5;
+        let density = exp(-d * 3.0) * ray * (0.5 + bass * 0.5);
+        fog = fog + vec3<f32>(0.15, 0.12, 0.25) * density;
+    }
+    return fog / steps;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -98,27 +188,42 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let colB = textureSampleLevel(readTexture, u_sampler, clamp(sampleUVB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     var col = vec3<f32>(colR, colG, colB);
 
-    // Color-space warp
-    var yuv = rgb2yuv(col);
+    // OkLab color-space warp with smoother hue rotation
+    var lab = srgb_to_oklab(max(col, vec3<f32>(0.0)));
     let hueShift = time * 0.2 + bass * 1.5 + colorWarp * 3.14159;
-    let cosH = cos(hueShift);
-    let sinH = sin(hueShift);
-    yuv.y = yuv.y * cosH - yuv.z * sinH;
-    yuv.z = yuv.y * sinH + yuv.z * cosH;
+    let chroma = length(lab.yz);
+    let luma = lab.x;
+    let newHue = atan2(lab.z, lab.y) + hueShift;
+    lab.y = chroma * cos(newHue) * (1.0 + mids * 0.25);
+    lab.z = chroma * sin(newHue) * (1.0 + mids * 0.25);
+    lab.x = luma * (1.0 + treble * 0.35);
+    var outCol = oklab_to_srgb(lab);
 
-    yuv.x = yuv.x * (1.0 + treble * 0.5);
-    yuv.y = yuv.y * (1.0 + mids * 0.3);
-    yuv.z = yuv.z * (1.0 + mids * 0.3);
+    // Dynamic color temperature driven by bass (warm) / treble (cool)
+    let tempDrive = clamp(bass * 0.7 - treble * 0.3 + 0.5, 0.0, 1.0);
+    outCol = color_temp(outCol, tempDrive);
 
-    var outCol = yuv2rgb(yuv);
+    // Iridescent Fresnel rim on swirling boundaries
+    outCol = outCol + iridescent_fresnel(r, time, bass) * (0.5 + mids * 0.5);
 
+    // Hex-bokeh bloom on highlights
+    let bloom = hex_bloom(uv, 0.008 + treble * 0.012);
+    outCol = outCol + bloom * (0.4 + bass * 0.4);
+
+    // Volumetric fog / light rays along the vortex tunnel
+    let fog = volumetric_fog(uv, center, r, time, bass);
+    outCol = outCol + fog * (1.0 - depth * 0.5);
+
+    // Vignette and radial streak accents
     let vig = 1.0 - smoothstep(0.3, 1.0, r);
     outCol = outCol * (0.7 + 0.3 * vig);
 
     let streak = pow(sin(spiral * sectors + time * 2.0) * 0.5 + 0.5, 4.0);
-    outCol = outCol + vec3<f32>(streak * bass * 0.3);
+    outCol = outCol + vec3<f32>(streak * bass * 0.25);
 
-    outCol = clamp(outCol, vec3<f32>(0.0), vec3<f32>(2.0));
+    // Allow HDR headroom, then ACES tone map
+    outCol = outCol * (1.0 + bass * 0.35);
+    outCol = aces_fitted(outCol);
 
     // Temporal persistence blend
     let prevCol = prev.rgb;

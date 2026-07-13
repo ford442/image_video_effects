@@ -9,7 +9,7 @@
     "raymarching",
     "volumetric"
   ],
-  "description": "A mesmerizing, hyper-turbulent ocean of boiling quantum probability foam, where iridescent hyper-bubbles merge and burst in sync with audio frequencies, releasing flashes of raw cosmic energy.",
+  "description": "An upgraded, hyper-turbulent ocean of boiling quantum probability foam. Iridescent hyper-bubbles merge and burst in sync with split audio bands, a spring-damper mouse gravity-well warps the field, click shockwaves ripple through the bubbles, and luma/depth-keyed spawn regions seed new foam from the input image.",
   "workgroup_size": [
     16,
     16,
@@ -54,5 +54,12 @@
   "updated": true,
   "id": "gen-superfluid-quantum-foam",
   "url": "shaders/gen-superfluid-quantum-foam.wgsl",
-  "features": []
+  "features": [
+    "spring-damper-mouse",
+    "click-shockwave",
+    "multi-band-audio",
+    "temporal-trails",
+    "luma-spawn-region",
+    "depth-spawn-region"
+  ]
 }

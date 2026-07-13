@@ -9,9 +9,13 @@
     "audio-reactive",
     "geometric",
     "abstract",
-    "procedural"
+    "procedural",
+    "hdr-ready",
+    "lod",
+    "depth-aware",
+    "bloom"
   ],
-  "description": "Mineral dendrites crystallise from a golden-ratio nucleation seed. Radially symmetric branches grow with bass energy, prismatic hue shifts with mids, treble adds refractive sparkle.",
+  "description": "Mineral dendrites crystallise from a golden-ratio nucleation seed. Radially symmetric branches grow with bass energy, prismatic hue shifts with mids, treble adds refractive sparkle. LOD reduces peripheral branch iterations and symmetry; sparse hex-bokeh approximates cheap glow; smart depth pass-through respects scene foreground.",
   "workgroup_size": [
     16,
     16,
@@ -53,8 +57,16 @@
   ],
   "supportsDepth": true,
   "supportsDof": false,
+  "hdrReady": true,
+  "bloomThreshold": 0.85,
   "updated": true,
   "id": "gen-crystal-lattice-growth",
   "url": "shaders/gen-crystal-lattice-growth.wgsl",
-  "features": []
+  "features": [
+    "lod-quality-scaling",
+    "early-exit",
+    "hex-bokeh-glow",
+    "smart-depth-pass-through",
+    "hdr-ready"
+  ]
 }

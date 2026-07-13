@@ -3049,7 +3049,7 @@
     "tags": [
       "generative"
     ],
-    "description": "",
+    "description": "Gray-Scott reaction-diffusion simulation with dual 3x3/5x5 Laplacian kernels, two competing species, domain-warped FBM, curl-noise advection, strange-attractor orbit traps, procedural plankton SDFs, bioluminescent color mapping, mouse seeding, and audio-driven feed/kill rates.",
     "workgroup_size": [
       16,
       16,
@@ -3094,7 +3094,18 @@
     "updated": true,
     "id": "gen-bioluminescent-reaction-diffusion",
     "url": "shaders/gen-bioluminescent-reaction-diffusion.wgsl",
-    "features": []
+    "features": [
+      "dual-laplacian",
+      "multi-scale-rd",
+      "curl-advection",
+      "domain-warped-fbm",
+      "strange-attractor",
+      "plankton-sdf",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-scaled-glow",
+      "chromatic-species"
+    ]
   },
   {
     "name": "Biomechanical Hive",
@@ -4241,6 +4252,79 @@
     "features": []
   },
   {
+    "id": "gen-chromatic-vortex",
+    "name": "Chromatic Vortex",
+    "category": "generative",
+    "url": "shaders/gen-chromatic-vortex.wgsl",
+    "description": "A hypnotic polar distortion vortex with chromatic sector dispersion, OkLab color-space warping, ACES HDR tone mapping, volumetric fog, iridescent Fresnel rims, and hex-bokeh bloom. Audio drives color temperature, spiral intensity, and atmospheric density.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "temporal-feedback",
+      "oklab-warp",
+      "aces-tone-map",
+      "iridescent-fresnel",
+      "volumetric-fog",
+      "hex-bokeh-bloom",
+      "color-temperature",
+      "depth-aware"
+    ],
+    "tags": [
+      "vortex",
+      "chromatic",
+      "polar-distortion",
+      "oklab",
+      "aces",
+      "iridescent",
+      "volumetric",
+      "bloom",
+      "audio-reactive",
+      "generative"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Swirl Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Radius Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Polar Distort",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Warp",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true
+  },
+  {
     "name": "Chromatic Zonohedron",
     "category": "generative",
     "tags": [
@@ -5166,9 +5250,13 @@
       "audio-reactive",
       "geometric",
       "abstract",
-      "procedural"
+      "procedural",
+      "hdr-ready",
+      "lod",
+      "depth-aware",
+      "bloom"
     ],
-    "description": "Mineral dendrites crystallise from a golden-ratio nucleation seed. Radially symmetric branches grow with bass energy, prismatic hue shifts with mids, treble adds refractive sparkle.",
+    "description": "Mineral dendrites crystallise from a golden-ratio nucleation seed. Radially symmetric branches grow with bass energy, prismatic hue shifts with mids, treble adds refractive sparkle. LOD reduces peripheral branch iterations and symmetry; sparse hex-bokeh approximates cheap glow; smart depth pass-through respects scene foreground.",
     "workgroup_size": [
       16,
       16,
@@ -5210,10 +5298,18 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
+    "hdrReady": true,
+    "bloomThreshold": 0.85,
     "updated": true,
     "id": "gen-crystal-lattice-growth",
     "url": "shaders/gen-crystal-lattice-growth.wgsl",
-    "features": []
+    "features": [
+      "lod-quality-scaling",
+      "early-exit",
+      "hex-bokeh-glow",
+      "smart-depth-pass-through",
+      "hdr-ready"
+    ]
   },
   {
     "id": "gen-crystalline-chrono-dyson",
@@ -12716,7 +12812,7 @@
       "audio-reactive",
       "vj"
     ],
-    "description": "2D Navier-Stokes fluid simulation with semi-Lagrangian advection, pressure projection, and ink injection. Bass drives injection rate, mouse injects ink and vortices, depth controls viscosity.",
+    "description": "2D Navier-Stokes fluid simulation with semi-Lagrangian advection, two Jacobi pressure-projection iterations, curl-noise perturbation, anisotropic density diffusion, and procedural dye SDFs. Bass drives injection rate, mouse injects ink and vortices, depth controls opacity.",
     "workgroup_size": [
       16,
       16,
@@ -12761,7 +12857,14 @@
     "updated": true,
     "id": "gen-navier-stokes-ink",
     "url": "shaders/gen-navier-stokes-ink.wgsl",
-    "features": []
+    "features": [
+      "jacobi-pressure",
+      "curl-noise",
+      "anisotropic-diffusion",
+      "dye-sdf",
+      "vorticity-confinement",
+      "domain-warped-advection"
+    ]
   },
   {
     "name": "Nebula Light-Trail Swarm",
@@ -13021,7 +13124,7 @@
       "abstract",
       "psychedelic"
     ],
-    "description": "A blooming neon lotus flower with layered petals unfolding in real-time. Bass swells the bloom, mids shift the chromatic glow, treble adds iridescent shimmer on each petal edge.",
+    "description": "An interactive blooming neon lotus with layered prismatic petals. Bass swells the bloom, mids drive hue-shift speed, treble sparks petal edges. Mouse gravity warps petals toward the cursor, clicks emit a center shockwave, and video luma/depth spawns particles along petal edges with temporal neon trails.",
     "workgroup_size": [
       16,
       16,
@@ -13066,7 +13169,17 @@
     "updated": true,
     "id": "gen-neon-lotus",
     "url": "shaders/gen-neon-lotus.wgsl",
-    "features": []
+    "features": [
+      "click-shockwave",
+      "mouse-gravity-well",
+      "audio-envelope-followers",
+      "bass-bloom",
+      "mids-hue-shift",
+      "treble-edge-sparkle",
+      "temporal-neon-trails",
+      "luma-depth-particles",
+      "prismatic-petals"
+    ]
   },
   {
     "name": "Neon Neural Network",
@@ -15032,17 +15145,36 @@
     "features": []
   },
   {
+    "id": "gen-prismatic-ion-cascade",
     "name": "Prismatic Ion Cascade",
     "category": "generative",
+    "url": "shaders/gen-prismatic-ion-cascade.wgsl",
+    "description": "Mouse-anchored cascade of prismatic ion streams with curl-warped angular bands, chromatic spectral split, LOD-aware FBM shimmer, audio-reactive flicker, sparse hex-bokeh glow, and smart depth-aware compositing. Bass pulses the radial core, mids drive flow speed, treble adds sparkle.",
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "chromatic-split",
+      "temporal-cascade-persistence",
+      "LOD-quality-scaling",
+      "early-exit-culling",
+      "hex-bokeh-glow",
+      "depth-aware",
+      "aces-tone-map",
+      "HDR-ready",
+      "bloom-threshold"
+    ],
     "tags": [
       "generative",
       "prismatic",
       "ion",
       "cascade",
       "spectral",
-      "audio-reactive"
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "bloom",
+      "HDR"
     ],
-    "description": "Mouse-anchored cascade of prismatic ion streams. Curl-warped angular bands radiate from the cursor with chromatic spectral split, fbm-driven shimmer, and audio-reactive flicker. Bass pulses the radial core, mids drive flow speed, treble adds sparkle.",
     "workgroup_size": [
       16,
       16,
@@ -15084,10 +15216,9 @@
     ],
     "supportsDepth": true,
     "supportsDof": false,
-    "updated": true,
-    "id": "gen-prismatic-ion-cascade",
-    "url": "shaders/gen-prismatic-ion-cascade.wgsl",
-    "features": []
+    "bloomThreshold": 1.25,
+    "hdrReady": true,
+    "updated": true
   },
   {
     "name": "Prismatic Möbius Helix",
@@ -16977,7 +17108,7 @@
       "generative",
       "abstract"
     ],
-    "description": "Simulates a multi-slit diffraction grating where separate red, green, and blue wavelengths produce offset interference fringe patterns. Six-fold rotational symmetry creates a spectral starburst. Slit orientation and frequency pulse to audio for reactive prism effects.",
+    "description": "Multi-slit diffraction grating with separate red/green/blue wavelength interference, 6-fold rotational symmetry, and audio-reactive fringe modulation. Upgraded with ACES tone mapping, volumetric light cones, Fresnel glints, dynamic color temperature shifts, radial bloom, and spectral wavelength mixing.",
     "workgroup_size": [
       16,
       16,
@@ -17022,7 +17153,14 @@
     "updated": true,
     "id": "gen-rgb-diffraction",
     "url": "shaders/gen-rgb-diffraction.wgsl",
-    "features": []
+    "features": [
+      "ACES tone mapping",
+      "volumetric light cones",
+      "Fresnel glint",
+      "dynamic color temperature",
+      "radial bloom",
+      "spectral wavelength mixing"
+    ]
   },
   {
     "name": "Sentient Aether-Flora Biosphere",
@@ -18288,7 +18426,7 @@
       "raymarching",
       "volumetric"
     ],
-    "description": "A mesmerizing, hyper-turbulent ocean of boiling quantum probability foam, where iridescent hyper-bubbles merge and burst in sync with audio frequencies, releasing flashes of raw cosmic energy.",
+    "description": "An upgraded, hyper-turbulent ocean of boiling quantum probability foam. Iridescent hyper-bubbles merge and burst in sync with split audio bands, a spring-damper mouse gravity-well warps the field, click shockwaves ripple through the bubbles, and luma/depth-keyed spawn regions seed new foam from the input image.",
     "workgroup_size": [
       16,
       16,
@@ -18333,7 +18471,14 @@
     "updated": true,
     "id": "gen-superfluid-quantum-foam",
     "url": "shaders/gen-superfluid-quantum-foam.wgsl",
-    "features": []
+    "features": [
+      "spring-damper-mouse",
+      "click-shockwave",
+      "multi-band-audio",
+      "temporal-trails",
+      "luma-spawn-region",
+      "depth-spawn-region"
+    ]
   },
   {
     "name": "Supernova Remnant",

@@ -1,0 +1,41 @@
+{
+  "id": "gen-chromatic-vortex",
+  "name": "Chromatic Vortex",
+  "category": "generative",
+  "url": "shaders/gen-chromatic-vortex.wgsl",
+  "description": "A hypnotic polar distortion vortex with chromatic sector dispersion, OkLab color-space warping, ACES HDR tone mapping, volumetric fog, iridescent Fresnel rims, and hex-bokeh bloom. Audio drives color temperature, spiral intensity, and atmospheric density.",
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal-feedback",
+    "oklab-warp",
+    "aces-tone-map",
+    "iridescent-fresnel",
+    "volumetric-fog",
+    "hex-bokeh-bloom",
+    "color-temperature",
+    "depth-aware"
+  ],
+  "tags": [
+    "vortex",
+    "chromatic",
+    "polar-distortion",
+    "oklab",
+    "aces",
+    "iridescent",
+    "volumetric",
+    "bloom",
+    "audio-reactive",
+    "generative"
+  ],
+  "workgroup_size": [16, 16, 1],
+  "updatedParams": [
+    { "index": 0, "name": "Swirl Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Radius Scale", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Polar Distort", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Color Warp", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true
+}

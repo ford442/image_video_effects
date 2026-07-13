@@ -12,7 +12,7 @@
     "generative",
     "abstract"
   ],
-  "description": "Simulates a multi-slit diffraction grating where separate red, green, and blue wavelengths produce offset interference fringe patterns. Six-fold rotational symmetry creates a spectral starburst. Slit orientation and frequency pulse to audio for reactive prism effects.",
+  "description": "Multi-slit diffraction grating with separate red/green/blue wavelength interference, 6-fold rotational symmetry, and audio-reactive fringe modulation. Upgraded with ACES tone mapping, volumetric light cones, Fresnel glints, dynamic color temperature shifts, radial bloom, and spectral wavelength mixing.",
   "workgroup_size": [
     16,
     16,
@@ -57,5 +57,12 @@
   "updated": true,
   "id": "gen-rgb-diffraction",
   "url": "shaders/gen-rgb-diffraction.wgsl",
-  "features": []
+  "features": [
+    "ACES tone mapping",
+    "volumetric light cones",
+    "Fresnel glint",
+    "dynamic color temperature",
+    "radial bloom",
+    "spectral wavelength mixing"
+  ]
 }

@@ -11,7 +11,7 @@
     "abstract",
     "psychedelic"
   ],
-  "description": "A blooming neon lotus flower with layered petals unfolding in real-time. Bass swells the bloom, mids shift the chromatic glow, treble adds iridescent shimmer on each petal edge.",
+  "description": "An interactive blooming neon lotus with layered prismatic petals. Bass swells the bloom, mids drive hue-shift speed, treble sparks petal edges. Mouse gravity warps petals toward the cursor, clicks emit a center shockwave, and video luma/depth spawns particles along petal edges with temporal neon trails.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,15 @@
   "updated": true,
   "id": "gen-neon-lotus",
   "url": "shaders/gen-neon-lotus.wgsl",
-  "features": []
+  "features": [
+    "click-shockwave",
+    "mouse-gravity-well",
+    "audio-envelope-followers",
+    "bass-bloom",
+    "mids-hue-shift",
+    "treble-edge-sparkle",
+    "temporal-neon-trails",
+    "luma-depth-particles",
+    "prismatic-petals"
+  ]
 }

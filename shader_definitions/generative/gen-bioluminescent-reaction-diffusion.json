@@ -4,7 +4,7 @@
   "tags": [
     "generative"
   ],
-  "description": "",
+  "description": "Gray-Scott reaction-diffusion simulation with dual 3x3/5x5 Laplacian kernels, two competing species, domain-warped FBM, curl-noise advection, strange-attractor orbit traps, procedural plankton SDFs, bioluminescent color mapping, mouse seeding, and audio-driven feed/kill rates.",
   "workgroup_size": [
     16,
     16,
@@ -49,5 +49,16 @@
   "updated": true,
   "id": "gen-bioluminescent-reaction-diffusion",
   "url": "shaders/gen-bioluminescent-reaction-diffusion.wgsl",
-  "features": []
+  "features": [
+    "dual-laplacian",
+    "multi-scale-rd",
+    "curl-advection",
+    "domain-warped-fbm",
+    "strange-attractor",
+    "plankton-sdf",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-scaled-glow",
+    "chromatic-species"
+  ]
 }

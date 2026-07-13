@@ -1,11 +1,53 @@
+# Swarm Brief: gen-superfluid-quantum-foam
+
+**Role:** Interactivist
+**Name:** Superfluid Quantum-Foam
+**Category:** generative
+**Description:** Raymarched quantum foam of boiling hyper-bubbles with iridescent surfaces, audio reactivity, and mouse vortex interaction.
+**Current lines:** 150
+**Target lines:** 210–290 (expand by +60 to +140)
+
+## Role Instructions
+
+You are the Interactivist. Focus on input reactivity, feedback loops, and emergent behavior:
+- Add a spring-damper mouse-follow or gravity-well interaction that deforms the foam field.
+- Add click shockwaves / spawn bursts that ripple through the bubble field.
+- Map bass to bubble boil intensity, mids to vortex rotation, treble to sparkle/additive flashes.
+- Add temporal accumulation trails so high-energy bursts persist briefly.
+- Add multi-band audio splitting (bass/mids/treble each drive a distinct visual parameter).
+- Use luma-keyed or depth-keyed spawn regions.
+- Preserve the original "soul" — a turbulent, living quantum foam.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+
+## JSON Parameters / Controls
+
+```json
+[
+  {"index": 0, "name": "Boiling Volatility", "default": 0.5, "min": 0, "max": 2, "step": 0.05},
+  {"index": 1, "name": "Vortex Radius", "default": 4, "min": 0, "max": 10, "step": 0.1},
+  {"index": 2, "name": "Radiation Glow", "default": 1, "min": 0, "max": 5, "step": 0.1},
+  {"index": 3, "name": "Current Speed", "default": 0.5, "min": 0, "max": 3, "step": 0.1}
+]
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════════
 //  Superfluid Quantum-Foam
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, raymarched, temporal, chromatic, depth-aware,
-//            spring-damper mouse gravity-well, click shockwaves, luma/depth spawn regions,
-//            multi-band audio splitting, temporal burst trails
+//  Features: mouse-driven, audio-reactive, raymarched, temporal, chromatic, depth-aware
 //  Complexity: High
-//  Upgraded: 2026-07-13
+//  Upgraded: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -27,12 +69,6 @@ struct Uniforms {
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
-
-// Per-pixel globals fed from audio, mouse state, and input analysis
-var<private> g_spawn: f32;
-var<private> g_shock: f32;
-var<private> g_shockStrength: f32;
-var<private> g_mouseSpring: vec2<f32>;
 
 fn hash13(p3: vec3<f32>) -> f32 {
   var p = fract(p3 * 0.1031);
@@ -60,42 +96,25 @@ fn curlNoise(p: vec3<f32>) -> vec3<f32> {
 fn map(p: vec3<f32>) -> vec2<f32> {
   let t = u.config.x;
   let bass = plasmaBuffer[0].x;
-  let mids = plasmaBuffer[0].y;
-  let treble = plasmaBuffer[0].z;
-  let env = 1.0 + bass * 2.0 + g_spawn * 0.5;
+  let env = 1.0 + bass * 2.0;
   var pos = p + curlNoise(p * 0.5 + t * 0.1) * 0.3 * env;
-
-  // Spring-damper mouse gravity well deforms the foam field
-  let m = vec3<f32>((g_mouseSpring.x * 2.0 - 1.0) * 10.0, -(g_mouseSpring.y * 2.0 - 1.0) * 5.0, 0.0);
+  
+  let m = vec3<f32>((u.zoom_config.y * 2.0 - 1.0) * 10.0, -(u.zoom_config.z * 2.0 - 1.0) * 5.0, 0.0);
   let dm = length(p - m);
-  let vr = u.zoom_params.y * (1.0 + mids * 0.3);
+  let vr = u.zoom_params.y;
   if (dm < vr) {
-    let falloff = 1.0 - dm / max(vr, 0.001);
-    pos += normalize(m - p) * falloff * (vr * 0.5 + bass * 1.5);
-    // Mids drive vortex rotation speed and direction
-    let angle = t * (0.5 + mids * 2.0) * sign(m.x + 0.001);
-    let s = sin(angle);
-    let c = cos(angle);
+    pos += normalize(m - p) * (vr - dm) * 0.5;
+    let s = sin(dm);
+    let c = cos(dm);
     let xz = pos.xz * mat2x2<f32>(c, -s, s, c);
     pos.x = xz.x;
     pos.z = xz.y;
   }
-
-  // Click shockwave ripple propagates through the bubble field
-  if (g_shockStrength > 0.001) {
-    let mRaw = vec2<f32>(u.zoom_config.y * 2.0 - 1.0, -(u.zoom_config.z * 2.0 - 1.0));
-    let dsw = length(p.xy - mRaw * 10.0);
-    let ring = abs(dsw - g_shock);
-    if (ring < 2.5) {
-      let ripple = sin(dsw * 4.0 - t * 12.0) * (1.0 - ring / 2.5) * g_shockStrength;
-      pos += normalize(vec3<f32>(p.xy - mRaw * 10.0, 0.0)) * ripple;
-    }
-  }
-
+  
   let sp = 3.0 / env;
   var cell = floor(pos / sp);
   pos = pos - sp * round(pos / sp);
-  let boil = hash13(cell) * sin(t * 3.0 + bass * 10.0) * u.zoom_params.x * (1.0 + treble * 0.5);
+  let boil = hash13(cell) * sin(t * 3.0 + bass * 10.0) * u.zoom_params.x;
   let r = (0.6 + hash13(cell + 1.0) * 0.6) * env + boil;
   return vec2<f32>(length(pos) - r, hash13(cell));
 }
@@ -110,67 +129,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coords = vec2<i32>(global_id.xy);
   let dims = textureDimensions(writeTexture);
   if (coords.x >= i32(dims.x) || coords.y >= i32(dims.y)) { return; }
-
+  
   let uv = (vec2<f32>(coords) - 0.5 * vec2<f32>(dims)) / f32(dims.y);
-  let uv_norm = vec2<f32>(coords) / vec2<f32>(dims);
   let t = u.config.x;
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let env = 1.0 + bass * 2.0;
-
-  // Luma-keyed and depth-keyed spawn regions
-  let inputCol = textureSampleLevel(readTexture, u_sampler, uv_norm, 0.0);
-  let luma = dot(inputCol.rgb, vec3<f32>(0.299, 0.587, 0.114));
-  let depthSample = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv_norm, 0.0).r;
-  let depthKey = 1.0 - smoothstep(0.0, 0.4, depthSample);
-  g_spawn = smoothstep(0.55, 0.95, luma) * 0.7 + depthKey * 0.5;
-
-  // Read and update spring-damper mouse-follow state and click shockwave state
-  var sm = vec2<f32>(extraBuffer[0], extraBuffer[1]);
-  var vm = vec2<f32>(extraBuffer[2], extraBuffer[3]);
-  var lastClick = extraBuffer[4];
-  var shock = extraBuffer[5];
-  var shockStrength = extraBuffer[6];
-
-  if (global_id.x == 0u && global_id.y == 0u) {
-    let mouseTarget = u.zoom_config.yz;
-    let k = 8.0;
-    let d = 4.0;
-    let dt = 0.016;
-    let force = (mouseTarget - sm) * k;
-    vm = vm + (force - vm * d) * dt;
-    sm = sm + vm * dt;
-
-    let clickCount = u.config.y;
-    if (clickCount > lastClick + 0.5) {
-      shock = 0.0;
-      shockStrength = 1.0;
-      lastClick = clickCount;
-    }
-
-    shock = shock + (3.0 + bass * 5.0) * dt;
-    shockStrength = shockStrength * (0.94 - treble * 0.02);
-    if (shockStrength < 0.01) { shockStrength = 0.0; }
-
-    extraBuffer[0] = sm.x;
-    extraBuffer[1] = sm.y;
-    extraBuffer[2] = vm.x;
-    extraBuffer[3] = vm.y;
-    extraBuffer[4] = lastClick;
-    extraBuffer[5] = shock;
-    extraBuffer[6] = shockStrength;
-  }
-
-  g_mouseSpring = sm;
-  g_shock = shock;
-  g_shockStrength = shockStrength;
-
+  
   let ro = vec3<f32>(0.0, 0.0, -8.0 + t * u.zoom_params.w);
   let rd = normalize(vec3<f32>(uv, 1.0));
   var dist = 0.0;
   var glow = 0.0;
-
+  
   for (var i = 0; i < 80; i++) {
     let p = ro + rd * dist;
     let res = map(p);
@@ -178,26 +149,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (res.x < 0.001 || dist > 30.0) { break; }
     dist += res.x * 0.5;
   }
-
+  
   var col = vec3<f32>(0.02, 0.0, 0.05);
   var alpha = 0.0;
-
+  
   if (dist < 30.0) {
     let p = ro + rd * dist;
     let n = calcNormal(p);
     let v = -rd;
     let ndotv = clamp(dot(n, v), 0.0, 1.0);
 
-    // Treble brightens and sharpens iridescence frequency
-    let freq = 6.28318 * (1.0 + treble * 0.5);
+    // ═══ Chromatic dispersion: per-channel iridescence offsets ═══
     let ndotvR = clamp(ndotv + bass * 0.05, 0.0, 1.0);
     let ndotvG = clamp(ndotv + mids * 0.05, 0.0, 1.0);
     let ndotvB = clamp(ndotv + treble * 0.05, 0.0, 1.0);
 
     let irid = vec3<f32>(
-      0.5 + 0.5 * cos(freq * (ndotvR + 0.0)),
-      0.5 + 0.5 * cos(freq * (ndotvG + 0.33)),
-      0.5 + 0.5 * cos(freq * (ndotvB + 0.67))
+      0.5 + 0.5 * cos(6.28318 * (ndotvR + 0.0)),
+      0.5 + 0.5 * cos(6.28318 * (ndotvG + 0.33)),
+      0.5 + 0.5 * cos(6.28318 * (ndotvB + 0.67))
     );
 
     let dif = clamp(dot(n, normalize(vec3<f32>(0.8, 0.7, -0.6))), 0.0, 1.0);
@@ -205,24 +175,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = mix(col, vec3<f32>(0.02, 0.0, 0.05), 1.0 - exp(-0.02 * dist * dist));
     alpha = clamp(1.0 - exp(-0.05 * dist), 0.0, 1.0) * (0.4 + 0.6 * dif);
   }
-
-  // Treble-driven additive sparkle / flash on top of volumetric glow
-  let sparkle = vec3<f32>(0.9, 0.85, 1.0) * treble * pow(glow, 2.0) * 2.0;
+  
   let flash = vec3<f32>(0.8, 0.1, 1.0) * glow * env;
-  col += flash + sparkle;
+  col += flash;
   alpha = max(alpha, glow * 0.5);
-
+  
   let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
   col = max(col, lum * vec3<f32>(0.3, 0.2, 0.4));
 
-  // Temporal accumulation trails — bursts persist longer when energy is high
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv_norm, 0.0);
-  let energy = bass + treble * 2.0 + g_shockStrength;
-  let trail = clamp(0.04 + energy * 0.22, 0.0, 0.55);
-  col = mix(col, prev.rgb * 0.9, trail);
-
+  // ═══ Temporal feedback ═══
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  col = mix(col, prev.rgb * 0.9, 0.03 + bass * 0.01);
+  
   textureStore(writeTexture, coords, vec4<f32>(col * alpha, alpha));
   textureStore(writeDepthTexture, coords, vec4<f32>(min(dist / 30.0, 1.0), 0.0, 0.0, 1.0));
   textureStore(dataTextureA, coords, vec4<f32>(col * alpha, alpha));
 }
+```
