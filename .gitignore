@@ -2,6 +2,7 @@ node_modules
 *.log
 build/
 venv/
+.venv/
 emsdk
 
 # Python cache

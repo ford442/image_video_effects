@@ -3,7 +3,17 @@ project(PixelocityWASM CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(pixelocity_wasm main.cpp renderer.cpp)
+add_executable(pixelocity_wasm
+    main.cpp
+    renderer.cpp
+    device.cpp
+    resources.cpp
+    pipeline.cpp
+    frame.cpp
+    timing.cpp
+    audio_depth.cpp
+    wasm_internal.cpp
+)
 
 target_compile_features(pixelocity_wasm PUBLIC cxx_std_20)
 

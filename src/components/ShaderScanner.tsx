@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { ShaderEntry } from '../renderer/types';
+import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
+import { requestPixelocityDevice } from '../utils/requestPixelocityDevice';
 
 interface ShaderParam {
   id: string;
@@ -148,6 +150,7 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
     const doParamCheck = scanMode === 'params' || scanMode === 'both';
     
     let device: GPUDevice | null = null;
+    let supportsSubgroups = false;
     
     if (doCompileCheck) {
       if (!navigator.gpu) {
@@ -161,11 +164,13 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
         return;
       }
 
-      device = await adapter.requestDevice();
-      if (!device) {
+      const deviceResult = await requestPixelocityDevice(adapter);
+      if (!deviceResult) {
         alert('Failed to get WebGPU device');
         return;
       }
+      device = deviceResult.device;
+      supportsSubgroups = deviceResult.supportsSubgroups;
     }
 
     setIsScanning(true);
@@ -205,13 +210,26 @@ export const ShaderScanner: React.FC<ShaderScannerProps> = ({ shaders, isOpen, o
         let paramValidation = { valid: true, errors: [] as string[], normalized: [] as ShaderParam[] };
         
         try {
-          // Fetch the shader code
-          const response = await fetch(shader.url);
-          if (!response.ok) {
-            throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+          // Subgroup variants need the same device features as WebGPURenderer.
+          if (shader.id.endsWith('-sg') && !supportsSubgroups) {
+            setResults(prev => {
+              const updated = [...prev];
+              updated[index] = {
+                ...updated[index],
+                status: 'skipped',
+                errorMessage: 'Subgroup variant requires subgroups GPU feature',
+                paramStatus: shader.params && shader.params.length > 0 ? 'valid' : 'no-params',
+              };
+              return updated;
+            });
+            return;
           }
-          
-          const code = await response.text();
+
+          // Fetch via multi-host fallback (local → CDN → storage API).
+          const code = await fetchShaderWgsl(shader.id, shader.url);
+          if (!code) {
+            throw new Error('Failed to fetch shader source from all known hosts');
+          }
           
           // Skip if not a compute shader
           if (!code.includes('@compute')) {

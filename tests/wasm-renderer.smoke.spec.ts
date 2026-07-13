@@ -1,321 +1,170 @@
 /**
- * wasm-renderer.smoke.spec.ts
+ * WASM renderer Playwright smoke suite.
  *
- * Automated smoke test for the WASM renderer path.
- * Validates that:
- * - WASM renderer initializes successfully with ?renderer=wasm
- * - Diagnostics report initialized=true and fps>0
- * - Representative shaders load and render without critical errors
- * - No WebGPU device-lost or shader compilation failures
- * - Frame times are recorded for performance tracking
+ * Soft mode (default CI): verifies production build loads, test API works, no crash.
+ * Strict mode (WASM_GPU_TESTS=1): requires real ?renderer=wasm backend, FPS health,
+ * and exercises the full parity matrix (fluid, RD, audio, generative, interactive).
+ *
+ *   npm run build && WASM_GPU_TESTS=1 npm run test:wasm:smoke
  */
 
 import { test, expect } from '@playwright/test';
-import { execSync, spawn } from 'child_process';
-import { resolve } from 'path';
-
-const BUILD_DIR = resolve(__dirname, '../build');
-const PORT = 3457;
-const BASE_URL = `http://localhost:${PORT}`;
-const WASM_URL = `${BASE_URL}?renderer=wasm&testMode=1`;
-
-// Representative shaders to test (4-6 across different categories)
-const TEST_SHADERS = [
-  // Generative/procedural
-  { slot: 0, id: 'plasma', url: './shaders/plasma.wgsl', category: 'generative' },
-  // Interactive/mouse-driven
-  { slot: 0, id: 'liquid', url: './shaders/liquid.wgsl', category: 'interactive-mouse' },
-  // Distortion effect
-  { slot: 0, id: 'kaleidoscope', url: './shaders/kaleidoscope.wgsl', category: 'distortion' },
-  // Multi-slot stack: slot 1
-  { slot: 1, id: 'adaptive-mosaic', url: './shaders/adaptive-mosaic.wgsl', category: 'visual-effects' },
-  // Color/chromatic effects
-  { slot: 0, id: 'aero-chromatics', url: './shaders/aero-chromatics.wgsl', category: 'visual-effects' },
-  // Atmospheric effects
-  { slot: 0, id: 'aerogel-smoke', url: './shaders/aerogel-smoke.wgsl', category: 'visual-effects' },
-];
-
-let server: ReturnType<typeof spawn> | null = null;
-
-async function startServer(): Promise<void> {
-  // Use Python http.server for reliability in headless CI
-  server = spawn('python3', ['-m', 'http.server', String(PORT), '--directory', BUILD_DIR], {
-    stdio: 'pipe',
-    shell: false,
-  });
-
-  // Poll until server responds
-  await new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Server start timeout')), 60000);
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`${BASE_URL}/`);
-        if (res.status === 200) {
-          clearInterval(interval);
-          clearTimeout(timeout);
-          resolve();
-        }
-      } catch {
-        // Not ready yet
-      }
-    }, 200);
-  });
-}
-
-async function stopServer(): Promise<void> {
-  if (server) {
-    server.kill('SIGTERM');
-    server = null;
-  }
-}
+import { PARITY_MATRIX } from './fixtures/parityMatrix';
+import {
+  startStaticServer,
+  stopStaticServer,
+  buildAppUrl,
+  waitForTestApi,
+  getActiveBackend,
+  assertExpectedBackend,
+  attachConsoleCollector,
+  exerciseShaderOnWasm,
+  captureCanvasStats,
+  getRendererFps,
+  isStrictGpuMode,
+  MIN_WASM_FPS,
+} from './helpers/rendererHarness';
 
 test.beforeAll(async () => {
-  await startServer();
+  await startStaticServer();
 }, 60000);
 
 test.afterAll(async () => {
-  await stopServer();
+  await stopStaticServer();
 });
 
-test.beforeEach(async ({ page }) => {
-  // Collect console messages for diagnostics
-  (page as any).__consoleMessages = [];
-  (page as any).__consoleErrors = [];
-  (page as any).__criticalErrors = [];
+test('WASM renderer initializes (testMode API + diagnostics)', async ({ page }) => {
+  const { criticalErrors } = attachConsoleCollector(page);
+  await page.goto(buildAppUrl('wasm'), { waitUntil: 'networkidle' });
+  await waitForTestApi(page);
 
-  page.on('console', (msg) => {
-    const text = msg.text();
-    const type = msg.type();
-    ((page as any).__consoleMessages as string[]).push(`[${type}] ${text}`);
-    console.log(`[BROWSER ${type}] ${text}`);
+  const active = await assertExpectedBackend(page, 'wasm');
 
-    // Track errors
-    if (type === 'error') {
-      ((page as any).__consoleErrors as string[]).push(text);
-    }
-
-    // Track critical WASM/WebGPU errors
-    if (
-      text.includes('[WebGPU]') && !text.includes('No GPU adapter found') ||
-      text.includes('Uncaught') ||
-      text.includes('device-lost') ||
-      text.includes('shader-compile-error')
-    ) {
-      ((page as any).__criticalErrors as string[]).push(text);
-    }
-  });
-
-  page.on('pageerror', (err) => {
-    ((page as any).__criticalErrors as string[]).push(`[pageerror] ${err.message}`);
-  });
-});
-
-test('WASM renderer initializes successfully', async ({ page }) => {
-  // Navigate to app with WASM forced and test mode enabled
-  await page.goto(WASM_URL, { waitUntil: 'networkidle' });
-
-  // Wait for test API to be available
-  await page.waitForFunction(() => {
-    return (window as any).__pixelocity__ != null;
-  }, {
-    timeout: 15000,
-  });
-
-  // Get diagnostics from the renderer object
   const diagnostics = await page.evaluate(() => {
-    console.log('DIAGNOSTICS:', JSON.stringify((window as any).__pixelocity__?.renderer?.getDiagnostics?.() || {}, null, 2));
-    const renderer = (window as any).__pixelocity__?.renderer;
-    return renderer?.getDiagnostics?.();
+    return (window as any).__pixelocity__?.renderer?.getDiagnostics?.();
   });
-  console.log("DIAGNOSTICS:", diagnostics);
-
-  const consoleMessages = await page.evaluate(() => (window as any).__consoleMessages || []);
-  console.log("CONSOLE MESSAGES:", consoleMessages);
 
   expect(diagnostics).toBeDefined();
-  // If WASM couldn't initialize and fell back, skip the WASM-specific checks
+
   if (!diagnostics?.wasm) {
     console.log('WASM renderer fell back (expected in CI)');
-    return;
-  }
-  // expect(diagnostics?.wasm?.initialized).toBe(true); // Fails in CI without a GPU
-  expect(diagnostics?.wasm?.fps).toBeGreaterThanOrEqual(0);
-  expect(diagnostics?.wasm?.hasModule).toBe(true);
-
-  if (diagnostics?.rendererType === 'wasm') {
-    // Real WebGPU path succeeded
-    expect(diagnostics?.wasm?.initialized).toBe(true);
+  } else {
     expect(diagnostics?.wasm?.fps).toBeGreaterThanOrEqual(0);
     expect(diagnostics?.wasm?.hasModule).toBe(true);
-  } else {
-    // CI / no-GPU case - WASM fell back to JS Renderer
-    console.log('WASM path fell back to JS Canvas2D (expected in CI without GPU)');
-    expect(['js', 'webgpu']).toContain(diagnostics?.rendererType);
+    if (active === 'wasm') {
+      expect(diagnostics?.wasm?.initialized).toBe(true);
+      expect(diagnostics?.rendererType).toBe('wasm');
+    } else if (!isStrictGpuMode()) {
+      console.log(`[smoke] WASM fell back to "${active}" — OK without WASM_GPU_TESTS=1`);
+    }
   }
 
-  // Verify no critical errors during initialization (filter expected WebGPU failures)
-  const criticalErrors: string[] = (page as any).__criticalErrors || [];
-  const filtered = criticalErrors.filter(e =>
-    !e.includes('Failed to get WebGPU adapter') &&
-    !e.includes('No GPU adapter found') &&
-    !e.includes('wasm-init') &&
-    !e.includes('webgpu-unavailable')
+  const filtered = criticalErrors.filter(
+    (e) =>
+      !e.includes('No GPU adapter found') &&
+      !e.includes('Failed to get WebGPU adapter') &&
+      !e.includes('wasm-init') &&
+      !e.includes('webgpu-unavailable')
   );
   expect(filtered).toEqual([]);
 });
 
-test('WASM renderer loads single shader without errors', async ({ page }) => {
-  await page.goto(WASM_URL, { waitUntil: 'networkidle' });
+test('WASM canvas has non-zero dimensions', async ({ page }) => {
+  await page.goto(buildAppUrl('wasm'), { waitUntil: 'networkidle' });
+  await waitForTestApi(page);
 
-  // Wait for test API
-  await page.waitForFunction(
-    () => (window as any).__pixelocity__ != null,
-    { timeout: 30000 }
-  );
-
-  // Load a single shader
-  const shader = TEST_SHADERS[0];
-  await page.evaluate(async (s: typeof shader) => {
-    const api = (window as any).__pixelocity__;
-    await api.loadShader(s.id, s.url);
-    api.setSlotShader(0, s.id);
-  }, shader);
-
-  // Let it render for 2 seconds
-  await page.waitForTimeout(2000);
-
-  // Verify no critical errors
-  const criticalErrors: string[] = (page as any).__criticalErrors || [];
-  expect(criticalErrors).toEqual([]);
-
-  // Verify renderer is still functioning
-  const fps = await page.evaluate(() => {
-    return (window as any).__pixelocity__?.renderer?.getDiagnostics?.()?.fps ?? 0;
-  });
-  expect(fps).toBeGreaterThanOrEqual(0);
+  const stats = await captureCanvasStats(page);
+  expect(stats.width).toBeGreaterThan(0);
+  expect(stats.height).toBeGreaterThan(0);
 });
 
-test('WASM renderer loads multiple shaders (multi-slot stack)', async ({ page }) => {
-  await page.goto(WASM_URL, { waitUntil: 'networkidle' });
+for (const shaderCase of PARITY_MATRIX) {
+  test(`WASM smoke: ${shaderCase.category} / ${shaderCase.id}`, async ({ page }) => {
+    const { criticalErrors } = attachConsoleCollector(page);
+    await page.goto(buildAppUrl('wasm'), { waitUntil: 'networkidle' });
+    await waitForTestApi(page);
 
-  // Wait for test API
-  await page.waitForFunction(
-    () => (window as any).__pixelocity__ != null,
-    { timeout: 30000 }
-  );
+    const active = await assertExpectedBackend(page, 'wasm');
+    if (active !== 'wasm') {
+      if (isStrictGpuMode()) {
+        expect(active).toBe('wasm');
+      }
+      test.skip(true, 'WASM backend unavailable');
+      return;
+    }
 
-  // Load multiple shaders into different slots
-  const slotsToTest = TEST_SHADERS.slice(0, 3); // Test first 3 shaders
-  for (const shader of slotsToTest) {
-    await page.evaluate(async (s: typeof shader) => {
-      const api = (window as any).__pixelocity__;
-      await api.loadShader(s.id, s.url);
-      api.setSlotShader(s.slot, s.id);
-    }, shader);
+    const { fps, stats, criticalErrors: exerciseErrors } = await exerciseShaderOnWasm(
+      page,
+      shaderCase,
+      3000
+    );
 
-    // Small delay between shader loads
-    await page.waitForTimeout(300);
+    expect([...criticalErrors, ...exerciseErrors]).toEqual([]);
+    expect(stats.width).toBeGreaterThan(0);
+    expect(stats.height).toBeGreaterThan(0);
+
+    if (isStrictGpuMode()) {
+      expect(stats.activePixelRatio).toBeGreaterThan(0.01);
+      expect(fps).toBeGreaterThanOrEqual(MIN_WASM_FPS);
+    }
+
+    const slotState = await page.evaluate((idx) => {
+      return (window as any).__pixelocity__?.getSlotState?.(idx);
+    }, shaderCase.slot ?? 0);
+
+    if (slotState) {
+      expect(slotState.shaderId).toBe(shaderCase.id);
+      expect(slotState.enabled).toBe(true);
+    }
+
+    console.log(
+      `[smoke:${shaderCase.id}] fps=${fps.toFixed(1)} active=${(stats.activePixelRatio * 100).toFixed(1)}%`
+    );
+  });
+}
+
+test('WASM multi-slot stack (fluid + generative)', async ({ page }) => {
+  await page.goto(buildAppUrl('wasm'), { waitUntil: 'networkidle' });
+  await waitForTestApi(page);
+
+  const active = await getActiveBackend(page);
+  if (active !== 'wasm') {
+    if (isStrictGpuMode()) expect(active).toBe('wasm');
+    test.skip(true, 'WASM backend unavailable');
+    return;
   }
 
-  // Render with multiple shaders for 3 seconds
-  await page.waitForTimeout(3000);
-
-  // Verify no critical errors
-  const criticalErrors: string[] = (page as any).__criticalErrors || [];
-  expect(criticalErrors).toEqual([]);
-
-  // Verify renderer is still functioning
-  const fps = await page.evaluate(() => {
-    return (window as any).__pixelocity__?.renderer?.getDiagnostics?.()?.fps ?? 0;
-  });
-  expect(fps).toBeGreaterThanOrEqual(0);
-});
-
-test('WASM renderer handles shader loading with minimal console errors', async ({ page }) => {
-  await page.goto(WASM_URL, { waitUntil: 'networkidle' });
-
-  // Wait for test API
-  await page.waitForFunction(
-    () => (window as any).__pixelocity__ != null,
-    { timeout: 30000 }
-  );
-
-  // Load first shader
-  const shader = TEST_SHADERS[0];
-  await page.evaluate(async (s: typeof shader) => {
-    const api = (window as any).__pixelocity__;
-    await api.loadShader(s.id, s.url);
-    api.setSlotShader(0, s.id);
-  }, shader);
-
-  // Render for 2 seconds
-  await page.waitForTimeout(2000);
-
-  // Check console messages for any critical patterns
-  const consoleErrors: string[] = (page as any).__consoleErrors || [];
-  const criticalErrorPatterns = [
-    'device-lost',
-    'shader-compile-error',
-    'Fallback shader also failed',
-    'Uncaptured error',
+  const stack = [
+    { ...PARITY_MATRIX[0], slot: 0 },
+    { ...PARITY_MATRIX[3], slot: 1 },
   ];
 
-  for (const pattern of criticalErrorPatterns) {
-    const foundCritical = consoleErrors.find((e) => e.includes(pattern));
-    expect(foundCritical).toBeUndefined();
+  for (const shader of stack) {
+    await page.evaluate(
+      async (s) => {
+        const api = (window as any).__pixelocity__;
+        api.setInputSource('generative');
+        const ok = await api.loadShader(s.id, s.url);
+        if (!ok) throw new Error(`loadShader failed: ${s.id}`);
+        api.setSlotShader(s.slot ?? 0, s.id);
+      },
+      shader
+    );
+    await page.waitForTimeout(400);
   }
 
-  // Verify diagnostics are still good
-  const diagnostics = await page.evaluate(() => {
-    console.log('DIAGNOSTICS:', JSON.stringify((window as any).__pixelocity__?.renderer?.getDiagnostics?.() || {}, null, 2));
-    return (window as any).__pixelocity__?.renderer?.getDiagnostics?.();
-  });
-  if (diagnostics?.wasm) expect(diagnostics?.wasm?.errorCount ?? 0).toBeLessThan(5); // Allow 0-4 errors as warnings
-});
-
-test('WASM renderer collects performance metrics', async ({ page }) => {
-  await page.goto(WASM_URL, { waitUntil: 'networkidle' });
-
-  // Wait for test API
-  await page.waitForFunction(
-    () => (window as any).__pixelocity__ != null,
-    { timeout: 30000 }
-  );
-
-  // Load shader
-  const shader = TEST_SHADERS[0];
-  await page.evaluate(async (s: typeof shader) => {
-    const api = (window as any).__pixelocity__;
-    await api.loadShader(s.id, s.url);
-    api.setSlotShader(0, s.id);
-  }, shader);
-
-  // Render for 3 seconds to collect stable metrics
   await page.waitForTimeout(3000);
 
-  // Collect WASM diagnostics
-  const wasmDiags = await page.evaluate(() => {
-    const renderer = (window as any).__pixelocity__?.renderer;
-    const diags = renderer?.getDiagnostics?.();
-    return {
-      wasmFps: diags?.wasm?.fps,
-      wasmInitTime: diags?.wasm?.initTime,
-      wasmHasModule: diags?.wasm?.hasModule,
-    };
-  });
+  const fps = await getRendererFps(page);
+  const stats = await captureCanvasStats(page);
 
-  // Log metrics for CI reporting
-  console.log('=== WASM Renderer Metrics ===\n' + JSON.stringify(wasmDiags, null, 2));
-  console.log(`FPS: ${wasmDiags.wasmFps}`);
-  console.log(`Init Time: ${wasmDiags.wasmInitTime}`);
-  console.log(`Has Module: ${wasmDiags.wasmHasModule}`);
-  console.log('==============================');
-
-  if (wasmDiags.rendererType === 'wasm') {
-    // Assertions for WASM
-    expect(wasmDiags.wasmFps).toBeGreaterThanOrEqual(0);
-    expect(wasmDiags.wasmHasModule).toBe(true);
-  } else {
-    console.log(`Skipping WASM performance metric assertions because renderer fell back to ${wasmDiags.rendererType}`);
+  if (isStrictGpuMode()) {
+    expect(fps).toBeGreaterThanOrEqual(MIN_WASM_FPS);
+    expect(stats.activePixelRatio).toBeGreaterThan(0.01);
   }
+
+  const slot0 = await page.evaluate(() => (window as any).__pixelocity__?.getSlotState?.(0));
+  const slot1 = await page.evaluate(() => (window as any).__pixelocity__?.getSlotState?.(1));
+  expect(slot0?.enabled).toBe(true);
+  expect(slot1?.enabled).toBe(true);
 });
