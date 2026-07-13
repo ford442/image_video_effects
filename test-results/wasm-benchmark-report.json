@@ -1,10 +1,11 @@
 {
-  "generatedAt": "2026-07-04T21:44:04.356Z",
-  "strictGpuMode": true,
+  "generatedAt": "2026-07-11T20:00:00.000Z",
+  "strictGpuMode": false,
   "gpuBackendObserved": false,
   "results": [],
   "comparisons": [],
   "promotionGateMet": false,
   "promotionMinShaders": 3,
-  "promotionSpeedupRatio": 1.25
+  "promotionSpeedupRatio": 1.25,
+  "_note": "STUB — not a real benchmark run. Regenerate with: npm run build && WASM_GPU_TESTS=1 npm run test:wasm:bench on hardware with a WebGPU adapter (discrete + iGPU recommended). CI ubuntu-latest skips the benchmark matrix even when WASM_GPU_TESTS=1."
 }

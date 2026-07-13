@@ -1,0 +1,57 @@
+{
+  "id": "interactive-rgb-split-explosion",
+  "name": "Interactive Rgb Split Explosion",
+  "url": "shaders/interactive-rgb-split-explosion.wgsl",
+  "description": "Interactive Rgb Split Explosion",
+  "tags": [
+    "mouse-driven",
+    "chromatic",
+    "prism",
+    "ripple"
+  ],
+  "features": [
+    "mouse-driven",
+    "chromatic",
+    "prism",
+    "ripple"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Param 1",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Param 2",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Param 3",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Param 4",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+}

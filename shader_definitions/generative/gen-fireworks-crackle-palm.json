@@ -1,5 +1,5 @@
 {
-  "name": "Crackle Palm",
+  "name": "4th of July \u2014 Crackle Palm",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -9,10 +9,16 @@
     "pyrotechnics",
     "audio-reactive",
     "generative",
-    "celebration"
+    "celebration",
+    "4th-of-july",
+    "july-4"
   ],
   "description": "Multi-stage pyrotechnic shells that bloom in two acts. A primary burst erupts first, then delayed secondary crackle and palm fronds spawn from sub-points along the fading sparks. Treble drives thousands of micro-crackle pops; mids trigger the second-stage palm arms. Bass deepens the initial detonation. Mouse launches a triple-stage command shell at the cursor.",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updatedParams": [
     {
       "index": 0,

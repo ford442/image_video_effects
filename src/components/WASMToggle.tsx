@@ -1,5 +1,9 @@
 import React, { useState, useCallback } from 'react';
 
+/**
+ * @deprecated Demo-only toggle — use `RendererSwitcher` / `RendererBackendPanel` in production.
+ */
+
 interface WASMToggleProps {
   onToggle: (useWasm: boolean) => void;
   defaultMode?: 'wasm' | 'js';

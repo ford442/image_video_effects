@@ -1,5 +1,5 @@
 {
-  "name": "Fireworks Nocturne",
+  "name": "4th of July \u2014 Fireworks Nocturne",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -11,7 +11,9 @@
     "night-sky",
     "audio-reactive",
     "generative",
-    "explosive"
+    "explosive",
+    "4th-of-july",
+    "july-4"
   ],
   "description": "A living fireworks display over a dark velvet night. Multiple mortar shells launch, burst in jewel and gold colors with realistic gravity arcs and lingering ember trails. Bass detonates bigger shells and richer bursts, treble crackles extra sparks. Mouse click or hold launches a personal command shell at the cursor. Temporal glow and soft smoke persist between explosions for cinematic long-exposure feel.",
   "workgroup_size": [

@@ -1,7 +1,17 @@
 {
   "config": {
+    "argv": [
+      "/root/.local/share/cursor-agent/versions/2026.07.09-a3815c0/node",
+      "/root/image_video_effects/node_modules/.bin/playwright",
+      "test",
+      "tests/wasm-renderer.smoke.spec.ts",
+      "tests/wasm-benchmark.spec.ts",
+      "tests/renderer-parity.spec.ts",
+      "--project=chromium"
+    ],
     "configFile": "/root/image_video_effects/playwright.config.ts",
     "rootDir": "/root/image_video_effects/tests",
+    "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -77,12 +87,11 @@
       "max": 5,
       "threshold": 300000
     },
-    "runAgents": "none",
     "shard": null,
     "tags": [],
     "updateSnapshots": "missing",
     "updateSourceMethod": "patch",
-    "version": "1.58.2",
+    "version": "1.61.1",
     "workers": 1,
     "webServer": null
   },
@@ -95,51 +104,66 @@
       "specs": [
         {
           "title": "parity: fluid / sim-fluid-feedback-coupled",
-          "ok": true,
+          "ok": false,
           "tags": [],
           "tests": [
             {
               "timeout": 30000,
-              "annotations": [
-                {
-                  "type": "skip",
-                  "description": "GPU backends unavailable (wasm=js, webgpu=js)",
-                  "location": {
-                    "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                    "line": 45,
-                    "column": 12
-                  }
-                }
-              ],
-              "expectedStatus": "skipped",
+              "annotations": [],
+              "expectedStatus": "passed",
               "projectId": "chromium",
               "projectName": "chromium",
               "results": [
                 {
                   "workerIndex": 0,
                   "parallelIndex": 0,
-                  "status": "skipped",
-                  "duration": 7778,
-                  "errors": [],
+                  "status": "failed",
+                  "duration": 0,
+                  "error": {
+                    "message": "Error: Missing /root/image_video_effects/build/index.html. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.",
+                    "stack": "Error: Missing /root/image_video_effects/build/index.html. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.\n    at startStaticServer (/root/image_video_effects/tests/helpers/rendererHarness.ts:86:11)\n    at /root/image_video_effects/tests/renderer-parity.spec.ts:25:26",
+                    "location": {
+                      "file": "/root/image_video_effects/tests/helpers/rendererHarness.ts",
+                      "column": 11,
+                      "line": 86
+                    },
+                    "snippet": "   at helpers/rendererHarness.ts:86\n\n  84 |   const indexHtml = resolve(BUILD_DIR, 'index.html');\n  85 |   if (!existsSync(indexHtml)) {\n> 86 |     throw new Error(\n     |           ^\n  87 |       `Missing ${indexHtml}. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.`\n  88 |     );\n  89 |   }"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/root/image_video_effects/tests/helpers/rendererHarness.ts",
+                        "column": 11,
+                        "line": 86
+                      },
+                      "message": "Error: Missing /root/image_video_effects/build/index.html. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.\n\n   at helpers/rendererHarness.ts:86\n\n  84 |   const indexHtml = resolve(BUILD_DIR, 'index.html');\n  85 |   if (!existsSync(indexHtml)) {\n> 86 |     throw new Error(\n     |           ^\n  87 |       `Missing ${indexHtml}. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.`\n  88 |     );\n  89 |   }\n    at startStaticServer (/root/image_video_effects/tests/helpers/rendererHarness.ts:86:11)\n    at /root/image_video_effects/tests/renderer-parity.spec.ts:25:26"
+                    }
+                  ],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-04T21:42:54.322Z",
-                  "annotations": [
+                  "startTime": "2026-07-11T19:40:35.970Z",
+                  "annotations": [],
+                  "attachments": [
                     {
-                      "type": "skip",
-                      "description": "GPU backends unavailable (wasm=js, webgpu=js)",
-                      "location": {
-                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                        "line": 45,
-                        "column": 12
-                      }
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/root/image_video_effects/test-results/renderer-parity-parity-fluid-sim-fluid-feedback-coupled-chromium/error-context.md"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/root/image_video_effects/test-results/renderer-parity-parity-fluid-sim-fluid-feedback-coupled-chromium/error-context.md"
                     }
                   ],
-                  "attachments": []
+                  "errorLocation": {
+                    "file": "/root/image_video_effects/tests/helpers/rendererHarness.ts",
+                    "column": 11,
+                    "line": 86
+                  }
                 }
               ],
-              "status": "skipped"
+              "status": "unexpected"
             }
           ],
           "id": "70d93397f01815bb38df-d030692421e6f40c9a88",
@@ -154,42 +178,22 @@
           "tests": [
             {
               "timeout": 30000,
-              "annotations": [
-                {
-                  "type": "skip",
-                  "description": "GPU backends unavailable (wasm=js, webgpu=js)",
-                  "location": {
-                    "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                    "line": 45,
-                    "column": 12
-                  }
-                }
-              ],
-              "expectedStatus": "skipped",
+              "annotations": [],
+              "expectedStatus": "passed",
               "projectId": "chromium",
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
                   "status": "skipped",
-                  "duration": 8057,
+                  "duration": 0,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-04T21:43:02.777Z",
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "GPU backends unavailable (wasm=js, webgpu=js)",
-                      "location": {
-                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                        "line": 45,
-                        "column": 12
-                      }
-                    }
-                  ],
+                  "startTime": "2026-07-11T19:40:36.254Z",
+                  "annotations": [],
                   "attachments": []
                 }
               ],
@@ -208,42 +212,22 @@
           "tests": [
             {
               "timeout": 30000,
-              "annotations": [
-                {
-                  "type": "skip",
-                  "description": "GPU backends unavailable (wasm=js, webgpu=js)",
-                  "location": {
-                    "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                    "line": 45,
-                    "column": 12
-                  }
-                }
-              ],
-              "expectedStatus": "skipped",
+              "annotations": [],
+              "expectedStatus": "passed",
               "projectId": "chromium",
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
                   "status": "skipped",
-                  "duration": 7494,
+                  "duration": 0,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-04T21:43:10.899Z",
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "GPU backends unavailable (wasm=js, webgpu=js)",
-                      "location": {
-                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                        "line": 45,
-                        "column": 12
-                      }
-                    }
-                  ],
+                  "startTime": "2026-07-11T19:40:36.255Z",
+                  "annotations": [],
                   "attachments": []
                 }
               ],
@@ -262,42 +246,22 @@
           "tests": [
             {
               "timeout": 30000,
-              "annotations": [
-                {
-                  "type": "skip",
-                  "description": "GPU backends unavailable (wasm=js, webgpu=js)",
-                  "location": {
-                    "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                    "line": 45,
-                    "column": 12
-                  }
-                }
-              ],
-              "expectedStatus": "skipped",
+              "annotations": [],
+              "expectedStatus": "passed",
               "projectId": "chromium",
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
                   "status": "skipped",
-                  "duration": 8399,
+                  "duration": 0,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-04T21:43:18.427Z",
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "GPU backends unavailable (wasm=js, webgpu=js)",
-                      "location": {
-                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                        "line": 45,
-                        "column": 12
-                      }
-                    }
-                  ],
+                  "startTime": "2026-07-11T19:40:36.255Z",
+                  "annotations": [],
                   "attachments": []
                 }
               ],
@@ -316,42 +280,22 @@
           "tests": [
             {
               "timeout": 30000,
-              "annotations": [
-                {
-                  "type": "skip",
-                  "description": "GPU backends unavailable (wasm=js, webgpu=js)",
-                  "location": {
-                    "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                    "line": 45,
-                    "column": 12
-                  }
-                }
-              ],
-              "expectedStatus": "skipped",
+              "annotations": [],
+              "expectedStatus": "passed",
               "projectId": "chromium",
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
                   "status": "skipped",
-                  "duration": 7705,
+                  "duration": 0,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-04T21:43:26.852Z",
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "GPU backends unavailable (wasm=js, webgpu=js)",
-                      "location": {
-                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                        "line": 45,
-                        "column": 12
-                      }
-                    }
-                  ],
+                  "startTime": "2026-07-11T19:40:36.255Z",
+                  "annotations": [],
                   "attachments": []
                 }
               ],
@@ -378,42 +322,22 @@
               "tests": [
                 {
                   "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "WASM backend unavailable",
-                      "location": {
-                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                        "line": 76,
-                        "column": 14
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
+                  "annotations": [],
+                  "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
                       "status": "skipped",
-                      "duration": 2876,
+                      "duration": 0,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-04T21:43:34.579Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "WASM backend unavailable",
-                          "location": {
-                            "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                            "line": 76,
-                            "column": 14
-                          }
-                        }
-                      ],
+                      "startTime": "2026-07-11T19:40:36.255Z",
+                      "annotations": [],
                       "attachments": []
                     }
                   ],
@@ -432,42 +356,22 @@
               "tests": [
                 {
                   "timeout": 30000,
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "WASM backend unavailable",
-                      "location": {
-                        "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                        "line": 76,
-                        "column": 14
-                      }
-                    }
-                  ],
-                  "expectedStatus": "skipped",
+                  "annotations": [],
+                  "expectedStatus": "passed",
                   "projectId": "chromium",
                   "projectName": "chromium",
                   "results": [
                     {
-                      "workerIndex": 0,
-                      "parallelIndex": 0,
+                      "workerIndex": -1,
+                      "parallelIndex": -1,
                       "status": "skipped",
-                      "duration": 2488,
+                      "duration": 0,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-07-04T21:43:37.514Z",
-                      "annotations": [
-                        {
-                          "type": "skip",
-                          "description": "WASM backend unavailable",
-                          "location": {
-                            "file": "/root/image_video_effects/tests/renderer-parity.spec.ts",
-                            "line": 76,
-                            "column": 14
-                          }
-                        }
-                      ],
+                      "startTime": "2026-07-11T19:40:36.255Z",
+                      "annotations": [],
                       "attachments": []
                     }
                   ],
@@ -491,80 +395,66 @@
       "specs": [
         {
           "title": "WASM vs WebGPU benchmark matrix",
-          "ok": true,
+          "ok": false,
           "tags": [],
           "tests": [
             {
               "timeout": 30000,
-              "annotations": [
-                {
-                  "type": "skip",
-                  "description": "WebGPU adapter unavailable — run locally or on a GPU runner with WASM_GPU_TESTS=1",
-                  "location": {
-                    "file": "/root/image_video_effects/tests/wasm-benchmark.spec.ts",
-                    "line": 139,
-                    "column": 10
-                  }
-                }
-              ],
-              "expectedStatus": "skipped",
+              "annotations": [],
+              "expectedStatus": "passed",
               "projectId": "chromium",
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 0,
+                  "workerIndex": 1,
                   "parallelIndex": 0,
-                  "status": "skipped",
-                  "duration": 24671,
-                  "errors": [],
-                  "stdout": [
-                    {
-                      "text": "\nWrote benchmark report → test-results/wasm-benchmark-report.json\n\n"
+                  "status": "failed",
+                  "duration": 0,
+                  "error": {
+                    "message": "Error: Missing /root/image_video_effects/build/index.html. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.",
+                    "stack": "Error: Missing /root/image_video_effects/build/index.html. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.\n    at startStaticServer (/root/image_video_effects/tests/helpers/rendererHarness.ts:86:11)\n    at /root/image_video_effects/tests/wasm-benchmark.spec.ts:28:26",
+                    "location": {
+                      "file": "/root/image_video_effects/tests/helpers/rendererHarness.ts",
+                      "column": 11,
+                      "line": 86
                     },
+                    "snippet": "   at helpers/rendererHarness.ts:86\n\n  84 |   const indexHtml = resolve(BUILD_DIR, 'index.html');\n  85 |   if (!existsSync(indexHtml)) {\n> 86 |     throw new Error(\n     |           ^\n  87 |       `Missing ${indexHtml}. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.`\n  88 |     );\n  89 |   }"
+                  },
+                  "errors": [
                     {
-                      "text": "\n=== WASM Benchmark Report ===\n"
-                    },
-                    {
-                      "text": "{\n  \"generatedAt\": \"2026-07-04T21:44:04.356Z\",\n  \"strictGpuMode\": true,\n  \"gpuBackendObserved\": false,\n  \"results\": [],\n  \"comparisons\": [],\n  \"promotionGateMet\": false,\n  \"promotionMinShaders\": 3,\n  \"promotionSpeedupRatio\": 1.25\n}\n"
-                    },
-                    {
-                      "text": "Promotion gate (≥1.25× on ≥3 shaders): NOT MET (0/0 shaders)\n"
-                    },
-                    {
-                      "text": "Note: WASM getGPUTimings().available is false — timingSource is wall-clock.\n"
-                    },
-                    {
-                      "text": "=============================\n\n"
-                    }
-                  ],
-                  "stderr": [
-                    {
-                      "text": "[bench] Skipping sim-fluid-feedback-coupled: wasm=missing webgpu=missing\n"
-                    },
-                    {
-                      "text": "[bench] Skipping gen-lichen-reaction-diffusion: wasm=missing webgpu=missing\n"
-                    },
-                    {
-                      "text": "[bench] Skipping cyber-ripples: wasm=missing webgpu=missing\n"
-                    }
-                  ],
-                  "retry": 0,
-                  "startTime": "2026-07-04T21:43:40.091Z",
-                  "annotations": [
-                    {
-                      "type": "skip",
-                      "description": "WebGPU adapter unavailable — run locally or on a GPU runner with WASM_GPU_TESTS=1",
                       "location": {
-                        "file": "/root/image_video_effects/tests/wasm-benchmark.spec.ts",
-                        "line": 139,
-                        "column": 10
-                      }
+                        "file": "/root/image_video_effects/tests/helpers/rendererHarness.ts",
+                        "column": 11,
+                        "line": 86
+                      },
+                      "message": "Error: Missing /root/image_video_effects/build/index.html. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.\n\n   at helpers/rendererHarness.ts:86\n\n  84 |   const indexHtml = resolve(BUILD_DIR, 'index.html');\n  85 |   if (!existsSync(indexHtml)) {\n> 86 |     throw new Error(\n     |           ^\n  87 |       `Missing ${indexHtml}. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.`\n  88 |     );\n  89 |   }\n    at startStaticServer (/root/image_video_effects/tests/helpers/rendererHarness.ts:86:11)\n    at /root/image_video_effects/tests/wasm-benchmark.spec.ts:28:26"
                     }
                   ],
-                  "attachments": []
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-11T19:40:37.127Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/root/image_video_effects/test-results/wasm-benchmark-WASM-vs-WebGPU-benchmark-matrix-chromium/error-context.md"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/root/image_video_effects/test-results/wasm-benchmark-WASM-vs-WebGPU-benchmark-matrix-chromium/error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/root/image_video_effects/tests/helpers/rendererHarness.ts",
+                    "column": 11,
+                    "line": 86
+                  }
                 }
               ],
-              "status": "skipped"
+              "status": "unexpected"
             }
           ],
           "id": "4a8aa07ffec9e2acd96b-81095b29f6467e4e7199",
@@ -585,20 +475,20 @@
               "projectName": "chromium",
               "results": [
                 {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 2916,
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-04T21:44:05.095Z",
+                  "startTime": "2026-07-11T19:40:37.251Z",
                   "annotations": [],
                   "attachments": []
                 }
               ],
-              "status": "expected"
+              "status": "skipped"
             }
           ],
           "id": "4a8aa07ffec9e2acd96b-52f43cab48119046cafc",
@@ -607,15 +497,330 @@
           "column": 5
         }
       ]
+    },
+    {
+      "title": "wasm-renderer.smoke.spec.ts",
+      "file": "wasm-renderer.smoke.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "WASM renderer initializes (testMode API + diagnostics)",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 1,
+                  "error": {
+                    "message": "Error: Missing /root/image_video_effects/build/index.html. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.",
+                    "stack": "Error: Missing /root/image_video_effects/build/index.html. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.\n    at startStaticServer (/root/image_video_effects/tests/helpers/rendererHarness.ts:86:11)\n    at /root/image_video_effects/tests/wasm-renderer.smoke.spec.ts:29:26",
+                    "location": {
+                      "file": "/root/image_video_effects/tests/helpers/rendererHarness.ts",
+                      "column": 11,
+                      "line": 86
+                    },
+                    "snippet": "   at helpers/rendererHarness.ts:86\n\n  84 |   const indexHtml = resolve(BUILD_DIR, 'index.html');\n  85 |   if (!existsSync(indexHtml)) {\n> 86 |     throw new Error(\n     |           ^\n  87 |       `Missing ${indexHtml}. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.`\n  88 |     );\n  89 |   }"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/root/image_video_effects/tests/helpers/rendererHarness.ts",
+                        "column": 11,
+                        "line": 86
+                      },
+                      "message": "Error: Missing /root/image_video_effects/build/index.html. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.\n\n   at helpers/rendererHarness.ts:86\n\n  84 |   const indexHtml = resolve(BUILD_DIR, 'index.html');\n  85 |   if (!existsSync(indexHtml)) {\n> 86 |     throw new Error(\n     |           ^\n  87 |       `Missing ${indexHtml}. Run \"npm run build\" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.`\n  88 |     );\n  89 |   }\n    at startStaticServer (/root/image_video_effects/tests/helpers/rendererHarness.ts:86:11)\n    at /root/image_video_effects/tests/wasm-renderer.smoke.spec.ts:29:26"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-11T19:40:38.408Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/root/image_video_effects/test-results/wasm-renderer.smoke-WASM-r-ab45d-s-testMode-API-diagnostics--chromium/error-context.md"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/root/image_video_effects/test-results/wasm-renderer.smoke-WASM-r-ab45d-s-testMode-API-diagnostics--chromium/error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/root/image_video_effects/tests/helpers/rendererHarness.ts",
+                    "column": 11,
+                    "line": 86
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "66856f7efa90714362f5-c1e61d5dbf621d14f30c",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 36,
+          "column": 5
+        },
+        {
+          "title": "WASM canvas has non-zero dimensions",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-11T19:40:38.637Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-6f0e029fec09447595e9",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 67,
+          "column": 5
+        },
+        {
+          "title": "WASM smoke: fluid / sim-fluid-feedback-coupled",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-11T19:40:38.638Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-2e74bb27e585efe27dc4",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 77,
+          "column": 7
+        },
+        {
+          "title": "WASM smoke: reaction-diffusion / gen-lichen-reaction-diffusion",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-11T19:40:38.639Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-c19a12afba8462c43f97",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 77,
+          "column": 7
+        },
+        {
+          "title": "WASM smoke: audio-reactive / cyber-ripples",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-11T19:40:38.639Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-b071954c585e3b26d732",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 77,
+          "column": 7
+        },
+        {
+          "title": "WASM smoke: generative / plasma",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-11T19:40:38.639Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-6493e9505c8a3b3caffe",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 77,
+          "column": 7
+        },
+        {
+          "title": "WASM smoke: interactive / liquid",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-11T19:40:38.639Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-13041c6eefff79ec9a86",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 77,
+          "column": 7
+        },
+        {
+          "title": "WASM multi-slot stack (fluid + generative)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": -1,
+                  "parallelIndex": -1,
+                  "status": "skipped",
+                  "duration": 0,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-11T19:40:38.639Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "skipped"
+            }
+          ],
+          "id": "66856f7efa90714362f5-58172dbd6cb4cab590b0",
+          "file": "wasm-renderer.smoke.spec.ts",
+          "line": 121,
+          "column": 5
+        }
+      ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-07-04T21:42:51.618Z",
-    "duration": 76819.75099999999,
-    "expected": 1,
-    "skipped": 8,
-    "unexpected": 0,
+    "startTime": "2026-07-11T19:40:34.269Z",
+    "duration": 4434.46,
+    "expected": 0,
+    "skipped": 14,
+    "unexpected": 3,
     "flaky": 0
   }
 }

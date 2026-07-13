@@ -1,16 +1,60 @@
 {
-  "name": "Ring Shell",
+  "name": "4th of July \u2014 Ring Shell",
   "category": "generative",
-  "tags": ["fireworks", "ring", "halo", "donut", "pyrotechnics", "july-4", "audio-reactive", "generative"],
-  "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor.",
-  "workgroup_size": [16, 16, 1],
-  "updatedParams": [
-    {"index": 0, "name": "Ring Radius", "default": 0.65, "min": 0, "max": 1, "step": 0.01},
-    {"index": 1, "name": "Thickness", "default": 0.45, "min": 0, "max": 1, "step": 0.01},
-    {"index": 2, "name": "Spark Count", "default": 0.6, "min": 0, "max": 1, "step": 0.01},
-    {"index": 3, "name": "Color Cycle", "default": 0.3, "min": 0, "max": 1, "step": 0.01}
+  "tags": [
+    "fireworks",
+    "ring",
+    "halo",
+    "donut",
+    "pyrotechnics",
+    "july-4",
+    "audio-reactive",
+    "generative",
+    "4th-of-july"
   ],
-  "supportsDepth": true, "supportsDof": false, "updated": true,
+  "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Ring Radius",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Thickness",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Spark Count",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Color Cycle",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
   "id": "gen-fireworks-ring-shell",
   "url": "shaders/gen-fireworks-ring-shell.wgsl",
   "features": []

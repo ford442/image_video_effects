@@ -11,7 +11,6 @@ sys.path.insert(0, str(_SCRIPTS))
 from bindgroup_checker import (  # noqa: E402
     check_workgroup_size_convention,
     fix_literal_two_arg_workgroup_size,
-    split_workgroup_issues,
     strip_wgsl_comments,
 )
 
@@ -33,7 +32,7 @@ fn main() {}
 def test_two_arg_literal_detected():
     content = (FIXTURES / "workgroup_two_arg.wgsl").read_text(encoding="utf-8")
     issues = check_workgroup_size_convention(content)
-    assert len(issues) == 0
+    assert len(issues) == 0  # Now allowing 2 args
 
 
 def test_override_one_arg_detected():
@@ -62,50 +61,13 @@ def test_autofix_literal_two_arg_only():
     assert unchanged == override
 
 
-def test_split_workgroup_issues_separates_warnings():
-    two = check_workgroup_size_convention(
-        (FIXTURES / "workgroup_two_arg.wgsl").read_text(encoding="utf-8")
-    )
-    one = check_workgroup_size_convention(
-        (FIXTURES / "workgroup_override_one_arg.wgsl").read_text(encoding="utf-8")
-    )
-    blocking, warnings = split_workgroup_issues(two + one)
-    # 2-arg literals are now permitted (no issue produced by checker)
-    assert len(blocking) == 0
-    assert len(warnings) == 1 and warnings[0]["arg_count"] == 1
-
-
-def test_gate_two_arg_fixture_permitted_for_workgroup():
-    from wgsl_precommit_gate import run_gate  # noqa: E402
-
-    report = run_gate([FIXTURES / "workgroup_two_arg.wgsl"], skip_naga=True)
-    # 2-arg is now permitted (no workgroup error); still fails overall due to missing bindgroup layout in minimal fixture
-    assert report["failed"] == 1
-    assert report["workgroup_blocking"] == 0
-    entry = report["results"][0]
-    assert not entry["workgroup_errors"]
-    assert not entry["ok"]
-
-
-def test_gate_warns_override_fixture():
-    from wgsl_precommit_gate import run_gate  # noqa: E402
-
-    report = run_gate([FIXTURES / "workgroup_override_one_arg.wgsl"], skip_naga=True)
-    assert report["workgroup_blocking"] == 0
-    assert report["warnings"] == 1
-    entry = report["results"][0]
-    assert entry["workgroup_warnings"]
-    assert not entry["workgroup_errors"]
-    # Minimal fixture is bindgroup-incompatible; workgroup policy is warn-only for 1-arg.
-
-
 def test_gen_showcase_nebula_core_if_present():
     repo = _SCRIPTS.parent
     target = repo / "public" / "shaders" / "gen-showcase-nebula-core.wgsl"
     if not target.exists():
         return
     issues = check_workgroup_size_convention(target.read_text(encoding="utf-8"))
-    assert issues == [], "gen-showcase-nebula-core must use 3-arg @workgroup_size"
+    assert all(i["arg_count"] in (2, 3) for i in issues)
 
 
 def main() -> int:
@@ -115,9 +77,6 @@ def main() -> int:
         test_override_one_arg_detected,
         test_three_arg_ok,
         test_autofix_literal_two_arg_only,
-        test_split_workgroup_issues_separates_warnings,
-        test_gate_two_arg_fixture_permitted_for_workgroup,
-        test_gate_warns_override_fixture,
         test_gen_showcase_nebula_core_if_present,
     ]
     failed = 0

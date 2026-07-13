@@ -1,126 +1,181 @@
 # WASM Tier B → Tier A Promotion Tracking
 
 **Policy:** [`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md)  
-**Epic:** [#885](https://github.com/ford442/image_video_effects/issues/885)  
-**Docs refresh:** [#890](https://github.com/ford442/image_video_effects/issues/890)
+**Status doc:** [`wasm_renderer/STATUS.md`](./wasm_renderer/STATUS.md)  
+**Test how-to:** [`WASM_TEST_SUITE.md`](./WASM_TEST_SUITE.md) · [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md)  
+**Umbrella (closed):** [#885](https://github.com/ford442/image_video_effects/issues/885)  
+**Docs refresh (closed):** [#890](https://github.com/ford442/image_video_effects/issues/890)
 
-**Current verdict:** **Tier B — experimental opt-in.** TypeScript WebGPU remains the production default. Do not describe WASM as production-ready until **all four gates** below are checked with attached evidence.
+**Current tier:** **B — Experimental (opt-in)**  
+**Last evidence review:** 2026-07-11
 
 ---
 
-## Promotion gates (all required)
+## Promotion gates (all must pass)
 
-Copy this checklist into promotion PRs/issues. Each gate needs **linked evidence** — not checkbox claims alone.
+| # | Gate | Threshold | Status | Evidence |
+|---|------|-----------|--------|----------|
+| 1 | **Performance** | WASM ≥ **1.25×** TS FPS (or inverse frame-time) on **≥3** benchmark shaders | ⬜ **OPEN** | No `wasm-benchmark-report.json` with `gpuBackendObserved: true` |
+| 2 | **Reliability** | Playwright parity green on **≥2 distinct GPU configs** | ⬜ **OPEN** | CI skips parity without adapter; no vendor matrix attached |
+| 3 | **Integration** | Manual Controls smoke outside `testMode` — shader pick, params, input sources, recording | ⬜ **OPEN** | Checklist in [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md) not signed off |
+| 4 | **Ops** | `wasm` + `test-wasm-e2e` jobs green **4 consecutive calendar weeks** on `main` | ⬜ **OPEN** | See [Weekly CI table](#weekly-ci-table) |
 
-### Gate 1 — Performance
+---
 
-- [ ] WASM ≥ **1.25×** TS WebGPU (FPS or frame time) on **≥ 3** priority shaders (fluids, reaction-diffusion, multi-slot stacks)
+## Decision (2026-07-11)
 
-**How to measure:**
+### **STAY TIER B** — do not promote
+
+Integration epics #817–#890 are closed; remaining work is **measurement**, not features. None of the four promotion gates have sufficient GPU-backed evidence. CI `test-wasm-e2e` green on `ubuntu-latest` **does not** satisfy gates 1–2 because Playwright skips GPU-dependent specs when no WebGPU adapter is present (see [CI interpretation](#ci-interpretation)).
+
+**Demote?** No — WASM builds, unit tests pass, smoke API surface holds. Keep experimental opt-in.
+
+**Next measurement actions (human + GPU hardware):**
+
+1. On **discrete GPU** machine (e.g. NVIDIA GTX 1060+):  
+   `npm run wasm:build && npm run build && WASM_GPU_TESTS=1 npm run test:wasm:bench`  
+   Attach `test-results/wasm-benchmark-report.json` + `lspci` / `chrome://gpu` notes.
+
+2. On **iGPU or second vendor** (Intel/AMD): repeat bench + parity.
+
+3. Run [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md) Tests 1–5 **without** `testMode=1`; record pass/fail in [Evidence log](#evidence-log).
+
+4. Continue weekly CI monitoring until 4 consecutive green weeks.
+
+---
+
+## Gate 1 — Performance benchmark
+
+### Command
 
 ```bash
 npm run wasm:build && npm run build
 WASM_GPU_TESTS=1 npm run test:wasm:bench
 ```
 
-**Evidence required:**
+### Benchmark matrix (3 shaders)
 
-- Attach `test-results/wasm-benchmark-report.json`
-- Report must show `promotionGateMet: true` **or** manual table with per-shader `speedupRatio` ≥ 1.25 on ≥ 3 shaders
-- Note hardware: GPU model, browser version, display scale
+From [`tests/fixtures/parityMatrix.ts`](./tests/fixtures/parityMatrix.ts) → `BENCHMARK_MATRIX`:
 
-**Benchmark shaders (default):** `sim-fluid-feedback-coupled`, `gen-lichen-reaction-diffusion`, `cyber-ripples` (see `tests/fixtures/parityMatrix.ts`)
+| Shader | Category |
+|--------|----------|
+| `sim-fluid-feedback-coupled` | fluid |
+| `gen-lichen-reaction-diffusion` | reaction-diffusion |
+| `cyber-ripples` | audio-reactive |
+
+### Promotion math
+
+- `speedupRatio = wasm.avgFps / webgpu.avgFps` (fallback: `webgpu.avgTotalMs / wasm.avgTotalMs`)
+- Gate met when **≥3** comparisons have `speedupRatio ≥ 1.25`
+- WASM `getGPUTimings().available` is **always false** — compare wall-clock only
+
+### Evidence slot
+
+| Run date | Hardware | Report path | `promotionGateMet` | Notes |
+|----------|----------|-------------|-------------------|-------|
+| — | — | `test-results/wasm-benchmark-report.json` | — | **Not collected** |
+
+Stub report (no GPU): [`test-results/wasm-benchmark-report.json`](./test-results/wasm-benchmark-report.json)
 
 ---
 
-### Gate 2 — Reliability (multi-GPU parity)
+## Gate 2 — Playwright parity (≥2 GPU configs)
 
-- [ ] Playwright parity suite **green** on **≥ 2** distinct GPU configs
-
-**How to run:**
+### Command
 
 ```bash
 WASM_GPU_TESTS=1 npm run test:wasm:parity
-# Full suite including smoke + bench:
-WASM_GPU_TESTS=1 npm run test:wasm:full
 ```
 
-**Evidence required:**
+### Matrix (5 shaders)
 
-- CI run URL **or** local Playwright HTML report (`playwright-report/`)
-- Table of GPU configs tested (vendor, device, OS, browser)
-- `tests/renderer-parity.spec.ts` green on each config (no skipped parity cases due to init failure)
+`sim-fluid-feedback-coupled`, `gen-lichen-reaction-diffusion`, `cyber-ripples`, `plasma`, `liquid`
 
-**CI note:** GitHub-hosted runners have no WebGPU adapter — run on self-hosted GPU machines or trigger `wasm-gpu-manual` workflow dispatch.
+### Evidence slot
 
----
+| Run date | GPU / OS / Browser | Parity result | Report / run URL |
+|----------|-------------------|---------------|------------------|
+| — | — | — | — |
 
-### Gate 3 — Integration (Controls flow)
-
-- [ ] No **P0** gaps in normal Controls flow (shader pick, params, input sources, recording) — exercised outside `testMode=1` only
-
-**Manual smoke:** [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md) checklist on WASM backend.
-
-**Evidence required:**
-
-- Issue/PR comment listing Controls paths verified (shader dropdown, slot stack, generative/image/video/webcam, audio, recording, screenshots)
-- Any remaining P1/P2 gaps filed as issues with WASM label
-
-**July 2026 baseline (closed in tree):** #886 recording readback, #887 manager forwarding, #888 FFT/audio parity — re-verify on target GPUs before promotion sign-off.
+**Minimum:** one discrete + one integrated GPU, or two vendors (NVIDIA + AMD/Intel).
 
 ---
 
-### Gate 4 — Ops (sustained CI health)
+## Gate 3 — Controls integration (manual)
 
-- [ ] CI jobs `wasm` + `test-wasm-e2e` green for **4 consecutive weeks** without emdawn/emsdk breakage
+Outside `testMode`. See [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md).
 
-**Evidence required:**
-
-- Link to 4 weeks of green `main` CI history (or release branch) for both jobs
-- Note any `SKIP_WASM_BUILD=1` usage — acceptable for app build job, but `wasm` job must still compile from source
-
-**Track here:**
-
-| Week ending (UTC) | `wasm` job | `test-wasm-e2e` job | Notes |
-|-------------------|------------|---------------------|-------|
-| _TBD_ | ⬜ | ⬜ | |
-| _TBD_ | ⬜ | ⬜ | |
-| _TBD_ | ⬜ | ⬜ | |
-| _TBD_ | ⬜ | ⬜ | |
+| Check | Pass? | Date | Tester |
+|-------|-------|------|--------|
+| `?renderer=wasm` init, no crash | ⬜ | | |
+| Shader browser → load effect | ⬜ | | |
+| Param sliders → `zoom_params` | ⬜ | | |
+| Input source switch (image/video/webcam) | ⬜ | | |
+| Mouse / ripples on interactive shader | ⬜ | | |
+| Recording start/stop + blob | ⬜ | | |
+| Renderer switcher wasm ↔ webgpu | ⬜ | | |
 
 ---
 
-## Evidence log (append-only)
+## Gate 4 — Weekly CI table
 
-Maintainers append rows when new benchmark or parity data is collected.
+Jobs: `wasm` (build + Jest WASM unit) and `test-wasm-e2e` (Playwright).  
+Source: `main` branch push runs — [Actions](https://github.com/ford442/image_video_effects/actions/workflows/ci.yml).
 
-| Date | Contributor | Hardware / browser | Artifact | Gate(s) | Result |
-|------|-------------|-------------------|----------|---------|--------|
-| _none yet_ | — | — | — | — | Promotion not started |
+| ISO week | `wasm` | `test-wasm-e2e` | Both green? |
+|----------|--------|-----------------|-------------|
+| 2026-W26 (Jun 23–29) | ❌ failures dominate | ❌ | **FAIL** |
+| 2026-W27 (Jun 30–Jul 6) | ❌ | ❌ | **FAIL** |
+| 2026-W28 (Jul 7–13) | ✅ Jul 10–11 pushes green | ✅ Jul 10–11 | **PARTIAL** (week not complete; Jul 5–8 failures) |
+| 2026-W29+ | — | — | TBD |
 
----
+**4 consecutive weeks:** **NOT MET** (as of 2026-07-11).
 
-## Prerequisites already closed (do not re-open)
-
-| Batch | Issues | Status |
-|-------|--------|--------|
-| C++ init / format / limits | #817–#823, parent #799 | ✅ Closed — in tree |
-| Integration / CI / tests (June) | #845–#849 | ✅ Closed |
-| July glue + parity + tests | #886–#889 | ✅ Implemented in tree (July 2026) |
+Recent green main pushes (both jobs): `29148209376`, `29144412949`, `29143957549`, `29125958617`, `29082223632` (2026-07-10 – 07-11).
 
 ---
 
-## Demotion triggers (reminder)
+## CI interpretation
 
-Per policy, consider **hiding the WASM toggle** if:
+`test-wasm-e2e` sets `WASM_GPU_TESTS=1` but runs on **GitHub `ubuntu-latest` without a WebGPU adapter**. Observed on run `29148209376`:
 
-- Benchmarks show **no meaningful win** on target shader classes, **or**
-- Init failure rate is unacceptably high on target browsers after #817–#822 fixes
+- ✅ `wasm-benchmark.spec.ts` → **getGPUTimings API surface** (no GPU needed)
+- ⏭️ `wasm-benchmark.spec.ts` → **benchmark matrix** — skipped (`WebGPU adapter unavailable`)
+- ⏭️ `renderer-parity.spec.ts` — skipped when backends fall back
+- ✅ Smoke tests that only require build + test API — pass
+
+**Implication:** CI green ≠ promotion gates 1–2 met. GPU runners or local hardware required.
 
 ---
 
-## Related docs
+## Evidence log
 
-- [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) — technical gaps + July 2026 status
-- [`wasm_renderer/STATUS.md`](./wasm_renderer/STATUS.md) — implementation snapshot
-- [`WASM_TEST_SUITE.md`](./WASM_TEST_SUITE.md) — how to run tests and benchmarks
+| Date | Collector | What | Result |
+|------|-----------|------|--------|
+| 2026-07-11 | Agent (Cloud VM) | `npm run test:wasm:unit` | **29/29 pass** |
+| 2026-07-11 | Agent (Cloud VM) | Playwright bench/parity/smoke | **Blocked** — no `build/` (branch TS error in `webgpuDevicePolicy.test.ts`); VM has no GPU |
+| 2026-07-11 | CI `29148209376` | `wasm` + `test-wasm-e2e` on main | **Green** — GPU specs skipped |
+| 2026-07-11 | Review | Promotion decision | **STAY TIER B** |
+
+---
+
+## Attachments checklist (for PR / issue comment)
+
+When closing promotion review, attach:
+
+- [ ] `test-results/wasm-benchmark-report.json` (`gpuBackendObserved: true`)
+- [ ] Hardware notes per run (GPU model, driver, browser, resolution)
+- [ ] Playwright HTML report or `gh run` URL for parity on ≥2 configs
+- [ ] Signed manual smoke table (Gate 3)
+- [ ] Updated weekly CI table through gate week 4
+
+---
+
+## Related closed work
+
+| Range | Topic |
+|-------|-------|
+| #817–#823 | C++ init / bridge / docs |
+| #845–#849 | Manager forwarding, CI, tests |
+| #886–#889 | Recording, parity API, Playwright suite |
+| #885 | Umbrella integration epic |

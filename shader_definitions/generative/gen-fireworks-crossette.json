@@ -1,16 +1,59 @@
 {
-  "name": "Crossette Split",
+  "name": "4th of July \u2014 Crossette Split",
   "category": "generative",
-  "tags": ["fireworks", "crossette", "split", "pyrotechnics", "july-4", "audio-reactive", "generative"],
-  "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor.",
-  "workgroup_size": [16, 16, 1],
-  "updatedParams": [
-    {"index": 0, "name": "Shell Power", "default": 0.7, "min": 0, "max": 1, "step": 0.01},
-    {"index": 1, "name": "Split Delay", "default": 0.4, "min": 0, "max": 1, "step": 0.01},
-    {"index": 2, "name": "Arm Spread", "default": 0.55, "min": 0, "max": 1, "step": 0.01},
-    {"index": 3, "name": "Hue Shift", "default": 0.0, "min": 0, "max": 1, "step": 0.01}
+  "tags": [
+    "fireworks",
+    "crossette",
+    "split",
+    "pyrotechnics",
+    "july-4",
+    "audio-reactive",
+    "generative",
+    "4th-of-july"
   ],
-  "supportsDepth": true, "supportsDof": false, "updated": true,
+  "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Shell Power",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Split Delay",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Arm Spread",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Hue Shift",
+      "default": 0.0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
   "id": "gen-fireworks-crossette",
   "url": "shaders/gen-fireworks-crossette.wgsl",
   "features": []

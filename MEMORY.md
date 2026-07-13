@@ -1,6 +1,14 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-07-10 (full project audit + GitHub issue roadmap #912–#933)
+**Last updated:** 2026-07-12 (WGSL perf/quality audit considerations)
+
+## WGSL cross-cutting improvements (2026-07-12 audit)
+- **Engine wins (all shaders):** gate historyTex copy (only 11 use binding 13); reuse extraBuffer Float32Array; fix dataTexA/B→C double-copy in chained slots; merge queue submits; GPU image upload path.
+- **Shader bulk:** ~63 still on 8×8 workgroups; UV pixel-center + aspect helpers; mouse Y already flipped in renderer — audit double-flips in mouse shaders.
+- **Dormant infra:** subgroup `-sg.wgsl` loader (0 files); TS timestamp-query alloc unused.
+- **Format tradeoff:** rgba32float pipeline is quality-correct for HDR/sim but 4× bandwidth — don't downgrade without tiering.
+
+**Last updated (prior):** 2026-07-11 (Epic #912 foundation hardening in flight)
 
 ## Core Identity & Vibe (from SOUL + IDENTITY)
 - Spark Engine / Cheerleader: bright, protective, kinetic, loud-hearted. "We are NOT done here!" Fast, punchy, energetic. Use "we/let's", 🔥⚡💥🫡, short lines, "one thing first", "messy start? fine", "this is NOT the final boss".
@@ -36,10 +44,32 @@
 - Update GAP/STATUS aggressively when code evolves (present path landed after May doc).
 - Use GH issues + Copilot for the C++ work (user has swarm/agent patterns elsewhere).
 
+## Epic #912 — Foundation hardening (2026-07-11)
+- **Strategic call:** 1–2 cycles of structure before next shader swarm. Content (#897 fireworks) ships in parallel.
+- **Three waves done locally:** W1 (#919/#918/#931 build+docs), W2 (#915/#917/#920 limits+catalog+ES2020), W3 (#913/#914 App/Controls split) — PR #938 open for W3 only; W1/W2 branches not pushed yet.
+- **Current branch:** `feat/midi-control-and-wasm-parity` (PR #936) — orthogonal to foundation; merge foundation first or rebase MIDI after.
+- **Still open in epic:** #917 full orphan reconcile, #921 thumbnail pipeline (GPU), #916 renderer.cpp modularize, product epics (#922/#929) deferred per epic scope.
+- **Success criteria:** 4/6 have code on foundation branches; thumbnails + full god-component split remain partial.
+
+## Epic: Advanced Physics & Multipass Sims (2026-07-11)
+- **Agent kit:** `swarm-tasks/advanced-physics/` — README, MULTIPASS_SIM_CONTRACT, 3 agent specs + stretch goals
+- **Tier gate:** A/B ship now (linear multipass + frame feedback); Tier C (graph runner #929) blocks heavy iterative solvers
+- **Priority:** ripple-tank multipass → fabric-of-reality → caustic accumulator
+- **Prototypes exist:** `wave-equation`, `photonic-caustics` (single-pass); `fabric-of-reality` greenfield
+- **Preamble for swarms:** `agents/WGSL_BUILTINS_GENERATIVE.md` + MULTIPASS_SIM_CONTRACT.md
+
+## WASM Tier B → A evidence (2026-07-11)
+- **Decision: STAY TIER B** — no GPU benchmark/parity evidence; 4-week CI ops gate not met
+- Created `WASM_PROMOTION_TRACKING.md` + `reports/wasm-promotion-evidence-2026-07-11.md`
+- Stub `test-results/wasm-benchmark-report.json` (gpuBackendObserved: false)
+- Local: `test:wasm:unit` 29/29 pass; Playwright blocked (no GPU VM; branch build TS2352)
+- CI note: `test-wasm-e2e` green on ubuntu-latest skips GPU-dependent specs
+
+- **2026-07-11:** WASM GPU timestamp queries when `timestamp-query` feature supported (`timing.cpp`); wall-clock fallback otherwise.
+
 ## TODOs / Open Threads (from this + recent memory)
-- [x] **Shader upgrade mission (2026-06-28):** Phase A + Phase B Advanced Enhancement (2026-07-08): **48/48 completed + validated**. Reports in `swarm-tasks/phase-b-*-report.md`.
-- [x] **2026-07-10 project audit:** Progress check + foundation-first strategy. Created GH issues **#912–#933** (epic #912). Snapshot: 1201 cataloged shaders / 1288 WGSL / 346 thumbs; WASM Tier B complete on glue; App/Controls/renderer.cpp monoliths; TS missing requiredLimits vs C++; double wasm:build; 93 orphan WGSL + 6 missing defs; legacy lists. **Suggested sprint:** #919 → #918 → #917 → #915 → #913/#914 → #920 → product #922/#921. Content parallel: #897 fireworks. Multipass sims #924 after #923.
-- [x] 2026-07-03: Created GH issues for WASM renderer remaining work: umbrella #885 + #886–#890 (recording, forwarding audit, parity, tests/bench, docs/promotion). Expanded #845–#849 with follow-up notes. Updated GAP + STATUS docs. C++ renderer still Tier B experimental; core is solid but integration/recording/parity/tests not fully seamless.
+- [ ] **Shader scan cleanup (2026-07-11):** 95 scan errors fixed in code (fetch fallback, subgroups device, filter test junk). Optional: `sync_shaders_to_1ink.py --ids-file scripts/shader_scan_fix_list.txt` for 88 CDN 404s.
+- [ ] **Shader upgrade mission (2026-06-28):** Upgrade batches of Pixelocity WGSL shaders to the immutable 13-binding contract, including standard `Uniforms`, `rgba32float` storage writes, depth/data/audio bindings, 16x16x1 workgroups, aspect-correct UVs, four `updatedParams`, feature metadata, generator validation, and batch commits.
 - [x] Created GH issues 817-823 (2026-06-11) for C++ solidification. All C++-centric, reference #799 + specific source lines.
 - [x] Updated issue bodies 2026-06-14: moved Claude's implementation sketches from comments into structured task sections (Prerequisites, Implementation Instructions, Task Checklist). PR order: #821 → #818+#820 → #817+#819 → #822 → #823.
 - [x] Bridge skew fix (2026-06-16): `wasm_renderer/wasm_bridge.js` is SOT; build.sh copies to both paths; validate guard; `getDiagnostics()` synced.
@@ -47,9 +77,9 @@
 - [x] Bridge sync (#821, 2026-06-16): canonical `wasm_renderer/wasm_bridge.js` synced to `src/wasm/` + validator guard.
 - [x] WASM docs refresh (#823, 2026-06-16): GAP_ANALYSIS, STATUS, README, WASM_*.md — presentation corrected, #817–#822 tracking table, #799 roadmap link.
 - [x] RendererManager WASM forwarding + resync on switch (Phase 1, 2026-06-20).
-- [x] App-level `setInputSource` + manager forwarding (July #886–#887). Residual: edge-GPU live verification + promotion evidence (#925).
+- [ ] App-level `setInputSource` everywhere + live edge-GPU verification.
 - [x] Phase 2 CI/build hygiene (2026-06-27): build.sh fails without emcc; CI artifact pipeline; ARTIFACTS.md
-- [x] 2026-07-04: WASM promotion tracking doc + GAP/STATUS/README refresh (#890). Tier B honest; gates in `WASM_PROMOTION_TRACKING.md`.
+- [x] Phase 3 WASM test suite (2026-06-27): parity matrix, benchmarks, hot-reload, WASM_TEST_SUITE.md
 - [x] **Product decision Tier B (2026-06-27):** WASM = experimental opt-in; TS WebGPU = production default. Policy: `WASM_BACKEND_POLICY.md`
 - Memory maintenance: review recent daily (06-07 had swarm, git sync); distill only high-signal (C++ reliability is now key infra bet).
 

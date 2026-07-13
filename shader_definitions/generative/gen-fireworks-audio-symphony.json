@@ -1,5 +1,5 @@
 {
-  "name": "Audio Symphony Fireworks",
+  "name": "4th of July \u2014 Audio Symphony",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -10,10 +10,16 @@
     "mouse-driven",
     "trails",
     "generative",
-    "celebration"
+    "celebration",
+    "4th-of-july",
+    "july-4"
   ],
   "description": "A fireworks display conducted by the music. A smoothed bass envelope triggers bigger, faster launches on transients; mids layer in secondary shells; treble crackles a cloud of micro-sparks. Mouse click or hold launches a personal synced shell at the cursor.",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updatedParams": [
     {
       "index": 0,

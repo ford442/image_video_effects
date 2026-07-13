@@ -21,6 +21,27 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 
 ## Architecture
 
+### Source file map (modular layout, July 2026)
+
+| File | Responsibility |
+|------|----------------|
+| `main.cpp` | `EMSCRIPTEN_KEEPALIVE` exports, render loop glue |
+| `renderer.h` | `WebGPURenderer` class declaration, RAII handles, types |
+| `renderer.cpp` | Lifecycle facade: `Initialize`/`Shutdown`, slot API, mouse/zoom/ripples |
+| `device.cpp` | Instance/adapter/device ladder, limits, surface, `PresentToSurface` |
+| `resources.cpp` | Textures, buffers, samplers, `ResizeCanvas` / `RecreateTextures` |
+| `pipeline.cpp` | Shader load/reload, compute + blit pipelines, bind groups |
+| `frame.cpp` | Multi-slot `Render()`, uniforms flush, async frame capture |
+| `timing.cpp` | GPU timestamp queries + `getGPUTimings` resolve/readback |
+| `audio_depth.cpp` | Image/video upload, depth map, audio FFT bins |
+| `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
+| `wasm_bridge.js` | JS bridge (canonical; copied to `public/wasm/` + `src/wasm/`) |
+| `build.sh` | **Canonical build** — single-pass `emcc` + emdawnwebgpu |
+| `CMakeLists.txt` | Optional IDE/fallback build (link-time port only) |
+
+Cross-reference: TypeScript device policy lives in `src/renderer/webgpuDevicePolicy.ts`
+(must stay in sync with `device.cpp` `CreateDevice()` limits table).
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    JavaScript/TypeScript                    │
@@ -112,12 +133,28 @@ struct Uniforms {
 
 ### Build
 
+**Canonical path:** `build.sh` (single-pass `emcc`). CMake is optional/IDE-only.
+
 ```bash
 cd wasm_renderer
 ./build.sh
 ```
 
-Or manually:
+`SKIP_WASM_BUILD=1` skips when `emcc` is missing (uses committed `public/wasm/` artifacts).
+
+#### Compile flags (reviewed July 2026)
+
+| Flag | Rationale |
+|------|-----------|
+| `-sASYNCIFY` | Required for `wgpuInstanceWaitAny` during adapter/device request callbacks. Adds size cost; keep until emdawn offers sync path. |
+| `-O2` | Default balance; evaluate `-O3` per-shader if profiling shows benefit. |
+| `-sALLOW_MEMORY_GROWTH=1` | Large 2048² rgba32f texture stacks; optional `-sINITIAL_MEMORY=67108864` reduces early growth. |
+| `-sMODULARIZE=1` | `PixelocityWASM` factory for `wasm_bridge.js` |
+| `compatibleSurface=nullptr` | Surface created post-device via `importJsSurface` — see `device.cpp` |
+
+Bridge copy + `scripts/validate_wasm_artifacts.js` remain the source-of-truth guards after build.
+
+Or manually (CMake fallback — may be fragile with two-step emdawn):
 
 ```bash
 cd wasm_renderer

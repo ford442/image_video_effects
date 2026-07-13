@@ -1,5 +1,5 @@
 {
-  "name": "Chrysanthemum Burst",
+  "name": "4th of July \u2014 Chrysanthemum Burst",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -11,10 +11,16 @@
     "rings",
     "audio-reactive",
     "generative",
-    "celebration"
+    "celebration",
+    "4th-of-july",
+    "july-4"
   ],
-  "description": "Dense spherical chrysanthemum and peony shells with hundreds of sparks arranged in concentric rings. Each burst flashes brilliant white at the core then blooms into layered color rings — crimson inner petals fading to electric blue and gold at the edges. Multiple timed ring layers create depth within each explosion. Bass expands burst radius, mids add secondary ring shells, treble crackles the outer petals. Mouse detonates a massive peony at the cursor.",
-  "workgroup_size": [16, 16, 1],
+  "description": "Dense spherical chrysanthemum and peony shells with hundreds of sparks arranged in concentric rings. Each burst flashes brilliant white at the core then blooms into layered color rings \u2014 crimson inner petals fading to electric blue and gold at the edges. Multiple timed ring layers create depth within each explosion. Bass expands burst radius, mids add secondary ring shells, treble crackles the outer petals. Mouse detonates a massive peony at the cursor.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updatedParams": [
     {
       "index": 0,

@@ -1,72 +1,157 @@
-<testsuites id="" name="" tests="9" failures="0" skipped="8" errors="0" time="76.81975099999998">
-<testsuite name="renderer-parity.spec.ts" timestamp="2026-07-04T21:42:52.058Z" hostname="chromium" tests="7" failures="0" skipped="7" time="44.797" errors="0">
-<testcase name="parity: fluid / sim-fluid-feedback-coupled" classname="renderer-parity.spec.ts" time="7.778">
-<properties>
-<property name="skip" value="GPU backends unavailable (wasm=js, webgpu=js)">
-</property>
-</properties>
+<testsuites id="" name="" tests="17" failures="0" skipped="14" errors="3" time="4.43446">
+<testsuite name="renderer-parity.spec.ts" timestamp="2026-07-11T19:40:34.977Z" hostname="chromium" tests="7" failures="0" skipped="6" time="0" errors="1">
+<testcase name="parity: fluid / sim-fluid-feedback-coupled" classname="renderer-parity.spec.ts" time="0">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|renderer-parity-parity-fluid-sim-fluid-feedback-coupled-chromium/error-context.md]]
+
+[[ATTACHMENT|renderer-parity-parity-fluid-sim-fluid-feedback-coupled-chromium/error-context.md]]
+]]>
+</system-out>
+<error message="Missing /root/image_video_effects/build/index.html. Run &quot;npm run build&quot; (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests." type="Error">
+<![CDATA[  [chromium] › renderer-parity.spec.ts:33:7 › parity: fluid / sim-fluid-feedback-coupled ───────────
+
+    Error: Missing /root/image_video_effects/build/index.html. Run "npm run build" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.
+
+       at helpers/rendererHarness.ts:86
+
+      84 |   const indexHtml = resolve(BUILD_DIR, 'index.html');
+      85 |   if (!existsSync(indexHtml)) {
+    > 86 |     throw new Error(
+         |           ^
+      87 |       `Missing ${indexHtml}. Run "npm run build" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.`
+      88 |     );
+      89 |   }
+        at startStaticServer (/root/image_video_effects/tests/helpers/rendererHarness.ts:86:11)
+        at /root/image_video_effects/tests/renderer-parity.spec.ts:25:26
+
+    Error Context: ../test-results/renderer-parity-parity-fluid-sim-fluid-feedback-coupled-chromium/error-context.md
+
+    Error Context: ../test-results/renderer-parity-parity-fluid-sim-fluid-feedback-coupled-chromium/error-context.md
+]]>
+</error>
+</testcase>
+<testcase name="parity: reaction-diffusion / gen-lichen-reaction-diffusion" classname="renderer-parity.spec.ts">
 <skipped>
 </skipped>
 </testcase>
-<testcase name="parity: reaction-diffusion / gen-lichen-reaction-diffusion" classname="renderer-parity.spec.ts" time="8.057">
-<properties>
-<property name="skip" value="GPU backends unavailable (wasm=js, webgpu=js)">
-</property>
-</properties>
+<testcase name="parity: audio-reactive / cyber-ripples" classname="renderer-parity.spec.ts">
 <skipped>
 </skipped>
 </testcase>
-<testcase name="parity: audio-reactive / cyber-ripples" classname="renderer-parity.spec.ts" time="7.494">
-<properties>
-<property name="skip" value="GPU backends unavailable (wasm=js, webgpu=js)">
-</property>
-</properties>
+<testcase name="parity: generative / plasma" classname="renderer-parity.spec.ts">
 <skipped>
 </skipped>
 </testcase>
-<testcase name="parity: generative / plasma" classname="renderer-parity.spec.ts" time="8.399">
-<properties>
-<property name="skip" value="GPU backends unavailable (wasm=js, webgpu=js)">
-</property>
-</properties>
+<testcase name="parity: interactive / liquid" classname="renderer-parity.spec.ts">
 <skipped>
 </skipped>
 </testcase>
-<testcase name="parity: interactive / liquid" classname="renderer-parity.spec.ts" time="7.705">
-<properties>
-<property name="skip" value="GPU backends unavailable (wasm=js, webgpu=js)">
-</property>
-</properties>
+<testcase name="WASM canvas snapshots › snapshot wasm: sim-fluid-feedback-coupled" classname="renderer-parity.spec.ts">
 <skipped>
 </skipped>
 </testcase>
-<testcase name="WASM canvas snapshots › snapshot wasm: sim-fluid-feedback-coupled" classname="renderer-parity.spec.ts" time="2.876">
-<properties>
-<property name="skip" value="WASM backend unavailable">
-</property>
-</properties>
-<skipped>
-</skipped>
-</testcase>
-<testcase name="WASM canvas snapshots › snapshot wasm: gen-lichen-reaction-diffusion" classname="renderer-parity.spec.ts" time="2.488">
-<properties>
-<property name="skip" value="WASM backend unavailable">
-</property>
-</properties>
+<testcase name="WASM canvas snapshots › snapshot wasm: gen-lichen-reaction-diffusion" classname="renderer-parity.spec.ts">
 <skipped>
 </skipped>
 </testcase>
 </testsuite>
-<testsuite name="wasm-benchmark.spec.ts" timestamp="2026-07-04T21:42:52.058Z" hostname="chromium" tests="2" failures="0" skipped="1" time="27.587" errors="0">
-<testcase name="WASM vs WebGPU benchmark matrix" classname="wasm-benchmark.spec.ts" time="24.671">
-<properties>
-<property name="skip" value="WebGPU adapter unavailable — run locally or on a GPU runner with WASM_GPU_TESTS=1">
-</property>
-</properties>
+<testsuite name="wasm-benchmark.spec.ts" timestamp="2026-07-11T19:40:34.977Z" hostname="chromium" tests="2" failures="0" skipped="1" time="0" errors="1">
+<testcase name="WASM vs WebGPU benchmark matrix" classname="wasm-benchmark.spec.ts" time="0">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|wasm-benchmark-WASM-vs-WebGPU-benchmark-matrix-chromium/error-context.md]]
+
+[[ATTACHMENT|wasm-benchmark-WASM-vs-WebGPU-benchmark-matrix-chromium/error-context.md]]
+]]>
+</system-out>
+<error message="Missing /root/image_video_effects/build/index.html. Run &quot;npm run build&quot; (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests." type="Error">
+<![CDATA[  [chromium] › wasm-benchmark.spec.ts:75:5 › WASM vs WebGPU benchmark matrix ───────────────────────
+
+    Error: Missing /root/image_video_effects/build/index.html. Run "npm run build" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.
+
+       at helpers/rendererHarness.ts:86
+
+      84 |   const indexHtml = resolve(BUILD_DIR, 'index.html');
+      85 |   if (!existsSync(indexHtml)) {
+    > 86 |     throw new Error(
+         |           ^
+      87 |       `Missing ${indexHtml}. Run "npm run build" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.`
+      88 |     );
+      89 |   }
+        at startStaticServer (/root/image_video_effects/tests/helpers/rendererHarness.ts:86:11)
+        at /root/image_video_effects/tests/wasm-benchmark.spec.ts:28:26
+
+    Error Context: ../test-results/wasm-benchmark-WASM-vs-WebGPU-benchmark-matrix-chromium/error-context.md
+
+    Error Context: ../test-results/wasm-benchmark-WASM-vs-WebGPU-benchmark-matrix-chromium/error-context.md
+]]>
+</error>
+</testcase>
+<testcase name="WASM getGPUTimings API surface" classname="wasm-benchmark.spec.ts">
 <skipped>
 </skipped>
 </testcase>
-<testcase name="WASM getGPUTimings API surface" classname="wasm-benchmark.spec.ts" time="2.916">
+</testsuite>
+<testsuite name="wasm-renderer.smoke.spec.ts" timestamp="2026-07-11T19:40:34.977Z" hostname="chromium" tests="8" failures="0" skipped="7" time="0.001" errors="1">
+<testcase name="WASM renderer initializes (testMode API + diagnostics)" classname="wasm-renderer.smoke.spec.ts" time="0.001">
+<system-out>
+<![CDATA[
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-ab45d-s-testMode-API-diagnostics--chromium/error-context.md]]
+
+[[ATTACHMENT|wasm-renderer.smoke-WASM-r-ab45d-s-testMode-API-diagnostics--chromium/error-context.md]]
+]]>
+</system-out>
+<error message="Missing /root/image_video_effects/build/index.html. Run &quot;npm run build&quot; (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests." type="Error">
+<![CDATA[  [chromium] › wasm-renderer.smoke.spec.ts:36:5 › WASM renderer initializes (testMode API + diagnostics) 
+
+    Error: Missing /root/image_video_effects/build/index.html. Run "npm run build" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.
+
+       at helpers/rendererHarness.ts:86
+
+      84 |   const indexHtml = resolve(BUILD_DIR, 'index.html');
+      85 |   if (!existsSync(indexHtml)) {
+    > 86 |     throw new Error(
+         |           ^
+      87 |       `Missing ${indexHtml}. Run "npm run build" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.`
+      88 |     );
+      89 |   }
+        at startStaticServer (/root/image_video_effects/tests/helpers/rendererHarness.ts:86:11)
+        at /root/image_video_effects/tests/wasm-renderer.smoke.spec.ts:29:26
+
+    Error Context: ../test-results/wasm-renderer.smoke-WASM-r-ab45d-s-testMode-API-diagnostics--chromium/error-context.md
+
+    Error Context: ../test-results/wasm-renderer.smoke-WASM-r-ab45d-s-testMode-API-diagnostics--chromium/error-context.md
+]]>
+</error>
+</testcase>
+<testcase name="WASM canvas has non-zero dimensions" classname="wasm-renderer.smoke.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM smoke: fluid / sim-fluid-feedback-coupled" classname="wasm-renderer.smoke.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM smoke: reaction-diffusion / gen-lichen-reaction-diffusion" classname="wasm-renderer.smoke.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM smoke: audio-reactive / cyber-ripples" classname="wasm-renderer.smoke.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM smoke: generative / plasma" classname="wasm-renderer.smoke.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM smoke: interactive / liquid" classname="wasm-renderer.smoke.spec.ts">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="WASM multi-slot stack (fluid + generative)" classname="wasm-renderer.smoke.spec.ts">
+<skipped>
+</skipped>
 </testcase>
 </testsuite>
 </testsuites>

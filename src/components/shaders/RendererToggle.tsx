@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 
+/**
+ * @deprecated Shader demo helper — production path uses `RendererSwitcher`.
+ */
 interface RendererToggleProps {
   onToggle?: (useWasm: boolean) => void;
   className?: string;

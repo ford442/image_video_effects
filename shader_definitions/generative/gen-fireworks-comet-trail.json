@@ -1,16 +1,60 @@
 {
-  "name": "Comet Trail Shell",
+  "name": "4th of July \u2014 Comet Trail",
   "category": "generative",
-  "tags": ["fireworks", "comet", "trail", "streak", "pyrotechnics", "july-4", "audio-reactive", "generative"],
-  "description": "Blazing comet shells with brilliant heads and long luminous tails that streak across the night sky. Each shell launches upward then leaves a glowing path as sparks peel off the main trajectory. Bass makes bigger comet heads, treble adds sparkle along the trail. Mouse fires a comet from the cursor.",
-  "workgroup_size": [16, 16, 1],
-  "updatedParams": [
-    {"index": 0, "name": "Comet Speed", "default": 0.6, "min": 0, "max": 1, "step": 0.01},
-    {"index": 1, "name": "Trail Length", "default": 0.65, "min": 0, "max": 1, "step": 0.01},
-    {"index": 2, "name": "Head Brightness", "default": 0.7, "min": 0, "max": 1, "step": 0.01},
-    {"index": 3, "name": "Color Shift", "default": 0.3, "min": 0, "max": 1, "step": 0.01}
+  "tags": [
+    "fireworks",
+    "comet",
+    "trail",
+    "streak",
+    "pyrotechnics",
+    "july-4",
+    "audio-reactive",
+    "generative",
+    "4th-of-july"
   ],
-  "supportsDepth": true, "supportsDof": false, "updated": true,
+  "description": "Blazing comet shells with brilliant heads and long luminous tails that streak across the night sky. Each shell launches upward then leaves a glowing path as sparks peel off the main trajectory. Bass makes bigger comet heads, treble adds sparkle along the trail. Mouse fires a comet from the cursor.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Comet Speed",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Trail Length",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Head Brightness",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Color Shift",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
   "id": "gen-fireworks-comet-trail",
   "url": "shaders/gen-fireworks-comet-trail.wgsl",
   "features": []

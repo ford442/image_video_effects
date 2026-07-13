@@ -341,6 +341,67 @@
     ]
   },
   {
+    "id": "brush-strokes",
+    "name": "Brush Strokes",
+    "url": "https://test.1ink.us/image_video_effects/shaders/brush-strokes.wgsl",
+    "description": "Catalog entry for Brush Strokes.",
+    "tags": [
+      "mouse-driven",
+      "paint-brush",
+      "trail",
+      "organic",
+      "audio-reactive",
+      "semantic-alpha"
+    ],
+    "features": [
+      "mouse-driven",
+      "paint-brush",
+      "trail",
+      "organic",
+      "audio-reactive",
+      "semantic-alpha"
+    ],
+    "params": [
+      {
+        "id": "param1",
+        "name": "Param 1",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "param2",
+        "name": "Param 2",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "param3",
+        "name": "Param 3",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "param4",
+        "name": "Param 4",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "_seeded_by": "scripts/seed_orphan_shader_defs.py"
+  },
+  {
     "id": "bubble-wrap",
     "name": "Bubble Wrap",
     "url": "https://test.1ink.us/image_video_effects/shaders/bubble-wrap.wgsl",

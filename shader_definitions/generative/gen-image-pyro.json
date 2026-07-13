@@ -1,5 +1,5 @@
 {
-  "name": "Image Pyro",
+  "name": "4th of July \u2014 Image Pyro",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -10,7 +10,9 @@
     "gravity",
     "audio-reactive",
     "celebration",
-    "color-sampling"
+    "color-sampling",
+    "4th-of-july",
+    "july-4"
   ],
   "description": "Your photo or video frame becomes the fuel for a fireworks show. Bright regions of the image launch colored mortar shells and sparks that inherit the source hues. Explosions paint over the image with gravity arcs and glowing trails while the original image provides the palette. Bass triggers larger detonations, treble adds crackling highlights. Mouse directs a focused barrage.",
   "workgroup_size": [

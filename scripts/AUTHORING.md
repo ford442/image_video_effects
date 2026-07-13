@@ -98,9 +98,23 @@ python3 scripts/audit_orphan_shader_defs.py
 python3 scripts/audit_orphan_shader_defs.py --ci-gate --base origin/main
 ```
 
-Writes `reports/orphan_shader_defs.{json,md}`. Classifies entries as `local`,
-`storage-only` (present in `public/shader_coordinates.json` and/or
-`storage_manager/seed_shaders.json`), `allowlisted`, or `likely-broken`.
+Writes `reports/orphan_shader_defs.{json,md}`. Audits **both directions**:
+
+- Definitions → WGSL (`local`, `storage-only`, `allowlisted`, `likely-broken`)
+- WGSL → definitions (`cataloged`, `template-prefix`, `multipass-secondary`, `orphan`)
+
+**Exits 1** when `only_def` or unexpected `only_wgsl` > 0 (CI gate). Use
+`--no-fail` for report-only runs.
+
+Templates (`_*.wgsl`) and multipass secondaries are excluded — see
+`docs/SHADER_TEMPLATES.md`.
+
+Backfill legacy orphan WGSL:
+
+```bash
+python3 scripts/seed_orphan_shader_defs.py --write
+node scripts/generate_shader_lists.js
+```
 
 **CI gate:** fails when a **changed** definition is `likely-broken`, or when a
 **new** `likely-broken` id appears outside `reports/orphan_baseline.json`

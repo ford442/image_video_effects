@@ -1,5 +1,5 @@
 {
-  "name": "Wind & Ripple Fireworks",
+  "name": "4th of July \u2014 Wind & Ripple",
   "category": "generative",
   "tags": [
     "fireworks",
@@ -10,10 +10,16 @@
     "mouse-driven",
     "trails",
     "generative",
-    "celebration"
+    "celebration",
+    "4th-of-july",
+    "july-4"
   ],
   "description": "Sparks drift on a time-varying wind while ripple events ignite directed radial barrages. Bass deepens the shells, mids add secondary gusts, and treble scatters silver micro-sparkle through the air. Mouse click or hold launches a personal wind-swept shell at the cursor.",
-  "workgroup_size": [16, 16, 1],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "updatedParams": [
     {
       "index": 0,

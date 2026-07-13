@@ -284,7 +284,7 @@
     "id": "chrono-slit-scan",
     "name": "Chrono Slit Scan",
     "url": "https://test.1ink.us/image_video_effects/shaders/chrono-slit-scan.wgsl",
-    "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, audio-reactive speed modulation, depth-aware width scaling, and LOD-optimized fbm warp with early-exit sampling.",
+    "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, audio-reactive speed modulation, and depth-aware width scaling.",
     "params": [
       {
         "id": "slitCount",
@@ -322,10 +322,7 @@
       "sdf-composition",
       "upgraded-rgba",
       "multi-slit",
-      "depth-aware",
-      "lod-noise",
-      "early-exit",
-      "sparse-sampling"
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -1766,7 +1763,7 @@
     "id": "digital-lens",
     "name": "Digital Lens",
     "url": "https://test.1ink.us/image_video_effects/shaders/digital-lens.wgsl",
-    "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, mouse gravity-well focus, attack/release bass envelope, temporal feedback trails, ACES tone mapping, film grain, and advanced RGBA compositing via depth-layered, luminance-key, and effect-intensity alpha.",
+    "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, mouse gravity-well focus, attack/release bass envelope, temporal feedback trails, ACES tone mapping, and film grain.",
     "params": [
       {
         "id": "distortion",
@@ -1805,9 +1802,7 @@
       "barrel-distortion",
       "chromatic-dispersion",
       "anamorphic",
-      "temporal-feedback",
-      "alpha-layered",
-      "luminance-key"
+      "temporal-feedback"
     ],
     "tags": [
       "filter",
@@ -1818,9 +1813,7 @@
       "audio-reactive",
       "anamorphic",
       "temporal-feedback",
-      "gravity-well",
-      "alpha-layered",
-      "luminance-key"
+      "gravity-well"
     ]
   },
   {
@@ -1937,7 +1930,7 @@
   },
   {
     "id": "fireworks-depth-parade",
-    "name": "Fireworks Depth Parade",
+    "name": "4th of July — Depth Parade",
     "url": "https://test.1ink.us/image_video_effects/shaders/fireworks-depth-parade.wgsl",
     "description": "Depth layers of your image launch fireworks in parade sequence — foreground detonates first, then midground, then background. Creates a cinematic 3D-ish celebration where near elements pop before far ones. Image colors tint each layer's shells. Bass amplifies foreground launches. Mouse triggers a depth-sorted barrage.",
     "tags": [
@@ -1948,7 +1941,8 @@
       "pyrotechnics",
       "july-4",
       "image-reactive",
-      "audio-reactive"
+      "audio-reactive",
+      "4th-of-july"
     ],
     "features": [
       "audio-reactive",
@@ -1993,7 +1987,7 @@
   },
   {
     "id": "fireworks-edge-ignite",
-    "name": "Fireworks Edge Ignite",
+    "name": "4th of July — Edge Ignite",
     "url": "https://test.1ink.us/image_video_effects/shaders/fireworks-edge-ignite.wgsl",
     "description": "Image contours and edges become ignition lines for a fireworks show. Bright boundaries spark and launch colored shells along the detected edges of your photo. The picture's outlines trace themselves in pyrotechnic light. Bass deepens edge bursts, treble adds crackle along contours. Mouse ignites edges at the cursor.",
     "tags": [
@@ -2003,7 +1997,8 @@
       "pyrotechnics",
       "july-4",
       "image-reactive",
-      "audio-reactive"
+      "audio-reactive",
+      "4th-of-july"
     ],
     "features": [
       "audio-reactive",
@@ -2048,7 +2043,7 @@
   },
   {
     "id": "fireworks-patriotic-july4",
-    "name": "Patriotic July 4th Pyro",
+    "name": "4th of July — Patriotic Pyro",
     "url": "https://test.1ink.us/image_video_effects/shaders/fireworks-patriotic-july4.wgsl",
     "description": "Happy July 4th! Your image fuels a red, white, and blue fireworks spectacular. Bright regions launch patriotic shells cycling through crimson, silver-white, and electric blue. Image hues blend with the classic American palette for a backyard celebration feel. Bass booms the big shells, treble crackles the finale. Mouse fires a patriotic barrage.",
     "tags": [
@@ -2058,7 +2053,8 @@
       "red-white-blue",
       "pyrotechnics",
       "image-reactive",
-      "audio-reactive"
+      "audio-reactive",
+      "4th-of-july"
     ],
     "features": [
       "audio-reactive",
@@ -2103,7 +2099,7 @@
   },
   {
     "id": "fireworks-portrait-burst",
-    "name": "Fireworks Portrait Burst",
+    "name": "4th of July — Portrait Burst",
     "url": "https://test.1ink.us/image_video_effects/shaders/fireworks-portrait-burst.wgsl",
     "description": "Bright regions of your image become the cores of spectacular firework detonations. Faces, skylines, and luminous highlights erupt in bursts that inherit the source colors. The photo celebrates itself — portraits explode in their own palette. Bass triggers larger cores, treble adds sparkle. Mouse detonates at the cursor.",
     "tags": [
@@ -2113,7 +2109,8 @@
       "pyrotechnics",
       "july-4",
       "image-reactive",
-      "audio-reactive"
+      "audio-reactive",
+      "4th-of-july"
     ],
     "features": [
       "audio-reactive",
@@ -3237,11 +3234,9 @@
       "upgraded-rgba",
       "aces-tone-map",
       "chromatic-aberration",
-      "oklab-mix",
-      "lod-noise",
-      "branchless-page-mask"
+      "oklab-mix"
     ],
-    "description": "Interactive page curl with warm/cool 3-point studio lighting on the curl face, OkLab color blending, ACES tone mapping, click shockwaves, depth-aware shadows, LOD noise, branchless page masking, chromatic aberration, and temporal feedback trails.",
+    "description": "Interactive page curl with warm/cool 3-point studio lighting on the curl face, OkLab color blending, ACES tone mapping, click shockwaves, depth-aware shadows, chromatic aberration, and temporal feedback trails.",
     "params": [
       {
         "id": "param1",

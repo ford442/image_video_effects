@@ -62,7 +62,7 @@ Older analysis files (`ARCHITECTURE_ANALYSIS.md`, `COMPLETENESS_ANALYSIS.md`,
 | Limitation | Notes |
 |------------|-------|
 | Not production default | TS WebGPU is Tier A |
-| GPU timings on WASM | Wall-clock only (`getGPUTimings().available === false`) |
+| GPU timings on WASM | GPU timestamp queries when `timestamp-query` feature is supported; otherwise wall-clock (`available: false`) |
 | Promotion gates open | See [`WASM_PROMOTION_TRACKING.md`](../WASM_PROMOTION_TRACKING.md) |
 | Edge GPU coverage | Informal — run manual smoke on target hardware |
 | Visual pixel-diff | Not automated (statistical luminance parity only) |
