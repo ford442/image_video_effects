@@ -6,7 +6,6 @@ import LiveStudioTab from './components/LiveStudioTab';
 import { StorageBrowser } from './components/StorageBrowser';
 import { RendererToggle } from './components/RendererToggle';
 import { PerformanceStatusHUD } from './components/PerformanceStatusHUD';
-import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { RenderQualityMode } from './config/performancePolicy';
 import { loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
 import { RendererType, RendererManager } from './renderer/RendererManager';
@@ -14,201 +13,43 @@ import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } 
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
 import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
 import { resolveShaderUrl } from './utils/resolveShaderUrl';
+import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
+import { RendererManager } from './renderer/RendererManager';
+import { ImageRecord } from './AutoDJ';
+import { VideoRecord } from './syncTypes';
+import { VideoSegment } from './services/videoSegmentManager';
+import { saveMyVjSet } from './services/myVjSets';
 import {
-    STORAGE_API_URL,
-
     DEFAULT_B3HD_SEGMENT_LENGTH,
     DEFAULT_B3HD_INTERVAL_SECONDS,
 } from './config/appConfig';
-import { fetchContentManifest, LoadedContent } from './services/contentLoader';
-import { VideoSegment, pickRandomSegment, hydrateDurations } from './services/videoSegmentManager';
-import { savePreset } from './services/vjPresets';
-import { saveMyVjSet } from './services/myVjSets';
-import { mapOrderedParamsToSlotParams } from './utils/shaderParamMapping';
-import { useDepthEstimation, useAudioReactiveParams, useShareChain } from './hooks';
+import {
+    useDepthEstimation,
+    useAudioReactiveParams,
+    useShareChain,
+    useContentManifest,
+    useShaderCatalogLoad,
+    useShaderBoot,
+    useAiVjHandlers,
+    useWebcam,
+    useB3hdMode,
+    useRoulette,
+    useGenerativeShowcase,
+    useRecording,
+    useRemoteSync,
+    useRendererBackend,
+    useShaderMode,
+    useTestHarness,
+    useImageLoading,
+} from './hooks';
+import { WEBCAM_FUN_SHADERS, getShaderDefaults } from './app/constants/shaderDefaults';
+import { defaultSlotParams } from './app/constants/defaultSlotParams';
+import { AppShell } from './components/app/AppShell';
+import { AppOverlays } from './components/app/AppOverlays';
 import './style.css';
 
-// --- Webcam Fun Shaders ---
-const WEBCAM_FUN_SHADERS = [
-    'liquid', 'liquid-chrome-ripple', 'liquid-rainbow', 'liquid-swirl',
-    'neon-pulse', 'neon-edge-pulse', 'neon-fluid-warp', 'neon-warp',
-    'vortex', 'vortex-distortion', 'vortex-warp', 'chroma-vortex',
-    'distortion', 'chromatic-folds', 'holographic-projection', 'cyber-glitch-hologram',
-    'kaleidoscope', 'kaleido-scope', 'fractal-kaleidoscope', 'astral-kaleidoscope',
-    'rgb-fluid', 'rgb-ripple-distortion', 'rgb-shift-brush',
-    'pixel-sorter', 'pixel-sort-glitch', 'ascii-shockwave',
-    'magnetic-field', 'magnetic-pixels', 'magnetic-rgb'
-];
-
-// --- Shader Parameter Defaults ---
-// Hardcoded defaults for shaders where API returns generic 0.5 values
-// Format: shader_id -> [param1, param2, param3, param4, param5, param6]
-const SHADER_DEFAULTS: Record<string, number[]> = {
-    // Liquid shaders - tuned for fluid dynamics
-    'liquid': [0.35, 0.50, 0.30, 0.50],           // surfaceTension, gravityScale, damping, turbidity
-    'liquid-chrome-ripple': [0.40, 0.60, 0.25, 0.45],
-    'liquid-rainbow': [0.50, 0.40, 0.35, 0.60],
-    'liquid-swirl': [0.45, 0.55, 0.30, 0.40],
-    'liquid-viscous': [0.60, 0.30, 0.50, 0.35],
-    
-    // Distortion shaders
-    'distortion': [0.40, 0.50, 0.30, 0.45],
-    'vortex': [0.50, 0.40, 0.60, 0.35],
-    'vortex-distortion': [0.45, 0.45, 0.55, 0.40],
-    'vortex-warp': [0.40, 0.50, 0.50, 0.45],
-    'chroma-vortex': [0.35, 0.55, 0.45, 0.50],
-    
-    // Chromatic/Color shaders
-    'chromatic-folds': [0.45, 0.40, 0.50, 0.35],
-    'chromatic-aberration': [0.30, 0.50, 0.40, 0.45],
-    'rgb-fluid': [0.40, 0.35, 0.55, 0.45],
-    'rgb-ripple-distortion': [0.35, 0.45, 0.50, 0.40],
-    'rgb-shift-brush': [0.50, 0.30, 0.45, 0.55],
-    
-    // Neon/Glow shaders
-    'neon-pulse': [0.60, 0.40, 0.50, 0.35],
-    'neon-edge-pulse': [0.55, 0.45, 0.40, 0.50],
-    'neon-fluid-warp': [0.45, 0.55, 0.35, 0.45],
-    'neon-warp': [0.50, 0.50, 0.40, 0.40],
-    
-    // Kaleidoscope/Geometric
-    'kaleidoscope': [0.40, 0.50, 0.45, 0.35],
-    'kaleido-scope': [0.45, 0.40, 0.50, 0.40],
-    'fractal-kaleidoscope': [0.35, 0.55, 0.40, 0.45],
-    'astral-kaleidoscope': [0.50, 0.35, 0.45, 0.50],
-    
-    // Glitch/Effects
-    'pixel-sorter': [0.40, 0.45, 0.55, 0.35],
-    'pixel-sort-glitch': [0.35, 0.50, 0.45, 0.40],
-    'ascii-shockwave': [0.45, 0.40, 0.50, 0.45],
-    'cyber-glitch-hologram': [0.50, 0.35, 0.40, 0.55],
-    
-    // Magnetic/Field shaders
-    'magnetic-field': [0.40, 0.50, 0.35, 0.50],
-    'magnetic-pixels': [0.45, 0.40, 0.50, 0.40],
-    'magnetic-rgb': [0.35, 0.55, 0.45, 0.35],
-    
-    // Projection/3D effects
-    'holographic-projection': [0.45, 0.45, 0.40, 0.50],
-    
-    // Generative shaders (common defaults)
-    'gen-orb': [0.50, 0.40, 0.60, 0.35],
-    'gen-grid': [0.40, 0.50, 0.45, 0.40],
-    'gen-neuro-kinetic-bloom': [0.50, 0.35, 0.55, 0.40],
-    'gen-quantum-foam': [0.45, 0.45, 0.40, 0.50],
-    'gen-crystal-caverns': [0.35, 0.55, 0.45, 0.35],
-    'gen-fractal-clockwork': [0.50, 0.40, 0.50, 0.40],
-    // Showcase-optimized generative shaders
-    'gen-showcase-nebula-core': [0.50, 0.30, 0.40, 0.20],
-    'gen-showcase-kinetic-bloom': [0.50, 0.30, 0.40, 0.30],
-    'gen-showcase-crystalline-pulse': [0.50, 0.30, 0.50, 0.20],
-    'molten-gold': [0.50, 0.50, 0.50, 0.50],
-    'galaxy': [0.50, 0.40, 0.60, 0.35],
-    'plasma': [0.45, 0.55, 0.40, 0.45],
-    
-    // Interactive/Mouse shaders
-    'cmyk-halftone-interactive': [0.40, 0.50, 0.35, 0.45],
-    'interactive-rgb-split': [0.35, 0.45, 0.50, 0.40],
-    'interactive-zoom-blur': [0.50, 0.40, 0.45, 0.35],
-    'mouse-pixel-sort': [0.40, 0.35, 0.55, 0.45],
-    'magnetic-interference': [0.45, 0.50, 0.40, 0.35],
-    
-    // Artistic/Painterly
-    'artistic_painterly_oil': [0.50, 0.40, 0.45, 0.50],
-    'double-exposure-zoom': [0.40, 0.50, 0.35, 0.45],
-    'halftone-reveal': [0.45, 0.40, 0.50, 0.35],
-    'rorschach-inkblot': [0.50, 0.45, 0.40, 0.50],
-    
-    // Simulation/Physics
-    'reaction-diffusion': [0.40, 0.50, 0.45, 0.35],
-    'physarum': [0.50, 0.40, 0.60, 0.45],
-    'lenia': [0.45, 0.45, 0.50, 0.40],
-    'navier-stokes-dye': [0.40, 0.50, 0.35, 0.50],
-    
-    // Lighting/Glow
-    'bloom': [0.50, 0.40, 0.55, 0.35],
-    'dynamic-lens-flares': [0.45, 0.50, 0.40, 0.45],
-    'chromatic-crawler': [0.40, 0.45, 0.50, 0.35],
-    
-    // Image processing effects
-    'digital-haze': [0.50, 0.40, 0.45, 0.35],
-    
-    // Generative: Crystalline Chrono-Dyson (Panel Density, Quasar Glow, Flux Speed, Swarm Count)
-    'gen-crystalline-chrono-dyson': [0.40, 0.55, 0.50, 0.45],
-};
-
-// Helper to get shader defaults - tries multiple ID variations for matching
-function getShaderDefaults(shaderId: string, numParams: number = 4): number[] {
-    // Try multiple variations of the shader ID
-    const variations = [
-        shaderId,                                    // exact match
-        shaderId.replace('.wgsl', ''),              // strip .wgsl extension if present
-        `${shaderId}.wgsl`,                         // with .wgsl
-        shaderId.replace(/-/g, '_'),                // snake_case
-        shaderId.replace(/_/g, '-'),                // kebab-case
-        shaderId.replace(/^gen[-_]/, 'gen-'),       // normalize gen prefix
-    ];
-    
-    for (const key of variations) {
-        const defaults = SHADER_DEFAULTS[key];
-        if (defaults) {
-            return [...defaults, ...Array(4 - defaults.length).fill(0.5)].slice(0, numParams);
-        }
-    }
-    
-    return Array(numParams).fill(0.5);
-}
-
-// --- Configuration ---
-// Use VPS Storage API instead of HuggingFace
-const SHADER_WGSL_URL = `${STORAGE_API_URL}/api/shaders`;
-// URL vars removed for unused variables warning
-const IMAGE_SUGGESTIONS_URL = `/image_suggestions.md`;
-
-const FALLBACK_IMAGES = [
-    "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop", // Liquid Metal
-    "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=2568&auto=format&fit=crop", // Cyberpunk City
-    "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2670&auto=format&fit=crop", // Fluid Gradient
-    "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2694&auto=format&fit=crop", // Grid Landscape
-    "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=2670&auto=format&fit=crop", // Nature
-    "https://images.unsplash.com/photo-1614850523060-8da1d56ae167?q=80&w=2670&auto=format&fit=crop", // Neon
-    "https://images.unsplash.com/photo-1605218427306-633ba8546381?q=80&w=2669&auto=format&fit=crop"  // Geometry
-];
-
-// Sample videos for when bucket has no videos
-const FALLBACK_VIDEOS = [
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4",
-    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4"
-];
-
-const defaultSlotParams: SlotParams = {
-    zoomParam1: 0.99,
-    zoomParam2: 1.01,
-    zoomParam3: 0.5,
-    zoomParam4: 0.5,
-    lightStrength: 1.0,
-    ambient: 0.2,
-    normalStrength: 0.1,
-    fogFalloff: 4.0,
-    depthThreshold: 0.5,
-};
-
 function MainApp() {
-    // --- State: Tabs ---
     const [activeTab, setActiveTab] = useState<'main' | 'live-studio'>('main');
-
-    // --- State: General & Stacking ---
     const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
     const [modes, setModes] = useState<RenderMode[]>(['none', 'none', 'none', 'none', 'none', 'none']);
     const [activeSlot, setActiveSlot] = useState<number>(0);
@@ -220,22 +61,12 @@ function MainApp() {
         defaultSlotParams,
         defaultSlotParams,
     ]);
-
-    // --- State: Automation & Status ---
     const [autoChangeEnabled, setAutoChangeEnabled] = useState(false);
     const [autoChangeDelay, setAutoChangeDelay] = useState(10);
     const [status, setStatus] = useState('Ready.');
     const [slotShaderStatus, setSlotShaderStatus] = useState<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle', 'idle', 'idle', 'idle']);
-    
-    // --- State: AI Models & VJ ---
-    const [aiVj, setAiVj] = useState<Alucinate | null>(null);
-    const [aiVjStatus, setAiVjStatus] = useState<AIStatus>('idle');
-    const [aiVjMessage, setAiVjMessage] = useState('AI VJ is offline.');
-    const [isAiVjMode, setIsAiVjMode] = useState(false);
-
-    // --- State: Content ---
     const [imageManifest, setImageManifest] = useState<ImageRecord[]>([]);
-    const [videoList, setVideoList] = useState<VideoRecord[]>([]); // Video List with metadata
+    const [videoList, setVideoList] = useState<VideoRecord[]>([]);
     const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>();
     const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
     const [inputSource, setInputSource] = useState<InputSource>('image');
@@ -248,49 +79,13 @@ function MainApp() {
     const [b3hdSegmentLength, setB3hdSegmentLength] = useState(DEFAULT_B3HD_SEGMENT_LENGTH);
     const [b3hdIntervalSeconds, setB3hdIntervalSeconds] = useState(DEFAULT_B3HD_INTERVAL_SECONDS);
     const [currentSegment, setCurrentSegment] = useState<VideoSegment | null>(null);
-
-    // --- State: Layout ---
     const [showSidebar, setShowSidebar] = useState(true);
     const [showShaderScanner, setShowShaderScanner] = useState(false);
     const [showStorageBrowser, setShowStorageBrowser] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [storageBrowserTab, setStorageBrowserTab] = useState<'shaders' | 'images' | 'videos'>('shaders');
-
-    // --- State: Webcam ---
-    const [isWebcamActive, setIsWebcamActive] = useState(false);
-    const [webcamError, setWebcamError] = useState<string | null>(null);
-    const [showWebcamShaderSuggestions, setShowWebcamShaderSuggestions] = useState(false);
-    const videoElementRef = useRef<HTMLVideoElement | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
-
-    // --- State: Roulette ---
-    const [isRouletteActive, setIsRouletteActive] = useState(false);
-    const [chaosModeEnabled, setChaosModeEnabled] = useState(false);
-    const [rouletteFirstUse, setRouletteFirstUse] = useState(true);
-    const [showConfetti, setShowConfetti] = useState(false);
-    const chaosIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-    // --- State: Recording ---
-    const [isRecording, setIsRecording] = useState(false);
-    const [recordingCountdown, setRecordingCountdown] = useState(8);
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const recordedChunksRef = useRef<Blob[]>([]);
-    const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const wasmRecordingPromiseRef = useRef<Promise<Blob> | null>(null);
-    const recordingFinishedRef = useRef(false);
-
-    // --- State: Mouse Control ---
     const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 });
     const [isMouseDown, setIsMouseDown] = useState(false);
-
-    // --- State: Generative Showcase ---
-    const [generativeShowcaseActive, setGenerativeShowcaseActive] = useState(false);
-    const [generativeShowcaseLocked, setGenerativeShowcaseLocked] = useState(false);
-    const [generativeShowcaseDelay] = useState(12);
-    const generativeShowcaseTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-    // --- State: Boot Gate ---
-    const [rendererReady, setRendererReady] = useState(false);
     const [shadersReady, setShadersReady] = useState(false);
     const initialBootAppliedRef = useRef(false);
 
@@ -314,6 +109,10 @@ function MainApp() {
     const availableModesRef = useRef<ShaderEntry[]>(availableModes);
     const slotParamsRef = useRef<SlotParams[]>(slotParams);
     const inputSourceRef = useRef<InputSource>(inputSource);
+    const slotShaderStatusRef = useRef<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle', 'idle', 'idle', 'idle']);
+    const webgpuCanvasRef = useRef<HTMLCanvasElement | null>(null);
+    const fileInputImageRef = useRef<HTMLInputElement>(null);
+    const fileInputVideoRef = useRef<HTMLInputElement>(null);
 
     const {
         depthEstimator,
@@ -514,29 +313,48 @@ function MainApp() {
                         return next;
                     });
                 }
+    const {
+        activeRendererType,
+        jsFps,
+        wasmFps,
+        isRendererSwitching,
+        rendererReady,
+        supportsDeepWorkgroup,
+        handleSwitchRenderer,
+        onInitCanvas,
+    } = useRendererBackend({
+        rendererRef,
+        modesRef,
+        slotParamsRef,
+        availableModesRef,
+        inputSourceRef,
+        setStatus,
+    });
 
-                // Record play event (fire-and-forget)
-                if (ok) {
-                    fetch(`${SHADER_WGSL_URL}/${shaderEntry.id}/play`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                    }).catch(() => {});
-                }
-            } catch (error) {
-                console.error(`❌ Failed to load shader ${shaderEntry.id}:`, error);
-                slotShaderStatusRef.current[index] = 'error';
-                setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'error'; return n; });
-            }
-        }
-    }, [availableModes, rendererRef]);
+    useEffect(() => { modesRef.current = modes; }, [modes]);
+    useEffect(() => { availableModesRef.current = availableModes; }, [availableModes]);
+    useEffect(() => { slotParamsRef.current = slotParams; }, [slotParams]);
+    useEffect(() => { inputSourceRef.current = inputSource; }, [inputSource]);
 
-    const updateSlotParam = useCallback((slotIndex: number, updates: Partial<SlotParams>) => {
-        setSlotParams(prev => {
-            const next = [...prev];
-            next[slotIndex] = { ...next[slotIndex], ...updates };
-            return next;
-        });
-    }, []);
+    const {
+        setMode,
+        updateSlotParam,
+        mapShaderParamUpdates,
+        handleApplyParamsDirect,
+        syncInputSourceToRenderer,
+    } = useShaderMode({
+        rendererRef,
+        availableModes,
+        availableModesRef,
+        modesRef,
+        slotParamsRef,
+        inputSourceRef,
+        slotShaderStatusRef,
+        setModes,
+        setSlotParams,
+        setSlotShaderStatus,
+        setInputSource,
+    });
 
     const {
         audioReactiveParams,
@@ -1017,89 +835,87 @@ function MainApp() {
             };
         }
     }, [rendererReady]);
+    useContentManifest({
+        rendererRef,
+        setImageManifest,
+        setVideoList,
+        setStatus,
+    });
 
-    // --- Dev shader hot-reload (?renderer=wasm&shaderHotReload=1) ---
-    useEffect(() => {
-        if (typeof window === 'undefined' || !rendererRef.current) return;
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('shaderHotReload') !== '1') return;
-        if (params.get('renderer') !== 'wasm') return;
+    useShaderCatalogLoad({
+        setAvailableModes,
+        setShadersReady,
+        setStatus,
+        rendererReady,
+        supportsDeepWorkgroup,
+        availableModes,
+    });
 
-        let cleanup: (() => void) | undefined;
-        import('./dev/shaderHotReload').then(({ attachShaderHotReload, wrapLoadShaderForHotReload }) => {
-            const manager = rendererRef.current!;
-            const wrapped = wrapLoadShaderForHotReload(manager);
-            (window as any).__pixelocity__ = {
-                ...(window as any).__pixelocity__,
-                loadShader: wrapped,
-                reloadShader: (id: string, url: string) => manager.reloadShader(id, url),
-            };
-            cleanup = attachShaderHotReload(manager);
-            console.log('[HotReload] Enabled — edit files in public/shaders/ to reload pipelines');
-        });
-        return () => cleanup?.();
-    }, [rendererReady]);
+    const { handleLoadImage, handleNewRandomImage } = useImageLoading({
+        rendererRef,
+        depthEstimator,
+        runDepthAnalysis,
+        imageManifest,
+        setCurrentImageUrl,
+        setStatus,
+    });
 
-    // --- Webcam Handlers ---
-    const startWebcam = useCallback(async () => {
-        try {
-            setWebcamError(null);
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: "user",
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
-            });
-            streamRef.current = stream;
-            
-            // Create hidden video element
-            if (!videoElementRef.current) {
-                const video = document.createElement('video');
-                video.autoplay = true;
-                video.playsInline = true;
-                video.muted = true;
-                video.style.position = 'absolute';
-                video.style.width = '1px';
-                video.style.height = '1px';
-                video.style.opacity = '0';
-                video.style.pointerEvents = 'none';
-                video.style.zIndex = '-1';
-                document.body.appendChild(video);
-                videoElementRef.current = video;
-            }
-            
-            videoElementRef.current.srcObject = stream;
-            await videoElementRef.current.play();
-            
-            setIsWebcamActive(true);
-            syncInputSourceToRenderer('webcam');
-            setShaderCategory('image');
-            setShowWebcamShaderSuggestions(true);
-            setStatus('📹 Webcam active! Try fun shaders below.');
-        } catch (err: any) {
-            console.error('Webcam error:', err);
-            setWebcamError(err.name === 'NotAllowedError' 
-                ? 'Camera permission denied. Please allow camera access and try again.' 
-                : 'Failed to access webcam. Please check your camera.');
-            setStatus('❌ Camera permission denied');
-        }
-    }, [syncInputSourceToRenderer]);
+    useShaderBoot({
+        rendererReady,
+        shadersReady,
+        modes,
+        setMode,
+        setStatus,
+        imageManifest,
+        currentImageUrl,
+        inputSource,
+        handleNewRandomImage,
+        availableModes,
+        autoChangeEnabled,
+        autoChangeDelay,
+        shaderCategory,
+        syncInputSourceToRenderer,
+    });
 
-    const stopWebcam = useCallback(() => {
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-        }
-        if (videoElementRef.current) {
-            videoElementRef.current.pause();
-            videoElementRef.current.srcObject = null;
-        }
-        setIsWebcamActive(false);
-        syncInputSourceToRenderer('image');
-        setShowWebcamShaderSuggestions(false);
-        setStatus('Webcam stopped');
-    }, [syncInputSourceToRenderer]);
+    const {
+        aiVj,
+        aiVjStatus,
+        aiVjMessage,
+        isAiVjMode,
+        toggleAiVj,
+        handleGenerateFromVibe,
+        handleRandomizeParams,
+        handleTriggerNextTransition,
+        handleSavePreset,
+        startAutoTransition,
+        stopAutoTransition,
+    } = useAiVjHandlers({
+        imageManifest,
+        availableModes,
+        modes,
+        currentImageUrl,
+        handleLoadImage,
+        handleUpdateStack,
+        handleUpdateParams,
+        handleApplyParamsDirect,
+        setStatus,
+    });
+
+    const {
+        isWebcamActive,
+        webcamError,
+        showWebcamShaderSuggestions,
+        videoElementRef,
+        startWebcam,
+        stopWebcam,
+        applyWebcamFunShader,
+    } = useWebcam({
+        syncInputSourceToRenderer,
+        setShaderCategory,
+        setStatus,
+        setMode,
+        setActiveSlot,
+    });
 
     const {
         showShareModal,
@@ -1140,311 +956,55 @@ function MainApp() {
         setStatus(`💾 Saved VJ set "${name}"`);
     }, [buildVjChainString, aiVj, setStatus]);
 
-    const applyWebcamFunShader = useCallback((shaderId: string) => {
-        setMode(0, shaderId as RenderMode);
-        setActiveSlot(0);
-    }, [setMode]);
+    useB3hdMode({
+        videoB3hdMode,
+        inputSource,
+        videoList,
+        b3hdSegmentLength,
+        b3hdIntervalSeconds,
+        setCurrentSegment,
+        setSelectedVideo,
+    });
 
-    // Cleanup webcam on unmount
-    useEffect(() => {
-        return () => {
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach(track => track.stop());
-            }
-            if (videoElementRef.current) {
-                videoElementRef.current.remove();
-            }
-            if (chaosIntervalRef.current) {
-                clearInterval(chaosIntervalRef.current);
-            }
-        };
-    }, []);
+    const {
+        isRouletteActive,
+        chaosModeEnabled,
+        setChaosModeEnabled,
+        showConfetti,
+        rouletteFlashRef,
+        handleRandomizeSlot,
+        triggerRoulette,
+        triggerRandomizeAllSlots,
+    } = useRoulette({
+        availableModes,
+        modes,
+        activeSlot,
+        setMode,
+        updateSlotParam,
+        setStatus,
+    });
 
-    // --- B3HD Video Rotation Mode ---
-    const b3hdTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const b3hdRecentHistoryRef = useRef<string[]>([]);
-    const videoListRef = useRef<VideoRecord[]>(videoList);
-    videoListRef.current = videoList;
-
-    useEffect(() => {
-        // Clear any existing timer when mode changes
-        if (b3hdTimerRef.current) {
-            clearTimeout(b3hdTimerRef.current);
-            b3hdTimerRef.current = null;
-        }
-
-        if (!videoB3hdMode || inputSource !== 'video' || videoList.length === 0) {
-            setCurrentSegment(null);
-            return;
-        }
-
-        const playNextSegment = () => {
-            const segment = pickRandomSegment(
-                videoListRef.current,
-                b3hdSegmentLength,
-                b3hdRecentHistoryRef.current
-            );
-            if (!segment) {
-                console.warn("B3HD: No valid segment found");
-                return;
-            }
-
-            setCurrentSegment(segment);
-            setSelectedVideo(segment.video.url);
-
-            // Update history
-            b3hdRecentHistoryRef.current.push(segment.video.id || segment.video.url);
-            if (b3hdRecentHistoryRef.current.length > 5) {
-                b3hdRecentHistoryRef.current.shift();
-            }
-
-            // Schedule next segment
-            const totalCycle = (b3hdSegmentLength + b3hdIntervalSeconds) * 1000;
-            b3hdTimerRef.current = setTimeout(playNextSegment, totalCycle);
-        };
-
-        // Start immediately
-        playNextSegment();
-
-        return () => {
-            if (b3hdTimerRef.current) {
-                clearTimeout(b3hdTimerRef.current);
-                b3hdTimerRef.current = null;
-            }
-        };
-    }, [videoB3hdMode, inputSource, b3hdSegmentLength, b3hdIntervalSeconds, videoList.length]);
-
-    // --- Roulette / Chaos Mode Functions ---
-    const getRandomShader = useCallback((): ShaderEntry | null => {
-        if (availableModes.length === 0) return null;
-        // Only include effect shaders that process input textures.
-        // Exclude generative/simulation shaders (they render their own content and block the canvas).
-        // Also filter by tags in case a shader is miscategorized by the API (e.g., category:"none" fallback).
-        const EXCLUDED_CATEGORIES = new Set(['generative', 'simulation']);
-        const validShaders = availableModes.filter(s => {
-            if (!s.id || s.id === 'none') return false;
-            if (EXCLUDED_CATEGORIES.has(s.category)) return false;
-            if (s.tags?.includes('generative') || s.tags?.includes('simulation')) return false;
-            return true;
-        });
-        if (validShaders.length === 0) return null;
-        const randomIndex = Math.floor(Math.random() * validShaders.length);
-        return validShaders[randomIndex];
-    }, [availableModes]);
-
-    const randomizeSlotParams = useCallback((): SlotParams => {
-        // Generate random values within sensible ranges for fun effects
-        return {
-            zoomParam1: 0.3 + Math.random() * 0.7,      // 0.3 - 1.0
-            zoomParam2: 0.5 + Math.random() * 0.5,      // 0.5 - 1.0
-            zoomParam3: Math.random() * 1.0,            // 0.0 - 1.0
-            zoomParam4: Math.random() * 1.0,            // 0.0 - 1.0
-            lightStrength: 0.5 + Math.random() * 1.5,   // 0.5 - 2.0
-            ambient: 0.1 + Math.random() * 0.4,         // 0.1 - 0.5
-            normalStrength: 0.05 + Math.random() * 0.25,// 0.05 - 0.3
-            fogFalloff: 2.0 + Math.random() * 6.0,      // 2.0 - 8.0
-            depthThreshold: 0.3 + Math.random() * 0.5,  // 0.3 - 0.8
-        };
-    }, []);
-
-    const handleRandomizeSlot = useCallback((slot: number) => {
-        const randomShader = getRandomShader();
-        if (!randomShader) {
-            setStatus('No shaders available for randomize.');
-            return;
-        }
-        setMode(slot, randomShader.id as RenderMode);
-        const newParams = randomizeSlotParams();
-        updateSlotParam(slot, newParams);
-        setStatus(`🎲 Randomized slot ${slot + 1}: ${randomShader.name}`);
-        setIsRouletteActive(true);
-        setTimeout(() => setIsRouletteActive(false), 500);
-    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam]);
+    const {
+        generativeShowcaseActive,
+        generativeShowcaseLocked,
+        startGenerativeShowcase,
+        stopGenerativeShowcase,
+        lockGenerativeShowcase,
+        unlockGenerativeShowcase,
+    } = useGenerativeShowcase({
+        availableModes,
+        setMode,
+        updateSlotParam,
+        syncInputSourceToRenderer,
+        setActiveGenerativeShader,
+        setStatus,
+    });
 
     const handleSetSlotParam = useCallback((slot: number, param: string, value: number) => {
         const updates: Partial<SlotParams> = { [param]: value };
         updateSlotParam(slot, updates);
         rendererRef.current?.updateSlotParams(updates, slot);
     }, [updateSlotParam]);
-
-    const triggerRoulette = useCallback(() => {
-        const randomShader = getRandomShader();
-        if (!randomShader) {
-            setStatus('No shaders available for Roulette!');
-            return;
-        }
-
-        // Flash effect
-        if (rouletteFlashRef.current) {
-            rouletteFlashRef.current.classList.add('flash-active');
-            setTimeout(() => {
-                rouletteFlashRef.current?.classList.remove('flash-active');
-            }, 300);
-        }
-
-        // Apply random shader to active slot
-        setMode(activeSlot, randomShader.id as RenderMode);
-
-        // Randomize parameters for fresh look
-        const newParams = randomizeSlotParams();
-        updateSlotParam(activeSlot, newParams);
-
-        // Show confetti on first use
-        if (rouletteFirstUse) {
-            setShowConfetti(true);
-            setRouletteFirstUse(false);
-            setTimeout(() => setShowConfetti(false), 3000);
-        }
-
-        setStatus(`🎰 Roulette slot ${activeSlot + 1}: ${randomShader.name}`);
-        setIsRouletteActive(true);
-        setTimeout(() => setIsRouletteActive(false), 500);
-    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam, rouletteFirstUse, activeSlot]);
-
-    const triggerRandomizeAllSlots = useCallback(() => {
-        // Flash effect
-        if (rouletteFlashRef.current) {
-            rouletteFlashRef.current.classList.add('flash-active');
-            setTimeout(() => {
-                rouletteFlashRef.current?.classList.remove('flash-active');
-            }, 300);
-        }
-
-        const names: string[] = [];
-        for (let i = 0; i < modes.length; i++) {
-            const randomShader = getRandomShader();
-            if (randomShader) {
-                setMode(i, randomShader.id as RenderMode);
-                updateSlotParam(i, randomizeSlotParams());
-                names.push(randomShader.name);
-            }
-        }
-
-        setStatus(`🎲 All slots randomized: ${names.join(', ')}`);
-        setIsRouletteActive(true);
-        setTimeout(() => setIsRouletteActive(false), 500);
-    }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam, modes.length]);
-
-    // Chaos Mode effect
-    useEffect(() => {
-        if (chaosModeEnabled) {
-            // Initial trigger
-            triggerRoulette();
-            // Set up interval (6-10 seconds random)
-            chaosIntervalRef.current = setInterval(() => {
-                triggerRoulette();
-            }, 6000 + Math.random() * 4000);
-        } else {
-            if (chaosIntervalRef.current) {
-                clearInterval(chaosIntervalRef.current);
-                chaosIntervalRef.current = null;
-            }
-        }
-
-        return () => {
-            if (chaosIntervalRef.current) {
-                clearInterval(chaosIntervalRef.current);
-            }
-        };
-    }, [chaosModeEnabled, triggerRoulette]);
-
-    // --- Generative Showcase Functions ---
-    // Build a randomized list of all available generative shaders
-    const getGenerativeShaders = useCallback((): ShaderEntry[] => {
-        return availableModes.filter(s => s.category === 'generative' && s.id !== 'none');
-    }, [availableModes]);
-
-    const advanceGenerativeShowcase = useCallback(() => {
-        const genShaders = getGenerativeShaders();
-        if (genShaders.length === 0) return;
-
-        // Pick next generative shader (random to avoid predictable order)
-        const nextShader = genShaders[Math.floor(Math.random() * genShaders.length)];
-        if (!nextShader) return;
-
-        // Switch to generative input source if not already
-        syncInputSourceToRenderer('generative');
-        setActiveGenerativeShader(nextShader.id);
-
-        // Load the shader into slot 0
-        setMode(0, nextShader.id as RenderMode);
-
-        // Set sensible default params (or randomize for variety)
-        const defaults = getShaderDefaults(nextShader.id, nextShader.params?.length || 4);
-        updateSlotParam(0, {
-            zoomParam1: defaults[0],
-            zoomParam2: defaults[1],
-            zoomParam3: defaults[2],
-            zoomParam4: defaults[3],
-        });
-
-        setStatus(`🎨 Generative Showcase: ${nextShader.name}`);
-    }, [getGenerativeShaders, setMode, updateSlotParam, syncInputSourceToRenderer, setActiveGenerativeShader]);
-
-    const startGenerativeShowcase = useCallback(() => {
-        setGenerativeShowcaseLocked(false);
-        setGenerativeShowcaseActive(true);
-        syncInputSourceToRenderer('generative');
-        advanceGenerativeShowcase(); // First one immediately
-        setStatus('🎨 Generative Showcase started! Click or press SPACE to lock the current shader.');
-    }, [advanceGenerativeShowcase, syncInputSourceToRenderer]);
-
-    const stopGenerativeShowcase = useCallback(() => {
-        setGenerativeShowcaseActive(false);
-        setGenerativeShowcaseLocked(false);
-        if (generativeShowcaseTimerRef.current) {
-            clearInterval(generativeShowcaseTimerRef.current);
-            generativeShowcaseTimerRef.current = null;
-        }
-        setStatus('Generative Showcase stopped.');
-    }, []);
-
-    const lockGenerativeShowcase = useCallback(() => {
-        if (!generativeShowcaseActive) return;
-        setGenerativeShowcaseLocked(true);
-        if (generativeShowcaseTimerRef.current) {
-            clearInterval(generativeShowcaseTimerRef.current);
-            generativeShowcaseTimerRef.current = null;
-        }
-        setStatus('🔒 Generative shader locked! Mouse control is active.');
-    }, [generativeShowcaseActive]);
-
-    const unlockGenerativeShowcase = useCallback(() => {
-        if (!generativeShowcaseActive) return;
-        setGenerativeShowcaseLocked(false);
-        // Restart timer
-        if (generativeShowcaseTimerRef.current) {
-            clearInterval(generativeShowcaseTimerRef.current);
-        }
-        generativeShowcaseTimerRef.current = setInterval(() => {
-            advanceGenerativeShowcase();
-        }, generativeShowcaseDelay * 1000);
-        setStatus('🔓 Showcase resumed. Auto-switching generative shaders.');
-    }, [generativeShowcaseActive, generativeShowcaseDelay, advanceGenerativeShowcase]);
-
-    // Generative Showcase timer effect
-    useEffect(() => {
-        if (generativeShowcaseActive && !generativeShowcaseLocked) {
-            // Clear any existing timer
-            if (generativeShowcaseTimerRef.current) {
-                clearInterval(generativeShowcaseTimerRef.current);
-            }
-            generativeShowcaseTimerRef.current = setInterval(() => {
-                advanceGenerativeShowcase();
-            }, generativeShowcaseDelay * 1000);
-        } else {
-            if (generativeShowcaseTimerRef.current) {
-                clearInterval(generativeShowcaseTimerRef.current);
-                generativeShowcaseTimerRef.current = null;
-            }
-        }
-
-        return () => {
-            if (generativeShowcaseTimerRef.current) {
-                clearInterval(generativeShowcaseTimerRef.current);
-            }
-        };
-    }, [generativeShowcaseActive, generativeShowcaseLocked, generativeShowcaseDelay, advanceGenerativeShowcase]);
 
     const handleTakeScreenshot = useCallback(async () => {
         const manager = rendererRef.current;
@@ -1463,7 +1023,6 @@ function MainApp() {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
             // 'G' toggles Generative Showcase
             if (e.key === 'g' || e.key === 'G') {
                 if (generativeShowcaseActive) {
@@ -1484,7 +1043,6 @@ function MainApp() {
                 }
             }
         };
-
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [generativeShowcaseActive, generativeShowcaseLocked, startGenerativeShowcase, stopGenerativeShowcase, lockGenerativeShowcase, unlockGenerativeShowcase]);
@@ -1500,183 +1058,23 @@ function MainApp() {
                 triggerRoulette();
             }
         };
-
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [triggerRoulette]);
 
-    const finishRecordingBlob = useCallback((blob: Blob) => {
-        if (recordingFinishedRef.current) return;
-        recordingFinishedRef.current = true;
+    const {
+        isRecording,
+        recordingCountdown,
+        startRecording,
+        stopRecording,
+    } = useRecording({
+        rendererRef,
+        webgpuCanvasRef,
+        openRecordingShareModal,
+        setStatus,
+    });
 
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `pixelocity-clip-${Date.now()}.webm`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        openRecordingShareModal();
-        setStatus('✅ Recording saved! Download started.');
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }, [openRecordingShareModal]);
-
-    const clearRecordingTimer = useCallback(() => {
-        if (recordingTimerRef.current) {
-            clearInterval(recordingTimerRef.current);
-            recordingTimerRef.current = null;
-        }
-    }, []);
-
-    const stopRecording = useCallback(() => {
-        clearRecordingTimer();
-
-        const manager = rendererRef.current;
-        if (manager?.usesInternalRecording()) {
-            manager.stopRendererRecording();
-            manager.setRecording(false);
-            wasmRecordingPromiseRef.current = null;
-            setIsRecording(false);
-            setRecordingCountdown(8);
-            return;
-        }
-
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-            mediaRecorderRef.current.stop();
-        }
-
-        setIsRecording(false);
-        setRecordingCountdown(8);
-        rendererRef.current?.setRecording?.(false);
-    }, [clearRecordingTimer]);
-
-    const startRecording = useCallback(async () => {
-        const canvas = webgpuCanvasRef.current;
-        const manager = rendererRef.current;
-        if (!canvas) {
-            setStatus('❌ Canvas not found for recording');
-            return;
-        }
-        if (!manager) {
-            setStatus('❌ Renderer not ready for recording');
-            return;
-        }
-
-        recordingFinishedRef.current = false;
-
-        try {
-            if (manager.usesInternalRecording()) {
-                setIsRecording(true);
-                setRecordingCountdown(8);
-                setStatus('🔴 Recording (WASM)… 8s');
-                manager.setRecording(true);
-
-                const recordingPromise = manager.startRecording(canvas, {
-                    durationMs: 8000,
-                    frameRate: 60,
-                    videoBitsPerSecond: 8_000_000,
-                });
-                wasmRecordingPromiseRef.current = recordingPromise;
-
-                recordingPromise
-                    .then((blob) => {
-                        finishRecordingBlob(blob);
-                    })
-                    .catch((e) => {
-                        console.error('WASM recording failed:', e);
-                        setStatus('❌ Recording failed. WASM readback may be unavailable.');
-                    })
-                    .finally(() => {
-                        wasmRecordingPromiseRef.current = null;
-                        setIsRecording(false);
-                        setRecordingCountdown(8);
-                        manager.setRecording(false);
-                    });
-
-                let count = 8;
-                recordingTimerRef.current = setInterval(() => {
-                    count -= 1;
-                    setRecordingCountdown(count);
-                    setStatus(`🔴 Recording (WASM)… ${count}s`);
-
-                    if (count <= 0) {
-                        stopRecording();
-                    }
-                }, 1000);
-
-                return;
-            }
-
-            // TS WebGPU path: capture the visible WebGPU canvas directly.
-            const stream = canvas.captureStream(60);
-
-            let mimeType = 'video/webm;codecs=vp9';
-            if (!MediaRecorder.isTypeSupported(mimeType)) {
-                mimeType = 'video/webm;codecs=vp8';
-                if (!MediaRecorder.isTypeSupported(mimeType)) {
-                    mimeType = 'video/webm';
-                }
-            }
-
-            const mediaRecorder = new MediaRecorder(stream, {
-                mimeType,
-                videoBitsPerSecond: 8000000,
-            });
-
-            mediaRecorderRef.current = mediaRecorder;
-            recordedChunksRef.current = [];
-
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) {
-                    recordedChunksRef.current.push(e.data);
-                }
-            };
-
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-                finishRecordingBlob(blob);
-            };
-
-            mediaRecorder.start(100);
-            rendererRef.current?.setRecording?.(true);
-            setIsRecording(true);
-            setRecordingCountdown(8);
-            setStatus('🔴 Recording… 8s');
-
-            let count = 8;
-            recordingTimerRef.current = setInterval(() => {
-                count -= 1;
-                setRecordingCountdown(count);
-                setStatus(`🔴 Recording… ${count}s`);
-
-                if (count <= 0) {
-                    stopRecording();
-                }
-            }, 1000);
-        } catch (e) {
-            console.error('Recording failed:', e);
-            setStatus('❌ Recording failed. Browser may not support this feature.');
-        }
-    }, [finishRecordingBlob, stopRecording]);
-
-    // Cleanup recording on unmount
-    useEffect(() => {
-        return () => {
-            clearRecordingTimer();
-            const manager = rendererRef.current;
-            if (manager?.usesInternalRecording()) {
-                manager.stopRendererRecording();
-            } else if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-                mediaRecorderRef.current.stop();
-            }
-        };
-    }, [clearRecordingTimer]);
-
-    // --- Remote Control Sync ---
-    // Build full state object for syncing
-    const buildFullState = useCallback((): FullState => ({
+    useRemoteSync({
         modes,
         activeSlot,
         slotParams,
@@ -1689,86 +1087,20 @@ function MainApp() {
         videoList,
         selectedVideo,
         isMuted,
-    }), [modes, activeSlot, slotParams, shaderCategory, inputSource,
-        autoChangeEnabled, autoChangeDelay, isModelLoaded, availableModes, videoList, selectedVideo, isMuted]);
+        setMode,
+        setActiveSlot,
+        updateSlotParam,
+        setShaderCategory,
+        syncInputSourceToRenderer,
+        setAutoChangeEnabled,
+        setAutoChangeDelay,
+        handleNewRandomImage,
+        loadDepthModel,
+        setSelectedVideo,
+        setIsMuted,
+    });
 
-    // Keep latest buildFullState in a ref so the BroadcastChannel effect
-    // doesn't re-run every time state changes.
-    const buildFullStateRef = useRef(buildFullState);
-    buildFullStateRef.current = buildFullState;
-
-    // Send message to remote
-    const sendMessage = useCallback((type: SyncMessage['type'], payload?: any) => {
-        if (channelRef.current) {
-            channelRef.current.postMessage({ type, payload });
-        }
-    }, []);
-
-    // Setup BroadcastChannel for remote control — runs once on mount
-    useEffect(() => {
-        const channel = new BroadcastChannel(SYNC_CHANNEL_NAME);
-        channelRef.current = channel;
-
-        channel.onmessage = (event) => {
-            const msg = event.data as SyncMessage;
-
-            if (msg.type === 'HELLO') {
-                // Remote app connected — send full state and start heartbeat if not already running
-                sendMessage('STATE_FULL', buildFullStateRef.current());
-                // Send an immediate heartbeat so the remote doesn't timeout
-                // before the first interval tick
-                sendMessage('HEARTBEAT');
-                if (!heartbeatIntervalRef.current) {
-                    heartbeatIntervalRef.current = setInterval(() => {
-                        sendMessage('HEARTBEAT');
-                    }, 5000); // 5s is plenty for a keep-alive
-                }
-            } else if (msg.type === 'CMD_SET_MODE') {
-                const { index, mode } = msg.payload;
-                setMode(index, mode);
-            } else if (msg.type === 'CMD_SET_ACTIVE_SLOT') {
-                setActiveSlot(msg.payload);
-            } else if (msg.type === 'CMD_UPDATE_SLOT_PARAM') {
-                const { index, updates } = msg.payload;
-                updateSlotParam(index, updates);
-            } else if (msg.type === 'CMD_SET_SHADER_CATEGORY') {
-                setShaderCategory(msg.payload);
-            } else if (msg.type === 'CMD_SET_INPUT_SOURCE') {
-                syncInputSourceToRenderer(msg.payload);
-            } else if (msg.type === 'CMD_SET_AUTO_CHANGE') {
-                setAutoChangeEnabled(msg.payload);
-            } else if (msg.type === 'CMD_SET_AUTO_CHANGE_DELAY') {
-                setAutoChangeDelay(msg.payload);
-            } else if (msg.type === 'CMD_LOAD_RANDOM_IMAGE') {
-                handleNewRandomImage();
-            } else if (msg.type === 'CMD_LOAD_MODEL') {
-                loadDepthModel();
-            } else if (msg.type === 'CMD_SELECT_VIDEO') {
-                setSelectedVideo(msg.payload);
-            } else if (msg.type === 'CMD_SET_MUTED') {
-                setIsMuted(msg.payload);
-            } else if (msg.type === 'CMD_UPLOAD_FILE') {
-                // File upload from remote - handle if needed
-            }
-        };
-
-        return () => {
-            channel.close();
-            if (heartbeatIntervalRef.current) {
-                clearInterval(heartbeatIntervalRef.current);
-                heartbeatIntervalRef.current = null;
-            }
-        };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Intentionally empty — channel lifecycle should not depend on state
-
-    // Send state updates to remote when key state changes
-    useEffect(() => {
-        if (channelRef.current) {
-            sendMessage('STATE_FULL', buildFullState());
-        }
-    }, [modes, activeSlot, shaderCategory, inputSource, 
-        autoChangeEnabled, autoChangeDelay, isMuted, selectedVideo, buildFullState, sendMessage]);
+    useTestHarness({ rendererRef, rendererReady });
 
     return (
         <div className="App">
@@ -1986,151 +1318,129 @@ function MainApp() {
                     zIndex: 9999,
                     transition: 'opacity 0.15s ease-out'
                 }}
+            <AppShell
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                showSidebar={showSidebar}
+                setShowSidebar={setShowSidebar}
+                modes={modes}
+                setMode={setMode}
+                activeSlot={activeSlot}
+                setActiveSlot={setActiveSlot}
+                slotParams={slotParams}
+                updateSlotParam={updateSlotParam}
+                slotShaderStatus={slotShaderStatus}
+                shaderCategory={shaderCategory}
+                setShaderCategory={setShaderCategory}
+                handleNewRandomImage={handleNewRandomImage}
+                autoChangeEnabled={autoChangeEnabled}
+                setAutoChangeEnabled={setAutoChangeEnabled}
+                autoChangeDelay={autoChangeDelay}
+                setAutoChangeDelay={setAutoChangeDelay}
+                loadDepthModel={loadDepthModel}
+                isModelLoaded={isModelLoaded}
+                availableModes={availableModes}
+                inputSource={inputSource}
+                syncInputSourceToRenderer={syncInputSourceToRenderer}
+                videoList={videoList}
+                selectedVideo={selectedVideo}
+                setSelectedVideo={setSelectedVideo}
+                videoB3hdMode={videoB3hdMode}
+                setVideoB3hdMode={setVideoB3hdMode}
+                b3hdSegmentLength={b3hdSegmentLength}
+                setB3hdSegmentLength={setB3hdSegmentLength}
+                b3hdIntervalSeconds={b3hdIntervalSeconds}
+                setB3hdIntervalSeconds={setB3hdIntervalSeconds}
+                currentSegment={currentSegment}
+                isMuted={isMuted}
+                setIsMuted={setIsMuted}
+                activeGenerativeShader={activeGenerativeShader}
+                setActiveGenerativeShader={setActiveGenerativeShader}
+                fileInputImageRef={fileInputImageRef}
+                fileInputVideoRef={fileInputVideoRef}
+                isAiVjMode={isAiVjMode}
+                toggleAiVj={toggleAiVj}
+                aiVjStatus={aiVjStatus}
+                aiVjMessage={aiVjMessage}
+                handleGenerateFromVibe={handleGenerateFromVibe}
+                handleUpdateStack={handleUpdateStack}
+                handleUpdateParams={handleUpdateParams}
+                handleRandomizeParams={handleRandomizeParams}
+                handleSavePreset={handleSavePreset}
+                handleTriggerNextTransition={handleTriggerNextTransition}
+                handleRandomizeSlot={handleRandomizeSlot}
+                handleSetSlotParam={handleSetSlotParam}
+                handleShareVjSet={handleShareVjSet}
+                handleSaveVjSet={handleSaveVjSet}
+                startAutoTransition={startAutoTransition}
+                stopAutoTransition={stopAutoTransition}
+                isWebcamActive={isWebcamActive}
+                startWebcam={startWebcam}
+                stopWebcam={stopWebcam}
+                webcamError={webcamError}
+                showWebcamShaderSuggestions={showWebcamShaderSuggestions}
+                webcamFunShaders={WEBCAM_FUN_SHADERS}
+                applyWebcamFunShader={applyWebcamFunShader}
+                triggerRoulette={triggerRoulette}
+                triggerRandomizeAllSlots={triggerRandomizeAllSlots}
+                isRouletteActive={isRouletteActive}
+                chaosModeEnabled={chaosModeEnabled}
+                setChaosModeEnabled={setChaosModeEnabled}
+                audioReactiveParams={audioReactiveParams}
+                setAudioReactiveParams={setAudioReactiveParams}
+                audioReactiveAmount={audioReactiveAmount}
+                setAudioReactiveAmount={setAudioReactiveAmount}
+                isRecording={isRecording}
+                recordingCountdown={recordingCountdown}
+                startRecording={startRecording}
+                stopRecording={stopRecording}
+                handleTakeScreenshot={handleTakeScreenshot}
+                setShowShaderScanner={setShowShaderScanner}
+                activeRendererType={activeRendererType}
+                handleSwitchRenderer={handleSwitchRenderer}
+                setShowStorageBrowser={setShowStorageBrowser}
+                copyChainShareLink={copyChainShareLink}
+                applySharedChain={applySharedChain}
+                rendererRef={rendererRef}
+                mousePosition={mousePosition}
+                setMousePosition={setMousePosition}
+                isMouseDown={isMouseDown}
+                setIsMouseDown={setIsMouseDown}
+                onInitCanvas={onInitCanvas}
+                videoSourceUrl={videoSourceUrl}
+                webgpuCanvasRef={webgpuCanvasRef}
+                videoElementRef={videoElementRef}
+                status={status}
+                generativeShowcaseActive={generativeShowcaseActive}
+                generativeShowcaseLocked={generativeShowcaseLocked}
+                isRendererSwitching={isRendererSwitching}
+                jsFps={jsFps}
+                wasmFps={wasmFps}
             />
-            
-            {/* Confetti Container */}
-            {showConfetti && (
-                <div className="confetti-container">
-                    {Array.from({ length: 50 }).map((_, i) => (
-                        <div
-                            key={i}
-                            className="confetti-piece"
-                            style={{
-                                left: `${Math.random() * 100}%`,
-                                animationDelay: `${Math.random() * 2}s`,
-                                backgroundColor: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dfe6e9', '#fd79a8'][Math.floor(Math.random() * 7)]
-                            }}
-                        />
-                    ))}
-                </div>
-            )}
-            
-            {/* Chaos Mode Indicator */}
-            {chaosModeEnabled && (
-                <div className="chaos-active-indicator">
-                    🔥 CHAOS MODE ON
-                </div>
-            )}
-            
-            {/* Recording Indicator Overlay */}
-            {isRecording && (
-                <div className="recording-indicator-overlay">
-                    <div className="recording-dot-large"></div>
-                    <span>REC {recordingCountdown}s</span>
-                </div>
-            )}
-            
-            {/* Share Modal */}
-            {showShareModal && (
-                <div className="share-modal-overlay" onClick={() => setShowShareModal(false)}>
-                    <div className="share-modal" onClick={(e) => e.stopPropagation()}>
-                        <button className="share-modal-close" onClick={() => setShowShareModal(false)}>×</button>
-                        
-                        <div className="share-modal-header">
-                            <h2>{shareVibeText ? '🎛️ Share Your VJ Set!' : '🎉 Clip Recorded!'}</h2>
-                            <p>{shareVibeText
-                                ? 'Anyone who opens this link gets your exact shader stack.'
-                                : 'Your video has been downloaded. Share your creation!'}</p>
-                        </div>
-
-                        {shareVibeText && (
-                            <div className="share-link-section">
-                                <label>Vibe Prompt:</label>
-                                <div style={{
-                                    fontStyle: 'italic',
-                                    color: '#d0d0e0',
-                                    background: 'rgba(20, 20, 30, 0.6)',
-                                    border: '1px solid rgba(255, 215, 0, 0.15)',
-                                    borderRadius: '6px',
-                                    padding: '8px 10px',
-                                }}>
-                                    “{shareVibeText}”
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="share-link-section">
-                            <label>Shareable Link:</label>
-                            <div className="share-link-input-group">
-                                <input 
-                                    type="text" 
-                                    value={shareableLink} 
-                                    readOnly 
-                                    className="share-link-input"
-                                />
-                                <button 
-                                    className="share-copy-btn"
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(shareableLink);
-                                        setStatus('🔗 Link copied to clipboard!');
-                                    }}
-                                >
-                                    📋 Copy
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div className="share-buttons">
-                            <a 
-                                href={`https://twitter.com/intent/tweet?text=Check+out+my+Pixelocity+creation!&url=${encodeURIComponent(shareableLink)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="share-btn twitter"
-                            >
-                                🐦 Share on Twitter
-                            </a>
-                            <a 
-                                href={`https://www.tiktok.com/upload?referer=${encodeURIComponent(shareableLink)}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="share-btn tiktok"
-                            >
-                                🎵 Post on TikTok
-                            </a>
-                        </div>
-                        
-                        <div className="share-modal-footer">
-                            <button className="share-done-btn" onClick={() => setShowShareModal(false)}>
-                                Done
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Shader Scanner Modal */}
-            <ShaderScanner
-                shaders={availableModes}
-                isOpen={showShaderScanner}
-                onClose={() => setShowShaderScanner(false)}
-                onTestShader={async (shaderId, testValues) => {
-                    try {
-                        // Load the shader
-                        setMode(0, shaderId as RenderMode);
-                        
-                        // Wait for shader to load
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        
-                        // Test setting parameters
-                        const testParams: Partial<SlotParams> = {
-                            zoomParam1: testValues[0] ?? 0.5,
-                            zoomParam2: testValues[1] ?? 0.5,
-                            zoomParam3: testValues[2] ?? 0.5,
-                            zoomParam4: testValues[3] ?? 0.5,
-                        };
-                        updateSlotParam(0, testParams as SlotParams);
-                        
-                        // Wait for params to apply
-                        await new Promise(resolve => setTimeout(resolve, 200));
-                        
-                        return { success: true };
-                    } catch (error) {
-                        return { 
-                            success: false, 
-                            error: error instanceof Error ? error.message : String(error) 
-                        };
-                    }
-                }}
+            <AppOverlays
+                rouletteFlashRef={rouletteFlashRef}
+                showConfetti={showConfetti}
+                chaosModeEnabled={chaosModeEnabled}
+                isRecording={isRecording}
+                recordingCountdown={recordingCountdown}
+                showShareModal={showShareModal}
+                setShowShareModal={setShowShareModal}
+                shareVibeText={shareVibeText}
+                shareableLink={shareableLink}
+                setStatus={setStatus}
+                availableModes={availableModes}
+                showShaderScanner={showShaderScanner}
+                setShowShaderScanner={setShowShaderScanner}
+                setMode={setMode}
+                updateSlotParam={updateSlotParam}
+                showStorageBrowser={showStorageBrowser}
+                setShowStorageBrowser={setShowStorageBrowser}
+                activeSlot={activeSlot}
+                handleLoadImage={handleLoadImage}
+                syncInputSourceToRenderer={syncInputSourceToRenderer}
+                setSelectedVideo={setSelectedVideo}
+                setSlotParams={setSlotParams}
+                storageBrowserTab={storageBrowserTab}
             />
 
             {/* Storage Browser Modal */}

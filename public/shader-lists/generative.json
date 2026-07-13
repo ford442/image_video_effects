@@ -3267,6 +3267,65 @@
     "features": []
   },
   {
+    "name": "Bismuth Singularity-Loom Engine",
+    "category": "generative",
+    "tags": [
+      "geometric",
+      "crystal",
+      "iridescent",
+      "singularity",
+      "fractal",
+      "audio-reactive",
+      "bismuth"
+    ],
+    "description": "A hyper-dimensional, continually self-assembling bismuth crystal matrix orbiting a microscopic gravitational singularity, its iridescent geometric steps carving sharp staircases into the fabric of spacetime. The scene blends hard-edged, prismatic synthetic-architecture with chaotic fluid distortions driven by an intense sub-bass core.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bismuth-singularity-loom-engine.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-bismuth-singularity-loom-engine",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Singularity Mass",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Bismuth Iterations",
+        "default": 5,
+        "min": 1,
+        "max": 10,
+        "step": 1
+      },
+      {
+        "index": 2,
+        "name": "Iridescence Frequency",
+        "default": 2,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Acoustic Extrusion Force",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.05
+      }
+    ],
+    "features": []
+  },
+  {
     "name": "Brutalist Monument",
     "category": "generative",
     "tags": [
@@ -11408,6 +11467,54 @@
     "features": []
   },
   {
+    "id": "gen-luminescent-chrono-prism-astro-stag",
+    "name": "Luminescent Chrono-Prism Astro-Stag",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "quantum",
+      "cosmic",
+      "mechanical",
+      "volumetric"
+    ],
+    "description": "A hyper-majestic, biomechanical celestial stag woven from shattered chrono-prisms and glowing liquid-aurora, elegantly galloping through a volumetric cosmic-rift while its crystalline antlers carve temporal geometric fractals into the void.",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-chrono-prism-astro-stag.wgsl",
+    "updatedParams": [
+      {
+        "name": "Temporal Distortion",
+        "index": 0,
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Rift Density",
+        "index": 1,
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "name": "Fractal Intensity",
+        "index": 2,
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "name": "Prismatic Refraction",
+        "index": 3,
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "name": "Luminescent Cyber-Chrono Void-Turtle",
     "category": "generative",
     "tags": [
@@ -11574,6 +11681,63 @@
     "updated": true,
     "id": "gen-luminescent-quantum-void-anglerfish",
     "url": "shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
+    "features": []
+  },
+  {
+    "name": "Luminescent Quantum-Void Astral-Turtle",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "quantum",
+      "cosmic",
+      "animal",
+      "volumetric"
+    ],
+    "description": "A hyper-organic, glowing biomechanical space-turtle drifting through a volumetric quantum nebula, its shell woven from shattered chromatic crystal and liquid-plasma that intensely reacts to deep bass frequencies.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fractal Detail",
+        "default": 3,
+        "min": 1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Plasma Glow",
+        "default": 1.5,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Void Density",
+        "default": 0.8,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 3,
+        "name": "Acoustic Reactivity",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      }
+    ],
+    "supportsDepth": false,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-luminescent-quantum-void-astral-turtle",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-quantum-void-astral-turtle.wgsl",
     "features": []
   },
   {
@@ -14783,10 +14947,12 @@
   {
     "id": "gen-prismatic-cyber-chrono-nebula-peacock",
     "name": "Prismatic Cyber-Chrono Nebula-Peacock",
+    "category": "generative",
     "description": "A hyper-majestic, biomechanical celestial peacock woven from shattered quantum glass and glowing liquid-aurora.",
     "author": "Jules",
     "url": "shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
     "category": "generative",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
     "tags": [
       "organic",
       "quantum",
@@ -14796,46 +14962,38 @@
       "audio-reactive",
       "fractal"
     ],
-    "parameters": [
+    "params": [
       {
-        "id": "plumageSpread",
         "name": "Plumage Spread",
-        "type": "slider",
+        "type": "range",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01,
-        "mapping": "zoom_params.x"
+        "step": 0.01
       },
       {
-        "id": "quantumGlassRefraction",
         "name": "Quantum Glass Refraction",
-        "type": "slider",
+        "type": "range",
         "default": 1.2,
         "min": 1,
         "max": 2.5,
-        "step": 0.01,
-        "mapping": "zoom_params.y"
+        "step": 0.01
       },
       {
-        "id": "nebulaDensity",
         "name": "Nebula Density",
-        "type": "slider",
+        "type": "range",
         "default": 0.8,
         "min": 0.1,
         "max": 2,
-        "step": 0.05,
-        "mapping": "zoom_params.z"
+        "step": 0.05
       },
       {
-        "id": "audioReactivity",
         "name": "Audio Reactivity",
-        "type": "slider",
+        "type": "range",
         "default": 1,
         "min": 0,
         "max": 3,
-        "step": 0.05,
-        "mapping": "zoom_params.w"
+        "step": 0.05
       }
     ]
   },

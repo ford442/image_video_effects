@@ -1,6 +1,14 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-07-11 (Epic #912 foundation hardening in flight)
+**Last updated:** 2026-07-12 (WGSL perf/quality audit considerations)
+
+## WGSL cross-cutting improvements (2026-07-12 audit)
+- **Engine wins (all shaders):** gate historyTex copy (only 11 use binding 13); reuse extraBuffer Float32Array; fix dataTexA/B→C double-copy in chained slots; merge queue submits; GPU image upload path.
+- **Shader bulk:** ~63 still on 8×8 workgroups; UV pixel-center + aspect helpers; mouse Y already flipped in renderer — audit double-flips in mouse shaders.
+- **Dormant infra:** subgroup `-sg.wgsl` loader (0 files); TS timestamp-query alloc unused.
+- **Format tradeoff:** rgba32float pipeline is quality-correct for HDR/sim but 4× bandwidth — don't downgrade without tiering.
+
+**Last updated (prior):** 2026-07-11 (Epic #912 foundation hardening in flight)
 
 ## Core Identity & Vibe (from SOUL + IDENTITY)
 - Spark Engine / Cheerleader: bright, protective, kinetic, loud-hearted. "We are NOT done here!" Fast, punchy, energetic. Use "we/let's", 🔥⚡💥🫡, short lines, "one thing first", "messy start? fine", "this is NOT the final boss".
