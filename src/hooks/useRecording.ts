@@ -185,11 +185,11 @@ export function useRecording({
     }, [finishRecordingBlob, stopRecording, rendererRef, webgpuCanvasRef, setStatus]);
 
     useEffect(() => {
+        const currentRenderer = rendererRef.current;
         return () => {
             clearRecordingTimer();
-            const manager = rendererRef.current;
-            if (manager?.usesInternalRecording()) {
-                manager.stopRendererRecording();
+            if (currentRenderer?.usesInternalRecording()) {
+                currentRenderer.stopRendererRecording();
             } else if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
                 mediaRecorderRef.current.stop();
             }

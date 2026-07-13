@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import Controls from './Controls';
+import { ControlsContainer as Controls } from "./controls/ControlsContainer";
 import { ShaderEntry, SlotParams } from '../renderer/types';
 
 beforeEach(() => {
