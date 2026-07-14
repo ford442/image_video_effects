@@ -2499,7 +2499,7 @@
   {
     "id": "scan-distort-gpt52",
     "name": "Scan Distort Matrix gpt52",
-    "url": "https://test.1ink.us/image_video_effects/shaders/scan-distort-gpt52.wgsl",
+    "url": "shaders/scan-distort-gpt52.wgsl",
     "description": "High-density scanlines with 3-band frequency distortion, FBM-perturbed scan positions, rolling jitter, curvature, chromatic tearing, mids-driven band distortion, domain-warped FBM displacement, and an audio-reactive color palette.",
     "params": [
       {

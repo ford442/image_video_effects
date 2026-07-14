@@ -404,7 +404,7 @@
   {
     "id": "pixel-depth-sort",
     "name": "Pixel Depth Sort",
-    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-depth-sort.wgsl",
+    "url": "shaders/pixel-depth-sort.wgsl",
     "description": "Directional pixel sorting by depth with a 25-comparator sorting network, mouse-following sort angle, depth-weighted color selection, distance-based LOD, chromatic aberration at boundaries, bass-driven sort length, depth-layered alpha, temporal feedback, and ACES tone mapping.",
     "features": [
       "upgraded-rgba",

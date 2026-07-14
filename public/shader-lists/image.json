@@ -284,7 +284,7 @@
     "id": "chrono-slit-scan",
     "name": "Chrono Slit Scan",
     "url": "shaders/chrono-slit-scan.wgsl",
-    "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, audio-reactive speed modulation, and depth-aware width scaling.",
+    "description": "Multi-slit temporal scan with 2-3 simultaneous animated slits, feathered edges, audio-reactive speed modulation, depth-aware width scaling, and LOD-optimized fbm warp with early-exit sampling.",
     "params": [
       {
         "id": "slitCount",
@@ -322,7 +322,10 @@
       "sdf-composition",
       "upgraded-rgba",
       "multi-slit",
-      "depth-aware"
+      "depth-aware",
+      "lod-noise",
+      "early-exit",
+      "sparse-sampling"
     ],
     "tags": [
       "filter",
@@ -1763,7 +1766,7 @@
     "id": "digital-lens",
     "name": "Digital Lens",
     "url": "shaders/digital-lens.wgsl",
-    "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, mouse gravity-well focus, attack/release bass envelope, temporal feedback trails, ACES tone mapping, and film grain.",
+    "description": "Brown-Conrady lens distortion model with radial/tangential coefficients, per-channel chromatic aberration with depth-dependent separation, anamorphic squeeze, mouse gravity-well focus, attack/release bass envelope, temporal feedback trails, ACES tone mapping, film grain, and advanced RGBA compositing via depth-layered, luminance-key, and effect-intensity alpha.",
     "params": [
       {
         "id": "distortion",
@@ -1802,7 +1805,9 @@
       "barrel-distortion",
       "chromatic-dispersion",
       "anamorphic",
-      "temporal-feedback"
+      "temporal-feedback",
+      "alpha-layered",
+      "luminance-key"
     ],
     "tags": [
       "filter",
@@ -1813,7 +1818,9 @@
       "audio-reactive",
       "anamorphic",
       "temporal-feedback",
-      "gravity-well"
+      "gravity-well",
+      "alpha-layered",
+      "luminance-key"
     ]
   },
   {
@@ -3234,9 +3241,11 @@
       "upgraded-rgba",
       "aces-tone-map",
       "chromatic-aberration",
-      "oklab-mix"
+      "oklab-mix",
+      "lod-noise",
+      "branchless-page-mask"
     ],
-    "description": "Interactive page curl with warm/cool 3-point studio lighting on the curl face, OkLab color blending, ACES tone mapping, click shockwaves, depth-aware shadows, chromatic aberration, and temporal feedback trails.",
+    "description": "Interactive page curl with warm/cool 3-point studio lighting on the curl face, OkLab color blending, ACES tone mapping, click shockwaves, depth-aware shadows, LOD noise, branchless page masking, chromatic aberration, and temporal feedback trails.",
     "params": [
       {
         "id": "param1",
