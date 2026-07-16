@@ -939,7 +939,7 @@
   {
     "id": "elastic-chromatic",
     "name": "Elastic Chromatic",
-    "url": "https://test.1ink.us/image_video_effects/shaders/elastic-chromatic.wgsl",
+    "url": "shaders/elastic-chromatic.wgsl",
     "description": "Elastic chromatic aberration with radial RGB shift, per-channel temporal lag, Lissajous mouse source, depth-aware audio reactivity, split-tone blackbody grading, ACES tone mapping, IGN dither and advanced layered alpha compositing.",
     "features": [
       "mouse-driven",
@@ -2236,7 +2236,7 @@
   {
     "id": "temporal-rgb-smear",
     "name": "Temporal RGB Smear",
-    "url": "https://test.1ink.us/image_video_effects/shaders/temporal-rgb-smear.wgsl",
+    "url": "shaders/temporal-rgb-smear.wgsl",
     "description": "Directional RGB smear with curl-noise velocity field, domain-warped drift, Halton-jittered chromatic sampling, temporal feedback decay, ACES tone mapping, and advanced layered alpha compositing (luminance key, edge preserve, effect intensity, depth layer, accumulative trails).",
     "params": [
       {

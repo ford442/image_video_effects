@@ -698,7 +698,7 @@
   {
     "id": "chromatic-mosaic-projector",
     "name": "Chromatic Mosaic Projector",
-    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-mosaic-projector.wgsl",
+    "url": "shaders/chromatic-mosaic-projector.wgsl",
     "description": "Animated Voronoi cell mosaic with per-cell chromatic aberration, mouse gravity wells, audio-reactive cell pulsing, HDR ACES tone mapping, temporal trails, dynamic blackbody color temperature, and layered alpha compositing.",
     "params": [
       {
@@ -1698,7 +1698,7 @@
   {
     "id": "cyber-ripples",
     "name": "Cyber Ripples",
-    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-ripples.wgsl",
+    "url": "shaders/cyber-ripples.wgsl",
     "description": "Interactive cursor-driven ripples fused with domain-warped FBM turbulence, audio-driven cyber palette shifting, SDF ring masking, click shockwaves, bass envelope feedback trails, depth-aware compositing, and ACES tone mapping.",
     "params": [
       {
@@ -2211,7 +2211,7 @@
   {
     "id": "directional-glitch",
     "name": "Directional Glitch",
-    "url": "https://test.1ink.us/image_video_effects/shaders/directional-glitch.wgsl",
+    "url": "shaders/directional-glitch.wgsl",
     "description": "SDF-masked Voronoi-ridge and FBM domain-warped glitch bands radiate from the mouse, driven by curl-noise displacement, audio-reactive cosine palette, chromatic aberration, depth-aware masking, and kaleidoscope temporal feedback.",
     "params": [
       {
@@ -2389,7 +2389,7 @@
   {
     "id": "echo-ripple",
     "name": "Echo Ripple",
-    "url": "https://test.1ink.us/image_video_effects/shaders/echo-ripple.wgsl",
+    "url": "shaders/echo-ripple.wgsl",
     "description": "Mouse movement and click history spawn expanding ripples that echo through time. Audio-reactive envelopes smooth bass pulses, depth-aware parallax separates foreground from background, and chromatic aberration plus ACES tone mapping give the feedback loop a modern, saturated look. Phase B adds LOD noise and a cached displacement field for cleaner echo accumulation.",
     "params": [
       {
@@ -4142,7 +4142,7 @@
   {
     "id": "interactive-magnetic-ripple",
     "name": "Magnetic Ripple",
-    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-magnetic-ripple.wgsl",
+    "url": "shaders/interactive-magnetic-ripple.wgsl",
     "description": "Phase B audio-reactive magnetic ripple. Bass-pulsed ripple frequency and field strength, mids-morphing hue-cycled glow, treble sparkle on field lines, plus curl-noise field lines, click-burst shockwaves, 50 ripple-point accumulation, FBM domain warping, depth-aware compositing, temporal motion trails, chromatic split, and semantic glow-alpha.",
     "params": [
       {
@@ -5433,7 +5433,7 @@
   {
     "id": "magnetic-interference",
     "name": "Magnetic Interference",
-    "url": "https://test.1ink.us/image_video_effects/shaders/magnetic-interference.wgsl",
+    "url": "shaders/magnetic-interference.wgsl",
     "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, canonical bass envelope, beat-pulsed magnetic field, mids-driven swirl and chromatic rotation, treble sparkle overlay, audio-amplified ripples, temporal feedback smearing, depth-aware compositing, chromatic aberration, and mouse-velocity trail drag.",
     "params": [
       {
@@ -7601,7 +7601,7 @@
   {
     "id": "oscilloscope-overlay",
     "name": "Oscilloscope Overlay",
-    "url": "https://test.1ink.us/image_video_effects/shaders/oscilloscope-overlay.wgsl",
+    "url": "shaders/oscilloscope-overlay.wgsl",
     "description": "Overlays a real-time luminance waveform of the image scanline at the mouse cursor's vertical position, now with a smoothed bass envelope, treble sparkle, audio-reactive color temperature, HDR tone mapping, and IGN dithering.",
     "params": [
       {
@@ -8269,7 +8269,7 @@
   {
     "id": "pixel-stretch-cross",
     "name": "Pixel Stretch Cross",
-    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-stretch-cross.wgsl",
+    "url": "shaders/pixel-stretch-cross.wgsl",
     "description": "Multi-direction pixel stretch using Fibonacci disk sampling, mouse gravity well, depth-aware attenuation, bass-envelope magnitude, click shockwaves, temporal trails, and layered alpha compositing with depth fading, luminance keying, and accumulative feedback.",
     "features": [
       "mouse-driven",
@@ -8615,7 +8615,7 @@
   {
     "id": "quad-mirror",
     "name": "Quad Mirror",
-    "url": "https://test.1ink.us/image_video_effects/shaders/quad-mirror.wgsl",
+    "url": "shaders/quad-mirror.wgsl",
     "description": "4-way kaleidoscope mirror with FBM domain warp at seam boundaries, animated rotation, audio-reactive seam shimmer, chromatic aberration, ACES tone mapping, temporal feedback trails, and layered semantic alpha compositing.",
     "params": [
       {
@@ -8866,7 +8866,7 @@
   {
     "id": "quantum-ripples",
     "name": "Quantum Ripples",
-    "url": "https://test.1ink.us/image_video_effects/shaders/quantum-ripples.wgsl",
+    "url": "shaders/quantum-ripples.wgsl",
     "description": "Mouse-driven quantum interference waves with domain-warped FBM, divergence-free curl turbulence, Voronoi cellular displacement, SDF portal masking, audio-driven palette, temporal feedback, depth-aware chromatic aberration and audio reactivity.",
     "params": [
       {
@@ -9799,7 +9799,7 @@
   {
     "id": "scanline-sorting",
     "name": "Scanline Sorting",
-    "url": "https://test.1ink.us/image_video_effects/shaders/scanline-sorting.wgsl",
+    "url": "shaders/scanline-sorting.wgsl",
     "description": "Sorts pixels by luminance within a moving scanline band using a tile-wide early-exit and a shared-memory bitonic sort over local 16-pixel segments. Reacts to audio bass for intensified sorting, applies ACES tone mapping, and preserves depth and semantic alpha.",
     "params": [
       {
@@ -11156,7 +11156,7 @@
   {
     "id": "tile-twist",
     "name": "Tile Twist",
-    "url": "https://test.1ink.us/image_video_effects/shaders/tile-twist.wgsl",
+    "url": "shaders/tile-twist.wgsl",
     "description": "Grid tiles twist and rotate based on mouse proximity and an envelope-smoothed bass pulse, with mids-driven hue shifts, treble sparkle, FBM domain warping, and SDF edge masking.",
     "params": [
       {
