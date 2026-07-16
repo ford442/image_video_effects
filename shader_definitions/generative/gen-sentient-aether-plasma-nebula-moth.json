@@ -48,7 +48,7 @@
       "step": 0.01
     }
   ],
-  "supportsDepth": false,
+  "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
   "id": "gen-sentient-aether-plasma-nebula-moth",
