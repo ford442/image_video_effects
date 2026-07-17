@@ -36,6 +36,23 @@
 - Update GAP/STATUS aggressively when code evolves (present path landed after May doc).
 - Use GH issues + Copilot for the C++ work (user has swarm/agent patterns elsewhere).
 
+## Epic #965 — Foundation Wave 2 (2026-07-16)
+
+**Strategic call:** 1–2 more foundation cycles before large content-only wave. Content still ships (spot shaders).
+
+**Audit findings:**
+- Catalog ~1296 defs / ~1299 WGSL / 346 thumbs (~27%)
+- App.tsx ~2230, ControlsContainer ~1186, WebGPURenderer.ts ~1708 (partial #913/#914 only)
+- C++ modularized; TS renderer still monolith
+- **Binding drift:** TS has binding 13 historyTexture; C++ BINDING_COUNT=13 (0–12 only) — #969 HIGH
+- Device policy comments still cite old renderer.cpp line numbers → device.cpp
+- WASM Tier B; promotion gates still open (need real GPU evidence)
+- Open issue backlog was empty — reseeded #965–#976
+
+**Child issues:** #966 App, #967 Controls, #968 modularize TS renderer, #969 contract, #970 multipass graph, #971 thumbs, #972 WASM evidence, #973 VJ Studio, #974 physics sims epic, #975 build/tooling, #976 importer+attract
+
+**Branch context:** `feat/midi-control-and-wasm-parity` in flight; merge foundation carefully with MIDI.
+
 ## Epic #912 — Foundation hardening (2026-07-11)
 - **Strategic call:** 1–2 cycles of structure before next shader swarm. Content (#897 fireworks) ships in parallel.
 - **Three waves done locally:** W1 (#919/#918/#931 build+docs), W2 (#915/#917/#920 limits+catalog+ES2020), W3 (#913/#914 App/Controls split) — PR #938 open for W3 only; W1/W2 branches not pushed yet.
