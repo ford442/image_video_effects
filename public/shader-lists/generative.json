@@ -17232,11 +17232,11 @@
         "step": 0.01
       }
     ],
-    "supportsDepth": false,
-    "supportsDof": false,
-    "updated": true,
     "id": "gen-sentient-aether-plasma-nebula-moth",
     "url": "shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
     "features": []
   },
   {
