@@ -179,9 +179,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse = u.zoom_config.yz * 2.0 - vec2<f32>(1.0);
 
     var ro = vec3<f32>(mouse.x * 3.0, mouse.y * 3.0 + 2.0, -6.0);
-    let target = vec3<f32>(0.0, 0.0, 0.0);
+    let cam_target = vec3<f32>(0.0, 0.0, 0.0);
 
-    let cz = normalize(target - ro);
+    let cz = normalize(cam_target - ro);
     let cx = normalize(cross(cz, vec3<f32>(0.0, 1.0, 0.0)));
     let cy = normalize(cross(cx, cz));
     let rd = normalize(cx * uv.x + cy * uv.y + cz * 1.5);
