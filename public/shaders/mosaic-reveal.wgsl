@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-//  mosaic-reveal — Visualist Upgrade
+//  mosaic-reveal — Phase B Advanced-Alpha Upgrade
 //  Category: distortion
-//  Features: upgraded-rgba, depth-aware, mosaic, interactive-reveal,
-//            mouse-driven, hex-grid, flood-fill-reveal, audio-reactive,
-//            oklab-mixing, temporal-feedback, aces-tone-map
-//  Upgraded: 2026-06-14
+//  Features: upgraded-rgba, depth-aware, alpha-layered, mosaic,
+//            interactive-reveal, mouse-driven, hex-grid, flood-fill-reveal,
+//            audio-reactive, oklab-mixing, temporal-feedback, aces-tone-map
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -135,6 +135,20 @@ fn hexCenter(uv: vec2<f32>, size: f32) -> vec2<f32> {
   return (floor(hex) + 0.5) / size;
 }
 
+// ── Advanced alpha compositing ────────────────────────────────────
+fn depthLayeredAlpha(depth: f32) -> f32 {
+  return mix(0.38, 1.0, depth);
+}
+
+fn lumaKeyAlpha(col: vec3<f32>) -> f32 {
+  let luma = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return smoothstep(0.03, 0.20, luma);
+}
+
+fn edgePreserveAlpha(edgeMask: f32) -> f32 {
+  return mix(0.25, 1.0, edgeMask);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
@@ -203,8 +217,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
   color = color + vec3<f32>(dither);
 
-  // Semantic alpha = effect reveal strength
-  let alpha = mix(0.5, 1.0, revealMask);
+  // Advanced layered alpha: depth, luminance key, edge preserve + accumulative feedback
+  let revealAlpha = mix(0.4, 1.0, revealMask);
+  let depthAlpha = depthLayeredAlpha(depth);
+  let lumaAlpha = lumaKeyAlpha(colMosaic);
+  let edgeAlpha = edgePreserveAlpha(edgeMask);
+  var alpha = clamp(
+    revealAlpha * 0.55 + depthAlpha * 0.25 + lumaAlpha * 0.12 + edgeAlpha * 0.08,
+    0.12, 1.0
+  );
+
+  // Accumulative temporal alpha feedback
+  let accumAlpha = max(alpha, prev.a * 0.93);
+  alpha = mix(alpha, accumAlpha, 0.35);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

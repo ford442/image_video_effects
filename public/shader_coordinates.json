@@ -8924,5 +8924,420 @@
       "filter",
       "image-processing"
     ]
+  },
+  "gen-fireworks-nocturne": {
+    "coordinate": 856,
+    "reason": "4th of July fireworks collection \u2014 grouped block (856)",
+    "name": "4th of July \u2014 Fireworks Nocturne",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "pyrotechnics",
+      "celebration",
+      "sparks",
+      "gravity",
+      "particles",
+      "night-sky",
+      "audio-reactive",
+      "generative",
+      "explosive",
+      "4th-of-july",
+      "july-4"
+    ]
+  },
+  "gen-fireworks-willow-cascade": {
+    "coordinate": 857,
+    "reason": "4th of July fireworks collection \u2014 grouped block (857)",
+    "name": "4th of July \u2014 Willow Cascade",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "willow",
+      "pyrotechnics",
+      "trails",
+      "golden",
+      "long-exposure",
+      "gravity",
+      "audio-reactive",
+      "generative",
+      "cinematic",
+      "4th-of-july",
+      "july-4"
+    ]
+  },
+  "gen-fireworks-chrysanthemum": {
+    "coordinate": 858,
+    "reason": "4th of July fireworks collection \u2014 grouped block (858)",
+    "name": "4th of July \u2014 Chrysanthemum Burst",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "chrysanthemum",
+      "peony",
+      "pyrotechnics",
+      "spherical",
+      "dense",
+      "rings",
+      "audio-reactive",
+      "generative",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ]
+  },
+  "gen-fireworks-crackle-palm": {
+    "coordinate": 859,
+    "reason": "4th of July fireworks collection \u2014 grouped block (859)",
+    "name": "4th of July \u2014 Crackle Palm",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "crackle",
+      "palm",
+      "multi-stage",
+      "pyrotechnics",
+      "audio-reactive",
+      "generative",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ]
+  },
+  "gen-fireworks-ring-shell": {
+    "coordinate": 860,
+    "reason": "4th of July fireworks collection \u2014 grouped block (860)",
+    "name": "4th of July \u2014 Ring Shell",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "ring",
+      "halo",
+      "donut",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ]
+  },
+  "gen-fireworks-crossette": {
+    "coordinate": 861,
+    "reason": "4th of July fireworks collection \u2014 grouped block (861)",
+    "name": "4th of July \u2014 Crossette Split",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "crossette",
+      "split",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ]
+  },
+  "gen-fireworks-kamuro-gold": {
+    "coordinate": 862,
+    "reason": "4th of July fireworks collection \u2014 grouped block (862)",
+    "name": "4th of July \u2014 Kamuro Gold",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "kamuro",
+      "gold",
+      "glitter",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ]
+  },
+  "gen-fireworks-roman-candle": {
+    "coordinate": 863,
+    "reason": "4th of July fireworks collection \u2014 grouped block (863)",
+    "name": "4th of July \u2014 Roman Candle",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "roman-candle",
+      "barrage",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ]
+  },
+  "gen-fireworks-horse-tail": {
+    "coordinate": 864,
+    "reason": "4th of July fireworks collection \u2014 grouped block (864)",
+    "name": "4th of July \u2014 Horse Tail Brocade",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "horse-tail",
+      "brocade",
+      "streamers",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ]
+  },
+  "gen-fireworks-comet-trail": {
+    "coordinate": 865,
+    "reason": "4th of July fireworks collection \u2014 grouped block (865)",
+    "name": "4th of July \u2014 Comet Trail",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "comet",
+      "trail",
+      "streak",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ]
+  },
+  "gen-fireworks-fan-shell": {
+    "coordinate": 866,
+    "reason": "4th of July fireworks collection \u2014 grouped block (866)",
+    "name": "4th of July \u2014 Fan Shell",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "fan",
+      "spread",
+      "hemisphere",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "4th-of-july"
+    ]
+  },
+  "gen-fireworks-strobe-shell": {
+    "coordinate": 867,
+    "reason": "4th of July fireworks collection \u2014 grouped block (867)",
+    "name": "4th of July \u2014 Strobe Shell",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "strobe",
+      "blink",
+      "flash",
+      "pyrotechnics",
+      "july-4",
+      "audio-reactive",
+      "generative",
+      "psychedelic",
+      "4th-of-july"
+    ]
+  },
+  "gen-fireworks-wind-ripple": {
+    "coordinate": 868,
+    "reason": "4th of July fireworks collection \u2014 grouped block (868)",
+    "name": "4th of July \u2014 Wind & Ripple",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "wind",
+      "ripple",
+      "pyrotechnics",
+      "audio-reactive",
+      "mouse-driven",
+      "trails",
+      "generative",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ]
+  },
+  "gen-fireworks-smoke-bloom": {
+    "coordinate": 869,
+    "reason": "4th of July fireworks collection \u2014 grouped block (869)",
+    "name": "4th of July \u2014 Smoke Bloom",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "smoke",
+      "bloom",
+      "volumetric",
+      "pyrotechnics",
+      "audio-reactive",
+      "mouse-driven",
+      "trails",
+      "generative",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ]
+  },
+  "gen-fireworks-audio-symphony": {
+    "coordinate": 870,
+    "reason": "4th of July fireworks collection \u2014 grouped block (870)",
+    "name": "4th of July \u2014 Audio Symphony",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "audio-reactive",
+      "music-sync",
+      "spectrum",
+      "pyrotechnics",
+      "mouse-driven",
+      "trails",
+      "generative",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ]
+  },
+  "gen-image-pyro": {
+    "coordinate": 871,
+    "reason": "4th of July fireworks collection \u2014 grouped block (871)",
+    "name": "4th of July \u2014 Image Pyro",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "image-reactive",
+      "pyrotechnics",
+      "photo-burst",
+      "sparks",
+      "gravity",
+      "audio-reactive",
+      "celebration",
+      "color-sampling",
+      "4th-of-july",
+      "july-4"
+    ]
+  },
+  "gen-image-pixel-detonation": {
+    "coordinate": 872,
+    "reason": "4th of July fireworks collection \u2014 grouped block (872)",
+    "name": "4th of July \u2014 Pixel Detonation",
+    "category": "generative",
+    "features": [],
+    "tags": [
+      "fireworks",
+      "image-reactive",
+      "pixel-flight",
+      "detonation",
+      "pyrotechnics",
+      "photo-burst",
+      "depth-aware",
+      "audio-reactive",
+      "celebration",
+      "4th-of-july",
+      "july-4"
+    ]
+  },
+  "fireworks-edge-ignite": {
+    "coordinate": 873,
+    "reason": "4th of July fireworks collection \u2014 grouped block (873)",
+    "name": "4th of July \u2014 Edge Ignite",
+    "category": "image",
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "tags": [
+      "fireworks",
+      "edge",
+      "contour",
+      "pyrotechnics",
+      "july-4",
+      "image-reactive",
+      "audio-reactive",
+      "4th-of-july"
+    ]
+  },
+  "fireworks-portrait-burst": {
+    "coordinate": 874,
+    "reason": "4th of July fireworks collection \u2014 grouped block (874)",
+    "name": "4th of July \u2014 Portrait Burst",
+    "category": "image",
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "tags": [
+      "fireworks",
+      "portrait",
+      "bright-region",
+      "pyrotechnics",
+      "july-4",
+      "image-reactive",
+      "audio-reactive",
+      "4th-of-july"
+    ]
+  },
+  "fireworks-patriotic-july4": {
+    "coordinate": 875,
+    "reason": "4th of July fireworks collection \u2014 grouped block (875)",
+    "name": "4th of July \u2014 Patriotic Pyro",
+    "category": "image",
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "tags": [
+      "fireworks",
+      "patriotic",
+      "july-4",
+      "red-white-blue",
+      "pyrotechnics",
+      "image-reactive",
+      "audio-reactive",
+      "4th-of-july"
+    ]
+  },
+  "fireworks-depth-parade": {
+    "coordinate": 876,
+    "reason": "4th of July fireworks collection \u2014 grouped block (876)",
+    "name": "4th of July \u2014 Depth Parade",
+    "category": "image",
+    "features": [
+      "audio-reactive",
+      "temporal",
+      "semantic-alpha",
+      "depth-aware"
+    ],
+    "tags": [
+      "fireworks",
+      "depth",
+      "parade",
+      "layered",
+      "pyrotechnics",
+      "july-4",
+      "image-reactive",
+      "audio-reactive",
+      "4th-of-july"
+    ]
   }
 }

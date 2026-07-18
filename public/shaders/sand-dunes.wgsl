@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Sand Dunes — Visualist Upgrade
+//  Sand Dunes — Phase B Audio-Reactivity Upgrade
 //  Category: generative
 //  Features: generative, audio-reactive, bagnold-physics, anisotropic-fbm,
 //            wind-erosion, separation-bubble, domain-warp, ggx-specular,
 //            rayleigh-mie-sky, temporal-feedback, oklab-palette,
-//            blackbody-sun, aces-tone-map, ign-dither, semantic-alpha
+//            blackbody-sun, aces-tone-map, ign-dither, semantic-alpha,
+//            audio-envelope
 //  Complexity: High
 //  Created: 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
@@ -118,17 +119,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv01 = vec2<f32>(pixel) / res;
   let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
   let time = u.config.x; let mouse = u.zoom_config.yz;
-  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
+  let bass_raw = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble_raw = plasmaBuffer[0].z;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
   let prev = textureLoad(dataTextureC, pixel, 0);
 
-  let duneScale = u.zoom_params.x * 4.0 + 2.0; let windBase = u.zoom_params.y * 0.5;
+  // Audio envelope smoothing: state is carried in the feedback alpha channel.
+  let env_prev = prev.a;
+  let atk = select(0.15, 0.8, bass_raw > env_prev);
+  let bass = mix(env_prev, bass_raw, atk);
+  let treble = treble_raw * (1.0 + mids * 0.25);
+
+  let duneScale = (u.zoom_params.x * 4.0 + 2.0) * (1.0 + bass * 0.35);
+  let windBase = u.zoom_params.y * 0.5;
   let erosion = u.zoom_params.z; let shadowDepth = u.zoom_params.w;
 
   let windAngle = (mouse.x - 0.5) * 1.5 + (mids - 0.5) * 0.8;
   let windDir = vec2<f32>(cos(windAngle), sin(windAngle));
   let windSpeed = windBase + bass * 0.3;
-  let t = time * windSpeed;
+  let evolution = 1.0 + mids * 0.5;
+  let t = time * windSpeed * evolution;
 
   let p = uv01 * duneScale;
   let warped = domainWarp(p + windDir * t * 0.05, 0.4 + mids * 0.3, 4);
@@ -174,9 +183,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sss = smoothstep(-0.8, -0.2, slope) * crest * vec3<f32>(0.55, 0.30, 0.12) * 0.5;
   hdr = hdr + sss;
 
-  let sparkleCoord = uv01 * 120.0 + windDir * t * 10.0;
-  let sparkle = step(0.997 - treble * 0.003, fract(sin(dot(sparkleCoord, vec2<f32>(12.9898, 78.233))) * 43758.5453));
-  let sparkleColor = vec3<f32>(1.0, 0.95, 0.85) * sparkle * treble * (0.5 + smoothstep(0.0, -0.3, slope));
+  let sparkleCoord = uv01 * (120.0 + treble * 60.0) + windDir * t * 10.0;
+  let sparkle = step(0.997 - treble * 0.004, fract(sin(dot(sparkleCoord, vec2<f32>(12.9898, 78.233))) * 43758.5453));
+  let sparkleColor = vec3<f32>(1.0, 0.95, 0.85) * sparkle * treble * (0.5 + smoothstep(0.0, -0.3, slope)) * (1.0 + bass * 0.5);
   hdr = hdr + sparkleColor * 2.0;
 
   let mouseDist = length(uv01 - mouse);
@@ -208,6 +217,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let a = bloomWeight;
 
   textureStore(writeTexture, pixel, vec4<f32>(color * a, a));
-  textureStore(dataTextureA, pixel, vec4<f32>(trail * a, a));
+  textureStore(dataTextureA, pixel, vec4<f32>(trail * a, bass));
   textureStore(writeDepthTexture, pixel, vec4<f32>(height * 0.5 + bubble, 0.0, 0.0, 0.0));
 }

@@ -2,11 +2,16 @@
  * Shared Playwright harness for WASM / WebGPU renderer tests.
  */
 import { spawn, type ChildProcessWithoutNullStreams } from 'child_process';
-import type { Page } from '@playwright/test';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
+import { expect, type Page } from '@playwright/test';
+import type { ParityShaderCase } from '../fixtures/parityMatrix';
 
 export const BUILD_DIR = resolve(__dirname, '../../build');
 export const DEFAULT_PORT = 3458;
+export const MIN_WASM_FPS = 5;
+export const PROMOTION_SPEEDUP_RATIO = 1.25;
+export const PROMOTION_MIN_SHADERS = 3;
 
 export type RendererBackend = 'wasm' | 'webgpu';
 
@@ -17,8 +22,50 @@ export interface ImageStats {
   activePixelRatio: number;
 }
 
+export interface BenchResult {
+  shaderId: string;
+  backend: string;
+  avgFps: number;
+  avgTotalMs: number;
+  gpuTimingsAvailable: boolean;
+  timingSource?: string;
+  p95TotalMs: number;
+}
+
+export interface BenchComparison {
+  shaderId: string;
+  wasmFps: number;
+  webgpuFps: number;
+  wasmAvgTotalMs: number;
+  webgpuAvgTotalMs: number;
+  /** WASM fps / WebGPU fps (or inverse frame-time ratio). ≥1.25 meets promotion gate. */
+  speedupRatio: number;
+  meetsPromotionGate: boolean;
+}
+
+export interface WasmBenchmarkReport {
+  generatedAt: string;
+  strictGpuMode: boolean;
+  gpuBackendObserved: boolean;
+  results: BenchResult[];
+  comparisons: BenchComparison[];
+  promotionGateMet: boolean;
+  promotionMinShaders: number;
+  promotionSpeedupRatio: number;
+}
+
 let server: ChildProcessWithoutNullStreams | null = null;
 let serverPort = DEFAULT_PORT;
+
+/** Opt-in strict mode: fail when WebGPU/WASM backends are unavailable (local GPU runs). */
+export function isStrictGpuMode(): boolean {
+  return process.env.WASM_GPU_TESTS === '1';
+}
+
+/** @deprecated Use isStrictGpuMode() — kept for existing specs. */
+export function hasGpuForTests(): boolean {
+  return isStrictGpuMode();
+}
 
 export function buildAppUrl(
   backend: RendererBackend,
@@ -34,6 +81,13 @@ export function buildAppUrl(
 }
 
 export async function startStaticServer(port = DEFAULT_PORT): Promise<void> {
+  const indexHtml = resolve(BUILD_DIR, 'index.html');
+  if (!existsSync(indexHtml)) {
+    throw new Error(
+      `Missing ${indexHtml}. Run "npm run build" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.`
+    );
+  }
+
   serverPort = port;
   server = spawn('python3', ['-m', 'http.server', String(port), '--directory', BUILD_DIR], {
     stdio: 'pipe',
@@ -65,17 +119,24 @@ export async function stopStaticServer(): Promise<void> {
 
 export function attachConsoleCollector(page: Page): {
   criticalErrors: string[];
+  consoleErrors: string[];
 } {
   const criticalErrors: string[] = [];
+  const consoleErrors: string[] = [];
 
   page.on('console', (msg) => {
     const text = msg.text();
     const type = msg.type();
+    if (type === 'error') {
+      consoleErrors.push(text);
+    }
     if (
-      type === 'error' &&
-      (text.includes('device-lost') ||
-        text.includes('shader-compile-error') ||
-        text.includes('Uncaptured error'))
+      (type === 'error' &&
+        (text.includes('device-lost') ||
+          text.includes('shader-compile-error') ||
+          text.includes('Uncaptured error') ||
+          text.includes('Fallback shader also failed'))) ||
+      text.includes('[pageerror]')
     ) {
       criticalErrors.push(text);
     }
@@ -85,7 +146,7 @@ export function attachConsoleCollector(page: Page): {
     criticalErrors.push(`[pageerror] ${err.message}`);
   });
 
-  return { criticalErrors };
+  return { criticalErrors, consoleErrors };
 }
 
 export async function waitForTestApi(page: Page, timeoutMs = 30000): Promise<void> {
@@ -100,16 +161,34 @@ export async function getActiveBackend(page: Page): Promise<RendererBackend | 'j
   });
 }
 
+export async function assertExpectedBackend(
+  page: Page,
+  expected: RendererBackend
+): Promise<RendererBackend | 'js' | null> {
+  const active = await getActiveBackend(page);
+  if (isStrictGpuMode()) {
+    expect(active, `Expected ${expected} backend (WASM_GPU_TESTS=1)`).toBe(expected);
+  } else if (active !== expected) {
+    console.log(
+      `[harness] Backend is "${active}" not "${expected}" — acceptable without WASM_GPU_TESTS=1`
+    );
+  }
+  return active;
+}
+
 export async function loadShaderOnSlot(
   page: Page,
   shader: { id: string; url: string; slot?: number },
-  inputSource: 'generative' | 'none' = 'generative'
+  inputSource: 'generative' | 'image' | 'none' = 'generative'
 ): Promise<void> {
   await page.evaluate(
     async ({ s, source }) => {
       const api = (window as any).__pixelocity__;
       api.setInputSource(source);
-      await api.loadShader(s.id, s.url);
+      const ok = await api.loadShader(s.id, s.url);
+      if (!ok) {
+        throw new Error(`loadShader failed for ${s.id}`);
+      }
       api.setSlotShader(s.slot ?? 0, s.id);
     },
     { s: shader, source: inputSource }
@@ -118,7 +197,7 @@ export async function loadShaderOnSlot(
 
 export async function applyTestState(
   page: Page,
-  state: NonNullable<import('../fixtures/parityMatrix').ParityShaderCase['testState']>
+  state: NonNullable<ParityShaderCase['testState']>
 ): Promise<void> {
   await page.evaluate((s) => {
     (window as any).__pixelocity__?.setTestRenderState(s);
@@ -166,10 +245,33 @@ export async function captureCanvasStats(page: Page): Promise<ImageStats> {
   });
 }
 
+export async function getRendererFps(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const diags = (window as any).__pixelocity__?.renderer?.getDiagnostics?.();
+    return diags?.wasm?.fps ?? diags?.webgpu?.fps ?? diags?.metrics?.fps ?? 0;
+  });
+}
+
+export async function exerciseShaderOnWasm(
+  page: Page,
+  shader: ParityShaderCase,
+  renderMs = 2500
+): Promise<{ fps: number; stats: ImageStats; criticalErrors: string[] }> {
+  const { criticalErrors } = attachConsoleCollector(page);
+  await loadShaderOnSlot(page, shader);
+  if (shader.testState) {
+    await applyTestState(page, shader.testState);
+  }
+  await page.waitForTimeout(renderMs);
+  const stats = await captureCanvasStats(page);
+  const fps = await getRendererFps(page);
+  return { fps, stats, criticalErrors };
+}
+
 export async function renderShaderCase(
   page: Page,
   backend: RendererBackend,
-  shader: import('../fixtures/parityMatrix').ParityShaderCase,
+  shader: ParityShaderCase,
   port = serverPort
 ): Promise<{ backend: RendererBackend | 'js' | null; stats: ImageStats; criticalErrors: string[] }> {
   const { criticalErrors } = attachConsoleCollector(page);
@@ -178,7 +280,11 @@ export async function renderShaderCase(
 
   const active = await getActiveBackend(page);
   if (active !== backend) {
-    return { backend: active, stats: { width: 0, height: 0, meanLuminance: 0, activePixelRatio: 0 }, criticalErrors };
+    return {
+      backend: active,
+      stats: { width: 0, height: 0, meanLuminance: 0, activePixelRatio: 0 },
+      criticalErrors,
+    };
   }
 
   await loadShaderOnSlot(page, shader);
@@ -196,6 +302,35 @@ export async function renderShaderCase(
   return { backend: active, stats, criticalErrors };
 }
 
-export function hasGpuForTests(): boolean {
-  return process.env.WASM_GPU_TESTS === '1' || process.env.CI !== 'true';
+export function computeSpeedupRatio(wasm: BenchResult, webgpu: BenchResult): number {
+  if (wasm.avgFps > 0 && webgpu.avgFps > 0) {
+    return wasm.avgFps / webgpu.avgFps;
+  }
+  if (wasm.avgTotalMs > 0 && webgpu.avgTotalMs > 0) {
+    return webgpu.avgTotalMs / wasm.avgTotalMs;
+  }
+  return 0;
+}
+
+export function buildBenchmarkReport(
+  results: BenchResult[],
+  comparisons: BenchComparison[]
+): WasmBenchmarkReport {
+  const promotionHits = comparisons.filter((c) => c.meetsPromotionGate).length;
+  return {
+    generatedAt: new Date().toISOString(),
+    strictGpuMode: isStrictGpuMode(),
+    gpuBackendObserved: results.some((r) => r.backend === 'wasm'),
+    results,
+    comparisons,
+    promotionGateMet: promotionHits >= PROMOTION_MIN_SHADERS,
+    promotionMinShaders: PROMOTION_MIN_SHADERS,
+    promotionSpeedupRatio: PROMOTION_SPEEDUP_RATIO,
+  };
+}
+
+export function writeBenchmarkReport(report: WasmBenchmarkReport, path = 'test-results/wasm-benchmark-report.json'): void {
+  mkdirSync(resolve(path, '..'), { recursive: true });
+  writeFileSync(path, JSON.stringify(report, null, 2));
+  console.log(`\nWrote benchmark report → ${path}\n`);
 }

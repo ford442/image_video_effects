@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Pixel Depth Sort — Optimizer Upgrade
+//  Pixel Depth Sort — Multi-Pass Architect Upgrade
 //  Category: post-processing
 //  Features: upgraded-rgba, mouse-driven, audio-reactive, depth-aware,
-//            temporal-feedback, aces-tone-map, branchless-sort
+//            temporal-feedback, aces-tone-map, branchless-sort,
+//            sorting-network, depth-weighted, lod-distance
 //  Complexity: Medium
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -30,7 +31,7 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
-const SAMPLE_COUNT: u32 = 9u;
+const MAX_SAMPLES: u32 = 9u;
 
 // ── Fast math helpers ─────────────────────────────────────────────
 fn fast_atan2(y: f32, x: f32) -> f32 {
@@ -57,20 +58,38 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// ── Branchless sorting helper ─────────────────────────────────────
-fn sort_pair(
+// ── Branchless comparator for sorting network ─────────────────────
+fn comp(
   i: u32,
   j: u32,
   depths: ptr<function, array<f32, 9>>,
   colors: ptr<function, array<vec4<f32>, 9>>
 ) {
-  let swap = f32((*depths)[i] > (*depths)[j]);
   let di = (*depths)[i];
+  let dj = (*depths)[j];
+  let swap = f32(di > dj);
   let ci = (*colors)[i];
-  (*depths)[i] = mix((*depths)[i], (*depths)[j], swap);
-  (*depths)[j] = mix((*depths)[j], di, swap);
-  (*colors)[i] = mix((*colors)[i], (*colors)[j], swap);
-  (*colors)[j] = mix((*colors)[j], ci, swap);
+  let cj = (*colors)[j];
+  (*depths)[i] = mix(di, dj, swap);
+  (*depths)[j] = mix(dj, di, swap);
+  (*colors)[i] = mix(ci, cj, swap);
+  (*colors)[j] = mix(cj, ci, swap);
+}
+
+// ── 25-comparator optimal sorting network for 9 elements ──────────
+fn sort_network(
+  depths: ptr<function, array<f32, 9>>,
+  colors: ptr<function, array<vec4<f32>, 9>>
+) {
+  comp(0u, 1u, depths, colors); comp(3u, 4u, depths, colors); comp(6u, 7u, depths, colors);
+  comp(1u, 2u, depths, colors); comp(4u, 5u, depths, colors); comp(7u, 8u, depths, colors);
+  comp(0u, 1u, depths, colors); comp(3u, 4u, depths, colors); comp(6u, 7u, depths, colors);
+  comp(0u, 3u, depths, colors); comp(3u, 6u, depths, colors); comp(0u, 3u, depths, colors);
+  comp(1u, 4u, depths, colors); comp(4u, 7u, depths, colors); comp(1u, 4u, depths, colors);
+  comp(2u, 5u, depths, colors); comp(5u, 8u, depths, colors); comp(2u, 5u, depths, colors);
+  comp(1u, 3u, depths, colors); comp(5u, 7u, depths, colors); comp(2u, 6u, depths, colors);
+  comp(4u, 6u, depths, colors); comp(2u, 4u, depths, colors); comp(2u, 3u, depths, colors);
+  comp(5u, 6u, depths, colors);
 }
 
 // ── Main compute kernel ───────────────────────────────────────────
@@ -92,51 +111,68 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let centerDepth = textureLoad(readDepthTexture, pixel, 0).r;
+  let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-  // Early exit: pass through background / sky pixels unchanged
-  if (centerDepth < depthThresh || centerDepth > 0.995) {
-    let bg = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // Branchless background mask: keep sky/background pixels unchanged
+  let isBg = f32(centerDepth < depthThresh || centerDepth > 0.995);
+  if (isBg > 0.5) {
     textureStore(dataTextureA, pixel, bg);
     textureStore(writeTexture, pixel, vec4<f32>(bg.rgb, centerDepth));
     textureStore(writeDepthTexture, pixel, vec4<f32>(centerDepth, 0.0, 0.0, 0.0));
     return;
   }
 
-  // Audio-reactive sort length
-  let sortLength = sortLenBase * (1.0 + bass * 2.0);
-
-  // Sort direction follows mouse + blue-noise jitter to kill banding
+  // Precompute sort direction and LOD factor from mouse distance
   let jitter = (hash21(uv * 1337.0 + time) - 0.5) * 0.04;
   let angleFromMouse = fast_atan2(mouse.y - 0.5, mouse.x - 0.5);
   let angle = angleFromMouse + sortAngle + jitter;
   let dir = vec2<f32>(cos(angle), sin(angle));
   let invRes = 1.0 / res;
 
-  // Sample 9 pixels forward along sort direction
+  let mouseDist = length(uv - mouse);
+  let lod = 1.0 - smoothstep(0.15, 0.55, mouseDist);
+  let sortLength = sortLenBase * (1.0 + bass * 2.0) * (0.5 + 0.5 * lod);
+  let sampleCount = u32(5.0 + lod * 4.0);
+  let depthSharp = 8.0 + lod * 24.0;
+
+  // Sample taps along sort direction with depth-weighted accumulation
   var colors: array<vec4<f32>, 9>;
   var depths: array<f32, 9>;
-  for (var i: u32 = 0u; i < SAMPLE_COUNT; i = i + 1u) {
+  var weights: array<f32, 9>;
+  var wsum: f32 = 0.0;
+  for (var i: u32 = 0u; i < MAX_SAMPLES; i = i + 1u) {
+    let sampleActive = f32(i < sampleCount);
     let offset = dir * f32(i) * sortLength * invRes;
     let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-    colors[i] = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
-    depths[i] = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+    let c = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+    let w = sampleActive / (1.0 + abs(d - centerDepth) * depthSharp);
+    colors[i] = c;
+    depths[i] = d;
+    weights[i] = w;
+    wsum = wsum + w;
   }
 
-  // Branchless bubble sort by depth (ascending: near to far)
-  for (var i: u32 = 0u; i < SAMPLE_COUNT; i = i + 1u) {
-    for (var j: u32 = 0u; j < 8u - i; j = j + 1u) {
-      sort_pair(j, j + 1u, &depths, &colors);
-    }
-  }
+  // Sort active samples by depth (near to far)
+  sort_network(&depths, &colors);
 
-  // Find where centerDepth fits in sorted depths
+  // Find insertion rank of centerDepth
   var rank: u32 = 0u;
-  for (var i: u32 = 0u; i < SAMPLE_COUNT; i = i + 1u) {
+  for (var i: u32 = 0u; i < MAX_SAMPLES; i = i + 1u) {
     rank = rank + u32(centerDepth > depths[i]);
   }
   rank = clamp(rank, 0u, 8u);
 
-  let sortedColor = colors[rank];
+  // Depth-weighted blend around the insertion rank
+  var weightedColor = vec3<f32>(0.0);
+  var weightTotal: f32 = 0.0;
+  for (var i: u32 = 0u; i < MAX_SAMPLES; i = i + 1u) {
+    let w = weights[i];
+    weightedColor = weightedColor + colors[i].rgb * w;
+    weightTotal = weightTotal + w;
+  }
+  let avgColor = weightedColor / max(weightTotal, 1e-6);
+  let sortedColor = mix(colors[rank].rgb, avgColor, 0.35);
 
   // Directional chromatic aberration at depth boundaries
   let depthRange = abs(depths[8] - depths[0]);
@@ -144,9 +180,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let caOffset = dir * aberration * boundaryStrength * 4.0 * invRes;
 
   let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + caOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let g = sortedColor.g;
   let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - caOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-  var color = vec3<f32>(r, g, b);
+  var color = vec3<f32>(r, sortedColor.g, b);
 
   // Temporal feedback for slot chaining
   let prev = textureLoad(dataTextureC, pixel, 0);

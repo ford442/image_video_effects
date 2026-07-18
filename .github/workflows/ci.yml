@@ -210,23 +210,25 @@ jobs:
     - name: Install naga CLI
       run: |
         rustup update stable
-        cargo install naga-cli
-    
+        cargo install naga-cli --version 30.0.0
+
     - name: Run WGSL pre-commit gate on changed files
       run: python3 scripts/wgsl_precommit_gate.py --base origin/main
 
-    - name: Audit orphan shader definitions
-      run: python3 scripts/audit_orphan_shader_defs.py
+    - name: Audit shader catalog hygiene (defs ↔ WGSL)
+      run: python3 scripts/audit_orphan_shader_defs.py --base origin/main
 
     - name: Workgroup gate unit tests
-      run: python3 scripts/test_workgroup_gate.py
+      run: |
+        python3 scripts/test_workgroup_gate.py
+        python3 scripts/test_authoring_gates.py
 
     - name: Publish gate summary
       if: always()
       run: |
         echo "## WGSL pre-commit gate" >> "$GITHUB_STEP_SUMMARY"
         if [ -f reports/wgsl_precommit_report.json ]; then
-          python3 -c "import json; r=json.load(open('reports/wgsl_precommit_report.json')); print(f\"- Files: {r['total']} passed {r['passed']} failed {r['failed']} warnings {r.get('warnings', 0)}\"); print(f\"- naga available: {r.get('naga_available', True)}\")" >> "$GITHUB_STEP_SUMMARY"
+          python3 -c "import json; r=json.load(open('reports/wgsl_precommit_report.json')); print(f\"- Files: {r['total']} passed {r['passed']} failed {r['failed']} workgroup_errors {r.get('workgroup_failures', 0)}\"); print(f\"- naga available: {r.get('naga_available', True)}\")" >> "$GITHUB_STEP_SUMMARY"
         else
           echo "- No precommit report generated" >> "$GITHUB_STEP_SUMMARY"
         fi

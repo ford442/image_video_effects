@@ -2,7 +2,24 @@
 
 ## The Blessed Build Path
 
-The canonical way to build the Pixelocity WASM renderer is:
+### Full production build (`npm run build`)
+
+CRA copies `public/` into the output **during** `craco build`, so WASM artifacts must exist **before** that step. The `prebuild` hook runs this sequence **once**:
+
+```
+wasm:build → generate_shader_lists → build:manifest → craco build
+```
+
+`npm run build` invokes `craco build` only — it does **not** call `wasm:build` again. A second compile would be redundant: artifacts are already in `public/wasm/` and are copied into `build/wasm/` by CRA.
+
+```bash
+npm run build                    # full path (requires emsdk, or see SKIP below)
+SKIP_WASM_BUILD=1 npm run build  # headless VMs: skip emcc, use committed public/wasm/
+```
+
+### WASM-only compile (`npm run wasm:build`)
+
+The canonical way to rebuild the C++ WASM renderer alone is:
 
 ```bash
 npm run wasm:build
@@ -34,9 +51,12 @@ npm run wasm:build
 
 ## Build Failures: CI vs Local
 
-**CI (hardened):** the dedicated `wasm` job installs emsdk, runs `npm run wasm:build`,
-validates artifacts, runs WASM unit smoke tests, and uploads artifacts for downstream jobs.
-Downstream jobs (`test`, `test-wasm-e2e`) download those artifacts and set `SKIP_WASM_BUILD=1`.
+**CI — `wasm` job:** installs emsdk, runs `npm run wasm:build` **once**, then
+`npm run wasm:validate`, WASM Jest smoke tests, and uploads artifacts.
+
+**CI — `test` / `test-wasm-e2e` jobs:** download WASM artifacts, set
+`SKIP_WASM_BUILD=1`, then run `npm run build`. `prebuild` sees the skip and does not
+recompile; committed/downloaded `public/wasm/` is copied into `build/` by CRA.
 
 **Local:** `wasm_renderer/build.sh` **fails (exit 1) when `emcc` is missing**. Install emsdk
 or use committed artifacts with an explicit skip:
@@ -45,7 +65,16 @@ or use committed artifacts with an explicit skip:
 SKIP_WASM_BUILD=1 npm run build   # headless VMs without emsdk
 ```
 
-Run `npm run wasm:validate` after any C++ or bridge change.
+### When `wasm:validate` runs
+
+| Context | Command |
+|---------|---------|
+| After local C++ or bridge change | `npm run wasm:validate` |
+| CI `wasm` job | immediately after `wasm:build` |
+| CI `test` job | after `npm run build` (confirms artifacts survived the bundle) |
+| Not run automatically | `npm start` / dev server (uses existing `public/wasm/`) |
+
+Run `npm run wasm:validate` manually after any C++ or bridge change.
 
 1. **No swallowed compile errors**: `package.json` no longer wraps `wasm:build` in
    `2>/dev/null || echo` — if `emcc` is present and compilation fails, the error
@@ -153,7 +182,7 @@ hardened init/format/limits ([#817](https://github.com/ford442/image_video_effec
 **Still open (not #817–#822):**
 
 - App never calls `setInputSource` — generative mode unreachable for WASM *(partially addressed 2026-06-20)*
-- Live-browser smoke on edge GPUs not yet formally verified
+- Live-browser smoke on edge GPUs — informal only; promotion tracking in [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md)
 
 Tracking table:
 [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md#c-solidification-tracking-2026-06).
@@ -166,3 +195,12 @@ Tracking table:
 - **Skip (explicit)**: `SKIP_WASM_BUILD=1` for machines without emsdk using committed artifacts
 - **Artifact layout**: [`wasm_renderer/ARTIFACTS.md`](./wasm_renderer/ARTIFACTS.md)
 - **Roadmap**: See [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) and [#799 roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584)
+
+### Known Workarounds
+
+#### TextDecoder and Resizable ArrayBuffers
+When compiling with recent Emscripten versions and enabling WebGPU (or certain `emcc` memory flags), the WebAssembly heap may be backed by a resizable `ArrayBuffer`.
+Certain browser implementations of `TextDecoder.decode()` throw a `TypeError` if provided a view into a resizable `ArrayBuffer`. This causes an initialization failure in the JS glue code (specifically within Emscripten's `UTF8ToString` or `UTF8ArrayToString`).
+
+**Solution:**
+The `wasm_renderer/build.sh` script explicitly includes `-sGROWABLE_ARRAYBUFFERS=0` while preserving `-sALLOW_MEMORY_GROWTH=1`. This prevents the memory's underlying ArrayBuffer from being marked resizable, completely bypassing the browser's `TextDecoder` exceptions without requiring runtime JS monkey-patches.

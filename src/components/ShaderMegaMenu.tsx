@@ -96,12 +96,17 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
     const ordered: Array<{ key: string; label: string; items: ShaderMegaMenuOption[] }> = [];
     for (const key of CATEGORY_ORDER) {
       if (map.has(key)) {
-        ordered.push({ key, label: CATEGORY_LABELS[key] || key, items: map.get(key)! });
+        const items = [...map.get(key)!].sort((a, b) => a.name.localeCompare(b.name));
+        ordered.push({ key, label: CATEGORY_LABELS[key] || key, items });
       }
     }
     for (const [key, items] of map.entries()) {
       if (!CATEGORY_ORDER.includes(key)) {
-        ordered.push({ key, label: CATEGORY_LABELS[key] || key, items });
+        ordered.push({
+          key,
+          label: CATEGORY_LABELS[key] || key,
+          items: [...items].sort((a, b) => a.name.localeCompare(b.name)),
+        });
       }
     }
     return ordered;

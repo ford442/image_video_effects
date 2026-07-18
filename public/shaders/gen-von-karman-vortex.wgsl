@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Von Kármán Vortex Street — Upgraded
+//  Von Kármán Vortex Street — Phase B Audio-Reactive Upgrade
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, curl-noise,
 //            domain-warp, analytic-velocity, temporal-feedback,
@@ -8,9 +8,9 @@
 //  Description: Analytic point-vortex street with divergence-free
 //    curl-noise perturbation and fBM domain warping. Velocity is
 //    computed analytically from the vortex model rather than by
-//    finite differences. Bass drives shedding speed and micro-
-//    turbulence; mids control trail decay. Mouse positions the
-//    obstacle.
+//    finite differences. Envelope-smoothed bass drives shedding speed
+//    and brightness pulses; mids morph separation and color cycling;
+//    treble adds high-frequency sparkle. Mouse positions the obstacle.
 // ═══════════════════════════════════════════════════════════════════
 //  zoom_params: x=flow_speed, y=vortex_separation, z=vortex_spacing, w=hue
 
@@ -40,6 +40,12 @@ const TAU: f32     = 6.28318530718;
 const INV_TAU: f32 = 0.15915494309;
 const N_VTX: i32   = 10;
 const CORE_R: f32  = 0.04;
+
+// ── Audio envelope smoothing ───────────────────────────────────────
+fn bass_env(prev: f32, bass: f32) -> f32 {
+    let k = select(0.15, 0.8, bass > prev);
+    return mix(prev, bass, k);
+}
 
 // ── Hash & noise library ──────────────────────────────────────────
 fn hash21(p: vec2<f32>) -> f32 {
@@ -139,17 +145,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time   = u.config.x;
     let mouse  = u.zoom_config.yz;
 
-    let bass   = plasmaBuffer[0].x;
-    let mids   = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
-    let depth  = textureLoad(readDepthTexture, pixel, 0).r;
-    let prev   = textureLoad(dataTextureC, pixel, 0);
+    let rawBass = plasmaBuffer[0].x;
+    let mids    = plasmaBuffer[0].y;
+    let treble  = plasmaBuffer[0].z;
+    let depth   = textureLoad(readDepthTexture, pixel, 0).r;
+    let prev    = textureLoad(dataTextureC, pixel, 0);
+
+    // Envelope-smoothed bass for coherent musical pulses
+    let bass = bass_env(extraBuffer[0], rawBass);
+    if (gid.x == 0u && gid.y == 0u) {
+        extraBuffer[0] = bass;
+    }
 
     // UI parameters
     let U        = (0.20 + u.zoom_params.x * 0.50) * (1.0 + bass * 0.6);
-    let h        = 0.10 + u.zoom_params.y * 0.25 + mids * 0.05;
+    let h        = 0.10 + u.zoom_params.y * 0.25 + mids * 0.05 + bass * 0.03;
     let spacing  = 0.35 + u.zoom_params.z * 0.40;
-    let hueShift = u.zoom_params.w;
+    let hueShift = fract(u.zoom_params.w + time * 0.02 * mids);
 
     // Aspect-correct physical coordinates; mouse drives obstacle position
     let aspect  = res.x / res.y;
@@ -160,7 +172,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Divergence-free curl-noise perturbation + fBM domain warp
     let noiseCoord = physPos * 2.5 + vec2<f32>(time * 0.13, -time * 0.07);
     let turb       = curl2D(noiseCoord, time * 0.2);
-    let warpStr    = 0.015 + mids * 0.025 + bass * 0.015;
+    let warpStr    = 0.015 + mids * 0.025 + bass * 0.015 + rawBass * 0.01;
     let warpedPos  = physPos + turb * warpStr + vec2<f32>(
         fbm(physPos * 3.0 + vec2<f32>(time * 0.05, 1.3), 3) - 0.5,
         fbm(physPos * 3.0 + vec2<f32>(5.2, -time * 0.04), 3) - 0.5
@@ -186,12 +198,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var col = streamline_color(psi * 0.05 + spd * 0.02, hueShift, spd);
     col *= lineGlow * obstMask;
 
-    // Speed halo around vortex cores
+    // Speed halo around vortex cores, pulsed by envelope bass
     let speedHalo = clamp(spd * 0.12, 0.0, 1.0);
     col = clamp(col + vec3<f32>(speedHalo * 0.25 * (1.0 + bass)), vec3<f32>(0.0), vec3<f32>(1.0));
 
+    // Treble sparkle: high-frequency glitter along fast streamlines
+    let sparkle = hash21(uv01 * 1000.0 + time * 30.0) * treble * speedHalo * 0.5;
+    col = clamp(col + vec3<f32>(sparkle), vec3<f32>(0.0), vec3<f32>(1.0));
+
     // Temporal feedback: decaying trails blended with current frame
-    let decay = 0.96 - mids * 0.03;
+    let decay = 0.96 - mids * 0.03 - bass * 0.01;
     col = mix(prev.rgb * decay, col, 0.18 + bass * 0.12);
 
     // Chromatic aberration radiating from screen centre, driven by bass + depth

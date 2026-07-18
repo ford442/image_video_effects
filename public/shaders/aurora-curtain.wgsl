@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Aurora Curtain — Visualist Upgrade
+//  Aurora Curtain — Advanced Alpha Compositor Upgrade
 //  Category: generative
 //  Features: generative, audio-reactive, mouse-driven, chapman-layer,
 //            kelvin-helmholtz, temporal-flow, upgraded-rgba, oklab-mix,
 //            blackbody-stars, mie-scatter, ign-dither, fresnel-rim,
-//            chromatic-aberration, two-tone-atmosphere
+//            chromatic-aberration, two-tone-atmosphere, alpha-layered,
+//            depth-aware, luminance-key, edge-preserve
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
@@ -134,6 +135,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var hdr = vec3<f32>(0.0);
   var excitation = 0.0;
   var bloom = 0.0;
+  var edgeField = 0.0;
 
   let cRed = vec3<f32>(0.9, 0.2, 0.15);
   let cGreen = vec3<f32>(0.2, 0.95, 0.35);
@@ -156,6 +158,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = abs(p.y - curtainY);
     let thickness = curtainWidth * (0.65 + fi * 0.09) * (1.0 + bass * 0.22);
     let glow = smoothstep(thickness, 0.0, dist);
+    let rim = pow(1.0 - clamp(dist / (thickness * 1.5), 0.0, 1.0), 2.0);
 
     var layerColor: vec3<f32>;
     if (altitude < 0.35) { layerColor = mixOkLab(cRed, cGreen, altitude / 0.35); }
@@ -169,13 +172,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tempShift = blackbodyRGB(2800.0 + bass * 5200.0);
     layerColor = mix(layerColor, layerColor * tempShift * 1.45, colorShift * 0.35);
 
-    let rim = pow(1.0 - clamp(dist / (thickness * 1.5), 0.0, 1.0), 2.0);
     layerColor = layerColor + layerColor * rim * 0.4 * (1.0 + treble);
 
     let layerIntensity = glow * (0.55 + fi * 0.08) * (1.0 + bass * 0.4);
     hdr = hdr + layerColor * layerIntensity * 1.6;
     excitation = excitation + layerIntensity;
     bloom = bloom + glow * (0.35 + bass * 0.25);
+    edgeField = edgeField + rim * layerIntensity;
   }
 
   let starHash = hash21(floor(uv01 * 900.0));
@@ -197,7 +200,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let decay = 0.96 - p4 * 0.03;
   let trail = mix(prev.rgb * decay, hdr, 0.22 + bass * 0.08);
-  hdr = hdr + trail * 0.25;
+  hdr = hdr + trail * 0.25 * prev.a;
 
   hdr = hue_preserve_clamp(hdr, 7.0);
   let mapped = acesToneMap(hdr * 1.25);
@@ -207,10 +210,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let caStr = 0.004 * (1.0 + bass) * excitation + depth * 0.001;
   color = genChromaticShift(color, uv01, caStr, time);
 
-  let transparency = 1.0 - smoothstep(0.0, 0.45, uv01.y) * 0.28;
-  let alpha = clamp(excitation * transparency * (0.65 + depth * 0.35), 0.0, 0.95);
+  // Advanced Alpha Compositor: combine depth-layered, luminance-key, edge-preserve, and sky-fade.
+  let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let lumaAlpha = smoothstep(0.03, 0.20, luma);
+  let depthAlpha = mix(0.32, 1.0, depth);
+  let edgeAlpha = clamp(excitation * 1.1 + edgeField * 0.35, 0.0, 1.0);
+  let skyFade = 1.0 - smoothstep(0.0, 0.5, uv01.y) * 0.32;
 
-  textureStore(writeTexture, pixel, vec4<f32>(color * alpha, alpha));
-  textureStore(dataTextureA, pixel, vec4<f32>(color * alpha, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(excitation * 0.45, 0.0, 0.0, 0.0));
+  var alpha = mix(lumaAlpha, depthAlpha, 0.4) * edgeAlpha * skyFade;
+  alpha = clamp(alpha, 0.0, 0.98);
+
+  let premul = color * alpha;
+  textureStore(writeTexture, pixel, vec4<f32>(premul, alpha));
+  textureStore(dataTextureA, pixel, vec4<f32>(premul, alpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(alpha * 0.5 + depth * 0.25, 0.0, 0.0, 0.0));
 }

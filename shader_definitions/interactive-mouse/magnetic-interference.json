@@ -2,7 +2,7 @@
   "id": "magnetic-interference",
   "name": "Magnetic Interference",
   "url": "shaders/magnetic-interference.wgsl",
-  "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, audio-reactive bass envelope, temporal feedback smearing, depth-aware compositing, chromatic aberration, and mouse-velocity trail drag.",
+  "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, canonical bass envelope, beat-pulsed magnetic field, mids-driven swirl and chromatic rotation, treble sparkle overlay, audio-amplified ripples, temporal feedback smearing, depth-aware compositing, chromatic aberration, and mouse-velocity trail drag.",
   "params": [
     {
       "id": "strength",
@@ -36,6 +36,9 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "bass-pulse",
+    "mids-morph",
+    "treble-sparkle",
     "ripple-integration",
     "upgraded-rgba",
     "depth-aware",

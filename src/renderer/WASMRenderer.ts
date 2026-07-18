@@ -1,9 +1,18 @@
-import { Renderer, RendererConfig, ShaderSlotRenderer } from './Renderer';
+import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
 import { InputSource } from './types';
+import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
+import {
+  computeInternalDimensions,
+  INTERNAL_RENDER_RESOLUTION,
+  snapRenderScale,
+} from '../config/performancePolicy';
 
 type SlotMode = 'chained' | 'parallel';
+
+/** FFT bins mirrored in extraBuffer[5..132] (matches TS WebGPURenderer). */
+const AUDIO_FFT_BINS = 128;
 
 /**
  * Diagnostic information from the WASM renderer.
@@ -52,6 +61,12 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   private maxRenderErrorsBeforeStopping = 10;
   private lastFrameDataUrl = '';
   private recording = false;
+  private recordingMode: 'loop' | 'continuous' = 'loop';
+  private resolutionScale = 1.0;
+  private audioBass = 0;
+  private audioMid = 0;
+  private audioTreble = 0;
+  private readonly audioFreqBins = new Float32Array(AUDIO_FFT_BINS);
 
   constructor(config: RendererConfig) {
     this.config = config;
@@ -78,6 +93,9 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
 
       this.initialized = true;
       this.startTime = performance.now() / 1000;
+      if (this.resolutionScale !== 1.0) {
+        this.setResolutionScale(this.resolutionScale);
+      }
       this.startRenderLoop();
 
       console.log('✅ WASM Renderer initialized successfully');
@@ -201,6 +219,43 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     WasmBridge.resizeCanvas(newWidth, newHeight);
   }
 
+  /**
+   * Set internal render resolution scale (0.25–1.0) relative to INTERNAL_RENDER_RESOLUTION.
+   * Recreates WASM GPU textures via ResizeCanvas.
+   */
+  setResolutionScale(scale: number): void {
+    const snapped = snapRenderScale(scale);
+    if (snapped === this.resolutionScale && this.initialized) return;
+    this.resolutionScale = snapped;
+    if (!this.initialized) return;
+
+    const { width, height } = computeInternalDimensions(INTERNAL_RENDER_RESOLUTION, snapped);
+    this.resizeCanvas(width, height);
+  }
+
+  getResolutionScale(): {
+    scale: number;
+    full: { w: number; h: number };
+    scaled: { w: number; h: number };
+    pixelReduction: string;
+  } {
+    const full = INTERNAL_RENDER_RESOLUTION;
+    const dims = computeInternalDimensions(full, this.resolutionScale);
+    const fullPixels = full * full;
+    const scaledPixels = dims.width * dims.height;
+    return {
+      scale: dims.scale,
+      full: { w: full, h: full },
+      scaled: { w: dims.width, h: dims.height },
+      pixelReduction: `${Math.round((1 - scaledPixels / fullPixels) * 100)}%`,
+    };
+  }
+
+  /** Adaptive quality is driven by RendererManager; kept for API parity. */
+  setAdaptiveQuality(_enabled: boolean, _targetFps = 60): void {
+    // no-op — RendererManager AdaptivePerformanceController owns WASM scale changes
+  }
+
   // ── Phase 2: Screenshot capture ───────────────────────────────────────────
 
   /**
@@ -306,12 +361,36 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     WasmBridge.uploadImageData(imageData.data, w, h);
   }
 
+  /** Renderer interface alias — matches WebGPURenderer.loadImage signature. */
+  async loadImage(url: string): Promise<string> {
+    await this.loadImageFromURL(url);
+    return url;
+  }
+
   updateAudioData(bass: number, mid: number, treble: number): void {
+    this.audioBass = bass;
+    this.audioMid = mid;
+    this.audioTreble = treble;
     WasmBridge.updateAudioData(bass, mid, treble);
   }
 
   updateAudioFrequencyBins(bins: Float32Array): void {
+    const len = Math.min(bins.length, AUDIO_FFT_BINS);
+    this.audioFreqBins.set(bins.subarray(0, len), 0);
+    if (len < AUDIO_FFT_BINS) {
+      this.audioFreqBins.fill(0, len);
+    }
     WasmBridge.updateAudioFrequencyBins(bins);
+  }
+
+  /** Mirrors WebGPURenderer.getAudioData for external consumers. */
+  getAudioData(): { bass: number; mid: number; treble: number; freqBins: Float32Array } {
+    return {
+      bass: this.audioBass,
+      mid: this.audioMid,
+      treble: this.audioTreble,
+      freqBins: this.audioFreqBins,
+    };
   }
 
   getSupportsDeepWorkgroup(): boolean {
@@ -323,7 +402,7 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     return WasmBridge.getSlotState(index);
   }
 
-  getGPUTimings(): { parallelTime: number; chainedTime: number; totalTime: number; available: boolean } {
+  getGPUTimings(): GPUTimings {
     return WasmBridge.getGPUTimings();
   }
 
@@ -371,8 +450,16 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
     WasmBridge.setRecording(isRecording);
   }
 
-  setRecordingMode(_mode: 'loop' | 'continuous'): void {
-    // WASM path uses MediaRecorder; mode is handled at the App layer.
+  setRecordingMode(mode: 'loop' | 'continuous'): void {
+    this.recordingMode = mode;
+  }
+
+  getRecordingMode(): 'loop' | 'continuous' {
+    return this.recordingMode;
+  }
+
+  isRecording(): boolean {
+    return this.recording || WasmBridge.isRecordingActive();
   }
 
   updateMouse(x: number, y: number): void {

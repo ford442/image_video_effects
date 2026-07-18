@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-03T00:07:59.587627",
+  "timestamp": "2026-07-17T08:37:59.232112",
   "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": false,
   "total": 1,
@@ -7,9 +7,10 @@
   "failed": 0,
   "skipped": 0,
   "warnings": 0,
+  "workgroup_blocking": 0,
   "results": [
     {
-      "file": "public/shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
+      "file": "public/shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -17,6 +18,7 @@
       "naga_error": null,
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
+      "workgroup_errors": [],
       "workgroup_warnings": [],
       "ok": true
     }

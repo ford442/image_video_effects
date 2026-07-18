@@ -1,14 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Magnetic Interference - Interactivist Upgrade
+//  Magnetic Interference - Phase B Audio-Reactivity Upgrade
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, ripple-integration,
-//            depth-aware, chromatic-aberration, aces-tone-map,
-//            temporal-feedback, velocity-trails
+//  Features: mouse-driven, audio-reactive, bass-pulse, mids-morph,
+//            treble-sparkle, ripple-integration, depth-aware,
+//            chromatic-aberration, aces-tone-map, temporal-feedback,
+//            velocity-trails
 //  Complexity: Medium
-//  Upgraded: 2026-06-14
-//  Transform: Added depth-aware compositing, ACES tone mapping,
-//             chromatic aberration, and mouse-velocity trail drag.
-//             Switched feedback reads to pixel-exact textureLoad.
+//  Upgraded: 2026-07-08
+//  Transform: Tightened bass envelope to canonical attack/release,
+//             added beat-pulsed magnetic field, mids-driven swirl,
+//             rotating chromatic aberration, and treble sparkle.
+//             Ripple interference is now audio-amplified.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -35,10 +37,23 @@ struct Uniforms {
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
-// ═══ Audio envelope (smooth attack/release) ═══
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-    let k = select(release, attack, bass > prev);
+// ═══ Audio envelope (canonical smooth attack/release) ═══
+fn bass_env(prev: f32, bass: f32) -> f32 {
+    let k = select(0.15, 0.8, bass > prev);
     return mix(prev, bass, k);
+}
+
+// ═══ 2D hash for treble sparkle ═══
+fn hash21(p: vec2<f32>) -> f32 {
+    let n = sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453;
+    return fract(n);
+}
+
+// ═══ Rotate vector by angle ═══
+fn rotate(v: vec2<f32>, a: f32) -> vec2<f32> {
+    let c = cos(a);
+    let s = sin(a);
+    return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
 }
 
 // ═══ Gravity well (mouse attraction) ═══
@@ -60,8 +75,8 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 // ═══ Chromatic shift for generative / displaced output ═══
-fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32, time: f32) -> vec3<f32> {
-    let angle = atan2(uv.y - 0.5, uv.x - 0.5);
+fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32, angleOffset: f32) -> vec3<f32> {
+    let angle = atan2(uv.y - 0.5, uv.x - 0.5) + angleOffset;
     let shift = vec2<f32>(cos(angle), sin(angle)) * strength;
     return vec3<f32>(
         color.r * (1.0 + shift.x * 0.8),
@@ -88,7 +103,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ─── Audio envelope read from feedback pixel (0,0) ───
     let prevEnv = textureLoad(dataTextureC, vec2<i32>(0), 0).r;
-    let env = bass_env(prevEnv, bass, 0.8, 0.15);
+    let env = bass_env(prevEnv, bass);
 
     // ─── Mouse velocity from persistent storage ───
     let prevMouse = vec2<f32>(extraBuffer[0], extraBuffer[1]);
@@ -100,23 +115,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aberration = u.zoom_params.z;
     let scanline_intensity = u.zoom_params.w;
 
+    // ─── Audio-derived modulators ───
+    let bassPulse  = 1.0 + env * 0.4 + bass * 0.3;
+    let midsRot    = mids * 0.5;
+    let trebleGlow = treble * 0.35;
+
     let aspect = res.x / res.y;
     let uv_corrected = vec2<f32>(uv.x * aspect, uv.y);
     let mouse_corrected = vec2<f32>(mouse.x * aspect, mouse.y);
     let dist = distance(uv_corrected, mouse_corrected);
 
-    // Mouse X modulates radius; speed stretches it
-    let effectiveRadius = radius * (1.0 + mouse.x * 0.3 + mouseSpeed * 5.0);
-    let audioStrength = strength * (1.0 + env * 0.3 + mids * 0.2);
+    // Mouse X modulates radius; speed stretches it; bass pulses it
+    let effectiveRadius = radius * (1.0 + mouse.x * 0.3 + mouseSpeed * 5.0) * (1.0 + env * 0.2);
+    let audioStrength = strength * bassPulse * (1.0 + mids * 0.2);
     let audioScanlines = scanline_intensity * (1.0 + env * 0.5);
 
-    // ─── Single magnetic displacement field ───
+    // ─── Magnetic displacement field with mids-driven swirl ───
     let pull = audioStrength * 0.05 / (dist * dist + 0.01);
     let influence = smoothstep(effectiveRadius, 0.0, dist);
     let dir = uv - mouse;
-    let magneticDisp = dir * pull * influence;
+    let swirl = rotate(dir, midsRot + env * 0.2);
+    let magneticDisp = swirl * pull * influence;
 
-    // ─── Ripple system integration for shockwave interference ───
+    // ─── Ripple system integration (audio-amplified shockwaves) ───
     var rippleDisp = vec2<f32>(0.0);
     let rippleCount = u32(u.config.y);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
@@ -125,7 +146,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (rElapsed > 0.0 && rElapsed < 3.0) {
             let rDist = distance(uv, ripple.xy);
             let rWave = sin(rDist * 40.0 - rElapsed * 8.0) * exp(-rElapsed * 1.5);
-            rippleDisp += (uv - ripple.xy) * rWave * smoothstep(0.3, 0.0, rDist) * 0.5;
+            let rAmp = 0.5 * (1.0 + env * 0.5 + bass * 0.3);
+            rippleDisp += (uv - ripple.xy) * rWave * smoothstep(0.3, 0.0, rDist) * rAmp;
         }
     }
 
@@ -144,7 +166,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ─── Temporal feedback for smearing ───
     let prevColor = textureLoad(dataTextureC, pixel, 0).rgb;
     let fieldMag = length(totalDisp) * 20.0;
-    let feedbackMix = tentAlpha(fieldMag) * (0.1 + mouseSpeed * 2.0);
+    let feedbackMix = tentAlpha(fieldMag) * (0.1 + mouseSpeed * 2.0 + env * 0.15);
     let feedbackColor = mix(baseColor, prevColor, feedbackMix);
 
     // Spectral tint via mix, not per-channel sampling
@@ -156,18 +178,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scanline_mask = 1.0 - (scanline * 0.5 + 0.5) * audioScanlines;
     var color = tintedColor * scanline_mask;
 
+    // ─── Treble sparkle overlay ───
+    let sparkle = hash21(uv * 1200.0 + vec2<f32>(time * 80.0));
+    let sparkleMask = smoothstep(0.88, 0.98, sparkle) * trebleGlow;
+    color += vec3<f32>(sparkleMask * 0.8);
+
     // ─── Chromatic aberration + ACES tone map ───
     let caStr = 0.003 * (1.0 + env) + depth * 0.001;
-    color = genChromaticShift(color, uv, caStr * aberration, time);
-    color = acesToneMap(color * (0.9 + mids * 0.2));
+    let caAngle = time * 0.3 + midsRot;
+    color = genChromaticShift(color, uv, caStr * aberration, caAngle);
+    color = acesToneMap(color * (0.9 + mids * 0.2 + env * 0.1));
 
     // ─── Depth-aware compositing (stronger in background) ───
     let fog = 1.0 - exp(-depth * 1.5);
     color = mix(baseColor, color, fog * 0.5 + 0.5);
 
-    // ─── Semantic alpha = field intensity * distance falloff * depth ───
+    // ─── Semantic alpha = field intensity * distance falloff * depth + sparkle ───
     let fieldMagnetic = length(magneticDisp) * 10.0;
-    let alpha = clamp(fieldMagnetic * influence + env * 0.2 + depth * 0.15, 0.0, 1.0);
+    let alpha = clamp(fieldMagnetic * influence + env * 0.2 + depth * 0.15 + sparkleMask * 0.5, 0.0, 1.0);
 
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));

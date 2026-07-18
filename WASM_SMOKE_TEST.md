@@ -374,3 +374,16 @@ If WASM smoke tests fail, please collect:
 5. **Steps to reproduce** the failure
 
 File an issue with the label `wasm` and attach this information.
+
+## Troubleshooting: TextDecoder Errors
+
+**Symptom:**
+Playwright tests (or the browser console) show a fatal error during WASM initialization:
+`TypeError: Failed to execute 'decode' on 'TextDecoder': The provided ArrayBuffer value must not be resizable`
+
+**Cause:**
+Emscripten attempts to decode strings directly from the WASM heap. If the heap is backed by a resizable `ArrayBuffer` (which can happen depending on memory growth flags or WebGPU configurations), `TextDecoder` may reject it in certain browser implementations (like Chromium).
+
+**Fix/Verification:**
+This is mitigated by compiling the WASM module with `-sGROWABLE_ARRAYBUFFERS=0` in `build.sh`.
+If you encounter this error, verify that the compiled WASM module output (`pixelocity_wasm.js`) was built with this flag, and ensure you do not have cached artifacts overriding the build pipeline.

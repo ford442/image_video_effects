@@ -111,6 +111,27 @@ def check_workgroup_size_convention(content: str) -> list[dict]:
     return issues
 
 
+def split_workgroup_issues(issues: list[dict]) -> tuple[list[dict], list[dict]]:
+    """
+    Split workgroup convention issues into blocking vs warning.
+
+    Note: as of the 2-arg permit change, check_workgroup_size_convention only
+    returns issues for <2 args (1-arg forms). 2-arg literals are accepted.
+    - Blocking: reserved for <2 in legacy split paths (currently unused for standard issues).
+    - Warning: 1-arg override/expression forms (valid WGSL, non-standard convention).
+    """
+    blocking: list[dict] = []
+    warnings: list[dict] = []
+    for issue in issues:
+        if issue["arg_count"] == 1:
+            warnings.append(issue)
+        elif issue["arg_count"] < 3:
+            blocking.append(issue)
+        else:
+            warnings.append(issue)
+    return blocking, warnings
+
+
 def fix_literal_two_arg_workgroup_size(content: str) -> tuple[str, int]:
     """
     Auto-fix only unambiguous literal (int, int) -> (int, int, 1).

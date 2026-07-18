@@ -761,7 +761,8 @@ class TestRescanShaders:
         assert result["uploaded_count"] == 2
         assert result["uploaded_files"] == ["alpha.json", "beta.json"]
         assert run_mock.call_count == 1
-        assert run_mock.call_args.args[0] == ["node", "scripts/generate_shader_lists.js"]
+        assert run_mock.call_args.args[0][:2] == ["node", "scripts/generate_shader_lists.js"]
+        assert any(arg.startswith("--base-url=") for arg in run_mock.call_args.args[0])
         assert "shader-lists/alpha.json" in blobs
         assert "shader-lists/beta.json" in blobs
 

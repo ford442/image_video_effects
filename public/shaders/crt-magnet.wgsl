@@ -1,9 +1,13 @@
-// CRT Magnet - Optimized Edition
+// CRT Magnet - Phase B Hybrid Edition
 // Category: retro-glitch
-// Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, aces-tone-map
+// Techniques: crt-magnet distortion + feedback echo + audio-driven palette + sdf mask
+// Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, aces-tone-map,
+//           feedback-echo, audio-palette, sdf-mask
 // Complexity: Medium
 // Transform: canonical noise/fbm, 16x16 workgroup, unified envelope/mouse state,
-//            branchless aperture grille, hex-bloom, ACES tone map.
+//            branchless aperture grille, hex-bloom, beam-purity RGB separation,
+//            ACES tone map, temporal feedback echo, audio-driven cosine palette,
+//            domain-warped FBM, and smooth SDF mask.
 
 // ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
@@ -46,6 +50,11 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 {
   return s;
 }
 
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+  let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+  return mix(b, a, h) - k * h * (1.0 - h);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
@@ -74,6 +83,16 @@ fn curl2(p: vec2<f32>, t: f32) -> vec2<f32> {
   let n3 = fbm(p + vec2<f32>(0.0, e) + t, 4);
   let n4 = fbm(p - vec2<f32>(0.0, e) + t, 4);
   return vec2<f32>((n3 - n4) / (2.0 * e), (n2 - n1) / (2.0 * e));
+}
+
+fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
+  let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t * 0.1), 3),
+                     fbm(p + vec2<f32>(5.2, 1.3 + t * 0.1), 3));
+  return fbm(p + 4.0 * q + t * 0.2, 4);
+}
+
+fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
+  return a + b * cos(TAU * (c * t + d));
 }
 
 fn luma(rgb: vec3<f32>) -> f32 { return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722)); }
@@ -113,14 +132,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dVec = uv - smoothMouse;
   let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
 
-  let fbmWarp = fbm(uv * 8.0 + time * 0.3, 4) * 0.3 + 0.7;
+  // SDF mask: combine mouse field with an orbiting audio blob.
+  let blobPos = smoothMouse + vec2<f32>(cos(time * 0.7), sin(time * 0.5)) * 0.15 * (0.3 + env);
+  let blobDist = length(vec2<f32>((uv - blobPos).x * aspect, (uv - blobPos).y));
+  let sdf = smin(dist, blobDist, 0.25);
+  let sdfMask = 1.0 - smoothstep(0.0, distortionRadius * 0.6 + 0.15, sdf);
+
+  let fbmWarp = warpedFBM(uv * 6.0, time * 0.3) * 0.3 + 0.7;
   let radius = distortionRadius * 0.4 + 0.05;
   let falloff = exp(-dist * dist / (radius * radius * fbmWarp));
 
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthAtten = mix(0.7, 1.0, depth);
 
-  let field = magnetStrength * falloff * depthAtten * (1.0 + env * 2.0);
+  let field = magnetStrength * falloff * sdfMask * depthAtten * (1.0 + env * 2.0);
 
   let curl = curl2(uv * 6.0 + smoothMouse * 3.0, time * 0.2);
   let displacement = dVec * field * 4.0 + curl * field * 0.4;
@@ -153,6 +178,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let bloomThreshold = smoothstep(0.6, 1.0, luma(color));
   color += bloom * bloomThreshold * bloomIntensity * (2.0 + mids * 1.5) + vec3<f32>(treble * 0.05);
+
+  // Audio-driven palette: shift hues based on bass envelope and mids.
+  let pal = palette(luma(color) * 0.7 + env * 0.6 + mids * 0.2 + time * 0.03,
+                    vec3<f32>(0.5), vec3<f32>(0.5),
+                    vec3<f32>(1.0, 1.0, 0.7), vec3<f32>(0.0, 0.33, 0.67));
+  color = mix(color, color * pal * 1.2, clamp(field * 0.8 + env * 0.3, 0.0, 0.55));
+
+  // Temporal feedback echo from the previous frame's color buffer.
+  let echoUV = clamp(uv - displacement * 0.6, vec2<f32>(0.0), vec2<f32>(1.0));
+  let echo = textureSampleLevel(dataTextureC, u_sampler, echoUV, 0.0).rgb;
+  color = mix(color, echo, 0.2 * field + 0.04 * env);
 
   let stripe = f32(global_id.x % 3u);
   let grille = mix(mix(vec3<f32>(0.8, 0.8, 1.15), vec3<f32>(0.8, 1.15, 0.8), step(1.0, stripe)),

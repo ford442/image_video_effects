@@ -7,7 +7,9 @@ checks on ONLY the .wgsl files that changed against a base ref (or an explicit
 file list). Skips known template files and vertex/fragment render shaders.
 
 Workgroup convention: compute shaders must use @workgroup_size with 3 explicit
-dimensions (e.g. 16, 16, 1). Two-arg forms are reported as [WARN] (non-blocking).
+dimensions (e.g. 16, 16, 1). Two-arg forms are **blocking**; single-arg
+override/expression forms are **warnings** (valid WGSL, non-standard here).
+dimensions (e.g. 16, 16, 1). Two-arg forms fail the gate (use --fix locally).
 
 Usage:
     python scripts/wgsl_precommit_gate.py
@@ -35,6 +37,7 @@ from bindgroup_checker import (  # noqa: E402
     check_workgroup_size_convention,
     fix_literal_two_arg_workgroup_size,
     parse_shader,
+    split_workgroup_issues,
 )
 
 PROJECT_ROOT = _SCRIPTS_DIR.parent
@@ -130,6 +133,7 @@ def run_gate(paths: list[Path], *, skip_naga: bool = False) -> dict:
         "failed": 0,
         "skipped": 0,
         "warnings": 0,
+        "workgroup_blocking": 0,
         "results": [],
     }
 
@@ -147,6 +151,7 @@ def run_gate(paths: list[Path], *, skip_naga: bool = False) -> dict:
             "naga_error": None,
             "bindgroup_status": None,
             "bindgroup_errors": [],
+            "workgroup_errors": [],
             "workgroup_warnings": [],
             "ok": False,
         }
@@ -170,9 +175,13 @@ def run_gate(paths: list[Path], *, skip_naga: bool = False) -> dict:
             continue
 
         wg_issues = check_workgroup_size_convention(content)
-        entry["workgroup_warnings"] = wg_issues
-        if wg_issues:
-            report["warnings"] += len(wg_issues)
+        wg_blocking, wg_warnings = split_workgroup_issues(wg_issues)
+        entry["workgroup_errors"] = wg_blocking
+        entry["workgroup_warnings"] = wg_warnings
+        if wg_blocking:
+            report["workgroup_blocking"] += len(wg_blocking)
+        if wg_warnings:
+            report["warnings"] += len(wg_warnings)
 
         if skip_naga or not naga_available():
             entry["naga_skipped"] = True
@@ -192,7 +201,10 @@ def run_gate(paths: list[Path], *, skip_naga: bool = False) -> dict:
         entry["bindgroup_status"] = bg.get("status", "unknown")
         entry["bindgroup_errors"] = bg.get("errors", [])
 
-        if naga_ok and bg.get("status") == "compatible":
+        workgroup_ok = len(wg_blocking) == 0
+        bindgroup_ok = bg.get("status") == "compatible"
+
+        if naga_ok and bindgroup_ok and workgroup_ok:
             entry["ok"] = True
             report["passed"] += 1
         else:
@@ -211,6 +223,7 @@ def print_report(report: dict) -> None:
     failed = report["failed"]
     skipped = report["skipped"]
     warnings = report["warnings"]
+    wg_blocking = report.get("workgroup_blocking", 0)
 
     print("=" * 70)
     print("WGSL PRECOMMIT GATE")
@@ -219,7 +232,7 @@ def print_report(report: dict) -> None:
         print("[WARN] naga unavailable — skipped naga validation (bindgroup + workgroup still run)")
     print(
         f"Files checked: {total}  |  Passed: {passed}  |  Failed: {failed}  |  "
-        f"Skipped: {skipped}  |  Workgroup warnings: {warnings}"
+        f"Skipped: {skipped}  |  Workgroup errors: {wg_blocking}  |  Warnings: {warnings}"
     )
 
     for entry in report["results"]:
@@ -228,10 +241,20 @@ def print_report(report: dict) -> None:
             print(f"  ⏭  {file} — skipped ({entry['skip_reason']})")
             continue
 
+        for wg in entry.get("workgroup_errors", []):
+            print(
+                f"  [ERROR] {file} — @workgroup_size has {wg['arg_count']} arg(s) "
+                f"(need 3 explicit dims): {wg['match']}"
+            )
+
         for wg in entry.get("workgroup_warnings", []):
             print(
-                f"  [WARN] {file} — @workgroup_size has {wg['arg_count']} arg(s) "
-                f"(need 3): {wg['match']}"
+                f"  [ERROR] {file} — @workgroup_size has {wg['arg_count']} arg(s) "
+                f"(need 3 explicit dims): {wg['match']}"
+            )
+            print(
+                f"         Fix: python3 scripts/wgsl_precommit_gate.py "
+                f"--files {file} --fix"
             )
 
         if entry["ok"]:
@@ -240,11 +263,13 @@ def print_report(report: dict) -> None:
             continue
 
         details = []
+        if entry.get("workgroup_errors"):
+            details.append("workgroup convention")
         if entry.get("naga_ok") is False:
             details.append("naga failed")
         if entry["bindgroup_status"] != "compatible":
             details.append(f"bindgroup {entry['bindgroup_status']}")
-        print(f"  ❌ {file} — {', '.join(details)}")
+        print(f"  ❌ {file} — {', '.join(details) or 'failed'}")
         if entry["naga_error"]:
             for line in entry["naga_error"].splitlines()[:8]:
                 print(f"      {line}")

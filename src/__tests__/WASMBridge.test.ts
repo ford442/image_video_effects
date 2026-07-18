@@ -39,7 +39,7 @@ jest.mock('../wasm/wasm_bridge.js', () => {
     getFPS: jest.fn().mockReturnValue(0),
     getSupportsDeepWorkgroup: jest.fn().mockReturnValue(false),
     getSlotState: jest.fn().mockReturnValue({ shaderId: null, enabled: false, mode: 'chained' }),
-    getGPUTimings: jest.fn().mockReturnValue({ parallelTime: 0, chainedTime: 0, totalTime: 0, available: false }),
+    getGPUTimings: jest.fn().mockReturnValue({ parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable' }),
     setRecording: jest.fn(),
     isRecordingActive: jest.fn().mockReturnValue(false),
     captureFrameDataUrl: jest.fn().mockResolvedValue(''),
@@ -86,7 +86,7 @@ function makeMockBridge() {
     getFPS: jest.fn().mockReturnValue(0),
     getSupportsDeepWorkgroup: jest.fn().mockReturnValue(false),
     getSlotState: jest.fn().mockReturnValue({ shaderId: null, enabled: false, mode: 'chained' }),
-    getGPUTimings: jest.fn().mockReturnValue({ parallelTime: 0, chainedTime: 0, totalTime: 0, available: false }),
+    getGPUTimings: jest.fn().mockReturnValue({ parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable' }),
     setRecording: jest.fn(),
     isRecordingActive: jest.fn().mockReturnValue(false),
     captureFrameDataUrl: jest.fn().mockResolvedValue(''),
@@ -148,8 +148,15 @@ describe('WASMBridge API surface', () => {
     expect(b.loadShaderFromURL('id', '/shaders/test.wgsl')).toEqual(expect.objectContaining({ then: expect.any(Function) }));
   });
 
-  it('captureFrame() returns a Promise', () => {
-    expect(b.captureFrame()).toEqual(expect.objectContaining({ then: expect.any(Function) }));
+  it('getGPUTimings() returns wall-clock timingSource when unavailable', () => {
+    const timings = b.getGPUTimings();
+    expect(timings).toEqual(expect.objectContaining({
+      parallelTime: expect.any(Number),
+      chainedTime: expect.any(Number),
+      totalTime: expect.any(Number),
+      available: false,
+      timingSource: 'unavailable',
+    }));
   });
 
   it('startRecording() returns a Promise', () => {

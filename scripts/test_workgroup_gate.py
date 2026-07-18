@@ -68,7 +68,7 @@ def test_gen_showcase_nebula_core_if_present():
     if not target.exists():
         return
     issues = check_workgroup_size_convention(target.read_text(encoding="utf-8"))
-    assert any(i["arg_count"] == 2 for i in issues)
+    assert issues == []
 
 
 def main() -> int:

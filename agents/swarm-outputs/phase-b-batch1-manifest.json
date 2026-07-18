@@ -1,0 +1,50 @@
+[
+  {
+    "id": "gen-von-karman-vortex",
+    "agent_role": "Audio-Reactivity",
+    "prompt_length": 13709,
+    "prompt_file": "/root/image_video_effects/swarm-tasks/prompts/gen-von-karman-vortex.md"
+  },
+  {
+    "id": "gen-barnsley-fern",
+    "agent_role": "Advanced-Hybrid",
+    "prompt_length": 12071,
+    "prompt_file": "/root/image_video_effects/swarm-tasks/prompts/gen-barnsley-fern.md"
+  },
+  {
+    "id": "gen-sierpinski-tetrahedron",
+    "agent_role": "Multi-Pass-Architect",
+    "prompt_length": 12750,
+    "prompt_file": "/root/image_video_effects/swarm-tasks/prompts/gen-sierpinski-tetrahedron.md"
+  },
+  {
+    "id": "supernova-core",
+    "agent_role": "Advanced-Alpha",
+    "prompt_length": 14522,
+    "prompt_file": "/root/image_video_effects/swarm-tasks/prompts/supernova-core.md"
+  },
+  {
+    "id": "aurora-curtain",
+    "agent_role": "Advanced-Alpha",
+    "prompt_length": 14939,
+    "prompt_file": "/root/image_video_effects/swarm-tasks/prompts/aurora-curtain.md"
+  },
+  {
+    "id": "sand-dunes",
+    "agent_role": "Audio-Reactivity",
+    "prompt_length": 15415,
+    "prompt_file": "/root/image_video_effects/swarm-tasks/prompts/sand-dunes.md"
+  },
+  {
+    "id": "gen-feedback-echo-chamber",
+    "agent_role": "Multi-Pass-Architect",
+    "prompt_length": 12454,
+    "prompt_file": "/root/image_video_effects/swarm-tasks/prompts/gen-feedback-echo-chamber.md"
+  },
+  {
+    "id": "hyperbolic-crystal-symbiosis",
+    "agent_role": "Advanced-Hybrid",
+    "prompt_length": 15089,
+    "prompt_file": "/root/image_video_effects/swarm-tasks/prompts/hyperbolic-crystal-symbiosis.md"
+  }
+]

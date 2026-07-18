@@ -8,6 +8,7 @@ import asyncio
 import logging
 import hashlib
 import time
+import base64
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field as dc_field
@@ -73,6 +74,7 @@ STORAGE_MAP = {
     "note": {"folder": "notes/", "index": "notes/_notes.json"},
     "location": {"folder": "locations/", "index": "locations/_locations.json"},
     "shader": {"folder": "shaders/", "index": "shaders/_shaders.json"},
+    "preset_pack": {"folder": "preset_packs/", "index": "preset_packs/_preset_packs.json"},
     "brainfuck": {
         "folder": "brainfuck/",
         "index": "brainfuck/_brainfuck.json"
@@ -475,6 +477,72 @@ def _write_json_sync(blob_path, data):
         json.dumps(data),
         content_type='application/json'
     )
+
+# --- SHARED CHAIN VALIDATION (mirrors src/services/layerChainShare.ts) ---
+MAX_SHARED_SLOTS = 6
+SHARED_CHAIN_VERSION = 1
+
+
+def _decode_shared_chain(chain_str: str) -> Optional[dict]:
+    """Decode and validate a SharedChain wire string.
+
+    The wire format is base64url(minified JSON) where the JSON bytes are
+    UTF-8. Returns the parsed chain dict if valid, otherwise None.
+    Mirrors encodeChain/decodeChain in src/services/layerChainShare.ts.
+    """
+    if not chain_str:
+        return None
+
+    # base64url → standard base64 padding
+    padded = chain_str.replace("-", "+").replace("_", "/")
+    pad_len = (-len(padded)) % 4
+    if pad_len:
+        padded += "=" * pad_len
+
+    try:
+        raw_bytes = base64.b64decode(padded, validate=True)
+        json_str = raw_bytes.decode("utf-8")
+        raw = json.loads(json_str)
+    except Exception:
+        return None
+
+    if not isinstance(raw, dict):
+        return None
+    if raw.get("v") != SHARED_CHAIN_VERSION:
+        return None
+    slots = raw.get("slots")
+    if not isinstance(slots, list):
+        return None
+    if len(slots) > MAX_SHARED_SLOTS:
+        return None
+
+    valid_slots = []
+    for slot in slots:
+        if not isinstance(slot, dict):
+            return None
+        shader_id = slot.get("shaderId")
+        if shader_id is not None and not isinstance(shader_id, str):
+            return None
+        params = slot.get("params")
+        if params is not None:
+            if not isinstance(params, dict):
+                return None
+            for key, value in params.items():
+                if not isinstance(key, str):
+                    return None
+                if not isinstance(value, (int, float)):
+                    return None
+        enabled = slot.get("enabled")
+        if enabled is not None and not isinstance(enabled, bool):
+            return None
+        mode = slot.get("mode")
+        if mode is not None and mode not in ("chained", "parallel"):
+            return None
+        valid_slots.append(slot)
+
+    return {"v": SHARED_CHAIN_VERSION, "slots": valid_slots}
+
+
 # --- ENDPOINTS ---
 @app.get("/")
 def home():
@@ -665,6 +733,21 @@ class MetaPatch(BaseModel):
     last_played: Optional[str] = None
     coordinate: Optional[int] = None  # NEW
     params: Optional[List[ShaderParam]] = None  # Shader parameter definitions
+
+class PresetPackPublishPayload(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    description: Optional[str] = Field("", max_length=500)
+    author: Optional[str] = Field("Anonymous", max_length=60)
+    chain: str = Field(..., min_length=1)
+
+class PresetPackMeta(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = ""
+    author: Optional[str] = "Anonymous"
+    date: str
+    chain: str
+    play_count: Optional[int] = 0
 
 class CoordinateSyncPayload(BaseModel):
     coordinates: dict
@@ -1715,6 +1798,130 @@ async def upload_shader(
             return {"success": True, "id": shader_id, "meta": meta}
         except Exception as e:
             raise HTTPException(500, f"Upload failed: {str(e)}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+#  PRESET PACKS (community-published shader chains)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/preset-packs")
+async def publish_preset_pack(payload: PresetPackPublishPayload):
+    """Publish a shared shader chain as a community preset pack.
+
+    The `chain` field must be a valid SharedChain wire string as produced by
+    encodeChain() in src/services/layerChainShare.ts. Undecodable or malformed
+    chains are rejected with 400.
+    """
+    decoded = _decode_shared_chain(payload.chain)
+    if decoded is None:
+        raise HTTPException(400, "Invalid shared chain: could not decode or validate")
+
+    pack_id = str(uuid.uuid4())
+    now = datetime.now().strftime("%Y-%m-%d")
+    entry = {
+        "id": pack_id,
+        "name": payload.name.strip(),
+        "description": (payload.description or "").strip(),
+        "author": (payload.author or "Anonymous").strip() or "Anonymous",
+        "date": now,
+        "chain": payload.chain,
+        "play_count": 0,
+    }
+
+    config = STORAGE_MAP["preset_pack"]
+    async with get_resource_lock("preset_pack"):
+        try:
+            index = await run_io(_read_json_sync, config["index"])
+            if not isinstance(index, list):
+                index = []
+            index.insert(0, entry)
+            await run_io(_write_json_sync, config["index"], index)
+            await clear_cache_for_type("preset_pack")
+            return {"success": True, "id": pack_id, "pack": entry}
+        except Exception as e:
+            logging.error(f"Failed to publish preset pack: {e}")
+            raise HTTPException(500, f"Failed to publish preset pack: {str(e)}")
+
+
+@app.get("/api/preset-packs")
+async def list_preset_packs(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """List published preset packs, newest first."""
+    config = STORAGE_MAP["preset_pack"]
+    try:
+        index = await run_io(_read_json_sync, config["index"])
+        if not isinstance(index, list):
+            index = []
+
+        # Ensure defaults for older entries
+        for pack in index:
+            pack.setdefault("play_count", 0)
+
+        total = len(index)
+        page = index[offset : offset + limit]
+        return {"total": total, "limit": limit, "offset": offset, "packs": page}
+    except Exception as e:
+        logging.error(f"Failed to list preset packs: {e}")
+        raise HTTPException(500, f"Failed to list preset packs: {str(e)}")
+
+
+@app.get("/api/preset-packs/{pack_id}")
+async def get_preset_pack(pack_id: str):
+    """Fetch a single preset pack by id."""
+    config = STORAGE_MAP["preset_pack"]
+    try:
+        index = await run_io(_read_json_sync, config["index"])
+        if not isinstance(index, list):
+            raise HTTPException(500, "Preset pack index corrupted")
+
+        entry = next((p for p in index if p.get("id") == pack_id), None)
+        if not entry:
+            raise HTTPException(404, "Preset pack not found")
+
+        entry.setdefault("play_count", 0)
+        return entry
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Failed to fetch preset pack {pack_id}: {e}")
+        raise HTTPException(500, f"Failed to fetch preset pack: {str(e)}")
+
+
+@app.post("/api/preset-packs/{pack_id}/play")
+async def record_preset_pack_play(pack_id: str):
+    """Increment the play count for a preset pack."""
+    config = STORAGE_MAP["preset_pack"]
+    now = datetime.now().isoformat()
+
+    async with get_resource_lock("preset_pack"):
+        try:
+            index = await run_io(_read_json_sync, config["index"])
+            if not isinstance(index, list):
+                raise HTTPException(500, "Preset pack index corrupted")
+
+            entry = next((p for p in index if p.get("id") == pack_id), None)
+            if not entry:
+                raise HTTPException(404, "Preset pack not found")
+
+            entry["play_count"] = (entry.get("play_count") or 0) + 1
+            entry["last_played"] = now
+
+            await run_io(_write_json_sync, config["index"], index)
+            await clear_cache_for_type("preset_pack")
+
+            return {
+                "success": True,
+                "id": pack_id,
+                "play_count": entry["play_count"],
+                "last_played": now,
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logging.error(f"Failed to record play for preset pack {pack_id}: {e}")
+            raise HTTPException(500, f"Failed to record play: {str(e)}")
 
 
 @app.post("/api/admin/bulk-upload-shaders")

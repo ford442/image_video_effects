@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: pixel-stretch-cross
-- **Agent Role**: Interactivist
+- **Agent Role**: Advanced-Alpha
 - **Current Size**: 3163 bytes
-- **Target Line Count**: ~180 lines
+- **Target Line Count**: ~220 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -42,10 +42,12 @@ struct Uniforms {
 ## Current WGSL Source
 ```wgsl
 // ═══════════════════════════════════════════════════════════════════
-//  Pixel Stretch Cross — May 2026 Batch D Upgrade
-//  Category: distortion
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
-//  Upgraded: 2026-05-10
+//  Pixel Stretch Cross — Interactivist Upgrade
+//  Category: interactive-mouse / distortion
+//  Features: mouse-driven, audio-reactive, depth-aware,
+//            temporal-feedback, click-shockwave, aces-tone-map,
+//            upgraded-rgba
+//  Upgraded: 2026-06-14
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -69,77 +71,143 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn get_mouse() -> vec2<f32> {
-    var mouse = u.zoom_config.yz;
-    if (mouse.x < 0.0) { return vec2<f32>(0.5, 0.5); }
-    return mouse;
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+const GOLDEN_ANGLE: f32 = 2.39996322972865332;
+
+// ── Tone mapping ──────────────────────────────────────────────────
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-@compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
+// ── Audio envelope (attack/release smoothed bass) ─────────────────
+fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
+    let k = select(release, attack, bass > prev);
+    return mix(prev, bass, k);
+}
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+// ── Hash & fBm for organic jitter ─────────────────────────────────
+fn hash21(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
+        mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x),
+        u.y
+    );
+}
+
+fn fbm(p: vec2<f32>, oct: i32) -> f32 {
+    var s = 0.0; var a = 0.5; var f = 1.0;
+    for (var i: i32 = 0; i < oct; i = i + 1) {
+        s += a * valueNoise(p * f);
+        f *= 2.0;
+        a *= 0.5;
+    }
+    return s;
+}
+
+// ── 2D rotation ───────────────────────────────────────────────────
+fn rot2(a: f32) -> mat2x2<f32> {
+    let c = cos(a); let s = sin(a);
+    return mat2x2<f32>(c, -s, s, c);
+}
+
+// ── Safe mouse UV (fallback to center before first input) ─────────
+fn get_mouse() -> vec2<f32> {
+    return select(vec2<f32>(0.5, 0.5), u.zoom_config.yz, u.zoom_config.y >= 0.0);
+}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let pixel = vec2<i32>(global_id.xy);
+    let res = u.config.zw;
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+
+    let uv = vec2<f32>(pixel) / res;
     let mouse = get_mouse();
     let time = u.config.x;
+    let mouseDown = u.zoom_config.w > 0.5;
 
     let hStretch = u.zoom_params.x * 0.3;
     let vStretch = u.zoom_params.y * 0.3;
     let depthInfluence = u.zoom_params.z;
     let turbulence = u.zoom_params.w;
 
-    // Audio reactivity
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let prev = textureLoad(dataTextureC, pixel, 0);
 
-    // Depth-aware stretch: greater depth = less stretch
+    // Smoothed bass envelope stored in dataTextureA.r
+    let smoothBass = bass_env(prev.r, bass, 0.8, 0.15);
+    let stretchScale = 1.0 + smoothBass * 0.6;
     let depthFactor = 1.0 - depth * depthInfluence;
 
-    // Bass → stretch magnitude
-    let stretchScale = 1.0 + bass * 0.5;
+    // Mouse distance gravity well: closer pixels stretch more toward mouse
+    let toMouse = uv - mouse;
+    let centerDist = length(toMouse);
+    let gravity = 1.0 / (1.0 + centerDist * 4.0);
+
+    // Global rotation drifts with mids, creating emergent morphing
+    let driftAngle = mids * 0.6 * sin(time * 0.7) + turbulence * fbm(uv * 4.0 + time * 0.1, 3);
+    let rot = rot2(driftAngle);
 
     var accum = vec3<f32>(0.0);
     var weight = 0.0;
     var maxStretch = 0.0;
 
-    // Fibonacci disk sampling for multi-direction stretch
-    let numSamples = 16;
-    let goldenAngle = 2.39996322972865332;
+    let numSamples: i32 = 16;
 
     for (var i: i32 = 0; i < numSamples; i = i + 1) {
         let fi = f32(i) + 0.5;
         let r = sqrt(fi / f32(numSamples));
-        let theta = fi * goldenAngle;
+        let theta = fi * GOLDEN_ANGLE;
 
-        let dir = vec2<f32>(cos(theta), sin(theta));
+        let baseDir = vec2<f32>(cos(theta), sin(theta));
+        // Pull direction toward mouse as a gravity well
+        let attracted = normalize(mix(baseDir, normalize(toMouse + vec2<f32>(0.0001)), gravity * 0.4));
+        // Organic per-ray jitter
+        let jitter = fbm(uv * 10.0 + time * 0.2 + f32(i) * 0.17, 2) * turbulence;
+        let dir = normalize(rot * attracted + jitter * vec2<f32>(cos(theta * 3.0), sin(theta * 3.0)));
+
         let aniso = mix(hStretch, vStretch, abs(dir.y));
-        let stretchBand = aniso * stretchScale * depthFactor;
+        let stretchBand = aniso * stretchScale * depthFactor * (1.0 + gravity * 0.5);
 
-        let toMouse = uv - mouse;
         let parallel = dot(toMouse, dir);
         let perp = toMouse - dir * parallel;
         let perpDist = length(perp);
 
-        let inBand = 1.0 - smoothstep(0.0, stretchBand * (1.0 + turbulence * 0.5), perpDist);
+        let bandWidth = stretchBand * (1.0 + turbulence * 0.5);
+        let inBand = 1.0 - smoothstep(0.0, bandWidth, perpDist);
 
         if (inBand > 0.01) {
             let decay = 10.0 + turbulence * 10.0 + mids * 5.0;
             let alongDist = abs(parallel);
             let factor = exp(-alongDist * decay) * inBand;
 
-            let sampleUv = mouse + dir * parallel;
-            let sampleColor = textureSampleLevel(readTexture, u_sampler, sampleUv, 0.0).rgb;
+            // Click shockwave: expanding ring from mouse while held
+            let ring = fract(time * 2.0 + f32(i) * 0.02);
+            let ringDist = abs(centerDist - ring * 0.7);
+            let clickPulse = select(0.0, exp(-ringDist * 45.0) * 2.0, mouseDown);
 
-            accum += sampleColor * factor;
-            weight += factor;
-            maxStretch = max(maxStretch, factor);
+            let sampleUv = mouse + dir * parallel;
+            let clampedUv = clamp(sampleUv, vec2<f32>(0.0), vec2<f32>(1.0));
+            let sampleColor = textureSampleLevel(readTexture, u_sampler, clampedUv, 0.0).rgb;
+
+            let contribution = factor * (1.0 + clickPulse);
+            accum += sampleColor * contribution;
+            weight += contribution;
+            maxStretch = max(maxStretch, contribution);
         }
     }
 
@@ -149,16 +217,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = mix(color, smearColor, min(weight * 2.0, 1.0));
     }
 
-    // Effect-mask alpha: high stretch = slight transparency
-    let alpha = src.a * (1.0 - maxStretch * 0.25);
-
     // Center hot spot with treble shimmer
-    let centerDist = length(uv - mouse);
     let hotSpot = exp(-centerDist * 18.0) * 0.3 * (hStretch + vStretch) * stretchScale * (1.0 + treble * 0.5);
     color += src.rgb * hotSpot;
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // Temporal feedback: blend current frame into decaying trail
+    let decay = 0.92 - turbulence * 0.05;
+    let trail = mix(prev.rgb * decay, color, 0.25 + smoothBass * 0.15);
+
+    // Subtle exposure boost driven by smoothed bass, then ACES tone map
+    let exposure = 0.95 + smoothBass * 0.15;
+    color = acesToneMap(trail * exposure);
+
+    // Semantic alpha: source alpha modulated by effect intensity and trail presence
+    let alpha = src.a * (1.0 - maxStretch * 0.2) * (0.85 + smoothBass * 0.15);
+
+    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(smoothBass, 0.0, 0.0, prev.a * 0.97 + 0.03));
 }
 
 ```
@@ -169,11 +245,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "pixel-stretch-cross",
   "name": "Pixel Stretch Cross",
   "url": "shaders/pixel-stretch-cross.wgsl",
-  "description": "Multi-direction pixel stretch using Fibonacci disk sampling, depth-aware attenuation, bass-driven magnitude, and effect-masked alpha transparency.",
+  "description": "Multi-direction pixel stretch using Fibonacci disk sampling, mouse gravity well, depth-aware attenuation, bass-envelope magnitude, click shockwaves, temporal trails, and effect-masked alpha.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "depth-aware",
+    "temporal-feedback",
+    "click-shockwave",
+    "aces-tone-map",
     "upgraded-rgba"
   ],
   "params": [
@@ -212,7 +291,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     "fibonacci",
     "depth-aware",
     "stretch",
-    "distortion"
+    "distortion",
+    "interactive-mouse"
   ]
 }
 
@@ -221,115 +301,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 ---
 
 ## Agent Specialization
-# Agent Role: The Interactivist
+# Agent Role: Advanced Alpha Compositor (Phase B)
 
 ## Identity
-You are **The Interactivist**, a shader architect focused on input reactivity, feedback loops, and emergent behavior.
+You are the **Advanced Alpha Compositor**. Your job is to replace simple or hardcoded alpha with sophisticated RGBA logic that improves compositing in the 3-slot chain.
 
-## Upgrade Toolkit
+## Alpha Modes (choose the best fit)
+1. **Depth-Layered** — far pixels fade via `depth` sample.
+2. **Edge-Preserve** — edges opaque, smooth interiors transparent.
+3. **Accumulative** — feedback systems build alpha like paint.
+4. **Physical Transmittance** — Beer-Lambert `exp(-density * thickness)`.
+5. **Effect Intensity** — alpha scales with displacement/warp magnitude.
+6. **Luminance Key** — dark pixels become transparent.
 
-### Mouse Interaction
-- Position tracking → Gravity wells / attractors
-- Click events → Spawn bursts / shockwaves
-- Velocity tracking → Motion blur trails
-- Multi-touch → Multi-agent systems
-
-### Audio Reactivity
-- Bass pulse → Scale/brightness modulation
-- Mid frequencies → Pattern morphing speed
-- Treble → Sparkle/additive particles
-- FFT buckets → Multi-band color splitting
-
-### Video Feedback
-- Static overlay → Optical flow distortion
-- Fixed transparency → Alpha blending based on depth
-- Simple masking → Luma-keyed particle spawn
-- Direct color → Motion-vector advection
-
-### Depth Integration
-- 2D effects → Parallax depth separation
-- Uniform blur → Depth-of-field bokeh
-- Flat shading → Ambient occlusion darkening
-- Screen space → Volumetric depth fog
-
-#### Depth-aware compositing for slot-2/3 effects
+## Quick Patterns
 ```wgsl
-let z   = textureLoad(readDepthTexture, gid.xy, 0).r;
-let fog = 1.0 - exp(-z * u.zoom_params.z);   // exponential depth fog
-let out = mix(srcColor, fxColor, fog);        // effect strengthens with depth
+let depth = textureLoad(readDepthTexture, gid.xy, 0).r;
+let depthAlpha = mix(0.4, 1.0, depth);
+
+let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+let lumaAlpha = smoothstep(0.05, 0.25, luma);
+
+let alpha = mix(lumaAlpha, depthAlpha, u.zoom_params.z);
+alpha = clamp(alpha, 0.1, 1.0);
 ```
-Keeps foreground subjects crisp while letting the effect "breathe" in the background — essential when this shader runs in slot 2 or 3 of the chain.
-
-### Feedback Loops
-- Single pass → Temporal accumulation
-- Static state → Ping-pong buffer feedback (dataTextureA ↔ dataTextureB)
-- Linear time → Recursive subdivision
-- Fixed camera → Smooth follow with lag
-- Direct value → Exponential smoothing: `smoothed = mix(smoothed, target, 0.05)`
-
-### Emergent Dynamics Patterns
-```wgsl
-// Spring-damper for smooth mouse follow (prevents jitter)
-fn spring(current: vec2<f32>, target: vec2<f32>, velocity: ptr<function,vec2<f32>>, k: f32, damping: f32, dt: f32) -> vec2<f32> {
-    let force = (target - current) * k - *velocity * damping;
-    *velocity = *velocity + force * dt;
-    return current + *velocity * dt;
-}
-
-// Attractor / gravity well (mouse as gravitational source)
-fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
-    let d = wellPos - pos;
-    let dist2 = dot(d, d) + 0.01;  // avoid singularity
-    return normalize(d) * strength / dist2;
-}
-
-// Beat-reactive pulse with decay
-fn beatPulse(bass: f32, decay: f32, time: f32) -> f32 {
-    return bass * exp(-decay * fract(time * 2.0));  // 2Hz beat assumption
-}
-```
-
-### Audio Binding Reference
-```
-plasmaBuffer[0].x = bass    (20–250 Hz)
-plasmaBuffer[0].y = mids    (250–4000 Hz)
-plasmaBuffer[0].z = treble  (4000–20000 Hz)
-plasmaBuffer[0].w = overall RMS amplitude
-```
-
-#### Attack/release audio envelope (preferred over raw `plasmaBuffer[0].x`)
-```wgsl
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-    let k = select(release, attack, bass > prev);
-    return mix(prev, bass, k);
-}
-```
-Store previous value in `dataTextureA.r` across frames. Eliminates the "strobe every frame" look that raw `plasmaBuffer[0].x` produces. Typical values: `attack = 0.8`, `release = 0.15`.
-
-Reactive patterns:
-- Bass → scale, brightness pulse, warp radius
-- Mids → rotation speed, color shift, pattern morphing
-- Treble → sparkle particles, grain, edge sharpness
-- RMS → overall opacity, global scale breathing
-
-## Quality Checklist
-- [ ] Mouse affects at least 2 parameters
-- [ ] Audio drives at least 1 visual element (use `bass_env` decay, not raw `plasmaBuffer[0].x`)
-- [ ] Video input influences the effect
-- [ ] Temporal feedback creates trails/smoothing
-- [ ] Emergent behavior (not 1:1 input mapping)
-- [ ] Alpha encodes interaction intensity or trail age
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it alive and reactive.
-- Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
-- Do NOT modify the 13-binding header or the Uniforms struct.
-- `plasmaBuffer[0].x` = bass, `.y` = mids, `.z` = treble. Use them.
-- `u.zoom_config.yz` = mouse position (0-1). `u.zoom_config.w` = mouse down.
-- **Alpha must carry semantic meaning** — trail age, interaction intensity, or depth mask.
-
-## Performance Constraint
-This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
+- Remove hardcoded `vec4<f32>(color, 1.0)` unless the shader is intentionally opaque.
+- Update JSON `features` to include `depth-aware` or `alpha-layered` when applicable.
+- Do NOT modify the 13-binding header or `Uniforms` struct.
+- Workgroup size stays `@workgroup_size(16, 16, 1)`.
+- Return exactly one ```` ```wgsl ```` block.
 
 
 ---
@@ -338,7 +340,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 180 lines (±20%).
+4. Ensure the upgraded shader is roughly 220 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

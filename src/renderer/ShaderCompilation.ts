@@ -46,6 +46,58 @@ export function parseWorkgroupSize(wgslSource: string): { x: number; y: number }
 }
 
 /**
+ * Which optional per-frame texture copies a shader actually needs.
+ * Drives skipping of dataTexA/B→C feedback copies and the history-ring copy
+ * in the render loop when the bound shader never touches those resources.
+ */
+export interface ShaderBindingUsage {
+  writesDataA: boolean;
+  writesDataB: boolean;
+  readsDataC: boolean;
+  usesHistory: boolean;
+}
+
+/** Conservative usage assumed when a shader's source was never analyzed. */
+export const CONSERVATIVE_BINDING_USAGE: ShaderBindingUsage = {
+  writesDataA: true,
+  writesDataB: true,
+  readsDataC: true,
+  usesHistory: true,
+};
+
+function bindingVarName(wgsl: string, binding: number): string | null {
+  const m = wgsl.match(
+    new RegExp(`@group\\(0\\)\\s*@binding\\(${binding}\\)\\s*var(?:<[^>]*>)?\\s+([A-Za-z_][A-Za-z0-9_]*)`),
+  );
+  return m ? m[1] : null;
+}
+
+function usedBeyondDeclaration(wgsl: string, binding: number): boolean {
+  const hasBinding = new RegExp(`@group\\(0\\)\\s*@binding\\(${binding}\\)`).test(wgsl);
+  if (!hasBinding) return false;
+  const name = bindingVarName(wgsl, binding);
+  // Declared but unparseable name: assume used (conservative).
+  if (!name) return true;
+  const refs = wgsl.match(new RegExp(`\\b${name}\\b`, 'g'));
+  return (refs?.length ?? 0) > 1;
+}
+
+/**
+ * Statically determine which feedback resources a shader uses, by variable
+ * name bound at each binding slot (names may be aliased, so the declaration
+ * is parsed rather than assuming canonical names). Errs on the side of
+ * "used" whenever the source is ambiguous.
+ */
+export function analyzeShaderBindings(wgsl: string): ShaderBindingUsage {
+  return {
+    writesDataA: usedBeyondDeclaration(wgsl, 7),
+    writesDataB: usedBeyondDeclaration(wgsl, 8),
+    readsDataC: usedBeyondDeclaration(wgsl, 9),
+    usesHistory: usedBeyondDeclaration(wgsl, 13),
+  };
+}
+
+/**
  * Fallback compute shader used when the requested shader fails to compile
  * Simple pass-through with slight red tint to indicate fallback mode
  */

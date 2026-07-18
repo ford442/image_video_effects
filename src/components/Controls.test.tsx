@@ -1,8 +1,12 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import Controls from './Controls';
+import { ControlsContainer as Controls } from "./controls/ControlsContainer";
 import { ShaderEntry, SlotParams } from '../renderer/types';
+
+beforeEach(() => {
+    localStorage.clear();
+});
 
 const mockSetMode = jest.fn();
 const mockSetShaderCategory = jest.fn();
@@ -178,3 +182,88 @@ test('filters slot mega-menu to non-generative or generative shaders based on ef
     expect(screen.queryByText('Paint Flow')).not.toBeInTheDocument();
 });
 
+
+
+describe('Live Control panel', () => {
+    const baseProps = {
+        modes: ['rain', 'none', 'none'] as string[],
+        setMode: mockSetMode,
+        activeSlot: 0,
+        setActiveSlot: mockSetActiveSlot,
+        slotParams: mockSlotParams,
+        updateSlotParam: mockUpdateSlotParam,
+        shaderCategory: 'image' as const,
+        setShaderCategory: mockSetShaderCategory,
+        onNewImage: () => {},
+        autoChangeEnabled: false,
+        setAutoChangeEnabled: () => {},
+        autoChangeDelay: 10,
+        setAutoChangeDelay: () => {},
+        onLoadModel: () => {},
+        isModelLoaded: false,
+        availableModes,
+        inputSource: 'image' as const,
+        setInputSource: () => {},
+        videoList: [],
+        selectedVideo: '',
+        setSelectedVideo: () => {},
+        isMuted: false,
+        setIsMuted: () => {},
+        onUploadImageTrigger: () => {},
+        onUploadVideoTrigger: () => {},
+        isAiVjMode: false,
+        onToggleAiVj: () => {},
+        aiVjStatus: 'idle' as const,
+        onTriggerNextTransition: jest.fn(),
+        onRandomizeSlot: jest.fn(),
+        onSetSlotParam: jest.fn(),
+    };
+
+    test('expands and captures a key binding', async () => {
+        render(<Controls {...baseProps} />);
+
+        fireEvent.click(screen.getByText('🎛️ Live Control'));
+        expect(screen.getByText('Arm Key')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Arm Key'));
+        expect(screen.getByText('Press a key…')).toBeInTheDocument();
+
+        fireEvent.keyDown(window, { key: 't' });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Captured:/)).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('Save Binding'));
+
+        await waitFor(() => {
+            expect(screen.getByText(/Bindings \(1\)/)).toBeInTheDocument();
+        });
+
+        expect(screen.getByText('t')).toBeInTheDocument();
+        expect(screen.getByText(/trigger transition/)).toBeInTheDocument();
+    });
+
+    test('clears a saved binding', async () => {
+        render(<Controls {...baseProps} />);
+
+        fireEvent.click(screen.getByText('🎛️ Live Control'));
+        fireEvent.click(screen.getByText('Arm Key'));
+        fireEvent.keyDown(window, { key: 'r' });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Captured:/)).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('Save Binding'));
+        await waitFor(() => {
+            expect(screen.getByText(/Bindings \(1\)/)).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getAllByText('✕')[0]);
+
+        await waitFor(() => {
+            expect(screen.queryByText(/Bindings/)).not.toBeInTheDocument();
+        });
+    });
+});

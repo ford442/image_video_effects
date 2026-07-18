@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: gen-feedback-echo-chamber
-- **Agent Role**: Interactivist
+- **Agent Role**: Multi-Pass-Architect
 - **Current Size**: 1370 bytes
-- **Target Line Count**: ~180 lines
+- **Target Line Count**: ~200 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -232,10 +232,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 ## Current JSON Definition
 ```json
 {
-  "id": "gen-feedback-echo-chamber",
   "name": "Feedback Echo Chamber",
-  "url": "shaders/gen-feedback-echo-chamber.wgsl",
-  "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending",
+  "category": "generative",
   "tags": [
     "temporal",
     "echo",
@@ -250,176 +248,89 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     "mouse-reactive",
     "shockwave"
   ],
-  "features": [
-    "aces-tone-map",
-    "advanced-alpha",
-    "audio-driven",
-    "audio-reactive",
-    "chromatic-aberration",
-    "depth-aware",
-    "domain-warp",
-    "gravity-well",
-    "mouse-reactive",
-    "multi-pass",
-    "psychedelic-palette",
-    "shockwave",
-    "temporal",
-    "upgraded-rgba"
+  "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending",
+  "workgroup_size": [
+    16,
+    16,
+    1
   ],
-  "params": [
+  "updatedParams": [
     {
-      "id": "echoCount",
+      "index": 0,
       "name": "Echo Count",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.x"
+      "step": 0.01
     },
     {
-      "id": "decayRate",
+      "index": 1,
       "name": "Decay Rate",
       "default": 0.5,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.y"
+      "step": 0.01
     },
     {
-      "id": "spacing",
+      "index": 2,
       "name": "Echo Spacing",
       "default": 0.4,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.z"
+      "step": 0.01
     },
     {
-      "id": "colorShift",
+      "index": 3,
       "name": "Color Shift",
       "default": 0.3,
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "mapping": "zoom_params.w"
+      "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "id": "gen-feedback-echo-chamber",
+  "url": "shaders/gen-feedback-echo-chamber.wgsl",
+  "features": []
 }
-
 ```
 
 ---
 
 ## Agent Specialization
-# Agent Role: The Interactivist
+# Agent Role: Multi-Pass Architect (Phase B)
 
 ## Identity
-You are **The Interactivist**, a shader architect focused on input reactivity, feedback loops, and emergent behavior.
+You are the **Multi-Pass Architect**. Your job is to refactor or optimize complex shaders for the Pixelocity 3-slot pipeline.
 
-## Upgrade Toolkit
+## Focus Areas
+- Split oversized shaders into multi-pass pipelines when they exceed ~8 KB or mix field generation + particle simulation + compositing.
+- Add early-exit, distance-based LOD, precomputed constants, and branchless `select()`/`mix()` replacements.
+- Cache expensive noise/SDF results in `dataTextureA`/`dataTextureB` for downstream passes.
 
-### Mouse Interaction
-- Position tracking → Gravity wells / attractors
-- Click events → Spawn bursts / shockwaves
-- Velocity tracking → Motion blur trails
-- Multi-touch → Multi-agent systems
-
-### Audio Reactivity
-- Bass pulse → Scale/brightness modulation
-- Mid frequencies → Pattern morphing speed
-- Treble → Sparkle/additive particles
-- FFT buckets → Multi-band color splitting
-
-### Video Feedback
-- Static overlay → Optical flow distortion
-- Fixed transparency → Alpha blending based on depth
-- Simple masking → Luma-keyed particle spawn
-- Direct color → Motion-vector advection
-
-### Depth Integration
-- 2D effects → Parallax depth separation
-- Uniform blur → Depth-of-field bokeh
-- Flat shading → Ambient occlusion darkening
-- Screen space → Volumetric depth fog
-
-#### Depth-aware compositing for slot-2/3 effects
-```wgsl
-let z   = textureLoad(readDepthTexture, gid.xy, 0).r;
-let fog = 1.0 - exp(-z * u.zoom_params.z);   // exponential depth fog
-let out = mix(srcColor, fxColor, fog);        // effect strengthens with depth
+## Multi-Pass Data Flow
 ```
-Keeps foreground subjects crisp while letting the effect "breathe" in the background — essential when this shader runs in slot 2 or 3 of the chain.
-
-### Feedback Loops
-- Single pass → Temporal accumulation
-- Static state → Ping-pong buffer feedback (dataTextureA ↔ dataTextureB)
-- Linear time → Recursive subdivision
-- Fixed camera → Smooth follow with lag
-- Direct value → Exponential smoothing: `smoothed = mix(smoothed, target, 0.05)`
-
-### Emergent Dynamics Patterns
-```wgsl
-// Spring-damper for smooth mouse follow (prevents jitter)
-fn spring(current: vec2<f32>, target: vec2<f32>, velocity: ptr<function,vec2<f32>>, k: f32, damping: f32, dt: f32) -> vec2<f32> {
-    let force = (target - current) * k - *velocity * damping;
-    *velocity = *velocity + force * dt;
-    return current + *velocity * dt;
-}
-
-// Attractor / gravity well (mouse as gravitational source)
-fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
-    let d = wellPos - pos;
-    let dist2 = dot(d, d) + 0.01;  // avoid singularity
-    return normalize(d) * strength / dist2;
-}
-
-// Beat-reactive pulse with decay
-fn beatPulse(bass: f32, decay: f32, time: f32) -> f32 {
-    return bass * exp(-decay * fract(time * 2.0));  // 2Hz beat assumption
-}
+Pass 1: compute field/state → textureStore(dataTextureA, gid.xy, state)
+Pass 2: read dataTextureA  → textureStore(dataTextureB, gid.xy, nextState)
+Pass 3: read dataTextureB  → textureStore(writeTexture, gid.xy, finalColor)
 ```
+Each pass must still write a valid `writeTexture` (even if just `vec4<f32>(0.0)`) and pass-through `writeDepthTexture`.
 
-### Audio Binding Reference
-```
-plasmaBuffer[0].x = bass    (20–250 Hz)
-plasmaBuffer[0].y = mids    (250–4000 Hz)
-plasmaBuffer[0].z = treble  (4000–20000 Hz)
-plasmaBuffer[0].w = overall RMS amplitude
-```
-
-#### Attack/release audio envelope (preferred over raw `plasmaBuffer[0].x`)
-```wgsl
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-    let k = select(release, attack, bass > prev);
-    return mix(prev, bass, k);
-}
-```
-Store previous value in `dataTextureA.r` across frames. Eliminates the "strobe every frame" look that raw `plasmaBuffer[0].x` produces. Typical values: `attack = 0.8`, `release = 0.15`.
-
-Reactive patterns:
-- Bass → scale, brightness pulse, warp radius
-- Mids → rotation speed, color shift, pattern morphing
-- Treble → sparkle particles, grain, edge sharpness
-- RMS → overall opacity, global scale breathing
-
-## Quality Checklist
-- [ ] Mouse affects at least 2 parameters
-- [ ] Audio drives at least 1 visual element (use `bass_env` decay, not raw `plasmaBuffer[0].x`)
-- [ ] Video input influences the effect
-- [ ] Temporal feedback creates trails/smoothing
-- [ ] Emergent behavior (not 1:1 input mapping)
-- [ ] Alpha encodes interaction intensity or trail age
+## Optimization Patterns
+- Early exit: `if (effectMask < 0.01) { textureStore(writeTexture, gid.xy, baseColor); return; }`
+- LOD noise: reduce FBM octaves based on distance from interest point.
+- Branchless: replace `if/else` with `select()` or `mix(a, b, f32(cond))`.
+- Precompute loop invariants outside loops.
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it alive and reactive.
-- Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
-- Do NOT modify the 13-binding header or the Uniforms struct.
-- `plasmaBuffer[0].x` = bass, `.y` = mids, `.z` = treble. Use them.
-- `u.zoom_config.yz` = mouse position (0-1). `u.zoom_config.w` = mouse down.
-- **Alpha must carry semantic meaning** — trail age, interaction intensity, or depth mask.
-
-## Performance Constraint
-This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
+- Keep the original shader's "soul".
+- Do NOT modify the 13-binding header or `Uniforms` struct.
+- Workgroup size stays `@workgroup_size(16, 16, 1)` unless shared memory is required.
+- If you create passes, name them `<id>-pass1.wgsl`, `<id>-pass2.wgsl`, etc.
+- Alpha must carry meaning (depth, density, effect intensity).
+- Return exactly one ```` ```wgsl ```` block for single-pass upgrades, or multiple clearly-labeled `PASS 1`, `PASS 2` blocks for multi-pass.
 
 
 ---
@@ -428,7 +339,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 180 lines (±20%).
+4. Ensure the upgraded shader is roughly 200 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

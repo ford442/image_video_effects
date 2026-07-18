@@ -2,9 +2,10 @@
 //  Spectral Brush
 //  Category: image
 //  Features: mouse-driven, audio-reactive, temporal, depth-aware, blackbody,
-//             oklab, chromatic-aberration, aces-tone-mapped, premultiplied-alpha
+//             oklab, chromatic-aberration, aces-tone-mapped, premultiplied-alpha,
+//             alpha-layered, luminance-key
 //  Complexity: High
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -196,13 +197,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
   color = color + vec3<f32>(dither);
 
-  // Semantic alpha = bloom weight / effect strength
-  let bloomWeight = pow(max(0.0, lum - 0.55), 2.0) * 3.0;
-  let brushAlpha = clamp(bloomWeight + 0.25 + bass * 0.15, 0.0, 1.0);
-  let brushed = vec4<f32>(color * brushAlpha, brushAlpha);
-  let finalColor = mix(brushed, base, untouched);
+  // Advanced alpha compositing: depth-layered + luminance-key + effect intensity
+  let depthAlpha = mix(0.35, 1.0, depth);
+  let lumaAlpha = smoothstep(0.03, 0.25, lum);
+  let effectAlpha = clamp(effectiveMask + bloomFalloff * bass * 0.4, 0.0, 1.0);
+  let brushA = clamp(effectAlpha * lumaAlpha * depthAlpha, 0.0, 1.0);
 
-  textureStore(writeTexture, pixel, finalColor);
-  textureStore(dataTextureA, pixel, vec4<f32>(effectiveMask, 0.0, 0.0, effectiveMask));
+  let baseA = baseSample.a;
+  let outA = brushA + baseA * (1.0 - brushA);
+  let outRGB = color * brushA + base.rgb * baseA * (1.0 - brushA);
+
+  textureStore(writeTexture, pixel, vec4<f32>(outRGB, outA));
+  textureStore(dataTextureA, pixel, vec4<f32>(effectiveMask, brushA, 0.0, outA));
+  textureStore(dataTextureB, pixel, vec4<f32>(depthAlpha, lumaAlpha, effectAlpha, brushA));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
