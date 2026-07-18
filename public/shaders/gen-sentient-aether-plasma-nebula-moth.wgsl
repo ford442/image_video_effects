@@ -2,7 +2,6 @@
 // Sentient Aether-Plasma Nebula-Moth
 // Category: generative
 // ----------------------------------------------------------------
-
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -24,50 +23,38 @@ struct Uniforms {
     ripples: array<vec4<f32>, 50>,
 };
 
-const PI = 3.14159265359;
+const MAX_STEPS: i32 = 100;
+const SURF_DIST: f32 = 0.005;
+const MAX_DIST: f32 = 40.0;
 
-fn rot(a: f32) -> mat2x2<f32> {
+fn rot2d(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     let c = cos(a);
     return mat2x2<f32>(c, -s, s, c);
 }
 
-fn hash33(p3: vec3<f32>) -> vec3<f32> {
-    var p = fract(p3 * vec3<f32>(0.1031, 0.1030, 0.0973));
-    p += dot(p, p.yxz + 33.33);
-    return fract((p.xxy + p.yxx) * p.zyx);
-}
-
-fn noise(p: vec3<f32>) -> f32 {
-    let i = floor(p);
-    let f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(mix(dot(hash33(i + vec3<f32>(0.0,0.0,0.0)), f - vec3<f32>(0.0,0.0,0.0)),
-                dot(hash33(i + vec3<f32>(1.0,0.0,0.0)), f - vec3<f32>(1.0,0.0,0.0)), u.x),
-            mix(dot(hash33(i + vec3<f32>(0.0,1.0,0.0)), f - vec3<f32>(0.0,1.0,0.0)),
-                dot(hash33(i + vec3<f32>(1.0,1.0,0.0)), f - vec3<f32>(1.0,1.0,0.0)), u.x), u.y),
-        mix(mix(dot(hash33(i + vec3<f32>(0.0,0.0,1.0)), f - vec3<f32>(0.0,0.0,1.0)),
-                dot(hash33(i + vec3<f32>(1.0,0.0,1.0)), f - vec3<f32>(1.0,0.0,1.0)), u.x),
-            mix(dot(hash33(i + vec3<f32>(0.0,1.0,1.0)), f - vec3<f32>(0.0,1.0,1.0)),
-                dot(hash33(i + vec3<f32>(1.0,1.0,1.0)), f - vec3<f32>(1.0,1.0,1.0)), u.x), u.y), u.z);
-}
-
-fn fbm(p: vec3<f32>) -> f32 {
-    var f = 0.0;
-    var amp = 0.5;
-    var pos = p;
-    for(var i = 0; i < 5; i++) {
-        f += amp * noise(pos);
-        pos = pos * 2.0;
-        amp *= 0.5;
-    }
-    return f;
-}
-
 fn smin(a: f32, b: f32, k: f32) -> f32 {
-    let h = max(k - abs(a - b), 0.0) / k;
-    return min(a, b) - h * h * k * 0.25;
+    let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+fn sdCappedCone(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, ra: f32, rb: f32) -> f32 {
+    let rba = rb - ra;
+    let baba = dot(b - a, b - a);
+    let papa = dot(p - a, p - a);
+    let paba = dot(p - a, b - a) / baba;
+    let x = sqrt(papa - paba * paba * baba);
+    let cax = max(0.0, x - mix(ra, rb, paba));
+    let cay = abs(paba - 0.5) - 0.5;
+    let k = rba * rba + baba;
+    let f = clamp((rba * (x - ra) + paba * baba) / k, 0.0, 1.0);
+    let cbx = x - ra - f * rba;
+    let cby = paba - f;
+    let s = select(1.0, -1.0, cbx < 0.0 && cay < 0.0);
+    if(paba < 0.0 || paba > 1.0) {
+        return s * sqrt(min(cax * cax + cay * cay * baba, cbx * cbx + cby * cby * baba));
+    }
+    return s * sqrt(cbx * cbx + cby * cby * baba);
 }
 
 fn sdEllipsoid(p: vec3<f32>, r: vec3<f32>) -> f32 {
@@ -76,190 +63,223 @@ fn sdEllipsoid(p: vec3<f32>, r: vec3<f32>) -> f32 {
     return k0 * (k0 - 1.0) / k1;
 }
 
-fn acesToneMap(color: vec3<f32>) -> vec3<f32> {
-    let a = 2.51;
-    let b = 0.03;
-    let c = 2.43;
-    let d = 0.59;
-    let e = 0.14;
-    return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+fn hash33(p: vec3<f32>) -> vec3<f32> {
+    var p2 = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
+    p2 = p2 + dot(p2, p2.yxz + 33.33);
+    return fract((p2.xxy + p2.yxx) * p2.zyx);
 }
 
-fn sceneSDF(p: vec3<f32>, time: f32, flutter: f32, audioBass: f32) -> vec2<f32> {
-    var d = 1000.0;
-    var matId = 0.0; // 0 = thorax, 1 = wings, 2 = glass
+fn noise31(p: vec3<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(mix(dot(hash33(i + vec3<f32>(0.0, 0.0, 0.0)), f - vec3<f32>(0.0, 0.0, 0.0)),
+                dot(hash33(i + vec3<f32>(1.0, 0.0, 0.0)), f - vec3<f32>(1.0, 0.0, 0.0)), u.x),
+            mix(dot(hash33(i + vec3<f32>(0.0, 1.0, 0.0)), f - vec3<f32>(0.0, 1.0, 0.0)),
+                dot(hash33(i + vec3<f32>(1.0, 1.0, 0.0)), f - vec3<f32>(1.0, 1.0, 0.0)), u.x), u.y),
+        mix(mix(dot(hash33(i + vec3<f32>(0.0, 0.0, 1.0)), f - vec3<f32>(0.0, 0.0, 1.0)),
+                dot(hash33(i + vec3<f32>(1.0, 0.0, 1.0)), f - vec3<f32>(1.0, 0.0, 1.0)), u.x),
+            mix(dot(hash33(i + vec3<f32>(0.0, 1.0, 1.0)), f - vec3<f32>(0.0, 1.0, 1.0)),
+                dot(hash33(i + vec3<f32>(1.0, 1.0, 1.0)), f - vec3<f32>(1.0, 1.0, 1.0)), u.x), u.y), u.z);
+}
 
-    // Thorax (Ellipsoid)
-    let thoraxDist = sdEllipsoid(p, vec3<f32>(0.5, 0.8, 0.5));
-    d = thoraxDist;
-    matId = 0.0;
-
-    // Head
-    var hp = p - vec3<f32>(0.0, 1.0, 0.2);
-    let headDist = sdEllipsoid(hp, vec3<f32>(0.3, 0.3, 0.3));
-    if (headDist < d) {
-        d = smin(d, headDist, 0.2);
+fn fbm(p: vec3<f32>) -> f32 {
+    var f = 0.0;
+    var amp = 0.5;
+    var pp = p;
+    for(var i = 0; i < 4; i++) {
+        f = f + amp * noise31(pp);
+        amp = amp * 0.5;
+        pp = pp * 2.0;
     }
+    return f;
+}
+
+// Global variables for material tracking
+var<private> g_glow: f32 = 0.0;
+var<private> g_wing_dist: f32 = 0.0;
+var<private> g_body_dist: f32 = 0.0;
+
+fn map(p_in: vec3<f32>) -> f32 {
+    let time = u.config.x;
+    let mouse = u.zoom_config.yz;
+    let audio = plasmaBuffer[0].x;
+
+    // Parameters
+    let flutter_freq = u.zoom_params.x;
+    let storm_intensity = u.zoom_params.y;
+    let plasma_glow = u.zoom_params.z;
+    let rift_dist = u.zoom_params.w;
+
+    var p = p_in;
+    // Mouse interaction - slightly offset the world
+    p = p - vec3<f32>(mouse.x * 2.0 - 1.0, -(mouse.y * 2.0 - 1.0), 0.0);
+
+    // Base animation
+    let t = time * flutter_freq;
+
+    // Thorax / Body
+    var body = sdEllipsoid(p, vec3<f32>(0.3, 0.2 + audio * 0.1, 1.0));
+
+    // Antennae
+    var ap = p;
+    ap.x = abs(ap.x);
+    let rot = rot2d(0.5 + sin(t) * 0.1);
+    var ap_yz = vec2<f32>(ap.y, ap.z);
+    let tmp1 = rot * ap_yz;
+    ap.y = tmp1.x;
+    ap.z = tmp1.y;
+    var ap_xz = vec2<f32>(ap.x, ap.z);
+    let tmp2 = rot2d(0.3) * ap_xz;
+    ap.x = tmp2.x;
+    ap.z = tmp2.y;
+    let antenna = sdCappedCone(ap, vec3<f32>(0.2, 0.1, 0.8), vec3<f32>(0.5, 0.5, 1.8), 0.05, 0.01);
+    body = smin(body, antenna, 0.1);
 
     // Wings
     var wp = p;
-    wp.x = abs(wp.x); // symmetry
-    wp.x -= 0.6;
+    wp.x = abs(wp.x);
+    // Flapping motion
+    let flap_angle = sin(t * 15.0) * 0.8 * (1.0 + audio);
+    let flap_rot = rot2d(flap_angle);
+    var wp_xy = vec2<f32>(wp.x, wp.y);
+    let tmp3 = flap_rot * wp_xy;
+    wp.x = tmp3.x;
+    wp.y = tmp3.y;
 
-    // Flutter animation
-    let flutterAnim = sin(time * 10.0 * flutter) * 0.5 * wp.x;
-    wp.y += flutterAnim;
-    wp.z += flutterAnim * 0.5;
+    // Wing shape - using a thin ellipsoid with noise distortion
+    let wing_base = sdEllipsoid(wp - vec3<f32>(1.2, 0.0, 0.0), vec3<f32>(1.5, 0.02, 1.0));
 
-    // Wing basic shape (flattened ellipsoid)
-    let wingBase = sdEllipsoid(wp, vec3<f32>(1.5, 1.2, 0.05));
+    // Add fbm distortion for the plasma wing effect
+    let distortion = fbm(wp * 3.0 - vec3<f32>(0.0, 0.0, time * 2.0)) * 0.2 * plasma_glow;
+    let wing = wing_base + distortion;
 
-    // Fractal displacement for wings
-    let wingDisp = fbm(wp * 3.0 + vec3<f32>(0.0, 0.0, time)) * 0.2;
-    let wingDist = wingBase + wingDisp;
+    // Time Rift Distortion (modifies the space around the moth)
+    let rift = sin(p.x * 2.0 + t) * sin(p.y * 2.0 - t) * sin(p.z * 2.0) * rift_dist;
 
-    if (wingDist < d) {
-        d = smin(d, wingDist, 0.1);
-        matId = 1.0;
-    }
+    let final_body = body + rift;
+    let final_wing = wing + rift;
 
-    // Chrono-glass shards
-    var sp = p;
-    sp.y -= time * 0.5; // falling
-    sp = fract(sp * 2.0) - 0.5; // repeating
-    let shardDist = length(sp) - 0.05;
+    g_body_dist = final_body;
+    g_wing_dist = final_wing;
 
-    // Mask shards to only appear near wings
-    let mask = sdEllipsoid(p, vec3<f32>(3.0, 2.0, 1.0));
-    let finalShard = max(shardDist, mask);
+    // Accumulate glow
+    g_glow = g_glow + 0.01 / (0.01 + abs(final_wing)) * plasma_glow;
+    g_glow = g_glow + 0.02 / (0.01 + abs(final_body)) * (audio * 2.0);
 
-    if (finalShard < d) {
-        d = finalShard;
-        matId = 2.0;
-    }
-
-    return vec2<f32>(d, matId);
+    return min(final_body, final_wing);
 }
 
-fn calcNormal(p: vec3<f32>, time: f32, flutter: f32, audioBass: f32) -> vec3<f32> {
-    let e = vec2<f32>(1.0, -1.0) * 0.001;
-    return normalize(
-        e.xyy * sceneSDF(p + e.xyy, time, flutter, audioBass).x +
-        e.yyx * sceneSDF(p + e.yyx, time, flutter, audioBass).x +
-        e.yxy * sceneSDF(p + e.yxy, time, flutter, audioBass).x +
-        e.xxx * sceneSDF(p + e.xxx, time, flutter, audioBass).x
+fn calcNormal(p: vec3<f32>) -> vec3<f32> {
+    let e = vec2<f32>(0.001, 0.0);
+    let n = vec3<f32>(
+        map(p + e.xyy) - map(p - e.xyy),
+        map(p + e.yxy) - map(p - e.yxy),
+        map(p + e.yyx) - map(p - e.yyx)
     );
+    return normalize(n);
 }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let res = vec2<f32>(u.config.z, u.config.w);
-    let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
-    if (fragCoord.x >= res.x || fragCoord.y >= res.y) { return; }
-    let uv = (fragCoord * 2.0 - res) / res.y;
-    let coord = vec2<i32>(id.xy);
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let dims = textureDimensions(writeTexture);
+    let coord = vec2<i32>(global_id.xy);
+    if (global_id.x >= dims.x || global_id.y >= dims.y) {
+        return;
+    }
 
-    let time = u.config.x * 0.5;
+    let resolution = vec2<f32>(f32(dims.x), f32(dims.y));
+    let uv = (vec2<f32>(coord) - 0.5 * resolution) / resolution.y;
+    let time = u.config.x;
 
-    // UI Sliders
-    let flutterFreq = u.zoom_params.x;
-    let stormInt = u.zoom_params.y;
-    let plasmaGlow = u.zoom_params.z;
-    let riftDist = u.zoom_params.w;
+    // Camera setup
+    var ro = vec3<f32>(0.0, 2.0, -6.0);
+    // Mouse orbit
+    let mouse = u.zoom_config.yz;
+    let mx = (mouse.x * 2.0 - 1.0) * 3.14;
+    let my = -(mouse.y * 2.0 - 1.0) * 1.5;
 
-    let audioBass = plasmaBuffer[0].x;
+    var ro_yz = vec2<f32>(ro.y, ro.z);
+    let tmp4 = rot2d(my) * ro_yz;
+    ro.y = tmp4.x;
+    ro.z = tmp4.y;
+    var ro_xz = vec2<f32>(ro.x, ro.z);
+    let tmp5 = rot2d(mx) * ro_xz;
+    ro.x = tmp5.x;
+    ro.z = tmp5.y;
 
-    var ro = vec3<f32>(0.0, 0.0, -5.0);
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    let ta = vec3<f32>(0.0, 0.0, 0.0);
+    let cw = normalize(ta - ro);
+    let cp = vec3<f32>(0.0, 1.0, 0.0);
+    let cu = normalize(cross(cw, cp));
+    let cv = normalize(cross(cu, cw));
+    let rd = normalize(uv.x * cu + uv.y * cv + 1.5 * cw);
 
-    // Mouse Interaction
-    let mouseX = (u.zoom_config.y * 2.0 - 1.0) * PI;
-    let mouseY = (u.zoom_config.z * 2.0 - 1.0) * PI * 0.5;
-
-    let rotX = rot(-mouseY);
-    let rotY = rot(mouseX);
-
-    ro.y = ro.y * rotX[0][0] + ro.z * rotX[1][0];
-    ro.z = ro.y * rotX[0][1] + ro.z * rotX[1][1];
-
-    ro.x = ro.x * rotY[0][0] + ro.z * rotY[1][0];
-    ro.z = ro.x * rotY[0][1] + ro.z * rotY[1][1];
-
-    rd.y = rd.y * rotX[0][0] + rd.z * rotX[1][0];
-    rd.z = rd.y * rotX[0][1] + rd.z * rotX[1][1];
-
-    rd.x = rd.x * rotY[0][0] + rd.z * rotY[1][0];
-    rd.z = rd.x * rotY[0][1] + rd.z * rotY[1][1];
-
-
-    var t = 0.0;
+    // Raymarching
+    var t_dist = 0.0;
+    var p = ro;
     var hit = false;
-    var hitMat = 0.0;
-    var hitP = vec3<f32>(0.0);
-    var glowVol = 0.0;
 
-    for (var i = 0; i < 100; i++) {
-        var p = ro + rd * t;
+    g_glow = 0.0;
 
-        // Quantum storm distortion
-        p += vec3<f32>(noise(p * 2.0 + time), noise(p * 2.0 - time), noise(p * 2.0)) * stormInt * 0.1;
-        // Time rift distortion
-        p.x += sin(p.y * 5.0 + time) * riftDist * 0.5;
-
-        let res = sceneSDF(p, time, flutterFreq, audioBass);
-        let d = res.x;
-
-        // Accumulate glow near wings (matId 1.0)
-        if (res.y == 1.0) {
-            glowVol += 0.01 / (0.1 + abs(d));
-        }
-
-        if (d < 0.001) {
+    for (var i = 0; i < MAX_STEPS; i++) {
+        p = ro + rd * t_dist;
+        let d = map(p);
+        if (d < SURF_DIST) {
             hit = true;
-            hitP = p;
-            hitMat = res.y;
             break;
         }
-        if (t > 20.0) {
+        if (t_dist > MAX_DIST) {
             break;
         }
-        t += d * 0.7; // Step size reduction for domain distortion
+        t_dist = t_dist + d * 0.7; // slight under-relaxation for fbm
     }
 
     var col = vec3<f32>(0.0);
+    let audio = plasmaBuffer[0].x;
+
+    // Background particle storm
+    let storm_intensity = u.zoom_params.y;
+    var storm = 0.0;
+    var sp = ro;
+    var st = 0.0;
+    for(var j = 0; j < 15; j++) {
+        sp = ro + rd * st;
+        let sv = fbm(sp * 2.0 + vec3<f32>(0.0, 0.0, time * 3.0));
+        storm = storm + (sv * sv) * 0.05 * storm_intensity;
+        st = st + 1.0;
+    }
+    col = col + vec3<f32>(0.1, 0.2, 0.3) * storm * (1.0 + audio);
 
     if (hit) {
-        let n = calcNormal(hitP, time, flutterFreq, audioBass);
-        let lightDir = normalize(vec3<f32>(1.0, 1.0, -1.0));
-        let diff = max(dot(n, lightDir), 0.0);
-        let viewDir = -rd;
-        let halfDir = normalize(lightDir + viewDir);
-        let spec = pow(max(dot(n, halfDir), 0.0), 32.0);
+        let n = calcNormal(p);
+        let l = normalize(vec3<f32>(1.0, 2.0, -1.0));
+        let diff = max(dot(n, l), 0.0);
+        let ao = clamp(map(p + n * 0.1) * 10.0, 0.0, 1.0);
 
-        if (hitMat == 0.0) {
-            // Thorax (Glowing liquid-aurora)
-            let baseColor = vec3<f32>(0.1, 0.8, 0.6); // Auroral green
-            col = baseColor * diff + vec3<f32>(1.0) * spec;
-            col += baseColor * audioBass * 0.5; // Audio reactive glow
-        } else if (hitMat == 1.0) {
-            // Wings (Aether-Plasma)
-            let baseColor = vec3<f32>(0.2, 0.4, 1.0); // Bioluminescent cyan/purple
-            col = baseColor * diff + vec3<f32>(1.0) * spec;
-            col += baseColor * plasmaGlow * 0.5;
-        } else if (hitMat == 2.0) {
-            // Chrono-glass shards
-            col = vec3<f32>(0.8, 0.9, 1.0) * diff + vec3<f32>(1.0) * spec * 2.0;
+        var matCol = vec3<f32>(0.0);
+        if (g_body_dist < g_wing_dist) {
+            // Thorax / body
+            matCol = vec3<f32>(0.1, 0.8, 0.9); // Bioluminescent cyan
+            let sub = max(0.0, map(p + l * 0.2)) * 2.0; // fake subsurface
+            matCol = matCol * (diff + 0.2 + sub * audio);
+        } else {
+            // Wings
+            matCol = vec3<f32>(0.6, 0.2, 0.9); // Quantum purple
+            matCol = matCol * (diff + 0.5); // more emissive
         }
-    } else {
-        // Background Particle Storm (Void)
-        let stormDens = noise(rd * 10.0 + time * 0.5) * stormInt;
-        col = vec3<f32>(0.05, 0.0, 0.1) * stormDens;
+
+        col = matCol * ao;
     }
 
     // Add volumetric glow
-    col += vec3<f32>(0.1, 0.5, 0.8) * glowVol * plasmaGlow * 0.2;
+    let glowCol = vec3<f32>(0.2, 0.9, 0.7) * (g_glow * 0.02); // Auroral greens
+    col = col + glowCol;
 
-    col = acesToneMap(col);
+    // Tone mapping
+    col = col / (1.0 + col);
+    col = pow(col, vec3<f32>(0.4545)); // Gamma correction
 
-    textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
 }
