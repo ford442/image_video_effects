@@ -158,7 +158,7 @@
   {
     "id": "crt-magnet",
     "name": "CRT Magnet",
-    "url": "https://test.1ink.us/image_video_effects/shaders/crt-magnet.wgsl",
+    "url": "shaders/crt-magnet.wgsl",
     "description": "Phase-B hybrid CRT monitor degaussing magnetic distortion near the mouse. Fuses crt-magnet distortion with temporal feedback echo, audio-driven cosine palette, domain-warped FBM, and a smooth SDF mask. Uses canonical fbm/curl noise, unified audio-envelope and spring-damped mouse state, branchless aperture grille, hex-bloom, beam-purity RGB separation, and ACES tone mapping with semantic alpha blending.",
     "params": [
       {
@@ -1172,7 +1172,7 @@
   {
     "id": "phosphor-decay",
     "name": "Phosphor Decay",
-    "url": "https://test.1ink.us/image_video_effects/shaders/phosphor-decay.wgsl",
+    "url": "shaders/phosphor-decay.wgsl",
     "description": "CRT phosphor persistence with per-channel linear-feedback decay, OkLab-blended trails, audio-reactive bloom, branchless shadow mask, scan-line blanking, depth haze, blackbody temperature grading, and IGN-dithered premultiplied output.",
     "params": [
       {
@@ -1793,7 +1793,7 @@
   {
     "id": "waveform-glitch",
     "name": "Waveform Glitch",
-    "url": "https://test.1ink.us/image_video_effects/shaders/waveform-glitch.wgsl",
+    "url": "shaders/waveform-glitch.wgsl",
     "description": "VHS waveform glitch driven by a Clifford strange attractor, domain-warped FBM, divergence-free curl flow, Voronoi F2-F1 ridge corruption, YUV chroma noise, CRT shadow mask, temporal feedback persistence, SDF glitch masks, audio-driven cosine palette, and bass-envelope smoothing. Alpha encodes waveform displacement magnitude * block corruption intensity * SDF-mask proximity.",
     "features": [
       "temporal",

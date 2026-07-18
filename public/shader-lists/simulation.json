@@ -1170,7 +1170,7 @@
   {
     "id": "pixel-sand",
     "name": "Pixel Sand",
-    "url": "https://test.1ink.us/image_video_effects/shaders/pixel-sand.wgsl",
+    "url": "shaders/pixel-sand.wgsl",
     "description": "Falling granular automata crossed with domain-warped FBM flow fields, temporal feedback echo, and an audio-driven palette. Warm blackbody spawns, OkLab video-to-sand blending, mouse gravity wells, ripple shockwaves, depth shading, ACES tone mapping, and IGN dither remain intact.",
     "features": [
       "upgraded-rgba",
