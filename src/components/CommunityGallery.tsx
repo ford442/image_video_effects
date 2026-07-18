@@ -16,6 +16,23 @@ import {
   decodeChain,
 } from '../services/communityGallery';
 
+interface ThumbnailManifestEntry {
+  thumbnail_url: string;
+}
+
+type ThumbnailManifest = Record<string, ThumbnailManifestEntry>;
+
+function getPackThumbnailUrl(
+  pack: CommunityPack,
+  manifest: ThumbnailManifest
+): string | undefined {
+  const decoded = pack.chain ? decodeChain(pack.chain) : null;
+  const firstShaderId = decoded?.slots.find(s => s.shaderId)?.shaderId;
+  if (!firstShaderId) return undefined;
+  const entry = manifest[firstShaderId];
+  return entry?.thumbnail_url ? `./${entry.thumbnail_url}` : undefined;
+}
+
 export interface CommunityGalleryProps {
   open: boolean;
   onToggle: () => void;
@@ -39,7 +56,9 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
   const [publishAuthor, setPublishAuthor] = useState('');
   const [publishStatus, setPublishStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [thumbnailManifest, setThumbnailManifest] = useState<ThumbnailManifest>({});
   const fetchStartedRef = useRef(false);
+  const manifestLoadedRef = useRef(false);
 
   const loadPacks = useCallback(async () => {
     setStatus('loading');
@@ -52,6 +71,15 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
       setStatus('error');
     }
   }, []);
+
+  useEffect(() => {
+    if (!open || manifestLoadedRef.current) return;
+    manifestLoadedRef.current = true;
+    fetch('./thumbnails/manifest.json')
+      .then(r => (r.ok ? r.json() : {}))
+      .then(setThumbnailManifest)
+      .catch(() => setThumbnailManifest({}));
+  }, [open]);
 
   useEffect(() => {
     if (!open || fetchStartedRef.current) return;
@@ -293,6 +321,7 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
                   .slice(0, 3)
                   .join(', ') ?? ''
               : '';
+            const thumbUrl = getPackThumbnailUrl(pack, thumbnailManifest);
             return (
               <div
                 key={pack.id}
@@ -303,49 +332,67 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
                   padding: '8px',
                 }}
               >
-                <div
-                  style={{
-                    fontSize: '12px',
-                    color: '#FFD700',
-                    fontWeight: 500,
-                    marginBottom: '4px',
-                  }}
-                >
-                  {pack.name}
-                </div>
-                <div
-                  style={{
-                    fontSize: '10px',
-                    color: 'rgba(255,255,255,0.45)',
-                    marginBottom: '4px',
-                  }}
-                >
-                  {pack.author || 'Anonymous'}
-                  {pack.date ? ` · ${pack.date}` : ''}
-                  {pack.play_count > 0 ? ` · ▶ ${pack.play_count}` : ''}
-                </div>
-                <div
-                  style={{
-                    fontSize: '10px',
-                    color: 'rgba(255,255,255,0.5)',
-                    marginBottom: '6px',
-                  }}
-                >
-                  {pack.description}
-                </div>
-                <div
-                  style={{
-                    fontSize: '10px',
-                    color: 'rgba(255,255,255,0.4)',
-                    marginBottom: '6px',
-                    fontStyle: 'italic',
-                  }}
-                >
-                  {idDisplay}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {thumbUrl && (
+                    <img
+                      src={thumbUrl}
+                      alt=""
+                      style={{
+                        width: 56,
+                        height: 56,
+                        objectFit: 'cover',
+                        borderRadius: '4px',
+                        flexShrink: 0,
+                        border: '1px solid rgba(255, 215, 0, 0.15)',
+                      }}
+                    />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: '#FFD700',
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                      }}
+                    >
+                      {pack.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '10px',
+                        color: 'rgba(255,255,255,0.45)',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      {pack.author || 'Anonymous'}
+                      {pack.date ? ` · ${pack.date}` : ''}
+                      {pack.play_count > 0 ? ` · ▶ ${pack.play_count}` : ''}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '10px',
+                        color: 'rgba(255,255,255,0.5)',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      {pack.description}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '10px',
+                        color: 'rgba(255,255,255,0.4)',
+                        marginBottom: '6px',
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      {idDisplay}
+                    </div>
+                  </div>
                 </div>
                 <button
                   className="gold-outline-btn"
-                  style={{ fontSize: '11px', padding: '3px 8px', width: '100%' }}
+                  style={{ fontSize: '11px', padding: '3px 8px', width: '100%', marginTop: '6px' }}
                   onClick={() => handleApply(pack)}
                 >
                   Load Pack
