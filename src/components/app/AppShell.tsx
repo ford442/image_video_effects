@@ -95,6 +95,7 @@ export interface AppShellProps {
     setShowStorageBrowser: (show: boolean) => void;
     copyChainShareLink: () => void;
     applySharedChain: (chain: SharedChain) => void;
+    getCurrentChain: () => SharedChain | null;
     // Canvas props
     rendererRef: RefObject<RendererManager | null>;
     mousePosition: { x: number; y: number };
@@ -198,6 +199,7 @@ export function AppShell(props: AppShellProps) {
         setShowStorageBrowser,
         copyChainShareLink,
         applySharedChain,
+        getCurrentChain,
         rendererRef,
         mousePosition,
         setMousePosition,
@@ -319,6 +321,7 @@ export function AppShell(props: AppShellProps) {
                         onOpenStorageBrowser={() => setShowStorageBrowser(true)}
                         onCopyChainShareLink={copyChainShareLink}
                         onApplySharedChain={applySharedChain}
+                        getCurrentChain={getCurrentChain}
                     />
                 </aside>
                 <main className="canvas-container">

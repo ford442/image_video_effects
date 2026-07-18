@@ -4,9 +4,6 @@
  * Live community preset-pack gallery. Fetches published shader chains from the
  * storage backend and restores them via the same SharedChain apply path used by
  * share-link hydration. Also publishes the current chain to the gallery.
- *
- * This component is intentionally self-contained and NOT wired into App.tsx or
- * Controls.tsx while PRs #936/#938 are in flight. Mount it once those land.
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
@@ -47,7 +44,7 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
   const loadPacks = useCallback(async () => {
     setStatus('loading');
     try {
-      const data = await listCommunityPacks({ limit: 50 });
+      const data = await listCommunityPacks({ limit: 50, sortBy: 'play_count' });
       setPacks(data.packs);
       setStatus('loaded');
     } catch (err) {
@@ -116,12 +113,13 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
       setPublishStatus('loading');
       setPublishError(null);
       try {
-        await publishPack({
+        const result = await publishPack({
           name,
           description: publishDescription.trim(),
           author: publishAuthor.trim() || undefined,
           chain: current,
         });
+        setPacks(prev => [result.pack, ...prev.filter(p => p.id !== result.pack.id)]);
         setPublishStatus('success');
         setPublishFormOpen(false);
         setPublishName('');
@@ -314,6 +312,17 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
                   }}
                 >
                   {pack.name}
+                </div>
+                <div
+                  style={{
+                    fontSize: '10px',
+                    color: 'rgba(255,255,255,0.45)',
+                    marginBottom: '4px',
+                  }}
+                >
+                  {pack.author || 'Anonymous'}
+                  {pack.date ? ` · ${pack.date}` : ''}
+                  {pack.play_count > 0 ? ` · ▶ ${pack.play_count}` : ''}
                 </div>
                 <div
                   style={{

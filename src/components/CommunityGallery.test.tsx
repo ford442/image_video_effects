@@ -70,7 +70,7 @@ describe('CommunityGallery', () => {
 
     await waitFor(() =>
       expect(global.fetch).toHaveBeenCalledWith(
-        `${API_URL}/api/preset-packs?limit=50`,
+        `${API_URL}/api/preset-packs?limit=50&sort_by=play_count`,
         expect.any(Object)
       )
     );

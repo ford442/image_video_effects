@@ -88,6 +88,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onOpenStorageBrowser,
     onCopyChainShareLink,
     onApplySharedChain,
+    getCurrentChain,
     onTriggerNextTransition,
     onRandomizeSlot,
     onSetSlotParam,
@@ -322,6 +323,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     onShareVjSet={onShareVjSet}
                     onSaveVjSet={onSaveVjSet}
                     onApplySharedChain={onApplySharedChain}
+                    getCurrentChain={getCurrentChain}
                     onCopyChainShareLink={onCopyChainShareLink}
                     autoTransitionOpen={autoTransitionOpen}
                     setAutoTransitionOpen={setAutoTransitionOpen}

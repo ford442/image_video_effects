@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import WebGPUCanvas from './components/WebGPUCanvas';
 import Controls from './components/Controls';
+import { AppShell } from './components/app/AppShell';
 import ShaderScanner from './components/ShaderScanner';
 import LiveStudioTab from './components/LiveStudioTab';
 import { StorageBrowser } from './components/StorageBrowser';
@@ -14,27 +15,30 @@ import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTy
 import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
 import { resolveShaderUrl } from './utils/resolveShaderUrl';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
-import { RendererType, RendererManager } from './renderer/RendererManager';
-import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from './AutoDJ';
 import { pipeline, env } from '@xenova/transformers';
-import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
-import { ShaderApi, ShaderEntry as ApiShaderEntry } from './services/shaderApi';
-import { resolveShaderUrl } from './utils/resolveShaderUrl';
 import {
     STORAGE_API_URL,
-
     DEFAULT_B3HD_SEGMENT_LENGTH,
     DEFAULT_B3HD_INTERVAL_SECONDS,
 } from './config/appConfig';
-import { fetchContentManifest, LoadedContent } from './services/contentLoader';
 import { VideoSegment, pickRandomSegment, hydrateDurations } from './services/videoSegmentManager';
 import { savePreset } from './services/vjPresets';
 import { saveMyVjSet } from './services/myVjSets';
-import { mapVJStackToSharedChain } from './services/vjToSharedChain';
-import { buildCatalog } from './services/shaderCatalog';
-import { mapOrderedParamsToSlotParams } from './utils/shaderParamMapping';
-import { SharedChain, encodeChain, decodeChain, buildSharedChain, expandSharedChain, MAX_SHARED_SLOTS } from './services/layerChainShare';
-import { useAudioAnalyzer } from './hooks';
+import { SharedChain } from './services/layerChainShare';
+import {
+    useAudioAnalyzer,
+    useDepthEstimation,
+    useRendererBackend,
+    useShaderMode,
+    useAudioReactiveParams,
+    useContentManifest,
+    useShaderCatalogLoad,
+    useImageLoading,
+    useShaderBoot,
+    useAiVjHandlers,
+    useWebcam,
+    useShareChain,
+} from './hooks';
 import './style.css';
 
 // --- Webcam Fun Shaders ---
@@ -286,11 +290,6 @@ function MainApp() {
     // --- State: Recording ---
     const [isRecording, setIsRecording] = useState(false);
     const [recordingCountdown, setRecordingCountdown] = useState(8);
-    const [showShareModal, setShowShareModal] = useState(false);
-    const [shareableLink, setShareableLink] = useState('');
-    // Vibe prompt shown alongside the link in the share modal (VJ-set shares
-    // only). It is intentionally NOT embedded in the `?chain=` link.
-    const [shareVibeText, setShareVibeText] = useState('');
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const recordedChunksRef = useRef<Blob[]>([]);
     const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -318,12 +317,8 @@ function MainApp() {
     const audioParamSmoothedRef = useRef<[number, number, number, number]>([0.5, 0.5, 0.5, 0.5]);
 
     // --- State: Boot Gate ---
-    const [rendererReady, setRendererReady] = useState(false);
     const [shadersReady, setShadersReady] = useState(false);
     const initialBootAppliedRef = useRef(false);
-
-    // --- State: GPU Capabilities ---
-    const [supportsDeepWorkgroup, setSupportsDeepWorkgroup] = useState(false);
 
     // --- State: Render quality ---
     const [renderQualityMode, setRenderQualityMode] = useState<RenderQualityMode>(() => loadRenderQualityMode());
@@ -342,63 +337,6 @@ function MainApp() {
     const availableModesRef = useRef<ShaderEntry[]>(availableModes);
     const slotParamsRef = useRef<SlotParams[]>(slotParams);
     const inputSourceRef = useRef<InputSource>(inputSource);
-
-    // --- Renderer backend state ---
-    const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
-    const [jsFps, setJsFps] = useState(0);
-    const [wasmFps, setWasmFps] = useState(0);
-    const [isRendererSwitching, setIsRendererSwitching] = useState(false);
-
-    const handleSwitchRenderer = useCallback(async (type: RendererType) => {
-        const manager = rendererRef.current;
-        if (!manager) return;
-
-        setIsRendererSwitching(true);
-        setStatus(`Switching to ${type} renderer…`);
-
-        // Snapshot current FPS into the correct bucket before switching
-        const currentFps = manager.getCurrentFPS?.() ?? 0;
-        if (activeRendererType === 'webgpu' || activeRendererType === 'js') {
-            setJsFps(currentFps);
-        } else if (activeRendererType === 'wasm') {
-            setWasmFps(currentFps);
-        }
-
-        const ok = await manager.switchRenderer(type);
-
-        if (ok) {
-            setActiveRendererType(type);
-            setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM (experimental)' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
-
-            // Re-bind shaders + params so the new backend matches the UI state
-            if (type === 'wasm' || type === 'webgpu') {
-                await manager.resyncShaderStack({
-                    modes: modesRef.current,
-                    slotParams: slotParamsRef.current,
-                    resolveShader: (shaderId) => availableModesRef.current.find(s => s.id === shaderId),
-                    inputSource: inputSourceRef.current,
-                });
-            }
-        } else {
-            setStatus(`⚠️ Failed to switch to ${type} renderer — staying on ${activeRendererType}.`);
-        }
-        setIsRendererSwitching(false);
-    }, [activeRendererType]);
-
-    // Poll real FPS from the active renderer and keep separate buckets for comparison
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const manager = rendererRef.current;
-            if (!manager) return;
-            const fps = manager.getCurrentFPS?.() ?? 0;
-            if (activeRendererType === 'wasm') {
-                setWasmFps(fps);
-            } else {
-                setJsFps(fps);
-            }
-        }, 800);
-        return () => clearInterval(interval);
-    }, [activeRendererType]);
     const fileInputImageRef = useRef<HTMLInputElement>(null);
     const fileInputVideoRef = useRef<HTMLInputElement>(null);
     const channelRef = useRef<BroadcastChannel | null>(null);
@@ -420,72 +358,6 @@ function MainApp() {
         setStatus,
     });
 
-    // --- Renderer backend state ---
-    const [activeRendererType, setActiveRendererType] = useState<RendererType>('webgpu');
-    const [jsFps, setJsFps] = useState(0);
-    const [wasmFps, setWasmFps] = useState(0);
-    const [isRendererSwitching, setIsRendererSwitching] = useState(false);
-
-    const handleSwitchRenderer = useCallback(async (type: RendererType) => {
-        const manager = rendererRef.current;
-        if (!manager) return;
-
-        setIsRendererSwitching(true);
-        setStatus(`Switching to ${type} renderer…`);
-
-        // Snapshot current FPS into the correct bucket before switching
-        const currentFps = manager.getCurrentFPS?.() ?? 0;
-        if (activeRendererType === 'webgpu' || activeRendererType === 'js') {
-            setJsFps(currentFps);
-        } else if (activeRendererType === 'wasm') {
-            setWasmFps(currentFps);
-        }
-
-        const ok = await manager.switchRenderer(type);
-
-        if (ok) {
-            setActiveRendererType(type);
-            setStatus(`✅ Now using ${type === 'wasm' ? 'C++ WASM (experimental)' : type === 'webgpu' ? 'TypeScript WebGPU' : 'Canvas2D'} renderer.`);
-
-            // Re-bind shaders + params so the new backend matches the UI state
-            if (type === 'wasm' || type === 'webgpu') {
-                await manager.resyncShaderStack({
-                    modes: modesRef.current,
-                    slotParams: slotParamsRef.current,
-                    resolveShader: (shaderId) => availableModesRef.current.find(s => s.id === shaderId),
-                    inputSource: inputSourceRef.current,
-                });
-            }
-        } else {
-            setStatus(`⚠️ Failed to switch to ${type} renderer — staying on ${activeRendererType}.`);
-        }
-        setIsRendererSwitching(false);
-    }, [activeRendererType]);
-
-    // Poll real FPS from the active renderer and keep separate buckets for comparison
-    useEffect(() => {
-        const interval = setInterval(() => {
-            const manager = rendererRef.current;
-            if (!manager) return;
-            const fps = manager.getCurrentFPS?.() ?? 0;
-            if (activeRendererType === 'wasm') {
-                setWasmFps(fps);
-            } else {
-                setJsFps(fps);
-            }
-        }, 800);
-        return () => clearInterval(interval);
-    }, [activeRendererType]);
-    const fileInputImageRef = useRef<HTMLInputElement>(null);
-    const fileInputVideoRef = useRef<HTMLInputElement>(null);
-    const channelRef = useRef<BroadcastChannel | null>(null);
-    const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const rouletteFlashRef = useRef<HTMLDivElement | null>(null);
-    // Mirrors slotShaderStatus state so setMode can read it without being in its dep array
-    const slotShaderStatusRef = useRef<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle', 'idle', 'idle', 'idle']);
-    // Direct ref to the WebGPU canvas — set via onCanvasRef callback (avoids fragile querySelector)
-    const webgpuCanvasRef = useRef<HTMLCanvasElement | null>(null);
-
     // --- Helpers ---
     useEffect(() => {
         modesRef.current = modes;
@@ -503,134 +375,6 @@ function MainApp() {
         inputSourceRef.current = inputSource;
     }, [inputSource]);
 
-    /** Push input-source changes to the active renderer (WebGPU, WASM, or JS). */
-    const syncInputSourceToRenderer = useCallback((source: InputSource) => {
-        inputSourceRef.current = source;
-        setInputSource(source);
-        rendererRef.current?.setInputSource(source);
-    }, []);
-
-    const mapShaderParamUpdates = useCallback((slotParamsUpdates: Record<string, number>, slotIndex: number): Partial<SlotParams> => {
-        const shaderId = modesRef.current[slotIndex];
-        const shaderEntry = availableModesRef.current.find(m => m.id === shaderId);
-        if (!shaderEntry || !shaderEntry.params) return {};
-
-        return mapOrderedParamsToSlotParams(slotParamsUpdates, shaderEntry.params.map(p => p.id));
-    }, []);
-
-    const handleApplyParamsDirect = useCallback((paramsList: Record<string, number>[]) => {
-        paramsList.forEach((slotParamsUpdates, slotIndex) => {
-            const updates = mapShaderParamUpdates(slotParamsUpdates, slotIndex);
-            if (Object.keys(updates).length > 0) {
-                rendererRef.current?.updateSlotParams({
-                    zoomParam1: updates.zoomParam1,
-                    zoomParam2: updates.zoomParam2,
-                    zoomParam3: updates.zoomParam3,
-                    zoomParam4: updates.zoomParam4,
-                }, slotIndex);
-            }
-        });
-    }, [mapShaderParamUpdates]);
-
-    const setMode = useCallback(async (index: number, mode: RenderMode) => {
-        const maxSlots = rendererRef.current?.getMaxActiveSlots?.() ?? 3;
-        if (mode !== 'none' && index >= maxSlots) {
-            setStatus(`Quality cap: only ${maxSlots} slot(s) active — raise quality in Render Quality panel.`);
-            return;
-        }
-
-        // Guard: if a shader is already compiling on this slot, skip to prevent chaos-mode pile-up
-        if (slotShaderStatusRef.current[index] === 'loading') return;
-
-        setModes(prev => {
-            const next = [...prev];
-            next[index] = mode;
-            return next;
-        });
-
-        if (mode === 'none') {
-            slotShaderStatusRef.current[index] = 'idle';
-            setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'idle'; return n; });
-            // Tell the renderer to disable this slot so other slots keep running
-            if (rendererRef.current) {
-                rendererRef.current.setSlotShader(index, '');
-            }
-            return;
-        }
-
-        // Attempt to load & compile the shader, tracking status
-        const shaderEntry = availableModes.find(s => s.id === mode);
-        if (shaderEntry && rendererRef.current) {
-            slotShaderStatusRef.current[index] = 'loading';
-            setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'loading'; return n; });
-
-            try {
-                // Determine shader URL — API shaders now point directly to the .wgsl static file
-                // served by nginx with CORS headers, so pass the URL straight to loadShader.
-                let shaderUrl = shaderEntry.url;
-                
-                // Load the shader
-                const ok = await rendererRef.current.loadShader(
-                    shaderEntry.id,
-                    shaderUrl,
-                    { requiresDeepWorkgroup: shaderEntry.requiresDeepWorkgroup },
-                );
-                
-                // Activate the shader on the specified slot
-                if (ok && rendererRef.current) {
-                    rendererRef.current.setSlotShader(index, shaderEntry.id);
-                }
-                
-                slotShaderStatusRef.current[index] = ok ? 'idle' : 'error';
-                setSlotShaderStatus(prev => { const n = [...prev]; n[index] = ok ? 'idle' : 'error'; return n; });
-                
-                // Initialize slider values to shader's declared param defaults
-                // Use hardcoded defaults first (API returns generic 0.5 values)
-                const hardcodedDefaults = getShaderDefaults(shaderEntry.id, shaderEntry.params?.length || 4);
-                const hasHardcoded = hardcodedDefaults.some(v => v !== 0.5);
-                
-                if (ok && (shaderEntry.params?.length || hasHardcoded)) {
-                    const paramDefaults: Partial<SlotParams> = {};
-                    const numParams = shaderEntry.params?.length || hardcodedDefaults.length;
-                    
-                    for (let i = 0; i < numParams; i++) {
-                        // Use hardcoded default if available, otherwise fall back to API default
-                        const defaultValue = hasHardcoded ? hardcodedDefaults[i] : (shaderEntry.params?.[i]?.default ?? 0.5);
-                        if (i === 0) paramDefaults.zoomParam1 = defaultValue;
-                        else if (i === 1) paramDefaults.zoomParam2 = defaultValue;
-                        else if (i === 2) paramDefaults.zoomParam3 = defaultValue;
-                        else if (i === 3) paramDefaults.zoomParam4 = defaultValue;
-                    }
-                    
-                    setSlotParams(prev => {
-                        const next = [...prev];
-                        next[index] = { ...next[index], ...paramDefaults };
-                        return next;
-                    });
-                }
-
-                // Record play event (fire-and-forget)
-                if (ok) {
-                    fetch(`${SHADER_WGSL_URL}/${shaderEntry.id}/play`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                    }).catch(() => {});
-                }
-            } catch (error) {
-                console.error(`❌ Failed to load shader ${shaderEntry.id}:`, error);
-                slotShaderStatusRef.current[index] = 'error';
-                setSlotShaderStatus(prev => { const n = [...prev]; n[index] = 'error'; return n; });
-            }
-        }
-    }, [availableModes, rendererRef]);
-
-    const updateSlotParam = useCallback((slotIndex: number, updates: Partial<SlotParams>) => {
-        setSlotParams(prev => {
-            const next = [...prev];
-            next[slotIndex] = { ...next[slotIndex], ...updates };
-            return next;
-        });
-    }, []);
     const {
         activeRendererType,
         jsFps,
@@ -648,11 +392,6 @@ function MainApp() {
         inputSourceRef,
         setStatus,
     });
-
-    useEffect(() => { modesRef.current = modes; }, [modes]);
-    useEffect(() => { availableModesRef.current = availableModes; }, [availableModes]);
-    useEffect(() => { slotParamsRef.current = slotParams; }, [slotParams]);
-    useEffect(() => { inputSourceRef.current = inputSource; }, [inputSource]);
 
     const {
         setMode,
@@ -1073,38 +812,6 @@ function MainApp() {
         savePreset(name, shaderIds, params);
     }, [aiVj]);
 
-    /**
-     * Encode the live AI VJ stack into a `?chain=` share link via the existing
-     * share modal. The vibe prompt is shown alongside the link (not in the URL).
-     * Returns the encoded chain string (for "Save as My VJ Set"), or '' on failure.
-     */
-    const buildVjChainString = useCallback(async (): Promise<string> => {
-        if (!aiVj) return '';
-        const shaderIds = aiVj.getActiveShaderIds();
-        const params = aiVj.getCurrentParams();
-        if (shaderIds.length === 0) return '';
-        const catalog = await buildCatalog();
-        const knownIds = new Set(catalog.map(s => s.id));
-        // Generic-defaults compaction (no per-shader lookup) so the app's
-        // load-time decode path reproduces the same zoomParam1-4 values.
-        const chain = mapVJStackToSharedChain(shaderIds, params, catalog, knownIds);
-        return encodeChain(chain);
-    }, [aiVj]);
-
-    const handleShareVjSet = useCallback(async () => {
-        const encoded = await buildVjChainString();
-        if (!encoded) {
-            setStatus('❌ No active VJ stack to share');
-            return;
-        }
-        const url = new URL(window.location.href);
-        url.search = '';
-        url.hash = '';
-        url.searchParams.set('chain', encoded);
-        setShareableLink(url.toString());
-        setShareVibeText(aiVj?.getLastVibeText() ?? '');
-        setShowShareModal(true);
-    }, [buildVjChainString, aiVj]);
     const startAutoTransition = useCallback(async (config: AutoTransitionConfig) => {
         if (!aiVj) return false;
         return aiVj.startAutoTransition(config);
@@ -1113,17 +820,6 @@ function MainApp() {
     const stopAutoTransition = useCallback(() => {
         aiVj?.stopAutoTransition();
     }, [aiVj]);
-    
-    const onInitCanvas = useCallback(() => {
-        const manager = rendererRef.current;
-        if (!manager) return;
-        setActiveRendererType(manager.getActiveRendererType());
-        const deep = manager.getSupportsDeepWorkgroup();
-        setSupportsDeepWorkgroup(deep);
-        manager.setRenderQuality(renderQualityMode, { supportsDeepWorkgroup: deep });
-        manager.setInputSource(inputSourceRef.current);
-        setRendererReady(true);
-    }, [renderQualityMode]);
 
     const handleRenderQualityChange = useCallback((mode: RenderQualityMode) => {
         setRenderQualityMode(mode);
@@ -1314,6 +1010,7 @@ function MainApp() {
         handleShareVjSet,
         applySharedChain,
         copyChainShareLink,
+        getCurrentChain,
         openRecordingShareModal,
     } = useShareChain({
         modes,
@@ -1343,93 +1040,6 @@ function MainApp() {
         saveMyVjSet(name, aiVj?.getLastVibeText() ?? '', encoded);
         setStatus(`💾 Saved VJ set "${name}"`);
     }, [buildVjChainString, aiVj]);
-
-    const startAutoTransition = useCallback(async (config: AutoTransitionConfig) => {
-        if (!aiVj) return false;
-        return aiVj.startAutoTransition(config);
-    }, [aiVj]);
-
-    const stopAutoTransition = useCallback(() => {
-        aiVj?.stopAutoTransition();
-    }, [aiVj]);
-    
-    const onInitCanvas = useCallback(() => {
-        const manager = rendererRef.current;
-        if (!manager) return;
-        setActiveRendererType(manager.getActiveRendererType());
-        setSupportsDeepWorkgroup(manager.getSupportsDeepWorkgroup());
-        manager.setInputSource(inputSourceRef.current);
-        setRendererReady(true);
-    }, []);
-
-    // --- Test Mode Hook (exposes renderer for Playwright harness) ---
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('testMode') === '1' && rendererRef.current) {
-            const manager = rendererRef.current;
-            const loadShaderTracked = async (id: string, url: string) => {
-                const ok = await manager.loadShader(id, url) ?? false;
-                if (params.get('shaderHotReload') === '1') {
-                    import('./dev/shaderHotReload').then(({ trackShaderForHotReload }) => {
-                        trackShaderForHotReload(id, url);
-                    });
-                }
-                return ok;
-            };
-            (window as any).__pixelocity__ = {
-                renderer: manager,
-                getRendererType: () => manager.getActiveRendererType(),
-                setSlotShader: (index: number, id: string) => {
-                    manager.setSlotShader(index, id);
-                },
-                loadShader: loadShaderTracked,
-                reloadShader: (id: string, url: string) => manager.reloadShader(id, url),
-                setInputSource: (source: Parameters<typeof manager.setInputSource>[0]) => {
-                    manager.setInputSource(source);
-                },
-                setTestRenderState: (state: Parameters<typeof manager.applyTestRenderState>[0]) => {
-                    manager.applyTestRenderState(state);
-                },
-                captureCanvasScreenshot: async () => {
-                    const canvas = document.querySelector('canvas');
-                    if (!canvas) return null;
-                    return canvas.toDataURL('image/png');
-                },
-                runBenchmark: async (frameCount = 90) => {
-                    const samples: Array<{ fps: number; gpu: ReturnType<typeof manager.getGPUTimings> }> = [];
-                    for (let i = 0; i < frameCount; i++) {
-                        await new Promise<void>((r) => requestAnimationFrame(() => r()));
-                        samples.push({
-                            fps: manager.getMetrics().fps,
-                            gpu: manager.getGPUTimings(),
-                        });
-                    }
-                    const totals = samples.map((s) => s.gpu.totalTime).filter((t) => t > 0);
-                    const avgTotalMs = totals.length
-                        ? totals.reduce((a, b) => a + b, 0) / totals.length
-                        : 0;
-                    return {
-                        frames: frameCount,
-                        avgFps: samples.reduce((a, s) => a + s.fps, 0) / frameCount,
-                        avgTotalMs,
-                        gpuTimingsAvailable: samples.some((s) => s.gpu.available),
-                        rendererType: manager.getActiveRendererType(),
-                        samples: samples.slice(-5),
-                    };
-                },
-                updateAudioFrequencyBins: (bins: Float32Array) => {
-                    manager.updateAudioFrequencyBins(bins);
-                },
-                getSlotState: (index: number) => manager.getSlotState(index),
-                getGPUTimings: () => manager.getGPUTimings(),
-                getSupportsDeepWorkgroup: () => manager.getSupportsDeepWorkgroup(),
-                takeScreenshot: (filename?: string) => manager.takeScreenshot(filename),
-                refreshFrameImage: () => manager.refreshFrameImage(),
-                getFrameImage: () => manager.getFrameImage(),
-            };
-        }
-    }, [rendererReady]);
 
     // --- Dev shader hot-reload (?renderer=wasm&shaderHotReload=1) ---
     useEffect(() => {
@@ -1970,191 +1580,6 @@ function MainApp() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [triggerRoulette]);
 
-    // --- Recording & Share Functions ---
-    const generateShareableLink = useCallback(() => {
-        const params = new URLSearchParams();
-        
-        // Current shader/mode
-        params.set('shader', modes[0]);
-        params.set('slot', activeSlot.toString());
-        
-        // Current slot parameters
-        const params1 = slotParams[activeSlot];
-        if (params1) {
-            params.set('p1', params1.zoomParam1.toFixed(2));
-            params.set('p2', params1.zoomParam2.toFixed(2));
-            params.set('p3', params1.zoomParam3.toFixed(2));
-            params.set('p4', params1.zoomParam4.toFixed(2));
-            params.set('light', params1.lightStrength.toFixed(2));
-            params.set('ambient', params1.ambient.toFixed(2));
-        }
-        
-        // Input source and related state
-        params.set('source', inputSource);
-        if (inputSource === 'webcam') {
-            params.set('webcam', 'true');
-        }
-        if (currentImageUrl) {
-            params.set('img', encodeURIComponent(currentImageUrl));
-        }
-        
-        // Generative shader if active
-        if (inputSource === 'generative' && activeGenerativeShader) {
-            params.set('gen', activeGenerativeShader);
-        }
-        
-        const hash = params.toString();
-        const baseUrl = window.location.origin + window.location.pathname;
-        return `${baseUrl}#${hash}`;
-    }, [modes, activeSlot, slotParams, inputSource, currentImageUrl, activeGenerativeShader]);
-
-    const restoreStateFromHash = useCallback(() => {
-        const hash = window.location.hash.slice(1); // Remove #
-        if (!hash) return;
-        
-        try {
-            const params = new URLSearchParams(hash);
-            
-            // Restore shader/mode
-            const shader = params.get('shader');
-            if (shader) {
-                setMode(0, shader as RenderMode);
-            }
-            
-            // Restore active slot
-            const slot = params.get('slot');
-            if (slot) {
-                setActiveSlot(parseInt(slot, 10));
-            }
-            
-            // Restore slot parameters
-            const updates: Partial<SlotParams> = {};
-            const p1 = params.get('p1');
-            const p2 = params.get('p2');
-            const p3 = params.get('p3');
-            const p4 = params.get('p4');
-            const light = params.get('light');
-            const ambient = params.get('ambient');
-            
-            if (p1) updates.zoomParam1 = parseFloat(p1);
-            if (p2) updates.zoomParam2 = parseFloat(p2);
-            if (p3) updates.zoomParam3 = parseFloat(p3);
-            if (p4) updates.zoomParam4 = parseFloat(p4);
-            if (light) updates.lightStrength = parseFloat(light);
-            if (ambient) updates.ambient = parseFloat(ambient);
-            
-            if (Object.keys(updates).length > 0) {
-                updateSlotParam(slot ? parseInt(slot, 10) : 0, updates);
-            }
-            
-            // Restore input source
-            const source = params.get('source');
-            if (source) {
-                syncInputSourceToRenderer(source as InputSource);
-                if (source === 'webcam') {
-                    // Will need to trigger webcam start separately
-                    setTimeout(() => startWebcam(), 1000);
-                }
-            }
-            
-            // Restore image URL if present
-            const img = params.get('img');
-            if (img && source !== 'webcam') {
-                handleLoadImage(decodeURIComponent(img));
-            }
-            
-            // Restore generative shader
-            const gen = params.get('gen');
-            if (gen) {
-                setActiveGenerativeShader(gen);
-                syncInputSourceToRenderer('generative');
-            }
-            
-            setStatus('🎉 Shared state restored!');
-        } catch (e) {
-            console.error('Failed to restore state from hash:', e);
-        }
-    }, [setMode, setActiveSlot, updateSlotParam, syncInputSourceToRenderer, setActiveGenerativeShader, handleLoadImage, startWebcam]);
-
-    // Restore state from URL hash on load
-    useEffect(() => {
-        restoreStateFromHash();
-    }, [restoreStateFromHash]);
-
-    // --- Multi-Slot Chain Sharing ---
-    const SHARE_CHAIN_PARAM = 'chain';
-
-    /** Applies a decoded chain to the live slot state, skipping unknown shader ids. */
-    const applySharedChain = useCallback((chain: SharedChain) => {
-        const { modes: sharedModes, slotParams: sharedParams } = expandSharedChain(chain);
-        const known = availableModesRef.current;
-
-        sharedModes.forEach((shaderId, index) => {
-            if (index >= MAX_SHARED_SLOTS) return;
-
-            if (!shaderId || shaderId === 'none') {
-                setMode(index, 'none');
-                return;
-            }
-
-            const exists = known.length === 0 || known.some(m => m.id === shaderId);
-            if (!exists) {
-                console.warn(`[layerChainShare] skipping unknown shader id "${shaderId}" for slot ${index}`);
-                return;
-            }
-
-            setMode(index, shaderId as RenderMode);
-            updateSlotParam(index, sharedParams[index]);
-        });
-
-        setStatus('🔗 Shared chain loaded!');
-    }, [setMode, updateSlotParam]);
-
-    /** Builds a compact, URL-safe link encoding the entire active chain. */
-    const generateChainShareLink = useCallback(() => {
-        const chain = buildSharedChain(modes, slotParams);
-        const encoded = encodeChain(chain);
-        const url = new URL(window.location.href);
-        url.search = '';
-        url.hash = '';
-        url.searchParams.set(SHARE_CHAIN_PARAM, encoded);
-        return url.toString();
-    }, [modes, slotParams]);
-
-    /** Copies the current chain's share link to the clipboard. */
-    const copyChainShareLink = useCallback(async () => {
-        try {
-            const link = generateChainShareLink();
-            await navigator.clipboard.writeText(link);
-            setStatus('🔗 Chain share link copied to clipboard!');
-        } catch (e) {
-            console.error('Failed to copy chain share link:', e);
-            setStatus('❌ Failed to copy share link');
-        }
-    }, [generateChainShareLink]);
-
-    // Hydrate the active chain from a `?chain=` share link on first load, then
-    // strip the param so a refresh doesn't re-clobber the user's edits.
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const params = new URLSearchParams(window.location.search);
-        const encoded = params.get(SHARE_CHAIN_PARAM);
-        if (!encoded) return;
-
-        const chain = decodeChain(encoded);
-        if (!chain) {
-            console.warn('[layerChainShare] ignoring invalid chain share link');
-        } else {
-            applySharedChain(chain);
-        }
-
-        params.delete(SHARE_CHAIN_PARAM);
-        const newSearch = params.toString();
-        const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`;
-        window.history.replaceState(null, '', newUrl);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     const finishRecordingBlob = useCallback((blob: Blob) => {
         if (recordingFinishedRef.current) return;
         recordingFinishedRef.current = true;
@@ -2168,14 +1593,11 @@ function MainApp() {
         a.click();
         document.body.removeChild(a);
 
-        const link = generateShareableLink();
-        setShareableLink(link);
-        setShareVibeText('');
-        setShowShareModal(true);
+        openRecordingShareModal();
 
         setStatus('✅ Recording saved! Download started.');
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }, [generateShareableLink]);
+    }, [openRecordingShareModal]);
 
     const clearRecordingTimer = useCallback(() => {
         if (recordingTimerRef.current) {
@@ -2426,220 +1848,6 @@ function MainApp() {
 
     return (
         <div className="App">
-            <header className="header">
-                <div className="logo-section">
-                    <div style={{ height: '80px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img
-                            src="https://test.1ink.us/image_video_effects/static/media/pixelocity_title_logo_glitch.gif"
-                            alt="Pixelocity"
-                            className="logo-img"
-                            style={{ height: '100px', width: 'auto', objectFit: 'contain' }}
-                        />
-                    </div>
-                    <div className="subtitle-text">Image Playpen</div>
-                </div>
-                <div className="header-controls">
-                    <button
-                        className={`toggle-sidebar-btn ${activeTab === 'main' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('main')}
-                    >
-                        Main
-                    </button>
-                    <button
-                        className={`toggle-sidebar-btn ${activeTab === 'live-studio' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('live-studio')}
-                        style={{ background: activeTab === 'live-studio' ? 'linear-gradient(135deg, #00d4ff, #7b2cbf)' : undefined }}
-                    >
-                        🎥 Live Studio
-                    </button>
-                    <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.2)', margin: '0 8px' }} />
-                    <button 
-                        className="toggle-sidebar-btn" 
-                        onClick={() => window.open('?mode=remote', '_blank', 'width=420,height=900')}
-                        title="Open Remote Control in new window"
-                    >
-                        Open Remote
-                    </button>
-                    {activeTab === 'main' && (
-                        <button className="toggle-sidebar-btn" onClick={() => setShowSidebar(!showSidebar)}>
-                            {showSidebar ? 'Hide Controls' : 'Show Controls'}
-                        </button>
-                    )}
-                </div>
-            </header>
-            {activeTab === 'live-studio' ? (
-                <LiveStudioTab />
-            ) : (
-            <div className="main-container">
-                <aside className={`sidebar ${!showSidebar ? 'hidden' : ''}`}>
-                    <Controls
-                        // ... pass all props to Controls component
-                        modes={modes} setMode={setMode} activeSlot={activeSlot} setActiveSlot={setActiveSlot}
-                        slotParams={slotParams} updateSlotParam={updateSlotParam} slotShaderStatus={slotShaderStatus} shaderCategory={shaderCategory}
-                        setShaderCategory={setShaderCategory} onNewImage={handleNewRandomImage}
-                        autoChangeEnabled={autoChangeEnabled} setAutoChangeEnabled={setAutoChangeEnabled}
-                        autoChangeDelay={autoChangeDelay} setAutoChangeDelay={setAutoChangeDelay}
-                        onLoadModel={loadDepthModel} isModelLoaded={!!depthEstimator} availableModes={availableModes}
-                        inputSource={inputSource} setInputSource={syncInputSourceToRenderer} videoList={videoList}
-                        selectedVideo={selectedVideo} setSelectedVideo={setSelectedVideo}
-                        videoB3hdMode={videoB3hdMode} setVideoB3hdMode={setVideoB3hdMode}
-                        b3hdSegmentLength={b3hdSegmentLength} setB3hdSegmentLength={setB3hdSegmentLength}
-                        b3hdIntervalSeconds={b3hdIntervalSeconds} setB3hdIntervalSeconds={setB3hdIntervalSeconds}
-                        currentSegment={currentSegment}
-                        isMuted={isMuted} setIsMuted={setIsMuted}
-                        activeGenerativeShader={activeGenerativeShader} setActiveGenerativeShader={setActiveGenerativeShader}
-                        onUploadImageTrigger={() => fileInputImageRef.current?.click()}
-                        onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
-                        isAiVjMode={isAiVjMode} onToggleAiVj={toggleAiVj} aiVjStatus={aiVjStatus}
-                        aiVjMessage={aiVjMessage} onGenerateFromVibe={handleGenerateFromVibe}
-                        onUpdateStack={handleUpdateStack} onUpdateParams={handleUpdateParams}
-                        onRandomizeParams={handleRandomizeParams}
-                        onSavePreset={handleSavePreset}
-                        onTriggerNextTransition={handleTriggerNextTransition}
-                        onRandomizeSlot={handleRandomizeSlot}
-                        onSetSlotParam={handleSetSlotParam}
-                        onShareVjSet={handleShareVjSet}
-                        onSaveVjSet={handleSaveVjSet}
-                        onStartAutoTransition={startAutoTransition}
-                        onStopAutoTransition={stopAutoTransition}
-                        isWebcamActive={isWebcamActive}
-                        onStartWebcam={startWebcam}
-                        onStopWebcam={stopWebcam}
-                        webcamError={webcamError}
-                        showWebcamShaderSuggestions={showWebcamShaderSuggestions}
-                        webcamFunShaders={WEBCAM_FUN_SHADERS}
-                        onApplyWebcamShader={applyWebcamFunShader}
-                        // Roulette props
-                        onRoulette={triggerRoulette}
-                        onRandomizeAllSlots={triggerRandomizeAllSlots}
-                        isRouletteActive={isRouletteActive}
-                        chaosModeEnabled={chaosModeEnabled}
-                        setChaosModeEnabled={setChaosModeEnabled}
-                        // Audio-Reactive Props
-                        audioReactiveParams={audioReactiveParams}
-                        setAudioReactiveParams={setAudioReactiveParams}
-                        audioReactiveAmount={audioReactiveAmount}
-                        setAudioReactiveAmount={setAudioReactiveAmount}
-                        // Recording props
-                        isRecording={isRecording}
-                        recordingCountdown={recordingCountdown}
-                        onStartRecording={startRecording}
-                        onStopRecording={stopRecording}
-                        onTakeScreenshot={handleTakeScreenshot}
-                        // Dev Tools props
-                        onOpenShaderScanner={() => setShowShaderScanner(true)}
-                        // Renderer switch props
-                        activeRendererType={activeRendererType}
-                        onSwitchRenderer={handleSwitchRenderer}
-                        // Storage Browser props
-                        onOpenStorageBrowser={() => setShowStorageBrowser(true)}
-                        // Multi-Slot Chain Sharing props
-                        onCopyChainShareLink={copyChainShareLink}
-                        onApplySharedChain={applySharedChain}
-                        renderQualityMode={renderQualityMode}
-                        onRenderQualityChange={handleRenderQualityChange}
-                        maxActiveSlots={performanceHud.maxActiveSlots}
-                        performanceHud={performanceHud}
-                    />
-                </aside>
-                <main className="canvas-container">
-                    <WebGPUCanvas
-                        modes={modes} slotParams={slotParams}
-                        rendererRef={rendererRef} farthestPoint={{x:0.5, y:0.5}}
-                        mousePosition={mousePosition} setMousePosition={setMousePosition}
-                        isMouseDown={isMouseDown} setIsMouseDown={setIsMouseDown} onInit={onInitCanvas}
-                        inputSource={inputSource} videoSourceUrl={videoSourceUrl}
-                        isMuted={isMuted} setInputSource={syncInputSourceToRenderer}
-                        activeSlot={activeSlot}
-                        activeGenerativeShader={activeGenerativeShader}
-                        selectedVideo={selectedVideo}
-                        segment={currentSegment ? { start: currentSegment.start, end: currentSegment.end } : null}
-                        apiBaseUrl={STORAGE_API_URL}
-                        isWebcamActive={isWebcamActive}
-                        webcamVideoElement={videoElementRef.current}
-                        onCanvasRef={(el) => { webgpuCanvasRef.current = el; }}
-                        shaderCatalog={availableModes}
-                    />
-                    <div className="status-bar">
-                        <span>{isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}</span>
-                        {generativeShowcaseActive && (
-                            <span style={{ color: '#00d4ff', marginLeft: '12px', fontWeight: 600 }}>
-                                🎨 Showcase {generativeShowcaseLocked ? '🔒 LOCKED' : '● AUTO'}
-                            </span>
-                        )}
-                        {audioReactiveParams && (
-                            <span style={{ color: '#FFD700', marginLeft: '12px' }}>
-                                🔊 Audio-Reactive {Math.round(audioReactiveAmount * 100)}%
-                            </span>
-                        )}
-
-                        {/* Current Renderer Badge (clickable for cycling) */}
-                        <span
-                            className={`renderer-badge renderer-badge--${activeRendererType}`}
-                            title={
-                                activeRendererType === 'wasm'
-                                    ? 'Experimental C++ WASM — click to cycle renderer'
-                                    : 'Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)'
-                            }
-                            onClick={() => {
-                                const cycle: Record<RendererType, RendererType> = {
-                                    webgpu: 'wasm',
-                                    wasm: 'js',
-                                    js: 'webgpu',
-                                };
-                                handleSwitchRenderer(cycle[activeRendererType]);
-                            }}
-                        >
-                            {activeRendererType === 'wasm'
-                                ? '⚡ WASM (exp.)'
-                                : activeRendererType === 'js'
-                                  ? '🎨 Canvas2D'
-                                  : '🔷 WebGPU'}
-                        </span>
-
-                        <PerformanceStatusHUD
-                            backend={activeRendererType}
-                            internalWidth={performanceHud.internalWidth}
-                            internalHeight={performanceHud.internalHeight}
-                            scale={performanceHud.scale}
-                            fps={activeRendererType === 'wasm' ? wasmFps : jsFps}
-                            qualityLabel={renderQualityMode}
-                        />
-
-                        {/* FPS Comparison + Switch Toggle (JS WebGPU vs C++ WASM) */}
-                        <RendererToggle
-                            isWASM={activeRendererType === 'wasm'}
-                            onToggle={async (useWasm) => {
-                                const target: RendererType = useWasm ? 'wasm' : 'webgpu';
-                                await handleSwitchRenderer(target);
-                            }}
-                            isLoading={isRendererSwitching}
-                            jsFps={jsFps}
-                            wasmFps={wasmFps}
-                        />
-                    </div>
-                </main>
-            </div>
-            )}
-            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={() => {}} />
-            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={() => {}} />
-            
-            {/* Roulette Flash Overlay */}
-            <div 
-                ref={rouletteFlashRef} 
-                className="roulette-flash"
-                style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'white',
-                    opacity: 0,
-                    pointerEvents: 'none',
-                    zIndex: 9999,
-                    transition: 'opacity 0.15s ease-out'
-                }}
             <AppShell
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -2723,6 +1931,7 @@ function MainApp() {
                 setShowStorageBrowser={setShowStorageBrowser}
                 copyChainShareLink={copyChainShareLink}
                 applySharedChain={applySharedChain}
+                getCurrentChain={getCurrentChain}
                 rendererRef={rendererRef}
                 mousePosition={mousePosition}
                 setMousePosition={setMousePosition}
@@ -2738,6 +1947,24 @@ function MainApp() {
                 isRendererSwitching={isRendererSwitching}
                 jsFps={jsFps}
                 wasmFps={wasmFps}
+            />
+
+            {/* Roulette Flash Overlay */}
+            <div
+                ref={rouletteFlashRef}
+                className="roulette-flash"
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'white',
+                    opacity: 0,
+                    pointerEvents: 'none',
+                    zIndex: 9999,
+                    transition: 'opacity 0.15s ease-out',
+                }}
             />
             
             {/* Confetti Container */}
