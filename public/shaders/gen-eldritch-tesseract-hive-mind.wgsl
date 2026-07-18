@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Eldritch Tesseract-Hive Mind
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  gen-eldritch-tesseract-hive-mind
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, depth-aware, tesseract-sdf,
+//            iridescence, sentinel-swarm, aces-tone-map, ign-dither, premultiplied-alpha
+//  Complexity: Medium-High
+//  Chunks From: rot4D, vnoise3, iridescence, raymarchSDF, bass_env, ign
+//  Upgraded: 2026-07-17 — weekly swarm Batch 15
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -133,6 +138,14 @@ fn iridescence(view_dir: vec3<f32>, normal: vec3<f32>, shift: f32) -> vec3<f32> 
     return a + b * cos(vec3<f32>(6.28318) * (c * vec3<f32>(t) + d));
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.x, u.config.y);
@@ -141,7 +154,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
     var uv = (fragCoord - vec2<f32>(0.5) * resolution) / resolution.y;
     let time = u.config.z;
-    let audio_intensity = u.zoom_config.w;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio_intensity = bass * 0.7 + mids * 0.2 + treble * 0.1;
 
     // Parameters
     let swarm_density = u.zoom_params.y;
@@ -197,14 +213,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Mask swarms to only appear near the structure using depth
     let depth_mask = 1.0 - smoothstep(0.0, 10.0, d);
     let swarm_color = vec3<f32>(0.0, 1.0, 0.5) * vec3<f32>(swarm_val * depth_mask * 3.0);
-    col += swarm_color;
+    col += swarm_color * (1.0 + treble * 0.5);
 
-    // Atmospheric Fog
     col = mix(col, vec3<f32>(0.02, 0.0, 0.05), 1.0 - exp(-0.02 * d * d));
 
-    // Gamma correction
-    col = pow(col, vec3<f32>(1.0/2.2));
-
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    col = aces(col * (0.95 + bass * 0.2));
+    col += vec3<f32>((ign(vec2<f32>(id.xy)) - 0.5) / 255.0);
+    let alpha = clamp(length(col) * 0.65 + swarm_val * 0.25 + select(0.0, 0.4, d < MAX_DIST), 0.1, 0.95);
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col * alpha, alpha));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(min(d / MAX_DIST, 1.0) * 0.55 + 0.1, 0.0, 0.0, 0.0));
 }

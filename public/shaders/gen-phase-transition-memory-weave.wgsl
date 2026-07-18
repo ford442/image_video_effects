@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Phase-Transition Memory Weave
+//  gen-phase-transition-memory-weave
 //  Category: generative
-//  Description: Viscous history-dependent field undergoing phase
-//  transitions between fluid, crystalline, and chaotic states.
-//  Audio controls phase thresholds. Mouse forces local phase changes.
-//  Strong temporal persistence and hysteresis.
+//  Features: audio-reactive, mouse-driven, depth-aware, phase-transition,
+//            hysteresis-weave, aces-tone-map, ign-dither, premultiplied-alpha
 //  Complexity: Medium-High
+//  Chunks From: orderParameter, crystallineLattice, fluidFlow, ign
+//  Upgraded: 2026-07-17 — weekly swarm Batch 14
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +31,14 @@ struct Uniforms {
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -200,6 +208,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vig = 1.0 - smoothstep(0.3, 0.75, length(uv - 0.5) * 1.2);
     color *= vig;
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(clamp(color * glowAmt, vec3<f32>(0.0), vec3<f32>(1.0)), 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+    color = aces(clamp(color * glowAmt, vec3<f32>(0.0), vec3<f32>(8.0)));
+    color += vec3<f32>((ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0);
+    let alpha = clamp(abs(order - 0.5) * 1.6 + crystallineFraction * 0.35 + fluidFraction * 0.2, 0.12, 0.95);
+    textureStore(writeTexture, global_id.xy, vec4<f32>(color * alpha, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(order * 0.5 + 0.1, 0.0, 0.0, 0.0));
 }

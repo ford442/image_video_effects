@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-07-13T15:28:50.504566",
+  "timestamp": "2026-07-17T07:16:01.766032",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 4,
-  "passed": 4,
+  "total": 8,
+  "passed": 8,
   "failed": 0,
   "skipped": 0,
   "workgroup_failures": 0,
   "results": [
     {
-      "file": "public/shaders/gen-navier-stokes-ink.wgsl",
+      "file": "public/shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -21,7 +21,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-neon-lotus.wgsl",
+      "file": "public/shaders/gen-audio-reactive-mycelium-pulse.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -33,7 +33,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-prismatic-ion-cascade.wgsl",
+      "file": "public/shaders/gen-cymatic-hex-mandala.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -45,7 +45,55 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-rgb-diffraction.wgsl",
+      "file": "public/shaders/gen-eldritch-tesseract-hive-mind.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_issues": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_issues": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_issues": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_issues": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-sonoluminescent-chrono-geode-matrix.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

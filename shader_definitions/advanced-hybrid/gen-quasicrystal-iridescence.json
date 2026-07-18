@@ -13,7 +13,10 @@
     "generative",
     "quasicrystal",
     "thin-film-interference",
-    "spectral"
+    "spectral",
+    "audio-reactive",
+    "aces-tone-map",
+    "ign-dither"
   ],
   "params": [
     {

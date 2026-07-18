@@ -1,0 +1,64 @@
+{
+  "id": "gen-cymatic-bloom-fronds",
+  "name": "Cymatic Bloom Fronds",
+  "category": "generative",
+  "url": "shaders/gen-cymatic-bloom-fronds.wgsl",
+  "tags": [
+    "generative",
+    "cymatic",
+    "fern",
+    "fractal",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "organic"
+  ],
+  "description": "Barnsley fern fronds bloom under bass-driven growth, shimmer with cymatic standing-wave rims on mids, and scatter treble jitter across the field. Mouse warps the coordinate space; depth softens background fronds.",
+  "workgroup_size": [16, 16, 1],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Growth Rate",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Cymatic Frequency",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Frond Scale",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Trail Decay",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "barnsley-ifs",
+    "domain-warp",
+    "aces-tone-map",
+    "ign-dither"
+  ]
+}

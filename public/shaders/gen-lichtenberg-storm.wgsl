@@ -1,5 +1,13 @@
-// gen-lichtenberg-storm.wgsl — Visualist upgrade
-// Lichtenberg discharge with OkLab mixing, blackbody temperature, atmospheric depth
+// ═══════════════════════════════════════════════════════════════════
+//  gen-lichtenberg-storm
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, depth-aware, lichtenberg,
+//            oklab-mix, blackbody-temperature, aces-tone-map, ign-dither,
+//            premultiplied-alpha
+//  Complexity: Medium-High
+//  Chunks From: lichtenbergFBM, mixOkLab, blackbodyRGB, bass_env, ign
+//  Upgraded: 2026-07-17 — weekly swarm Batch 14
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;

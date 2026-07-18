@@ -1,8 +1,12 @@
-// ----------------------------------------------------------------
-// Stellar Web-Loom
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  gen-stellar-web-loom
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, depth-aware, stellar-threads,
+//            volumetric-glow, aces-tone-map, ign-dither, premultiplied-alpha
+//  Complexity: Medium-High
+//  Chunks From: sdCylinder, fbmWarp, raymarchGlow, bass_env, ign
+//  Upgraded: 2026-07-17 — weekly swarm Batch 14
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -75,6 +79,14 @@ fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
     return length(p) - r;
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 var<private> g_time: f32;
 var<private> g_mouse: vec2<f32>;
 var<private> g_audio: f32;
@@ -141,7 +153,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var uv = (fragCoord * 2.0 - dims) / dims.y;
 
     g_time = u.config.x;
-    g_audio = u.config.y * 0.1;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    g_audio = bass * 0.12 + mids * 0.06 + treble * 0.03;
 
     let mX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
     let mY = u.zoom_config.z * 2.0 - 1.0;
@@ -171,7 +186,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var glow = 0.0;
     var colorAccum = vec3<f32>(0.0);
     let plasmaGlow = u.zoom_params.z;
-    let bass = plasmaBuffer[0].x;
 
     for (var i = 0; i < 80; i++) {
         let p = ro + rd * t;
@@ -192,12 +206,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         t += d;
     }
 
-    colorAccum += vec3<f32>(1.0, 0.4, 0.2) * g_audio * glow * 0.005;
+    colorAccum += vec3<f32>(1.0, 0.4, 0.2) * (bass + mids * 0.5) * glow * 0.005;
+    colorAccum += vec3<f32>(0.85, 0.95, 1.0) * treble * glow * 0.002;
 
     var col = colorAccum + starCol * exp(-t * 0.1);
 
-    col = col / (col + vec3<f32>(1.0));
-    col = pow(col, vec3<f32>(0.4545));
+    col = aces(col * (0.9 + bass * 0.2));
+    col += vec3<f32>((ign(vec2<f32>(id.xy)) - 0.5) / 255.0);
 
     let intensity = length(col);
     let threadOpacityExp = u.zoom_params.w;
@@ -206,5 +221,5 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let screenUV = fragCoord / dims;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, screenUV, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col * alpha, alpha));
 }

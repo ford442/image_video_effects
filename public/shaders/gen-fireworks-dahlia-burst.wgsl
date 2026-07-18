@@ -35,6 +35,9 @@ const GRAVITY: f32 = 0.85;
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
 fn hash1(n: f32) -> f32 { return fract(sin(n*127.1)*43758.5453); }
 fn hash2(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx)*0.1031); p3 += dot(p3, p3.yzx + 33.33);
@@ -179,11 +182,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   col = mix(prev * 0.91, col, 0.33);
   col = acesToneMap(col * 1.12);
+  col += vec3<f32>((ign(vec2<f32>(pixel)) - 0.5) / 255.0);
 
   let alpha = clamp(length(col) * 1.2 + 0.1, 0.12, 0.97);
   let persistent = col * 0.55 + prev * 0.38;
-  textureStore(dataTextureB, pixel, vec4<f32>(persistent, alpha));
-  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
-  textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
+  textureStore(dataTextureB, pixel, vec4<f32>(persistent * alpha, alpha));
+  textureStore(dataTextureA, pixel, vec4<f32>(col * alpha, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(col * alpha, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
 }

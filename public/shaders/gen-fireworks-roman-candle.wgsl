@@ -1,4 +1,9 @@
-// Roman Candle — optimized vertical star barrage from launch tubes
+// ═══ gen-fireworks-roman-candle ════════════════════════════════════
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, fireworks, temporal, roman-candle,
+//            aces-tone-map, ign-dither, premultiplied-alpha
+//  Complexity: Medium
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -14,7 +19,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=delta_time, zw=resolution
+  zoom_config: vec4<f32>,  // x=zoom, yz=mouse_uv, w=mouse_down
+  zoom_params: vec4<f32>,  // xyzw = user params p1…p4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -38,6 +45,9 @@ const HEX_WEIGHTS: array<f32, 7> = array<f32, 7>(0.25, 0.125, 0.125, 0.125, 0.12
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 fn hash1(n: f32) -> f32 { return fract(sin(n*127.1)*43758.5453); }
 fn hash2(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7)))*43758.5453123); }
@@ -163,6 +173,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col += vec3<f32>(0.7, 0.85, 1.0) * dust * treble * 0.5;
 
   col = acesToneMap(col * 1.08);
+  col += vec3<f32>((ign(vec2<f32>(pixel)) - 0.5) / 255.0);
 
   let intensity = clamp(length(col) * 1.1 + 0.14, 0.14, 0.96);
   let depth = 0.02 + readDepth * 0.08;
@@ -170,6 +181,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   textureStore(dataTextureB, pixel, vec4<f32>(col * 0.5 + prev * 0.4, semanticAlpha));
   textureStore(dataTextureA, pixel, vec4<f32>(col, semanticAlpha));
-  textureStore(writeTexture, pixel, vec4<f32>(col, semanticAlpha));
+  textureStore(writeTexture, pixel, vec4<f32>(col * semanticAlpha, semanticAlpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

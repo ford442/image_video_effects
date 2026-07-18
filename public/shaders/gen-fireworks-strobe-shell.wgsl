@@ -1,4 +1,9 @@
-// Strobe Blink Shell — rhythmic multi-flash bursts (upgraded)
+// ═══ gen-fireworks-strobe-shell ══════════════════════════════════════
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, fireworks, temporal, strobe,
+//            aces-tone-map, ign-dither, premultiplied-alpha
+//  Complexity: Medium
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -14,7 +19,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=delta_time, zw=resolution
+  zoom_config: vec4<f32>,  // x=zoom, yz=mouse_uv, w=mouse_down
+  zoom_params: vec4<f32>,  // xyzw = user params p1…p4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -23,7 +30,11 @@ const TAU: f32 = 6.28318530718;
 const GRAVITY: f32 = 0.85;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 fn hash1(n: f32) -> f32 { return fract(sin(n*127.1)*43758.5453); }
 fn hash2(p: vec2<f32>) -> f32 {
@@ -46,8 +57,8 @@ fn starField(uv: vec2<f32>) -> vec3<f32> {
   let id = floor(uv*160.0);
   return vec3<f32>(0.8, 0.9, 1.0)*step(0.992, hash2(id))*0.35;
 }
-fn strobePulse(age: f32, rate: f32, bass: f32) -> f32 {
-  let freq = 4.0 + rate * 12.0 + bass * 4.0;
+fn strobePulse(age: f32, rate: f32, bass: f32, mids: f32) -> f32 {
+  let freq = 4.0 + rate * 12.0 + bass * 4.0 + mids * 3.0;
   let wave = sin(age * freq * TAU) * 0.5 + 0.5;
   return pow(wave, 3.0);
 }
@@ -99,11 +110,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (bAge > 0.0 && bAge < 6.0) {
       let center = vec2<f32>(bx, by+1.22);
       let fade = smoothstep(5.5, 0.3, bAge);
-      let pulse = strobePulse(bAge, flashRate, bass);
+      let pulse = strobePulse(bAge, flashRate, bass, mids);
       let flash = pulse * energy * (1.0 + treble * 0.5);
       col += flashColor(seed, colorFlash, flash) * hexBokeh(uv, center, 0.05 + pulse * 0.04, 2.0);
 
-      let n = i32(22.0 + energy * 28.0 + mids * 10.0);
+      let n = i32(22.0 + energy * 28.0 + mids * 10.0 + treble * 18.0);
       for (var j: i32 = 0; j < n; j = j + 1) {
         let jf = f32(j);
         let js = hash1(si*83.0+jf*3.7);
@@ -132,7 +143,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mAge = fract(time*1.1)*3.5;
     if (mAge > 0.5) {
       let mb = mAge-0.5;
-      let pulse = strobePulse(mb, flashRate, bass);
+      let pulse = strobePulse(mb, flashRate, bass, mids);
       col += flashColor(time*0.1, colorFlash, pulse*pulsePow) * hexBokeh(uv, mUV, 0.06+pulse*0.05, 2.0);
       for (var k = 0; k < 25; k = k + 1) {
         let ang = f32(k)/25.0*TAU;
@@ -144,10 +155,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   col = mix(prev*afterglow, col, 0.32);
   col = acesToneMap(col*1.1);
+  let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
+  col += vec3<f32>(dither);
   let alpha = clamp(length(col)*1.2+0.1, 0.12, 0.97);
   let persistent = col*0.55 + prev*0.38;
   textureStore(dataTextureB, pixel, vec4<f32>(persistent, alpha));
   textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
-  textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(col*alpha, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
 }

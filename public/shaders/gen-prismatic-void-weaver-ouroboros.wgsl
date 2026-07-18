@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Prismatic Void-Weaver Ouroboros
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  gen-prismatic-void-weaver-ouroboros
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, depth-aware, ouroboros-sdf,
+//            chromatic-dispersion, aces-tone-map, ign-dither, premultiplied-alpha
+//  Complexity: Medium-High
+//  Chunks From: sdfOuroboros, fbm, raymarchSDF, bass_env, ign
+//  Upgraded: 2026-07-17 — weekly swarm Batch 15
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -108,7 +113,7 @@ fn sdfOuroboros(p_in: vec3<f32>, time: f32) -> f32 {
 
     // Fractal Scales
     let audioReact = u.zoom_params.w;
-    let audio = u.config.y * audioReact * 2.0;
+    let audio = plasmaBuffer[0].x * audioReact * 2.0 + plasmaBuffer[0].y * 0.5;
     let scaleDisplacement = fbm(p * 3.0 + vec3<f32>(time * 0.2)) * 0.2;
 
     return baseSdf - scaleDisplacement * (1.0 + audio);
@@ -124,6 +129,14 @@ fn getNormal(p: vec3<f32>, time: f32) -> vec3<f32> {
     return normalize(n);
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(u.config.z, u.config.w);
@@ -133,6 +146,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     var ro = vec3<f32>(0.0, 0.0, -6.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
@@ -191,9 +207,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = matCol * diff * darkMatter + spec * vec3<f32>(0.8, 0.9, 1.0);
 
         // Plasma aura
-        let audioReact = u.config.y * u.zoom_params.w;
+        let audioReact = bass * u.zoom_params.w + mids * 0.35;
         let emission = clamp(fbm(p * 5.0 - vec3<f32>(time)), 0.0, 1.0) * u.zoom_params.y * (1.0 + audioReact);
         col += matCol * emission * vec3<f32>(1.5, 0.5, 2.0);
+        col += vec3<f32>(1.0, 0.9, 1.0) * treble * emission * 0.4;
 
         // Distance fog
         col = mix(col, vec3<f32>(0.02, 0.0, 0.05), 1.0 - exp(-0.02 * dO * dO));
@@ -201,6 +218,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     col += voidGlow;
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    col = aces(col * (0.95 + bass * 0.2));
+    col += vec3<f32>((ign(vec2<f32>(id.xy)) - 0.5) / 255.0);
+    let alpha = clamp(length(col) * 0.7 + voidGlow.r * 0.3 + select(0.0, 0.4, dO < MAX_DIST), 0.1, 0.95);
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col * alpha, alpha));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(min(dO / MAX_DIST, 1.0) * 0.6 + 0.1, 0.0, 0.0, 0.0));
 }

@@ -1,0 +1,63 @@
+{
+  "id": "gen-cymatic-hex-mandala",
+  "name": "Cymatic Hex Mandala",
+  "category": "generative",
+  "url": "shaders/gen-cymatic-hex-mandala.wgsl",
+  "tags": [
+    "generative",
+    "cymatic",
+    "mandala",
+    "hex-grid",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "standing-wave"
+  ],
+  "description": "A hex-tiled cymatic mandala radiates standing-wave rings from center. Bass drives wave amplitude, mids shift frequency and hue, and treble sparks node intersections. Mouse offsets the mandala center; depth softens outer rings.",
+  "workgroup_size": [16, 16, 1],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Hex Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Wave Frequency",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Ring Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Trail Persistence",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "hex-cymatics",
+    "aces-tone-map",
+    "ign-dither"
+  ]
+}

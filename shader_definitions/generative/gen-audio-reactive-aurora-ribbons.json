@@ -1,0 +1,63 @@
+{
+  "id": "gen-audio-reactive-aurora-ribbons",
+  "name": "Audio-Reactive Aurora Ribbons",
+  "category": "generative",
+  "url": "shaders/gen-audio-reactive-aurora-ribbons.wgsl",
+  "tags": [
+    "generative",
+    "aurora",
+    "ribbons",
+    "northern-lights",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "atmospheric"
+  ],
+  "description": "Flowing aurora curtains ripple across a polar sky. Bass swells ribbon amplitude, mids shift spectral hue, and treble adds ionospheric sparkle. Mouse bends the curtain field; depth fades distant glow.",
+  "workgroup_size": [16, 16, 1],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Ribbon Intensity",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Ribbon Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Wave Frequency",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Trail Persistence",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "aurora-curtains",
+    "aces-tone-map",
+    "ign-dither"
+  ]
+}

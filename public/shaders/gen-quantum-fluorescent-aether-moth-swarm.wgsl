@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Quantum-Fluorescent Aether-Moth Swarm
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  gen-quantum-fluorescent-aether-moth-swarm
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, depth-aware, moth-swarm,
+//            curl-noise, fluorescence, aces-tone-map, ign-dither, premultiplied-alpha
+//  Complexity: Medium-High
+//  Chunks From: curlNoise, snoise, advectionTrails, bass_env, ign
+//  Upgraded: 2026-07-17 — weekly swarm Batch 15
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -126,10 +131,13 @@ fn curlNoise(p: vec3<f32>) -> vec3<f32> {
     return normalize(vec3<f32>(x, y, z) * divisor);
 }
 
-// Memory rule says: read from dataTextureC and write to dataTextureA
-// (However, this is typically for ping-pong. For particle swarms on a screen, we compute a field and display it).
-// The task requires: flocking behavior mimicking complex fluid dynamics,
-// a persistent buffer if needed, audio-reactive fluorescence.
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -143,7 +151,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv_scaled = uv * vec2<f32>(res.x / res.y, 1.0);
 
     let time = u.config.x;
-    let audio = u.config.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio = bass * 0.7 + mids * 0.2 + treble * 0.1;
     let mouse = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) / res) * 2.0 - 1.0;
     let mouse_scaled = mouse * vec2<f32>(res.x / res.y, 1.0);
     let click = select(0.0, 1.0, u.config.y > 0.5); // proxy for click or audio reactivity
@@ -183,9 +194,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var spawn = smoothstep(0.7, 0.9, particle_noise);
 
     // Audio reactivity - spontaneous assembly
-    if (audio > 0.5) {
+    if (audio > 0.35 || bass > 0.4) {
         let mandala = sin(length(uv_scaled) * 20.0 - time * 5.0) * cos(atan2(uv_scaled.y, uv_scaled.x) * 8.0);
-        spawn += smoothstep(0.8, 1.0, mandala) * audio * audio_sens;
+        spawn += smoothstep(0.8, 1.0, mandala) * audio * audio_sens * (1.0 + treble * 0.5);
     }
 
     // Color mapping
@@ -196,13 +207,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let vel_color = mix(col3, mix(col1, col2, speed), speed * 2.0);
 
-    var final_color = trail * 0.92; // Decay
-    final_color += vel_color * spawn * glow_strength;
+    var final_color = trail * 0.92;
+    final_color += vel_color * spawn * glow_strength * (1.0 + mids * 0.3);
 
-    // Tone mapping
-    final_color = final_color / (1.0 + final_color);
-
-    textureStore(dataTextureA, gid, vec4<f32>(final_color, 1.0));
-    textureStore(writeTexture, gid, vec4<f32>(final_color, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    final_color = aces(final_color * (0.9 + bass * 0.25));
+    final_color += vec3<f32>((ign(vec2<f32>(gid)) - 0.5) / 255.0);
+    let alpha = clamp(spawn * glow_strength * (0.6 + bass * 0.4) + length(final_color) * 0.15, 0.1, 0.94);
+    textureStore(dataTextureA, gid, vec4<f32>(final_color * alpha, alpha));
+    textureStore(writeTexture, gid, vec4<f32>(final_color * alpha, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(spawn * 0.4 + 0.05, 0.0, 0.0, 0.0));
 }

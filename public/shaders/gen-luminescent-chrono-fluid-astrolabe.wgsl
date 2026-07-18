@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Luminescent Chrono-Fluid Astrolabe
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  gen-luminescent-chrono-fluid-astrolabe
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, depth-aware, astrolabe-sdf,
+//            iridescent-rings, aces-tone-map, ign-dither, premultiplied-alpha
+//  Complexity: Medium-High
+//  Chunks From: sdTorus, noise3D, raymarchSDF, bass_env, ign
+//  Upgraded: 2026-07-17 — weekly swarm Batch 15
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -136,6 +141,14 @@ fn getNormal(p: vec3<f32>) -> vec3<f32> {
     return normalize(n);
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (vec2<f32>(id.xy) * 2.0 - vec2<f32>(u.config.xy)) / u.config.y;
@@ -167,7 +180,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var col = vec3<f32>(0.0);
     let time = u.config.z;
-    let audio = u.zoom_config.w;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio = bass * 0.6 + mids * 0.3 + treble * 0.1;
 
     if (hit) {
         let p = ro + rd * t;
@@ -184,8 +200,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let iridescence = vec3<f32>(0.0, 1.0, 1.0) * (0.5 + 0.5 * sin(p.x * 2.0 + time));
             col = mix(base_col, iridescence, 0.5) * (diff + 0.2) + spec;
         } else if (mat == 2.0) { // Core material - Holographic Bloom
-            col = vec3<f32>(0.0, 1.0, 1.0) + vec3<f32>(1.0, 0.0, 1.0) * sin(time * 3.0);
-            col *= u.zoom_params.z; // Core Glow Intensity
+            col = vec3<f32>(0.0, 1.0, 1.0) + vec3<f32>(1.0, 0.0, 1.0) * sin(time * 3.0 + mids * 2.0);
+            col *= u.zoom_params.z * (1.0 + bass * 0.35);
         }
     } else {
         // Nebula Dust Interference
@@ -197,10 +213,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Core Glow Volume Accumulation (Fake)
     let core_dist = length(uv);
     let glow = 0.05 / (core_dist * core_dist + 0.01) * u.zoom_params.z;
-    col += vec3<f32>(0.0, 0.5, 1.0) * glow;
+    col += vec3<f32>(0.0, 0.5, 1.0) * glow * (1.0 + treble * 0.4);
 
-    // Output
-    let final_col = vec4<f32>(col, 1.0);
-    textureStore(writeTexture, vec2<i32>(id.xy), applyGenerativePrimaryControls(final_col));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    col = aces(col * (0.95 + bass * 0.2));
+    col += vec3<f32>((ign(vec2<f32>(id.xy)) - 0.5) / 255.0);
+    let alpha = clamp(length(col) * 0.75 + glow * 0.25 + select(0.0, 0.35, hit), 0.1, 0.96);
+    let controlled = applyGenerativePrimaryControls(vec4<f32>(col, alpha));
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(controlled.rgb * controlled.a, controlled.a));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(select(t / MAX_DIST, 0.0, hit) * 0.5 + 0.1, 0.0, 0.0, 0.0));
 }

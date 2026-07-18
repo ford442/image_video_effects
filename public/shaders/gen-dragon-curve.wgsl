@@ -1,6 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Heighway Dragon Curve (Algorithmist Upgrade)
+//  gen-dragon-curve
 //  Category: generative
+//  Features: audio-reactive, mouse-driven, depth-aware, fractal-curve,
+//            kaleidoscope, clifford-attractor, aces-tone-map, ign-dither,
+//            premultiplied-alpha
+//  Complexity: High
+//  Chunks From: warpedFBM, kaleido, clifford, hsv2rgb, ign
 // ═══════════════════════════════════════════════════════════════════
 const PI=3.14159265358979323846; const TAU=6.28318530717958647692;
 const PHI=1.61803398874989484820; const SQRT2=1.41421356237309504880;
@@ -22,15 +27,19 @@ const LN2=0.69314718055994530941; const INV_PI=0.31830988618379067154;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
+    config: vec4<f32>,       // x=Time, y=delta_time, zw=resolution
+    zoom_config: vec4<f32>,  // x=zoom, yz=mouse_uv, w=mouse_down
+    zoom_params: vec4<f32>,  // xyzw = user params p1…p4
     ripples: array<vec4<f32>, 50>,
 };
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
 fn segDist(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
@@ -96,6 +105,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = (vec2<f32>(gid.xy) + 0.5) / vec2<f32>(dims);
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let mouse = u.zoom_config.yz;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -109,7 +120,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var p = ((uv - 0.5) * vec2<f32>(aspect, 1.0) - mp) * zoom * 40.0 + vec2<f32>(16.0, 8.0);
 
     // Kaleidoscope symmetry + Clifford strange-attractor warp
-    let kSegs = mix(1.0, 6.0, sin(time * 0.1) * 0.5 + 0.5);
+    let kSegs = mix(1.0, 6.0 + mids * 2.0, sin(time * 0.1) * 0.5 + 0.5);
     p = kaleido(p - vec2<f32>(16.0, 8.0), kSegs) + vec2<f32>(16.0, 8.0);
     let cW = clifford(p * 0.05, 1.5 + time*0.03, -1.7, 1.3, -1.1) * 0.3 * sin(time*0.2);
     p = p + cW;
@@ -154,7 +165,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // HDR glow modulated by domain-warped background field
     let bgField = warpedFBM(p * 0.1 + vec2<f32>(time*0.03, 0.0), time) * 0.5 + 0.5;
-    let glow = exp(-minDist / glowWidth) * turnIntensity * (1.0 + bgField * 0.3);
+    let glow = exp(-minDist / glowWidth) * turnIntensity * (1.0 + bgField * 0.3 + treble * 0.25);
     var color = neon * glow * 2.5;
 
     // Chromatic aberration on tight folds
@@ -163,6 +174,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                         color.b * (1.0 - fold * caAmt * 0.5));
 
     color = acesToneMap(color);
+    color += vec3<f32>((ign(vec2<f32>(coord)) - 0.5) / 255.0);
 
     // Temporal persistence
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
@@ -172,7 +184,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let curveDensity = exp(-minDist / (glowWidth * (1.0 + depth)));
     let alpha = curveDensity * turnIntensity * (0.3 + depth * 0.7);
 
-    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(color * alpha, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(curveDensity * depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
 }

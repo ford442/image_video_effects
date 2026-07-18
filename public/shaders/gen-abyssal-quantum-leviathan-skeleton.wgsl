@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Abyssal Quantum-Leviathan Skeleton
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  gen-abyssal-quantum-leviathan-skeleton
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, depth-aware, leviathan-sdf,
+//            marrow-glow, volumetric-aether, aces-tone-map, ign-dither, premultiplied-alpha
+//  Complexity: Medium-High
+//  Chunks From: smin, noise3, raymarchSDF, bass_env, ign
+//  Upgraded: 2026-07-17 — weekly swarm Batch 15
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -116,6 +121,14 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coords = vec2<i32>(global_id.xy);
@@ -130,6 +143,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Camera setup
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio = bass * 0.7 + mids * 0.2 + treble * 0.1;
     var ro = vec3<f32>(sin(time * 0.2) * 12.0, sin(time * 0.1) * 5.0, cos(time * 0.2) * 12.0);
     let ta = vec3<f32>(0.0, 0.0, 0.0);
 
@@ -180,7 +197,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dist_to_center = length(p.xy);
         let marrow_intensity = smoothstep(2.0, 0.0, dist_to_center) * marrow_glow_param;
         let audio_pulse = sin(time * 5.0 + p.z) * 0.5 + 0.5;
-        color += vec3<f32>(0.5, 0.0, 1.0) * marrow_intensity * (1.0 + audio_pulse * u.config.y);
+        color += vec3<f32>(0.5, 0.0, 1.0) * marrow_intensity * (1.0 + audio_pulse * audio);
+        color += vec3<f32>(0.2, 0.8, 1.0) * treble * marrow_intensity * 0.35;
 
         // Simple fog
         color = mix(color, vec3<f32>(0.0, 0.02, 0.05), smoothstep(10.0, max_d, t));
@@ -202,9 +220,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = bg_color + aether_color * vol_acc;
     }
 
+    color = aces(color * (0.9 + bass * 0.2));
+    color += vec3<f32>((ign(vec2<f32>(coords)) - 0.5) / 255.0);
+    let alpha = clamp(length(color) * 0.7 + select(0.0, 0.35, hit) + mids * 0.1, 0.12, 0.94);
+
     let decay = 0.96;
     let temporal = mix(prev.rgb * decay, color, 0.25);
-    textureStore(dataTextureA, coords, vec4<f32>(temporal, 1.0));
-    textureStore(writeTexture, coords, vec4<f32>(color, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coords, vec4<f32>(temporal * alpha, alpha));
+    textureStore(writeTexture, coords, vec4<f32>(color * alpha, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(select(t / max_d, 0.0, hit) * 0.5 + 0.1, 0.0, 0.0, 0.0));
 }

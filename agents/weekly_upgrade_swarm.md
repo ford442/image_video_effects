@@ -5,9 +5,69 @@
 
 ---
 
-## Recently Completed (104 shaders)
+## Recently Completed (120 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 15 (8 shaders) — 2026-07-17
+
+8-shader weekly swarm — 6 legacy-header generative repairs + 2 creations. Repairs wire `plasmaBuffer` audio, add Standard Hybrid Headers, ACES + IGN dither, semantic alpha, and premultiplied alpha. Creations: bioluminescent mycelium network and cymatic hex mandala. All 8 pass `naga` and `wgsl_precommit_gate.py`; manifest now 1304 shaders.
+
+| # | Shader | Batch | Role | Changes Made |
+|---|--------|-------|------|--------------|
+| 145 | `gen-luminescent-chrono-fluid-astrolabe` | 15 | Repair | Modern header, plasmaBuffer audio, ACES/IGN/premul, depth from hit distance. |
+| 146 | `gen-prismatic-void-weaver-ouroboros` | 15 | Repair | Modern header, bass/mids/treble on ouroboros SDF + emission, ACES/IGN/premul. |
+| 147 | `gen-quantum-fluorescent-aether-moth-swarm` | 15 | Repair | Modern header, plasmaBuffer mandala assembly, ACES/IGN/premul trails. |
+| 148 | `gen-sonoluminescent-chrono-geode-matrix` | 15 | Repair | Modern header, plasmaBuffer sonoluminescence, ACES/IGN/premul geode glow. |
+| 149 | `gen-abyssal-quantum-leviathan-skeleton` | 15 | Repair | Modern header, plasmaBuffer marrow pulse, ACES/IGN/premul temporal feedback. |
+| 150 | `gen-eldritch-tesseract-hive-mind` | 15 | Repair | Modern header, plasmaBuffer hive intensity, ACES/IGN/premul swarm alpha. |
+| 151 | `gen-audio-reactive-mycelium-pulse` | 15 | **New** | Voronoi hyphae network, bass growth / mids hue / treble spores. |
+| 152 | `gen-cymatic-hex-mandala` | 15 | **New** | Hex cymatic standing waves, bass amplitude / mids frequency / treble nodes. |
+
+### Batch 14 (8 shaders) — 2026-07-17
+
+8-shader weekly swarm — 6 repairs + 2 creations. Repairs add Standard Hybrid Headers, plasmaBuffer audio mapping, ACES + IGN dither, and premultiplied alpha to undersized or legacy-header generative shaders. Creations: audio-reactive aurora ribbons and fractal lightning canvas. All 8 pass `naga` and `wgsl_precommit_gate.py`; manifest now 1302 shaders.
+
+| # | Shader | Batch | Role | Changes Made |
+|---|--------|-------|------|--------------|
+| 137 | `gen-chrono-kitsune-prism-weaver` | 14 | Repair | Modern header, bass/mids/treble prism tails, ACES + IGN, semantic alpha, premul, depth write. |
+| 138 | `gen-lichtenberg-storm` | 14 | Repair | Standard Hybrid Header (already had audio/ACES/IGN/premul). |
+| 139 | `gen-raptor-mini` | 14 | Repair | Modern header, mids/treble chase sparkle, ACES + IGN, premul alpha. |
+| 140 | `gen-stellar-web-loom` | 14 | Repair | Modern header, plasmaBuffer audio, ACES + IGN, premul alpha. |
+| 141 | `gen-phase-transition-memory-weave` | 14 | Repair | Modern header, ACES + IGN, semantic alpha from order parameter, premul. |
+| 142 | `gen-fireworks-dahlia-burst` | 14 | Repair | IGN dither, premultiplied alpha on write + feedback. |
+| 143 | `gen-audio-reactive-aurora-ribbons` | 14 | **New** | Flowing aurora curtains, bass amplitude / mids hue / treble sparkle. |
+| 144 | `gen-fractal-lightning-canvas` | 14 | **New** | Lichtenberg fractal bolts, bass seeds / treble jitter / mouse strike. |
+
+### Batch 13 (8 shaders) — 2026-07-17
+
+8-shader weekly swarm — 6 fireworks/dragon-curve header repairs + 2 new generative creations. Repairs add Standard Hybrid Headers, IGN dither, and premultiplied alpha to Batch 6 fireworks that lacked modern headers; dragon-curve gets mids/treble audio + premul alpha. Creations: audio-reactive spiral galaxy and cymatic bloom fronds. All 8 pass `naga` and `wgsl_precommit_gate.py`; manifest now 1300 shaders.
+
+| # | Shader | Batch | Role | Changes Made |
+|---|--------|-------|------|--------------|
+| 129 | `gen-fireworks-fan-shell` | 13 | Repair | Standard Hybrid Header, IGN dither, premultiplied alpha. |
+| 130 | `gen-fireworks-ring-shell` | 13 | Repair | Standard Hybrid Header, IGN dither, premultiplied alpha. |
+| 131 | `gen-fireworks-horse-tail` | 13 | Repair | Standard Hybrid Header, IGN dither, premultiplied alpha. |
+| 132 | `gen-fireworks-kamuro-gold` | 13 | Repair | Standard Hybrid Header, IGN dither, premultiplied alpha. |
+| 133 | `gen-fireworks-roman-candle` | 13 | Repair | Standard Hybrid Header, IGN dither, premultiplied alpha. |
+| 134 | `gen-dragon-curve` | 13 | Repair | Modern Features header, mids kaleidoscope + treble glow, IGN, premul alpha. |
+| 135 | `gen-audio-reactive-spiral-galaxy` | 13 | **New** | Log-spiral galaxy, bass arm tightness / treble supernova sparks, depth haze. |
+| 136 | `gen-cymatic-bloom-fronds` | 13 | **New** | Barnsley fern + cymatic rim, bass growth / mids frequency / treble jitter. |
+
+### Batch 12 (8 shaders) — 2026-07-17
+
+8-agent Kimi weekly swarm — 6 repairs + 2 creations. Repairs add Standard Hybrid Headers, audio reactivity, ACES + IGN dither, and premultiplied alpha on undersized or legacy-header shaders. Creations add two new generative shaders with JSON defs. Kimi stopped mid-batch; crossette repair, quantum-pollen creation, and JSON wiring completed in follow-up. All 8 pass `naga` and `wgsl_precommit_gate.py`; manifest now 1298 shaders.
+
+| # | Shader | Batch | Role | Changes Made |
+|---|--------|-------|------|--------------|
+| 121 | `gen-velocity-bloom` | 12 | Repair | Bass-envelope bloom radius/intensity, mids color temperature, treble edge sparkle, ACES + IGN, semantic alpha. |
+| 122 | `gen-quasicrystal-iridescence` | 12 | Repair | Modern header, thin-film spectral iridescence, audio-driven phase shift, ACES + IGN. |
+| 123 | `gen-ethereal-cyber-chrono-nebula-phoenix` | 12 | Repair | Phoenix SDF + Clifford attractor upgrade, audio fracture, domain-warped nebula. |
+| 124 | `gen-fireworks-comet-trail` | 12 | Repair | Standard Hybrid Header, hex-bokeh head/trail, bass energy, IGN dither, premultiplied alpha. |
+| 125 | `gen-fireworks-strobe-shell` | 12 | Repair | Strobe pulse audio mapping, flash color cycling, IGN dither, premultiplied alpha. |
+| 126 | `gen-fireworks-crossette` | 12 | Repair | Standard Hybrid Header, bass-accelerated arm split, treble sub-spark boost, IGN dither, premultiplied alpha. |
+| 127 | `gen-audio-reactive-quantum-pollen` | 12 | **New** | Galaxy-cluster pollen field, bass cluster / treble scatter / mids orbit, mouse attractor, depth haze. |
+| 128 | `gen-magnetic-liquid-glyphs` | 12 | **New** | Ferrofluid glyph SDFs, bass resolve / treble chaos, mouse magnetic field, transmission alpha. |
 
 ### Batch 11 (4 generative shaders) — 2026-07-13
 

@@ -1,15 +1,18 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Quasicrystal Iridescence
 //  Category: advanced-hybrid
-//  Features: generative, quasicrystal, thin-film-interference, spectral
+//  Features: generative, quasicrystal, thin-film-interference, spectral,
+//            audio-reactive, aces-tone-map, ign-dither
 //  Complexity: Very High
 //  Chunks From: gen-quasicrystal.wgsl, spec-iridescence-engine.wgsl
-//  Created: 2026-04-18
+//  Created: 2026-07-17
 //  By: Agent CB-23 — Generative Abstract Enhancer
 // ═══════════════════════════════════════════════════════════════════
 //  Penrose tiling-inspired patterns with 5-fold symmetry enhanced by
 //  thin-film iridescence. Quasicrystal depth drives film thickness,
 //  producing soap-bubble spectral colors across the aperiodic tiling.
+//  Audio: bass rotates/thickens the film, mids shift the color cycle,
+//  treble adds metallic edge shimmer. Alpha encodes density+thickness.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -27,18 +30,28 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=delta_time, zw=resolution
+  zoom_config: vec4<f32>,  // x=zoom, yz=mouse_uv, w=mouse_down
+  zoom_params: vec4<f32>,  // xyzw = user params p1…p4
   ripples: array<vec4<f32>, 50>,
 };
 
-// ═══ CHUNK: quasicrystal (from gen-quasicrystal.wgsl) ═══
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 fn quasicrystal(uv: vec2<f32>, n: i32, t: f32, angle: f32) -> f32 {
   var value = 0.0;
-  let pi = 3.14159265359;
   for (var i: i32 = 0; i < n; i++) {
-    let theta = angle + pi * 2.0 * f32(i) / f32(n);
+    let theta = angle + TAU * f32(i) / f32(n);
     let k = vec2<f32>(cos(theta), sin(theta));
     value += cos(dot(uv, k) * 10.0 + t);
   }
@@ -51,7 +64,6 @@ fn rot2(a: f32) -> mat2x2<f32> {
   return mat2x2<f32>(c, -s, s, c);
 }
 
-// ═══ CHUNK: thin-film functions (from spec-iridescence-engine.wgsl) ═══
 fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
   let t = clamp((lambda - 380.0) / (700.0 - 380.0), 0.0, 1.0);
   let r = smoothstep(0.5, 0.85, t) + smoothstep(0.0, 0.2, t) * 0.2;
@@ -68,7 +80,7 @@ fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
   var sampleCount = 0.0;
   for (var lambda = 380.0; lambda <= 700.0; lambda = lambda + 20.0) {
     let phase = opd / lambda;
-    let interference = cos(phase * 6.28318530718) * 0.5 + 0.5;
+    let interference = cos(phase * TAU) * 0.5 + 0.5;
     color += wavelengthToRGB(lambda) * interference;
     sampleCount = sampleCount + 1.0;
   }
@@ -83,19 +95,29 @@ fn hash12(p: vec2<f32>) -> f32 {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let pixel = vec2<i32>(global_id.xy);
   let resolution = u.config.zw;
-  if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  if (f32(pixel.x) >= resolution.x || f32(pixel.y) >= resolution.y) { return; }
+  let uv01 = vec2<f32>(pixel) / resolution;
   let t = u.config.x;
-  let coord = vec2<i32>(global_id.xy);
+  let coord = pixel;
+
+  let bass   = plasmaBuffer[0].x;
+  let mids   = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
 
   let symmetry = i32(mix(5.0, 13.0, u.zoom_params.x));
   let patternDensity = mix(3.0, 15.0, u.zoom_params.y);
-  let colorCycle = u.zoom_params.z;
-  let projAngle = mix(0.0, 6.28318, u.zoom_params.w);
+  let colorCycleBase = u.zoom_params.z;
+  let projAngleBase = mix(0.0, TAU, u.zoom_params.w);
+
+  // Audio-driven projection angle and film thickness
+  let projAngle = projAngleBase + t * (0.05 + bass * 0.15);
+  let filmThicknessBase = mix(200.0, 800.0, u.zoom_params.x) * (1.0 + bass * 0.4);
+  let colorCycle = colorCycleBase + mids * 0.5;
 
   let aspect = resolution.x / resolution.y;
-  var p = (uv - 0.5) * vec2<f32>(aspect, 1.0) * patternDensity;
+  var p = (uv01 - 0.5) * vec2<f32>(aspect, 1.0) * patternDensity;
   p = rot2(t * 0.05 + projAngle) * p;
 
   let qc = quasicrystal(p, symmetry, t * 0.2, projAngle);
@@ -105,38 +127,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let qc2 = quasicrystal(p * 1.5 + 0.5, symmetry, t * 0.15, projAngle + 0.1);
   let pattern2 = smoothstep(-threshold * 0.5, threshold * 0.5, qc2);
 
-  // ═══ IRIDESCENCE ENGINE ═══
-  let filmThicknessBase = mix(200.0, 800.0, u.zoom_params.x);
   let filmIOR = mix(1.2, 2.4, u.zoom_params.y);
   let intensity = mix(0.3, 1.5, u.zoom_params.z);
   let turbulence = mix(0.0, 1.0, u.zoom_params.w);
 
-  let toCenter = uv - vec2<f32>(0.5);
+  let toCenter = uv01 - vec2<f32>(0.5);
   let dist = length(toCenter);
   let cosTheta = sqrt(max(1.0 - dist * dist * 0.5, 0.01));
 
-  let noiseVal = hash12(uv * 12.0 + t * 0.1) * 0.5 + hash12(uv * 25.0 - t * 0.15) * 0.25;
+  let noiseVal = hash12(uv01 * 12.0 + t * 0.1) * 0.5 + hash12(uv01 * 25.0 - t * 0.15) * 0.25;
 
-  // Quasicrystal pattern drives thickness variation
   let depth = pattern * 0.5 + pattern2 * 0.3;
   var thickness = filmThicknessBase * (0.7 + depth * 0.6 + noiseVal * turbulence);
 
-  // Mouse interaction
+  // Mouse interaction, extra reactive to bass
   let mousePos = u.zoom_config.yz;
-  let isMouseDown = u.zoom_config.w > 0.5;
-  if (isMouseDown) {
-    let mouseDist = length(uv - mousePos);
+  if (u.zoom_config.w > 0.5) {
+    let mouseDist = length(uv01 - mousePos);
     let mouseInfluence = exp(-mouseDist * mouseDist * 800.0);
-    thickness += mouseInfluence * 300.0 * sin(t * 3.0 + mouseDist * 30.0);
+    thickness += mouseInfluence * 300.0 * (1.0 + bass) * sin(t * 3.0 + mouseDist * 30.0);
   }
 
   let iridescent = thinFilmColor(thickness, cosTheta, filmIOR) * intensity;
-
-  // Fresnel-like blend
   let fresnel = pow(1.0 - cosTheta, 3.0);
 
-  // Metallic base from quasicrystal
-  let m = fract(qc + qc2 + t * colorCycle * 0.05);
+  // Metallic base with mids-driven color cycle
+  let m = fract(qc + qc2 + t * colorCycle * 0.05 + mids * 0.25);
   let gold = vec3<f32>(1.0, 0.84, 0.0);
   let silver = vec3<f32>(0.75, 0.75, 0.75);
   let bronze = vec3<f32>(0.8, 0.5, 0.2);
@@ -145,24 +161,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   else if (m < 0.66) { baseCol = mix(silver, bronze, (m - 0.33) * 3.0); }
   else { baseCol = mix(bronze, gold, (m - 0.66) * 3.0); }
 
-  // Highlight edges
+  // Highlight edges and add treble shimmer
   let edge = abs(qc);
   let edgeMask = smoothstep(0.05, 0.0, edge);
+  let sparkle = hash12(uv01 * 350.0 + t * 10.0) * edgeMask * treble * 0.8;
   baseCol = baseCol + vec3<f32>(1.0, 0.95, 0.8) * edgeMask * 0.4;
+  baseCol = baseCol + vec3<f32>(sparkle);
 
-  // Blend quasicrystal with iridescence
-  var outColor = mix(baseCol, iridescent, fresnel * 0.7);
+  // Blend quasicrystal with iridescence, bass pushes iridescence dominance
+  var outColor = mix(baseCol, iridescent, fresnel * 0.7 + bass * 0.15);
 
-  // Shimmer
-  let shimmer = sin(p.x * 20.0 + t) * sin(p.y * 20.0 + t * 1.3);
-  outColor = outColor + vec3<f32>(0.1) * shimmer * 0.05;
+  // ACES tone map + IGN dither
+  let exposure = 0.9 + mids * 0.2;
+  var color = acesToneMap(outColor * exposure);
+  let dither = (ign(vec2<f32>(pixel)) - 0.5) / 256.0;
+  color = clamp(color + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
 
-  // Tone map
-  let tonemapped = outColor / (1.0 + outColor * 0.2);
-  let vignette = 1.0 - length(uv - 0.5) * 0.5;
-  let finalColor = tonemapped * vignette;
+  let vignette = 1.0 - length(uv01 - 0.5) * 0.5;
+  let finalColor = color * vignette;
 
-  textureStore(dataTextureA, coord, vec4<f32>(iridescent, thickness / 1000.0));
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, thickness / 1000.0));
+  // Alpha encodes pattern density / film thickness
+  let alpha = clamp(depth * 0.8 + thickness / 1200.0, 0.2, 0.95);
+
+  textureStore(dataTextureA, coord, vec4<f32>(iridescent, alpha));
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

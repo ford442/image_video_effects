@@ -1,8 +1,13 @@
-// ----------------------------------------------------------------
-// Chrono-Kitsune Prism Weaver
-// Category: generative
-// ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  gen-chrono-kitsune-prism-weaver
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, depth-aware, kitsune-sdf,
+//            prismatic-tails, temporal-echo, aces-tone-map, ign-dither,
+//            premultiplied-alpha
+//  Complexity: Medium-High
+//  Chunks From: raymarchSDF, smin, prismHue, bass_env, ign
+//  Upgraded: 2026-07-17 — weekly swarm Batch 14
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -25,7 +30,21 @@ struct Uniforms {
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
-const PI = 3.14159265359;
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+fn hue_preserve_clamp(c: vec3<f32>, max_lum: f32) -> vec3<f32> {
+    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let s = min(1.0, max_lum / max(l, 1e-4));
+    return c * s;
+}
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -106,7 +125,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (coord - 0.5 * dim) / dim.y;
     let time = u.config.x;
-    let audio = u.config.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio = bass * 0.6 + mids * 0.3 + treble * 0.1;
+    let depth = textureLoad(readDepthTexture, vec2<i32>(id.xy), 0).r;
 
     // Mouse coordinates mappings
     var mpos = vec2<f32>(u.zoom_config.y, u.zoom_config.z) / dim * 2.0 - vec2<f32>(1.0);
@@ -144,7 +167,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Raymarching
     for (var i = 0; i < 80; i++) {
         p = ro + rd * t;
-        let res = map(p, time, p_tail_count, 1.0 + p_weave * 3.0);
+        let weave = 1.0 + p_weave * 3.0 + mids * 1.2;
+        let res = map(p, time, p_tail_count, weave);
         d = res.x;
         m = res.y;
 
@@ -160,31 +184,27 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var col = vec3<f32>(0.0);
 
     if (t < 40.0) {
-        let n = calcNormal(p, time, p_tail_count, 1.0 + p_weave * 3.0);
+        let weave = 1.0 + p_weave * 3.0 + mids * 1.2;
+        let n = calcNormal(p, time, p_tail_count, weave);
         let l = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let diff = max(dot(n, l), 0.0);
         let view = normalize(ro - p);
         let fre = pow(1.0 - max(dot(n, view), 0.0), 4.0);
 
-        let hue = p_prism_hue + t * 0.1 - time * 0.5;
-        let base_col = vec3<f32>(0.5 + 0.5 * sin(hue * 6.28 + vec3<f32>(0.0, 2.0, 4.0)));
+        let hue = p_prism_hue + t * 0.1 - time * 0.5 + treble * 0.15;
+        let base_col = vec3<f32>(0.5 + 0.5 * sin(hue * TAU + vec3<f32>(0.0, 2.0, 4.0)));
 
         if (m == 1.0) {
-            // Kitsune Body
             col = mix(base_col * diff, vec3<f32>(1.0, 0.8, 1.0), fre);
         } else if (m == 2.0) {
-            // Tails
-            col = base_col * (diff + fre * 2.0) + vec3<f32>(glow * audio);
+            col = base_col * (diff + fre * 2.0) + vec3<f32>(glow * audio * 2.0);
         }
     }
 
-    // Add volumetric glow and space dust
-    let hue_glow = p_prism_hue - time * 0.2;
-    let glow_col = vec3<f32>(0.5 + 0.5 * sin(hue_glow * 6.28 + vec3<f32>(0.0, 2.0, 4.0)));
-    col += glow_col * glow * 1.5;
-
-    // Tone map
-    col = col / (1.0 + col);
+    let hue_glow = p_prism_hue - time * 0.2 + bass * 0.25;
+    let glow_col = vec3<f32>(0.5 + 0.5 * sin(hue_glow * TAU + vec3<f32>(0.0, 2.0, 4.0)));
+    col += glow_col * glow * (1.2 + bass * 0.8);
+    col += vec3<f32>(1.0, 0.95, 1.0) * treble * glow * 0.35;
 
     // Temporal Ping Pong Feedback
     let tex_coord = coord / dim;
@@ -201,8 +221,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let shifted_prev = prev_frame * vec3<f32>(0.99, 0.95, 0.9);
     col = mix(col, shifted_prev, 0.85 * p_echo * (1.0 - audio * 0.3));
 
-    let final_alpha = 1.0;
+    col *= mix(1.0, 0.65, depth);
+    col = hue_preserve_clamp(col, 1.4);
+    col = aces(col * (0.95 + bass * 0.2));
+    col += vec3<f32>((ign(vec2<f32>(id.xy)) - 0.5) / 255.0);
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, final_alpha));
-    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(col, final_alpha));
+    let hitAlpha = select(0.0, 1.0, t < 40.0) * smoothstep(0.02, 0.0, d);
+    let alpha = clamp(glow * (0.35 + bass * 0.25) + hitAlpha * 0.55, 0.08, 0.96);
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col * alpha, alpha));
+    textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(col, alpha));
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(glow * 0.4 + hitAlpha * 0.35 + depth * 0.15, 0.0, 0.0, 0.0));
 }

@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Sonoluminescent Chrono-Geode Matrix
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  gen-sonoluminescent-chrono-geode-matrix
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, depth-aware, geode-sdf,
+//            sonoluminescence, iridescence, aces-tone-map, ign-dither, premultiplied-alpha
+//  Complexity: Medium-High
+//  Chunks From: geodeSDF, plasmaAccum, fresnelIridescence, bass_env, ign
+//  Upgraded: 2026-07-17 — weekly swarm Batch 15
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -137,6 +142,14 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     );
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (id.x >= u32(u.config.x) || id.y >= u32(u.config.y)) {
@@ -153,6 +166,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var mat_id: f32 = 0.0;
     var col = vec3<f32>(0.0);
     var plasma_acc = 0.0;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let audio = bass * 0.6 + mids * 0.3 + treble * 0.1;
 
     for (var i = 0; i < MAX_STEPS; i = i + 1) {
         let p_march = ro + rd * d0;
@@ -197,13 +214,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     // Add plasma glow
-    let core_glow_color = vec3<f32>(0.1, 0.6, 1.0) * u.zoom_params.y * u.zoom_config.w;
-    col = col + plasma_acc * core_glow_color;
+    let core_glow_color = vec3<f32>(0.1, 0.6, 1.0) * u.zoom_params.y * (0.5 + audio + bass * 0.5);
+    col = col + plasma_acc * core_glow_color * (1.0 + treble * 0.4);
 
     // Background
     col = mix(vec3<f32>(0.01, 0.02, 0.05), col, min(1.0, plasma_acc + select(0.0, 1.0, mat_id == 1.0)));
 
-    col = pow(col, vec3<f32>(0.4545)); // gamma correction
-    textureStore(writeTexture, vec2<i32>(id.xy), applyGenerativePrimaryControls(vec4<f32>(col, 1.0)));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    col = aces(col * (0.95 + bass * 0.2));
+    col += vec3<f32>((ign(vec2<f32>(id.xy)) - 0.5) / 255.0);
+    let alpha = clamp(plasma_acc * 0.6 + select(0.0, 0.45, mat_id == 1.0) + length(col) * 0.2, 0.1, 0.95);
+    let controlled = applyGenerativePrimaryControls(vec4<f32>(col, alpha));
+    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(controlled.rgb * controlled.a, controlled.a));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(min(d0 / MAX_DIST, 1.0) * 0.5 + plasma_acc * 0.2, 0.0, 0.0, 0.0));
 }

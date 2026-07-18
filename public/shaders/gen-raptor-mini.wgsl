@@ -1,7 +1,13 @@
-// ----------------------------------------------------------------
-// Raptor Mini - Territorial Predator Simulation
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  gen-raptor-mini
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, depth-aware, predator-sdf,
+//            gray-scott-rd, scent-trails, aces-tone-map, ign-dither,
+//            premultiplied-alpha
+//  Complexity: Medium
+//  Chunks From: sdCapsule, voronoi, grayScottRD, bass_env, ign
+//  Upgraded: 2026-07-17 — weekly swarm Batch 14
+// ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -99,6 +105,14 @@ fn pursuitVector(predator: vec2<f32>, prey: vec2<f32>, speed: f32) -> vec2<f32> 
     return dir * speed * (1.0 + 1.0 / max(dist, 0.1));
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn ign(p: vec2<f32>) -> f32 {
+    return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = textureDimensions(writeTexture);
@@ -108,6 +122,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = (vec2<f32>(coords) - 0.5 * vec2<f32>(dims)) / f32(dims.y);
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let rage = bass * 3.0;
 
     let mouse = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0) * vec2<f32>(f32(dims.x) / f32(dims.y), 1.0);
@@ -169,14 +185,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var col = vec3<f32>(0.0);
     col.r = territorialIntensity * (0.8 + rage * 0.5);
-    col.g = energy * 0.7 + scent * 0.4;
-    col.b = age * 0.3 + rdEnergy * 0.15;
-    let alpha = reproCooldown;
+    col.g = energy * 0.7 + scent * 0.4 + mids * 0.15;
+    col.b = age * 0.3 + rdEnergy * 0.15 + treble * 0.2;
+    var alpha = clamp(reproCooldown * (0.75 + mids * 0.2) + chaseIntensity * 0.15, 0.2, 0.95);
 
     let scaleTex = fract(length(f * rageDuration * 10.0));
     col *= 0.7 + 0.3 * scaleTex;
+    col += vec3<f32>(1.0, 0.55, 0.2) * treble * chaseIntensity * 0.25;
+    col = aces(col * (0.9 + rage * 0.15));
+    col += vec3<f32>((ign(vec2<f32>(coords)) - 0.5) / 255.0);
 
-    textureStore(writeTexture, coords, vec4<f32>(col, alpha));
+    textureStore(writeTexture, coords, vec4<f32>(col * alpha, alpha));
 
     let screenUv = (vec2<f32>(coords) + 0.5) / vec2<f32>(dims);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, screenUv, 0.0).r;

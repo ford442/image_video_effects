@@ -1,0 +1,63 @@
+{
+  "id": "gen-audio-reactive-spiral-galaxy",
+  "name": "Audio-Reactive Spiral Galaxy",
+  "category": "generative",
+  "url": "shaders/gen-audio-reactive-spiral-galaxy.wgsl",
+  "tags": [
+    "generative",
+    "galaxy",
+    "spiral",
+    "stars",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "cosmic"
+  ],
+  "description": "A luminous spiral galaxy with a hot core and arm stars that tighten on bass, rotate with mids, and spark supernova bursts on treble. Mouse shifts the viewing center; depth fades distant dust into haze.",
+  "workgroup_size": [16, 16, 1],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Arm Tightness",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Arm Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Spin Rate",
+      "default": 0.45,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Trail Persistence",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "log-spiral",
+    "aces-tone-map",
+    "ign-dither"
+  ]
+}
