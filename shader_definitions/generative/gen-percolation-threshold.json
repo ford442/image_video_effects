@@ -56,5 +56,10 @@
   "updated": true,
   "id": "gen-percolation-threshold",
   "url": "shaders/gen-percolation-threshold.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "aces-tone-map",
+    "ign-dither",
+    "premultiplied-alpha"
+  ]
 }

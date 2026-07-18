@@ -164,7 +164,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Depth: phoenix in front, preserve input depth where transparent
     let depth = mix(inDepth, 0.2 + density * 0.6, clamp(density + shell * 0.5, 0.0, 1.0));
 
-    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+    textureStore(writeTexture, pixel, vec4<f32>(color * alpha, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, pixel, vec4<f32>(trap, d, nebula, alpha));
 }

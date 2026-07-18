@@ -56,5 +56,10 @@
   "updated": true,
   "id": "gen-conway-game-of-life",
   "url": "shaders/gen-conway-game-of-life.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "aces-tone-map",
+    "ign-dither",
+    "premultiplied-alpha"
+  ]
 }

@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Belousov-Zhabotinsky Reaction - Chemical spiral wave oscillator
 //  Category: generative
-//  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, temporal, mouse-driven, hue-preserve-clamp, ign-dither
+//  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, temporal, mouse-driven, hue-preserve-clamp, ign-dither,
+//            premultiplied-alpha
 //  Complexity: Medium
 //  Created: 2026-05-30
 //  Upgraded: 2026-06-07
@@ -28,9 +29,9 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
-  return clamp((color * (a * color + b)) / (color * (c * color + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // ═══ CHUNK: hue-preserve-clamp (from AGENTS.md) ═══
@@ -57,13 +58,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / resolution;
   let coord = vec2<i32>(global_id.xy);
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let mouseUV = u.zoom_config.yz;
   let mouseDown = step(0.5, u.zoom_config.w);
 
   let epsilon = mix(0.08, 0.25, u.zoom_params.x) * (1.0 - bass * 0.3);
   let Da = mix(0.8, 2.0, u.zoom_params.y);
   let Db = mix(0.2, 0.8, u.zoom_params.z);
-  let feed = mix(0.01, 0.05, u.zoom_params.w);
+  let feed = mix(0.01, 0.05, u.zoom_params.w) + bass * 0.003;
 
   let texel = 1.0 / resolution;
 
@@ -116,13 +119,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = mix(col, orange, t2);
 
   col = col + vec3<f32>(1.0, 0.7, 0.4) * waveFront * waveFront * 0.5;
+  col = col * (1.0 + mids * 0.1);
+  col = col + vec3<f32>(0.9, 0.95, 1.0) * hash12(uv * 500.0 + time) * treble * 0.15;
 
   let tipDist = length(uv - vec2<f32>(0.5 + 0.2 * cos(time * 0.3), 0.5 + 0.2 * sin(time * 0.4)));
   let spiralTip = 0.002 / (tipDist * tipDist + 0.001);
   col = col + vec3<f32>(0.3, 0.6, 1.0) * spiralTip * newA;
 
-  var outCol = acesToneMapping(huePreserveClamp(col * 1.3, 2.0));
-  outCol += (ign(vec2<f32>(coord)) - 0.5) / 255.0;
+  var outCol = acesToneMap(huePreserveClamp(col * 1.3, 2.0));
+  let dither = (ign(vec2<f32>(coord)) - 0.5) / 255.0;
+  outCol = clamp(outCol + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
 
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -136,7 +142,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
   let finalAlpha = max(inputColor.a, alpha);
 
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeTexture, coord, vec4<f32>(finalColor * finalAlpha, finalAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(newA * depth, 0.0, 0.0, 0.0));
   // Primary simulation state: activator(r), inhibitor(g), wavefront(b), alpha(a)
   textureStore(dataTextureA, coord, vec4<f32>(newA, newB, waveFront, alpha));

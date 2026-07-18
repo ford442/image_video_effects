@@ -4,7 +4,14 @@
   "description": "A majestic, hyper-organic cybernetic phoenix rising from a deep-space nebula, its wings woven from liquid auroral plasma and shattered quantum glass that burst into geometric temporal fractals upon acoustic climax.",
   "url": "shaders/gen-ethereal-cyber-chrono-nebula-phoenix.wgsl",
   "category": "generative",
-  "tags": ["organic", "quantum", "cosmic", "biomechanical", "phoenix", "audio-reactive"],
+  "tags": [
+    "organic",
+    "quantum",
+    "cosmic",
+    "biomechanical",
+    "phoenix",
+    "audio-reactive"
+  ],
   "controls": [
     {
       "id": "wingspan",
@@ -32,5 +39,17 @@
         "field": "y"
       }
     }
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware",
+    "generative",
+    "sdf",
+    "strange-attractor",
+    "domain-warped-fbm",
+    "aces-tone-map",
+    "ign-dither",
+    "premultiplied-alpha"
   ]
 }

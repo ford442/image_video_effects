@@ -184,6 +184,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(depth * 0.8 + thickness / 1200.0, 0.2, 0.95);
 
   textureStore(dataTextureA, coord, vec4<f32>(iridescent, alpha));
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+  textureStore(writeTexture, coord, vec4<f32>(finalColor * alpha, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

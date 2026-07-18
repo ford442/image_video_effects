@@ -2,7 +2,8 @@
 //  Turing Morphogenesis
 //  Category: generative
 //  Features: reaction-diffusion, organic, audio-reactive, mouse-interactive,
-//    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration
+//    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration, ign-dither,
+//    premultiplied-alpha
 //  Complexity: High
 //  Created: 2026-05-31
 //  Upgraded: 2026-06-07
@@ -36,6 +37,15 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let d = 0.59;
   let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
+fn huePreserveClamp(c: vec3<f32>, maxLum: f32) -> vec3<f32> {
+  let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return c * min(1.0, maxLum / max(l, 1e-4));
 }
 
 fn hashf(n: f32) -> f32 {
@@ -83,6 +93,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let p3 = u.zoom_params.z;
   let p4 = u.zoom_params.w;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let prev = textureLoad(dataTextureC, pixel, 0);
 
@@ -122,14 +134,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let patternDensity = clamp(dot(pattern, vec3<f32>(0.333)), 0.0, 1.0);
   let boundCurve = clamp(dot(curvature, vec3<f32>(0.333)), 0.0, 1.0);
 
+  let colorShift = p4 + mids * 0.05;
   var color = vec3<f32>(
-    organicColor(pattern.r, p4).r,
-    organicColor(pattern.g, p4 + 0.05).g,
-    organicColor(pattern.b, p4 + 0.1).b
+    organicColor(pattern.r, colorShift).r,
+    organicColor(pattern.g, colorShift + 0.05).g,
+    organicColor(pattern.b, colorShift + 0.1).b
   );
 
   let bloom = smoothstep(0.3, 0.7, boundCurve) * 0.15 * (1.0 + bass);
   color += vec3<f32>(0.85, 0.75, 0.55) * bloom;
+  color += vec3<f32>(0.7, 0.85, 1.0) * treble * boundCurve * 0.1;
 
   let vignette = 1.0 - smoothstep(0.3, 0.75, length(uv - 0.5));
   color *= 0.8 + vignette * 0.2;
@@ -137,11 +151,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let persistence = 0.94 + bass * 0.03;
   color = max(color, prev.rgb * persistence * 0.4);
 
-  color = acesToneMap(color * 1.2);
+  let finalColor = acesToneMap(huePreserveClamp(color, 2.0));
+  let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
+  let outColor = clamp(finalColor + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
 
   let alpha = patternDensity * boundCurve * depth;
 
-  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(outColor * alpha, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(patternDensity, 0.0, 0.0, 0.0));
 
   // ═══ CHUNK: multi-pass state packing — persist color for `prev.rgb * persistence` feedback ═══

@@ -16,7 +16,8 @@
     "spectral",
     "audio-reactive",
     "aces-tone-map",
-    "ign-dither"
+    "ign-dither",
+    "premultiplied-alpha"
   ],
   "params": [
     {

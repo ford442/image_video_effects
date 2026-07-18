@@ -2,7 +2,8 @@
 //  Conway Game of Life
 //  Category: generative
 //  Features: cellular-automata, neon, audio-reactive, mouse-interactive,
-//    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration, generation-counter, hue-preserve-clamp, ign-dither
+//    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration, generation-counter, hue-preserve-clamp, ign-dither,
+//    premultiplied-alpha
 //  Complexity: High
 //  Created: 2026-05-31
 //  Upgraded: 2026-06-07
@@ -82,6 +83,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let p3 = u.zoom_params.z;
   let p4 = u.zoom_params.w;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   // dataTextureC.r = CA state from last frame; dataTextureC.g = generation counter
   let prev = textureLoad(dataTextureC, pixel, 0);
@@ -123,6 +126,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let caStr = 0.004 * (1.0 + bass) * depthScale;
   let birthR = birthEvent * (1.0 + caStr);
   let birthB = birthEvent * (1.0 - caStr * 0.5);
+  let sparkle = hashf(time * 9.0 + uv.x * 200.0 + uv.y * 150.0) * treble * 0.2;
 
   var color = vec3<f32>(0.0);
   color += vec3<f32>(0.0, 0.85, 0.95) * birthR;
@@ -135,6 +139,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let bloom = birthEvent * 0.25 * (1.0 + bass);
   color += vec3<f32>(0.6, 0.9, 1.0) * bloom;
+  color += vec3<f32>(0.9, 0.95, 1.0) * sparkle;
 
   let activity = abs(newState - prevState);
   let caShift = activity * caStr * 2.0;
@@ -149,11 +154,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color *= mix(vec3<f32>(1.0), ageTint, survival * 0.6);
 
   var outCol = acesToneMap(huePreserveClamp(color * 1.3, 2.0));
-  outCol += (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
+  let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
+  outCol = clamp(outCol + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
 
   let alpha = newState * (activity + birthEvent * 0.5 + 0.1) * depth;
 
-  textureStore(writeTexture, pixel, vec4<f32>(outCol, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(outCol * alpha, alpha));
   // Depth: use cell age as depth proxy — older cells appear deeper
   textureStore(writeDepthTexture, pixel, vec4<f32>(mix(0.3, 1.0, newState * (0.5 + generation * 0.5)), 0.0, 0.0, 0.0));
   // ═══ CA state for next-frame ping-pong: .r=alive, .g=generation, .b=activity ═══

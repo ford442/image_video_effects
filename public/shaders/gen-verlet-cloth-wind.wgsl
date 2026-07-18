@@ -2,7 +2,8 @@
 //  Verlet Cloth Wind
 //  Category: generative
 //  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
-//            upgraded-rgba, aces-tone-map, chromatic-aberration
+//            upgraded-rgba, aces-tone-map, chromatic-aberration, ign-dither,
+//            premultiplied-alpha
 //  Complexity: High
 //  Created: 2026-05-30
 //  Upgraded: 2026-06-06
@@ -52,6 +53,15 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
+fn huePreserveClamp(c: vec3<f32>, maxLum: f32) -> vec3<f32> {
+  let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return c * min(1.0, maxLum / max(l, 1e-4));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
@@ -60,6 +70,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let coord = vec2<i32>(gid.xy);
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   let windStr = mix(0.2, 2.0, u.zoom_params.x) * (1.0 + bass * 1.5);
@@ -118,12 +130,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let halfDir = normalize(light + vec3<f32>(0.0, 0.0, 1.0));
   let spec = pow(max(dot(normal, halfDir), 0.0), 80.0) * sheen * (1.0 + bass * 2.0);
   let fabric = mix(vec3<f32>(0.15, 0.05, 0.25), vec3<f32>(0.6, 0.2, 0.5), diff);
-  var color = fabric + vec3<f32>(0.9, 0.85, 1.0) * spec;
-  color = color + fabric * backDiff;
+  let fabricShift = mix(fabric, vec3<f32>(0.25, 0.45, 0.65), mids * 0.35);
+  var color = fabricShift + vec3<f32>(0.9, 0.85, 1.0) * spec;
+  color = color + fabricShift * backDiff;
   let sss = max(0.0, -dot(normal, light)) * 0.15;
   color = color + vec3<f32>(0.4, 0.1, 0.3) * sss;
   color = color + vec3<f32>(0.3, 0.1, 0.4) * abs(h) * windStr * 0.5;
-  let weave = hash12(uv * 300.0) * 0.05;
+  let weave = hash12(uv * 300.0) * (0.05 + treble * 0.12);
   color = color * (1.0 + weave);
   let vignetteUV = uv * (1.0 - uv);
   let vignette = vignetteUV.x * vignetteUV.y * 15.0;
@@ -131,10 +144,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
-  color = acesToneMap(color * 1.1);
+  let finalColor = acesToneMap(huePreserveClamp(color, 2.0));
+  let dither = (ign(vec2<f32>(coord)) - 0.5) / 255.0;
+  let outColor = clamp(finalColor + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
   let stretch = abs(h) * 0.3;
   let density = smoothstep(-0.5, 0.5, diff);
   let alpha = clamp(density * (1.0 + stretch) * (0.5 + depth * 0.5), 0.0, 1.0);
-  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  textureStore(writeTexture, coord, vec4<f32>(outColor * alpha, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth * 0.5 + stretch * 0.3, 0.0, 0.0, 0.0));
 }

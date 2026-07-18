@@ -2,7 +2,8 @@
 //  Percolation Threshold
 //  Category: generative
 //  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
-//            upgraded-rgba, aces-tone-map, chromatic-aberration
+//            upgraded-rgba, aces-tone-map, chromatic-aberration, ign-dither,
+//            premultiplied-alpha
 //  Complexity: High
 //  Created: 2026-05-30
 //  Upgraded: 2026-06-06
@@ -44,6 +45,15 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
+fn huePreserveClamp(c: vec3<f32>, maxLum: f32) -> vec3<f32> {
+  let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return c * min(1.0, maxLum / max(l, 1e-4));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
@@ -52,13 +62,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let coord = vec2<i32>(gid.xy);
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let latticeW = 80;
   let latticeH = 60;
   let pCritical = 0.5927 + (bass - 0.5) * 0.1 + (u.zoom_params.x - 0.5) * 0.15;
   let p = clamp(pCritical, 0.35, 0.85);
   let latticeZoom = mix(0.6, 1.4, u.zoom_params.y);
-  let bloomAmt = mix(0.8, 2.0, u.zoom_params.z);
+  let bloomAmt = mix(0.8, 2.0, u.zoom_params.z) * (1.0 + bass * 0.2);
   let grainAmt = mix(0.0, 0.15, u.zoom_params.w);
 
   if (gid.x < u32(latticeW) && gid.y < u32(latticeH)) {
@@ -134,13 +146,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color = sat * bloomAmt + vec3<f32>(0.3, 0.2, 0.5) * bloomAmt * 0.5;
   }
   color = color + vec3<f32>(0.5, 0.3, 0.8) * f32(edgeCount) * 0.12;
+  color = mix(color, color.brg, mids * 0.15);
   let ca = smoothstep(0.0, 1.0, f32(edgeCount)) * 0.08 * (1.0 + bass * 0.5);
   color = vec3<f32>(color.r + ca, color.g, color.b - ca);
   color = color + hash12(uv * 500.0 + time) * grainAmt;
+  color = color + vec3<f32>(0.85, 0.95, 1.0) * hash12(uv * 800.0 + time) * f32(edgeCount) * treble * 0.1;
 
-  color = acesToneMap(color * 1.1);
+  let finalColor = acesToneMap(huePreserveClamp(color, 2.0));
+  let dither = (ign(vec2<f32>(coord)) - 0.5) / 255.0;
+  let outColor = clamp(finalColor + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
   let clusterProxy = 1.0 - f32(edgeCount) * 0.22;
   let alpha = clamp(clusterProxy * select(1.0, 2.2, isSpanning) * (0.4 + depth * 0.6), 0.0, 1.0);
-  textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  textureStore(writeTexture, coord, vec4<f32>(outColor * alpha, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth * 0.5 + select(0.0, 0.35, isSpanning), 0.0, 0.0, 0.0));
 }

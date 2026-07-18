@@ -57,5 +57,10 @@
   "updated": true,
   "id": "gen-turing-morphogenesis",
   "url": "shaders/gen-turing-morphogenesis.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "aces-tone-map",
+    "ign-dither",
+    "premultiplied-alpha"
+  ]
 }

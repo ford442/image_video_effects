@@ -56,5 +56,14 @@
   "updated": true,
   "id": "gen-fireworks-crossette",
   "url": "shaders/gen-fireworks-crossette.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "fireworks",
+    "temporal",
+    "crossette-split",
+    "aces-tone-map",
+    "ign-dither",
+    "premultiplied-alpha"
+  ]
 }

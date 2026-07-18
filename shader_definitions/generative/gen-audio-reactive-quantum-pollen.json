@@ -1,64 +1,37 @@
 {
-  "id": "gen-audio-reactive-quantum-pollen",
   "name": "Audio-Reactive Quantum Pollen",
   "category": "generative",
-  "url": "shaders/gen-audio-reactive-quantum-pollen.wgsl",
   "tags": [
-    "generative",
-    "pollen",
-    "particles",
     "audio-reactive",
-    "mouse-driven",
-    "depth-aware",
-    "galaxy-cluster",
-    "spectrogram"
+    "particles",
+    "pollen",
+    "galaxy",
+    "spiral",
+    "generative",
+    "mouse-interactive",
+    "depth-aware"
   ],
-  "description": "Hundreds of luminous pollen grains drift in a dark field. Bass pulls them into spiral galaxy clusters, mids drive harmonic orbital motion and hue shifts, and treble scatters sharp bursts. Mouse down attracts nearby grains; depth fades background haze while foreground grains stay crisp.",
+  "description": "Hundreds of luminous pollen grains drifting in a dark field. Bass clusters them into log-spiral galaxy arms, mids drive harmonic orbital motion and hue shifts, treble fires scatter bursts. Hold the mouse to attract nearby grains. Depth fades background grains into a transmission haze.",
   "workgroup_size": [16, 16, 1],
   "updatedParams": [
-    {
-      "index": 0,
-      "name": "Cluster Strength",
-      "default": 0.55,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 1,
-      "name": "Scatter Gain",
-      "default": 0.5,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 2,
-      "name": "Orbit Speed",
-      "default": 0.45,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    },
-    {
-      "index": 3,
-      "name": "Trail Persistence",
-      "default": 0.4,
-      "min": 0,
-      "max": 1,
-      "step": 0.01
-    }
+    { "index": 0, "name": "Grain Density", "default": 0.7, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Glow Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Orbit Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Hue Base", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
   ],
   "supportsDepth": true,
   "supportsDof": false,
   "updated": true,
+  "id": "gen-audio-reactive-quantum-pollen",
+  "url": "shaders/gen-audio-reactive-quantum-pollen.wgsl",
   "features": [
     "audio-reactive",
     "mouse-driven",
     "depth-aware",
-    "galaxy-cluster",
-    "domain-warp",
+    "particle-field",
+    "bass-env",
     "aces-tone-map",
-    "ign-dither"
+    "ign-dither",
+    "premultiplied-alpha"
   ]
 }

@@ -55,5 +55,13 @@
   "updated": true,
   "id": "gen-velocity-bloom",
   "url": "shaders/gen-velocity-bloom.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "temporal",
+    "velocity",
+    "bloom",
+    "aces-tone-map",
+    "ign-dither",
+    "premultiplied-alpha"
+  ]
 }

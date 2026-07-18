@@ -52,5 +52,10 @@
   "updated": true,
   "id": "gen-cellular-automata-tapestry",
   "url": "shaders/gen-cellular-automata-tapestry.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "aces-tone-map",
+    "ign-dither",
+    "premultiplied-alpha"
+  ]
 }

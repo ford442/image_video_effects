@@ -2,7 +2,8 @@
 //  Langton's Ant
 //  Category: generative
 //  Features: cellular-automata, heat-map, audio-reactive, mouse-interactive,
-//    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration
+//    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration, ign-dither,
+//    premultiplied-alpha
 //  Complexity: High
 //  Created: 2026-05-31
 //  Upgraded: 2026-06-07
@@ -48,6 +49,15 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
+fn huePreserveClamp(c: vec3<f32>, maxLum: f32) -> vec3<f32> {
+  let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return c * min(1.0, maxLum / max(l, 1e-4));
+}
+
 fn hashf(n: f32) -> f32 {
   return fract(sin(n * 127.1) * 43758.5453);
 }
@@ -80,6 +90,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let p3 = u.zoom_params.z;
   let p4 = u.zoom_params.w;
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let prev = textureLoad(dataTextureC, pixel, 0);
 
@@ -137,14 +149,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   heat = clamp(heat * (0.97 - p4 * 0.03), 0.0, 12.0);
   var color = heatColor(heat);
-  color += vec3<f32>(0.9, 0.9, 0.85) * isAntHere;
+  color = mix(color, color.brg, mids * 0.15);
+  color += vec3<f32>(0.9, 0.9, 0.85) * isAntHere * (1.0 + treble * 0.5);
 
   let caStr = 0.003 * (1.0 + bass) * depthScale + abs(heat - 3.0) * 0.0015;
   color = vec3<f32>(color.r * (1.0 + caStr), color.g, color.b * (1.0 - caStr * 0.5));
-  color = acesToneMap(color * 1.2);
+  let finalColor = acesToneMap(huePreserveClamp(color, 2.0));
+  let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
+  let outColor = clamp(finalColor + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
 
   let alpha = clamp(heat * 0.08 + isAntHere * 0.5, 0.0, 1.0) * depth;
-  textureStore(writeTexture, pixel, applyGenerativePrimaryControls(vec4<f32>(color, alpha)));
+  textureStore(writeTexture, pixel, applyGenerativePrimaryControls(vec4<f32>(outColor * alpha, alpha)));
   textureStore(writeDepthTexture, pixel, vec4<f32>(heat * 0.08, 0.0, 0.0, 0.0));
 
   // ═══ Persistent state: cell flip-state(.r), heat(.g), ant-here(.b) everywhere;

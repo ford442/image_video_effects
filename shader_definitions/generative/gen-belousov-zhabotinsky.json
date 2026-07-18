@@ -56,5 +56,10 @@
   "updated": true,
   "id": "gen-belousov-zhabotinsky",
   "url": "shaders/gen-belousov-zhabotinsky.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "aces-tone-map",
+    "ign-dither",
+    "premultiplied-alpha"
+  ]
 }

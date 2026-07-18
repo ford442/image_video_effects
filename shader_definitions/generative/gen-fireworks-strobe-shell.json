@@ -58,5 +58,14 @@
   "updated": true,
   "id": "gen-fireworks-strobe-shell",
   "url": "shaders/gen-fireworks-strobe-shell.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "fireworks",
+    "temporal",
+    "strobe",
+    "aces-tone-map",
+    "ign-dither",
+    "premultiplied-alpha"
+  ]
 }

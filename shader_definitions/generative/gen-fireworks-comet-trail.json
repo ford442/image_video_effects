@@ -57,5 +57,13 @@
   "updated": true,
   "id": "gen-fireworks-comet-trail",
   "url": "shaders/gen-fireworks-comet-trail.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "fireworks",
+    "temporal",
+    "aces-tone-map",
+    "ign-dither",
+    "premultiplied-alpha"
+  ]
 }

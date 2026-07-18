@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cellular Automata Tapestry
 //  Category: generative
-//  Features: multi-state-ca, evolving-rules, audio-mutation, mouse-nutrient, tapestry-weave, depth-pattern, temporal-texture, organic-evolution, semantic-alpha, temporal, chromatic, depth-aware
+//  Features: multi-state-ca, evolving-rules, audio-mutation, mouse-nutrient, tapestry-weave, depth-pattern, temporal-texture, organic-evolution, semantic-alpha, temporal, chromatic, depth-aware,
+//            audio-reactive, aces-tone-map, ign-dither, premultiplied-alpha
 //  Complexity: High
 //  Upgraded: 2026-05-31
 //  By: Grok (deep visual/audio flourish — seasonal plasma color climate, stronger mouse nutrient injector, semantic alpha from chemical energy + glow, richer final glaze)
@@ -27,6 +28,26 @@ struct Uniforms {
     zoom_params: vec4<f32>,  // x=diffA, y=diffB, z=feed, w=kill
     ripples: array<vec4<f32>, 50>,
 };
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn ign(p: vec2<f32>) -> f32 {
+  return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
+}
+
+fn huePreserveClamp(c: vec3<f32>, maxLum: f32) -> vec3<f32> {
+  let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return c * min(1.0, maxLum / max(l, 1e-4));
+}
+
+fn hash12(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 = p3 + dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -86,7 +107,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     kill -= (luminance * 0.01);
 
     // Modulate speed by audio
-    let dt = 1.0 + u.config.y * 0.5;
+    let dt = 1.0 + u.config.y * 0.5 + bass * 0.3;
 
     let A = currentCenter.x;
     let B = currentCenter.y;
@@ -132,10 +153,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     outColor = mix(outColor, prev.rgb * 0.9, 0.03 + bass * 0.01);
 
+    // Treble edge shimmer / sparkle
+    let sparkle = hash12(uv * 400.0 + f32(frame) * 0.01) * treble * 0.15;
+    outColor += vec3<f32>(sparkle);
+
     // Semantic alpha: chemical concentration + audio "glow" gives transparent background areas
     let semantic_alpha = clamp(0.35 + energy * 0.7 + mids * 0.15, 0.25, 1.0);
 
-    textureStore(writeTexture, coord, vec4<f32>(outColor, semantic_alpha));
+    let finalColor = acesToneMap(huePreserveClamp(outColor, 2.0));
+    let dither = (ign(vec2<f32>(coord)) - 0.5) / 255.0;
+    let toneColor = clamp(finalColor + vec3<f32>(dither), vec3<f32>(0.0), vec3<f32>(1.0));
+    textureStore(writeTexture, coord, vec4<f32>(toneColor * semantic_alpha, semantic_alpha));
 
     // Depth write (was unbound despite binding — enables depth-aware stacking)
     let ca_depth = 0.2 + nextB * 0.6 + (1.0 - energy) * 0.2;
