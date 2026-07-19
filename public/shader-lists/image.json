@@ -3931,8 +3931,8 @@
   {
     "id": "ring-slicer",
     "name": "Ring Slicer",
-    "description": "Slices the image into rotating concentric rings centered on the mouse.",
-    "url": "https://test.1ink.us/image_video_effects/shaders/ring_slicer.wgsl",
+    "description": "Slices the image into rotating concentric rings centered on the mouse, with organic noise-wobbled seams, palette-driven edge glow, subtle audio-reactive spin, and a mouse-down grab-and-twist.",
+    "url": "shaders/ring_slicer.wgsl",
     "params": [
       {
         "id": "density",
@@ -3964,7 +3964,11 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "fbm-wobble",
+      "palette-seam-glow",
+      "mouse-grab-twist"
     ],
     "tags": [
       "filter",

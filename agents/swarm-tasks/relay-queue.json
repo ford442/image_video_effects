@@ -36,11 +36,12 @@
     {
       "hop": 3,
       "name": "palette",
-      "owner": "unassigned",
+      "owner": "kimi-hop-3",
       "chunk": "palette",
       "prompt": "agents/swarm-tasks/prompts/relay-hop-3-palette.md",
-      "status": "pending",
-      "target": "IQ cosine palette or enhanced psychedelicPalette. Only chunk that assigns RGB."
+      "status": "completed",
+      "target": "IQ cosine palette or enhanced psychedelicPalette. Only chunk that assigns RGB.",
+      "notes": "Hybrid: psychedelicPalette base + IQ cosine interference bands (mix 0.45, slower phase t*0.5+field*0.7). sampleField gains ridged fbm layer (mix 0.3). Saturation/hueShift semantics kept; output clamped to 1.2. Gate: naga OK, bindgroup compatible. Visual check pending (no GPU on this VM)."
     },
     {
       "hop": 4,
@@ -48,7 +49,7 @@
       "owner": "unassigned",
       "chunk": "temporal-feedback",
       "prompt": "agents/swarm-tasks/prompts/relay-hop-4-feedback.md",
-      "status": "blocked",
+      "status": "pending",
       "target": "Echo trails via dataTextureC. Decay + optional UV warp on history sample."
     },
     {

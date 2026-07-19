@@ -2,7 +2,7 @@
   "id": "hex-mosaic",
   "name": "Hexagon Mosaic",
   "url": "shaders/hex-mosaic.wgsl",
-  "description": "Hexagonal tiling effect that reveals the clear image around the mouse cursor. Bass audio reactivity boosts saturation.",
+  "description": "Hexagonal glass-tile mosaic that reveals the clear image around the mouse cursor. Beveled tiles with grout seams shimmer with audio-reactive glints, bass boosts saturation, clicks send light ripples across the tiles, and holding the mouse down magnifies the mosaic under the cursor.",
   "params": [
     {
       "id": "tile-size",
@@ -40,6 +40,9 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "click-ripples",
+    "glass-tiles",
+    "vignette-grain",
     "upgraded-rgba"
   ],
   "tags": [
@@ -47,6 +50,8 @@
     "image-processing",
     "hexagon",
     "mosaic",
-    "interactive"
+    "interactive",
+    "glass",
+    "ripple"
   ]
 }

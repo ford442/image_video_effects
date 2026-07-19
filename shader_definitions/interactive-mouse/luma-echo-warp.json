@@ -1,13 +1,15 @@
 {
   "id": "luma-echo-warp",
   "url": "shaders/luma-echo-warp.wgsl",
-  "description": "Temporal echo accumulation with depth-parallax attenuation and curl-warped flow. Bass drives echo amplitude, treble adds sparkle to high-luma regions, and previous frames bleed through via dataTextureC.",
+  "description": "Temporal echo accumulation with depth-parallax attenuation and curl-noise swirl warping around the mouse. Bass drives echo amplitude and chromatic trail separation, treble adds twinkling sparkle to high-luma regions, and previous frames bleed through via dataTextureC with a luma-locked palette shimmer.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "temporal-echo",
     "depth-attenuation",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "curl-noise",
+    "chromatic-echo"
   ],
   "params": [
     {
@@ -45,7 +47,9 @@
     "temporal-feedback",
     "depth-aware",
     "echo",
-    "warp"
+    "warp",
+    "curl-noise",
+    "chromatic"
   ],
   "name": "Luma Echo Warp"
 }

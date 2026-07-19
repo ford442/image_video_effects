@@ -3174,6 +3174,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "click-ripples",
+      "glass-tiles",
+      "vignette-grain",
       "upgraded-rgba"
     ],
     "tags": [
@@ -3181,7 +3184,9 @@
       "image-processing",
       "hexagon",
       "mosaic",
-      "interactive"
+      "interactive",
+      "glass",
+      "ripple"
     ]
   },
   {
@@ -5100,7 +5105,9 @@
       "audio-reactive",
       "temporal-echo",
       "depth-attenuation",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "curl-noise",
+      "chromatic-echo"
     ],
     "params": [
       {
@@ -5138,7 +5145,9 @@
       "temporal-feedback",
       "depth-aware",
       "echo",
-      "warp"
+      "warp",
+      "curl-noise",
+      "chromatic"
     ],
     "name": "Luma Echo Warp"
   },
@@ -5282,7 +5291,11 @@
       "mouse-driven",
       "glitch",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "mouse-down-surge",
+      "fbm-wobble",
+      "palette-fringe",
+      "vignette-grain"
     ],
     "tags": [
       "filter",
@@ -8214,7 +8227,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
