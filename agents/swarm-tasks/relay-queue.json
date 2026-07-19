@@ -46,11 +46,12 @@
     {
       "hop": 4,
       "name": "temporal-feedback",
-      "owner": "unassigned",
+      "owner": "cursor-hop-4",
       "chunk": "temporal-feedback",
       "prompt": "agents/swarm-tasks/prompts/relay-hop-4-feedback.md",
-      "status": "pending",
-      "target": "Echo trails via dataTextureC. Decay + optional UV warp on history sample."
+      "status": "completed",
+      "target": "Echo trails via dataTextureC. Decay + optional UV warp on history sample.",
+      "notes": "organicDrift UV warp + dual bilinear dataTextureC taps; decay 0.86\u20130.97; luminance-weighted echo mix."
     },
     {
       "hop": 5,
@@ -58,7 +59,7 @@
       "owner": "unassigned",
       "chunk": "motion-modulation",
       "prompt": "agents/swarm-tasks/prompts/relay-hop-5-motion.md",
-      "status": "blocked",
+      "status": "pending",
       "target": "LFOs pushing warp/palette past legibility. Audio via plasmaBuffer."
     },
     {
