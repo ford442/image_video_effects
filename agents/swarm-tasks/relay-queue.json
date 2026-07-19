@@ -56,11 +56,12 @@
     {
       "hop": 5,
       "name": "motion-modulation",
-      "owner": "unassigned",
+      "owner": "cursor-hop-5",
       "chunk": "motion-modulation",
       "prompt": "agents/swarm-tasks/prompts/relay-hop-5-motion.md",
-      "status": "pending",
-      "target": "LFOs pushing warp/palette past legibility. Audio via plasmaBuffer."
+      "status": "completed",
+      "target": "LFOs pushing warp/palette past legibility. Audio via plasmaBuffer.",
+      "notes": "Multi-LFO stack (slow/mid/fast/spark); bass warp surge; mids time+sat; treble hue+sparkle. MotionState adds saturationBoost + hueDrift wired to applyPalette."
     },
     {
       "hop": 6,
@@ -68,7 +69,7 @@
       "owner": "unassigned",
       "chunk": "polish",
       "prompt": "agents/swarm-tasks/prompts/relay-hop-6-polish.md",
-      "status": "blocked",
+      "status": "pending",
       "target": "neonGlow, subtle chromatic split on generative color (no readTexture). Final QA."
     }
   ]

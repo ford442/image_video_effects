@@ -106,13 +106,60 @@ struct MotionState {
     warpStrength: f32,
     timeScale: f32,
     pulse: f32,
+    saturationBoost: f32,
+    hueDrift: f32,
 }
 
 fn motionModulate(time: f32, bass: f32, mids: f32) -> MotionState {
-    let pulse = 0.85 + 0.15 * sin(time * (1.2 + bass * 0.5));
-    let warpStrength = mix(0.12, 0.38, clamp(u.zoom_params.x, 0.0, 1.0)) * pulse;
-    let timeScale = 1.0 + mids * 0.15;
-    return MotionState(warpStrength, timeScale, pulse);
+    // OWNER: cursor-hop-5 2026-07-19
+    // Multi-LFO audio stack — pushes warp + palette timing past legibility on peaks.
+    let treble = plasmaBuffer[0].z;
+    let safeBass = clamp(bass, 0.0, 2.0);
+    let safeMids = clamp(mids, 0.0, 2.0);
+    let safeTreble = clamp(treble, 0.0, 2.0);
+
+    // Incommensurate LFOs avoid short-loop repetition.
+    let lfoSlow = sin(time * 0.37) * 0.5 + 0.5;
+    let lfoMid = sin(time * 1.13 + safeBass * 0.9) * 0.5 + 0.5;
+    let lfoFast = sin(time * 2.71 + safeMids * 1.1) * 0.5 + 0.5;
+    let lfoSpark = sin(time * 5.17 + safeTreble * 1.8) * 0.5 + 0.5;
+
+    // Bass surges warp depth; stacked LFOs add breathing chaos.
+    let warpLfo = mix(0.62, 1.55, lfoMid * lfoFast);
+    let warpBase = mix(0.12, 0.52, clamp(u.zoom_params.x, 0.0, 1.0));
+    let bassSurge = 1.0 + safeBass * 0.38;
+    let warpStrength = warpBase * warpLfo * bassSurge * (0.86 + 0.28 * lfoSlow);
+
+    // Mids/treble accelerate palette phase; slow LFO adds crawl/sprint swings.
+    let timeWarp = 1.0
+        + safeMids * 0.30 * lfoFast
+        + safeTreble * 0.14 * sin(time * 3.9)
+        + (lfoSlow - 0.5) * 0.26;
+    let timeScale = clamp(timeWarp, 0.50, 2.45);
+
+    // Exposure thump + treble sparkle on composite.
+    let pulse = 0.76
+        + 0.24 * lfoMid
+        + safeBass * 0.14 * sin(time * (2.2 + safeBass * 0.6))
+        + safeTreble * 0.07 * lfoSpark;
+
+    // Palette LFOs: saturation pump + hue wobble (wired in main).
+    let saturationBoost = clamp(
+        0.72 + 0.36 * lfoFast + safeMids * 0.18 * lfoSpark,
+        0.55,
+        1.45,
+    );
+    let hueDrift = (lfoMid - 0.5) * 0.22
+        + safeTreble * 0.06 * sin(time * 4.3)
+        + safeBass * 0.04 * sin(time * 0.85);
+
+    return MotionState(
+        warpStrength,
+        timeScale,
+        clamp(pulse, 0.70, 1.42),
+        saturationBoost,
+        hueDrift,
+    );
 }
 
 // ═══ CHUNK: domain-warp (OWNER: hop-1) ═══════════════════════════════════════
@@ -270,7 +317,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     p = applySymmetry(p);
 
     let field = sampleField(p, animTime);
-    var color = applyPalette(field, animTime, mix(0.55, 1.0, u.zoom_params.y), u.zoom_params.z);
+    let paletteSat = clamp(mix(0.55, 1.0, u.zoom_params.y) * motion.saturationBoost, 0.0, 1.0);
+    let paletteHue = fract(u.zoom_params.z + motion.hueDrift);
+    var color = applyPalette(field, animTime, paletteSat, paletteHue);
 
     color = applyTemporalFeedback(color, coord, res, u.zoom_params.w * 0.35, bass, animTime);
 
