@@ -153,8 +153,28 @@ fn applyDomainWarp(p: vec2<f32>, time: f32, strength: f32) -> vec2<f32> {
 // ═══ CHUNK: symmetry-fold (OWNER: hop-2) ═════════════════════════════════════
 
 fn applySymmetry(p: vec2<f32>) -> vec2<f32> {
-    // Spine: identity. Hop 2: polar/kaleidoscope fold before field sampling.
-    return p;
+    // OWNER: cursor-hop-2 2026-07-19
+    // Polar kaleidoscope fold: fixed 6-fold mandala, slow time spin, mouse-centers when held.
+    var q = p;
+
+    // Slow pre-rotation so the fold breathes instead of locking static.
+    let spin = u.config.x * 0.04;
+    let cs = cos(spin);
+    let sn = sin(spin);
+    q = vec2<f32>(cs * q.x - sn * q.y, sn * q.x + cs * q.y);
+
+    // Pull fold origin toward cursor while mouse is held (no zoom_params steal).
+    if (u.zoom_config.w > 0.5) {
+        let mouse = (u.zoom_config.yz - vec2<f32>(0.5)) * 2.0;
+        q -= mouse * 0.35;
+    }
+
+    let segments: f32 = 6.0;
+    let angle = atan2(q.y, q.x);
+    let radius = length(q);
+    let segmentAngle = TAU / segments;
+    let mirroredAngle = abs(fract(angle / segmentAngle + 0.5) - 0.5) * segmentAngle;
+    return vec2<f32>(cos(mirroredAngle), sin(mirroredAngle)) * radius;
 }
 
 // ═══ CHUNK: palette (OWNER: hop-3) — sole RGB assignment site ══════════════
