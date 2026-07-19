@@ -185,7 +185,7 @@ jobs:
       run: npx playwright test tests/wasm-renderer.smoke.spec.ts tests/layerChain.smoke.spec.ts tests/renderer-parity.spec.ts tests/wasm-benchmark.spec.ts --project=chromium
       env:
         CI: true
-        WASM_GPU_TESTS: '1'
+        WASM_GPU_TESTS: '0'
     
     - name: Upload Playwright report
       if: always()

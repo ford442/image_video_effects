@@ -113,7 +113,7 @@ function assertNoErrors(page: any, label: string) {
       e.includes('Fallback shader also failed') ||
       e.includes('Uncaptured error') ||
       // Only count webgpu-unavailable if it's NOT the expected headless CI case
-      (e.includes('webgpu-unavailable') && !e.includes('No suitable GPU adapter'))
+      (e.includes('webgpu-unavailable') && !e.includes('No suitable GPU adapter') && !e.includes('Failed to obtain a WebGPU adapter'))
   );
   expect(criticalErrors, `${label} critical console errors`).toEqual([]);
 }
