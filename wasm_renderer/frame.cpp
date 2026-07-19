@@ -85,7 +85,7 @@ void WebGPURenderer::UpdateUniformBuffer() {
         extraData[1] = audioMid_;
         extraData[2] = audioTreble_;
         extraData[3] = 0.0f;
-        extraData[4] = 0.0f;
+        extraData[4] = static_cast<float>(historyHead_);
         for (int i = 0; i < AUDIO_FFT_BINS; ++i) {
             extraData[EXTRA_BIN_OFFSET + i] = audioFreqBins_[i];
         }
@@ -296,12 +296,28 @@ void WebGPURenderer::Render() {
             CopyTex(enc, writeTexture_.get(),       readTexture_.get(),      W, H);
             CopyTex(enc, depthTextureWrite_.get(),  depthTextureRead_.get(), W, H);
             CopyTex(enc, dataTextureA_.get(),       dataTextureC_.get(),     W, H);
+            // Archive presented frame into history ring (binding 13)
+            {
+                WGPUTexelCopyTextureInfo src = {};
+                src.texture = writeTexture_.get();
+                src.mipLevel = 0;
+                src.origin = {0, 0, 0};
+                src.aspect = WGPUTextureAspect_All;
+                WGPUTexelCopyTextureInfo dst = {};
+                dst.texture = historyTexture_.get();
+                dst.mipLevel = 0;
+                dst.origin = {0, 0, historyHead_};
+                dst.aspect = WGPUTextureAspect_All;
+                WGPUExtent3D ext = { W, H, 1 };
+                wgpuCommandEncoderCopyTextureToTexture(enc, &src, &dst, &ext);
+            }
             WGPUCommandBufferDescriptor cbDesc = {};
             cbDesc.label = MakeStringView("Feedback CmdBuf");
             WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);
             wgpuQueueSubmit(queue_.get(), 1, &cb);
             wgpuCommandBufferRelease(cb);
             wgpuCommandEncoderRelease(enc);
+            historyHead_ = (historyHead_ + 1) % HISTORY_DEPTH;
         }
     }
 

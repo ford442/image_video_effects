@@ -411,6 +411,11 @@ private:
     WGPUTextureHandle dataTextureB_;  // write-only storage (binding 8)
     WGPUTextureHandle dataTextureC_;  // read-only texture  (binding 9)
 
+    // Temporal history ring (binding 13) — HISTORY_DEPTH past frames
+    static constexpr uint32_t HISTORY_DEPTH = 8;
+    WGPUTextureHandle historyTexture_;
+    uint32_t historyHead_ = 0;
+
     // Depth map (AI-generated from depth estimation model)
     WGPUTextureHandle depthTextureRead_;
     WGPUTextureHandle depthTextureWrite_;

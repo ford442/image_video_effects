@@ -5,7 +5,7 @@ import { FALLBACK_IMAGES } from '../app/constants/fallbackContent';
 
 export interface UseImageLoadingOptions {
     rendererRef: RefObject<RendererManager | null>;
-    depthEstimator: ((imageUrl: string) => Promise<{ predicted_depth: { data: number[]; dims: number[] } }>) | null;
+    isModelLoaded: boolean;
     runDepthAnalysis: (imageUrl: string) => Promise<void>;
     imageManifest: ImageRecord[];
     setCurrentImageUrl: React.Dispatch<React.SetStateAction<string | undefined>>;
@@ -19,7 +19,7 @@ export interface UseImageLoadingReturn {
 
 export function useImageLoading({
     rendererRef,
-    depthEstimator,
+    isModelLoaded,
     runDepthAnalysis,
     imageManifest,
     setCurrentImageUrl,
@@ -31,11 +31,11 @@ export function useImageLoading({
         const newImageUrl = await manager.loadImage(url);
         if (newImageUrl) {
             setCurrentImageUrl(newImageUrl);
-            if (depthEstimator) {
+            if (isModelLoaded) {
                 await runDepthAnalysis(newImageUrl);
             }
         }
-    }, [rendererRef, depthEstimator, runDepthAnalysis, setCurrentImageUrl]);
+    }, [rendererRef, isModelLoaded, runDepthAnalysis, setCurrentImageUrl]);
 
     const handleNewRandomImage = useCallback(async () => {
         let sourceList = imageManifest;
