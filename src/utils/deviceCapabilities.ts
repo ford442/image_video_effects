@@ -5,8 +5,8 @@
 /** True on phones/tablets — coarse pointer and no hover (touch-primary). */
 export function isMobileTouchDevice(): boolean {
   if (typeof window === 'undefined') return false;
-  return window.matchMedia('(pointer: coarse)').matches
-    || window.matchMedia('(max-width: 768px)').matches;
+  return Boolean(window.matchMedia && window.matchMedia('(pointer: coarse)') && window.matchMedia('(pointer: coarse)').matches)
+    || Boolean(window.matchMedia && window.matchMedia('(max-width: 768px)') && window.matchMedia('(max-width: 768px)').matches);
 }
 
 /** Web MIDI API availability (desktop browsers with MIDI hardware). */
