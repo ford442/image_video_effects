@@ -19,7 +19,9 @@ target_compile_features(pixelocity_wasm PUBLIC cxx_std_20)
 
 # ── emdawnwebgpu ──────────────────────────────────────────────────────────────
 #
-# NOTE: the canonical build path is build.sh (direct emcc invocation).
+# CANONICAL BUILD: wasm_renderer/build.sh (single-pass emcc). CI and npm run
+# wasm:build invoke build.sh only — do NOT use this CMake target in CI.
+#
 # cmake is kept here as a fallback/IDE convenience only.
 #
 # --use-port=emdawnwebgpu must NOT be passed as a compile option.  In cmake's

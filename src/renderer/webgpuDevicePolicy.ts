@@ -9,24 +9,22 @@
  *   - CheckLimit table (adapter + device post-creation)
  *   - requiredLimits seeding on wgpuAdapterRequestDevice
  *
- * Keep MINIMUM_COMPUTE_LIMITS in sync with device.cpp CheckLimit + requiredLimits.
+ * Keep MINIMUM_COMPUTE_LIMITS in sync with contracts/webgpu_limits.json and
+ * device.cpp CheckLimit + requiredLimits.
  * See docs/BINDING_CONTRACT.md for the full bind-group + device policy contract.
  */
 
+import webgpuLimitsContract from '../../contracts/webgpu_limits.json';
 import { UNIFORM_BUFFER_LAYOUT } from './types';
 
-/** Minimum limits implied by the 14-entry compute bind group (bindings 0–13). */
+/**
+ * Minimum limits implied by the 14-entry compute bind group (bindings 0–13).
+ * Source of truth: contracts/webgpu_limits.json (sync-checked in CI).
+ */
 export const MINIMUM_COMPUTE_LIMITS = {
-  maxBindingsPerBindGroup: 14,
-  maxSampledTexturesPerShaderStage: 3,
-  maxSamplersPerShaderStage: 3,
-  maxStorageTexturesPerShaderStage: 4,
-  maxStorageBuffersPerShaderStage: 2,
-  maxUniformBuffersPerShaderStage: 1,
-  maxUniformBufferBindingSize: UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE, // sizeof(Uniforms) in C++
-  maxComputeWorkgroupSizeX: 16,
-  maxComputeWorkgroupSizeY: 16,
-  maxComputeInvocationsPerWorkgroup: 256,
+  ...webgpuLimitsContract.minimumComputeLimits,
+  // Runtime guard: JSON value must match sizeof(Uniforms) in device.cpp
+  maxUniformBufferBindingSize: UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE,
 } as const;
 
 export type AdapterContractOptions = {

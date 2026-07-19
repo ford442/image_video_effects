@@ -23,6 +23,7 @@
     "types": ["@webgpu/types"]
   },
   "include": [
-    "src"
+    "src",
+    "contracts"
   ]
 }
