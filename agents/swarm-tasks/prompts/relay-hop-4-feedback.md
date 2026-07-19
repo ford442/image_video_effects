@@ -4,48 +4,60 @@
 - **Shader ID**: gen-relay-psychedelia
 - **Hop**: 4
 - **CHUNK**: `temporal-feedback`
-- **Agent Role**: Feedback Specialist
-- **Status**: pending
+- **Agent Role**: Echo / Trail Specialist
+- **Status**: completed (cursor-hop-4 2026-07-19)
 - **Protocol**: [`agents/RELAY_PROTOCOL.md`](../../RELAY_PROTOCOL.md)
 
 ## Immutable Rules
 1. Edit **only** `applyTemporalFeedback` inside the `CHUNK: temporal-feedback` block.
-2. Do NOT modify bindings, `Uniforms`, `main()`, utilities, or other CHUNKs.
-3. Function signature stays:
-   `fn applyTemporalFeedback(color: vec3<f32>, prevRgb: vec3<f32>, strength: f32, bass: f32) -> vec3<f32>`
-4. **Stability is non-negotiable**: effective history gain must stay < 1.0 in
-   every channel or the frame saturates to white within seconds. Keep
-   `decay * mixWeight` comfortably below 1 (≤ ~0.92 total).
-5. History arrives pre-sampled at the current pixel (`main()` is frozen), so
-   UV-warped history sampling is **out of scope for this hop** — sculpt the
-   trail in color space instead. If you believe warped-history sampling is
-   essential, flag it for human approval; do not edit `main()` yourself.
-6. No new hue sources — tint by *rotating between existing channels* of
-   `prevRgb`/`color`, don't introduce fresh RGB constants beyond subtle decay tints.
-7. Run gate before marking complete:
+2. Do NOT modify bindings, `Uniforms`, utilities, or other CHUNKs.
+3. **No new hue sources** — blend/mix passed `color` with history RGB only.
+4. **Decay must stay < 1.0** — feedback stable after ~30s (protocol checklist).
+5. `zoom_params.w` = Trail Echo — respect the `strength` argument (already scaled in `main()`).
+6. Run gate before marking complete:
    ```bash
    python3 scripts/wgsl_precommit_gate.py --files public/shaders/gen-relay-psychedelia.wgsl
    ```
 
 ## Task
 
-Upgrade the flat `mix(color, prev * 0.94, fb)` into expressive **echo trails**:
+Upgrade spine feedback to **self-advecting echo trails** via `dataTextureC`:
 
-- **Luma-shaped persistence**: bright pixels persist longer than dark ones —
-  e.g. scale decay by `smoothstep` over `luma(prevRgb)` so highlights streak
-  and shadows clear fast (keeps the field legible).
-- **Chromatic decay**: decay each channel slightly differently
-  (e.g. `vec3(0.90, 0.93, 0.95)`) so trails shift hue as they fade —
-  classic psychedelic afterimage.
-- **Bass pump**: `bass` (plasmaBuffer x) already arrives — let it push the
-  feedback mix up transiently, clamped so rule 4 still holds.
-- Use `max()`-style blending or soft-max for the brightest trails if plain
-  `mix` looks muddy — but verify stability after 60s.
+```
+uv01 → organicDrift UV warp → bilinear sample dataTextureC → decay → luminance-weighted mix
+```
 
 Goals:
-- Obvious flowing trails at Trail Echo ≥ 0.5, near-clean image at 0
-- No white-out or gray mud after running 60+ seconds
-- Trails inherit and shift the palette's hues, not desaturate them
+- **UV warp** on history sample so trails smear organically (not static stacking)
+- **Decay** mapped from Trail Echo slider + subtle bass lift
+- **Dual-tap** bilinear sample for softer phosphor echo
+- Luminance-weighted mix so bright regions leave longer trails
+- Use `textureSampleLevel(dataTextureC, u_sampler, …)` for filtered history reads
+
+## Wiring note
+
+`main()` passes `coord`, `res`, `strength`, `bass`, `time` instead of pre-sampled `prevRgb` so the chunk owns the warped history fetch. No other `main()` logic changes.
+
+## Reference pattern (from `gen-acid-lissajous.wgsl`)
+
+```wgsl
+let drift = organicDrift(uv01, time, 5.0) * (0.015 + bass * 0.015);
+let fbUV = clamp(uv01 + drift, vec2<f32>(0.0), vec2<f32>(1.0));
+let prev = textureSampleLevel(dataTextureC, u_sampler, fbUV, 0.0).rgb;
+let fbMix = feedback * 0.82;
+let decay = 0.88 + feedback * 0.11;
+totalColor = mix(totalColor, prev * decay, fbMix);
+```
+
+## Current CHUNK (replace body + signature)
+
+```wgsl
+fn applyTemporalFeedback(color: vec3<f32>, prevRgb: vec3<f32>, strength: f32, bass: f32) -> vec3<f32> {
+    let fb = clamp(strength + bass * 0.04, 0.0, 0.85);
+    let decayed = prevRgb * 0.94;
+    return mix(color, decayed, fb);
+}
+```
 
 ## On completion
 

@@ -213,10 +213,40 @@ fn applyPalette(field: f32, time: f32, saturation: f32, hueShift: f32) -> vec3<f
 
 // ═══ CHUNK: temporal-feedback (OWNER: hop-4) ═════════════════════════════════
 
-fn applyTemporalFeedback(color: vec3<f32>, prevRgb: vec3<f32>, strength: f32, bass: f32) -> vec3<f32> {
-    let fb = clamp(strength + bass * 0.04, 0.0, 0.85);
-    let decayed = prevRgb * 0.94;
-    return mix(color, decayed, fb);
+fn applyTemporalFeedback(
+    color: vec3<f32>,
+    coord: vec2<i32>,
+    res: vec2<f32>,
+    strength: f32,
+    bass: f32,
+    time: f32,
+) -> vec3<f32> {
+    // OWNER: cursor-hop-4 2026-07-19
+    // Self-advecting echo trails: organic UV warp on history + stable decay blend.
+    let uv01 = (vec2<f32>(coord) + 0.5) / res;
+
+    // Warp the history sample UV — trails smear instead of stacking in place.
+    let drift = organicDrift(uv01, time, 5.0) * (0.012 + strength * 0.018 + bass * 0.008);
+    let fbUV = clamp(uv01 + drift, vec2<f32>(0.0), vec2<f32>(1.0));
+    let fbUV2 = clamp(uv01 - drift * 0.65, vec2<f32>(0.0), vec2<f32>(1.0));
+
+    // Bilinear history taps for soft phosphor echo (dataTextureC → prior frame).
+    let prevA = textureSampleLevel(dataTextureC, u_sampler, fbUV, 0.0).rgb;
+    let prevB = textureSampleLevel(dataTextureC, u_sampler, fbUV2, 0.0).rgb;
+    let prev = (prevA + prevB) * 0.5;
+
+    // Trail Echo slider drives mix; bass nudges persistence.
+    let fbMix = clamp(strength * 0.82 + bass * 0.04, 0.0, 0.85);
+
+    // Decay stays < 1.0 so feedback remains stable after long runs.
+    let decay = clamp(0.86 + strength * 0.10 + bass * 0.02, 0.0, 0.97);
+    let decayed = prev * decay;
+
+    // Luminance-weighted echo: bright trails linger slightly longer.
+    let prevLuma = dot(decayed, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let echoWeight = fbMix * (0.75 + 0.25 * prevLuma);
+
+    return mix(color, decayed, echoWeight);
 }
 
 // ─── ENTRY ───────────────────────────────────────────────────────────────────
@@ -242,8 +272,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let field = sampleField(p, animTime);
     var color = applyPalette(field, animTime, mix(0.55, 1.0, u.zoom_params.y), u.zoom_params.z);
 
-    let prev = textureLoad(dataTextureC, coord, 0).rgb;
-    color = applyTemporalFeedback(color, prev, u.zoom_params.w * 0.35, bass);
+    color = applyTemporalFeedback(color, coord, res, u.zoom_params.w * 0.35, bass, animTime);
 
     color = finalComposite(color, 1.05 * motion.pulse);
 
