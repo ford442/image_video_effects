@@ -7,7 +7,7 @@ Module map after App.tsx strangler completion and WebGPU modularization.
 | Module | LOC | Epic target |
 |--------|-----|-------------|
 | [`src/App.tsx`](src/App.tsx) | ~560 | < 800 |
-| [`src/components/controls/ControlsContainer.tsx`](src/components/controls/ControlsContainer.tsx) | ~400 | < 500 |
+| [`src/components/controls/ControlsContainer.tsx`](src/components/controls/ControlsContainer.tsx) | ~340 | < 500 |
 | [`src/components/app/AppShell.tsx`](src/components/app/AppShell.tsx) | ~399 | layout shell |
 | [`src/components/app/AppOverlays.tsx`](src/components/app/AppOverlays.tsx) | ~280 | modals + overlays |
 | [`src/renderer/WebGPURenderer.ts`](src/renderer/WebGPURenderer.ts) | ~1,390 | facade + delegates to `webgpu/*`; `GraphRunner` for Tier C multipass |
@@ -55,7 +55,41 @@ Constants: [`src/app/constants/`](src/app/constants/) (`shaderDefaults`, `shader
 
 ## Controls — panels (#914)
 
-Directory: `src/components/controls/panels/` — see prior doc; `ControlsContainer` at ~400 LOC meets stretch target.
+Directory: [`src/components/controls/panels/`](../src/components/controls/panels/). [`ControlsContainer.tsx`](../src/components/controls/ControlsContainer.tsx) is a pure composition root (~340 LOC after hook extraction) that wires props into panels and hooks.
+
+### Hooks (`src/components/controls/hooks/`)
+
+| Hook | File | Responsibility |
+|------|------|----------------|
+| `useLiveControl` | `useLiveControl.ts` | MIDI/keyboard bindings, live action dispatch, auto-transition side effects |
+| `useCoordinateNavigation` | `useCoordinateNavigation.ts` | Coordinate map, number-overlay jump, zone browser state |
+| `useShaderMenuOptions` | `useShaderMenuOptions.ts` | Rating map, category-filtered modes, slot + generative mega-menu options |
+| `useAiVjAutoTransition` | `useAiVjAutoTransition.ts` | Auto-transition UI state shared by Live Control + AI VJ studio |
+
+### Panel inventory
+
+| Panel | File | Mount condition |
+|-------|------|-----------------|
+| CoordinateBrowserOverlay | `panels/CoordinateBrowserOverlay.tsx` | always |
+| InputSourcePanel | `panels/InputSourcePanel.tsx` | always |
+| LiveControlPanel | `panels/LiveControlPanel.tsx` | always |
+| RenderQualityPanel | `panels/RenderQualityPanel.tsx` | `onRenderQualityChange && performanceHud` |
+| RendererBackendPanel | `panels/RendererBackendPanel.tsx` | `onSwitchRenderer` |
+| ImageAutoSwitchPanel | `panels/ImageAutoSwitchPanel.tsx` | `inputSource === 'image'` |
+| EffectCategoryPanel | `panels/EffectCategoryPanel.tsx` | always |
+| RoulettePanel | `panels/RoulettePanel.tsx` | always |
+| SlotStackPanel | `panels/SlotStackPanel.tsx` | always |
+| ParamSlidersPanel | `panels/ParamSlidersPanel.tsx` | always |
+| CoordinateDisplayPanel | `panels/CoordinateDisplayPanel.tsx` | `currentCoordinate !== null` |
+| RecordingSharePanel | `panels/RecordingSharePanel.tsx` | always |
+| AiVjStudioPanel | `panels/AiVjStudioPanel.tsx` | `inputSource === 'image'` |
+| VideoSourcePanel | `panels/VideoSourcePanel.tsx` | `inputSource === 'video'` |
+| WebcamSuggestionsPanel | `panels/WebcamSuggestionsPanel.tsx` | `showWebcamShaderSuggestions && isWebcamActive` |
+| GenerativeSourcePanel | `panels/GenerativeSourcePanel.tsx` | `inputSource === 'generative'` |
+| LiveStreamPanel | `../LiveStreamPanel.tsx` | `inputSource === 'live'` |
+| AdvancedDebugPanel | `panels/AdvancedDebugPanel.tsx` | always |
+
+**Deprecated (demo-only):** `RendererToggle` lives under `src/components/shaders/` for `ShaderDemo` only. Production renderer switching uses `RendererBackendPanel` → `RendererSwitcher`. Storage UI canonical path: `src/components/storage/StoragePanel.tsx` (`StorageBrowser` alias).
 
 ---
 

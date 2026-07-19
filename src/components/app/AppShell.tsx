@@ -2,7 +2,6 @@ import React, { RefObject } from 'react';
 import WebGPUCanvas from '../WebGPUCanvas';
 import Controls from '../Controls';
 import LiveStudioTab from '../LiveStudioTab';
-import { RendererToggle } from '../RendererToggle';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
 import { RendererManager, RendererType } from '../../renderer/RendererManager';
 import { AIStatus, AutoTransitionConfig } from '../../AutoDJ';
@@ -375,12 +374,16 @@ export function AppShell(props: AppShellProps) {
 
                         <span
                             className={`renderer-badge renderer-badge--${activeRendererType}`}
-                            title={
+                            title={[
                                 activeRendererType === 'wasm'
                                     ? 'Experimental C++ WASM — click to cycle renderer'
-                                    : 'Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)'
-                            }
+                                    : 'Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)',
+                                jsFps > 0 ? `JS ${jsFps} FPS` : null,
+                                wasmFps > 0 ? `WASM ${wasmFps} FPS` : null,
+                                isRendererSwitching ? 'Switching…' : null,
+                            ].filter(Boolean).join(' · ')}
                             onClick={() => {
+                                if (isRendererSwitching) return;
                                 const cycle: Record<RendererType, RendererType> = {
                                     webgpu: 'wasm',
                                     wasm: 'js',
@@ -388,6 +391,7 @@ export function AppShell(props: AppShellProps) {
                                 };
                                 handleSwitchRenderer(cycle[activeRendererType]);
                             }}
+                            style={isRendererSwitching ? { opacity: 0.6, cursor: 'wait' } : undefined}
                         >
                             {activeRendererType === 'wasm'
                                 ? '⚡ WASM (exp.)'
@@ -395,17 +399,6 @@ export function AppShell(props: AppShellProps) {
                                   ? '🎨 Canvas2D'
                                   : '🔷 WebGPU'}
                         </span>
-
-                        <RendererToggle
-                            isWASM={activeRendererType === 'wasm'}
-                            onToggle={async (useWasm) => {
-                                const target: RendererType = useWasm ? 'wasm' : 'webgpu';
-                                await handleSwitchRenderer(target);
-                            }}
-                            isLoading={isRendererSwitching}
-                            jsFps={jsFps}
-                            wasmFps={wasmFps}
-                        />
                     </div>
                 </main>
             </div>
