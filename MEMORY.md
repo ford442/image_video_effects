@@ -103,7 +103,7 @@
 - Memory maintenance: review recent daily (06-07 had swarm, git sync); distill only high-signal (C++ reliability is now key infra bet).
 
 ## Build & tooling hardening (#965, 2026-07-19)
-- `contracts/webgpu_limits.json` — shared limits SOT; Jest `webgpuLimitsContract.test.ts`; `verify:device-policy` reads JSON
+- `src/contracts/webgpu_limits.json` — shared limits SOT; Jest `webgpuLimitsContract.test.ts`; `verify:device-policy` reads JSON
 - INITIAL_MEMORY 64 MiB experiment: **reject** (no wasm size win); ASYNCIFY **+40 KiB wasm** documented in `BUILD_FLAG_EXPERIMENTS.md`
 - `measure_wasm_build_flags.sh` for reproducible flag comparisons
 - PR template checklist includes `wasm:validate`; CMake marked CI-off-limits

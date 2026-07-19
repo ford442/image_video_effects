@@ -9,17 +9,17 @@
  *   - CheckLimit table (adapter + device post-creation)
  *   - requiredLimits seeding on wgpuAdapterRequestDevice
  *
- * Keep MINIMUM_COMPUTE_LIMITS in sync with contracts/webgpu_limits.json and
+ * Keep MINIMUM_COMPUTE_LIMITS in sync with src/contracts/webgpu_limits.json and
  * device.cpp CheckLimit + requiredLimits.
  * See docs/BINDING_CONTRACT.md for the full bind-group + device policy contract.
  */
 
-import webgpuLimitsContract from '../../contracts/webgpu_limits.json';
+import webgpuLimitsContract from '../contracts/webgpu_limits.json';
 import { UNIFORM_BUFFER_LAYOUT } from './types';
 
 /**
  * Minimum limits implied by the 14-entry compute bind group (bindings 0–13).
- * Source of truth: contracts/webgpu_limits.json (sync-checked in CI).
+ * Source of truth: src/contracts/webgpu_limits.json (sync-checked in CI).
  */
 export const MINIMUM_COMPUTE_LIMITS = {
   ...webgpuLimitsContract.minimumComputeLimits,

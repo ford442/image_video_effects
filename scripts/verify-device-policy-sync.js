@@ -2,7 +2,7 @@
 /**
  * verify-device-policy-sync.js
  *
- * CI check: contracts/webgpu_limits.json must match
+ * CI check: src/contracts/webgpu_limits.json must match
  * MINIMUM_COMPUTE_LIMITS in webgpuDevicePolicy.ts and device.cpp CheckLimit / requiredLimits.
  */
 
@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const CONTRACT = path.join(ROOT, 'contracts/webgpu_limits.json');
+const CONTRACT = path.join(ROOT, 'src/contracts/webgpu_limits.json');
 const TS_POLICY = path.join(ROOT, 'src/renderer/webgpuDevicePolicy.ts');
 const CPP_DEVICE = path.join(ROOT, 'wasm_renderer/device.cpp');
 
@@ -116,5 +116,5 @@ if (failed) {
 }
 
 console.log(
-  '✅ Device policy sync OK (contracts/webgpu_limits.json ↔ TS ↔ device.cpp CheckLimit + requiredLimits)',
+  '✅ Device policy sync OK (src/contracts/webgpu_limits.json ↔ TS ↔ device.cpp CheckLimit + requiredLimits)',
 );
