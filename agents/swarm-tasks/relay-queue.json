@@ -1,0 +1,71 @@
+{
+  "shader_id": "gen-relay-psychedelia",
+  "protocol": "agents/RELAY_PROTOCOL.md",
+  "wgsl": "public/shaders/gen-relay-psychedelia.wgsl",
+  "validation": "python3 scripts/wgsl_precommit_gate.py --files public/shaders/gen-relay-psychedelia.wgsl",
+  "hops": [
+    {
+      "hop": 0,
+      "name": "spine",
+      "owner": "human/cursor",
+      "chunk": "baseline",
+      "prompt": null,
+      "status": "completed",
+      "notes": "Warped fbm field, palette, feedback-ready composite"
+    },
+    {
+      "hop": 1,
+      "name": "domain-warp",
+      "owner": "unassigned",
+      "chunk": "domain-warp",
+      "prompt": "agents/swarm-tasks/prompts/relay-hop-1-domain-warp.md",
+      "status": "pending",
+      "target": "Recursive domain warp: fbm(p + fbm(p + fbm(p))). Stay within 6 octaves/call."
+    },
+    {
+      "hop": 2,
+      "name": "symmetry-fold",
+      "owner": "unassigned",
+      "chunk": "symmetry-fold",
+      "prompt": "agents/swarm-tasks/prompts/relay-hop-2-symmetry.md",
+      "status": "blocked",
+      "target": "Polar kaleidoscope fold on UV before field sample. N-fold via zoom_params or fixed 6-fold."
+    },
+    {
+      "hop": 3,
+      "name": "palette",
+      "owner": "unassigned",
+      "chunk": "palette",
+      "prompt": "agents/swarm-tasks/prompts/relay-hop-3-palette.md",
+      "status": "blocked",
+      "target": "IQ cosine palette or enhanced psychedelicPalette. Only chunk that assigns RGB."
+    },
+    {
+      "hop": 4,
+      "name": "temporal-feedback",
+      "owner": "unassigned",
+      "chunk": "temporal-feedback",
+      "prompt": "agents/swarm-tasks/prompts/relay-hop-4-feedback.md",
+      "status": "blocked",
+      "target": "Echo trails via dataTextureC. Decay + optional UV warp on history sample."
+    },
+    {
+      "hop": 5,
+      "name": "motion-modulation",
+      "owner": "unassigned",
+      "chunk": "motion-modulation",
+      "prompt": "agents/swarm-tasks/prompts/relay-hop-5-motion.md",
+      "status": "blocked",
+      "target": "LFOs pushing warp/palette past legibility. Audio via plasmaBuffer."
+    },
+    {
+      "hop": 6,
+      "name": "polish",
+      "owner": "unassigned",
+      "chunk": "polish",
+      "prompt": "agents/swarm-tasks/prompts/relay-hop-6-polish.md",
+      "status": "blocked",
+      "target": "neonGlow, subtle chromatic split on generative color (no readTexture). Final QA."
+    }
+  ]
+}

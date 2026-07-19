@@ -102,6 +102,12 @@
 - [x] **Product decision Tier B (2026-06-27):** WASM = experimental opt-in; TS WebGPU = production default. Policy: `WASM_BACKEND_POLICY.md`
 - Memory maintenance: review recent daily (06-07 had swarm, git sync); distill only high-signal (C++ reliability is now key infra bet).
 
+## Relay Psychedelia (2026-07-19)
+- Multi-agent shader relay experiment: `gen-relay-psychedelia` in generative category
+- CHUNK-based ownership (domain-warp, symmetry, palette, feedback, motion) — see `agents/RELAY_PROTOCOL.md`
+- Hop 0 spine done; hop 1 (recursive domain warp) prompt at `agents/swarm-tasks/prompts/relay-hop-1-domain-warp.md`
+- Validation between hops: `python3 scripts/wgsl_precommit_gate.py --files public/shaders/gen-relay-psychedelia.wgsl`
+
 ## Quick Refs (for continuity)
 - Key files: wasm_renderer/{renderer.cpp:242 CreateDevice, 658 format negotiation, 669 fatal surface, 1595 Render, 1725 PresentToSurface}, wasm_renderer/wasm_bridge.js (canonical, synced to src/wasm/), src/renderer/{WASMRenderer.ts,RendererManager.ts}, WASM_RENDERER_GAP_ANALYSIS.md, wasm_renderer/STATUS.md
 - GH: #799 (open, context init), #771 (closed windows), #736 (closed testing).
