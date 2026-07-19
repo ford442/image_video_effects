@@ -16,6 +16,7 @@ using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
 using wasm_internal::ParseWorkgroupSize;
+using wasm_internal::AnalyzeShaderBindings;
 
 bool WebGPURenderer::CreateBindGroupLayout() {
     // 14 bindings (0–13) matching the universal compute shader layout.
@@ -596,6 +597,11 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     sp.id       = id;
     sp.name     = id;
     ParseWorkgroupSize(wgslCode, sp.workgroupX, sp.workgroupY);
+    const auto usage = AnalyzeShaderBindings(wgslCode);
+    sp.writesDataA = usage.writesDataA;
+    sp.writesDataB = usage.writesDataB;
+    sp.readsDataC = usage.readsDataC;
+    sp.usesHistory = usage.usesHistory;
     shaders_[id] = std::move(sp);
 
     printf("✅ Loaded shader: %s (workgroup: %ux%u)\n", id,

@@ -146,7 +146,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse Interaction for Camera
     var mouse = u.zoom_config.yz;
     let rotX = (mouse.x - 0.5) * 4.0;
-    let rotY = (0.5 - mouse.y) * 2.0;
+    let rotY = (mouse.y - 0.5) * 2.0;
 
     // Camera Position - drifting slowly
     let ro = vec3<f32>(sin(time * 0.1) * 2.0, 0.0, -8.0 + time * 0.5);
@@ -163,7 +163,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rd_pre = normalize(fw + rt * uv.x + up * uv.y);
     // Applying mouse rotation (optional, but requested in plan features "mouse-driven")
     // Here we use mouse to perturb the ray direction slightly
-    let rd = normalize(rd_pre + rt * (mouse.x - 0.5) * 0.5 + up * (0.5 - mouse.y) * 0.5);
+    let rd = normalize(rd_pre + rt * (mouse.x - 0.5) * 0.5 + up * (mouse.y - 0.5) * 0.5);
 
     // Raymarch
     var res = raymarch(ro, rd);

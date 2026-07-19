@@ -1,11 +1,42 @@
 import React from 'react';
 import { ShaderEntry, SlotParams } from '../../../renderer/types';
+import { shouldShowMidiControls } from '../../../utils/deviceCapabilities';
+
+const INDEX_TO_PARAM: Array<keyof SlotParams> = ['zoomParam1', 'zoomParam2', 'zoomParam3', 'zoomParam4'];
 
 export interface ParamSlidersPanelProps {
     activeSlot: number;
     currentShaderEntry: ShaderEntry | undefined;
     currentParams: SlotParams;
     updateSlotParam: (slotIndex: number, updates: Partial<SlotParams>) => void;
+    onStartMidiLearn?: (slot: number, param: keyof SlotParams) => void;
+    learnActiveParam?: string | null;
+}
+
+function MidiLearnButton({
+    paramKey,
+    activeSlot,
+    learnActiveParam,
+    onStartMidiLearn,
+}: {
+    paramKey: keyof SlotParams;
+    activeSlot: number;
+    learnActiveParam?: string | null;
+    onStartMidiLearn?: (slot: number, param: keyof SlotParams) => void;
+}) {
+    if (!shouldShowMidiControls() || !onStartMidiLearn) return null;
+    const isActive = learnActiveParam === paramKey;
+    return (
+        <button
+            type="button"
+            className={`gold-outline-btn ${isActive ? 'gold-active' : ''}`}
+            style={{ fontSize: '10px', padding: '2px 6px', marginLeft: '6px' }}
+            title="Map MIDI to this parameter"
+            onClick={() => onStartMidiLearn(activeSlot, paramKey)}
+        >
+            🎛
+        </button>
+    );
 }
 
 export const ParamSlidersPanel: React.FC<ParamSlidersPanelProps> = ({
@@ -13,6 +44,8 @@ export const ParamSlidersPanel: React.FC<ParamSlidersPanelProps> = ({
     currentShaderEntry,
     currentParams,
     updateSlotParam,
+    onStartMidiLearn,
+    learnActiveParam,
 }) => (
     <>
         <div className="gold-section-header">
@@ -26,16 +59,16 @@ export const ParamSlidersPanel: React.FC<ParamSlidersPanelProps> = ({
             {currentShaderEntry?.params?.map((param, index) => {
                 if (index > 3) return null;
 
-                let val = 0;
-                if (index === 0) val = currentParams.zoomParam1;
-                else if (index === 1) val = currentParams.zoomParam2;
-                else if (index === 2) val = currentParams.zoomParam3;
-                else if (index === 3) val = currentParams.zoomParam4;
+                const paramKey = INDEX_TO_PARAM[index];
+                const val = currentParams[paramKey];
 
                 return (
                     <div key={param.id} className="control-group">
-                        <label htmlFor={`param-${param.id}`} style={{ display: 'flex', justifyContent: 'space-between', color: '#a0a0b0' }}>
-                            <span>{param.name}</span>
+                        <label htmlFor={`param-${param.id}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#a0a0b0' }}>
+                            <span style={{ display: 'flex', alignItems: 'center' }}>
+                                {param.name}
+                                <MidiLearnButton paramKey={paramKey} activeSlot={activeSlot} learnActiveParam={learnActiveParam} onStartMidiLearn={onStartMidiLearn} />
+                            </span>
                             <span style={{ color: '#FFD700', fontSize: '11px', fontWeight: 500 }}>{val.toFixed(2)}</span>
                         </label>
                         <input
@@ -47,13 +80,7 @@ export const ParamSlidersPanel: React.FC<ParamSlidersPanelProps> = ({
                             step={param.step || 0.01}
                             value={val}
                             onChange={(e) => {
-                                const v = parseFloat(e.target.value);
-                                const update: Partial<SlotParams> = {};
-                                if (index === 0) update.zoomParam1 = v;
-                                else if (index === 1) update.zoomParam2 = v;
-                                else if (index === 2) update.zoomParam3 = v;
-                                else if (index === 3) update.zoomParam4 = v;
-                                updateSlotParam(activeSlot, update);
+                                updateSlotParam(activeSlot, { [paramKey]: parseFloat(e.target.value) });
                             }}
                         />
                     </div>
@@ -82,8 +109,11 @@ export const ParamSlidersPanel: React.FC<ParamSlidersPanelProps> = ({
                         const val = currentParams[fb.paramKey];
                         return (
                             <div key={fb.id} className="control-group">
-                                <label htmlFor={`param-${fb.id}`} style={{ display: 'flex', justifyContent: 'space-between', color: '#a0a0b0' }}>
-                                    <span>{fb.name}</span>
+                                <label htmlFor={`param-${fb.id}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#a0a0b0' }}>
+                                    <span style={{ display: 'flex', alignItems: 'center' }}>
+                                        {fb.name}
+                                        <MidiLearnButton paramKey={fb.paramKey} activeSlot={activeSlot} learnActiveParam={learnActiveParam} onStartMidiLearn={onStartMidiLearn} />
+                                    </span>
                                     <span style={{ color: '#FFD700', fontSize: '11px', fontWeight: 500 }}>{val.toFixed(2)}</span>
                                 </label>
                                 <input

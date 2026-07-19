@@ -196,7 +196,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // c: position-space parameter (the "c" in z² + c)
     // Slowly pan through the Mandelbrot set, center on mouse
     let panX = sin(t * 0.04) * 0.3 + (mouse.x - 0.5) * 0.5;
-    let panY = cos(t * 0.031) * 0.2 + (0.5 - mouse.y) * 0.4;
+    let panY = cos(t * 0.031) * 0.2 + (mouse.y - 0.5) * 0.4;
     let center = vec2<f32>(-0.5 + panX, panY);
 
     let aspectUV = (uv - 0.5) * vec2<f32>(aspect, 1.0);

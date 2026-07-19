@@ -346,6 +346,8 @@ export interface ApiShaderEntry {
   params?: ShaderParam[];  // Shader parameter definitions for UI sliders
   /** When true, shader requires @workgroup_size(16,16,4) = 1024-invocation support. */
   requiresDeepWorkgroup?: boolean;
+  /** When true, shader samples binding 13 (historyTexture 2d-array ring buffer). */
+  requiresHistoryRing?: boolean;
 }
 
 export interface ShaderCoordinateData {
@@ -496,6 +498,7 @@ class ShaderApiService {
           tags: shader.tags || [],
           url: shader.url ? resolveShaderUrl(shader.url) : resolveShaderUrl(`shaders/${shader.id}.wgsl`),
           requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
+          requiresHistoryRing: shader.requiresHistoryRing === true,
           params: (shader.params || []).map((p: any, idx: number) => ({
             id: p.id || p.name || `param${idx + 1}`,
             name: p.label || p.name || `Parameter ${idx + 1}`,

@@ -215,7 +215,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     // Mouse Y-flip: screen-top = +Y/up
-    let mouseY = 1.0 - u.zoom_config.z;
+    let mouseY = u.zoom_config.z;
     let mousePos = vec2<f32>(u.zoom_config.y, mouseY);
 
     // Parameters

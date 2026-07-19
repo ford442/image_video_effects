@@ -5,98 +5,90 @@
  * Tier C: enables same-frame pass-to-pass reads (unlike linear multipassRegistry).
  */
 
-import { MultipassGraph, MultipassGraphNode, validateGraph } from './multipassGraph';
+import {
+  ExpandedDispatch,
+  MultipassGraphDef,
+  expandGraph,
+  validateGraph,
+} from './multipassGraph';
+import { CopyBarrier } from './multipassGraph';
+
+export interface GraphRoleBindings {
+  read: GPUTexture;
+  color: GPUTexture;
+  dataA: GPUTexture;
+  dataB: GPUTexture;
+  dataC: GPUTexture;
+}
 
 export interface GraphRunnerContext {
   device: GPUDevice;
   pipelineLayout: GPUPipelineLayout;
   getPipeline: (shaderId: string) => GPUComputePipeline | undefined;
   getWorkgroupSize: (shaderId: string) => { x: number; y: number };
-  createBindGroupForPass: (readTex: GPUTexture, writeTex: GPUTexture) => GPUBindGroup;
-  textures: {
-    readTex: GPUTexture;
-    writeTex: GPUTexture;
-    dataTexA: GPUTexture;
-    dataTexB: GPUTexture;
-    dataTexC: GPUTexture;
-  };
+  createBindGroupForRoles: (roles: GraphRoleBindings) => GPUBindGroup;
+  textures: GraphRoleBindings;
   scaledW: number;
   scaledH: number;
+  maxPassesPerFrame: number;
 }
 
-function resolveTexture(
-  role: 'read' | 'write' | 'dataA' | 'dataB' | 'dataC',
-  textures: GraphRunnerContext['textures'],
-): GPUTexture {
-  switch (role) {
-    case 'read': return textures.readTex;
-    case 'write': return textures.writeTex;
-    case 'dataA': return textures.dataTexA;
-    case 'dataB': return textures.dataTexB;
-    case 'dataC': return textures.dataTexC;
-  }
+function encodeCopy(
+  encoder: GPUCommandEncoder,
+  ctx: GraphRunnerContext,
+  copy: CopyBarrier,
+): void {
+  const fromTex = copy.from === 'dataA' ? ctx.textures.dataA : ctx.textures.dataB;
+  encoder.copyTextureToTexture(
+    { texture: fromTex },
+    { texture: ctx.textures.dataC },
+    [ctx.scaledW, ctx.scaledH, 1],
+  );
 }
 
 export class GraphRunner {
-  runGraph(encoder: GPUCommandEncoder, graph: MultipassGraph, ctx: GraphRunnerContext): void {
+  runGraph(encoder: GPUCommandEncoder, graph: MultipassGraphDef, ctx: GraphRunnerContext): void {
     const errors = validateGraph(graph);
     if (errors.length > 0) {
       console.warn('[GraphRunner] Invalid graph:', errors);
       return;
     }
 
-    for (const node of graph.nodes) {
-      this.runNode(encoder, node, ctx);
+    const cap = Math.min(graph.maxPassesPerFrame, ctx.maxPassesPerFrame);
+    let expanded = expandGraph(graph);
+
+    if (expanded.length > cap) {
+      console.warn(
+        `[GraphRunner] Pass cap ${cap} — skipping ${expanded.length - cap} dispatch(es)`,
+      );
+      expanded = expanded.slice(0, cap);
+    }
+
+    for (const dispatch of expanded) {
+      this.runDispatch(encoder, dispatch, ctx);
     }
   }
 
-  private runNode(
+  private runDispatch(
     encoder: GPUCommandEncoder,
-    node: MultipassGraphNode,
+    dispatch: ExpandedDispatch,
     ctx: GraphRunnerContext,
   ): void {
-    if (node.type === 'pass') {
-      this.dispatchPass(encoder, node.shaderId, node.readTexture, node.writeTexture, ctx);
-      return;
+    for (const copy of dispatch.copiesBefore) {
+      encodeCopy(encoder, ctx, copy);
     }
 
-    if (node.type === 'pingPong') {
-      for (let i = 0; i < node.iterations; i++) {
-        const read = i % 2 === 0 ? 'dataA' : 'dataB';
-        const write = i % 2 === 0 ? 'dataB' : 'dataA';
-        this.dispatchPass(encoder, node.shaderId, read, write, ctx);
-      }
-      return;
-    }
-
-    if (node.type === 'loop') {
-      for (let i = 0; i < node.iterations; i++) {
-        for (const child of node.body) {
-          this.runNode(encoder, child, ctx);
-        }
-      }
-    }
-  }
-
-  private dispatchPass(
-    encoder: GPUCommandEncoder,
-    shaderId: string,
-    readRole: 'read' | 'dataA' | 'dataB' | 'dataC',
-    writeRole: 'write' | 'dataA' | 'dataB',
-    ctx: GraphRunnerContext,
-  ): void {
-    const pipeline = ctx.getPipeline(shaderId);
+    const pipeline = ctx.getPipeline(dispatch.entry);
     if (!pipeline) {
-      console.warn(`[GraphRunner] Pipeline missing for "${shaderId}"`);
+      console.warn(`[GraphRunner] Pipeline missing for "${dispatch.entry}"`);
       return;
     }
 
-    const readTex = resolveTexture(readRole, ctx.textures);
-    const writeTex = resolveTexture(writeRole, ctx.textures);
-    const bindGroup = ctx.createBindGroupForPass(readTex, writeTex);
-    const wg = ctx.getWorkgroupSize(shaderId);
+    const bindGroup = ctx.createBindGroupForRoles(ctx.textures);
+    const wg = ctx.getWorkgroupSize(dispatch.entry);
 
-    const pass = encoder.beginComputePass({ label: `graph-${shaderId}` });
+    const label = `graph-${dispatch.nodeId}-${dispatch.iteration}-${dispatch.entry}`;
+    const pass = encoder.beginComputePass({ label });
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bindGroup);
     pass.dispatchWorkgroups(
@@ -109,3 +101,17 @@ export class GraphRunner {
 }
 
 export const graphRunner = new GraphRunner();
+
+/** Summarize graph binding usage for frame feedback gating. */
+export function analyzeGraphBindingUsage(graph: MultipassGraphDef): {
+  writesDataA: boolean;
+  writesDataB: boolean;
+  readsDataC: boolean;
+} {
+  const expanded = expandGraph(graph);
+  return {
+    writesDataA: expanded.some((d) => d.writes.includes('dataA')),
+    writesDataB: expanded.some((d) => d.writes.includes('dataB')),
+    readsDataC: expanded.some((d) => d.reads.includes('dataC')),
+  };
+}

@@ -1,41 +1,25 @@
 /**
- * WebGPUResourceManager.ts
+ * pipeline.ts
  *
- * GPU resource creation for the TypeScript WebGPU renderer.
+ * Compute bind-group layout, blit pipelines, and shader load/cache.
+ * Mirrors wasm_renderer/pipeline.cpp.
  */
 
-import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
-import { UNIFORM_FLOATS } from '../UniformBuffer';
 import {
-  EXTRA_FLOATS,
-  HISTORY_DEPTH,
-  PLASMA_BYTES,
-} from './webgpuConstants';
-
-export interface WebGPUTextureSet {
-  sourceTex: GPUTexture;
-  readTex: GPUTexture;
-  writeTex: GPUTexture;
-  dataTexA: GPUTexture;
-  dataTexB: GPUTexture;
-  dataTexC: GPUTexture;
-  historyTex: GPUTexture;
-  depthRead: GPUTexture;
-  depthWrite: GPUTexture;
-  emptyTex: GPUTexture;
-}
-
-export interface WebGPUSamplerSet {
-  filterSampler: GPUSampler;
-  nearestSampler: GPUSampler;
-  compSampler: GPUSampler;
-}
-
-export interface WebGPUBufferSet {
-  uniformBuf: GPUBuffer;
-  extraBuf: GPUBuffer;
-  plasmaBuf: GPUBuffer;
-}
+  analyzeShaderBindings,
+  compileShader,
+  CONSERVATIVE_BINDING_USAGE,
+  ShaderBindingUsage,
+} from '../ShaderCompilation';
+import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
+import { resolveShaderUrl } from '../../utils/resolveShaderUrl';
+import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
+import { HISTORY_DEPTH } from './webgpuConstants';
+import {
+  WebGPUBufferSet,
+  WebGPUSamplerSet,
+  WebGPUTextureSet,
+} from './resources';
 
 export interface WebGPUComputeLayout {
   bindGroupLayout: GPUBindGroupLayout;
@@ -53,171 +37,95 @@ export interface WebGPUBlitResources {
   supportsExternalTexture: boolean;
 }
 
-export interface WebGPUTimestampQueries {
-  supportsTimestampQuery: boolean;
-  querySet: GPUQuerySet | null;
-  queryBuffer: GPUBuffer | null;
-}
+export class WebGPUShaderManager {
+  private pipelines = new Map<string, GPUComputePipeline>();
+  private pipelineHashes = new Map<string, string>();
+  private workgroupSizes = new Map<string, { x: number; y: number }>();
+  private bindingUsages = new Map<string, ShaderBindingUsage>();
 
-export function createTextures(
-  device: GPUDevice,
-  canvasW: number,
-  canvasH: number,
-  scaledW: number,
-  scaledH: number,
-): WebGPUTextureSet {
-  const fullW = canvasW;
-  const fullH = canvasH;
-  const sw = scaledW || fullW;
-  const sh = scaledH || fullH;
+  getPipeline(id: string): GPUComputePipeline | undefined {
+    return this.pipelines.get(id);
+  }
 
-  const USAGE_SOURCE =
-    GPUTextureUsage.TEXTURE_BINDING |
-    GPUTextureUsage.COPY_DST |
-    GPUTextureUsage.COPY_SRC |
-    GPUTextureUsage.RENDER_ATTACHMENT;
+  hasPipeline(id: string): boolean {
+    return this.pipelines.has(id);
+  }
 
-  const USAGE_STANDARD =
-    GPUTextureUsage.TEXTURE_BINDING |
-    GPUTextureUsage.STORAGE_BINDING |
-    GPUTextureUsage.COPY_DST |
-    GPUTextureUsage.COPY_SRC;
+  getWorkgroupSize(id: string): { x: number; y: number } {
+    return this.workgroupSizes.get(id) || { x: 8, y: 8 };
+  }
 
-  const sourceTex = device.createTexture({
-    label: 'sourceTex',
-    size: [fullW, fullH],
-    format: 'rgba32float',
-    usage: USAGE_SOURCE,
-  });
+  getBindingUsage(id: string): ShaderBindingUsage {
+    return this.bindingUsages.get(id) ?? CONSERVATIVE_BINDING_USAGE;
+  }
 
-  const readTex = device.createTexture({
-    label: 'readTex',
-    size: [sw, sh],
-    format: 'rgba32float',
-    usage: USAGE_STANDARD,
-  });
+  getCacheStats(): { cachedCount: number; cachedIds: string[] } {
+    return {
+      cachedCount: this.pipelines.size,
+      cachedIds: Array.from(this.pipelines.keys()),
+    };
+  }
 
-  const writeTex = device.createTexture({
-    label: 'writeTex',
-    size: [sw, sh],
-    format: 'rgba32float',
-    usage: USAGE_STANDARD,
-  });
+  clear(): void {
+    this.pipelines.clear();
+    this.pipelineHashes.clear();
+    this.workgroupSizes.clear();
+    this.bindingUsages.clear();
+  }
 
-  const dataTexA = device.createTexture({
-    label: 'dataTexA',
-    size: [sw, sh],
-    format: 'rgba32float',
-    usage: USAGE_STANDARD,
-  });
+  compile(
+    device: GPUDevice,
+    pipelineLayout: GPUPipelineLayout,
+    id: string,
+    wgsl: string,
+  ): boolean {
+    const ok = compileShader(
+      device,
+      pipelineLayout,
+      id,
+      wgsl,
+      this.pipelines,
+      this.pipelineHashes,
+      this.workgroupSizes,
+    );
+    if (ok) {
+      this.bindingUsages.set(id, analyzeShaderBindings(wgsl));
+    }
+    return ok;
+  }
 
-  const dataTexB = device.createTexture({
-    label: 'dataTexB',
-    size: [sw, sh],
-    format: 'rgba32float',
-    usage: USAGE_STANDARD,
-  });
+  async loadShader(
+    device: GPUDevice | null,
+    pipelineLayout: GPUPipelineLayout | null,
+    supportsSubgroups: boolean,
+    id: string,
+    url: string,
+  ): Promise<boolean> {
+    if (!device || !pipelineLayout) return false;
 
-  const dataTexC = device.createTexture({
-    label: 'dataTexC',
-    size: [sw, sh],
-    format: 'rgba32float',
-    usage: USAGE_STANDARD,
-  });
+    const resolvedUrl = resolveShaderUrl(url);
 
-  const historyTex = device.createTexture({
-    label: 'historyTex',
-    size: { width: sw, height: sh, depthOrArrayLayers: HISTORY_DEPTH },
-    format: 'rgba32float',
-    usage:
-      GPUTextureUsage.TEXTURE_BINDING |
-      GPUTextureUsage.STORAGE_BINDING |
-      GPUTextureUsage.COPY_DST |
-      GPUTextureUsage.COPY_SRC,
-  });
+    if (supportsSubgroups && !id.endsWith('-sg') && resolvedUrl.endsWith('.wgsl')) {
+      const sgUrl = resolvedUrl.replace(/\.wgsl$/, '-sg.wgsl');
+      const sgWgsl = await fetchShaderWgsl(`${id}-sg`, sgUrl);
+      if (sgWgsl) {
+        const ok = this.compile(device, pipelineLayout, id, sgWgsl);
+        if (ok) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`[WebGPU] "${id}": loaded subgroup variant (-sg.wgsl)`);
+          }
+          return true;
+        }
+      }
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[WebGPU] "${id}": no -sg variant found, using base variant`);
+      }
+    }
 
-  const depthRead = device.createTexture({
-    label: 'depthRead',
-    size: [fullW, fullH],
-    format: 'r32float',
-    usage: USAGE_SOURCE,
-  });
-
-  const depthWrite = device.createTexture({
-    label: 'depthWrite',
-    size: [sw, sh],
-    format: 'r32float',
-    usage: USAGE_STANDARD,
-  });
-
-  const emptyTex = device.createTexture({
-    label: 'emptyTex',
-    size: [1, 1],
-    format: 'r32float',
-    usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-  });
-
-  device.queue.writeTexture(
-    { texture: emptyTex },
-    new Float32Array([0]),
-    { bytesPerRow: 4 },
-    [1, 1],
-  );
-
-  return {
-    sourceTex,
-    readTex,
-    writeTex,
-    dataTexA,
-    dataTexB,
-    dataTexC,
-    historyTex,
-    depthRead,
-    depthWrite,
-    emptyTex,
-  };
-}
-
-export function createSamplers(device: GPUDevice): WebGPUSamplerSet {
-  const filterSampler = device.createSampler({
-    label: 'filterSampler',
-    magFilter: 'linear',
-    minFilter: 'linear',
-    mipmapFilter: 'linear',
-    addressModeU: 'repeat',
-    addressModeV: 'repeat',
-  });
-  const nearestSampler = device.createSampler({
-    label: 'nearestSampler',
-    magFilter: 'nearest',
-    minFilter: 'nearest',
-    addressModeU: 'clamp-to-edge',
-    addressModeV: 'clamp-to-edge',
-  });
-  const compSampler = device.createSampler({
-    label: 'compSampler',
-    compare: 'less',
-  });
-  return { filterSampler, nearestSampler, compSampler };
-}
-
-export function createBuffers(device: GPUDevice): WebGPUBufferSet {
-  const uniformBuf = device.createBuffer({
-    label: 'uniformBuf',
-    size: UNIFORM_FLOATS * 4,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  const extraBuf = device.createBuffer({
-    label: 'extraBuf',
-    size: EXTRA_FLOATS * 4,
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-  const plasmaBuf = device.createBuffer({
-    label: 'plasmaBuf',
-    size: Math.max(PLASMA_BYTES, 16),
-    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-  });
-  return { uniformBuf, extraBuf, plasmaBuf };
+    const wgsl = await fetchShaderWgsl(id, url);
+    if (!wgsl) return false;
+    return this.compile(device, pipelineLayout, id, wgsl);
+  }
 }
 
 export function createComputeBindGroupLayout(
@@ -277,23 +185,30 @@ export function createComputeBindGroup(
   );
 }
 
-/** Bind group with explicit read/write textures (graph runner / multipass handoff). */
-export function createComputeBindGroupForPass(
+export interface GraphRoleTextureBindings {
+  read: GPUTexture;
+  color: GPUTexture;
+  dataA: GPUTexture;
+  dataB: GPUTexture;
+  dataC: GPUTexture;
+}
+
+/** Bind group with explicit role textures (graph runner / multipass handoff). */
+export function createComputeBindGroupForRoles(
   device: GPUDevice,
   layout: GPUBindGroupLayout,
-  readTex: GPUTexture,
-  writeTex: GPUTexture,
+  roles: GraphRoleTextureBindings,
   textures: WebGPUTextureSet,
   buffers: WebGPUBufferSet,
   samplers: WebGPUSamplerSet,
 ): GPUBindGroup {
   return device.createBindGroup({
-    label: 'computeBG',
+    label: 'computeBG-graph',
     layout,
     entries: [
       { binding: 0, resource: samplers.filterSampler },
-      { binding: 1, resource: readTex.createView() },
-      { binding: 2, resource: writeTex.createView() },
+      { binding: 1, resource: roles.read.createView() },
+      { binding: 2, resource: roles.color.createView() },
       { binding: 3, resource: { buffer: buffers.uniformBuf } },
       { binding: 4, resource: textures.depthRead.createView() },
       { binding: 5, resource: samplers.nearestSampler },
@@ -316,12 +231,36 @@ export function createComputeBindGroupForPass(
   });
 }
 
+/** Bind group with explicit read/write textures (legacy two-texture handoff). */
+export function createComputeBindGroupForPass(
+  device: GPUDevice,
+  layout: GPUBindGroupLayout,
+  readTex: GPUTexture,
+  writeTex: GPUTexture,
+  textures: WebGPUTextureSet,
+  buffers: WebGPUBufferSet,
+  samplers: WebGPUSamplerSet,
+): GPUBindGroup {
+  return createComputeBindGroupForRoles(
+    device,
+    layout,
+    {
+      read: readTex,
+      color: writeTex,
+      dataA: textures.dataTexA,
+      dataB: textures.dataTexB,
+      dataC: textures.dataTexC,
+    },
+    textures,
+    buffers,
+    samplers,
+  );
+}
+
 export function createBlitPipeline(
   device: GPUDevice,
   canvasFormat: GPUTextureFormat,
   blitReadTex: GPUTexture,
-  scaledW: number,
-  scaledH: number,
 ): WebGPUBlitResources {
   const blitBindGroupLayout = device.createBindGroupLayout({
     label: 'blitBGL',
@@ -366,10 +305,6 @@ export function createBlitPipeline(
     entries: [{ binding: 0, resource: blitReadTex.createView() }],
   });
 
-  // Downscale pass for resolutionScale < 1.0: samples the full-res
-  // rgba32float sourceTex via textureLoad (unfilterable-float — works on
-  // every adapter) and writes into the scaled readTex. Reuses the blit
-  // bind-group layout (single sampled texture at binding 0).
   const scaleModule = device.createShaderModule({
     label: 'scaleCopyShader',
     code: SCALE_COPY_WGSL,
@@ -439,27 +374,80 @@ export function createBlitBindGroup(
   });
 }
 
-export function createTimestampQueries(device: GPUDevice): WebGPUTimestampQueries {
-  const supportsTimestampQuery = device.features.has('timestamp-query');
-  let querySet: GPUQuerySet | null = null;
-  let queryBuffer: GPUBuffer | null = null;
+/** Holds compute layout, blit pipelines, and the shader cache. */
+export class WebGPUPipelineModule {
+  bindGroupLayout!: GPUBindGroupLayout;
+  pipelineLayout!: GPUPipelineLayout;
+  blitPipeline!: GPURenderPipeline;
+  generativeBlitPipeline!: GPURenderPipeline;
+  scaleCopyPipeline!: GPURenderPipeline;
+  blitBindGroupLayout!: GPUBindGroupLayout;
+  blitBindGroup!: GPUBindGroup;
+  videoCopyPipeline: GPURenderPipeline | null = null;
+  videoCopyBindGroupLayout: GPUBindGroupLayout | null = null;
+  supportsExternalTexture = false;
 
-  if (supportsTimestampQuery) {
-    try {
-      querySet = device.createQuerySet({
-        type: 'timestamp',
-        count: 8,
-      });
-      queryBuffer = device.createBuffer({
-        size: 8 * 8,
-        usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
-      });
-      console.log('[WebGPU] Timestamp queries enabled for GPU profiling');
-    } catch (e) {
-      console.warn('[WebGPU] Timestamp query creation failed:', e);
-      return { supportsTimestampQuery: false, querySet: null, queryBuffer: null };
-    }
+  readonly shaderManager = new WebGPUShaderManager();
+
+  setupComputeLayout(device: GPUDevice, hasF32Filt: boolean): void {
+    const layout = createComputeBindGroupLayout(device, hasF32Filt);
+    this.bindGroupLayout = layout.bindGroupLayout;
+    this.pipelineLayout = layout.pipelineLayout;
   }
 
-  return { supportsTimestampQuery, querySet, queryBuffer };
+  setupBlitPipelines(
+    device: GPUDevice,
+    canvasFormat: GPUTextureFormat,
+    blitReadTex: GPUTexture,
+  ): void {
+    const blit = createBlitPipeline(device, canvasFormat, blitReadTex);
+    this.blitPipeline = blit.blitPipeline;
+    this.generativeBlitPipeline = blit.generativeBlitPipeline;
+    this.scaleCopyPipeline = blit.scaleCopyPipeline;
+    this.blitBindGroupLayout = blit.blitBindGroupLayout;
+    this.blitBindGroup = blit.blitBindGroup;
+    this.videoCopyPipeline = blit.videoCopyPipeline;
+    this.videoCopyBindGroupLayout = blit.videoCopyBindGroupLayout;
+    this.supportsExternalTexture = blit.supportsExternalTexture;
+  }
+
+  createBindGroupForPass(
+    device: GPUDevice,
+    readTex: GPUTexture,
+    writeTex: GPUTexture,
+    textures: WebGPUTextureSet,
+    buffers: WebGPUBufferSet,
+    samplers: WebGPUSamplerSet,
+  ): GPUBindGroup {
+    return createComputeBindGroupForPass(
+      device,
+      this.bindGroupLayout,
+      readTex,
+      writeTex,
+      textures,
+      buffers,
+      samplers,
+    );
+  }
+
+  createBindGroupForRoles(
+    device: GPUDevice,
+    roles: GraphRoleTextureBindings,
+    textures: WebGPUTextureSet,
+    buffers: WebGPUBufferSet,
+    samplers: WebGPUSamplerSet,
+  ): GPUBindGroup {
+    return createComputeBindGroupForRoles(
+      device,
+      this.bindGroupLayout,
+      roles,
+      textures,
+      buffers,
+      samplers,
+    );
+  }
+
+  clear(): void {
+    this.shaderManager.clear();
+  }
 }

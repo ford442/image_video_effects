@@ -3,7 +3,7 @@ import { AppShell } from './components/app/AppShell';
 import { AppOverlays } from './components/app/AppOverlays';
 import { DEFAULT_B3HD_SEGMENT_LENGTH, DEFAULT_B3HD_INTERVAL_SECONDS } from './config/appConfig';
 import { RenderQualityMode } from './config/performancePolicy';
-import { loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
+import { isRenderQualityMode, loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
 import { RendererManager } from './renderer/RendererManager';
 import { ImageRecord } from './AutoDJ';
 import { VideoRecord } from './syncTypes';
@@ -70,7 +70,13 @@ function MainApp() {
     const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 });
     const [isMouseDown, setIsMouseDown] = useState(false);
     const [shadersReady, setShadersReady] = useState(false);
-    const [renderQualityMode, setRenderQualityMode] = useState<RenderQualityMode>(() => loadRenderQualityMode());
+    const [renderQualityMode, setRenderQualityMode] = useState<RenderQualityMode>(() => {
+        if (typeof window !== 'undefined') {
+            const fromUrl = new URLSearchParams(window.location.search).get('renderQuality');
+            if (isRenderQualityMode(fromUrl)) return fromUrl;
+        }
+        return loadRenderQualityMode();
+    });
     const [performanceHud, setPerformanceHud] = useState({
         internalWidth: 2048,
         internalHeight: 2048,
@@ -368,6 +374,15 @@ function MainApp() {
     });
 
     useTestHarness({ rendererRef, rendererReady });
+
+    useEffect(() => {
+        if (!rendererReady) return;
+        const manager = rendererRef.current;
+        if (!manager) return;
+        manager.setRenderQuality(renderQualityMode, {
+            supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup(),
+        });
+    }, [rendererReady, renderQualityMode]);
 
     const handleSaveVjSet = useCallback(async (name: string) => {
         const encoded = await buildVjChainString();

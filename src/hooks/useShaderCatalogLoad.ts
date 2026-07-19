@@ -39,6 +39,7 @@ export function useShaderCatalogLoad({
                     rating: shader.rating,
                     hasErrors: shader.has_errors,
                     requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
+                    requiresHistoryRing: shader.requiresHistoryRing === true,
                     params: (shader.params || []).map((p: { id?: string; name?: string; label?: string; default?: number; min?: number; max?: number; step?: number; labels?: string[] }, idx: number) => ({
                         id: p.id || p.name || `param${idx + 1}`,
                         name: p.label || p.name || `Parameter ${idx + 1}`,

@@ -151,7 +151,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Mouse - screen top = UP, flip Y
   let mouseUV = u.zoom_config.yz;
-  let mouseY = 1.0 - mouseUV.y;
+  let mouseY = mouseUV.y;
   let mousePos = vec2<f32>(mouseUV.x, mouseY);
 
   // Base video

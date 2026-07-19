@@ -19,4 +19,13 @@ constexpr int kBalancedMaxSlots  = 2;
 constexpr int kUltraMaxSlots     = 3;
 constexpr int kLowEndMaxSlots    = 1;
 
+// Tier C graph pass caps — keep in sync with src/config/performancePolicy.ts
+// WASM GraphRunner follow-up: GH #929
+
+constexpr int kBatteryMaxPassesPerFrame  = 4;
+constexpr int kBalancedMaxPassesPerFrame = 8;
+constexpr int kUltraMaxPassesPerFrame    = 16;
+constexpr int kAutoMobileMaxPassesPerFrame = 6;
+constexpr int kAutoDesktopMaxPassesPerFrame = 12;
+
 }  // namespace pixelocity::policy

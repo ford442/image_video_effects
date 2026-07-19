@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useShaderRatings } from '../../services/ShaderRatingIntegration';
 import { LiveStreamPanel } from '../LiveStreamPanel';
 import { RendererBackendPanel } from './panels/RendererBackendPanel';
@@ -6,7 +6,7 @@ import { ParamSlidersPanel } from './panels/ParamSlidersPanel';
 import { SlotStackPanel } from './panels/SlotStackPanel';
 import { InputSourcePanel } from './panels/InputSourcePanel';
 import { RecordingSharePanel } from './panels/RecordingSharePanel';
-import { LiveControlPanel } from './panels/LiveControlPanel';
+import { VjStudioPanel } from './panels/VjStudioPanel';
 import { RoulettePanel } from './panels/RoulettePanel';
 import { CoordinateBrowserOverlay } from './panels/CoordinateBrowserOverlay';
 import { AdvancedDebugPanel } from './panels/AdvancedDebugPanel';
@@ -99,6 +99,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     performanceHud,
 }) => {
     const autoTransition = useAiVjAutoTransition();
+    const [studioOpen, setStudioOpen] = useState(true);
 
     const {
         coordMap,
@@ -163,9 +164,39 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 setShaderCategory={setShaderCategory}
             />
 
-            <LiveControlPanel
-                {...liveControl}
+            <VjStudioPanel
+                studioOpen={studioOpen}
+                setStudioOpen={setStudioOpen}
                 modes={modes}
+                slotParams={slotParams}
+                activeSlot={activeSlot}
+                setActiveSlot={setActiveSlot}
+                liveControl={liveControl}
+                isAiVjMode={isAiVjMode}
+                autoTransitionOpen={autoTransition.autoTransitionOpen}
+                setAutoTransitionOpen={autoTransition.setAutoTransitionOpen}
+                autoTransitionEnabled={autoTransition.autoTransitionEnabled}
+                setAutoTransitionEnabled={autoTransition.setAutoTransitionEnabled}
+                autoTransitionSource={autoTransition.autoTransitionSource}
+                setAutoTransitionSource={autoTransition.setAutoTransitionSource}
+                autoTransitionIntervalMs={autoTransition.autoTransitionIntervalMs}
+                setAutoTransitionIntervalMs={autoTransition.setAutoTransitionIntervalMs}
+                autoTransitionDurationMs={autoTransition.autoTransitionDurationMs}
+                setAutoTransitionDurationMs={autoTransition.setAutoTransitionDurationMs}
+                autoTransitionMode={autoTransition.autoTransitionMode}
+                setAutoTransitionMode={autoTransition.setAutoTransitionMode}
+                audioReactiveParams={audioReactiveParams}
+                setAudioReactiveParams={setAudioReactiveParams}
+                audioReactiveAmount={audioReactiveAmount}
+                setAudioReactiveAmount={setAudioReactiveAmount}
+                onCopyChainShareLink={onCopyChainShareLink}
+                onShareVjSet={onShareVjSet}
+                onSaveVjSet={onSaveVjSet}
+                onApplySharedChain={onApplySharedChain}
+                getCurrentChain={getCurrentChain}
+                onUpdateStack={onUpdateStack}
+                onUpdateParams={onUpdateParams}
+                onGenerateFromVibe={onGenerateFromVibe}
             />
 
             {onRenderQualityChange && performanceHud && (

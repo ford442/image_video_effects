@@ -220,8 +220,8 @@ bool WebGPURenderer::CreateDevice() {
            backendStr, adapterTypeStr, adapterInfo.vendorID, adapterInfo.deviceID);
 
     // ── Adapter limits ────────────────────────────────────────────────────
-    // Validate against the minimums implied by the 13-binding compute shader
-    // contract (see AGENTS.md "Shader Bindings (IMMUTABLE)") so that a weak
+    // Validate against the minimums implied by the 14-entry compute bind group
+    // contract (bindings 0–13; see docs/BINDING_CONTRACT.md) so that a weak
     // adapter fails here with an actionable message instead of deep inside
     // CreateResources() with a cryptic bind-group-layout error.
     WGPULimits limits = {};
@@ -229,7 +229,7 @@ bool WebGPURenderer::CreateDevice() {
 
     bool limitsOk = true;
     const uint64_t maxCanvasDim = (uint64_t)std::max(canvasWidth_, canvasHeight_);
-    printf("[WASM] Adapter limits (validating against 13-binding compute contract):\n");
+    printf("[WASM] Adapter limits (validating against 14-entry compute contract):\n");
     CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              maxCanvasDim, limitsOk);
     CheckLimit("maxBindingsPerBindGroup",            limits.maxBindingsPerBindGroup,            14,  limitsOk);
     CheckLimit("maxSampledTexturesPerShaderStage",   limits.maxSampledTexturesPerShaderStage,    3,  limitsOk);
@@ -269,7 +269,7 @@ bool WebGPURenderer::CreateDevice() {
 
     if (!limitsOk) {
         printf("❌ Adapter does not meet the minimum WebGPU limits required by Pixelocity's\n");
-        printf("   13-binding compute shader contract (see entries marked INSUFFICIENT above).\n");
+        printf("   14-entry compute bind group contract (see entries marked INSUFFICIENT above).\n");
         printf("   This adapter/browser combination is too weak to run the WASM renderer.\n");
         printf("   Consider ?renderer=webgpu (JS renderer) or a different GPU/browser.\n");
         adapterSummary_ = "INSUFFICIENT adapter limits — see console for details";
@@ -444,7 +444,7 @@ bool WebGPURenderer::CreateDevice() {
         CheckLimit("maxComputeInvocationsPerWorkgroup", deviceLimits.maxComputeInvocationsPerWorkgroup, 256, deviceLimitsOk);
         if (!deviceLimitsOk) {
             printf("⚠️  Device limits were clamped below the adapter's reported limits and no\n");
-            printf("   longer meet the 13-binding compute contract minimums. Rendering may fail.\n");
+            printf("   longer meet the 14-entry compute contract minimums. Rendering may fail.\n");
         }
     }
 

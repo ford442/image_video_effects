@@ -169,7 +169,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
     var ro = vec3<f32>(0.0, 0.0, -5.0); var rd = normalize(vec3<f32>(uv, 1.0));
     // Mouse orbital camera (Y-flip: screen-top = +Y/up)
-    let mx = (u.zoom_config.y - 0.5) * 6.28; let my = (0.5 - u.zoom_config.z) * 3.14;
+    let mx = (u.zoom_config.y - 0.5) * 6.28; let my = (u.zoom_config.z - 0.5) * 3.14;
     let ro_xz = rot2D(mx) * vec2<f32>(ro.x, ro.z); ro.x = ro_xz.x; ro.z = ro_xz.y;
     let ro_yz = rot2D(my) * vec2<f32>(ro.y, ro.z); ro.y = ro_yz.x; ro.z = ro_yz.y;
     let cw = normalize(-ro); let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0))); let cv = cross(cu, cw);

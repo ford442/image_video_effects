@@ -1,7 +1,8 @@
 /**
- * WebGPUDeviceInit.ts
+ * device.ts
  *
  * WebGPU adapter/device acquisition and canvas context setup.
+ * Mirrors wasm_renderer/device.cpp.
  */
 
 import { reportError, getBrowserWarning } from '../ErrorHandling';

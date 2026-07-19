@@ -1,27 +1,49 @@
-# WASM Promotion Evidence — 2026-07-19 (Foundation Wave 2)
+# WASM Promotion Evidence — 2026-07-19 (Measurement harness)
 
-**Decision:** **STAY TIER B** (reaffirmed)
+**Decision:** **STAY TIER B**
 
-## Context
+## Summary
 
-Foundation Wave 2 (#965) delivered C++ binding-13 parity (`historyTexture`, `historyHead` in `extraBuffer[4]`), TS device policy sync (`maxBindingsPerBindGroup: 14`), and modular WebGPU init. Promotion still requires GPU-backed measurement.
+Implemented measurement harness polish (Phase A of promotion plan). Ran bench + parity in Cloud VM; all GPU-dependent specs skipped. **No promotion gates closed.**
 
-## Gates
+## Code changes (measurement support)
 
-| Gate | Status | Notes |
-|------|--------|-------|
-| Performance (≥1.25× on 3 shaders) | OPEN | No GPU bench in CI VM |
-| Reliability (2 GPU configs) | OPEN | Playwright skips without adapter |
-| Integration smoke | OPEN | Manual checklist unsigned |
-| Ops (4-week CI green) | OPEN | Not re-verified this cycle |
+| Change | File |
+|--------|------|
+| Bench report: `benchmarkShaderIds`, adapter summaries, `userAgent` | `tests/helpers/rendererHarness.ts`, `tests/wasm-benchmark.spec.ts` |
+| `__pixelocity__.getAdapterSummary()` in testMode | `src/hooks/useTestHarness.ts` |
+| CI artifact: `wasm-benchmark-report` | `.github/workflows/ci.yml` |
+| Early skip when no GPU (avoids bench timeout) | `tests/wasm-benchmark.spec.ts` |
 
-## Commands for human GPU run
+## Gate results
+
+| Gate | Status | Evidence |
+|------|--------|----------|
+| 1 Performance | **OPEN** | [`wasm-benchmark-report-stub-2026-07-19.json`](./wasm-benchmark-report-stub-2026-07-19.json) — `gpuBackendObserved: false`, `promotionGateMet: false` |
+| 2 Reliability (2 GPUs) | **OPEN** | Parity 7/7 skipped in VM |
+| 3 Manual smoke | **OPEN** | Requires GPU browser without `testMode` — not runnable in Cloud VM |
+| 4 Ops (4-week CI) | **OPEN** | W29: `wasm` green, `test-wasm-e2e` skipped (`test` job failing on main) |
+
+## VM run commands
+
+```bash
+npm run build
+WASM_GPU_TESTS=1 npm run test:wasm:bench   # skipped — no adapter
+WASM_GPU_TESTS=1 npm run test:wasm:parity  # 7/7 skipped
+lspci | grep -iE 'vga|3d|display'          # Device 1234:1111 (QEMU)
+```
+
+## Human GPU checklist (still required)
 
 ```bash
 npm run wasm:build && npm run build
 WASM_GPU_TESTS=1 npm run test:wasm:bench
-npm run test:wasm:parity
+WASM_GPU_TESTS=1 npm run test:wasm:parity
 # Then WASM_SMOKE_TEST.md Tests 1–5 without testMode
 ```
 
-Attach `test-results/wasm-benchmark-report.json` with `gpuBackendObserved: true` to close gate 1.
+Attach `test-results/wasm-benchmark-report.json` with `gpuBackendObserved: true` + `lspci` / `chrome://gpu` notes on **≥2 GPU configs**.
+
+## Decision
+
+**STAY TIER B** — measurement infrastructure ready; GPU-backed evidence and 4-week CI green streak still required before promotion.

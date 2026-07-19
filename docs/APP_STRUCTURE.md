@@ -7,12 +7,24 @@ Module map after App.tsx strangler completion and WebGPU modularization.
 | Module | LOC | Epic target |
 |--------|-----|-------------|
 | [`src/App.tsx`](src/App.tsx) | ~560 | < 800 |
-| [`src/components/controls/ControlsContainer.tsx`](src/components/controls/ControlsContainer.tsx) | ~340 | < 500 |
+| [`src/components/controls/ControlsContainer.tsx`](src/components/controls/ControlsContainer.tsx) | ~400 | < 500 |
 | [`src/components/app/AppShell.tsx`](src/components/app/AppShell.tsx) | ~399 | layout shell |
 | [`src/components/app/AppOverlays.tsx`](src/components/app/AppOverlays.tsx) | ~280 | modals + overlays |
-| [`src/renderer/WebGPURenderer.ts`](src/renderer/WebGPURenderer.ts) | ~1,390 | facade + delegates to `webgpu/*`; `GraphRunner` for Tier C multipass |
+| [`src/renderer/WebGPURenderer.ts`](src/renderer/WebGPURenderer.ts) | ~385 | thin facade (IRenderer) |
 
-**WebGPU modules** (`src/renderer/webgpu/`): `WebGPUDeviceInit`, `WebGPUResourceManager`, `WebGPUShaderManager`, `WebGPUTiming` — wired from `WebGPURenderer.init()` and `setupGpuResources()`. `WebGPURenderLoop` exists for future full render-loop extraction (blit scale path still inline).
+**WebGPU modules** (`src/renderer/webgpu/`, see [`src/renderer/README.md`](../src/renderer/README.md)):
+
+| Module | LOC | Mirrors |
+|--------|-----|---------|
+| `device.ts` | ~192 | `device.cpp` |
+| `resources.ts` | ~317 | `resources.cpp` |
+| `pipeline.ts` | ~403 | `pipeline.cpp` |
+| `frame.ts` | ~592 | `frame.cpp` |
+| `audioDepth.ts` | ~104 | `audio_depth.cpp` |
+| `WebGPUTiming.ts` | ~60 | `timing.cpp` |
+| `WebGPUMediaInput.ts` | ~266 | (image/video in `audio_depth.cpp`) |
+
+`GraphRunner` multipass dispatch is wired in `frame.ts` (`dispatchSlot` → `graphRunner.runGraph`).
 
 ---
 
@@ -55,41 +67,7 @@ Constants: [`src/app/constants/`](src/app/constants/) (`shaderDefaults`, `shader
 
 ## Controls — panels (#914)
 
-Directory: [`src/components/controls/panels/`](../src/components/controls/panels/). [`ControlsContainer.tsx`](../src/components/controls/ControlsContainer.tsx) is a pure composition root (~340 LOC after hook extraction) that wires props into panels and hooks.
-
-### Hooks (`src/components/controls/hooks/`)
-
-| Hook | File | Responsibility |
-|------|------|----------------|
-| `useLiveControl` | `useLiveControl.ts` | MIDI/keyboard bindings, live action dispatch, auto-transition side effects |
-| `useCoordinateNavigation` | `useCoordinateNavigation.ts` | Coordinate map, number-overlay jump, zone browser state |
-| `useShaderMenuOptions` | `useShaderMenuOptions.ts` | Rating map, category-filtered modes, slot + generative mega-menu options |
-| `useAiVjAutoTransition` | `useAiVjAutoTransition.ts` | Auto-transition UI state shared by Live Control + AI VJ studio |
-
-### Panel inventory
-
-| Panel | File | Mount condition |
-|-------|------|-----------------|
-| CoordinateBrowserOverlay | `panels/CoordinateBrowserOverlay.tsx` | always |
-| InputSourcePanel | `panels/InputSourcePanel.tsx` | always |
-| LiveControlPanel | `panels/LiveControlPanel.tsx` | always |
-| RenderQualityPanel | `panels/RenderQualityPanel.tsx` | `onRenderQualityChange && performanceHud` |
-| RendererBackendPanel | `panels/RendererBackendPanel.tsx` | `onSwitchRenderer` |
-| ImageAutoSwitchPanel | `panels/ImageAutoSwitchPanel.tsx` | `inputSource === 'image'` |
-| EffectCategoryPanel | `panels/EffectCategoryPanel.tsx` | always |
-| RoulettePanel | `panels/RoulettePanel.tsx` | always |
-| SlotStackPanel | `panels/SlotStackPanel.tsx` | always |
-| ParamSlidersPanel | `panels/ParamSlidersPanel.tsx` | always |
-| CoordinateDisplayPanel | `panels/CoordinateDisplayPanel.tsx` | `currentCoordinate !== null` |
-| RecordingSharePanel | `panels/RecordingSharePanel.tsx` | always |
-| AiVjStudioPanel | `panels/AiVjStudioPanel.tsx` | `inputSource === 'image'` |
-| VideoSourcePanel | `panels/VideoSourcePanel.tsx` | `inputSource === 'video'` |
-| WebcamSuggestionsPanel | `panels/WebcamSuggestionsPanel.tsx` | `showWebcamShaderSuggestions && isWebcamActive` |
-| GenerativeSourcePanel | `panels/GenerativeSourcePanel.tsx` | `inputSource === 'generative'` |
-| LiveStreamPanel | `../LiveStreamPanel.tsx` | `inputSource === 'live'` |
-| AdvancedDebugPanel | `panels/AdvancedDebugPanel.tsx` | always |
-
-**Deprecated (demo-only):** `RendererToggle` lives under `src/components/shaders/` for `ShaderDemo` only. Production renderer switching uses `RendererBackendPanel` → `RendererSwitcher`. Storage UI canonical path: `src/components/storage/StoragePanel.tsx` (`StorageBrowser` alias).
+Directory: `src/components/controls/panels/` — see prior doc; `ControlsContainer` at ~400 LOC meets stretch target.
 
 ---
 
@@ -103,18 +81,18 @@ Directory: [`src/components/controls/panels/`](../src/components/controls/panels
 
 ## Multipass graph (Tier C)
 
-- [`docs/MULTIPASS_GRAPH_SPEC.md`](MULTIPASS_GRAPH_SPEC.md)
+- [`docs/MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md)
 - [`src/renderer/multipassGraph.ts`](../src/renderer/multipassGraph.ts)
-- [`src/renderer/GraphRunner.ts`](../src/renderer/GraphRunner.ts) — wired in `WebGPURenderer.dispatchSlot()` for `quantum-foam-pass1` (same-frame handoff demo)
+- [`src/renderer/GraphRunner.ts`](../src/renderer/GraphRunner.ts) — wired in `webgpu/frame.ts` `dispatchSlot()` for `quantum-foam-pass1` (same-frame handoff demo)
 
 ---
 
 ## Testing
 
 ```bash
-npx react-scripts test --watchAll=false --ci   # 289 tests (incl. shaderDefaults, shaderCatalogUtils)
+npx react-scripts test --watchAll=false --ci   # 292 tests (incl. webgpu/resources, audioDepth)
 npm run verify:device-policy
 SKIP_WASM_BUILD=1 npm run build
 ```
 
-Thumbnails (requires GPU): `npm run thumbnails:generate` · status: `npm run thumbnails:status`
+Thumbnails (requires GPU): see [`docs/THUMBNAIL_PIPELINE.md`](THUMBNAIL_PIPELINE.md) · `npm run thumbs:generate -- --missing` · status: `npm run thumbs:status`

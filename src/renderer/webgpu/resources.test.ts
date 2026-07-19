@@ -1,0 +1,60 @@
+import { WebGPUResourcePool, createTextures } from './resources';
+
+// Minimal WebGPU globals for unit tests (no real GPU in Jest).
+const TU = {
+  TEXTURE_BINDING: 0x04,
+  COPY_DST: 0x08,
+  COPY_SRC: 0x01,
+  RENDER_ATTACHMENT: 0x10,
+  STORAGE_BINDING: 0x08,
+} as const;
+(global as unknown as { GPUTextureUsage: typeof TU }).GPUTextureUsage = TU;
+(global as unknown as { GPUBufferUsage: { UNIFORM: number; COPY_DST: number; STORAGE: number } }).GPUBufferUsage = {
+  UNIFORM: 0x40,
+  COPY_DST: 0x08,
+  STORAGE: 0x80,
+};
+
+function makeMockDevice(): GPUDevice {
+  const textures: GPUTexture[] = [];
+  return {
+    createTexture: jest.fn(() => {
+      const tex = { destroy: jest.fn(), createView: jest.fn() } as unknown as GPUTexture;
+      textures.push(tex);
+      return tex;
+    }),
+    createSampler: jest.fn(() => ({} as GPUSampler)),
+    createBuffer: jest.fn(() => ({ destroy: jest.fn() } as unknown as GPUBuffer)),
+    queue: { writeTexture: jest.fn() },
+    _textures: textures,
+  } as unknown as GPUDevice & { _textures: GPUTexture[] };
+}
+
+describe('WebGPUResourcePool', () => {
+  it('recreateScaleTextures destroys old textures and creates new ones', () => {
+    const device = makeMockDevice();
+    const pool = new WebGPUResourcePool();
+
+    pool.setup(device, 1920, 1080, 960, 540);
+    const firstRead = pool.readTex;
+    const firstWrite = pool.writeTex;
+
+    pool.recreateScaleTextures(device, 1920, 1080, 480, 270);
+
+    expect(firstRead.destroy).toHaveBeenCalled();
+    expect(firstWrite.destroy).toHaveBeenCalled();
+    expect(pool.readTex).not.toBe(firstRead);
+    expect(pool.writeTex).not.toBe(firstWrite);
+    expect(device.createTexture).toHaveBeenCalled();
+  });
+
+  it('createTextures uses scaled dimensions for working textures', () => {
+    const device = makeMockDevice();
+    const set = createTextures(device, 1920, 1080, 960, 544);
+
+    expect(device.createTexture).toHaveBeenCalled();
+    expect(set.sourceTex).toBeDefined();
+    expect(set.readTex).toBeDefined();
+    expect(set.readTex).not.toBe(set.sourceTex);
+  });
+});

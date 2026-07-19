@@ -1,16 +1,16 @@
 /**
  * webgpuDevicePolicy.ts
  *
- * TypeScript mirror of wasm_renderer/renderer.cpp CreateDevice() defensive policy
- * (~lines 320–545): adapter fallback ladder, limit validation, and explicit
- * requiredLimits on requestDevice().
+ * TypeScript mirror of wasm_renderer/device.cpp defensive policy: adapter fallback
+ * ladder, limit validation, and explicit requiredLimits on requestDevice().
  *
  * Cross-reference: wasm_renderer/device.cpp
- *   - requestAdapterWithFallback / ADAPTER_ATTEMPT_LADDER
- *   - assertAdapterMeetsContract / CheckLimit table
- *   - buildRequiredLimits / requiredLimits seeding
+ *   - ADAPTER_ATTEMPT_LADDER / adapter request loop
+ *   - CheckLimit table (adapter + device post-creation)
+ *   - requiredLimits seeding on wgpuAdapterRequestDevice
  *
  * Keep MINIMUM_COMPUTE_LIMITS in sync with device.cpp CheckLimit + requiredLimits.
+ * See docs/BINDING_CONTRACT.md for the full bind-group + device policy contract.
  */
 
 import { UNIFORM_BUFFER_LAYOUT } from './types';
@@ -112,8 +112,8 @@ export function assertAdapterMeetsContract(
   return {
     ok: false,
     message:
-      'GPU adapter does not meet minimum WebGPU limits for Pixelocity\'s 13-binding ' +
-      'compute shader contract. Try ?renderer=js or a different GPU/browser.',
+      'GPU adapter does not meet minimum WebGPU limits for Pixelocity\'s 14-entry ' +
+      'compute bind group contract (bindings 0–13). Try ?renderer=js or a different GPU/browser.',
     failures,
   };
 }

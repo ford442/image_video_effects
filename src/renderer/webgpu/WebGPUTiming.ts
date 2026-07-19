@@ -6,13 +6,43 @@
  */
 
 import { GPUTimings } from '../Renderer';
-import { createTimestampQueries, WebGPUTimestampQueries } from './WebGPUResourceManager';
 
 export type GpuTimingsState = {
   parallelTime: number;
   chainedTime: number;
   totalTime: number;
 };
+
+export interface WebGPUTimestampQueries {
+  supportsTimestampQuery: boolean;
+  querySet: GPUQuerySet | null;
+  queryBuffer: GPUBuffer | null;
+}
+
+export function createTimestampQueries(device: GPUDevice): WebGPUTimestampQueries {
+  const supportsTimestampQuery = device.features.has('timestamp-query');
+  let querySet: GPUQuerySet | null = null;
+  let queryBuffer: GPUBuffer | null = null;
+
+  if (supportsTimestampQuery) {
+    try {
+      querySet = device.createQuerySet({
+        type: 'timestamp',
+        count: 8,
+      });
+      queryBuffer = device.createBuffer({
+        size: 8 * 8,
+        usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC,
+      });
+      console.log('[WebGPU] Timestamp queries enabled for GPU profiling');
+    } catch (e) {
+      console.warn('[WebGPU] Timestamp query creation failed:', e);
+      return { supportsTimestampQuery: false, querySet: null, queryBuffer: null };
+    }
+  }
+
+  return { supportsTimestampQuery, querySet, queryBuffer };
+}
 
 export function setupTimestampQueries(device: GPUDevice): WebGPUTimestampQueries {
   return createTimestampQueries(device);
