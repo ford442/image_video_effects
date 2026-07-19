@@ -1,32 +1,8 @@
 import { useEffect } from 'react';
-import { ShaderEntry, ShaderCategory } from '../renderer/types';
-import { ShaderApi, ShaderEntry as ApiShaderEntry } from '../services/shaderApi';
+import { ShaderEntry } from '../renderer/types';
+import { ShaderApi } from '../services/shaderApi';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
-
-function determineCategory(shader: ApiShaderEntry): ShaderCategory {
-    const VALID_CATEGORIES: ShaderCategory[] = [
-        'image', 'generative', 'simulation', 'distortion', 'artistic',
-        'interactive-mouse', 'lighting-effects', 'liquid-effects',
-        'retro-glitch', 'visual-effects', 'geometric', 'glitch',
-    ];
-    if (shader.category && VALID_CATEGORIES.includes(shader.category as ShaderCategory)) {
-        return shader.category as ShaderCategory;
-    }
-
-    if (shader.tags?.includes('generative') || shader.id.startsWith('gen-') || shader.id.startsWith('gen_')) {
-        return 'generative';
-    }
-    if (shader.tags?.includes('simulation')) return 'simulation';
-    if (shader.tags?.includes('distortion') || shader.tags?.includes('warp')) return 'distortion';
-    if (shader.tags?.includes('artistic') || shader.tags?.includes('painterly')) return 'artistic';
-    if (shader.tags?.includes('interactive') || shader.tags?.includes('mouse-driven')) return 'interactive-mouse';
-    if (shader.tags?.includes('lighting') || shader.tags?.includes('plasma') || shader.tags?.includes('glow')) return 'lighting-effects';
-    if (shader.tags?.includes('liquid') || shader.tags?.includes('fluid')) return 'liquid-effects';
-    if (shader.tags?.includes('retro') || shader.tags?.includes('glitch') || shader.tags?.includes('vhs')) return 'retro-glitch';
-    if (shader.tags?.includes('visual-effects') || shader.tags?.includes('chromatic')) return 'visual-effects';
-    if (shader.tags?.includes('geometric') || shader.tags?.includes('tessellation')) return 'geometric';
-    return 'image';
-}
+import { determineCategory } from '../app/constants/shaderCatalogUtils';
 
 export interface UseShaderCatalogLoadOptions {
     setAvailableModes: React.Dispatch<React.SetStateAction<ShaderEntry[]>>;

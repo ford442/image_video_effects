@@ -266,13 +266,34 @@ export function createComputeBindGroup(
   buffers: WebGPUBufferSet,
   samplers: WebGPUSamplerSet,
 ): GPUBindGroup {
+  return createComputeBindGroupForPass(
+    device,
+    layout,
+    textures.readTex,
+    textures.writeTex,
+    textures,
+    buffers,
+    samplers,
+  );
+}
+
+/** Bind group with explicit read/write textures (graph runner / multipass handoff). */
+export function createComputeBindGroupForPass(
+  device: GPUDevice,
+  layout: GPUBindGroupLayout,
+  readTex: GPUTexture,
+  writeTex: GPUTexture,
+  textures: WebGPUTextureSet,
+  buffers: WebGPUBufferSet,
+  samplers: WebGPUSamplerSet,
+): GPUBindGroup {
   return device.createBindGroup({
     label: 'computeBG',
     layout,
     entries: [
       { binding: 0, resource: samplers.filterSampler },
-      { binding: 1, resource: textures.readTex.createView() },
-      { binding: 2, resource: textures.writeTex.createView() },
+      { binding: 1, resource: readTex.createView() },
+      { binding: 2, resource: writeTex.createView() },
       { binding: 3, resource: { buffer: buffers.uniformBuf } },
       { binding: 4, resource: textures.depthRead.createView() },
       { binding: 5, resource: samplers.nearestSampler },

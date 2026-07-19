@@ -245,7 +245,7 @@
   {
     "id": "anamorphic-flare-iridescence",
     "name": "Anamorphic Flare Iridescence",
-    "url": "shaders/anamorphic-flare-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/anamorphic-flare-iridescence.wgsl",
     "description": "Anamorphic Flare Iridescence",
     "tags": [
       "lens-flare",
@@ -417,7 +417,7 @@
   {
     "id": "astral-kaleidoscope-julia",
     "name": "Astral Kaleidoscope Julia",
-    "url": "shaders/astral-kaleidoscope-julia.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/astral-kaleidoscope-julia.wgsl",
     "description": "Astral Kaleidoscope Julia",
     "tags": [
       "kaleidoscope",
@@ -1092,7 +1092,7 @@
   {
     "id": "bismuth-crystal-growth",
     "name": "Bismuth Crystal Growth",
-    "url": "shaders/bismuth-crystal-growth.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/bismuth-crystal-growth.wgsl",
     "description": "Bismuth Crystal Growth",
     "tags": [
       "phase-field-crystal",
@@ -1364,7 +1364,7 @@
   {
     "id": "breathing-kaleidoscope-morph",
     "name": "Breathing Kaleidoscope Morph",
-    "url": "shaders/breathing-kaleidoscope-morph.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/breathing-kaleidoscope-morph.wgsl",
     "description": "Breathing Kaleidoscope Morph",
     "tags": [
       "kaleidoscope",
@@ -1671,7 +1671,7 @@
   {
     "id": "chroma-depth-tunnel-prismatic",
     "name": "Chroma Depth Tunnel Prismatic",
-    "url": "shaders/chroma-depth-tunnel-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chroma-depth-tunnel-prismatic.wgsl",
     "description": "Chroma Depth Tunnel Prismatic",
     "tags": [
       "chroma-depth-tunnel",
@@ -1726,7 +1726,7 @@
   {
     "id": "chroma-kinetic-blackbody",
     "name": "Chroma Kinetic Blackbody",
-    "url": "shaders/chroma-kinetic-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chroma-kinetic-blackbody.wgsl",
     "description": "Chroma Kinetic Blackbody",
     "tags": [
       "chroma-kinetic",
@@ -1781,7 +1781,7 @@
   {
     "id": "chroma-lens-iridescence",
     "name": "Chroma Lens Iridescence",
-    "url": "shaders/chroma-lens-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chroma-lens-iridescence.wgsl",
     "description": "Chroma Lens Iridescence",
     "tags": [
       "chroma-lens",
@@ -1838,7 +1838,7 @@
   {
     "id": "chroma-threads-gabor",
     "name": "Chroma Threads Gabor",
-    "url": "shaders/chroma-threads-gabor.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chroma-threads-gabor.wgsl",
     "description": "Catalog entry for Chroma Threads Gabor.",
     "tags": [
       "chroma-threads",
@@ -1893,7 +1893,7 @@
   {
     "id": "chroma-vortex-coupled",
     "name": "Chroma Vortex Coupled",
-    "url": "shaders/chroma-vortex-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chroma-vortex-coupled.wgsl",
     "description": "Chroma Vortex Coupled",
     "tags": [
       "chroma-vortex",
@@ -1950,7 +1950,7 @@
   {
     "id": "chromatic-crawler-structure",
     "name": "Chromatic Crawler Structure",
-    "url": "shaders/chromatic-crawler-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-crawler-structure.wgsl",
     "description": "Chromatic Crawler Structure",
     "tags": [
       "chromatic-crawler",
@@ -2054,7 +2054,7 @@
   {
     "id": "chromatic-focus-guided",
     "name": "Chromatic Focus Guided",
-    "url": "shaders/chromatic-focus-guided.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-focus-guided.wgsl",
     "description": "Chromatic Focus Guided",
     "tags": [
       "chromatic-focus",
@@ -2109,7 +2109,7 @@
   {
     "id": "chromatic-folds-bilateral",
     "name": "Chromatic Folds Bilateral",
-    "url": "shaders/chromatic-folds-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-folds-bilateral.wgsl",
     "description": "Chromatic Folds Bilateral",
     "tags": [
       "chromatic-folds",
@@ -2234,7 +2234,7 @@
   {
     "id": "chronos-brush-explosion",
     "name": "Chronos Brush Explosion",
-    "url": "shaders/chronos-brush-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chronos-brush-explosion.wgsl",
     "description": "Chronos Brush Explosion",
     "tags": [
       "time-freeze",
@@ -2389,7 +2389,7 @@
   {
     "id": "cosmic-jellyfish-coupled",
     "name": "Cosmic Jellyfish Coupled",
-    "url": "shaders/cosmic-jellyfish-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cosmic-jellyfish-coupled.wgsl",
     "description": "Cosmic Jellyfish Coupled",
     "tags": [
       "raymarching",
@@ -2446,7 +2446,7 @@
   {
     "id": "cosmic-web-structure",
     "name": "Cosmic Web Structure",
-    "url": "shaders/cosmic-web-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cosmic-web-structure.wgsl",
     "description": "Catalog entry for Cosmic Web Structure.",
     "tags": [
       "voronoi-filaments",
@@ -2575,7 +2575,7 @@
   {
     "id": "crystal-illuminator-iridescence",
     "name": "Crystal Illuminator Iridescence",
-    "url": "shaders/crystal-illuminator-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/crystal-illuminator-iridescence.wgsl",
     "description": "Crystal Illuminator Iridescence",
     "tags": [
       "voronoi-facets",
@@ -2630,7 +2630,7 @@
   {
     "id": "cursor-aura-explosion",
     "name": "Cursor Aura Explosion",
-    "url": "shaders/cursor-aura-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cursor-aura-explosion.wgsl",
     "description": "Cursor Aura Explosion",
     "tags": [
       "mouse-driven",
@@ -2687,7 +2687,7 @@
   {
     "id": "cyber-lattice-bilateral",
     "name": "Cyber Lattice Bilateral",
-    "url": "shaders/cyber-lattice-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-lattice-bilateral.wgsl",
     "description": "Cyber Lattice Bilateral",
     "tags": [
       "mouse-driven",
@@ -2744,7 +2744,7 @@
   {
     "id": "cyber-organic-ecosystem",
     "name": "Cyber Organic Ecosystem",
-    "url": "shaders/cyber-organic-ecosystem.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-organic-ecosystem.wgsl",
     "description": "Cyber Organic Ecosystem",
     "tags": [
       "mouse-driven",
@@ -2801,7 +2801,7 @@
   {
     "id": "cyber-rain-em",
     "name": "Cyber Rain Em",
-    "url": "shaders/cyber-rain-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-rain-em.wgsl",
     "description": "Catalog entry for Cyber Rain Em.",
     "tags": [
       "mouse-driven",
@@ -2858,7 +2858,7 @@
   {
     "id": "cyber-ripples-coupled",
     "name": "Cyber Ripples Coupled",
-    "url": "shaders/cyber-ripples-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-ripples-coupled.wgsl",
     "description": "Cyber Ripples Coupled",
     "tags": [
       "mouse-driven",
@@ -2915,7 +2915,7 @@
   {
     "id": "cyber-scan-gabor",
     "name": "Cyber Scan Gabor",
-    "url": "shaders/cyber-scan-gabor.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-scan-gabor.wgsl",
     "description": "Catalog entry for Cyber Scan Gabor.",
     "tags": [
       "cyber-scan",
@@ -2972,7 +2972,7 @@
   {
     "id": "cyber-trace-structure",
     "name": "Cyber Trace Structure",
-    "url": "shaders/cyber-trace-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-trace-structure.wgsl",
     "description": "Cyber Trace Structure",
     "tags": [
       "mouse-driven",
@@ -3029,7 +3029,7 @@
   {
     "id": "data-scanner-gabor",
     "name": "Data Scanner Gabor",
-    "url": "shaders/data-scanner-gabor.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/data-scanner-gabor.wgsl",
     "description": "Catalog entry for Data Scanner Gabor.",
     "tags": [
       "mouse-driven",
@@ -3084,7 +3084,7 @@
   {
     "id": "data-stream-corruption-hdr",
     "name": "Data Stream Corruption Hdr",
-    "url": "shaders/data-stream-corruption-hdr.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/data-stream-corruption-hdr.wgsl",
     "description": "Data Stream Corruption Hdr",
     "tags": [
       "mouse-driven",
@@ -3141,7 +3141,7 @@
   {
     "id": "data-stream-spectral",
     "name": "Data Stream Spectral",
-    "url": "shaders/data-stream-spectral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/data-stream-spectral.wgsl",
     "description": "Catalog entry for Data Stream Spectral.",
     "tags": [
       "mouse-driven",
@@ -3196,7 +3196,7 @@
   {
     "id": "data-stream-structure",
     "name": "Data Stream Structure",
-    "url": "shaders/data-stream-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/data-stream-structure.wgsl",
     "description": "Data Stream Structure",
     "tags": [
       "mouse-driven",
@@ -3449,7 +3449,7 @@
   {
     "id": "digital-glitch-explosion",
     "name": "Digital Glitch Explosion",
-    "url": "shaders/digital-glitch-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-glitch-explosion.wgsl",
     "description": "Digital Glitch Explosion",
     "tags": [
       "mouse-driven",
@@ -3506,7 +3506,7 @@
   {
     "id": "digital-lens-prismatic",
     "name": "Digital Lens Prismatic",
-    "url": "shaders/digital-lens-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-lens-prismatic.wgsl",
     "description": "Digital Lens Prismatic",
     "tags": [
       "mouse-driven",
@@ -3563,7 +3563,7 @@
   {
     "id": "digital-moss-rgba",
     "name": "Digital Moss Rgba",
-    "url": "shaders/digital-moss-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-moss-rgba.wgsl",
     "description": "Catalog entry for Digital Moss Rgba.",
     "tags": [
       "mouse-driven",
@@ -3620,7 +3620,7 @@
   {
     "id": "digital-reveal-guided",
     "name": "Digital Reveal Guided",
-    "url": "shaders/digital-reveal-guided.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-reveal-guided.wgsl",
     "description": "Digital Reveal Guided",
     "tags": [
       "mouse-driven",
@@ -3677,7 +3677,7 @@
   {
     "id": "dimension-slicer-guided",
     "name": "Dimension Slicer Guided",
-    "url": "shaders/dimension-slicer-guided.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/dimension-slicer-guided.wgsl",
     "description": "Dimension Slicer Guided",
     "tags": [
       "dimensional-slice",
@@ -3736,7 +3736,7 @@
   {
     "id": "distortion-gravitational-prismatic",
     "name": "Distortion Gravitational Prismatic",
-    "url": "shaders/distortion-gravitational-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/distortion-gravitational-prismatic.wgsl",
     "description": "Distortion Gravitational Prismatic",
     "tags": [
       "gravitational-lensing",
@@ -3791,7 +3791,7 @@
   {
     "id": "divine-light-iridescence",
     "name": "Divine Light Iridescence",
-    "url": "shaders/divine-light-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/divine-light-iridescence.wgsl",
     "description": "Divine Light Iridescence",
     "tags": [
       "god-rays",
@@ -3899,7 +3899,7 @@
   {
     "id": "dynamic-lens-flares-prismatic",
     "name": "Dynamic Lens Flares Prismatic",
-    "url": "shaders/dynamic-lens-flares-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/dynamic-lens-flares-prismatic.wgsl",
     "description": "Dynamic Lens Flares Prismatic",
     "tags": [
       "lens-flares",
@@ -3956,7 +3956,7 @@
   {
     "id": "edge-glow-mouse-em",
     "name": "Edge Glow Mouse Em",
-    "url": "shaders/edge-glow-mouse-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/edge-glow-mouse-em.wgsl",
     "description": "Catalog entry for Edge Glow Mouse Em.",
     "tags": [
       "edge-detection",
@@ -4013,7 +4013,7 @@
   {
     "id": "elastic-chromatic-explosion",
     "name": "Elastic Chromatic Explosion",
-    "url": "shaders/elastic-chromatic-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/elastic-chromatic-explosion.wgsl",
     "description": "Elastic Chromatic Explosion",
     "tags": [
       "chromatic-lag",
@@ -4122,7 +4122,7 @@
   {
     "id": "energy-shield-blackbody",
     "name": "Energy Shield Blackbody",
-    "url": "shaders/energy-shield-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/energy-shield-blackbody.wgsl",
     "description": "Energy Shield Blackbody",
     "tags": [
       "hex-grid",
@@ -4230,7 +4230,7 @@
   {
     "id": "ethereal-swirl-coupled",
     "name": "Ethereal Swirl Coupled",
-    "url": "shaders/ethereal-swirl-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ethereal-swirl-coupled.wgsl",
     "description": "Ethereal Swirl Coupled",
     "tags": [
       "fluid-coupling",
@@ -4342,7 +4342,7 @@
   {
     "id": "ferrofluid-em",
     "name": "Ferrofluid Em",
-    "url": "shaders/ferrofluid-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ferrofluid-em.wgsl",
     "description": "Catalog entry for Ferrofluid Em.",
     "tags": [
       "ferrofluid-distortion",
@@ -4397,7 +4397,7 @@
   {
     "id": "fire-smoke-volumetric-fog",
     "name": "Fire Smoke Volumetric Fog",
-    "url": "shaders/fire-smoke-volumetric-fog.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fire-smoke-volumetric-fog.wgsl",
     "description": "Fire Smoke Volumetric Fog",
     "tags": [
       "fire",
@@ -4458,7 +4458,7 @@
   {
     "id": "fluid-grid-rgba-fluid",
     "name": "Fluid Grid Rgba Fluid",
-    "url": "shaders/fluid-grid-rgba-fluid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fluid-grid-rgba-fluid.wgsl",
     "description": "Fluid Grid Rgba Fluid",
     "tags": [
       "fluid-simulation",
@@ -4666,7 +4666,7 @@
   {
     "id": "fractal-glass-distort-bilateral",
     "name": "Fractal Glass Distort Bilateral",
-    "url": "shaders/fractal-glass-distort-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fractal-glass-distort-bilateral.wgsl",
     "description": "Fractal Glass Distort Bilateral",
     "tags": [
       "fractal-glass-distortion",
@@ -4721,7 +4721,7 @@
   {
     "id": "fractal-noise-dissolve-nlm",
     "name": "Fractal Noise Dissolve Nlm",
-    "url": "shaders/fractal-noise-dissolve-nlm.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fractal-noise-dissolve-nlm.wgsl",
     "description": "Fractal Noise Dissolve Nlm",
     "tags": [
       "fractal-dissolve",
@@ -4776,7 +4776,7 @@
   {
     "id": "frost-reveal-crystal",
     "name": "Frost Reveal Crystal",
-    "url": "shaders/frost-reveal-crystal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/frost-reveal-crystal.wgsl",
     "description": "Catalog entry for Frost Reveal Crystal.",
     "tags": [
       "frost-reveal",
@@ -4833,7 +4833,7 @@
   {
     "id": "frosted-glass-lens-iridescence",
     "name": "Frosted Glass Lens Iridescence",
-    "url": "shaders/frosted-glass-lens-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/frosted-glass-lens-iridescence.wgsl",
     "description": "Frosted Glass Lens Iridescence",
     "tags": [
       "frosted-glass",
@@ -4890,7 +4890,7 @@
   {
     "id": "gamma-ray-burst-blackbody",
     "name": "Gamma Ray Burst Blackbody",
-    "url": "shaders/gamma-ray-burst-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gamma-ray-burst-blackbody.wgsl",
     "description": "Gamma Ray Burst Blackbody",
     "tags": [
       "radial-blur",
@@ -4949,7 +4949,7 @@
   {
     "id": "gemstone-fractures-crystal",
     "name": "Gemstone Fractures Crystal",
-    "url": "shaders/gemstone-fractures-crystal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gemstone-fractures-crystal.wgsl",
     "description": "Gemstone Fractures Crystal",
     "tags": [
       "voronoi-shards",
@@ -5006,7 +5006,7 @@
   {
     "id": "gen-abyssal-leviathan-iridescence",
     "name": "Gen Abyssal Leviathan Iridescence",
-    "url": "shaders/gen-abyssal-leviathan-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-abyssal-leviathan-iridescence.wgsl",
     "description": "Gen Abyssal Leviathan Iridescence",
     "tags": [
       "raymarching",
@@ -5063,7 +5063,7 @@
   {
     "id": "gen-art-deco-sky-prismatic",
     "name": "Gen Art Deco Sky Prismatic",
-    "url": "shaders/gen-art-deco-sky-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-art-deco-sky-prismatic.wgsl",
     "description": "Gen Art Deco Sky Prismatic",
     "tags": [
       "raymarching",
@@ -5283,7 +5283,7 @@
   {
     "id": "gen-bismuth-citadel-crystal",
     "name": "Gen Bismuth Citadel Crystal",
-    "url": "shaders/gen-bismuth-citadel-crystal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bismuth-citadel-crystal.wgsl",
     "description": "Gen Bismuth Citadel Crystal",
     "tags": [
       "raymarching",
@@ -5342,7 +5342,7 @@
   {
     "id": "gen-neural-fractal-hdr",
     "name": "Gen Neural Fractal Hdr",
-    "url": "shaders/gen-neural-fractal-hdr.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neural-fractal-hdr.wgsl",
     "description": "Gen Neural Fractal Hdr",
     "tags": [
       "generative",
@@ -5399,7 +5399,7 @@
   {
     "id": "gen-quasicrystal-iridescence",
     "name": "Gen Quasicrystal Iridescence",
-    "url": "shaders/gen-quasicrystal-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quasicrystal-iridescence.wgsl",
     "description": "Gen Quasicrystal Iridescence",
     "tags": [
       "generative",
@@ -5510,7 +5510,7 @@
   {
     "id": "gen-singularity-forge-blackbody",
     "name": "Gen Singularity Forge Blackbody",
-    "url": "shaders/gen-singularity-forge-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-singularity-forge-blackbody.wgsl",
     "description": "Gen Singularity Forge Blackbody",
     "tags": [
       "generative",
@@ -5567,7 +5567,7 @@
   {
     "id": "gen-string-theory-structure",
     "name": "Gen String Theory Structure",
-    "url": "shaders/gen-string-theory-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-string-theory-structure.wgsl",
     "description": "Gen String Theory Structure",
     "tags": [
       "generative",
@@ -6164,7 +6164,7 @@
   {
     "id": "gravity-well-em",
     "name": "Gravity Well Em",
-    "url": "shaders/gravity-well-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gravity-well-em.wgsl",
     "description": "Catalog entry for Gravity Well Em.",
     "tags": [
       "gravitational-lensing",
@@ -6219,7 +6219,7 @@
   {
     "id": "heat-haze-volumetric",
     "name": "Heat Haze Volumetric",
-    "url": "shaders/heat-haze-volumetric.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/heat-haze-volumetric.wgsl",
     "description": "Catalog entry for Heat Haze Volumetric.",
     "tags": [
       "heat-diffusion",
@@ -6523,7 +6523,7 @@
   {
     "id": "honey-melt-blackbody",
     "name": "Honey Melt Blackbody",
-    "url": "shaders/honey-melt-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/honey-melt-blackbody.wgsl",
     "description": "Catalog entry for Honey Melt Blackbody.",
     "tags": [
       "hex-grid",
@@ -6654,7 +6654,7 @@
   {
     "id": "hyper-space-jump-blackbody",
     "name": "Hyper Space Jump Blackbody",
-    "url": "shaders/hyper-space-jump-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hyper-space-jump-blackbody.wgsl",
     "description": "Hyper Space Jump Blackbody",
     "tags": [
       "radial-streaks",
@@ -6862,7 +6862,7 @@
   {
     "id": "hyperbolic-dreamweaver-julia",
     "name": "Hyperbolic Dreamweaver Julia",
-    "url": "shaders/hyperbolic-dreamweaver-julia.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hyperbolic-dreamweaver-julia.wgsl",
     "description": "Hyperbolic Dreamweaver Julia",
     "tags": [
       "hyperbolic-geometry",
@@ -6919,7 +6919,7 @@
   {
     "id": "impasto-swirl-bilateral",
     "name": "Impasto Swirl Bilateral",
-    "url": "shaders/impasto-swirl-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/impasto-swirl-bilateral.wgsl",
     "description": "Impasto Swirl Bilateral",
     "tags": [
       "bilateral-filter",
@@ -6976,7 +6976,7 @@
   {
     "id": "infinite-fractal-feedback-hdr",
     "name": "Infinite Fractal Feedback Hdr",
-    "url": "shaders/infinite-fractal-feedback-hdr.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/infinite-fractal-feedback-hdr.wgsl",
     "description": "Infinite Fractal Feedback Hdr",
     "tags": [
       "fractal-feedback",
@@ -7033,7 +7033,7 @@
   {
     "id": "ink-bleed-fluid",
     "name": "Ink Bleed Fluid",
-    "url": "shaders/ink-bleed-fluid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ink-bleed-fluid.wgsl",
     "description": "Catalog entry for Ink Bleed Fluid.",
     "tags": [
       "fluid-simulation",
@@ -7163,7 +7163,7 @@
   {
     "id": "interactive-magnetic-ripple-em",
     "name": "Interactive Magnetic Ripple Em",
-    "url": "shaders/interactive-magnetic-ripple-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-magnetic-ripple-em.wgsl",
     "description": "Interactive Magnetic Ripple Em",
     "tags": [
       "mouse-driven",
@@ -7220,7 +7220,7 @@
   {
     "id": "interactive-origami-coupled",
     "name": "Interactive Origami Coupled",
-    "url": "shaders/interactive-origami-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-origami-coupled.wgsl",
     "description": "Interactive Origami Coupled",
     "tags": [
       "mouse-driven",
@@ -7275,7 +7275,7 @@
   {
     "id": "interactive-pixel-wind-structure",
     "name": "Interactive Pixel Wind Structure",
-    "url": "shaders/interactive-pixel-wind-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-pixel-wind-structure.wgsl",
     "description": "Interactive Pixel Wind Structure",
     "tags": [
       "mouse-driven",
@@ -7332,7 +7332,7 @@
   {
     "id": "interactive-rgb-split-explosion",
     "name": "Interactive Rgb Split Explosion",
-    "url": "shaders/interactive-rgb-split-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-rgb-split-explosion.wgsl",
     "description": "Interactive Rgb Split Explosion",
     "tags": [
       "mouse-driven",
@@ -7389,7 +7389,7 @@
   {
     "id": "kimi-flock-symphony-em",
     "name": "Kimi Flock Symphony Em",
-    "url": "shaders/kimi-flock-symphony-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/kimi-flock-symphony-em.wgsl",
     "description": "Kimi Flock Symphony Em",
     "tags": [
       "flocking-particles",
@@ -7442,7 +7442,7 @@
   {
     "id": "liquid-jelly-fluid",
     "name": "Liquid Jelly Fluid",
-    "url": "shaders/liquid-jelly-fluid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-jelly-fluid.wgsl",
     "description": "Catalog entry for Liquid Jelly Fluid.",
     "tags": [
       "liquid-jelly",
@@ -7629,7 +7629,7 @@
   {
     "id": "liquid-oil-iridescence",
     "name": "Liquid Oil Iridescence",
-    "url": "shaders/liquid-oil-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-oil-iridescence.wgsl",
     "description": "Liquid Oil Iridescence",
     "tags": [
       "liquid-oil",
@@ -7686,7 +7686,7 @@
   {
     "id": "liquid-smear-structure",
     "name": "Liquid Smear Structure",
-    "url": "shaders/liquid-smear-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-smear-structure.wgsl",
     "description": "Liquid Smear Structure",
     "tags": [
       "liquid-smear",
@@ -7745,7 +7745,7 @@
   {
     "id": "melting-oil-blackbody",
     "name": "Melting Oil Blackbody",
-    "url": "shaders/melting-oil-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/melting-oil-blackbody.wgsl",
     "description": "Melting Oil Blackbody",
     "tags": [
       "melting-oil",
@@ -8321,7 +8321,7 @@
   {
     "id": "phantom-lag-history",
     "name": "Phantom Lag History",
-    "url": "shaders/phantom-lag-history.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/phantom-lag-history.wgsl",
     "description": "Catalog entry for Phantom Lag History.",
     "tags": [
       "temporal-echo",
@@ -9195,7 +9195,7 @@
   {
     "id": "spectral-bleed-confine",
     "name": "Spectral Bleed Confine",
-    "url": "shaders/spectral-bleed-confine.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spectral-bleed-confine.wgsl",
     "description": "Spectral Bleed Confine",
     "tags": [
       "advanced hybrid"
@@ -9393,7 +9393,7 @@
   {
     "id": "steamy-glass-volumetric",
     "name": "Steamy Glass Volumetric",
-    "url": "shaders/steamy-glass-volumetric.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/steamy-glass-volumetric.wgsl",
     "description": "Steamy Glass Volumetric",
     "tags": [
       "steamy-glass",
@@ -9737,7 +9737,7 @@
   {
     "id": "vaporwave-horizon-prismatic",
     "name": "Vaporwave Horizon Prismatic",
-    "url": "shaders/vaporwave-horizon-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/vaporwave-horizon-prismatic.wgsl",
     "description": "Vaporwave Horizon Prismatic",
     "tags": [
       "vaporwave-horizon",
@@ -9865,7 +9865,7 @@
   {
     "id": "viscous-drag-bilateral",
     "name": "Viscous Drag Bilateral",
-    "url": "shaders/viscous-drag-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/viscous-drag-bilateral.wgsl",
     "description": "Viscous Drag Bilateral",
     "tags": [
       "viscous-drag",
@@ -9922,7 +9922,7 @@
   {
     "id": "vortex-warp-coupled",
     "name": "Vortex Warp Coupled",
-    "url": "shaders/vortex-warp-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/vortex-warp-coupled.wgsl",
     "description": "Catalog entry for Vortex Warp Coupled.",
     "tags": [
       "vortex-warp",
@@ -9979,7 +9979,7 @@
   {
     "id": "warp-drive-blackbody",
     "name": "Warp Drive Blackbody",
-    "url": "shaders/warp-drive-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/warp-drive-blackbody.wgsl",
     "description": "Catalog entry for Warp Drive Blackbody.",
     "tags": [
       "radial-blur",

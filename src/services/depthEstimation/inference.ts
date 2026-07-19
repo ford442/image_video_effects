@@ -30,10 +30,16 @@ export async function runDepthInference(
   } catch (error) {
     const classified = classifyDepthLoadError(error);
     console.error('[depth] inference failed:', error);
+    const phase: DepthInferenceFailure['phase'] =
+      classified.phase === 'cancelled'
+        ? 'cancelled'
+        : classified.phase === 'offline'
+          ? 'offline'
+          : 'error';
     return {
       ok: false,
       message: classified.message,
-      phase: classified.phase === 'cancelled' ? 'cancelled' : classified.phase,
+      phase,
     };
   }
 }

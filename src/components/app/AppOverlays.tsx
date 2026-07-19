@@ -1,7 +1,8 @@
 import React, { RefObject } from 'react';
 import ShaderScanner from '../ShaderScanner';
 import { StorageBrowser } from '../StorageBrowser';
-import { RenderMode, ShaderEntry, InputSource, SlotParams } from '../../renderer/types';
+import { RenderMode, ShaderEntry, SlotParams, InputSource } from '../../renderer/types';
+import { SharedChain } from '../../services/layerChainShare';
 
 export interface AppOverlaysProps {
     rouletteFlashRef: RefObject<HTMLDivElement | null>;
@@ -11,22 +12,22 @@ export interface AppOverlaysProps {
     recordingCountdown: number;
     showShareModal: boolean;
     setShowShareModal: (show: boolean) => void;
-    shareVibeText: string;
     shareableLink: string;
+    shareVibeText: string;
     setStatus: (status: string) => void;
-    availableModes: ShaderEntry[];
     showShaderScanner: boolean;
     setShowShaderScanner: (show: boolean) => void;
+    availableModes: ShaderEntry[];
     setMode: (index: number, mode: RenderMode) => void;
     updateSlotParam: (slotIndex: number, updates: Partial<SlotParams>) => void;
     showStorageBrowser: boolean;
     setShowStorageBrowser: (show: boolean) => void;
+    storageBrowserTab: 'shaders' | 'images' | 'videos';
     activeSlot: number;
     handleLoadImage: (url: string) => Promise<void>;
+    setSelectedVideo: React.Dispatch<React.SetStateAction<string>>;
     syncInputSourceToRenderer: (source: InputSource) => void;
-    setSelectedVideo: (video: string) => void;
     setSlotParams: React.Dispatch<React.SetStateAction<SlotParams[]>>;
-    storageBrowserTab: 'shaders' | 'images' | 'videos';
 }
 
 export function AppOverlays({
@@ -37,27 +38,27 @@ export function AppOverlays({
     recordingCountdown,
     showShareModal,
     setShowShareModal,
-    shareVibeText,
     shareableLink,
+    shareVibeText,
     setStatus,
-    availableModes,
     showShaderScanner,
     setShowShaderScanner,
+    availableModes,
     setMode,
     updateSlotParam,
     showStorageBrowser,
     setShowStorageBrowser,
+    storageBrowserTab,
     activeSlot,
     handleLoadImage,
-    syncInputSourceToRenderer,
     setSelectedVideo,
+    syncInputSourceToRenderer,
     setSlotParams,
-    storageBrowserTab,
 }: AppOverlaysProps) {
     return (
         <>
-            <div 
-                ref={rouletteFlashRef} 
+            <div
+                ref={rouletteFlashRef}
                 className="roulette-flash"
                 style={{
                     position: 'fixed',
@@ -69,10 +70,10 @@ export function AppOverlays({
                     opacity: 0,
                     pointerEvents: 'none',
                     zIndex: 9999,
-                    transition: 'opacity 0.15s ease-out'
+                    transition: 'opacity 0.15s ease-out',
                 }}
             />
-            
+
             {showConfetti && (
                 <div className="confetti-container">
                     {Array.from({ length: 50 }).map((_, i) => (
@@ -88,25 +89,25 @@ export function AppOverlays({
                     ))}
                 </div>
             )}
-            
+
             {chaosModeEnabled && (
                 <div className="chaos-active-indicator">
                     🔥 CHAOS MODE ON
                 </div>
             )}
-            
+
             {isRecording && (
                 <div className="recording-indicator-overlay">
                     <div className="recording-dot-large"></div>
                     <span>REC {recordingCountdown}s</span>
                 </div>
             )}
-            
+
             {showShareModal && (
                 <div className="share-modal-overlay" onClick={() => setShowShareModal(false)}>
                     <div className="share-modal" onClick={(e) => e.stopPropagation()}>
                         <button className="share-modal-close" onClick={() => setShowShareModal(false)}>×</button>
-                        
+
                         <div className="share-modal-header">
                             <h2>{shareVibeText ? '🎛️ Share Your VJ Set!' : '🎉 Clip Recorded!'}</h2>
                             <p>{shareVibeText
@@ -133,13 +134,13 @@ export function AppOverlays({
                         <div className="share-link-section">
                             <label>Shareable Link:</label>
                             <div className="share-link-input-group">
-                                <input 
-                                    type="text" 
-                                    value={shareableLink} 
-                                    readOnly 
+                                <input
+                                    type="text"
+                                    value={shareableLink}
+                                    readOnly
                                     className="share-link-input"
                                 />
-                                <button 
+                                <button
                                     className="share-copy-btn"
                                     onClick={() => {
                                         navigator.clipboard.writeText(shareableLink);
@@ -150,9 +151,9 @@ export function AppOverlays({
                                 </button>
                             </div>
                         </div>
-                        
+
                         <div className="share-buttons">
-                            <a 
+                            <a
                                 href={`https://twitter.com/intent/tweet?text=Check+out+my+Pixelocity+creation!&url=${encodeURIComponent(shareableLink)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -160,7 +161,7 @@ export function AppOverlays({
                             >
                                 🐦 Share on Twitter
                             </a>
-                            <a 
+                            <a
                                 href={`https://www.tiktok.com/upload?referer=${encodeURIComponent(shareableLink)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -169,7 +170,7 @@ export function AppOverlays({
                                 🎵 Post on TikTok
                             </a>
                         </div>
-                        
+
                         <div className="share-modal-footer">
                             <button className="share-done-btn" onClick={() => setShowShareModal(false)}>
                                 Done
@@ -186,9 +187,7 @@ export function AppOverlays({
                 onTestShader={async (shaderId, testValues) => {
                     try {
                         setMode(0, shaderId as RenderMode);
-                        
                         await new Promise(resolve => setTimeout(resolve, 500));
-                        
                         const testParams: Partial<SlotParams> = {
                             zoomParam1: testValues[0] ?? 0.5,
                             zoomParam2: testValues[1] ?? 0.5,
@@ -196,21 +195,19 @@ export function AppOverlays({
                             zoomParam4: testValues[3] ?? 0.5,
                         };
                         updateSlotParam(0, testParams as SlotParams);
-                        
                         await new Promise(resolve => setTimeout(resolve, 200));
-                        
                         return { success: true };
                     } catch (error) {
-                        return { 
-                            success: false, 
-                            error: error instanceof Error ? error.message : String(error) 
+                        return {
+                            success: false,
+                            error: error instanceof Error ? error.message : String(error)
                         };
                     }
                 }}
             />
 
             {showStorageBrowser && (
-                <div 
+                <div
                     className="storage-browser-modal-overlay"
                     style={{
                         position: 'fixed',
@@ -225,7 +222,7 @@ export function AppOverlays({
                     }}
                     onClick={() => setShowStorageBrowser(false)}
                 >
-                    <div 
+                    <div
                         style={{
                             width: '100%',
                             maxWidth: '1200px',
@@ -257,7 +254,7 @@ export function AppOverlays({
                                             }
                                         }
                                     }
-                                } catch (err) {
+                                } catch {
                                     setStatus(`Failed to load shader: ${shader.name}`);
                                 }
                                 setShowStorageBrowser(false);
@@ -282,7 +279,7 @@ export function AppOverlays({
                                 if (config.slotParams) {
                                     setSlotParams(config.slotParams);
                                 }
-                                if (config.inputSource) syncInputSourceToRenderer(config.inputSource);
+                                if (config.inputSource) syncInputSourceToRenderer(config.inputSource as InputSource);
                                 if (config.currentImageUrl) handleLoadImage(config.currentImageUrl);
                                 setStatus('Loaded effect configuration from VPS');
                                 setShowStorageBrowser(false);

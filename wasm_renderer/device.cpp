@@ -231,7 +231,7 @@ bool WebGPURenderer::CreateDevice() {
     const uint64_t maxCanvasDim = (uint64_t)std::max(canvasWidth_, canvasHeight_);
     printf("[WASM] Adapter limits (validating against 13-binding compute contract):\n");
     CheckLimit("maxTextureDimension2D",              limits.maxTextureDimension2D,              maxCanvasDim, limitsOk);
-    CheckLimit("maxBindingsPerBindGroup",            limits.maxBindingsPerBindGroup,            13,  limitsOk);
+    CheckLimit("maxBindingsPerBindGroup",            limits.maxBindingsPerBindGroup,            14,  limitsOk);
     CheckLimit("maxSampledTexturesPerShaderStage",   limits.maxSampledTexturesPerShaderStage,    3,  limitsOk);
     CheckLimit("maxSamplersPerShaderStage",          limits.maxSamplersPerShaderStage,           3,  limitsOk);
     CheckLimit("maxStorageTexturesPerShaderStage",   limits.maxStorageTexturesPerShaderStage,    4,  limitsOk);
@@ -304,7 +304,7 @@ bool WebGPURenderer::CreateDevice() {
     // we don't over-request anything the adapter doesn't already offer.
     WGPULimits requiredLimits = WGPU_LIMITS_INIT;
     requiredLimits.maxTextureDimension2D             = (uint32_t)maxCanvasDim;
-    requiredLimits.maxBindingsPerBindGroup           = 13;
+    requiredLimits.maxBindingsPerBindGroup           = 14;
     requiredLimits.maxSampledTexturesPerShaderStage  = 3;
     requiredLimits.maxSamplersPerShaderStage         = 3;
     requiredLimits.maxStorageTexturesPerShaderStage  = 4;
@@ -435,7 +435,7 @@ bool WebGPURenderer::CreateDevice() {
         const uint64_t maxCanvasDim = (uint64_t)std::max(canvasWidth_, canvasHeight_);
         printf("[WASM] Device limits (post-creation, catches clamping):\n");
         CheckLimit("maxTextureDimension2D",             deviceLimits.maxTextureDimension2D,             maxCanvasDim, deviceLimitsOk);
-        CheckLimit("maxBindingsPerBindGroup",           deviceLimits.maxBindingsPerBindGroup,           13,  deviceLimitsOk);
+        CheckLimit("maxBindingsPerBindGroup",           deviceLimits.maxBindingsPerBindGroup,           14,  deviceLimitsOk);
         CheckLimit("maxSampledTexturesPerShaderStage",  deviceLimits.maxSampledTexturesPerShaderStage,  3,   deviceLimitsOk);
         CheckLimit("maxSamplersPerShaderStage",         deviceLimits.maxSamplersPerShaderStage,         3,   deviceLimitsOk);
         CheckLimit("maxStorageTexturesPerShaderStage",  deviceLimits.maxStorageTexturesPerShaderStage,  4,   deviceLimitsOk);

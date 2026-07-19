@@ -1,6 +1,6 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-07-12 (WGSL perf/quality audit considerations)
+**Last updated:** 2026-07-19 (Foundation Wave 2 #965)
 
 ## WGSL cross-cutting improvements (2026-07-12 audit)
 - **Engine wins (all shaders):** gate historyTex copy (only 11 use binding 13); reuse extraBuffer Float32Array; fix dataTexA/B→C double-copy in chained slots; merge queue submits; GPU image upload path.
@@ -50,6 +50,15 @@
 - **Current branch:** `feat/midi-control-and-wasm-parity` (PR #936) — orthogonal to foundation; merge foundation first or rebase MIDI after.
 - **Still open in epic:** #917 full orphan reconcile, #921 thumbnail pipeline (GPU), #916 renderer.cpp modularize, product epics (#922/#929) deferred per epic scope.
 - **Success criteria:** 4/6 have code on foundation branches; thumbnails + full god-component split remain partial.
+
+## Foundation Wave 2 — Post-#912 (#965, 2026-07-19)
+- **App strangler (#966):** `App.tsx` 2,207 → **562 LOC**; all hooks wired; overlays in `AppOverlays.tsx`; constants from `src/app/constants/`.
+- **WebGPU modularization (#967):** `WebGPUDeviceInit`, `WebGPUResourceManager`, `WebGPUShaderManager`, `WebGPUTiming` wired; monolith ~1,390 LOC (render loop + blit scale path still inline).
+- **Binding + device policy (#968/#969):** `docs/BINDING_CONTRACT.md`; binding 13 (`historyTexture`) in C++ pipeline/resources/frame; `maxBindingsPerBindGroup` 14; `npm run verify:device-policy`.
+- **Multipass graph (#970):** `docs/MULTIPASS_GRAPH_SPEC.md`, `multipassGraph.ts`, `GraphRunner.ts`; wired in `dispatchSlot()` for `quantum-foam-pass1` same-frame demo.
+- **Thumbnails (#921):** script upgrades (`--category=all-catalog`, `--shard`, `--skip-existing`, failure log); **346/1,301 (26.6%)** — GPU batch (~695 new) requires real hardware (`npm run thumbnails:generate`).
+- **WASM promotion (#890):** **STAY TIER B** reaffirmed 2026-07-19; `reports/wasm-promotion-evidence-2026-07-19.md`.
+- **Tests/build:** 274 Jest tests pass; `SKIP_WASM_BUILD=1 npm run build` green (WASM also compiles when emcc present).
 
 ## Epic: Advanced Physics & Multipass Sims (2026-07-11)
 - **Agent kit:** `swarm-tasks/advanced-physics/` — README, MULTIPASS_SIM_CONTRACT, 3 agent specs + stretch goals

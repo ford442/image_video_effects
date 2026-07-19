@@ -5,20 +5,19 @@
  * (~lines 320–545): adapter fallback ladder, limit validation, and explicit
  * requiredLimits on requestDevice().
  *
- * Cross-reference: wasm_renderer/renderer.cpp
- *   - Adapter ladder: lines 320–337 (AdapterAttempt[])
- *   - CheckLimit validation: lines 458–470
- *   - requiredLimits seeding: lines 522–538
+ * Cross-reference: wasm_renderer/device.cpp
+ *   - requestAdapterWithFallback / ADAPTER_ATTEMPT_LADDER
+ *   - assertAdapterMeetsContract / CheckLimit table
+ *   - buildRequiredLimits / requiredLimits seeding
  *
- * Keep MINIMUM_COMPUTE_LIMITS in sync with the C++ CheckLimit table and
- * requiredLimits block above.
+ * Keep MINIMUM_COMPUTE_LIMITS in sync with device.cpp CheckLimit + requiredLimits.
  */
 
 import { UNIFORM_BUFFER_LAYOUT } from './types';
 
-/** Minimum limits implied by the 13-binding compute shader contract (AGENTS.md). */
+/** Minimum limits implied by the 14-entry compute bind group (bindings 0–13). */
 export const MINIMUM_COMPUTE_LIMITS = {
-  maxBindingsPerBindGroup: 13,
+  maxBindingsPerBindGroup: 14,
   maxSampledTexturesPerShaderStage: 3,
   maxSamplersPerShaderStage: 3,
   maxStorageTexturesPerShaderStage: 4,
@@ -46,7 +45,7 @@ export type AdapterAttempt = {
   label: string;
 };
 
-/** Four-step ladder matching C++ AdapterAttempt[] (renderer.cpp ~332–337). */
+/** Four-step ladder matching C++ ADAPTER_ATTEMPT_LADDER in device.cpp. */
 export const ADAPTER_ATTEMPT_LADDER: readonly AdapterAttempt[] = [
   { powerPreference: 'high-performance', forceFallbackAdapter: false, label: 'HighPerformance' },
   { powerPreference: undefined, forceFallbackAdapter: false, label: 'Undefined' },
@@ -74,9 +73,7 @@ const LIMIT_CHECKS: LimitCheck[] = [
 ];
 
 /**
- * Build requiredLimits for requestDevice(), mirroring C++ requiredLimits seeding
- * (renderer.cpp ~527–538). Only requests the minimums we need; other fields stay
- * at adapter defaults.
+ * Build requiredLimits for requestDevice() — mirrors device.cpp requiredLimits seeding.
  */
 export function buildRequiredLimits(maxCanvasDim: number): GPUDeviceDescriptor['requiredLimits'] {
   return {
@@ -90,8 +87,8 @@ function requiredForCheck(check: LimitCheck, maxCanvasDim: number): number {
 }
 
 /**
- * Validate adapter.limits against the 13-binding compute contract before device
- * creation (renderer.cpp CheckLimit table ~461–470).
+ * Validate adapter.limits against the compute bind contract before device creation
+ * (device.cpp CheckLimit table).
  */
 export function assertAdapterMeetsContract(
   adapter: GPUAdapter,
@@ -122,7 +119,7 @@ export function assertAdapterMeetsContract(
 }
 
 /**
- * Request an adapter using the 4-step fallback ladder (renderer.cpp ~342–399).
+ * Request an adapter using the 4-step fallback ladder (device.cpp requestAdapterWithFallback).
  */
 export async function requestAdapterWithFallback(
   gpu: GPU,

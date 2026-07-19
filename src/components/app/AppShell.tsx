@@ -10,6 +10,7 @@ import { VideoRecord } from '../../syncTypes';
 import { VideoSegment } from '../../services/videoSegmentManager';
 import { SharedChain } from '../../services/layerChainShare';
 import { STORAGE_API_URL } from '../../config/appConfig';
+import { RenderQualityMode } from '../../config/performancePolicy';
 
 export interface AppShellProps {
     activeTab: 'main' | 'live-studio';
@@ -113,6 +114,16 @@ export interface AppShellProps {
     isRendererSwitching: boolean;
     jsFps: number;
     wasmFps: number;
+    renderQualityMode: RenderQualityMode;
+    onRenderQualityChange: (mode: RenderQualityMode) => void;
+    performanceHud: {
+        internalWidth: number;
+        internalHeight: number;
+        scale: number;
+        targetFps: number;
+        adaptive: boolean;
+        maxActiveSlots: number;
+    };
 }
 
 export function AppShell(props: AppShellProps) {
@@ -215,6 +226,9 @@ export function AppShell(props: AppShellProps) {
         isRendererSwitching,
         jsFps,
         wasmFps,
+        renderQualityMode,
+        onRenderQualityChange,
+        performanceHud,
     } = props;
 
     return (
@@ -322,6 +336,10 @@ export function AppShell(props: AppShellProps) {
                         onCopyChainShareLink={copyChainShareLink}
                         onApplySharedChain={applySharedChain}
                         getCurrentChain={getCurrentChain}
+                        renderQualityMode={renderQualityMode}
+                        onRenderQualityChange={onRenderQualityChange}
+                        performanceHud={performanceHud}
+                        maxActiveSlots={performanceHud.maxActiveSlots}
                     />
                 </aside>
                 <main className="canvas-container">

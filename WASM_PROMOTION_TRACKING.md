@@ -7,7 +7,15 @@
 **Docs refresh (closed):** [#890](https://github.com/ford442/image_video_effects/issues/890)
 
 **Current tier:** **B — Experimental (opt-in)**  
-**Last evidence review:** 2026-07-11
+**Last evidence review:** 2026-07-19 (Foundation Wave 2)
+
+---
+
+## Decision (2026-07-19) — reaffirm STAY TIER B
+
+Foundation Wave 2 (#965) closed binding-13 parity in C++ and wired TS device policy, but **promotion gates 1–4 remain open**. This Cloud VM cannot run `WASM_GPU_TESTS=1` benchmarks or manual GPU smoke tests.
+
+**Action:** Collect evidence on a discrete GPU workstation per checklist below. Until then: **STAY TIER B**.
 
 ---
 

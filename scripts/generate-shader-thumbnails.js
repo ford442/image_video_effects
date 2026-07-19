@@ -35,20 +35,49 @@ const RENDER_TIME = 1.5; // matches Phase 1 spec: render 1 frame at t=1.5
 // ── CLI args ────────────────────────────────────────────────────────────────
 
 function parseArgs(argv) {
-  const out = { category: 'generative', limit: null, ids: null, headless: false };
+  const out = {
+    category: 'generative',
+    limit: null,
+    ids: null,
+    headless: false,
+    skipExisting: false,
+    shardIndex: null,
+    shardCount: null,
+  };
   for (const arg of argv) {
     const [key, val] = arg.replace(/^--/, '').split('=');
     if (key === 'category') out.category = val;
     else if (key === 'limit') out.limit = parseInt(val, 10);
     else if (key === 'ids') out.ids = val.split(',').map(s => s.trim()).filter(Boolean);
     else if (key === 'headless') out.headless = val !== 'false';
+    else if (key === 'skip-existing') out.skipExisting = val !== 'false';
+    else if (key === 'shard') {
+      const [idx, count] = val.split('/').map(s => parseInt(s, 10));
+      out.shardIndex = idx;
+      out.shardCount = count;
+    }
   }
   return out;
+}
+
+function loadAllCatalogShaders() {
+  const files = fs.readdirSync(LISTS_DIR).filter(f => f.endsWith('.json'));
+  const byId = new Map();
+  for (const file of files) {
+    const list = JSON.parse(fs.readFileSync(path.join(LISTS_DIR, file), 'utf8'));
+    for (const entry of list) {
+      if (entry && entry.id) byId.set(entry.id, entry);
+    }
+  }
+  return Array.from(byId.values());
 }
 
 // ── Shader list loading ────────────────────────────────────────────────────
 
 function loadShaderList(category) {
+  if (category === 'all-catalog') {
+    return loadAllCatalogShaders();
+  }
   if (category === 'all') {
     const generative = JSON.parse(fs.readFileSync(path.join(LISTS_DIR, 'generative.json'), 'utf8'));
     const visualEffects = JSON.parse(fs.readFileSync(path.join(LISTS_DIR, 'visual-effects.json'), 'utf8'));
@@ -270,17 +299,24 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   let shaders = loadShaderList(args.category);
   if (args.ids) shaders = shaders.filter(s => args.ids.includes(s.id));
-  if (args.limit) shaders = shaders.slice(0, args.limit);
-
-  if (shaders.length === 0) {
-    console.log('No shaders to process.');
-    return;
+  if (args.shardIndex !== null && args.shardCount !== null) {
+    shaders = shaders.filter((_, i) => i % args.shardCount === args.shardIndex);
   }
+  if (args.limit) shaders = shaders.slice(0, args.limit);
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const manifest = fs.existsSync(MANIFEST_PATH)
     ? JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'))
     : {};
+
+  if (args.skipExisting) {
+    shaders = shaders.filter(s => !manifest[s.id] || !fs.existsSync(path.join(OUT_DIR, `${s.id}.png`)));
+  }
+
+  if (shaders.length === 0) {
+    console.log('No shaders to process.');
+    return;
+  }
 
   console.log(`[thumbnails] Generating ${shaders.length} thumbnail(s) (category=${args.category}, size=${SIZE}x${SIZE}, t=${RENDER_TIME})`);
 
@@ -307,6 +343,7 @@ async function main() {
   }
 
   let success = 0, failed = 0, skipped = 0;
+  const failures = [];
   for (let i = 0; i < shaders.length; i++) {
     const shader = shaders[i];
     const progress = `[${i + 1}/${shaders.length}]`;
@@ -333,8 +370,15 @@ async function main() {
       success++;
     } else {
       console.log(`${progress} ${shader.id}: FAIL (${result.error})`);
+      failures.push({ id: shader.id, error: result.error });
       failed++;
     }
+  }
+
+  if (failures.length > 0) {
+    const failPath = path.join(ROOT, 'reports', 'thumbnail-failures.json');
+    fs.mkdirSync(path.dirname(failPath), { recursive: true });
+    fs.writeFileSync(failPath, JSON.stringify({ generated_at: new Date().toISOString(), failures }, null, 2));
   }
 
   fs.writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));

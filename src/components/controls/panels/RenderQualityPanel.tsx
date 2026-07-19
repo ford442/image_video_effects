@@ -1,5 +1,5 @@
 import React from 'react';
-import { RenderQualityMode } from '../../config/performancePolicy';
+import { RenderQualityMode } from '../../../config/performancePolicy';
 
 export interface RenderQualityPanelProps {
   qualityMode: RenderQualityMode;
