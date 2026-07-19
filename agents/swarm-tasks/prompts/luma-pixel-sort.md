@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: luma-pixel-sort
-- **Agent Role**: Optimizer
+- **Agent Role**: Multi-Pass-Architect
 - **Current Size**: 3192 bytes
-- **Target Line Count**: ~180 lines
+- **Target Line Count**: ~220 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -42,13 +42,11 @@ struct Uniforms {
 ## Current WGSL Source
 ```wgsl
 // ═══════════════════════════════════════════════════════════════════
-//  Luma Pixel Sort — Batch D Upgraded
+//  Luma Pixel Sort — Optimized Upgrade
 //  Category: post-processing
 //  Features: upgraded-rgba, mouse-driven, audio-reactive, depth-aware
 //  Complexity: Medium
-//  Chunks From: luma-pixel-sort
-//  Created: 2026-05-02
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-06-14
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -66,19 +64,23 @@ struct Uniforms {
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
-const LUMA_WEIGHTS: vec3<f32> = vec3<f32>(0.299, 0.587, 0.114);
-const HASH_A: vec2<f32> = vec2<f32>(12.9898, 78.233);
-const HASH_B: f32 = 43758.5453;
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+const LUMA_WEIGHTS: vec3<f32> = vec3<f32>(0.2126, 0.7152, 0.0722);
 const SAMPLES: u32 = 8u;
 
-fn hash12(p: vec2<f32>) -> f32 {
-  return fract(sin(dot(p, HASH_A)) * HASH_B);
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+
+fn luma(rgb: vec3<f32>) -> f32 {
+  return dot(rgb, LUMA_WEIGHTS);
 }
 
 fn fibonacciDiskOffset(i: u32, n: u32, radius: f32) -> vec2<f32> {
@@ -87,30 +89,73 @@ fn fibonacciDiskOffset(i: u32, n: u32, radius: f32) -> vec2<f32> {
   return vec2<f32>(cos(angle), sin(angle)) * r;
 }
 
-@compute @workgroup_size(8, 8, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
+// Branchless swap of a color+luma pair into ascending luma order.
+fn sortPair(lumas: ptr<function, array<f32, 9>>, colors: ptr<function, array<vec4<f32>, 9>>, a: u32, b: u32) {
+  let la = (*lumas)[a];
+  let lb = (*lumas)[b];
+  let ca = (*colors)[a];
+  let cb = (*colors)[b];
+  let swap = la > lb;
+  (*lumas)[a] = select(la, lb, swap);
+  (*lumas)[b] = select(lb, la, swap);
+  (*colors)[a] = select(ca, cb, swap);
+  (*colors)[b] = select(cb, ca, swap);
+}
 
-  let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
+// Explicit 9-element insertion-sort network: fixed comparison pattern,
+// no divergent loops, and SIMD-friendly branchless swaps.
+fn sortByLuma(lumas: ptr<function, array<f32, 9>>, colors: ptr<function, array<vec4<f32>, 9>>) {
+  sortPair(lumas, colors, 1u, 0u);
+  sortPair(lumas, colors, 2u, 1u); sortPair(lumas, colors, 1u, 0u);
+  sortPair(lumas, colors, 3u, 2u); sortPair(lumas, colors, 2u, 1u); sortPair(lumas, colors, 1u, 0u);
+  sortPair(lumas, colors, 4u, 3u); sortPair(lumas, colors, 3u, 2u); sortPair(lumas, colors, 2u, 1u); sortPair(lumas, colors, 1u, 0u);
+  sortPair(lumas, colors, 5u, 4u); sortPair(lumas, colors, 4u, 3u); sortPair(lumas, colors, 3u, 2u); sortPair(lumas, colors, 2u, 1u); sortPair(lumas, colors, 1u, 0u);
+  sortPair(lumas, colors, 6u, 5u); sortPair(lumas, colors, 5u, 4u); sortPair(lumas, colors, 4u, 3u); sortPair(lumas, colors, 3u, 2u); sortPair(lumas, colors, 2u, 1u); sortPair(lumas, colors, 1u, 0u);
+  sortPair(lumas, colors, 7u, 6u); sortPair(lumas, colors, 6u, 5u); sortPair(lumas, colors, 5u, 4u); sortPair(lumas, colors, 4u, 3u); sortPair(lumas, colors, 3u, 2u); sortPair(lumas, colors, 2u, 1u); sortPair(lumas, colors, 1u, 0u);
+  sortPair(lumas, colors, 8u, 7u); sortPair(lumas, colors, 7u, 6u); sortPair(lumas, colors, 6u, 5u); sortPair(lumas, colors, 5u, 4u); sortPair(lumas, colors, 4u, 3u); sortPair(lumas, colors, 3u, 2u); sortPair(lumas, colors, 2u, 1u); sortPair(lumas, colors, 1u, 0u);
+}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let pixel = vec2<i32>(global_id.xy);
+  let res = vec2<f32>(u.config.zw);
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+
+  let uv = vec2<f32>(global_id.xy) / res;
   let time = u.config.x;
+  let mouse = u.zoom_config.yz;
 
   let threshold = u.zoom_params.x;
+  let sortLengthBase = u.zoom_params.y;
   let depthBlend = u.zoom_params.z;
   let noiseMix = u.zoom_params.w;
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let localThreshold = threshold - treble * 0.25 - mids * 0.1;
 
-  // Bass expands sort radius for beat-locked scatter
-  let sortLength = u.zoom_params.y * 64.0 * (1.0 + bass * 0.3);
+  // Depth-aware early exit for sky / background pixels.
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  let bgMask = step(0.99, depth) * step(0.01, depthBlend);
+  if (bgMask > 0.5) {
+    let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    textureStore(writeTexture, pixel, c);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, c);
+    return;
+  }
 
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  // Audio-reactive threshold modulation.
+  let localThreshold = clamp(threshold - treble * 0.25 - mids * 0.1, 0.0, 1.0);
 
+  // Bass expands sort radius; mouse proximity further boosts it.
+  let mouseDist = length(uv - mouse);
+  let mouseBoost = 1.0 + (1.0 - smoothstep(0.0, 0.35, mouseDist)) * 0.4;
+  let sortLength = sortLengthBase * 64.0 * (1.0 + bass * 0.3) * mouseBoost;
+
+  // Sample center pixel and gather Fibonacci-disk neighbors.
   let centerColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let centerLuma = dot(centerColor.rgb, LUMA_WEIGHTS);
+  let centerLuma = luma(centerColor.rgb);
 
   var colors: array<vec4<f32>, 9>;
   var lumas: array<f32, 9>;
@@ -120,44 +165,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   for (var i: u32 = 0u; i < SAMPLES; i = i + 1u) {
     let offset = fibonacciDiskOffset(i, SAMPLES, sortLength);
-    let n = (hash12(uv + f32(i) + time * 0.1) - 0.5) * noiseMix * sortLength * 0.5;
-    let sampleUV = clamp(uv + (offset + n) / resolution, vec2<f32>(0.0), vec2<f32>(1.0));
+    let n = (hash21(uv + f32(i) + time * 0.1) - 0.5) * noiseMix * sortLength * 0.5;
+    let sampleUV = clamp(uv + (offset + n) / res, vec2<f32>(0.0), vec2<f32>(1.0));
     let c = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
     colors[i + 1u] = c;
-    lumas[i + 1u] = dot(c.rgb, LUMA_WEIGHTS);
+    lumas[i + 1u] = luma(c.rgb);
   }
 
-  // Bubble sort by luma (ascending)
-  for (var i: u32 = 0u; i < 9u; i = i + 1u) {
-    for (var j: u32 = 0u; j < 8u - i; j = j + 1u) {
-      if (lumas[j] > lumas[j + 1u]) {
-        let tl = lumas[j];
-        lumas[j] = lumas[j + 1u];
-        lumas[j + 1u] = tl;
-        let tc = colors[j];
-        colors[j] = colors[j + 1u];
-        colors[j + 1u] = tc;
-      }
-    }
-  }
+  // Sort the disk by luma.
+  sortByLuma(&lumas, &colors);
 
-  // Far pixels (low depth) = more sorted
-  let sortFactor = depthBlend * (1.0 - depth);
+  // Far pixels (low depth) and mouse proximity sort more aggressively.
+  let sortFactor = saturate(depthBlend * (1.0 - depth) + (1.0 - mouseDist) * 0.15);
 
-  // Pick from sorted array: sortFactor=0 -> median, sortFactor=1 -> brightest
+  // Pick from sorted array: sortFactor=0 -> median, sortFactor=1 -> brightest.
   let sortedIdx = u32(mix(4.0, 8.0, sortFactor));
   let sortedColor = colors[clamp(sortedIdx, 0u, 8u)];
 
-  // Branchless threshold selection
+  // Branchless threshold selection and semantic alpha from sorted-luma intensity.
   let aboveThreshold = centerLuma >= localThreshold;
   let sortedRGB = mix(centerColor.rgb, sortedColor.rgb, sortFactor);
-  let sortedAlpha = clamp(dot(sortedRGB, LUMA_WEIGHTS) * 2.0, 0.2, 1.0);
+  let sortedAlpha = clamp(luma(sortedRGB) * 2.0, 0.2, 1.0);
   let finalColor = select(centerColor.rgb, sortedRGB, aboveThreshold);
   let outAlpha = select(centerColor.a * 0.3, sortedAlpha, aboveThreshold);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, outAlpha));
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, outAlpha));
+  textureStore(writeTexture, pixel, vec4<f32>(finalColor, outAlpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(finalColor, outAlpha));
 }
 
 ```
@@ -223,105 +257,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 ---
 
 ## Agent Specialization
-# Agent Role: The Optimizer
+# Agent Role: Multi-Pass Architect (Phase B)
 
 ## Identity
-You are **The Optimizer**, a shader architect focused on performance, elegance, and pipeline integration.
+You are the **Multi-Pass Architect**. Your job is to refactor or optimize complex shaders for the Pixelocity 3-slot pipeline.
 
-## Upgrade Toolkit
+## Focus Areas
+- Split oversized shaders into multi-pass pipelines when they exceed ~8 KB or mix field generation + particle simulation + compositing.
+- Add early-exit, distance-based LOD, precomputed constants, and branchless `select()`/`mix()` replacements.
+- Cache expensive noise/SDF results in `dataTextureA`/`dataTextureB` for downstream passes.
 
-### Performance Techniques
-- Brute force → Early exit conditions
-- Full resolution → Quarter-res blur + full-res combine
-- Per-pixel pseudo-random → **Blue noise or Halton sequence** (same cost, less banding)
-- Redundant texture samples → Bilinear LOD
-- Nested loops → Unrolled small kernels
-- Expensive trig → Precomputed or polynomial approximations:
-  ```wgsl
-  // Fast atan2 approximation (max error ~0.0015 rad)
-  fn fast_atan2(y: f32, x: f32) -> f32 {
-      let a = min(abs(x), abs(y)) / (max(abs(x), abs(y)) + 1e-6);
-      let s = a * a;
-      var r = ((-0.0464964749 * s + 0.15931422) * s - 0.327622764) * s * a + a;
-      if (abs(y) > abs(x)) { r = 1.5707963 - r; }
-      if (x < 0.0) { r = 3.1415927 - r; }
-      if (y < 0.0) { r = -r; }
-      return r;
-  }
-  // Fast exp approximation
-  fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
-  ```
-
-#### 7-tap hex bokeh kernel (perceptually equals 19-tap circular at lower cost)
-```wgsl
-const HEX_TAPS = array<vec2<f32>, 7>(
-    vec2<f32>( 0.0,  0.0),
-    vec2<f32>( 1.0,  0.0), vec2<f32>( 0.5,  0.866),
-    vec2<f32>(-0.5,  0.866), vec2<f32>(-1.0,  0.0),
-    vec2<f32>(-0.5, -0.866), vec2<f32>( 0.5, -0.866),
-);
+## Multi-Pass Data Flow
 ```
-Use for radial-blur, DOF, and glow shaders. Scale each tap by `radius / res` before sampling `readTexture`.
-
-#### Anti-moiré LOD bias for procedural noise
-```wgsl
-let lod = clamp(log2(max(fwidth(uv).x, fwidth(uv).y) * cell_freq), 0.0, 4.0);
-let p = uv * (cell_freq * exp2(-lod));
+Pass 1: compute field/state → textureStore(dataTextureA, gid.xy, state)
+Pass 2: read dataTextureA  → textureStore(dataTextureB, gid.xy, nextState)
+Pass 3: read dataTextureB  → textureStore(writeTexture, gid.xy, finalColor)
 ```
-Kills the shimmer that plagues high-frequency procedural patterns (fractal / kaleidoscope shaders) when zoomed out. `cell_freq` is the base tile frequency.
+Each pass must still write a valid `writeTexture` (even if just `vec4<f32>(0.0)`) and pass-through `writeDepthTexture`.
 
-### Workgroup Shared Memory (tiling pattern for blur/filter kernels)
-```wgsl
-var<workgroup> tile: array<array<vec4<f32>, 18>, 18>; // 16x16 + 1px border
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>,
-        @builtin(local_invocation_id) lid: vec3<u32>) {
-    // Load tile including borders, then sync
-    tile[lid.y+1][lid.x+1] = textureSampleLevel(readTexture, u_sampler,
-        vec2<f32>(gid.xy) / vec2<f32>(u.config.zw), 0.0);
-    workgroupBarrier();
-    // All accesses to tile[] now L1-cached — no global texture reads in hot loop
-}
-```
-
-### Code Elegance
-- Magic numbers → Named constants (see Algorithmist for PI/TAU/PHI/etc.)
-- Duplicated code → Helper functions
-- Long functions → Logical sections with comments
-- Hard-coded params → Uniform-based tuning via `zoom_params`
-- GPU-unfriendly ops → Precomputed lookups
-
-### Pipeline Integration
-- Standalone → Designed for slot chaining
-- No feedback → Uses dataTextureA/B for state
-- LDR only → HDR output ready for tone map
-- Single pass → Multi-pass decomposition hint
-- Fixed quality → Level-of-detail scaling
-
-### Post-Process Ready
-- Expose bloom threshold via alpha channel (`alpha = bloom_weight`)
-- Tag as "expects pp-tone-map" if HDR
-- Document slot recommendations
-- Provide quality presets (low/medium/high)
-
-## Quality Checklist
-- [ ] No per-pixel branching on uniforms
-- [ ] Texture samples minimized (caching used)
-- [ ] Workgroup size optimized (16x16 for Pixelocity)
-- [ ] Early exit for sky/background pixels
-- [ ] LOD quality scaling based on frame time
-- [ ] Anti-moiré LOD bias applied for high-frequency procedural patterns
-- [ ] Hex bokeh kernel used in place of naive circular sampling where applicable
+## Optimization Patterns
+- Early exit: `if (effectMask < 0.01) { textureStore(writeTexture, gid.xy, baseColor); return; }`
+- LOD noise: reduce FBM octaves based on distance from interest point.
+- Branchless: replace `if/else` with `select()` or `mix(a, b, f32(cond))`.
+- Precompute loop invariants outside loops.
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it production-ready.
-- Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
-- Do NOT modify the 13-binding header or the Uniforms struct.
-- Preserve or enhance RGBA channel usage.
-- Add JSON params if new tunable values are introduced (max 4 params mapped to zoom_params).
-
-## Performance Constraint
-This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
+- Keep the original shader's "soul".
+- Do NOT modify the 13-binding header or `Uniforms` struct.
+- Workgroup size stays `@workgroup_size(16, 16, 1)` unless shared memory is required.
+- If you create passes, name them `<id>-pass1.wgsl`, `<id>-pass2.wgsl`, etc.
+- Alpha must carry meaning (depth, density, effect intensity).
+- Return exactly one ```` ```wgsl ```` block for single-pass upgrades, or multiple clearly-labeled `PASS 1`, `PASS 2` blocks for multi-pass.
 
 
 ---
@@ -330,7 +296,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 180 lines (±20%).
+4. Ensure the upgraded shader is roughly 220 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

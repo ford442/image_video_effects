@@ -40,7 +40,7 @@ function makeLimits(overrides: Partial<GPUSupportedLimits> = {}): GPUSupportedLi
     maxComputeWorkgroupSizeX: 256,
     maxComputeWorkgroupSizeY: 256,
     maxComputeWorkgroupSizeZ: 64,
-  } as GPUSupportedLimits;
+  } as unknown as GPUSupportedLimits;
 
   return { ...base, ...overrides };
 }
@@ -60,7 +60,7 @@ describe('webgpuDevicePolicy', () => {
       const limits = buildRequiredLimits(1920);
       expect(limits).toMatchObject({
         maxTextureDimension2D: 1920,
-        maxBindingsPerBindGroup: 13,
+        maxBindingsPerBindGroup: 14,
         maxSampledTexturesPerShaderStage: 3,
         maxSamplersPerShaderStage: 3,
         maxStorageTexturesPerShaderStage: 4,
@@ -87,7 +87,7 @@ describe('webgpuDevicePolicy', () => {
       const adapter = makeAdapter({ maxBindingsPerBindGroup: 8 });
       const result = assertAdapterMeetsContract(adapter, { maxCanvasDim: 1024 });
       expect(result.ok).toBe(false);
-      expect(result.message).toMatch(/13-binding/);
+      expect(result.message).toMatch(/compute/);
       expect(result.failures.some((f) => f.includes('maxBindingsPerBindGroup'))).toBe(true);
     });
 

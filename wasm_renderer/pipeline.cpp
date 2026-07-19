@@ -16,11 +16,12 @@ using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
 using wasm_internal::ParseWorkgroupSize;
+using wasm_internal::AnalyzeShaderBindings;
 
 bool WebGPURenderer::CreateBindGroupLayout() {
-    // 13 fixed bindings matching the universal compute shader layout.
-    // See AGENTS.md "Shader Bindings (IMMUTABLE)" for the authoritative list.
-    static constexpr uint32_t BINDING_COUNT = 13;
+    // 14 bindings (0–13) matching the universal compute shader layout.
+    // See docs/BINDING_CONTRACT.md for the authoritative list.
+    static constexpr uint32_t BINDING_COUNT = 14;
     WGPUBindGroupLayoutEntry entries[BINDING_COUNT] = {};
     entries[0].binding = 0;
     entries[0].visibility = WGPUShaderStage_Compute;
@@ -96,6 +97,12 @@ bool WebGPURenderer::CreateBindGroupLayout() {
     entries[12].binding = 12;
     entries[12].visibility = WGPUShaderStage_Compute;
     entries[12].buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
+
+    // Binding 13: History ring (2d-array texture, opt-in temporal shaders)
+    entries[13].binding = 13;
+    entries[13].visibility = WGPUShaderStage_Compute;
+    entries[13].texture.sampleType = WGPUTextureSampleType_Float;
+    entries[13].texture.viewDimension = WGPUTextureViewDimension_2DArray;
 
     WGPUBindGroupLayoutDescriptor layoutDesc = {};
     layoutDesc.nextInChain = nullptr;
@@ -237,7 +244,7 @@ bool WebGPURenderer::CreateBindGroups() {
         return false;
     }
 
-    static constexpr uint32_t BINDING_COUNT = 13;
+    static constexpr uint32_t BINDING_COUNT = 14;
     WGPUTextureViewDescriptor viewDesc = {};
     viewDesc.nextInChain = nullptr;
     viewDesc.label = MakeStringView(nullptr);
@@ -296,6 +303,17 @@ bool WebGPURenderer::CreateBindGroups() {
     entries[12].buffer = plasmaBuffer_.get();
     entries[12].offset = 0;
     entries[12].size = wgpuBufferGetSize(plasmaBuffer_.get());
+
+    entries[13].binding = 13;
+    WGPUTextureViewDescriptor historyView = {};
+    historyView.format = WGPUTextureFormat_RGBA32Float;
+    historyView.dimension = WGPUTextureViewDimension_2DArray;
+    historyView.baseMipLevel = 0;
+    historyView.mipLevelCount = 1;
+    historyView.baseArrayLayer = 0;
+    historyView.arrayLayerCount = HISTORY_DEPTH;
+    historyView.aspect = WGPUTextureAspect_All;
+    entries[13].textureView = wgpuTextureCreateView(historyTexture_.get(), &historyView);
 
     WGPUBindGroupDescriptor bindGroupDesc = {};
     bindGroupDesc.nextInChain = nullptr;
@@ -377,7 +395,7 @@ void WebGPURenderer::CreateRenderBindGroup() {
 // Called once during initialisation and again whenever the canvas is resized.
 
 WGPUBindGroup WebGPURenderer::CreateComputeBindGroup(WGPUTexture readTex, WGPUTexture writeTex) {
-    static constexpr uint32_t BINDING_COUNT = 13;
+    static constexpr uint32_t BINDING_COUNT = 14;
     WGPUTextureViewDescriptor rgbaView = {};
     rgbaView.format          = WGPUTextureFormat_RGBA32Float;
     rgbaView.dimension       = WGPUTextureViewDimension_2D;
@@ -436,6 +454,12 @@ WGPUBindGroup WebGPURenderer::CreateComputeBindGroup(WGPUTexture readTex, WGPUTe
     entries[12].buffer  = plasmaBuffer_.get();
     entries[12].offset  = 0;
     entries[12].size    = wgpuBufferGetSize(plasmaBuffer_.get());
+
+    entries[13].binding = 13;
+    WGPUTextureViewDescriptor historyView = rgbaView;
+    historyView.dimension = WGPUTextureViewDimension_2DArray;
+    historyView.arrayLayerCount = HISTORY_DEPTH;
+    entries[13].textureView = wgpuTextureCreateView(historyTexture_.get(), &historyView);
 
     WGPUBindGroupDescriptor bgDesc = {};
     bgDesc.label      = MakeStringView("Compute Bind Group");
@@ -573,6 +597,11 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     sp.id       = id;
     sp.name     = id;
     ParseWorkgroupSize(wgslCode, sp.workgroupX, sp.workgroupY);
+    const auto usage = AnalyzeShaderBindings(wgslCode);
+    sp.writesDataA = usage.writesDataA;
+    sp.writesDataB = usage.writesDataB;
+    sp.readsDataC = usage.readsDataC;
+    sp.usesHistory = usage.usesHistory;
     shaders_[id] = std::move(sp);
 
     printf("✅ Loaded shader: %s (workgroup: %ux%u)\n", id,

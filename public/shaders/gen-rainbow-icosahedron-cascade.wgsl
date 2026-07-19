@@ -122,7 +122,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspect = res.x / max(res.y, 1.0);
   var p = vec3<f32>((uv01 - 0.5) * vec2<f32>(aspect, 1.0) * 2.2, 2.8);
   let yaw = (mouse.x - 0.5) * TAU + time * mix(0.08, 0.35, u.zoom_params.y);
-  let pitch = (0.5 - mouse.y) * PI * 0.7 + sin(time * 0.25) * 0.15;
+  let pitch = (mouse.y - 0.5) * PI * 0.7 + sin(time * 0.25) * 0.15;
   p = rotY(rotX(p, pitch), yaw);
 
   var color = vec3<f32>(0.02, 0.01, 0.06);

@@ -57,3 +57,25 @@ export function deleteMyVjSet(id: string): void {
   const sets = loadMyVjSets().filter(s => s.id !== id);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(sets));
 }
+
+/** Replace all saved sets (import). */
+export function replaceMyVjSets(sets: MyVjSet[]): void {
+  const capped = sets.slice(0, MAX_ENTRIES);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(capped));
+}
+
+/** Merge imported sets, skipping duplicate ids. */
+export function mergeMyVjSets(incoming: MyVjSet[]): MyVjSet[] {
+  const existing = loadMyVjSets();
+  const ids = new Set(existing.map(s => s.id));
+  const merged = [...existing];
+  for (const set of incoming) {
+    if (!ids.has(set.id)) {
+      merged.push(set);
+      ids.add(set.id);
+    }
+  }
+  const capped = merged.slice(0, MAX_ENTRIES);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(capped));
+  return capped;
+}

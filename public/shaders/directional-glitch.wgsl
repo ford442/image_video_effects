@@ -1,12 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Directional Glitch
-//  Category: interactive-mouse
-//  Features: mouse-driven, glitch, audio-reactive, temporal-feedback,
-//            chromatic-aberration, depth-aware, hdr, tonemapped,
-//            curl-noise, domain-warp, voronoi-ridges
+//  Category: advanced-hybrid
+//  Combined techniques:
+//    - SDF-masked mouse zone (sdCircle + smin ring)
+//    - Domain-warped FBM + Voronoi-ridge glitch blocks
+//    - Curl-noise directional displacement
+//    - Audio-reactive cosine palette + chromatic aberration
+//    - Kaleidoscope temporal feedback echo
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -103,20 +106,32 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn luma(rgb: vec3<f32>) -> f32 {
-    return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+// Audio-driven cosine palette
+fn palette(t: f32) -> vec3<f32> {
+    let a = vec3<f32>(0.50, 0.50, 0.50);
+    let b = vec3<f32>(0.50, 0.50, 0.50);
+    let c = vec3<f32>(1.00, 1.00, 1.00);
+    let d = vec3<f32>(0.26, 0.42, 0.56);
+    return a + b * cos(TAU * (c * t + d));
 }
 
-fn blackbodyRGB(T: f32) -> vec3<f32> {
-    let t = clamp(T, 1000.0, 40000.0) / 100.0;
-    let r_high = clamp(329.698727446 * pow(t - 60.0, -0.1332047592) / 255.0, 0.0, 1.0);
-    let r = mix(1.0, r_high, step(66.0, t));
-    let g_low = clamp((99.4708025861 * log(t) - 161.1195681661) / 255.0, 0.0, 1.0);
-    let g_high = clamp(288.1221695283 * pow(t - 60.0, -0.0755148492) / 255.0, 0.0, 1.0);
-    let g = mix(g_low, g_high, step(66.0, t));
-    let b_mid = clamp((138.5177312231 * log(t - 10.0) - 305.0447927307) / 255.0, 0.0, 1.0);
-    let b = mix(mix(0.0, b_mid, step(19.0, t)), 1.0, step(66.0, t));
-    return vec3<f32>(r, g, b);
+// ── SDFs & kaleidoscope ───────────────────────────────────────────
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+fn sdCircle(p: vec2<f32>, r: f32) -> f32 {
+    return length(p) - r;
+}
+
+fn kaleido(uv: vec2<f32>, n: f32) -> vec2<f32> {
+    let a = atan2(uv.y, uv.x);
+    let r = length(uv);
+    let an = TAU / n;
+    let am = a + an * 0.5;
+    let a2 = am - an * floor(am / an) - an * 0.5;
+    return vec2<f32>(cos(a2), sin(a2)) * r;
 }
 
 fn chromaticAberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
@@ -143,6 +158,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
+    let highs = plasmaBuffer[0].z;
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
     let intensity = u.zoom_params.x;
@@ -150,12 +166,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scatter = u.zoom_params.z;
     let angle_bias = u.zoom_params.w;
 
-    // Mouse-distance mask with depth awareness
+    // SDF mouse mask with smooth-unioned audio ring
     let aspect = res.x / max(res.y, 1.0);
     let uv_c = vec2<f32>(uv01.x * aspect, uv01.y);
     let mouse_c = vec2<f32>(mouse.x * aspect, mouse.y);
-    let dist = distance(uv_c, mouse_c);
-    let mask = smoothstep(radius, 0.0, dist) * (0.5 + 0.5 * clamp(depth, 0.0, 1.0));
+    let dMouse = sdCircle(uv_c - mouse_c, radius * 0.35);
+    let dRing = abs(sdCircle(uv_c - mouse_c, radius * (0.65 + bass * 0.2))) - 0.04;
+    let sdf = smin(dMouse, dRing, 0.12);
+    let mask = smoothstep(radius, 0.0, sdf) * (0.5 + 0.5 * clamp(depth, 0.0, 1.0));
 
     // Directional + divergence-free displacement
     let angle = atan2(uv01.y - mouse.y, uv01.x - mouse.x) + angle_bias * TAU;
@@ -178,9 +196,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aberrated = chromaticAberration(uv01, caAmount);
     var glitch = aberrated * (1.0 + disp * 12.0);
 
-    // Audio-reactive blackbody color and temporally coherent sparkle
-    let temp = mix(2200.0, 14000.0, clamp(bass * 0.7 + trigger * 0.4, 0.0, 1.0));
-    glitch *= blackbodyRGB(temp);
+    // Audio-reactive palette and temporally coherent sparkle
+    let pal = palette(time * 0.04 + bass * 0.6 + mids * 0.3 + trigger * 0.3 + highs * 0.2);
+    glitch *= pal * (1.0 + bass * 0.5);
     let spark = temporalHash(uv01 * 120.0 + mouse * 20.0, time);
     glitch += vec3<f32>(spark * mask * intensity * 0.5 * (1.0 + bass));
 
@@ -189,8 +207,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mixFactor = clamp(mask * glitchMask * intensity, 0.0, 1.0);
     var color = mix(original, glitch, mixFactor);
 
-    // Temporal feedback trail
-    let prev = textureLoad(dataTextureC, pixel, 0);
+    // Kaleidoscope temporal feedback echo
+    let seg = 4.0 + floor(2.0 + bass * 6.0);
+    let kuv = kaleido(uv01 - vec2<f32>(0.5), seg) + vec2<f32>(0.5);
+    let prev = textureSampleLevel(dataTextureC, u_sampler, clamp(kuv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
     let decay = 0.97 - intensity * 0.03;
     color = mix(prev.rgb * decay, color, 0.2 + bass * 0.1);
 

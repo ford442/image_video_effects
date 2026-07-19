@@ -34,7 +34,7 @@ static void CopyTex(WGPUCommandEncoder enc,
     wgpuCommandEncoderCopyTextureToTexture(enc, &s, &d, &ext);
 }
 
-void WebGPURenderer::UpdateUniformBuffer() {
+void WebGPURenderer::UpdateUniformBuffer(bool includeHistoryHead) {
     if (!uniformBuffer_.get()) return;
 
     // Use std::array to avoid VLA (non-standard extension) and ensure stack allocation.
@@ -85,7 +85,11 @@ void WebGPURenderer::UpdateUniformBuffer() {
         extraData[1] = audioMid_;
         extraData[2] = audioTreble_;
         extraData[3] = 0.0f;
-        extraData[4] = 0.0f;
+        if (includeHistoryHead) {
+            extraData[4] = static_cast<float>(historyHead_);
+        } else {
+            extraData[4] = 0.0f;
+        }
         for (int i = 0; i < AUDIO_FFT_BINS; ++i) {
             extraData[EXTRA_BIN_OFFSET + i] = audioFreqBins_[i];
         }
@@ -132,10 +136,24 @@ void WebGPURenderer::Render() {
     ResetTimestampFrameState();
 
     // Upload all per-frame global uniforms (time, mouse, ripples, audio).
-    UpdateUniformBuffer();
+    // historyHead in extraBuffer[4] is written only when a shader uses binding 13.
+    // (Computed below after slot scan; call deferred until usage is known.)
 
     const uint32_t W = static_cast<uint32_t>(canvasWidth_);
     const uint32_t H = static_cast<uint32_t>(canvasHeight_);
+
+    // Aggregate binding usage across enabled slots (mirrors TS frame.ts).
+    bool anyReadsC = false;
+    bool anyWritesDataA = false;
+    bool anyWritesDataB = false;
+    bool anyUsesHistory = false;
+
+    auto accumulateUsage = [&](const ShaderPipeline& sp) {
+        anyReadsC = anyReadsC || sp.readsDataC;
+        anyWritesDataA = anyWritesDataA || sp.writesDataA;
+        anyWritesDataB = anyWritesDataB || sp.writesDataB;
+        anyUsesHistory = anyUsesHistory || sp.usesHistory;
+    };
 
     // Fixed output texture per slot index.
     WGPUTexture slotOutput[MAX_SHADER_SLOTS] = { pingPong0_.get(), pingPong1_.get(), writeTexture_.get() };
@@ -151,6 +169,23 @@ void WebGPURenderer::Render() {
             lastEnabled = i;
         }
     }
+
+    if (firstEnabled < 0 && !activeShaderId_.empty()) {
+        auto it = shaders_.find(activeShaderId_);
+        if (it != shaders_.end()) {
+            accumulateUsage(it->second);
+        }
+    } else {
+        for (int i = 0; i < MAX_SHADER_SLOTS; i++) {
+            if (!slots_[i].enabled || slots_[i].shaderId.empty()) continue;
+            auto it = shaders_.find(slots_[i].shaderId);
+            if (it != shaders_.end()) {
+                accumulateUsage(it->second);
+            }
+        }
+    }
+
+    UpdateUniformBuffer(anyUsesHistory);
 
     // ── Legacy single-shader fallback ────────────────────────────────────────
     if (firstEnabled < 0) {
@@ -183,7 +218,27 @@ void WebGPURenderer::Render() {
 
                 CopyTex(enc, writeTexture_.get(), readTexture_.get(), W, H);
                 CopyTex(enc, depthTextureWrite_.get(), depthTextureRead_.get(), W, H);
-                CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
+                if (anyReadsC && anyWritesDataA) {
+                    CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
+                }
+                if (anyReadsC && anyWritesDataB) {
+                    CopyTex(enc, dataTextureB_.get(), dataTextureC_.get(), W, H);
+                }
+                if (anyUsesHistory) {
+                    WGPUTexelCopyTextureInfo src = {};
+                    src.texture = writeTexture_.get();
+                    src.mipLevel = 0;
+                    src.origin = {0, 0, 0};
+                    src.aspect = WGPUTextureAspect_All;
+                    WGPUTexelCopyTextureInfo dst = {};
+                    dst.texture = historyTexture_.get();
+                    dst.mipLevel = 0;
+                    dst.origin = {0, 0, historyHead_};
+                    dst.aspect = WGPUTextureAspect_All;
+                    WGPUExtent3D ext = { W, H, 1 };
+                    wgpuCommandEncoderCopyTextureToTexture(enc, &src, &dst, &ext);
+                    historyHead_ = (historyHead_ + 1) % HISTORY_DEPTH;
+                }
 
                 WGPUCommandBufferDescriptor cbDesc = {};
                 cbDesc.label = MakeStringView("Single CmdBuf");
@@ -295,7 +350,27 @@ void WebGPURenderer::Render() {
             WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
             CopyTex(enc, writeTexture_.get(),       readTexture_.get(),      W, H);
             CopyTex(enc, depthTextureWrite_.get(),  depthTextureRead_.get(), W, H);
-            CopyTex(enc, dataTextureA_.get(),       dataTextureC_.get(),     W, H);
+            if (anyReadsC && anyWritesDataA) {
+                CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
+            }
+            if (anyReadsC && anyWritesDataB) {
+                CopyTex(enc, dataTextureB_.get(), dataTextureC_.get(), W, H);
+            }
+            if (anyUsesHistory) {
+                WGPUTexelCopyTextureInfo src = {};
+                src.texture = writeTexture_.get();
+                src.mipLevel = 0;
+                src.origin = {0, 0, 0};
+                src.aspect = WGPUTextureAspect_All;
+                WGPUTexelCopyTextureInfo dst = {};
+                dst.texture = historyTexture_.get();
+                dst.mipLevel = 0;
+                dst.origin = {0, 0, historyHead_};
+                dst.aspect = WGPUTextureAspect_All;
+                WGPUExtent3D ext = { W, H, 1 };
+                wgpuCommandEncoderCopyTextureToTexture(enc, &src, &dst, &ext);
+                historyHead_ = (historyHead_ + 1) % HISTORY_DEPTH;
+            }
             WGPUCommandBufferDescriptor cbDesc = {};
             cbDesc.label = MakeStringView("Feedback CmdBuf");
             WGPUCommandBuffer cb = wgpuCommandEncoderFinish(enc, &cbDesc);

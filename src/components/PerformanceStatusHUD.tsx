@@ -1,5 +1,5 @@
 import React from 'react';
-import type { RendererType } from '../../renderer/RendererManager';
+import type { RendererType } from '../renderer/RendererManager';
 
 export interface PerformanceStatusHUDProps {
   backend: RendererType;

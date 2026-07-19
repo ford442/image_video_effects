@@ -17,7 +17,7 @@ import glob
 from datetime import datetime
 from pathlib import Path
 
-# Expected bindings configuration - binding numbers and types are MANDATORY
+# Expected bindings configuration - binding numbers and types are MANDATORY (0-12)
 EXPECTED_BINDINGS = {
     0: {"type": "sampler", "access": None, "storage_class": None},
     1: {"type": "texture_2d<f32>", "access": None, "storage_class": None},
@@ -33,6 +33,13 @@ EXPECTED_BINDINGS = {
     11: {"type": "sampler_comparison", "access": None, "storage_class": None},
     12: {"type": "array<vec4<f32>>", "access": "read", "storage_class": "storage"},
 }
+
+# Optional extension bindings (validated when present; absence is OK)
+OPTIONAL_BINDINGS = {
+    13: {"type": "texture_2d_array<f32>", "access": None, "storage_class": None},
+}
+
+MAX_BINDING_INDEX = 13
 
 # Expected Uniforms struct fields
 EXPECTED_UNIFORMS_FIELDS = {
@@ -111,6 +118,27 @@ def check_workgroup_size_convention(content: str) -> list[dict]:
     return issues
 
 
+def split_workgroup_issues(issues: list[dict]) -> tuple[list[dict], list[dict]]:
+    """
+    Split workgroup convention issues into blocking vs warning.
+
+    Note: as of the 2-arg permit change, check_workgroup_size_convention only
+    returns issues for <2 args (1-arg forms). 2-arg literals are accepted.
+    - Blocking: reserved for <2 in legacy split paths (currently unused for standard issues).
+    - Warning: 1-arg override/expression forms (valid WGSL, non-standard convention).
+    """
+    blocking: list[dict] = []
+    warnings: list[dict] = []
+    for issue in issues:
+        if issue["arg_count"] == 1:
+            warnings.append(issue)
+        elif issue["arg_count"] < 3:
+            blocking.append(issue)
+        else:
+            warnings.append(issue)
+    return blocking, warnings
+
+
 def fix_literal_two_arg_workgroup_size(content: str) -> tuple[str, int]:
     """
     Auto-fix only unambiguous literal (int, int) -> (int, int, 1).
@@ -119,8 +147,8 @@ def fix_literal_two_arg_workgroup_size(content: str) -> tuple[str, int]:
     """
     return LITERAL_TWO_INT_WORKGROUP_FIX.subn(r'\1, 1)', content)
 
-BINDING_13_PLUS_PATTERN = re.compile(
-    r'@group\(0\)\s*@binding\((1[3-9]|[2-9]\d+)\)',
+BINDING_BEYOND_MAX_PATTERN = re.compile(
+    r'@group\(0\)\s*@binding\((1[4-9]|[2-9]\d+)\)',
     re.MULTILINE
 )
 
@@ -206,6 +234,8 @@ def check_type_match(binding_num, found_type, found_storage):
         has_array = "array" in found_normalized and "vec4" in found_normalized
         has_read = "read" in found_storage_lower and "write" not in found_storage_lower
         return has_array and has_read
+    elif binding_num == 13:
+        return "texture_2d_array<f32>" in found_normalized
     return False
 
 def parse_shader(filepath):
@@ -266,13 +296,16 @@ def parse_shader(filepath):
         var_type = match.group(4).strip()
         found_bindings[binding_num] = {"name": var_name, "type": var_type, "storage_class": storage_class}
     
-    # Check for bindings 13+
-    binding_13_matches = BINDING_13_PLUS_PATTERN.findall(content)
-    if binding_13_matches:
+    # Check for bindings beyond the contract (>13)
+    beyond_max = BINDING_BEYOND_MAX_PATTERN.findall(content)
+    if beyond_max:
         result["has_binding_13_plus"] = True
-        result["warnings"].append(f"Uses extended binding(s): {binding_13_matches}")
-    
-    # Check each expected binding
+        result["status"] = "incompatible"
+        result["errors"].append(
+            f"Uses binding(s) beyond max index {MAX_BINDING_INDEX}: {beyond_max}"
+        )
+
+    # Check each required binding (0-12)
     for binding_num, expected in EXPECTED_BINDINGS.items():
         if binding_num not in found_bindings:
             result["missing_bindings"].append(binding_num)
@@ -291,6 +324,22 @@ def parse_shader(filepath):
                 result["errors"].append(
                     f"Binding {binding_num} ({found['name']}) has incompatible type: '{found['type']}'"
                 )
+
+    # Validate optional binding 13 when present
+    if 13 in found_bindings:
+        result["has_binding_13_plus"] = True
+        found = found_bindings[13]
+        if not check_type_match(13, found["type"], found["storage_class"]):
+            result["wrong_type_bindings"].append({
+                "binding": 13,
+                "var_name": found["name"],
+                "found_type": found["type"],
+                "storage_class": found["storage_class"],
+            })
+            result["status"] = "incompatible"
+            result["errors"].append(
+                f"Binding 13 ({found['name']}) must be texture_2d_array<f32>, got '{found['type']}'"
+            )
     
     # Check Uniforms struct
     uniforms_match = UNIFORM_STRUCT_PATTERN.search(content)

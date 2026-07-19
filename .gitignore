@@ -13,3 +13,5 @@ __pycache__/
 
 # Auto-generated unified shader manifest (generated during prestart/prebuild via build:manifest script)
 public/shader-manifest-unified.json
+playwright-report/
+test-results/

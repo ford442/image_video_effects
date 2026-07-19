@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, RefObject, Dispatch, SetStateAction } from 'react';
+import { useState, useEffect, useCallback, useRef, RefObject, Dispatch, SetStateAction } from 'react';
 import { RenderMode, ShaderEntry, SlotParams } from '../renderer/types';
 import { RendererManager } from '../renderer/RendererManager';
 import { useAudioAnalyzer } from './useAudioAnalyzer';

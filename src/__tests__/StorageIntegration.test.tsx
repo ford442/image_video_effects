@@ -7,7 +7,7 @@ import React from 'react';
 import '@testing-library/jest-dom';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from '../App';
-import { StorageBrowser } from '../components/StorageBrowser';
+import { StorageBrowser } from '../components/storage';
 import { useStorage } from '../hooks/useStorage';
 import StorageClient from '../services/storage/client';
 

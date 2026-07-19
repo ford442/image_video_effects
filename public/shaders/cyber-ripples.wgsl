@@ -2,10 +2,17 @@
 //  Cyber Ripples
 //  Category: interactive-mouse
 //  Features: mouse-driven, wave, neon, audio-reactive, upgraded-rgba,
-//            temporal-feedback, depth-aware, click-shockwave, aces-tone-map
+//            temporal-feedback, depth-aware, click-shockwave, aces-tone-map,
+//            domain-warped-fbm, audio-palette, sdf-ring-mask
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
+// ═══════════════════════════════════════════════════════════════════
+//  Hybrid techniques combined:
+//  1. Quantized mouse-driven ripple displacement
+//  2. Domain-warped FBM turbulence
+//  3. Audio-driven cyber palette shifting
+//  4. SDF ring masking with smooth minimum
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -59,6 +66,56 @@ fn neonGlow(color: vec3<f32>, intensity: f32) -> vec3<f32> {
     return safeColor + bloom;
 }
 
+fn hash21(p: vec2<f32>) -> f32 {
+    let n = sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453;
+    return fract(n);
+}
+
+fn noise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = f * f * (3.0 - 2.0 * f);
+    let a = hash21(i);
+    let b = hash21(i + vec2<f32>(1.0, 0.0));
+    let c = hash21(i + vec2<f32>(0.0, 1.0));
+    let d = hash21(i + vec2<f32>(1.0, 1.0));
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+fn fbm(p: vec2<f32>) -> f32 {
+    var v: f32 = 0.0;
+    var a: f32 = 0.5;
+    var pp = p;
+    let rot = mat2x2<f32>(0.8, 0.6, -0.6, 0.8);
+    for (var i: i32 = 0; i < 4; i = i + 1) {
+        v += a * noise(pp);
+        pp = rot * pp * 2.0;
+        a *= 0.5;
+    }
+    return v;
+}
+
+fn smin(a: f32, b: f32, k: f32) -> f32 {
+    let h = max(k - abs(a - b), 0.0) / k;
+    return min(a, b) - h * h * k * 0.25;
+}
+
+fn sdfRings(p: vec2<f32>, mouse: vec2<f32>, time: f32) -> f32 {
+    let d = length(p - mouse);
+    let r0 = abs(d - 0.12 - sin(time * 1.3) * 0.03);
+    let r1 = abs(d - 0.24 - cos(time * 0.9) * 0.04);
+    let r2 = abs(d - 0.36 + sin(time * 0.7) * 0.02);
+    return smin(smin(r0, r1, 0.08), r2, 0.08);
+}
+
+fn audioPalette(t: f32, bass: f32, treble: f32) -> vec3<f32> {
+    let a = vec3<f32>(0.5, 0.5, 0.5);
+    let b = vec3<f32>(0.5, 0.5, 0.5);
+    let c = vec3<f32>(1.0, 1.0, 1.0);
+    let d = vec3<f32>(0.263, 0.416, 0.557) + vec3<f32>(treble * 0.3, -bass * 0.2, bass * 0.4);
+    return a + b * cos(TAU * (c * t + d));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
@@ -80,7 +137,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let p3 = u.zoom_params.z;
     let p4 = u.zoom_params.w;
 
-    // Temporal state: previous frame color + smoothed bass envelope in alpha
     let prev = textureLoad(dataTextureC, pixel, 0);
     let env = bass_env(prev.a, bass, 0.8, 0.15);
 
@@ -88,8 +144,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let blockSize = p2 * 0.1;
     let aberration = p3 * 0.05;
     let frequency = p4 * 50.0 + 10.0;
+    let fbmAmp = p2 * 0.04 + 0.005;
 
-    // Mouse-driven ripple origin with aspect correction
     let aspect = res.x / res.y;
     let uvCorrected = vec2<f32>(uv01.x * aspect, uv01.y);
     let mouseCorrected = vec2<f32>(mouse.x * aspect, mouse.y);
@@ -97,56 +153,57 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = length(delta);
     let dir = select(vec2<f32>(0.0), delta / max(dist, 1e-6), dist > 1e-6);
 
-    // Quantized digital wave
-    let quant = floor(dist * QUANT_STEP) / QUANT_STEP;
-    let wave = sin(quant * frequency - time * speed);
+    let mouseUV = vec2<f32>(mouse.x * aspect - aspect * 0.5, mouse.y - 0.5);
 
-    // Click shockwave burst
+    let warp = fbm(uv * 3.5 + time * 0.2 + env) - 0.5;
+    let quant = floor(dist * QUANT_STEP) / QUANT_STEP;
+    let wave = sin((quant + warp * 0.08) * frequency - time * speed);
+
     let clickPhase = dist * 30.0 - time * 12.0;
     let clickPulse = select(0.0, sin(clickPhase) * exp(-dist * 4.0), mouseDown);
 
-    // Depth-aware compositing for slot 2/3 chains
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let depthAtten = 1.0 - exp(-depth * 3.0);
 
-    // Audio-reactive displacement
     let audioBoost = 1.0 + env * 0.6 + mids * 0.2;
     let strength = (1.0 / (dist * ATTEN_SCALE + 0.5)) * (0.3 + 0.7 * depthAtten);
     let displacement = dir * (wave + clickPulse * 0.5) * strength * DISP_AMP * audioBoost;
     var displacedUV = uv01 + displacement;
 
-    // Branchless pixelation
+    let fbmWarp = vec2<f32>(
+        fbm(displacedUV * 5.0 + time * 0.3),
+        fbm(displacedUV * 5.0 - time * 0.25)
+    ) - vec2<f32>(0.5);
+    displacedUV = displacedUV + fbmWarp * fbmAmp * (1.0 + env);
+
     let activePixel = step(EPS, blockSize);
     let blocks = 1.0 / max(blockSize, EPS);
     let pixelated = floor(displacedUV * blocks) / blocks;
     displacedUV = mix(displacedUV, pixelated, activePixel);
     displacedUV = clamp(displacedUV, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Anti-moiré LOD bias
     let lod = clamp(length(displacement) * res.x * 0.25, 0.0, 2.0);
 
-    // 2-tap chromatic aberration
     let offset = vec2<f32>(aberration * (1.0 + env * 0.5), 0.0);
     let sR = textureSampleLevel(readTexture, u_sampler, displacedUV + offset, lod);
     let sB = textureSampleLevel(readTexture, u_sampler, displacedUV - offset, lod);
     var color = vec3<f32>(sR.r, mix(sR.g, sB.g, 0.5), sB.b);
 
-    // Treble sparkle + click glow
     let lum = luma(color);
+
+    let rings = sdfRings(uv, mouseUV, time);
+    let ringGlow = exp(-rings * 12.0) * (0.15 + env * 0.25);
+    color = color + audioPalette(dist * 2.0 - time * 0.2, bass, treble) * ringGlow;
     color = color + vec3<f32>(treble * 0.15 * lum + clickPulse * 0.25);
 
-    // Neon glow driven by bass envelope
     color = neonGlow(color, 0.25 + env * 0.35);
 
-    // Temporal feedback trail
     let decay = 0.93 + env * 0.03;
     let trail = mix(prev.rgb * decay, color, 0.25 + env * 0.15);
 
-    // ACES tone mapping with mid-frequency exposure lift
     let finalColor = acesToneMap(trail * (0.9 + mids * 0.3));
 
-    // Semantic alpha: interaction intensity + depth
-    let effectStrength = clamp(strength * 2.0 + length(displacement) * 50.0 + lum * 0.3 + abs(clickPulse), 0.0, 1.0);
+    let effectStrength = clamp(strength * 2.0 + length(displacement) * 50.0 + lum * 0.3 + abs(clickPulse) + ringGlow * 2.0, 0.0, 1.0);
     let alpha = clamp(mix(0.35, 0.95, effectStrength) * (0.6 + depthAtten * 0.4), 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));

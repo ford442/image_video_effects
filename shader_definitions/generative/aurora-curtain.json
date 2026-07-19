@@ -3,7 +3,7 @@
   "name": "Aurora Curtain",
   "category": "generative",
   "url": "shaders/aurora-curtain.wgsl",
-  "description": "Chapman layer auroral excitation with Kelvin-Helmholtz instability and domain-warped curtain folds. Physically inspired colors by altitude via OkLab mixing: red O(1D) high, green O(1S) mid, blue N2+ low. Enhanced with Fresnel rim lighting on folds, temporal feedback trails, two-tone atmospheric key/fill, starfield blackbody temperatures, and audio-reactive chromatic aberration. Mouse drags magnetic zenith; depth drives extinction.",
+  "description": "Chapman layer auroral excitation with Kelvin-Helmholtz instability and domain-warped curtain folds. Physically inspired colors by altitude via OkLab mixing: red O(1D) high, green O(1S) mid, blue N2+ low. Enhanced with Fresnel rim lighting on folds, temporal feedback trails, two-tone atmospheric key/fill, starfield blackbody temperatures, and audio-reactive chromatic aberration. Mouse drags magnetic zenith; depth drives extinction. Phase B adds advanced alpha compositing: depth-layered fade, luminance-key transparency, edge-preserve curtain opacity, and alpha-aware temporal feedback.",
   "features": [
     "audio-reactive",
     "mouse-driven",
@@ -12,6 +12,7 @@
     "kelvin-helmholtz",
     "temporal-flow",
     "depth-aware",
+    "alpha-layered",
     "fresnel-rim",
     "chromatic-aberration",
     "two-tone-atmosphere"

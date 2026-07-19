@@ -1,33 +1,30 @@
 /**
  * webgpuDevicePolicy.ts
  *
- * TypeScript mirror of wasm_renderer/renderer.cpp CreateDevice() defensive policy
- * (~lines 320–545): adapter fallback ladder, limit validation, and explicit
- * requiredLimits on requestDevice().
+ * TypeScript mirror of wasm_renderer/device.cpp defensive policy: adapter fallback
+ * ladder, limit validation, and explicit requiredLimits on requestDevice().
  *
- * Cross-reference: wasm_renderer/renderer.cpp
- *   - Adapter ladder: lines 320–337 (AdapterAttempt[])
- *   - CheckLimit validation: lines 458–470
- *   - requiredLimits seeding: lines 522–538
+ * Cross-reference: wasm_renderer/device.cpp
+ *   - ADAPTER_ATTEMPT_LADDER / adapter request loop
+ *   - CheckLimit table (adapter + device post-creation)
+ *   - requiredLimits seeding on wgpuAdapterRequestDevice
  *
- * Keep MINIMUM_COMPUTE_LIMITS in sync with the C++ CheckLimit table and
- * requiredLimits block above.
+ * Keep MINIMUM_COMPUTE_LIMITS in sync with src/contracts/webgpu_limits.json and
+ * device.cpp CheckLimit + requiredLimits.
+ * See docs/BINDING_CONTRACT.md for the full bind-group + device policy contract.
  */
 
+import webgpuLimitsContract from '../contracts/webgpu_limits.json';
 import { UNIFORM_BUFFER_LAYOUT } from './types';
 
-/** Minimum limits implied by the 13-binding compute shader contract (AGENTS.md). */
+/**
+ * Minimum limits implied by the 14-entry compute bind group (bindings 0–13).
+ * Source of truth: src/contracts/webgpu_limits.json (sync-checked in CI).
+ */
 export const MINIMUM_COMPUTE_LIMITS = {
-  maxBindingsPerBindGroup: 13,
-  maxSampledTexturesPerShaderStage: 3,
-  maxSamplersPerShaderStage: 3,
-  maxStorageTexturesPerShaderStage: 4,
-  maxStorageBuffersPerShaderStage: 2,
-  maxUniformBuffersPerShaderStage: 1,
-  maxUniformBufferBindingSize: UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE, // sizeof(Uniforms) in C++
-  maxComputeWorkgroupSizeX: 16,
-  maxComputeWorkgroupSizeY: 16,
-  maxComputeInvocationsPerWorkgroup: 256,
+  ...webgpuLimitsContract.minimumComputeLimits,
+  // Runtime guard: JSON value must match sizeof(Uniforms) in device.cpp
+  maxUniformBufferBindingSize: UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE,
 } as const;
 
 export type AdapterContractOptions = {
@@ -46,7 +43,7 @@ export type AdapterAttempt = {
   label: string;
 };
 
-/** Four-step ladder matching C++ AdapterAttempt[] (renderer.cpp ~332–337). */
+/** Four-step ladder matching C++ ADAPTER_ATTEMPT_LADDER in device.cpp. */
 export const ADAPTER_ATTEMPT_LADDER: readonly AdapterAttempt[] = [
   { powerPreference: 'high-performance', forceFallbackAdapter: false, label: 'HighPerformance' },
   { powerPreference: undefined, forceFallbackAdapter: false, label: 'Undefined' },
@@ -74,9 +71,7 @@ const LIMIT_CHECKS: LimitCheck[] = [
 ];
 
 /**
- * Build requiredLimits for requestDevice(), mirroring C++ requiredLimits seeding
- * (renderer.cpp ~527–538). Only requests the minimums we need; other fields stay
- * at adapter defaults.
+ * Build requiredLimits for requestDevice() — mirrors device.cpp requiredLimits seeding.
  */
 export function buildRequiredLimits(maxCanvasDim: number): GPUDeviceDescriptor['requiredLimits'] {
   return {
@@ -90,8 +85,8 @@ function requiredForCheck(check: LimitCheck, maxCanvasDim: number): number {
 }
 
 /**
- * Validate adapter.limits against the 13-binding compute contract before device
- * creation (renderer.cpp CheckLimit table ~461–470).
+ * Validate adapter.limits against the compute bind contract before device creation
+ * (device.cpp CheckLimit table).
  */
 export function assertAdapterMeetsContract(
   adapter: GPUAdapter,
@@ -115,14 +110,14 @@ export function assertAdapterMeetsContract(
   return {
     ok: false,
     message:
-      'GPU adapter does not meet minimum WebGPU limits for Pixelocity\'s 13-binding ' +
-      'compute shader contract. Try ?renderer=js or a different GPU/browser.',
+      'GPU adapter does not meet minimum WebGPU limits for Pixelocity\'s 14-entry ' +
+      'compute bind group contract (bindings 0–13). Try ?renderer=js or a different GPU/browser.',
     failures,
   };
 }
 
 /**
- * Request an adapter using the 4-step fallback ladder (renderer.cpp ~342–399).
+ * Request an adapter using the 4-step fallback ladder (device.cpp requestAdapterWithFallback).
  */
 export async function requestAdapterWithFallback(
   gpu: GPU,

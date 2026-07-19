@@ -156,7 +156,7 @@ fn map(p: vec3<f32>) -> f32 {
 
     // Mouse Interaction (Gravity Vortex)
     let mx = (u.zoom_config.y / u.config.z - 0.5) * 10.0;
-    let my = (0.5 - u.zoom_config.z / u.config.w) * 10.0;
+    let my = (u.zoom_config.z / u.config.w - 0.5) * 10.0;
     let mouse_pos = vec3<f32>(mx, my, 0.0);
 
     let dist_mouse = length(p_mod - mouse_pos);

@@ -1,15 +1,16 @@
 {
-  "timestamp": "2026-07-18T11:12:13.653397",
+  "timestamp": "2026-07-19T10:09:58.014464",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 5,
-  "passed": 5,
+  "total": 6,
+  "passed": 6,
   "failed": 0,
   "skipped": 0,
-  "workgroup_failures": 0,
+  "warnings": 0,
+  "workgroup_blocking": 0,
   "results": [
     {
-      "file": "public/shaders/gen-audio-reactive-quantum-pollen.wgsl",
+      "file": "public/shaders/hex-mosaic.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -17,11 +18,12 @@
       "naga_error": "",
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
-      "workgroup_issues": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
       "ok": true
     },
     {
-      "file": "public/shaders/gen-ethereal-cyber-chrono-nebula-phoenix.wgsl",
+      "file": "public/shaders/luma-echo-warp.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -29,11 +31,12 @@
       "naga_error": "",
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
-      "workgroup_issues": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-comet-trail.wgsl",
+      "file": "public/shaders/luma-slice-interactive.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -41,11 +44,12 @@
       "naga_error": "",
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
-      "workgroup_issues": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-crossette.wgsl",
+      "file": "public/shaders/pixel-sort-explorer.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -53,11 +57,12 @@
       "naga_error": "",
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
-      "workgroup_issues": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
       "ok": true
     },
     {
-      "file": "public/shaders/gen-magnetic-liquid-glyphs.wgsl",
+      "file": "public/shaders/ring_slicer.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -65,7 +70,21 @@
       "naga_error": "",
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
-      "workgroup_issues": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/spectral-smear.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
       "ok": true
     }
   ]

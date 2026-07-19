@@ -114,7 +114,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let curlStrength = u.zoom_params.z * 3.0;
     let glowRadius = u.zoom_params.w * 0.03 + 0.005;
     // Mouse Y-flip: screen-top = +Y/up
-    let mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
+    let mouse = u.zoom_config.yz;
     let mouseDist = length(uv - mouse);
     let repel = smoothstep(0.2, 0.0, mouseDist);
     var col = vec3<f32>(0.0);

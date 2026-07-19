@@ -2,7 +2,7 @@
   "id": "elastic-chromatic",
   "name": "Elastic Chromatic",
   "url": "shaders/elastic-chromatic.wgsl",
-  "description": "Elastic chromatic aberration with radial RGB shift, per-channel temporal lag, Lissajous mouse source, depth-aware audio reactivity, split-tone blackbody grading, ACES tone mapping and IGN dither.",
+  "description": "Elastic chromatic aberration with radial RGB shift, per-channel temporal lag, Lissajous mouse source, depth-aware audio reactivity, split-tone blackbody grading, ACES tone mapping, IGN dither and advanced layered alpha compositing.",
   "features": [
     "mouse-driven",
     "depth-aware",
@@ -14,7 +14,10 @@
     "blackbody-temperature",
     "aces-tone-map",
     "ign-dither",
-    "premultiplied-alpha"
+    "premultiplied-alpha",
+    "alpha-layered",
+    "luminance-key",
+    "accumulative-alpha"
   ],
   "params": [
     {
@@ -67,6 +70,8 @@
     "mouse-driven",
     "hdr",
     "dither",
-    "split-tone"
+    "split-tone",
+    "alpha-layered",
+    "luminance-key"
   ]
 }

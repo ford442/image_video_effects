@@ -130,6 +130,11 @@ struct ShaderPipeline {
     // Defaults to (16, 16) to match the TypeScript renderer.
     uint32_t workgroupX = 16;
     uint32_t workgroupY = 16;
+    // Per-shader binding usage (mirrors TS analyzeShaderBindings).
+    bool writesDataA = false;
+    bool writesDataB = false;
+    bool readsDataC = false;
+    bool usesHistory = false;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -325,7 +330,7 @@ private:
     void CreateRenderBindGroup();
     void ConfigureSurface();
     void PresentToSurface();
-    void UpdateUniformBuffer();
+    void UpdateUniformBuffer(bool includeHistoryHead = false);
 
     // Release and recreate all canvas-size-dependent textures.
     // Called by ResizeCanvas().
@@ -410,6 +415,11 @@ private:
     WGPUTextureHandle dataTextureA_;  // write-only storage (binding 7)
     WGPUTextureHandle dataTextureB_;  // write-only storage (binding 8)
     WGPUTextureHandle dataTextureC_;  // read-only texture  (binding 9)
+
+    // Temporal history ring (binding 13) — HISTORY_DEPTH past frames
+    static constexpr uint32_t HISTORY_DEPTH = 8;
+    WGPUTextureHandle historyTexture_;
+    uint32_t historyHead_ = 0;
 
     // Depth map (AI-generated from depth estimation model)
     WGPUTextureHandle depthTextureRead_;

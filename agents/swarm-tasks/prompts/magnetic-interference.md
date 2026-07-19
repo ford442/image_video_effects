@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Shader ID**: magnetic-interference
-- **Agent Role**: Interactivist
-- **Current Size**: 3355 bytes
-- **Target Line Count**: ~180 lines
+- **Agent Role**: Audio-Reactivity
+- **Current Size**: 182 bytes
+- **Target Line Count**: ~200 lines
 - **Status**: pending
 
 ## Immutable Rules
@@ -42,15 +42,16 @@ struct Uniforms {
 ## Current WGSL Source
 ```wgsl
 // ═══════════════════════════════════════════════════════════════════
-//  Magnetic Interference - Alpha Translucency Edition
+//  Magnetic Interference - Interactivist Upgrade
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, ripple-integration, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, ripple-integration,
+//            depth-aware, chromatic-aberration, aces-tone-map,
+//            temporal-feedback, velocity-trails
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
-//  Transform: Replaced per-channel magnetic pull with unified
-//             displacement field. Alpha encodes magnetic field
-//             strength * distance falloff. Added ripple shockwave
-//             interference and gravity-well mouse attraction.
+//  Upgraded: 2026-06-14
+//  Transform: Added depth-aware compositing, ACES tone mapping,
+//             chromatic aberration, and mouse-velocity trail drag.
+//             Switched feedback reads to pixel-exact textureLoad.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -74,6 +75,9 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+
 // ═══ Audio envelope (smooth attack/release) ═══
 fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
     let k = select(release, attack, bass > prev);
@@ -92,44 +96,67 @@ fn tentAlpha(x: f32) -> f32 {
     return smoothstep(0.0, 0.4, x) * (1.0 - smoothstep(0.4, 1.0, x));
 }
 
+// ═══ ACES tone mapping ═══
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══ Chromatic shift for generative / displaced output ═══
+fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32, time: f32) -> vec3<f32> {
+    let angle = atan2(uv.y - 0.5, uv.x - 0.5);
+    let shift = vec2<f32>(cos(angle), sin(angle)) * strength;
+    return vec3<f32>(
+        color.r * (1.0 + shift.x * 0.8),
+        color.g,
+        color.b * (1.0 - shift.y * 0.5)
+    );
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
-    let coord = vec2<i32>(global_id.xy);
-    let uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x;
-    let mousePos = u.zoom_config.yz;
-    let isMouseDown = u.zoom_config.w > 0.5;
-    let bass = plasmaBuffer[0].x;
+    let pixel = vec2<i32>(global_id.xy);
+    let res = u.config.zw;
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-    // ─── Audio envelope with attack/release (read from feedback pixel 0,0) ───
-    let prevEnv = textureSampleLevel(dataTextureC, u_sampler, vec2<f32>(0.0), 0.0).r;
+    let uv = vec2<f32>(pixel) / res;
+    let time = u.config.x;
+    let mouse = u.zoom_config.yz;
+    let isMouseDown = u.zoom_config.w > 0.5;
+
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let depth  = textureLoad(readDepthTexture, pixel, 0).r;
+
+    // ─── Audio envelope read from feedback pixel (0,0) ───
+    let prevEnv = textureLoad(dataTextureC, vec2<i32>(0), 0).r;
     let env = bass_env(prevEnv, bass, 0.8, 0.15);
 
-    let aspect = resolution.x / resolution.y;
-    let uv_corrected = vec2<f32>(uv.x * aspect, uv.y);
-    let mouse_corrected = vec2<f32>(mousePos.x * aspect, mousePos.y);
-
-    let dist = distance(uv_corrected, mouse_corrected);
+    // ─── Mouse velocity from persistent storage ───
+    let prevMouse = vec2<f32>(extraBuffer[0], extraBuffer[1]);
+    let mouseVel = select(mouse - prevMouse, vec2<f32>(0.0), length(prevMouse) < 0.001);
+    let mouseSpeed = length(mouseVel);
 
     let strength = u.zoom_params.x;
     let radius = u.zoom_params.y;
     let aberration = u.zoom_params.z;
     let scanline_intensity = u.zoom_params.w;
 
-    // Mouse X modulates magnetic radius
-    let mouseRadiusMod = 1.0 + mousePos.x * 0.3;
-    let effectiveRadius = radius * mouseRadiusMod;
+    let aspect = res.x / res.y;
+    let uv_corrected = vec2<f32>(uv.x * aspect, uv.y);
+    let mouse_corrected = vec2<f32>(mouse.x * aspect, mouse.y);
+    let dist = distance(uv_corrected, mouse_corrected);
 
-    let audioStrength = strength * (1.0 + env * 0.3);
+    // Mouse X modulates radius; speed stretches it
+    let effectiveRadius = radius * (1.0 + mouse.x * 0.3 + mouseSpeed * 5.0);
+    let audioStrength = strength * (1.0 + env * 0.3 + mids * 0.2);
     let audioScanlines = scanline_intensity * (1.0 + env * 0.5);
 
     // ─── Single magnetic displacement field ───
-    let pull = audioStrength * 0.05 / (pow(dist, 2.0) + 0.01);
+    let pull = audioStrength * 0.05 / (dist * dist + 0.01);
     let influence = smoothstep(effectiveRadius, 0.0, dist);
-
-    var dir = uv - mousePos;
+    let dir = uv - mouse;
     let magneticDisp = dir * pull * influence;
 
     // ─── Ripple system integration for shockwave interference ───
@@ -137,55 +164,63 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rippleCount = u32(u.config.y);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
-        let rPos = ripple.xy;
-        let rStart = ripple.z;
-        let rElapsed = time - rStart;
+        let rElapsed = time - ripple.z;
         if (rElapsed > 0.0 && rElapsed < 3.0) {
-            let rDist = distance(uv, rPos);
+            let rDist = distance(uv, ripple.xy);
             let rWave = sin(rDist * 40.0 - rElapsed * 8.0) * exp(-rElapsed * 1.5);
-            rippleDisp = rippleDisp + (uv - rPos) * rWave * smoothstep(0.3, 0.0, rDist) * 0.5;
+            rippleDisp += (uv - ripple.xy) * rWave * smoothstep(0.3, 0.0, rDist) * 0.5;
         }
     }
 
-    // ─── Gravity well attracts pixels when mouse is down ───
-    let gWell = gravityWell(uv, mousePos, select(0.0, 0.03, isMouseDown));
+    // ─── Gravity well + velocity trail drag ───
+    let gStrength = select(0.0, 0.03 + treble * 0.02, isMouseDown);
+    let gWell = gravityWell(uv, mouse, gStrength);
     let gravityDisp = gWell * influence * 0.02;
+    let velDisp = mouseVel * influence * (0.1 + env * 0.1);
 
-    // Unified displacement (NO per-channel splitting)
-    let totalDisp = magneticDisp + rippleDisp + gravityDisp;
+    let totalDisp = magneticDisp + rippleDisp + gravityDisp + velDisp;
     let displacedUV = clamp(uv + totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Single sample from unified UV
+    // ─── Sample video input at displaced UV ───
     let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
     // ─── Temporal feedback for smearing ───
-    let prevColor = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let prevColor = textureLoad(dataTextureC, pixel, 0).rgb;
     let fieldMag = length(totalDisp) * 20.0;
-    let feedbackMix = tentAlpha(fieldMag) * 0.1;
+    let feedbackMix = tentAlpha(fieldMag) * (0.1 + mouseSpeed * 2.0);
     let feedbackColor = mix(baseColor, prevColor, feedbackMix);
 
-    // Spectral tint via mix(), NOT per-channel sampling
+    // Spectral tint via mix, not per-channel sampling
     let tint = vec3<f32>(1.0 + aberration * 0.3, 1.0, 1.0 - aberration * 0.3);
     let tintedColor = mix(feedbackColor, feedbackColor * tint, fieldMag * 0.5);
 
     // Scanlines modulated by field magnitude
-    let scanline_uv_y = uv.y + fieldMag * 0.5;
-    let scanline = sin(scanline_uv_y * resolution.y * 0.5 + time * 5.0);
+    let scanline = sin((uv.y + fieldMag * 0.5) * res.y * 0.5 + time * 5.0);
     let scanline_mask = 1.0 - (scanline * 0.5 + 0.5) * audioScanlines;
-    let color = tintedColor * scanline_mask;
+    var color = tintedColor * scanline_mask;
 
-    // ─── Alpha = magnetic field strength * distance falloff ───
+    // ─── Chromatic aberration + ACES tone map ───
+    let caStr = 0.003 * (1.0 + env) + depth * 0.001;
+    color = genChromaticShift(color, uv, caStr * aberration, time);
+    color = acesToneMap(color * (0.9 + mids * 0.2));
+
+    // ─── Depth-aware compositing (stronger in background) ───
+    let fog = 1.0 - exp(-depth * 1.5);
+    color = mix(baseColor, color, fog * 0.5 + 0.5);
+
+    // ─── Semantic alpha = field intensity * distance falloff * depth ───
     let fieldMagnetic = length(magneticDisp) * 10.0;
-    let alpha = clamp(fieldMagnetic * influence + env * 0.2, 0.0, 1.0);
+    let alpha = clamp(fieldMagnetic * influence + env * 0.2 + depth * 0.15, 0.0, 1.0);
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
 
-    if (coord.x == 0 && coord.y == 0) {
-        textureStore(dataTextureA, coord, vec4<f32>(env, 0.0, 0.0, 0.0));
+    if (pixel.x == 0 && pixel.y == 0) {
+        textureStore(dataTextureA, pixel, vec4<f32>(env, 0.0, 0.0, 0.0));
+        extraBuffer[0] = mouse.x;
+        extraBuffer[1] = mouse.y;
     } else {
-        textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
+        textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
     }
 }
 
@@ -197,7 +232,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   "id": "magnetic-interference",
   "name": "Magnetic Interference",
   "url": "shaders/magnetic-interference.wgsl",
-  "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, audio-reactive bass envelope, and temporal feedback smearing.",
+  "description": "Simulates magnetic distortion using unified displacement fields and alpha translucency blending. Features ripple shockwave interference, gravity-well mouse attraction, audio-reactive bass envelope, temporal feedback smearing, depth-aware compositing, chromatic aberration, and mouse-velocity trail drag.",
   "params": [
     {
       "id": "strength",
@@ -232,7 +267,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     "mouse-driven",
     "audio-reactive",
     "ripple-integration",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "depth-aware",
+    "chromatic-aberration",
+    "aces-tone-map",
+    "temporal-feedback",
+    "velocity-trails"
   ],
   "tags": [
     "filter",
@@ -246,115 +286,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 ---
 
 ## Agent Specialization
-# Agent Role: The Interactivist
+# Agent Role: Audio Reactivity Specialist (Phase B)
 
 ## Identity
-You are **The Interactivist**, a shader architect focused on input reactivity, feedback loops, and emergent behavior.
+You are the **Audio Reactivity Specialist**. Your job is to make shaders respond musically to the audio stream already bound to `plasmaBuffer`.
 
-## Upgrade Toolkit
-
-### Mouse Interaction
-- Position tracking → Gravity wells / attractors
-- Click events → Spawn bursts / shockwaves
-- Velocity tracking → Motion blur trails
-- Multi-touch → Multi-agent systems
-
-### Audio Reactivity
-- Bass pulse → Scale/brightness modulation
-- Mid frequencies → Pattern morphing speed
-- Treble → Sparkle/additive particles
-- FFT buckets → Multi-band color splitting
-
-### Video Feedback
-- Static overlay → Optical flow distortion
-- Fixed transparency → Alpha blending based on depth
-- Simple masking → Luma-keyed particle spawn
-- Direct color → Motion-vector advection
-
-### Depth Integration
-- 2D effects → Parallax depth separation
-- Uniform blur → Depth-of-field bokeh
-- Flat shading → Ambient occlusion darkening
-- Screen space → Volumetric depth fog
-
-#### Depth-aware compositing for slot-2/3 effects
+## Audio Binding (canonical)
 ```wgsl
-let z   = textureLoad(readDepthTexture, gid.xy, 0).r;
-let fog = 1.0 - exp(-z * u.zoom_params.z);   // exponential depth fog
-let out = mix(srcColor, fxColor, fog);        // effect strengthens with depth
-```
-Keeps foreground subjects crisp while letting the effect "breathe" in the background — essential when this shader runs in slot 2 or 3 of the chain.
-
-### Feedback Loops
-- Single pass → Temporal accumulation
-- Static state → Ping-pong buffer feedback (dataTextureA ↔ dataTextureB)
-- Linear time → Recursive subdivision
-- Fixed camera → Smooth follow with lag
-- Direct value → Exponential smoothing: `smoothed = mix(smoothed, target, 0.05)`
-
-### Emergent Dynamics Patterns
-```wgsl
-// Spring-damper for smooth mouse follow (prevents jitter)
-fn spring(current: vec2<f32>, target: vec2<f32>, velocity: ptr<function,vec2<f32>>, k: f32, damping: f32, dt: f32) -> vec2<f32> {
-    let force = (target - current) * k - *velocity * damping;
-    *velocity = *velocity + force * dt;
-    return current + *velocity * dt;
-}
-
-// Attractor / gravity well (mouse as gravitational source)
-fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
-    let d = wellPos - pos;
-    let dist2 = dot(d, d) + 0.01;  // avoid singularity
-    return normalize(d) * strength / dist2;
-}
-
-// Beat-reactive pulse with decay
-fn beatPulse(bass: f32, decay: f32, time: f32) -> f32 {
-    return bass * exp(-decay * fract(time * 2.0));  // 2Hz beat assumption
-}
+let bass   = plasmaBuffer[0].x;  // 20–200 Hz, ~0–2
+let mids   = plasmaBuffer[0].y;  // 200–2000 Hz, ~0–2
+let treble = plasmaBuffer[0].z;  // 2k–20k Hz, ~0–2
 ```
 
-### Audio Binding Reference
-```
-plasmaBuffer[0].x = bass    (20–250 Hz)
-plasmaBuffer[0].y = mids    (250–4000 Hz)
-plasmaBuffer[0].z = treble  (4000–20000 Hz)
-plasmaBuffer[0].w = overall RMS amplitude
-```
-
-#### Attack/release audio envelope (preferred over raw `plasmaBuffer[0].x`)
-```wgsl
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-    let k = select(release, attack, bass > prev);
-    return mix(prev, bass, k);
-}
-```
-Store previous value in `dataTextureA.r` across frames. Eliminates the "strobe every frame" look that raw `plasmaBuffer[0].x` produces. Typical values: `attack = 0.8`, `release = 0.15`.
-
-Reactive patterns:
-- Bass → scale, brightness pulse, warp radius
-- Mids → rotation speed, color shift, pattern morphing
-- Treble → sparkle particles, grain, edge sharpness
-- RMS → overall opacity, global scale breathing
-
-## Quality Checklist
-- [ ] Mouse affects at least 2 parameters
-- [ ] Audio drives at least 1 visual element (use `bass_env` decay, not raw `plasmaBuffer[0].x`)
-- [ ] Video input influences the effect
-- [ ] Temporal feedback creates trails/smoothing
-- [ ] Emergent behavior (not 1:1 input mapping)
-- [ ] Alpha encodes interaction intensity or trail age
+## Patterns
+- **Bass pulse**: scale/brightness/intensity *= `1.0 + bass * 0.5`.
+- **Mids morph**: rotation speed, pattern evolution, color cycling *= `1.0 + mids * 0.5`.
+- **Treble sparkle**: add high-frequency detail or shimmer.
+- **Envelope smoothing** (preferred over raw bass):
+  ```wgsl
+  fn bass_env(prev: f32, bass: f32) -> f32 {
+      let k = select(0.15, 0.8, bass > prev);
+      return mix(prev, bass, k);
+  }
+  ```
+  Store `prev` in `dataTextureA.r` if the shader has free feedback.
 
 ## Output Rules
-- Keep the original "soul" of the shader while making it alive and reactive.
-- Use `@workgroup_size(16, 16, 1)` unless the shader explicitly requires a different size.
-- Do NOT modify the 13-binding header or the Uniforms struct.
-- `plasmaBuffer[0].x` = bass, `.y` = mids, `.z` = treble. Use them.
-- `u.zoom_config.yz` = mouse position (0-1). `u.zoom_config.w` = mouse down.
-- **Alpha must carry semantic meaning** — trail age, interaction intensity, or depth mask.
-
-## Performance Constraint
-This shader must remain efficient for 3-slot chained rendering. Avoid excessive nested loops, minimize texture samples, and prefer branchless math. If adding features, keep total line count within the target specified in the task metadata.
+- Add at least one musically coherent audio-driven parameter.
+- Update JSON `features` to include `audio-reactive`.
+- Do NOT modify the 13-binding header or `Uniforms` struct.
+- Workgroup size stays `@workgroup_size(16, 16, 1)`.
+- Return exactly one ```` ```wgsl ```` block.
 
 
 ---
@@ -363,7 +325,7 @@ This shader must remain efficient for 3-slot chained rendering. Avoid excessive 
 1. Analyze the current shader and identify its biggest weaknesses in your domain.
 2. Apply 2-3 upgrade techniques from your toolkit above.
 3. Produce the **upgraded WGSL** and an **updated JSON definition** if new params/features are added.
-4. Ensure the upgraded shader is roughly 180 lines (±20%).
+4. Ensure the upgraded shader is roughly 200 lines (±20%).
 5. Write a brief upgrade rationale (2-3 sentences).
 
 ## Output Format

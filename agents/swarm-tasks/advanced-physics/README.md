@@ -13,7 +13,7 @@
 |------|------------|---------|
 | **A — now** | Polish existing single-pass prototypes | None |
 | **B — linear multipass** | 2–4 pass chains via `multipass.passes[]` + `buildMultipassRegistry.js` | Agent follows [`MULTIPASS_SIM_CONTRACT.md`](./MULTIPASS_SIM_CONTRACT.md) |
-| **C — graph runner** | In-frame ping-pong loops (Jacobi×N, cloth constraint iterations, 2M photon batches) | GH #929 / product multipass graph — **do not start Tier C until landed** |
+| **C — graph runner** | In-frame ping-pong loops (Jacobi×N, cloth constraint iterations, 2M photon batches) | **Landed** — see [`docs/MULTIPASS_GRAPH.md`](../../docs/MULTIPASS_GRAPH.md) |
 
 **Rule:** If unsure, ship Tier A or B. Never add bind groups.
 

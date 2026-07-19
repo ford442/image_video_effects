@@ -1,0 +1,126 @@
+name: Generate Thumbnails
+
+# Manual batch thumbnail generation — requires a WebGPU-capable runner for full batches.
+# Default ubuntu-latest has no GPU; job runs a smoke capture and uploads artifacts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      category:
+        description: 'Shader category (all-catalog, generative, visual-effects, …)'
+        required: false
+        default: 'all-catalog'
+        type: string
+      limit:
+        description: 'Max shaders (0 = no limit; auto-limited to 5 on runners without GPU)'
+        required: false
+        default: '0'
+        type: string
+      shard:
+        description: 'Shard index/count (e.g. 0/4) — leave empty to disable'
+        required: false
+        default: ''
+        type: string
+      engine:
+        description: 'Capture engine (app or minimal)'
+        required: false
+        default: 'app'
+        type: choice
+        options:
+          - app
+          - minimal
+      force:
+        description: 'Regenerate existing thumbnails'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  generate-thumbnails:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download WASM artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: wasm-artifacts
+
+      - name: Build production app
+        run: SKIP_WASM_BUILD=1 npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      - name: Generate thumbnails
+        id: thumbs
+        continue-on-error: true
+        run: |
+          ARGS="--engine=${{ inputs.engine }} --category=${{ inputs.category }}"
+          if [ "${{ inputs.force }}" = "true" ]; then
+            ARGS="$ARGS --force"
+          else
+            ARGS="$ARGS --missing"
+          fi
+          if [ -n "${{ inputs.shard }}" ]; then
+            ARGS="$ARGS --shard=${{ inputs.shard }}"
+          fi
+          LIMIT="${{ inputs.limit }}"
+          if [ "$LIMIT" = "0" ] || [ -z "$LIMIT" ]; then
+            # No GPU on ubuntu-latest — cap to smoke batch
+            LIMIT=5
+            echo "::notice::No GPU on default runner — limiting to $LIMIT shaders. Use a self-hosted webgpu runner for full batches."
+          fi
+          ARGS="$ARGS --limit=$LIMIT"
+          echo "Running: npm run thumbs:generate -- $ARGS"
+          npm run thumbs:generate -- $ARGS
+        env:
+          CI: true
+
+      - name: Coverage status
+        if: always()
+        run: npm run thumbs:status
+
+      - name: Upload thumbnail artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: thumbnails-${{ github.run_id }}
+          path: |
+            public/thumbnails/*.png
+            public/thumbnails/manifest.json
+            reports/thumbnail-failures.json
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Thumbnail generation"
+            echo ""
+            echo "- Engine: \`${{ inputs.engine }}\`"
+            echo "- Category: \`${{ inputs.category }}\`"
+            echo "- Shard: \`${{ inputs.shard || 'none' }}\`"
+            echo ""
+            echo "Download the \`thumbnails-${{ github.run_id }}\` artifact for PNGs and failure report."
+            echo ""
+            echo "For full catalog batches (~700+ missing), run on a **self-hosted runner with WebGPU** or locally:"
+            echo "\`SKIP_WASM_BUILD=1 npm run build && npm run thumbs:generate -- --missing\`"
+            echo ""
+            echo "See [docs/THUMBNAIL_PIPELINE.md](docs/THUMBNAIL_PIPELINE.md)."
+          } >> "$GITHUB_STEP_SUMMARY"

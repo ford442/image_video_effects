@@ -1,8 +1,9 @@
-// ═══ Supernova Core — Visualist Upgrade ═══
+// ═══ Supernova Core — Advanced Alpha Compositor Upgrade ═══
 // Category: generative
 // Features: generative, audio-reactive, sedov-taylor, rayleigh-taylor,
 //   radioactive-decay, chromatic-aberration, upgraded-rgba,
-//   blackbody-cooling, volumetric-fog, ign-dither
+//   blackbody-cooling, volumetric-fog, ign-dither, alpha-layered,
+//   physical-transmittance, luminance-key, depth-layered
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -91,6 +92,16 @@ fn ign(p: vec2<f32>) -> f32 {
   return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
+// Advanced alpha compositor helpers
+fn luminanceKey(color: vec3<f32>, low: f32, high: f32) -> f32 {
+  let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+  return smoothstep(low, high, luma);
+}
+
+fn beerLambertAlpha(density: f32, thickness: f32) -> f32 {
+  return 1.0 - exp(-density * thickness);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy); let res = u.config.zw;
@@ -152,8 +163,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mapped = acesToneMap(hdr * 1.5); let dither = (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
   let color = pow(mapped, vec3<f32>(1.0 / 2.2)) + vec3<f32>(dither);
   let tempNorm = clamp(shockTemp / 30000.0, 0.0, 1.0);
-  let bloomWeight = clamp(ejectaDensity * (0.3 + tempNorm * 0.7) * (0.5 + depth * 0.5), 0.0, 1.0);
-  textureStore(writeTexture, pixel, vec4<f32>(color * bloomWeight, bloomWeight));
-  textureStore(dataTextureA, pixel, vec4<f32>(color * bloomWeight, bloomWeight));
+
+  // ── Advanced Alpha Composition ─────────────────────────────────
+  // 1. Luminance key: dark outer ejecta becomes transparent.
+  let lumaAlpha = luminanceKey(color, 0.04, 0.32);
+  // 2. Depth-layered: far depth planes reduce opacity for parallax light echoes.
+  let depthAlpha = mix(0.22, 1.0, depth);
+  // 3. Physical transmittance: denser ejecta blocks more background light.
+  let physicalAlpha = beerLambertAlpha(ejectaDensity * (1.0 + tempNorm * 0.5), 1.6 * dist);
+  // 4. Edge preserve: retain opacity at sharp shock fronts and ray boundaries.
+  let edgeAlpha = smoothstep(0.0, 0.06, ejectaDensity + tempNorm * 0.25);
+  // Blend modes: luma key + depth layered, then reinforced by physical density.
+  var alpha = mix(lumaAlpha, depthAlpha, 0.3);
+  alpha = mix(alpha, physicalAlpha, 0.45);
+  alpha = alpha * edgeAlpha;
+  alpha = clamp(alpha, 0.0, 1.0);
+  // Pre-multiplied RGB for correct compositing in the 3-slot chain.
+  let finalColor = color * alpha;
+
+  textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, pixel, vec4<f32>(finalColor, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(ejectaDensity * 0.5 + tempNorm * 0.3, 0.0, 0.0, 0.0));
 }

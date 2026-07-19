@@ -260,11 +260,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse Interaction with Y-flip (screen-top = +Y/up)
     let mousePos = (u.zoom_config.yz * 2.0 - vec2<f32>(1.0, 1.0)) * 3.14;
-    let mouseYFlipped = vec2<f32>(mousePos.x, -mousePos.y); // Y-flip for 3D
+    let mouseYFlipped = vec2<f32>(mousePos.x, mousePos.y); // Y-flip for 3D
 
     // Camera Setup
     var ro = vec3<f32>(0.0, 0.0, 5.0);
-    ro = ro * rotX(-mouseYFlipped.y) * rotY(mouseYFlipped.x + rotAngle * 0.1);
+    ro = ro * rotX(mouseYFlipped.y) * rotY(mouseYFlipped.x + rotAngle * 0.1);
 
     let ta = vec3<f32>(0.0, 0.0, 0.0);
     let ww = normalize(ta - ro);

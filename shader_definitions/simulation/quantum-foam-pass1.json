@@ -11,7 +11,30 @@
   "multipass": {
     "pass": 1,
     "totalPasses": 3,
-    "nextShader": "quantum-foam-pass2"
+    "nextShader": "quantum-foam-pass2",
+    "graph": {
+      "maxPassesPerFrame": 8,
+      "nodes": [
+        {
+          "id": "integrate",
+          "entry": "quantum-foam-pass1",
+          "reads": ["dataC"],
+          "writes": ["dataA"]
+        },
+        {
+          "id": "composite",
+          "entry": "quantum-foam-pass2",
+          "reads": ["dataA"],
+          "writes": ["dataB"]
+        },
+        {
+          "id": "render",
+          "entry": "quantum-foam-pass3",
+          "reads": ["dataB"],
+          "writes": ["color"]
+        }
+      ]
+    }
   },
   "tags": [
     "quantum",

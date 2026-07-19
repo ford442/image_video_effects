@@ -1,3 +1,4 @@
+// ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -13,8 +14,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -173,18 +174,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Temporal feedback trail
   let decay = 0.96 - u.zoom_params.w * 0.03;
   let trail = mix(prev.rgb * decay, color, 0.22 + treble * 0.08);
-  textureStore(dataTextureA, pixel, vec4<f32>(trail, prev.a));
 
   // ACES tone map + IGN dither
   color = acesToneMap(trail * 1.15);
   let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
   color = color + vec3<f32>(dither);
 
-  // Semantic alpha: bloom weight blended with source alpha
+  // ── Advanced alpha compositor (Phase B) ────────────────────────
+  // Layered alpha: depth layering + edge preservation + luminance key +
+  // displacement/chromatic intensity, blended with source alpha and bloom.
   let lum = luma(color);
+  let lumaKey = smoothstep(0.06, 0.30, lum);
+  let depthLayer = mix(0.25, 1.0, depth);
+  let edgeLayer = smoothstep(0.0, 0.22, voro.x);
+  let warpMag = length(warp);
+  let chromaMag = cellChroma * (1.0 + bass * 0.6);
+  let intensityAlpha = clamp(warpMag * 14.0 + chromaMag * 8.0, 0.0, 1.0);
+  let baseAlpha = mix(lumaKey, depthLayer, 0.5);
+  let cellAlpha = baseAlpha * edgeLayer * (0.4 + 0.6 * intensityAlpha);
   let bloomWeight = pow(max(0.0, lum - 0.55), 2.0) * 2.5;
-  let alpha = clamp(src.a * (0.5 + 0.5 * edgeFade) + bloomWeight * 0.35, 0.0, 1.0);
+  let alpha = clamp(src.a * 0.5 + cellAlpha * 0.5 + bloomWeight * 0.35, 0.1, 1.0);
 
-  textureStore(writeTexture, pixel, vec4<f32>(color * alpha, alpha));
+  // Accumulative alpha trail for temporal consistency in the 3-slot chain
+  let feedbackAlpha = mix(prev.a * decay, alpha, 0.25 + treble * 0.08);
+  textureStore(dataTextureA, pixel, vec4<f32>(trail, feedbackAlpha));
+
+  textureStore(writeTexture, pixel, vec4<f32>(color * feedbackAlpha, feedbackAlpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

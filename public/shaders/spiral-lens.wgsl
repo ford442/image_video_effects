@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Spiral Lens v3
+//  Spiral Lens v4 — Advanced Alpha
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
-//            domain-warp, kaleidoscope, chromatic-dispersion, mobius-lens
+//            domain-warp, kaleidoscope, chromatic-dispersion, mobius-lens,
+//            alpha-layered, edge-preserve, effect-intensity
 //  Complexity: High
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -151,6 +152,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
     var col = vec3<f32>(r, g, b);
+    let baseLuma = luma(col);
 
     let edgePhase = dist * 6.0 - time * 0.3 + fbm(dvec * 8.0 + time * 0.5, 3);
     let rainbowEdge = smoothstep(0.35, 0.05, abs(fract(edgePhase) - 0.5)) * lensMask;
@@ -171,11 +173,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let armDetail = sin(armPhase * TAU + dist * 20.0) * 0.5 + 0.5;
     let armColor = vec3<f32>(0.7 + armDetail * 0.2, 0.9, 1.0 - armDetail * 0.15) * armGlow;
 
-    let finalColor = acesToneMap(col + rainbow + causticLight + bloom + armColor);
+    let displacement = length(sampleUV - uv01) * aspect;
+    let warpMag = abs(lensWarp) + displacement * 2.0;
+    let effectIntensity = smoothstep(0.0, 0.25, lensMask * lensStrength + warpMag + rainbowEdge * 0.5);
 
-    let edgeIntensity = rainbowEdge + caustic + armGlow;
-    let alpha = clamp(lensStrength * edgeIntensity * depth + lensMask * 0.12 + bloomCenter * 0.1, 0.08, 1.0);
+    let depthAlpha = mix(0.35, 1.0, depth);
+    let lumaAlpha = smoothstep(0.04, 0.22, baseLuma);
+    let edgeAlpha = smoothstep(0.0, 0.18, lensMask + warpMag);
+    var alpha = mix(lumaAlpha, depthAlpha, 0.5) * effectIntensity * edgeAlpha;
+    alpha = clamp(alpha, 0.06, 1.0);
+
+    let overlay = (rainbow + causticLight + bloom + armColor) * alpha;
+    let finalColor = acesToneMap(col + overlay);
+
     let outDepth = clamp(depth + lensMask * 0.04 - dof * 0.06, 0.0, 1.0);
+    let edgeIntensity = rainbowEdge + caustic + armGlow;
 
     textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));

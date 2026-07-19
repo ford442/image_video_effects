@@ -16,6 +16,7 @@ import {
     captureKeyOnce,
 } from '../../../services/midiControl';
 import { AutoTransitionConfig } from '../../../AutoDJ';
+import { shouldShowMidiControls } from '../../../utils/deviceCapabilities';
 
 export interface UseLiveControlOptions {
     isAiVjMode: boolean;
@@ -51,6 +52,11 @@ export interface UseLiveControlReturn {
     setPendingParam: Dispatch<SetStateAction<string>>;
     bindings: ControlBinding[];
     setBindings: Dispatch<SetStateAction<ControlBinding[]>>;
+    /** When set, learn flow is pre-targeted to a param (click-to-learn UX). */
+    learnTarget: 'param' | 'free' | null;
+    startLearnForParam: (slot: number, param: string) => void;
+    cancelLearn: () => void;
+    confirmLearnBinding: () => void;
 }
 
 export function useLiveControl({
@@ -77,6 +83,7 @@ export function useLiveControl({
     const [pendingSlot, setPendingSlot] = useState(0);
     const [pendingParam, setPendingParam] = useState('zoomParam1');
     const [bindings, setBindings] = useState<ControlBinding[]>(() => loadBindings());
+    const [learnTarget, setLearnTarget] = useState<'param' | 'free' | null>(null);
 
     const midiAdapterRef = useRef<MidiControlAdapter | null>(null);
     const keyUnsubscribeRef = useRef<(() => void) | null>(null);
@@ -218,6 +225,39 @@ export function useLiveControl({
         registryRef.current.dispatch(event, liveHandleRef.current);
     };
 
+    const startLearnForParam = (slot: number, param: string) => {
+        setPendingSlot(slot);
+        setPendingParam(param);
+        setPendingAction({ type: 'setSlotParam', slot, param });
+        setLearnedTrigger(null);
+        setLearnTarget('param');
+        setLiveControlOpen(true);
+        if (shouldShowMidiControls()) {
+            setMidiEnabled(true);
+            setArmed('midi');
+        } else {
+            setArmed('key');
+        }
+    };
+
+    const cancelLearn = () => {
+        setArmed(null);
+        setLearnedTrigger(null);
+        setLearnTarget(null);
+    };
+
+    const confirmLearnBinding = () => {
+        if (!learnedTrigger) return;
+        setBindings(prev => {
+            const registry = new ControlBindingRegistry(prev);
+            registry.addBinding(learnedTrigger, pendingAction);
+            return registry.getBindings();
+        });
+        setLearnedTrigger(null);
+        setLearnTarget(null);
+        setArmed(null);
+    };
+
     return {
         liveControlOpen,
         setLiveControlOpen,
@@ -236,5 +276,9 @@ export function useLiveControl({
         setPendingParam,
         bindings,
         setBindings,
+        learnTarget,
+        startLearnForParam,
+        cancelLearn,
+        confirmLearnBinding,
     };
 }

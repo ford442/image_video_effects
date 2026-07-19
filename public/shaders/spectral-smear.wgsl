@@ -4,6 +4,7 @@
 //  Features: mouse-driven, history, upgraded-rgba, audio-reactive, depth-aware
 //  Complexity: Medium
 //  Upgraded: 2026-05-23
+//  Upgraded by: kimi-swarm 2026-07-19
 //  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 
@@ -28,6 +29,43 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+// ── Hashes & Noise (canonical forms) ─────────────────────────────
+fn hash21(p: vec2<f32>) -> f32 {
+    let h = dot(p, vec2<f32>(127.1, 311.7));
+    return fract(sin(h) * 43758.5453123);
+}
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let uu = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash21(i),                         hash21(i + vec2<f32>(1.0, 0.0)), uu.x),
+        mix(hash21(i + vec2<f32>(0.0, 1.0)),   hash21(i + vec2<f32>(1.0, 1.0)), uu.x),
+        uu.y
+    );
+}
+
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+    var sum = 0.0; var amp = 0.5; var freq = 1.0;
+    for (var i = 0; i < octaves; i++) {
+        sum  += amp * valueNoise(p * freq);
+        freq *= 2.0;
+        amp  *= 0.5;
+    }
+    return sum;
+}
+
+// ── IQ cosine palette: richer spectral rainbow than the naive 3-cos ──
+// t in cycles; d offsets chosen for vivid magenta->cyan->gold spread.
+fn spectralPalette(t: f32) -> vec3<f32> {
+    let a = vec3<f32>(0.5, 0.5, 0.5);
+    let b = vec3<f32>(0.5, 0.5, 0.5);
+    let c = vec3<f32>(1.0, 1.0, 1.0);
+    let d = vec3<f32>(0.00, 0.33, 0.67);
+    return a + b * cos(6.28318 * (c * t + d));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -45,45 +83,68 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     // Params (mids speeds hue shift, treble lifts smear intensity)
+    // Clamps follow the definition-JSON ranges so labels stay truthful.
     let trailDecay = clamp(u.zoom_params.x, 0.0, 1.0);
-    let brushSize = clamp(u.zoom_params.y, 0.0, 1.0) * (1.0 + bass * 0.2);
-    let shiftSpeed = clamp(u.zoom_params.z, 0.0, 1.0) * (1.0 + mids * 0.8);
+    let brushSize = clamp(u.zoom_params.y, 0.0, 0.5) * (1.0 + bass * 0.2);
+    let shiftSpeed = clamp(u.zoom_params.z, 0.0, 2.0) * (1.0 + mids * 0.8);
     let intensity = clamp(u.zoom_params.w, 0.0, 1.0) * (1.0 + treble * 0.5);
 
-    // Check mouse distance
+    // Aspect-corrected positions
     let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
     let mouseCorrected = vec2<f32>(mouse.x * aspect, mouse.y);
     let dist = distance(uvCorrected, mouseCorrected);
 
-    let inBrush = smoothstep(brushSize, brushSize * 0.8, dist);
+    // Organic brush edge: fbm wobble breaks the perfect circle so the
+    // smear looks painted, not stamped. Bass adds a live pulse to the edge.
+    let edgeNoise = fbm(uvCorrected * 7.0 + vec2<f32>(time * 0.35, -time * 0.22), 3);
+    let noisyDist = dist * (0.80 + 0.40 * edgeNoise) - bass * 0.015;
+
+    let inBrush = smoothstep(brushSize, brushSize * 0.8, noisyDist);
 
     // Get current video frame
     let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    // Get history (previous output)
-    let history = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // Smear flow field: sample history at a slowly drifting offset so
+    // trails crawl organically instead of fading in place. Offset is
+    // tightly bounded (<= ~0.014 uv) and clamped to the frame.
+    let flowP = uvCorrected * 3.0;
+    let flow = vec2<f32>(
+        fbm(flowP + vec2<f32>(time * 0.11, 0.0), 2),
+        fbm(flowP + vec2<f32>(5.2, 1.3) - vec2<f32>(0.0, time * 0.08), 2)
+    ) - vec2<f32>(0.5);
+    let flowOffset = flow * (0.020 + mids * 0.008);
+    let historyUv = clamp(uv - flowOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // Create the "paint" color
+    // Get history (previous output), advected by the flow
+    let history = textureSampleLevel(dataTextureC, u_sampler, historyUv, 0.0);
+
+    // Spectral paint color: hue cycles with time (shiftSpeed), plus a
+    // radial fringe so the smear splits into rainbow bands around the
+    // cursor, plus a slow spatial drift from the edge noise field.
     let hue = fract(time * shiftSpeed);
-    let shiftColor = vec3<f32>(
-        0.5 + 0.5 * cos(6.28318 * (hue + 0.0)),
-        0.5 + 0.5 * cos(6.28318 * (hue + 0.33)),
-        0.5 + 0.5 * cos(6.28318 * (hue + 0.67))
-    );
+    let fringe = clamp(dist * 1.6, 0.0, 1.5);
+    let driftHue = (edgeNoise - 0.5) * 0.25;
+    let shiftColor = clamp(spectralPalette(hue + fringe + driftHue), vec3<f32>(0.0), vec3<f32>(1.0));
 
-    let paint = mix(current.rgb, shiftColor, 0.5);
+    // Blend the live video luma into the paint so strokes feel lit by
+    // the underlying frame rather than flat neon.
+    let paint = mix(current.rgb, shiftColor, 0.65);
 
     let historyDecayed = history.rgb * (0.9 + 0.09 * trailDecay);
 
     var newHistory = historyDecayed;
     if (inBrush > 0.01) {
-        newHistory = mix(newHistory, shiftColor * 2.0, inBrush * intensity);
+        newHistory = mix(newHistory, paint * 2.0, inBrush * intensity);
     }
 
     newHistory = clamp(newHistory, vec3<f32>(0.0), vec3<f32>(2.0));
 
-    // Final composite: Video + History
-    let finalColor = current.rgb + newHistory * 0.5;
+    // Final composite: Video + History, with a soft knee on the
+    // highlights so stacked strokes roll off instead of clipping.
+    var finalColor = current.rgb + newHistory * 0.5;
+    let over = max(finalColor - vec3<f32>(1.0), vec3<f32>(0.0));
+    finalColor = min(finalColor, vec3<f32>(1.0)) + over / (vec3<f32>(1.0) + over * 0.5);
+    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(3.0));
 
     // Alpha: preserve input transparency while blending smear intensity
     let finalAlpha = mix(current.a, 1.0, inBrush * intensity * 0.7);

@@ -1,9 +1,9 @@
-# WASM Renderer: Gap Analysis & Production Readiness (May 2026)
+# WASM Renderer: Gap Analysis & Production Readiness
 
 > **Type:** Epic / Tracking Document  
-> **Labels:** `wasm`, `renderer`, `infrastructure`, `help wanted`  
-> **Current as of:** May 2026 (post-Phase 3 commits), with a **June 2026 update** below  
-> **Related:** `wasm_renderer/STATUS.md` (over-optimistic), `wasm_renderer/README.md`, `WASM_TESTING.md`, `WASM_SMOKE_TEST.md`
+> **Labels:** `wasm`, `renderer`, `infrastructure`  
+> **Current as of:** **July 2026**  
+> **Related:** [`wasm_renderer/STATUS.md`](./wasm_renderer/STATUS.md), [`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md), [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md)
 
 ---
 
@@ -50,9 +50,30 @@ six have landed** — verified in `renderer.cpp` and the canonical bridge sync
 and the full dependency-ordered roadmap in
 [#799's tracking comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584).
 
-**Updated bottom line (June 2026):** compute + present + init handshake are hardened (#817–#822 ✅).
-Integration glue (#845–#847 ✅) and CI/testing (#848–#849 largely ✅) are in tree.
-**Product decision: [Tier B — experimental opt-in](./WASM_BACKEND_POLICY.md)** — TS WebGPU remains default; WASM is not production-SLA until promotion gates pass.
+**Updated bottom line (July 2026):** Compute + present + init handshake are hardened (#817–#822 ✅). Integration glue (#845–#849 ✅) and July follow-ups (#886–#889 ✅) landed in tree. **Still Tier B experimental** — promotion gates tracked in [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md). TS WebGPU remains production default.
+
+---
+
+## July 2026 — Current open work
+
+| Area | Status | Tracking |
+|------|--------|----------|
+| **Promotion to Tier A** | Not met — needs bench JSON + multi-GPU parity + 4wk CI | [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md), [#890](https://github.com/ford442/image_video_effects/issues/890) |
+| **Edge GPU live verification** | Informal only | Manual smoke + `WASM_GPU_TESTS=1` runs on real hardware |
+| **Visual pixel-diff parity** | Not automated | Future work (post-#889) |
+| **WASM GPU timestamp queries** | Wall-clock timings only (`timingSource: 'wall-clock'`) | Documented limitation (#888) |
+| **Docs accuracy** | This pass (#890) | GAP, STATUS, README, WASM_*.md |
+
+**Closed July epic items (implemented in tree):**
+
+| Issue | Topic | Status |
+|-------|-------|--------|
+| [#886](https://github.com/ford442/image_video_effects/issues/886) | Recording via internal readback (not blank `captureStream`) | ✅ |
+| [#887](https://github.com/ford442/image_video_effects/issues/887) | RendererManager duck-typed forwarding + `setInputSource` | ✅ |
+| [#888](https://github.com/ford442/image_video_effects/issues/888) | FFT bins, `getAudioData`, recording flags | ✅ (GPU timestamps: wall-clock only) |
+| [#889](https://github.com/ford442/image_video_effects/issues/889) | Playwright smoke, parity, `test:wasm:bench`, CI jobs | ✅ |
+
+Umbrella: [#885](https://github.com/ford442/image_video_effects/issues/885)
 
 ---
 
@@ -80,8 +101,8 @@ The old root GAP doc (pre-Phase work) was pessimistic but directionally correct 
 | C++ compute engine        | Advanced (Phase 2.5–3 quality)     | Full multi-slot, depth upload, audio to both buffers, RAII, workgroup parser, async readback |
 | Presentation / output     | **Implemented** (June 2026)        | `Render()` → `PresentToSurface()` (renderer.cpp:1725), full acquire/render-pass/blit (renderer.cpp:924-1000), real `CreateRenderPipeline()` |
 | Init / format / limits handshake | **Hardened (June 2026)**     | Fatal surface (#820 ✅), `getPreferredCanvasFormat()` (#818 ✅), `requiredLimits`/validation (#817/#819 ✅), unified init errors (#822 ✅), bridge sync (#821 ✅) |
-| TS integration (manager)  | **Functional (June 2026)**         | #845 forwarding + #846 input sources wired; Tier B — not production SLA |
-| App → renderer wiring     | **Functional (June 2026)**         | `setInputSource`, slot params via RendererManager |
+| TS integration (manager)  | **Functional (July 2026)**         | Duck-typed forwarding (#887); resync on switch; Tier B — not production SLA |
+| App → renderer wiring     | **Functional (July 2026)**         | `setInputSource`, slot params, recording via manager (#886–#887) |
 | Build / CI                | **Hardened (June 2026 Phase 2)**   | CI `wasm` job + emsdk; artifact upload; Jest + Playwright; see `ARTIFACTS.md` |
 | Product support tier      | **Tier B — Experimental**          | See [`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md) |
 | End-to-end usability      | Opt-in path on capable GPUs        | Edge GPU verification + benchmark promotion gate pending |
@@ -97,7 +118,7 @@ The old root GAP doc (pre-Phase work) was pessimistic but directionally correct 
 - **Shader loading**: `LoadShader` parses `@workgroup_size`, compiles WGSL via Dawn, caches pipelines. Matches the universal bind-group layout from AGENTS.md.
 - **Depth**: `UpdateDepthMap` does `wgpuQueueWriteTexture` into `depthTextureRead_` (with zero-fill for partial uploads). Respects canvas size.
 - **Audio**: `SetAudioData` → `UpdateUniformBuffer` writes to `extraBuffer_[0..2]` and `plasmaBuffer_[0]` as vec4(bass,mid,treble,0). Both shader conventions satisfied.
-- **Capture/Recording bridge**: `beginFrameCapture` + `mapAsync` + `ReadCapturedFrame` (float→u8 conversion) + JS polling + `captureFrame()`/`startRecording()` (the latter uses `canvas.captureStream` on the input canvas element, bypassing internal textures).
+- **Capture/Recording bridge**: `beginFrameCapture` + `mapAsync` + `ReadCapturedFrame`; `startRecording()` uses GPU readback → offscreen canvas → `captureStream` when WASM active (#886 ✅).
 - **Resize**: `ResizeCanvas` / `RecreateTextures` properly releases + rebuilds all size-dependent textures (including data A/B/C, depth, ping-pongs, readback buffer).
 - **Generative placeholder**: 1×1 black `emptyTexture_` + `InputSource::Generative` path exists in C++.
 - **Bridge & TS wrapper**: `wasm_bridge.js` (public version) + `WASMRenderer.ts` expose `setSlot*`, `updateDepthMap`, `updateAudioData`, `captureFrame`, `startRecording`, `resizeCanvas`, etc. Diagnostics present.
@@ -105,42 +126,65 @@ The old root GAP doc (pre-Phase work) was pessimistic but directionally correct 
 
 ---
 
-## 3. What's Broken / Incomplete
+## 3. Gaps & Residual Risk (July 2026)
 
-### 3.1 ~~No Pixels Ever Reach the Canvas~~ — RESOLVED (June 2026); see §0 update
-- ~~`Render()` ends after compute + `CopyTextureToTexture` feedback. No render pass...~~ **No longer true.** `Render()` now calls `PresentToSurface()` (renderer.cpp:1725), which does `wgpuSurfaceGetCurrentTexture` → `BeginRenderPass` → `SetPipeline`/`SetBindGroup` → `Draw` → `End` → submit (renderer.cpp:924-1000).
-- ~~`CreateRenderPipeline()` builds a dead full-screen sampler...~~ **No longer true.** It builds the pipeline used by `PresentToSurface()`.
-- The canvas element passed to `initWasmRenderer` is used to create and configure a real WebGPU surface (see `JS_CreateSurfaceFromCanvas` / `ConfigureSurface`).
-- **Residual risk (post-#817–#822):** init failures should now surface via structured diagnostics (`failedStageName`, `lastInitError`) instead of a silent black canvas, but live-browser verification on edge GPUs is still pending. Integration gaps (§3.2–3.4) can also make the canvas appear broken even when init succeeds.
+> **May 2026 sections 3.1–3.6** described blockers that are now **resolved** in tree. They are preserved in [§3 Historical (May 2026)](#3-historical-may-2026--superseded) for archaeology only.
 
-### 3.2 RendererManager Forwards Almost Nothing to WASM
-- `setSlotShader(index, id)`: only `if (instanceof WebGPURenderer)`
-- `updateSlotParams(...)`: only `if (instanceof WebGPURenderer)`
-- `loadShaders`, several other helpers have the same one-sided dispatch.
-- App code often does `(rendererRef.current as any).setSlotShader(...)` — fragile and bypasses the manager's (already incomplete) logic.
-- Consequence: changing shaders in slots or moving sliders has no effect under WASM.
+### 3.1 Active gaps (promotion blockers)
 
-### 3.3 Input Source & Generative Never Wired
-- Zero call sites for `renderer.setInputSource(...)` or `WasmBridge.setInputSource` in `App.tsx`, `WebGPUCanvas.tsx`, or `Controls.tsx`.
-- Video/webcam paths work because `updateVideoFrame()` is called on the active renderer (and WASM implements it).
-- Generative shaders and explicit "live" / "generative" source selection are no-ops for WASM.
+| Gap | Impact | Mitigation / tracking |
+|-----|--------|----------------------|
+| Promotion gates not met | WASM stays Tier B | [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md) |
+| No benchmark evidence on target GPUs | Cannot justify Tier A | `WASM_GPU_TESTS=1 npm run test:wasm:bench` → attach JSON |
+| Playwright parity unverified on ≥2 GPUs | Reliability gate open | Self-hosted / manual GPU runs (#889 infra) |
+| No automated visual pixel-diff | Parity is statistical (luminance) only | Future work |
+| WASM `getGPUTimings` wall-clock only | Perf analysis less precise than TS GPU timestamps | Documented (#888) |
+| Edge GPU init/render | May still fail on weak/odd drivers | Structured diagnostics (#822); manual smoke |
+| Per-slot separate `QueueSubmit` | Potential perf overhead | Benchmark gate will surface if material |
 
-### 3.4 Recording & Screenshots Are Half-Real
-- `startRecording()` in the bridge ignores the WASM renderer entirely and does `canvas.captureStream(60)` + `MediaRecorder` on the JS canvas (which may be blank when WASM is "active").
-- The internal `captureFrame()` / readback path works in isolation but is not used by the app's recording UI.
+### 3.2 Resolved (June–July 2026)
 
-### 3.5 Partial Interface Implementation
-WASMRenderer implements many optionals but is missing:
-- `updateAudioFrequencyBins` (full FFT → extraBuffer)
-- `updateSlotParams` (aggregate form used by WebGPUCanvas effect)
-- `getSlotState`, `getGPUTimings`, `getSupportsDeepWorkgroup`, `setRecording`/`setRecordingMode`
-- `getFrameImage`
+| Former gap | Resolution |
+|------------|------------|
+| No presentation to canvas | `PresentToSurface()` wired (#817–#822 era) |
+| Init/format/limits handshake fragile | #817–#822 ✅ |
+| RendererManager WASM forwarding | Duck-typed dispatch + resync (#845, #887) |
+| `setInputSource` never called | Wired in App/WebGPUCanvas (#846, #887) |
+| Recording used blank DOM `captureStream` | Internal readback path (#886) |
+| Missing FFT / `getAudioData` / slot state APIs | #888 ✅ |
+| No Playwright / bench automation | #889 ✅ — see §6 |
+| Stale bridge copy | #821 ✅ — `build.sh` + validator |
 
-### 3.6 Other Runtime Risks
-- Every slot = separate encoder + submit (no single-encoder multi-pass).
-- Readback path assumes RGBA32Float internal format and does manual float→u8 (correct for capture but highlights that the "final" texture is never presented as 8-bit either).
-- No high-DPI handling, no dynamic context loss recovery beyond the callbacks.
-- `src/wasm/wasm_bridge.js` is kept in sync with `wasm_renderer/wasm_bridge.js` by `build.sh` and `validate_wasm_artifacts.js` (#821 ✅).
+### 3. Historical (May 2026 — superseded)
+
+<details>
+<summary>Click to expand May 2026 gap descriptions (no longer accurate)</summary>
+
+#### 3.1 ~~No Pixels Ever Reach the Canvas~~ — RESOLVED (June 2026)
+- Was: `Render()` ended after compute with no present pass.
+- Now: `PresentToSurface()` at `renderer.cpp:1725`.
+
+#### 3.2 ~~RendererManager Forwards Almost Nothing to WASM~~ — RESOLVED (July 2026, #887)
+- Was: `instanceof WebGPURenderer`-only branches; `(as any)` bypasses.
+- Now: Duck-typed forwarding on `RendererManager`; `resyncShaderStack` on backend switch.
+
+#### 3.3 ~~Input Source & Generative Never Wired~~ — RESOLVED (July 2026, #846/#887)
+- Was: Zero `setInputSource` call sites.
+- Now: Called from input-source handlers + resync on renderer switch.
+
+#### 3.4 ~~Recording & Screenshots Are Half-Real~~ — RESOLVED (July 2026, #886)
+- Was: `startRecording()` used DOM `captureStream` on potentially blank canvas.
+- Now: WASM path uses GPU readback → offscreen canvas → `captureStream`.
+
+#### 3.5 ~~Partial Interface Implementation~~ — LARGELY RESOLVED (July 2026, #888)
+- Was: Missing FFT, `updateSlotParams`, `getSlotState`, `getGPUTimings`, recording flags.
+- Now: Implemented; WASM GPU timings remain wall-clock only (`available: false`).
+
+#### 3.6 Other Runtime Risks (partially open)
+- Per-slot submit overhead — still true; benchmark gate tracks impact.
+- Bridge sync — resolved (#821).
+
+</details>
 
 ---
 
@@ -167,38 +211,46 @@ The old stub behavior is gone (good), but the "silent degradation" problem moved
 | 3-slot chained / parallel        | ✅                         | ✅ (per-slot submits + param patch) | Core works |
 | Depth map (AI)                   | ✅                         | ✅ (QueueWriteTexture)             | Wired |
 | 3-band audio (bass/mid/treble)   | ✅                         | ✅ (extra + plasma)                | Wired |
-| Full FFT bins                    | ✅                         | ❌ (only 3-band)                   | Partial |
+| Full FFT bins                    | ✅                         | ✅ (C++ `SetAudioFrequencyBins` + TS `getAudioData`) | Good (#888) |
 | Mouse + ripples                  | ✅                         | ✅                                 | Good |
 | Image / video / webcam upload    | ✅                         | ✅ (persistent staging for video)  | Good |
-| Generative (no input)            | ✅                         | ⚠️ API exists, never called        | Unreachable |
-| HLS live streams                 | ✅ (via video element)     | ⚠️ Same path, untested             | Untested |
+| Generative (no input)            | ✅                         | ✅ (`setInputSource` wired)          | Good (#887) |
+| HLS live streams                 | ✅ (via video element)     | ⚠️ Same path, limited test coverage | Tier B |
 | Dynamic canvas resize            | ✅                         | ✅ (RecreateTextures)              | Good |
-| Screenshot / captureFrame        | ✅                         | ✅ (internal) / JS side            | Half |
-| 8s WebM recording                | ✅ (canvas.captureStream)  | ⚠️ JS canvas only (may be blank)   | Broken when active |
+| Screenshot / captureFrame        | ✅                         | ✅ (internal readback)             | Good |
+| 8s WebM recording                | ✅ (canvas.captureStream)  | ✅ (readback → offscreen stream)     | Good (#886) |
 | Shader caching / precompile      | ✅                         | ⚠️ Per-load compile, no cache      | Basic |
-| GPU timing queries               | ✅                         | ❌                                 | Missing |
-| `setRecording` / loop mode       | ✅                         | ❌ (different API)                 | Interface gap |
+| GPU timing queries               | ✅ (when supported)        | ⚠️ wall-clock only                   | Partial (#888) |
+| `setRecording` / loop mode       | ✅                         | ✅                                   | Good (#888) |
 | BroadcastChannel remote          | ✅                         | ❌ (JS layer only)                 | N/A |
-| Presentation to canvas           | ✅ (full WebGPU render pass) | ✅ (render pass via `PresentToSurface`, June 2026) | Implemented; init handshake hardened (#817–#822 ✅) |
+| Presentation to canvas           | ✅                         | ✅ (`PresentToSurface`)              | Good |
 
-**Highest-priority missing pieces for usability:**
-1. ~~End-to-end presentation (render pass + surface or texture-to-canvas path).~~ **Done (June 2026).**
-2. ~~Init/format/limits handshake (#817–#822).~~ **Done (June 2026).**
-3. Complete `RendererManager` forwarding for all WASM methods.
-4. App-level calls to `setInputSource` + per-renderer input mode handling.
-5. Wire `updateSlotParams` or normalize the slot param API.
-6. CI + build that actually produces fresh artifacts or fails visibly.
+**Remaining parity gaps (non-blocking for Tier B, blocking for Tier A promotion):**
+
+1. GPU timestamp queries on WASM path (wall-clock fallback only).
+2. Automated visual pixel-diff (statistical luminance parity exists via Playwright).
+3. Promotion evidence — see [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md).
+
+**Resolved (was highest-priority):**
+
+1. ~~End-to-end presentation.~~ **Done (June 2026).**
+2. ~~Init/format/limits handshake (#817–#822).~~ **Done.**
+3. ~~RendererManager WASM forwarding.~~ **Done (#887).**
+4. ~~App-level `setInputSource`.~~ **Done (#887).**
+5. ~~Recording integration.~~ **Done (#886).**
+6. ~~CI + Playwright + benchmarks.~~ **Done (#889).**
 
 ---
 
 ## 6. Testing & Validation Status
 
-- **Unit tests**: `src/__tests__/WASMBridge.test.ts` only mocks the bridge surface. No real WASM execution.
-- **Manual smoke docs**: `WASM_SMOKE_TEST.md` and `WASM_TESTING.md` are high-quality and describe `?renderer=wasm`, `getDiagnostics()`, runtime switching, and a checklist. They assume a working build.
-- **No automated parity or visual regression tests** for the WASM path.
-- **No performance numbers** (the original motivation).
-- **No Playwright / CI job** that actually builds with emsdk and exercises `?renderer=wasm`.
-- In practice, the only way to know it is broken is to try it manually with a local emsdk.
+- **Unit tests**: `WASMBridge.test.ts`, `WASMRenderer.*.test.ts`, `RendererManager.test.ts` — bridge surface + manager parity (mocked WASM module; no real GPU in Jest).
+- **Playwright smoke** (`tests/wasm-renderer.smoke.spec.ts`): `?renderer=wasm&testMode=1`, 5-shader parity matrix, multi-slot stack, console error collection, FPS/canvas health. **Soft mode** (default CI) tolerates JS fallback when no WebGPU adapter; **strict mode** (`WASM_GPU_TESTS=1`) requires active `wasm` backend.
+- **Parity matrix** (`tests/renderer-parity.spec.ts`): WASM vs WebGPU luminance comparison on `PARITY_MATRIX` shaders.
+- **Benchmarks** (`tests/wasm-benchmark.spec.ts`): `npm run test:wasm:bench` → `test-results/wasm-benchmark-report.json` with promotion gate assessment (≥1.25× on ≥3 shaders per `WASM_BACKEND_POLICY.md`).
+- **CI**: `wasm` job (emsdk build + Jest); `test-wasm-e2e` (soft smoke + strict GPU suite, skips without adapter); `wasm-gpu-manual` (`workflow_dispatch`) for self-hosted GPU runs.
+- **Manual smoke docs**: `WASM_SMOKE_TEST.md`, `WASM_TEST_SUITE.md` — local GPU verification + contributor commands.
+- **Still missing**: automated visual pixel-diff parity; real GPU numbers on CI (requires labeled/self-hosted runners); 4 consecutive green weeks for promotion.
 
 ---
 
@@ -215,11 +267,12 @@ The old stub behavior is gone (good), but the "silent degradation" problem moved
   - #822 ✅ — unified init error paths, RAII cleanup, structured diagnostics to JS
 - See **[C++ Solidification Tracking](#c-solidification-tracking-2026-06)** and the [#799 roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584).
 
-### Phase 1 — Glue & Correctness (1 week)
-- Fix `RendererManager`: add `else if (instanceof WASMRenderer)` branches for `setSlotShader`, `setSlotParams`/`updateSlotParams`, `setSlotMode`, `loadShader`, `updateSlotParams`, etc.
-- Add `updateSlotParams` (or a normalized `setActiveSlotParams`) to WASMRenderer that calls the per-slot C++ API for the active slot.
-- Audit every `(as any).foo` call site in App.tsx / WebGPUCanvas and route through the manager.
-- Call `setInputSource(...)` from the input-source change handlers (map 'generative' → 4, etc.) for both renderers.
+### Phase 1 — Glue & Correctness ✅ (July 2026, #845–#849 + #886–#887)
+- ✅ `RendererManager` duck-typed forwarding for slot/shader/param APIs
+- ✅ `updateSlotParams` / `getSlotState` on WASMRenderer
+- ✅ App/WebGPUCanvas routed through manager (reduced `(as any)` bypasses)
+- ✅ `setInputSource(...)` from input-source handlers + resync on switch
+- ✅ Recording via internal readback (#886)
 
 ### Phase 2 — Build & CI ✅ (June 2026)
 - ✅ Emscripten + emdawnwebgpu in CI `wasm` job (`mymindstorm/setup-emsdk@v14`)
@@ -228,12 +281,13 @@ The old stub behavior is gone (good), but the "silent degradation" problem moved
 - ✅ Canonical `wasm_renderer/wasm_bridge.js` copied to `src/wasm/` + `public/wasm/`; validator checks all three
 - ✅ Jest WASM smoke in `wasm` job; Playwright smoke in `test-wasm-e2e`
 
-### Phase 3 — Parity & Hardening (2–3 weeks)
-- Implement missing interface methods (`updateAudioFrequencyBins`, full recording integration using internal readback + JS encoding, `setRecording` adapter).
-- Add WASM smoke + visual parity tests (even if just "does FPS stay > 30 and no console errors for 10 shaders").
-- Performance benchmark (frame time, memory, shader compile) vs TS renderer on 3–5 representative shaders.
-- Clean up per-slot submit pattern if it causes measurable overhead.
-- RAII + error handling is already good; add shader hot-reload / recompilation path.
+### Phase 3 — Parity & Hardening (partial — July 2026)
+- ✅ FFT bins, `getAudioData`, recording flags (#888)
+- ✅ Playwright smoke + parity + benchmark JSON (#889) — see `WASM_TEST_SUITE.md`
+- ⬜ Visual pixel-diff parity (future)
+- ⬜ Promotion gates — [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md)
+- ⬜ Per-slot submit optimization (if benchmarks show need)
+- ⬜ Shader hot-reload path (dev `shaderHotReload=1` exists; production polish TBD)
 
 ### Decision Point for Maintainers — **RESOLVED: Option B (June 2026)**
 
@@ -276,16 +330,14 @@ Recommended PR order (all landed as of this doc pass):
 | [#822](https://github.com/ford442/image_video_effects/issues/822) | ✅ | Unified init error paths, RAII cleanup, structured diagnostics (`getLastInitErrorStage`/`Message` → JS) |
 | [#823](https://github.com/ford442/image_video_effects/issues/823) | ✅ | WASM docs refresh (this pass) |
 
-All six C++ reliability issues (#817–#822) and integration issues #845–#847 are
-implemented in tree.
+All six C++ reliability issues (#817–#822) and integration issues #845–#849 are
+implemented in tree. July glue (#886–#889) is implemented in tree.
 
-**Tier B (June 2026):** WASM is experimental opt-in — see [`WASM_BACKEND_POLICY.md`](../WASM_BACKEND_POLICY.md).
+**Tier B (July 2026):** WASM is experimental opt-in — see [`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md).
 
-**Remaining before Tier A promotion:**
+**Promotion tracking:** [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md) ([#890](https://github.com/ford442/image_video_effects/issues/890)).
 
-- Live-browser smoke on edge GPUs
-- Benchmark report attached to promotion issue (run `WASM_GPU_TESTS=1 npm run test:wasm:bench`)
-- Close #848 / #849 with final CI + test suite links
+**July 2026 epic (#885):** Sub-issues #886–#889 implemented; #890 docs + promotion checklist (this pass).
 
 ---
 

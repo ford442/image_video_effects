@@ -115,7 +115,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let shock = shockwave(uv, time) * (1.0 + f32(mouseDown) * 0.5);
 
     let panX   = (mouse.x - 0.5) * 24.0;
-    let panZ   = (0.5 - mouse.y) * 24.0;
+    let panZ   = (mouse.y - 0.5) * 24.0;
 
     let sigma  = 8.0 + u.zoom_params.x * 6.0;
     let rho    = (24.0 + u.zoom_params.y * 12.0 * (1.0 + eBass * 0.5)) * (1.0 + gravityWell * 0.08);

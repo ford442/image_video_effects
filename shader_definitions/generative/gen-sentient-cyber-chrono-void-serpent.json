@@ -1,0 +1,47 @@
+{
+  "id": "gen-sentient-cyber-chrono-void-serpent",
+  "name": "Sentient Cyber-Chrono Void-Serpent",
+  "description": "A hyper-dimensional, endlessly twisting biomechanical serpent forged from shattered chrono-glass and liquid auroral plasma, slithering aggressively through a violently decaying temporal cosmic-rift. This shader blends razor-sharp synthetic scales and recursive geometric fracturing with fluid, audio-reactive bioluminescent shockwaves.",
+  "url": "shaders/gen-sentient-cyber-chrono-void-serpent.wgsl",
+  "tags": [
+    "organic",
+    "cybernetic",
+    "fractal",
+    "volumetric",
+    "audio-reactive"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Time Scale",
+      "defaultValue": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "name": "Plasma Intensity",
+      "defaultValue": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "index": 2,
+      "name": "Void Density",
+      "defaultValue": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
+    },
+    {
+      "index": 3,
+      "name": "Fracture Depth",
+      "defaultValue": 2.0,
+      "min": 0.0,
+      "max": 10.0,
+      "step": 0.5
+    }
+  ]
+}

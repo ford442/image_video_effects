@@ -227,7 +227,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse interaction for look around
     var mouse = u.zoom_config.yz;
     let mouse_ang_x = (mouse.x - 0.5) * 3.14;
-    let mouse_ang_y = (0.5 - mouse.y) * 3.14;
+    let mouse_ang_y = (mouse.y - 0.5) * 3.14;
 
     let ro = vec3<f32>(0.0, 0.0, cam_z);
 

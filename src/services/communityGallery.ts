@@ -85,11 +85,12 @@ export async function publishPack(input: PublishPackInput): Promise<PublishPackR
  * List published community packs.
  */
 export async function listCommunityPacks(
-  options: { limit?: number; offset?: number } = {}
+  options: { limit?: number; offset?: number; sortBy?: 'date' | 'play_count' } = {}
 ): Promise<ListCommunityPacksResponse> {
   const params = new URLSearchParams();
   if (options.limit !== undefined) params.set('limit', String(options.limit));
   if (options.offset !== undefined) params.set('offset', String(options.offset));
+  if (options.sortBy) params.set('sort_by', options.sortBy);
   const query = params.toString();
   const res = await fetch(`${API_BASE}/api/preset-packs${query ? `?${query}` : ''}`, {
     method: 'GET',
@@ -134,4 +135,5 @@ export async function getCommunityPackWithDecodedChain(
   return { pack, chain };
 }
 
-export { encodeChain, decodeChain, SharedChain };
+export { encodeChain, decodeChain };
+export type { SharedChain };

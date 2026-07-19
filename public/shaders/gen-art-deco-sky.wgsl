@@ -262,7 +262,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // So camera stays relatively static in Y, looking around
 
     // Orbit camera based on mouse
-    let cam_radius = 20.0 + (0.5 - mouse.y) * 10.0;
+    let cam_radius = 20.0 + (mouse.y - 0.5) * 10.0;
     let cam_angle = (mouse.x - 0.5) * 6.28 + time * 0.05;
 
     // Look slightly up

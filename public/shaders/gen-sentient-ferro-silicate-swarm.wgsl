@@ -190,7 +190,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Mouse interaction (magnetic anomaly)
   let mouseUV = u.zoom_config.yz;
   let mousePos = (mouseUV - 0.5) * vec2<f32>(res.x / res.y, 1.0) * 3.0;
-  let mouseY = 1.0 - mouseUV.y;  // Flip Y
+  let mouseY = mouseUV.y;  // Flip Y
   let mouse3D = vec3<f32>(mousePos.x, mouseY * 3.0, 0.0);
   let toMouse = mouse3D - p;
   let mouseDist = length(toMouse);

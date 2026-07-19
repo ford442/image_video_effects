@@ -101,7 +101,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Luminance-key alpha (green NV glow is additive over dark scope)
     let alpha = clamp(dot(final_color, vec3<f32>(0.299, 0.587, 0.114)) + scope_mask * 0.3, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(final_color, alpha));
+    let finalOut = vec4<f32>(final_color, alpha);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalOut);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalOut);
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

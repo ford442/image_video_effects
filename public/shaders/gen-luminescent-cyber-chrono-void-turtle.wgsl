@@ -90,7 +90,7 @@ fn map(p_in: vec3<f32>) -> f32 {
     // Mouse Gravity Well (Chrono-distortion)
     let mouseNorm = u.zoom_config.yz / u.config.zw;
     // Map from [0,1] to [-2, 2] roughly for screen space mouse mapping
-    let mousePos = vec3<f32>((mouseNorm.x * 2.0 - 1.0) * 4.0, (1.0 - mouseNorm.y * 2.0) * 4.0, 0.0);
+    let mousePos = vec3<f32>((mouseNorm.x * 2.0 - 1.0) * 4.0, (mouseNorm.y * 2.0 - 1.0) * 4.0, 0.0);
 
     let distToMouse = length(p - mousePos);
     let distortionStrength = u.zoom_params.z;

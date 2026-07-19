@@ -1,4 +1,4 @@
-import type { InputSource, ShaderEntry } from './types';
+import type { InputSource } from './types';
 
 // Slot execution mode for inter-shader parallelization
 type SlotMode = 'chained' | 'parallel';
@@ -24,63 +24,6 @@ export interface GPUTimings {
   timingSource: GPUTimingSource;
 }
 
-/** Diagnostic information from the WASM renderer. */
-export interface WASMDiagnostics {
-  initialized: boolean;
-  initAttempts: number;
-  errorCount: number;
-  lastErrorTime: string | null;
-  fps: number;
-  hasModule: boolean;
-  adapterInfo: string;
-  /** WebGPURenderer::InitStage of the last Initialize() attempt (0=None, 8=Ready). */
-  failedStage: number;
-  /** Human-readable reason for the last Initialize() failure, or '' if none. */
-  lastInitError: string;
-  /** InitStage name from C++ (e.g. 'Device', 'Surface'). */
-  failedStageName: string;
-  /** Bridge-layer load/init failures (from wasm_bridge.js getDiagnostics). */
-  loadErrorCount: number;
-  lastLoadError: string | null;
-  initTime: string;
-}
-
-/** Diagnostic snapshot from the TypeScript WebGPU renderer. */
-export interface WebGPUDiagnostics {
-  initialized: boolean;
-  lastInitError: string;
-  adapterSummary: string;
-  adapterAttemptLabel: string | null;
-  supportsDeepWorkgroup: boolean;
-  supportsSubgroups: boolean;
-  fps: number;
-}
-
-export type RendererDiagnosticsSnapshot = WASMDiagnostics | WebGPUDiagnostics;
-
-export interface RendererTestState {
-  time?: number;
-  mouseX?: number;
-  mouseY?: number;
-  mouseDown?: boolean;
-  bass?: number;
-  mid?: number;
-  treble?: number;
-}
-
-export interface RecordingOptions {
-  durationMs?: number;
-  frameRate?: number;
-  videoBitsPerSecond?: number;
-}
-
-export interface RendererAudioData {
-  bass: number;
-  mid: number;
-  treble: number;
-  freqBins: Float32Array;
-}
-
 /** Shader-slot backends (WebGPU + WASM). Canvas2D does not implement these. */
 export interface ShaderSlotRenderer {
   loadShader(id: string, url: string): Promise<boolean>;
@@ -93,18 +36,14 @@ export interface ShaderSlotRenderer {
   clearRipples(): void;
 }
 
-/**
- * Canonical renderer contract implemented by WebGPURenderer, WASMRenderer, and JSRenderer.
- * Optional methods are backend-specific extensions; RendererManager forwards when present.
- */
-export interface IRenderer {
+// Base renderer interface
+export interface Renderer {
   init(canvas: HTMLCanvasElement): Promise<boolean>;
   render(): void;
   destroy(): void;
 
   // Video input
   setVideo(video: HTMLVideoElement | undefined): void;
-  getVideo?(): HTMLVideoElement | null;
   updateVideoFrame(): void;
 
   // Audio input
@@ -137,18 +76,19 @@ export interface IRenderer {
   /** Returns true when the GPU supports 16×16×4 (1024-invocation) workgroups. */
   getSupportsDeepWorkgroup?: () => boolean;
 
+  // Added optionally implemented methods used by app
   setImageList?: (urls: string[]) => void;
   updateDepthMap?: (data: Float32Array, width: number, height: number) => void;
-  getAvailableModes?: () => ShaderEntry[];
+  getAvailableModes?: () => any[];
   loadImage?: (url: string) => Promise<string>;
-  loadImageFromURL?: (url: string) => Promise<void>;
   getFrameImage?: () => string;
-  refreshFrameImage?: () => Promise<string>;
   applyMask?: (maskType: string) => void;
   setMaskEnabled?: (enabled: boolean) => void;
   setRecording?: (isRecording: boolean) => void;
   setRecordingMode?: (mode: 'loop' | 'continuous') => void;
-  getAudioData?: () => RendererAudioData;
+  /** Optional: last audio analysis snapshot (WebGPU + WASM). */
+  getAudioData?: () => { bass: number; mid: number; treble: number; freqBins: Float32Array };
+  /** Optional: whether an internal recording flag is active (WASM). */
   isRecording?: () => boolean;
   loadShader?: (id: string, url: string) => Promise<boolean>;
   setActiveShader?: (id: string) => void;
@@ -157,21 +97,13 @@ export interface IRenderer {
   updateSlotParams?: (params: SlotZoomParamsUpdate, slotIndex?: number) => void;
   addRipple?: (x: number, y: number) => void;
   clearRipples?: () => void;
-  getFPS?: () => number;
-  reloadShaderFromURL?: (id: string, url: string) => Promise<boolean>;
-  firePlasma?: (x: number, y: number, vx: number, vy: number) => void;
-  applyTestRenderState?: (state: RendererTestState) => void;
-  takeScreenshot?: (filename?: string) => Promise<void>;
-  startRecording?: (
-    canvas: HTMLCanvasElement,
-    options?: RecordingOptions
-  ) => Promise<Blob>;
-  stopRecording?: () => void;
-  getDiagnostics?: () => RendererDiagnosticsSnapshot;
-}
 
-/** @deprecated Use IRenderer — kept for existing imports. */
-export type Renderer = IRenderer;
+  /** Optional: Return current FPS for performance comparison (used by dual-FPS toggle). */
+  getFPS?: () => number;
+
+  /** Optional: Reload a single shader from a remote URL without rebuilding the entire pipeline. */
+  reloadShaderFromURL?: (id: string, url: string) => Promise<boolean>;
+}
 
 export interface RendererConfig {
   width: number;
@@ -184,6 +116,8 @@ export const DEFAULT_CONFIG: RendererConfig = {
   height: 1080,
   agentCount: 50000,
 };
+
+// Re-export error handling from ErrorHandling module for backward compatibility
 
 // Re-export error handling from ErrorHandling module for backward compatibility
 export type { RendererError, ErrorHandler } from './ErrorHandling';

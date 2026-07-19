@@ -12,7 +12,12 @@
     "depth-aware",
     "aces-tone-map",
     "chromatic-aberration",
-    "semantic-alpha"
+    "semantic-alpha",
+    "raymarching",
+    "sdf",
+    "early-exit",
+    "lod-noise",
+    "branchless"
   ],
   "params": [
     {

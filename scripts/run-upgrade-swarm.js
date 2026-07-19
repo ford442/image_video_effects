@@ -13,12 +13,14 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-const QUEUE_PATH = path.join(PROJECT_ROOT, 'swarm-tasks', 'upgrade-queue.json');
+const DEFAULT_QUEUE_PATH = path.join(PROJECT_ROOT, 'swarm-tasks', 'upgrade-queue.json');
 const PROMPTS_DIR = path.join(PROJECT_ROOT, 'swarm-tasks', 'prompts');
 const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'agents', 'prompt-templates');
 const PROGRESS_PATH = path.join(PROJECT_ROOT, 'swarm-outputs', 'upgrade-progress.json');
 const SHADERS_DIR = path.join(PROJECT_ROOT, 'public', 'shaders');
 const DEFINITIONS_DIR = path.join(PROJECT_ROOT, 'shader_definitions');
+
+let QUEUE_PATH = DEFAULT_QUEUE_PATH;
 
 const BINDING_HEADER = `// ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
@@ -223,6 +225,7 @@ function parseArgs() {
     agentDispatch: args.includes('--agent-dispatch'),
     kimi: args.includes('--kimi'),
     batch: parseInt(args.find(a => a.startsWith('--batch='))?.split('=')[1] || '4', 10),
+    queue: args.find(a => a.startsWith('--queue='))?.split('=')[1] || null,
     help: args.includes('--help') || args.includes('-h'),
   };
 }
@@ -240,6 +243,7 @@ Options:
   --dispatch --kimi   Dispatch to kimi-cli (no API key needed; uses local kimi-cli)
   --agent-dispatch    Output JSON manifest for AI CLI Agent-tool dispatch
   --batch=N           Process N shaders in parallel (default: 4)
+  --queue=PATH        Use a custom queue file (default: swarm-tasks/upgrade-queue.json)
   --help, -h          Show this help
 
 Files:
@@ -477,6 +481,11 @@ async function main() {
   if (opts.help) {
     printHelp();
     return;
+  }
+
+  if (opts.queue) {
+    QUEUE_PATH = path.resolve(PROJECT_ROOT, opts.queue);
+    console.log(`📂 Using custom queue: ${path.relative(PROJECT_ROOT, QUEUE_PATH)}`);
   }
 
   // Default to --prepare if no mode specified

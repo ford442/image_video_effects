@@ -1,84 +1,98 @@
-# App Structure — Foundation Epic #912 (#913)
+# App Structure — Foundation Wave 2 (#965)
 
-Module map after the App.tsx strangler refactor. Behavior is preserved; this documents where logic lives and what remains in the monolith.
+Module map after App.tsx strangler completion and WebGPU modularization.
 
-## Line counts
+## Line counts (2026-07-19)
 
-| Module | Before | After |
-|--------|--------|-------|
-| `src/App.tsx` | ~2479 | ~2160 |
-| `src/components/Controls.tsx` | ~2211 | 2 (re-export) |
-| `src/components/controls/ControlsContainer.tsx` | — | ~1167 |
+| Module | LOC | Epic target |
+|--------|-----|-------------|
+| [`src/App.tsx`](src/App.tsx) | ~560 | < 800 |
+| [`src/components/controls/ControlsContainer.tsx`](src/components/controls/ControlsContainer.tsx) | ~400 | < 500 |
+| [`src/components/app/AppShell.tsx`](src/components/app/AppShell.tsx) | ~399 | layout shell |
+| [`src/components/app/AppOverlays.tsx`](src/components/app/AppOverlays.tsx) | ~280 | modals + overlays |
+| [`src/renderer/WebGPURenderer.ts`](src/renderer/WebGPURenderer.ts) | ~385 | thin facade (IRenderer) |
 
-Stretch targets (App &lt;600, ControlsContainer &lt;400) require future waves — not safe in one pass without regressions.
+**WebGPU modules** (`src/renderer/webgpu/`, see [`src/renderer/README.md`](../src/renderer/README.md)):
 
----
+| Module | LOC | Mirrors |
+|--------|-----|---------|
+| `device.ts` | ~192 | `device.cpp` |
+| `resources.ts` | ~317 | `resources.cpp` |
+| `pipeline.ts` | ~403 | `pipeline.cpp` |
+| `frame.ts` | ~592 | `frame.cpp` |
+| `audioDepth.ts` | ~104 | `audio_depth.cpp` |
+| `WebGPUTiming.ts` | ~60 | `timing.cpp` |
+| `WebGPUMediaInput.ts` | ~266 | (image/video in `audio_depth.cpp`) |
 
-## Controls — extracted panels (#914)
-
-Directory: `src/components/controls/`
-
-| File | Responsibility |
-|------|----------------|
-| `Controls.tsx` | Thin re-export of `ControlsContainer` |
-| `ControlsContainer.tsx` | Props wiring, local state, panel composition |
-| `types.ts` | `ControlsProps`, `ShaderCoordData` |
-| `hooks/useLiveControl.ts` | MIDI/keyboard bindings, auto-transition side effects |
-
-| Panel | File | Responsibility |
-|-------|------|----------------|
-| `RendererBackendPanel` | `panels/RendererBackendPanel.tsx` | Canonical `RendererSwitcher` wrapper |
-| `SlotStackPanel` | `panels/SlotStackPanel.tsx` | Six shader slots, compile status, mega-menu |
-| `ParamSlidersPanel` | `panels/ParamSlidersPanel.tsx` | Active-slot param sliders |
-| `InputSourcePanel` | `panels/InputSourcePanel.tsx` | Input source radios |
-| `RecordingSharePanel` | `panels/RecordingSharePanel.tsx` | Record clip + screenshot |
-| `LiveControlPanel` | `panels/LiveControlPanel.tsx` | MIDI arm/learn UI |
-| `RoulettePanel` | `panels/RoulettePanel.tsx` | Randomize, chaos, audio-reactive |
-| `CoordinateBrowserOverlay` | `panels/CoordinateBrowserOverlay.tsx` | Number-jump + coordinate browser modals |
-| `AdvancedDebugPanel` | `panels/AdvancedDebugPanel.tsx` | Dev tools, storage browser entry |
-
-**Renderer switcher:** `RendererSwitcher` + `RendererBackendPanel` is canonical. `RendererToggle` (root + shaders/) and `WASMToggle` are `@deprecated`.
-
-**Still inline in ControlsContainer:** AI VJ studio block, video/B3HD, generative picker, effect category filter.
+`GraphRunner` multipass dispatch is wired in `frame.ts` (`dispatchSlot` → `graphRunner.runGraph`).
 
 ---
 
-## App.tsx — extracted hooks (#913)
+## App.tsx — hooks (all wired)
 
-| Hook | File | Responsibility |
-|------|------|----------------|
-| `useDepthEstimation` | `src/hooks/useDepthEstimation.ts` | Xenova/transformers depth pipeline, `loadDepthModel`, `runDepthAnalysis`, depth map upload to renderer |
-| `useAudioReactiveParams` | `src/hooks/useAudioReactiveParams.ts` | Bass/mid/treble → `zoomParam1–4` smoothing for generative shaders; RAF loop; analyzer start/stop; `A` / `[` / `]` shortcuts |
-| `useShareChain` | `src/hooks/useShareChain.ts` | `?chain=` encode/decode, hash-based clip share links, share modal state, VJ chain share, `applySharedChain`, `copyChainShareLink` |
+| Hook | File |
+|------|------|
+| `useDepthEstimation` | `src/hooks/useDepthEstimation.ts` |
+| `useAudioReactiveParams` | `src/hooks/useAudioReactiveParams.ts` |
+| `useShareChain` | `src/hooks/useShareChain.ts` |
+| `useContentManifest` | `src/hooks/useContentManifest.ts` |
+| `useShaderCatalogLoad` | `src/hooks/useShaderCatalogLoad.ts` |
+| `useShaderBoot` | `src/hooks/useShaderBoot.ts` |
+| `useImageLoading` | `src/hooks/useImageLoading.ts` |
+| `useAiVjHandlers` | `src/hooks/useAiVjHandlers.ts` |
+| `useWebcam` | `src/hooks/useWebcam.ts` |
+| `useB3hdMode` | `src/hooks/useB3hdMode.ts` |
+| `useRoulette` | `src/hooks/useRoulette.ts` |
+| `useGenerativeShowcase` | `src/hooks/useGenerativeShowcase.ts` |
+| `useRecording` | `src/hooks/useRecording.ts` |
+| `useRemoteSync` | `src/hooks/useRemoteSync.ts` |
+| `useTestHarness` | `src/hooks/useTestHarness.ts` |
+| `useRendererBackend` | `src/hooks/useRendererBackend.ts` |
+| `useShaderMode` | `src/hooks/useShaderMode.ts` |
 
-### App.tsx — still inline (TODO future waves)
+Constants: [`src/app/constants/`](src/app/constants/) (`shaderDefaults`, `shaderCatalogUtils`, `defaultSlotParams`, `fallbackContent`).
 
-| Module (proposed) | Responsibility |
+**Intentional split (no monolithic facades):**
+
+| Original proposal | Actual modules |
 |-------------------|----------------|
-| `useShaderCatalogLoad` | Shader manifest fetch, `availableModes` boot, deep-workgroup filter |
-| `useInputSourceLifecycle` | Image/video/webcam/generative/live input switching, B3HD, auto image timer |
-| `useRemoteSync` | BroadcastChannel remote control, `buildFullState`, heartbeat |
-| `AppShell.tsx` | Layout composition only |
+| `useInputSourceLifecycle` | `useImageLoading`, `useWebcam`, `useB3hdMode`, `useShaderBoot`, `useShaderMode` |
+| `useRendererLifecycle` | `useRendererBackend`, `useRecording`, `useTestHarness` |
 
-Also still inline: AI VJ (`Alucinate`), roulette/chaos/generative showcase, WASM+TS recording, renderer switch, `SHADER_DEFAULTS` table, boot gate.
+**Render quality prop path:** `App.tsx` → `AppShell` → `Controls` (`renderQualityMode`, `onRenderQualityChange`, `performanceHud`, `maxActiveSlots`).
 
-**Preserved globals:** `window.__pixelocity__`, `window.__rendererManager`, URL params (`?renderer=`, `?chain=`, `?testMode=`, hash state).
+**Pure helpers + tests:** `shaderDefaults.ts` (`getShaderDefaults`), `shaderCatalogUtils.ts` (`determineCategory`).
 
 ---
 
-## Hooks index
+## Controls — panels (#914)
 
-All custom hooks export from `src/hooks/index.ts`:
+Directory: `src/components/controls/panels/` — see prior doc; `ControlsContainer` at ~400 LOC meets stretch target.
 
-- `useStorage`, `useWASM`, `useAudioAnalyzer`, `usePerformanceMonitor`
-- **#913:** `useDepthEstimation`, `useAudioReactiveParams`, `useShareChain`
+---
+
+## Binding + device policy SoT
+
+- [`docs/BINDING_CONTRACT.md`](BINDING_CONTRACT.md)
+- [`src/renderer/webgpuDevicePolicy.ts`](../src/renderer/webgpuDevicePolicy.ts) ↔ [`wasm_renderer/device.cpp`](../wasm_renderer/device.cpp)
+- CI: `npm run verify:device-policy`
+
+---
+
+## Multipass graph (Tier C)
+
+- [`docs/MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md)
+- [`src/renderer/multipassGraph.ts`](../src/renderer/multipassGraph.ts)
+- [`src/renderer/GraphRunner.ts`](../src/renderer/GraphRunner.ts) — wired in `webgpu/frame.ts` `dispatchSlot()` for `quantum-foam-pass1` (same-frame handoff demo)
 
 ---
 
 ## Testing
 
 ```bash
-npx react-scripts test --watchAll=false --ci
+npx react-scripts test --watchAll=false --ci   # 292 tests (incl. webgpu/resources, audioDepth)
+npm run verify:device-policy
+SKIP_WASM_BUILD=1 npm run build
 ```
 
-Build in Cloud VM: `SKIP_WASM_BUILD=1 npm run build`
+Thumbnails (requires GPU): see [`docs/THUMBNAIL_PIPELINE.md`](THUMBNAIL_PIPELINE.md) · `npm run thumbs:generate -- --missing` · status: `npm run thumbs:status`

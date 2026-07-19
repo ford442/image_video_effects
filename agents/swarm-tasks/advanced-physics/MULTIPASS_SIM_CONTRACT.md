@@ -6,18 +6,21 @@ How to run physics sims **without** new bind groups or a graph runner.
 
 ## What exists today
 
-### Frame feedback (automatic)
+### Frame feedback (automatic, usage-gated)
 
-After each chained slot dispatch, `WebGPURenderer` copies:
+After each chained slot's full pass chain, `WebGPURenderLoop` copies data textures for the *next* frame. Since the usage-gating change, only the copies the frame actually needs are recorded (derived per shader at compile time by `analyzeShaderBindings()` in `src/renderer/ShaderCompilation.ts`):
 
-- `dataTextureA` → `dataTextureC`
-- `dataTextureB` → `dataTextureC` (second copy overwrites — use **one** primary feedback channel per effect)
+- `dataTextureA` → `dataTextureC` — only when a shader in the slot's chain writes `dataTextureA`
+- `dataTextureB` → `dataTextureC` — only when a shader in the slot's chain writes `dataTextureB`; it runs after the A copy, so if you write **both**, B wins — use **one** primary feedback channel per effect
+- Both copies are skipped when no enabled shader reads `dataTextureC`
 
-See `src/renderer/WebGPURenderer.ts` (~1560) and `src/renderer/slotOrchestrator.ts`.
+Just write your state and read `dataTextureC` — the gating is invisible to shader authors. The same applies to the history ring (binding 13): the per-frame history copy only happens when an enabled shader actually samples `historyTexture`.
+
+See `src/renderer/webgpu/WebGPURenderLoop.ts` and `src/renderer/slotOrchestrator.ts`.
 
 ### Linear multipass (same frame)
 
-`resolveMultipassChain()` runs passes **sequentially in one command encoder** with the **same** bind group. Pass *N+1* can sample what pass *N* wrote to `dataTextureA` / `dataTextureB` in the same frame.
+`resolveMultipassChain()` runs passes **sequentially in one command encoder** with the **same** bind group. Note that `dataTextureA` / `dataTextureB` are bound **write-only** and `dataTextureC` refreshes only *after* the slot's whole chain — so pass *N+1* **cannot** read what pass *N* wrote this frame; cross-pass state travels through `dataTextureC` with one frame of latency.
 
 Registry: `node scripts/buildMultipassRegistry.js` → `src/renderer/multipassRegistry.ts`
 
@@ -52,29 +55,28 @@ Secondary pass WGSL files use `_` prefix or `-passN` suffix — **no** separate 
 | `extraBuffer` (10) | Particle indices, broken springs, RNG seeds | storage |
 | `plasmaBuffer` (12) | Audio bands | read |
 
-**Ping-pong within one frame (Tier B — no graph runner):**
+**Ping-pong across frames (Tier B — no graph runner):**
 
 ```
 Pass 1: read dataTextureC (t-1)  → write dataTextureA (integrate)
-Pass 2: read dataTextureA        → write dataTextureB (inject forces)
-Pass 3: read dataTextureB        → write writeTexture + dataTextureA (render + commit)
-End of frame: dataTextureA → dataTextureC (automatic)
+Pass 2: read dataTextureC (t-1)  → write dataTextureB (scratch — NOT readable by later passes)
+Pass 3: read dataTextureC (t-1)  → write writeTexture + dataTextureA (render + commit)
+End of slot: dataTextureA → dataTextureC (automatic — feeds next frame)
 ```
 
-Three logical buffers (prev / work / next) map onto A + B + C across time.
+A and B are write-only within a frame; every pass reads the *previous frame's* committed state from `dataTextureC`. State written to A becomes visible in C on the next frame (one-frame latency). True same-frame pass-to-pass handoff needs the Tier C graph runner below.
 
 ---
 
-## What the graph runner will add (Tier C — blocked)
+## What the graph runner provides (Tier C — landed)
 
-Do **not** implement these until #929 lands:
+See [`docs/MULTIPASS_GRAPH.md`](../../docs/MULTIPASS_GRAPH.md) for the JSON schema and copy-barrier rules.
 
 - **Intra-frame ping-pong loops** — e.g. Jacobi pressure ×40, cloth constraints ×5, without 40 separate WGSL files
-- **Conditional branching** — skip passes when `zoom_params.w` = quality preset
-- **Fan-out / merge** — photon emit ∥ trace with reduction
-- **Cross-slot sim handoff** — slot 0 sim state → slot 1 render
+- **Repeat counts** — `repeat: N` on graph nodes
+- **Pass budgets** — `maxPassesPerFrame` + `performancePolicy` caps
 
-Until then: cap iterations at ≤4 passes per chain or unroll modest loops inside one kernel.
+Until WASM parity ([#929](https://github.com/ford442/image_video_effects/issues/929)): TS WebGPU path only.
 
 ---
 

@@ -51,8 +51,11 @@ Demotion action: hide UI toggle, keep `wasm_renderer/` as R&D or move to separat
 
 - [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) — technical gaps
 - [`WASM_TEST_SUITE.md`](./WASM_TEST_SUITE.md) — how to run benchmarks and parity tests
+- [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md) — Tier B → A checklist + evidence log
 - [`wasm_renderer/ARTIFACTS.md`](./wasm_renderer/ARTIFACTS.md) — build artifacts
-- GitHub: #799 (init handshake), #845–#849 (integration / CI / testing)
+- [`wasm_renderer/STATUS.md`](./wasm_renderer/STATUS.md) — implementation snapshot
+- GitHub: [#885](https://github.com/ford442/image_video_effects/issues/885) (epic), [#890](https://github.com/ford442/image_video_effects/issues/890) (promotion tracking)
+- Closed batches: #799/#817–#823 (C++ init), #845–#849 (integration/CI), #886–#889 (July glue/tests)
 
 ## Native desktop (out of scope for Tier B)
 

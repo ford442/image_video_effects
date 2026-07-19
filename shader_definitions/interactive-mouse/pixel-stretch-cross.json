@@ -2,7 +2,7 @@
   "id": "pixel-stretch-cross",
   "name": "Pixel Stretch Cross",
   "url": "shaders/pixel-stretch-cross.wgsl",
-  "description": "Multi-direction pixel stretch using Fibonacci disk sampling, mouse gravity well, depth-aware attenuation, bass-envelope magnitude, click shockwaves, temporal trails, and effect-masked alpha.",
+  "description": "Multi-direction pixel stretch using Fibonacci disk sampling, mouse gravity well, depth-aware attenuation, bass-envelope magnitude, click shockwaves, temporal trails, and layered alpha compositing with depth fading, luminance keying, and accumulative feedback.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -10,7 +10,8 @@
     "temporal-feedback",
     "click-shockwave",
     "aces-tone-map",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "alpha-layered"
   ],
   "params": [
     {
@@ -49,6 +50,7 @@
     "depth-aware",
     "stretch",
     "distortion",
-    "interactive-mouse"
+    "interactive-mouse",
+    "alpha-layered"
   ]
 }

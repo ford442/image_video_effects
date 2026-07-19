@@ -146,11 +146,16 @@ cd wasm_renderer
 
 | Flag | Rationale |
 |------|-----------|
-| `-sASYNCIFY` | Required for `wgpuInstanceWaitAny` during adapter/device request callbacks. Adds size cost; keep until emdawn offers sync path. |
+| `-sASYNCIFY` | Required for `wgpuInstanceWaitAny` during adapter/device request callbacks. **~38 KiB wasm** (+43%) vs no-ASYNCIFY build; keep until emdawn offers sync WaitAny path. See [build flag experiments](./BUILD_FLAG_EXPERIMENTS.md). |
 | `-O2` | Default balance; evaluate `-O3` per-shader if profiling shows benefit. |
-| `-sALLOW_MEMORY_GROWTH=1` | Large 2048² rgba32f texture stacks; optional `-sINITIAL_MEMORY=67108864` reduces early growth. |
+| `-sALLOW_MEMORY_GROWTH=1` | Large 2048² rgba32f texture stacks. |
+| `-sINITIAL_MEMORY=67108864` | **Not adopted** (experiment 2026-07-19): zero `.wasm` size delta vs default; reserves 64 MiB heap up front vs 16 MiB default — prefer lower baseline memory. Revisit if first-frame growth profiling shows thrash on discrete GPUs. |
 | `-sMODULARIZE=1` | `PixelocityWASM` factory for `wasm_bridge.js` |
 | `compatibleSurface=nullptr` | Surface created post-device via `importJsSurface` — see `device.cpp` |
+
+**CI build path:** `npm run wasm:build` → `wasm_renderer/build.sh` only (not CMake). After any C++ or bridge change, run `npm run wasm:validate`.
+
+Re-run flag measurements: `./measure_wasm_build_flags.sh` (requires emsdk).
 
 Bridge copy + `scripts/validate_wasm_artifacts.js` remain the source-of-truth guards after build.
 
@@ -416,3 +421,6 @@ See [`STATUS.md`](STATUS.md) for the authoritative current-state document.
 ## License
 
 Same as parent project
+
+### Emscripten Build Notes & TextDecoder
+The WASM build script (`build.sh`) utilizes the `-sGROWABLE_ARRAYBUFFERS=0` compiler flag. This suppresses a critical runtime error where `TextDecoder` fails when interacting with WebAssembly resizable `ArrayBuffer` instances in Chromium/Edge. See `WASM_BUILD_CI_GUIDE.md` for details.

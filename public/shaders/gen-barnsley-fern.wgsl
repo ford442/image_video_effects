@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Barnsley Fern IFS (Algorithmist Upgrade)
+//  Barnsley Fern IFS — Advanced Hybrid
+//  Combined techniques: Barnsley IFS + Voronoi displacement +
+//                       SDF vignette mask + audio-driven palette +
+//                       domain-warped FBM + chromatic aberration +
+//                       temporal feedback echo
 //  Category: generative
-//  Features: procedural, fractal, barnsley-ifs, audio-reactive,
-//            mouse-driven, aces-tonemap, chromatic-aberration,
-//            temporal-feedback, depth-aware, upgraded-rgba,
-//            domain-warping, halton-quasi-random
 //  Complexity: High
-//  Created: 2026-05-30
+//  Updated: 2026-07-08
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -38,6 +38,11 @@ fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  let n = sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453123;
+  return fract(vec2<f32>(n, n * 1.618));
+}
+
 fn valueNoise(p: vec2<f32>) -> f32 {
   let i = floor(p); let f = fract(p); let u = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
@@ -52,6 +57,25 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 {
 
 fn domainWarp(p: vec2<f32>, strength: f32, oct: i32) -> vec2<f32> {
   return p + strength * vec2<f32>(fbm(p, oct), fbm(p + vec2<f32>(5.2, 1.3), oct));
+}
+
+// ── Voronoi displacement ──────────────────────────────────────────
+fn voronoi(p: vec2<f32>) -> vec2<f32> {
+  let i = floor(p); let f = fract(p);
+  var md = 8.0; var md2 = 8.0; var cell = vec2<f32>(0.0);
+  for (var y = -1; y <= 1; y = y + 1) {
+    for (var x = -1; x <= 1; x = x + 1) {
+      let g = vec2<f32>(f32(x), f32(y));
+      let h = hash22(i + g);
+      let d = length(g + h - f);
+      if d < md {
+        md2 = md; md = d; cell = i + g + h;
+      } else if d < md2 {
+        md2 = d;
+      }
+    }
+  }
+  return vec2<f32>(md, md2 - md);
 }
 
 // ── Quasi-random Halton sequence ──────────────────────────────────
@@ -70,6 +94,21 @@ fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32) -> vec3<f32
   let a = atan2(uv.y - 0.5, uv.x - 0.5);
   let s = vec2<f32>(cos(a), sin(a)) * strength;
   return vec3<f32>(color.r * (1.0 + s.x * 0.8), color.g, color.b * (1.0 - s.y * 0.5));
+}
+
+fn audioPalette(fy: f32, bass: f32, treble: f32) -> vec3<f32> {
+  let forest = vec3<f32>(0.02, 0.18, 0.04);
+  let emerald = vec3<f32>(0.05, 0.65, 0.18);
+  let lime = vec3<f32>(0.45, 0.95, 0.12);
+  let gold = vec3<f32>(0.85, 0.75, 0.15);
+  let magenta = vec3<f32>(0.55, 0.15, 0.45);
+  var c: vec3<f32>;
+  if fy < 0.3 { c = mix(forest, emerald, fy / 0.3); }
+  else if fy < 0.7 { c = mix(emerald, lime, (fy - 0.3) / 0.4); }
+  else { c = mix(lime, gold, (fy - 0.7) / 0.3); }
+  let shift = clamp(bass * 0.25 + treble * 0.15, 0.0, 1.0);
+  c = mix(c, magenta, shift * 0.2);
+  return c;
 }
 
 // ── Inverse IFS transforms ────────────────────────────────────────
@@ -102,7 +141,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prev = textureLoad(dataTextureC, pixel, 0);
 
   let scale = mix(0.7, 1.3, u.zoom_params.x);
-  let caAmt = u.zoom_params.y * 0.06;
+  let caAmt = u.zoom_params.y * 0.08;
   let brightness = mix(0.8, 2.0, u.zoom_params.z);
   let feedback = u.zoom_params.w;
 
@@ -112,6 +151,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Organic domain warp driven by bass + time
   let warp = domainWarp(p * 1.5 + vec2<f32>(time * 0.07, time * 0.05), 0.18 + bass * 0.08, 3);
   p = mix(p, warp, 0.35 + bass * 0.15);
+
+  // Voronoi displacement on frond coordinates
+  let voro = voronoi(p * 0.35 + vec2<f32>(time * 0.04, time * 0.03));
+  p = p + (vec2<f32>(voro.y, voro.x) - 0.5) * 0.12 * (1.0 + treble);
 
   // Mouse attracts frond tips
   let mouseFern = (mouse - 0.5) * vec2<f32>(aspect * 5.0, 10.0) / scale;
@@ -142,16 +185,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let detail = fbm(p * 6.0 + vec2<f32>(time * 0.1), 3) * (0.08 + treble * 0.12);
   density = saturate(density * (1.0 + detail) - detail * 0.3);
 
-  // Natural fern palette by height
+  // SDF vignette mask — preserves semantic alpha falloff at edges
+  let vignette = 1.0 - smoothstep(0.35, 0.85, length(uv));
+  density = density * vignette;
+
+  // Natural + audio-driven fern palette by height
   let fy = clamp((p.y + 3.0) / 10.0, 0.0, 1.0);
-  let forest = vec3<f32>(0.02, 0.18, 0.04);
-  let emerald = vec3<f32>(0.05, 0.65, 0.18);
-  let lime = vec3<f32>(0.45, 0.95, 0.12);
-  let yellow = vec3<f32>(0.85, 0.95, 0.25);
-  var color: vec3<f32>;
-  if fy < 0.3 { color = mix(forest, emerald, fy / 0.3); }
-  else if fy < 0.7 { color = mix(emerald, lime, (fy - 0.3) / 0.4); }
-  else { color = mix(lime, yellow, (fy - 0.7) / 0.3); }
+  var color = audioPalette(fy, bass, treble);
 
   // Sunlight filtering through fronds
   let sun = 0.3 + 0.7 * smoothstep(0.2, 0.9, density);
@@ -163,10 +203,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   color = acesToneMap(color * 1.8);
 
-  // Temporal feedback
+  // Temporal feedback echo
   color = mix(color, prev.rgb * 0.96, 0.03 + feedback * 0.08 + bass * 0.02);
 
-  // Audio morphs palette warmth
+  // Audio warms palette
   let warmth = bass * 0.15;
   color = vec3<f32>(color.r * (1.0 + warmth), color.g, color.b * (1.0 - warmth * 0.3));
 
