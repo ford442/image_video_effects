@@ -1,9 +1,9 @@
 /**
- * Contract test: MINIMUM_COMPUTE_LIMITS (TS) must match contracts/webgpu_limits.json
+ * Contract test: MINIMUM_COMPUTE_LIMITS (TS) must match src/contracts/webgpu_limits.json
  * and stay aligned with wasm_renderer/device.cpp (enforced by verify:device-policy in CI).
  */
 
-import contract from '../../contracts/webgpu_limits.json';
+import contract from '../contracts/webgpu_limits.json';
 import { MINIMUM_COMPUTE_LIMITS } from './webgpuDevicePolicy';
 import { UNIFORM_BUFFER_LAYOUT } from './types';
 
