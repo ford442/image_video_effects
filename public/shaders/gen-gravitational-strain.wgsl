@@ -315,7 +315,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let t      = u.config.x;
     let mouse  = u.zoom_config.yz;
     // Mouse Y-flip: screen-top (zoom_config.z=0) = +Y/up
-    let mouseY = 1.0 - mouse.y;
+    let mouseY = mouse.y;
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;

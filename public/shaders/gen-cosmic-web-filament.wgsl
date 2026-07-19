@@ -224,7 +224,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
   let uv01 = vec2<f32>(id.xy) / res;
   var uv = (vec2<f32>(id.xy) / res - 0.5) * vec2<f32>(res.x / res.y, -1.0) * u.zoom_config.z;
-  var mouse = (vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z) - 0.5) * u.zoom_config.z;
+  var mouse = (u.zoom_config.yz - 0.5) * u.zoom_config.z;
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;

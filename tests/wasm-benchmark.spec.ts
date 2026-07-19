@@ -18,11 +18,15 @@ import {
   isStrictGpuMode,
   computeSpeedupRatio,
   buildBenchmarkReport,
+  buildStubBenchmarkReport,
+  collectAdapterSummary,
   writeBenchmarkReport,
   type BenchResult,
   type BenchComparison,
   PROMOTION_SPEEDUP_RATIO,
 } from './helpers/rendererHarness';
+
+const BENCHMARK_SHADER_IDS = BENCHMARK_MATRIX.map((s) => s.id);
 
 test.beforeAll(async () => {
   await startStaticServer();
@@ -73,13 +77,22 @@ async function benchBackend(
 }
 
 test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
+  test.setTimeout(180000);
+
+  const userAgent = await page.evaluate(() => navigator.userAgent);
+
   if (!isStrictGpuMode()) {
+    writeBenchmarkReport(
+      buildStubBenchmarkReport(BENCHMARK_SHADER_IDS, { userAgent })
+    );
     test.skip(true, 'Set WASM_GPU_TESTS=1 with WebGPU hardware for benchmarks');
   }
 
   const allResults: BenchResult[] = [];
   const comparisons: BenchComparison[] = [];
   let gpuObserved = false;
+  let wasmAdapterSummary = '';
+  let webgpuAdapterSummary = '';
 
   for (const shader of BENCHMARK_MATRIX) {
     const wasmPage = page;
@@ -93,7 +106,20 @@ test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
       console.warn(
         `[bench] Skipping ${shader.id}: wasm=${wasmBench ? 'ok' : 'missing'} webgpu=${tsBench ? 'ok' : 'missing'}`
       );
+      if (!gpuObserved && comparisons.length === 0) {
+        writeBenchmarkReport(
+          buildStubBenchmarkReport(BENCHMARK_SHADER_IDS, { userAgent })
+        );
+        test.skip(true, 'WebGPU adapter unavailable — run locally or on a GPU runner with WASM_GPU_TESTS=1');
+      }
       continue;
+    }
+
+    if (!wasmAdapterSummary) {
+      wasmAdapterSummary = await collectAdapterSummary(wasmPage, 'wasm');
+    }
+    if (!webgpuAdapterSummary) {
+      webgpuAdapterSummary = await collectAdapterSummary(tsPage, 'webgpu');
     }
 
     gpuObserved = true;
@@ -121,8 +147,13 @@ test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
     }
   }
 
-  const report = buildBenchmarkReport(allResults, comparisons);
-  report.gpuBackendObserved = gpuObserved;
+  const report = buildBenchmarkReport(allResults, comparisons, {
+    benchmarkShaderIds: BENCHMARK_SHADER_IDS,
+    wasmAdapterSummary: wasmAdapterSummary || undefined,
+    webgpuAdapterSummary: webgpuAdapterSummary || undefined,
+    userAgent,
+    gpuBackendObserved: gpuObserved,
+  });
   writeBenchmarkReport(report);
 
   console.log('\n=== WASM Benchmark Report ===');
@@ -136,6 +167,13 @@ test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
   console.log('=============================\n');
 
   if (!gpuObserved) {
+    writeBenchmarkReport(
+      buildStubBenchmarkReport(BENCHMARK_SHADER_IDS, {
+        userAgent,
+        wasmAdapterSummary: wasmAdapterSummary || undefined,
+        webgpuAdapterSummary: webgpuAdapterSummary || undefined,
+      })
+    );
     test.skip(true, 'WebGPU adapter unavailable — run locally or on a GPU runner with WASM_GPU_TESTS=1');
   }
 });

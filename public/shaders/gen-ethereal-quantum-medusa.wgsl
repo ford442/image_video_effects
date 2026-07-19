@@ -64,7 +64,7 @@ fn map(p: vec3<f32>, time: f32, bass: f32, mids: f32) -> vec2<f32> {
     var p1 = p;
 
     // Mouse in 3D: screen-top (zoom_config.z=0) = +Y/up
-    let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 5.0, (0.5 - u.zoom_config.z) * 5.0, 0.0);
+    let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 5.0, (u.zoom_config.z - 0.5) * 5.0, 0.0);
 
     // Gravity well repulsion + attractor dual force
     let repulse_strength = u.zoom_params.w * 3.0;
@@ -172,7 +172,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += vec3<f32>(0.2, 0.9, 0.8) * glow * (1.0 - fresnel);
 
         // Mouse-proximity chromatic boost
-        let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 5.0, (0.5 - u.zoom_config.z) * 5.0, 0.0);
+        let mouse_pos = vec3<f32>((u.zoom_config.y - 0.5) * 5.0, (u.zoom_config.z - 0.5) * 5.0, 0.0);
         let mouse_dist = length(p - mouse_pos);
         let mouse_prox = exp(-mouse_dist * 2.0);
         col += vec3<f32>(0.5, 0.1, 0.3) * mouse_prox * bass * 2.0;

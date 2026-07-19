@@ -314,6 +314,27 @@ class TestListPresetPacks:
         resp = c.get("/api/preset-packs?limit=0")
         assert resp.status_code == 422
 
+    def test_list_sort_by_play_count(self, client):
+        c, _ = client
+        low = c.post("/api/preset-packs", json={
+            "name": "Low Plays",
+            "chain": _encode_chain(_sample_chain("low")),
+        }).json()["id"]
+        high = c.post("/api/preset-packs", json={
+            "name": "High Plays",
+            "chain": _encode_chain(_sample_chain("high")),
+        }).json()["id"]
+
+        c.post(f"/api/preset-packs/{low}/play")
+        c.post(f"/api/preset-packs/{high}/play")
+        c.post(f"/api/preset-packs/{high}/play")
+
+        resp = c.get("/api/preset-packs?sort_by=play_count")
+        assert resp.status_code == 200
+        names = [p["name"] for p in resp.json()["packs"]]
+        assert names[0] == "High Plays"
+        assert names[1] == "Low Plays"
+
 
 # ---------------------------------------------------------------------------
 # Integration tests: fetch one

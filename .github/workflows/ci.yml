@@ -129,6 +129,9 @@ jobs:
         node -e "require.resolve('typescript'); console.log('typescript OK:', require('typescript').version)"
         npx tsc --version
     
+    - name: Verify device policy sync (TS ↔ C++)
+      run: npm run verify:device-policy
+
     - name: Run unit tests
       run: npm test -- --watchAll=false --ci --coverage
       env:
@@ -192,6 +195,15 @@ jobs:
         path: playwright-report/
         retention-days: 30
 
+    - name: Upload WASM benchmark report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: wasm-benchmark-report
+        path: test-results/wasm-benchmark-report.json
+        retention-days: 30
+        if-no-files-found: warn
+
   wgsl-precommit-gate:
     runs-on: ubuntu-latest
     permissions:
@@ -222,6 +234,7 @@ jobs:
       run: |
         python3 scripts/test_workgroup_gate.py
         python3 scripts/test_authoring_gates.py
+        python3 scripts/test_bindgroup_checker.py
 
     - name: Publish gate summary
       if: always()

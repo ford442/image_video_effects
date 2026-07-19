@@ -47,11 +47,23 @@ export interface WasmBenchmarkReport {
   generatedAt: string;
   strictGpuMode: boolean;
   gpuBackendObserved: boolean;
+  benchmarkShaderIds: string[];
+  wasmAdapterSummary?: string;
+  webgpuAdapterSummary?: string;
+  userAgent?: string;
   results: BenchResult[];
   comparisons: BenchComparison[];
   promotionGateMet: boolean;
   promotionMinShaders: number;
   promotionSpeedupRatio: number;
+}
+
+export interface BenchmarkReportMetadata {
+  benchmarkShaderIds: string[];
+  wasmAdapterSummary?: string;
+  webgpuAdapterSummary?: string;
+  userAgent?: string;
+  gpuBackendObserved?: boolean;
 }
 
 let server: ChildProcessWithoutNullStreams | null = null;
@@ -312,21 +324,64 @@ export function computeSpeedupRatio(wasm: BenchResult, webgpu: BenchResult): num
   return 0;
 }
 
+/** Collect adapter summary from the active renderer or navigator.gpu (browser context). */
+export async function collectAdapterSummary(
+  page: Page,
+  backend: RendererBackend
+): Promise<string> {
+  return page.evaluate(async (expectedBackend) => {
+    const api = (window as any).__pixelocity__;
+    if (expectedBackend === 'wasm') {
+      const fromApi = api?.getAdapterSummary?.();
+      if (fromApi) return fromApi;
+      return api?.renderer?.getDiagnostics?.()?.wasm?.adapterInfo ?? '';
+    }
+
+    const webgpuDiags = api?.renderer?.getDiagnostics?.()?.webgpu;
+    if (webgpuDiags?.adapterInfo) return webgpuDiags.adapterInfo;
+
+    if (!navigator.gpu) return '';
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) return '';
+    const info = adapter.info;
+    return [info.vendor, info.architecture, info.device, info.description]
+      .filter(Boolean)
+      .join(' | ');
+  }, backend);
+}
+
 export function buildBenchmarkReport(
   results: BenchResult[],
-  comparisons: BenchComparison[]
+  comparisons: BenchComparison[],
+  metadata: BenchmarkReportMetadata = { benchmarkShaderIds: [] }
 ): WasmBenchmarkReport {
   const promotionHits = comparisons.filter((c) => c.meetsPromotionGate).length;
+  const gpuFromResults = results.some((r) => r.backend === 'wasm' && r.avgFps > 0);
   return {
     generatedAt: new Date().toISOString(),
     strictGpuMode: isStrictGpuMode(),
-    gpuBackendObserved: results.some((r) => r.backend === 'wasm'),
+    gpuBackendObserved: metadata.gpuBackendObserved ?? gpuFromResults,
+    benchmarkShaderIds: metadata.benchmarkShaderIds,
+    wasmAdapterSummary: metadata.wasmAdapterSummary,
+    webgpuAdapterSummary: metadata.webgpuAdapterSummary,
+    userAgent: metadata.userAgent,
     results,
     comparisons,
     promotionGateMet: promotionHits >= PROMOTION_MIN_SHADERS,
     promotionMinShaders: PROMOTION_MIN_SHADERS,
     promotionSpeedupRatio: PROMOTION_SPEEDUP_RATIO,
   };
+}
+
+export function buildStubBenchmarkReport(
+  benchmarkShaderIds: string[],
+  overrides: Partial<BenchmarkReportMetadata> = {}
+): WasmBenchmarkReport {
+  return buildBenchmarkReport([], [], {
+    benchmarkShaderIds,
+    gpuBackendObserved: false,
+    ...overrides,
+  });
 }
 
 export function writeBenchmarkReport(report: WasmBenchmarkReport, path = 'test-results/wasm-benchmark-report.json'): void {

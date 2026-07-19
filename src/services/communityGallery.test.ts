@@ -135,6 +135,19 @@ describe('communityGallery', () => {
         expect.objectContaining({ method: 'GET' })
       );
     });
+
+    it('passes sort_by when sortBy is provided', async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ total: 0, limit: 50, offset: 0, packs: [] }),
+      });
+
+      await listCommunityPacks({ limit: 50, sortBy: 'play_count' });
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${API_URL}/api/preset-packs?limit=50&sort_by=play_count`,
+        expect.objectContaining({ method: 'GET' })
+      );
+    });
   });
 
   describe('getCommunityPack', () => {

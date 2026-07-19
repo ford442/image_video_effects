@@ -5,9 +5,12 @@
 
 ---
 
-## 0. Canonical 13-Binding Header
+## 0. Canonical Compute Header (bindings 0–12 required)
 
 Copy this verbatim — do not invent bindings, rename them, or reorder them.
+
+For temporal effects that sample past frames, add the **optional binding 13** extension
+(documented below). See [`docs/BINDING_CONTRACT.md`](../docs/BINDING_CONTRACT.md).
 
 ```wgsl
 @group(0) @binding(0) var u_sampler: sampler;
@@ -26,13 +29,20 @@ Copy this verbatim — do not invent bindings, rename them, or reorder them.
 
 struct Uniforms {
   config: vec4<f32>,       // .x = time, .y = delta_time, .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = zoom, .yz = mouse_uv (0-1), .w = mouse_down (>0.5 = pressed)
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
   zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
   ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = time_created, .w = strength
 };
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+```
+
+**Optional binding 13** — temporal / history-ring shaders only (~11 shaders; catalog flag `requiresHistoryRing: true`):
+
+```wgsl
+@group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
+// historyHead is in extraBuffer[4] (u32 as f32); HISTORY_DEPTH = 8 layers
 ```
 
 **Accessing audio** (always use these three):

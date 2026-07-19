@@ -158,7 +158,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = vec2<f32>(texSize);
     let centered_uv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
     // Mouse Y-flip: screen-top (zoom_config.z=0) = +Y/up
-    let mouse = (vec2<f32>(u.zoom_config.y, 0.5 - u.zoom_config.z) * res - 0.5 * res) / res.y;
+    let mouse = (vec2<f32>(u.zoom_config.y, u.zoom_config.z - 0.5) * res - 0.5 * res) / res.y;
     let mouse_dist = length(centered_uv - mouse);
     let fold_factor = smoothstep(0.0, 0.5, mouse_dist);
     let ro = vec3<f32>(0.0, 0.0, -3.0); let rd = normalize(vec3<f32>(centered_uv, 1.0));

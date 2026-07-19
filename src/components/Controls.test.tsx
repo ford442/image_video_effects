@@ -267,3 +267,47 @@ describe('Live Control panel', () => {
         });
     });
 });
+
+describe('Community gallery wiring', () => {
+    const chain = { v: 1 as const, slots: [{ shaderId: 'liquid-metal' }] };
+
+    test('renders Community Gallery when chain sharing props are provided', () => {
+        render(
+            <Controls
+                modes={['rain', 'none', 'none']}
+                setMode={mockSetMode}
+                activeSlot={0}
+                setActiveSlot={mockSetActiveSlot}
+                slotParams={mockSlotParams}
+                updateSlotParam={mockUpdateSlotParam}
+                shaderCategory="image"
+                setShaderCategory={mockSetShaderCategory}
+                onNewImage={() => {}}
+                autoChangeEnabled={false}
+                setAutoChangeEnabled={() => {}}
+                autoChangeDelay={10}
+                setAutoChangeDelay={() => {}}
+                onLoadModel={() => {}}
+                isModelLoaded={false}
+                availableModes={availableModes}
+                inputSource="image"
+                setInputSource={() => {}}
+                videoList={[]}
+                selectedVideo=""
+                setSelectedVideo={() => {}}
+                isMuted={false}
+                setIsMuted={() => {}}
+                onUploadImageTrigger={() => {}}
+                onUploadVideoTrigger={() => {}}
+                isAiVjMode={false}
+                onToggleAiVj={() => {}}
+                aiVjStatus="idle"
+                onApplySharedChain={jest.fn()}
+                getCurrentChain={() => chain}
+            />
+        );
+
+        expect(screen.getByText('Community Gallery')).toBeInTheDocument();
+        expect(screen.getByText('Preset Packs')).toBeInTheDocument();
+    });
+});

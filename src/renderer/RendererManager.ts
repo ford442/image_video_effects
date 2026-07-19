@@ -12,6 +12,8 @@ import {
   resolvePerformancePolicy,
 } from '../config/performancePolicy';
 import { AdaptivePerformanceController } from './adaptivePerformance';
+import { getGraphEntryIds, hasGraph } from './multipassRegistry';
+import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 
 export interface RendererMetrics {
   fps: number;
@@ -34,6 +36,7 @@ export interface RendererPerformanceStatus {
 
 export interface ShaderLoadMeta {
   requiresDeepWorkgroup?: boolean;
+  requiresHistoryRing?: boolean;
 }
 
 export interface RendererDiagnostics {
@@ -262,7 +265,25 @@ export class RendererManager {
     }
 
     try {
-      return await backend.loadShader(id, url);
+      const ok = await backend.loadShader(id, url);
+      if (ok && hasGraph(id)) {
+        const entries = getGraphEntryIds(id);
+        await Promise.all(
+          entries
+            .filter((entryId) => entryId !== id)
+            .map((entryId) =>
+              backend.loadShader(entryId, resolveShaderUrl(`shaders/${entryId}.wgsl`)).catch(() => false),
+            ),
+        );
+      }
+      if (
+        process.env.NODE_ENV === 'development'
+        && ok
+        && meta?.requiresHistoryRing
+      ) {
+        console.log(`[RendererManager] Loaded history-ring shader "${id}" (binding 13)`);
+      }
+      return ok;
     } catch (err) {
       console.warn(`[RendererManager] loadShader("${id}") failed:`, err);
       return false;
@@ -276,7 +297,10 @@ export class RendererManager {
   async loadShaders(shaders: ShaderEntry[]): Promise<void> {
     if (!this.supportsShaderEffects()) return;
     const results = await Promise.allSettled(
-      shaders.map(s => this.loadShader(s.id, s.url))
+      shaders.map(s => this.loadShader(s.id, s.url, {
+        requiresDeepWorkgroup: s.requiresDeepWorkgroup,
+        requiresHistoryRing: s.requiresHistoryRing,
+      }))
     );
     const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value)).length;
     if (failed > 0) {
@@ -369,7 +393,10 @@ export class RendererManager {
         continue;
       }
 
-      const ok = await this.loadShader(entry.id, entry.url);
+      const ok = await this.loadShader(entry.id, entry.url, {
+        requiresDeepWorkgroup: entry.requiresDeepWorkgroup,
+        requiresHistoryRing: entry.requiresHistoryRing,
+      });
       if (ok) {
         this.setSlotShader(i, entry.id);
       } else {
@@ -724,6 +751,7 @@ export class RendererManager {
     const r = this.currentRenderer;
     if (r instanceof WebGPURenderer) {
       r.setAdaptiveQuality(false);
+      r.setMaxPassesPerFrame(this.performancePolicy.maxPassesPerFrame);
     }
     this.adaptiveController.updatePolicy(this.performancePolicy);
   }

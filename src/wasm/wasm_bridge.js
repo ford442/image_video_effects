@@ -1,5 +1,5 @@
-// CANONICAL WASM bridge — edit this file only.
-// build.sh copies to src/wasm/wasm_bridge.js (webpack/TS) and public/wasm/wasm_bridge.js (runtime).
+// CANONICAL WASM bridge — edit wasm_renderer/bridge/*.js only.
+// concat_bridge.sh assembles wasm_bridge.js and copies to src/wasm/ + public/wasm/.
 /**
  * Pixelocity WASM Renderer Bridge
  *
@@ -7,14 +7,17 @@
  * It mirrors the TypeScript Renderer API for drop-in compatibility.
  */
 
-// The WASM module instance
+// Shared renderer state and canvas references (concatenated into wasm_bridge.js).
+
+/** The WASM module instance */
 let wasmModule = null;
+/** @type {HTMLCanvasElement|null} */
 let canvas = null;
 
-// Counter used to assign unique CSS IDs to canvas elements that lack one.
+/** Counter used to assign unique CSS IDs to canvas elements that lack one. */
 let _canvasIdCounter = 0;
 
-// Renderer state
+/** Renderer state */
 const state = {
   initialized: false,
   activeShader: null,
@@ -53,6 +56,8 @@ const INIT_STAGE_NAMES = {
   7: 'Pipeline',
   8: 'Ready',
 };
+
+// Init diagnostics and bridge health reporting.
 
 /**
  * Read structured init-failure diagnostics exported from C++ (main.cpp).
@@ -110,6 +115,45 @@ export function getDiagnostics() {
     adapterInfo: cpp.adapterSummary,
   };
 }
+
+/**
+ * Human-readable adapter/device/limits summary from C++ CreateDevice().
+ * Empty string if the renderer has not attempted initialization yet.
+ * @returns {string}
+ */
+export function getAdapterSummary() {
+  if (!wasmModule) return '';
+  return wasmModule.ccall('getAdapterSummary', 'string', [], []);
+}
+
+/**
+ * Which Initialize() stage failed (see InitStage in renderer.h).
+ * Returns 8 (Ready) on success, 0 before any init attempt.
+ * @returns {number}
+ */
+export function getLastInitErrorStage() {
+  if (!wasmModule) return 0;
+  return wasmModule.ccall('getLastInitErrorStage', 'number', [], []);
+}
+
+/**
+ * Human-readable reason for the last Initialize() failure.
+ * @returns {string}
+ */
+export function getLastInitErrorMessage() {
+  if (!wasmModule) return '';
+  return wasmModule.ccall('getLastInitErrorMessage', 'string', [], []);
+}
+
+/**
+ * Check if renderer is initialized.
+ * @returns {boolean}
+ */
+export function isInitialized() {
+  return state.initialized;
+}
+
+// WASM module load and renderer lifecycle.
 
 /**
  * Initialize the WASM renderer
@@ -278,6 +322,8 @@ export function shutdownWasmRenderer() {
   state.initialized = false;
 }
 
+// Shader load, hot-reload, and slot assignment.
+
 /**
  * Load a WGSL shader
  * @param {string} id - Shader identifier
@@ -387,6 +433,52 @@ export function setSlotShader(slotIndex, id) {
     wasmModule._free(idPtr);
   }
 }
+
+/**
+ * Load a shader from a URL
+ * @param {string} id - Shader identifier
+ * @param {string} url - URL to fetch WGSL code from
+ * @returns {Promise<boolean>}
+ */
+export async function loadShaderFromURL(id, url) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const wgslCode = await response.text();
+    return loadShader(id, wgslCode);
+  } catch (err) {
+    console.error(`Failed to load shader from ${url}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Hot-reload a shader from URL (recompiles compute pipeline in C++).
+ * @param {string} id - Shader identifier
+ * @param {string} url - URL to fetch WGSL code from
+ * @returns {Promise<boolean>}
+ */
+export async function reloadShaderFromURL(id, url) {
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const wgslCode = await response.text();
+    const ok = reloadShader(id, wgslCode);
+    if (ok) {
+      console.log(`[WASM] ♻️  Hot-reloaded shader: ${id}`);
+    }
+    return ok;
+  } catch (err) {
+    console.error(`Failed to reload shader from ${url}:`, err);
+    return false;
+  }
+}
+
+// Uniforms, slot params, input source, audio, depth, and render triggers.
 
 /**
  * Set the four zoom parameters for a specific slot.
@@ -528,9 +620,7 @@ export function getSlotState(slotIndex) {
   };
 }
 
-/** CPU wall-clock render timings from the last frame.
- *  `available` is false because emdawn/Dawn in WASM does not expose GPU timestamp
- *  queries yet; parallel/chained/total are still valid per-frame wall-clock ms. */
+/** Render timings from the last frame (GPU timestamp queries when supported). */
 export function getGPUTimings() {
   if (!state.initialized || !wasmModule) {
     return { parallelTime: 0, chainedTime: 0, totalTime: 0, available: false, timingSource: 'unavailable' };
@@ -544,50 +634,13 @@ export function getGPUTimings() {
     const chainedTime = wasmModule.getValue(ptr + 4, 'float');
     const totalTime = wasmModule.getValue(ptr + 8, 'float');
     const available = wasmModule.getValue(ptr + 12, 'i32') === 1;
-    const timingSource = totalTime > 0 || parallelTime > 0 || chainedTime > 0 ? 'wall-clock' : 'unavailable';
+    const timingSource = available
+      ? 'gpu-timestamp'
+      : (totalTime > 0 || parallelTime > 0 || chainedTime > 0 ? 'wall-clock' : 'unavailable');
     return { parallelTime, chainedTime, totalTime, available, timingSource };
   } finally {
     wasmModule._free(ptr);
   }
-}
-
-export function setRecording(recording) {
-  if (!state.initialized || !wasmModule) return;
-  wasmModule.ccall('setRecording', null, ['number'], [recording ? 1 : 0]);
-}
-
-export function isRecordingActive() {
-  if (!state.initialized || !wasmModule) return false;
-  return wasmModule.ccall('isRecording', 'number', [], []) === 1;
-}
-
-/**
- * Capture the current frame and return a PNG data URL (for export / sharing).
- * Async because it uses the GPU readback path.
- */
-export async function captureFrameDataUrl() {
-  const imageData = await captureFrame();
-  let blob;
-  if (typeof OffscreenCanvas !== 'undefined') {
-    const offscreen = new OffscreenCanvas(imageData.width, imageData.height);
-    const ctx = offscreen.getContext('2d');
-    ctx.putImageData(imageData, 0, 0);
-    blob = await offscreen.convertToBlob({ type: 'image/png' });
-  } else {
-    blob = await new Promise((resolve) => {
-      const tmp = document.createElement('canvas');
-      tmp.width = imageData.width;
-      tmp.height = imageData.height;
-      tmp.getContext('2d').putImageData(imageData, 0, 0);
-      tmp.toBlob((b) => resolve(b), 'image/png');
-    });
-  }
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }
 
 /**
@@ -671,128 +724,6 @@ export function getFPS() {
 }
 
 /**
- * Human-readable adapter/device/limits summary from C++ CreateDevice().
- * Empty string if the renderer has not attempted initialization yet.
- * @returns {string}
- */
-export function getAdapterSummary() {
-  if (!wasmModule) return '';
-  return wasmModule.ccall('getAdapterSummary', 'string', [], []);
-}
-
-/**
- * Which Initialize() stage failed (see InitStage in renderer.h).
- * Returns 8 (Ready) on success, 0 before any init attempt.
- * @returns {number}
- */
-export function getLastInitErrorStage() {
-  if (!wasmModule) return 0;
-  return wasmModule.ccall('getLastInitErrorStage', 'number', [], []);
-}
-
-/**
- * Human-readable reason for the last Initialize() failure.
- * @returns {string}
- */
-export function getLastInitErrorMessage() {
-  if (!wasmModule) return '';
-  return wasmModule.ccall('getLastInitErrorMessage', 'string', [], []);
-}
-
-/**
- * Check if renderer is initialized.
- * @returns {boolean}
- */
-export function isInitialized() {
-  return state.initialized;
-}
-
-/**
- * Load a shader from a URL
- * @param {string} id - Shader identifier
- * @param {string} url - URL to fetch WGSL code from
- * @returns {Promise<boolean>}
- */
-export async function loadShaderFromURL(id, url) {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const wgslCode = await response.text();
-    return loadShader(id, wgslCode);
-  } catch (err) {
-    console.error(`Failed to load shader from ${url}:`, err);
-    return false;
-  }
-}
-
-/**
- * Hot-reload a shader from URL (recompiles compute pipeline in C++).
- * @param {string} id - Shader identifier
- * @param {string} url - URL to fetch WGSL code from
- * @returns {Promise<boolean>}
- */
-export async function reloadShaderFromURL(id, url) {
-  try {
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    const wgslCode = await response.text();
-    const ok = reloadShader(id, wgslCode);
-    if (ok) {
-      console.log(`[WASM] ♻️  Hot-reloaded shader: ${id}`);
-    }
-    return ok;
-  } catch (err) {
-    console.error(`Failed to reload shader from ${url}:`, err);
-    return false;
-  }
-}
-
-/**
- * Upload RGBA pixel data as an image (one-time load).
- * @param {Uint8Array|Uint8ClampedArray} rgbaPixels - RGBA bytes (width * height * 4)
- * @param {number} width
- * @param {number} height
- */
-export function uploadImageData(rgbaPixels, width, height) {
-  if (!state.initialized || !wasmModule) return;
-
-  const ptr = wasmModule._malloc(rgbaPixels.length);
-  wasmModule.HEAPU8.set(rgbaPixels, ptr);
-  try {
-    wasmModule.ccall('loadImageData', null, ['number', 'number', 'number'], [ptr, width, height]);
-  } finally {
-    wasmModule._free(ptr);
-  }
-}
-
-/**
- * Upload RGBA pixel data as a video frame (called every frame).
- * The C++ side uses a persistent staging buffer to avoid per-frame heap allocation.
- * @param {Uint8Array|Uint8ClampedArray} rgbaPixels - RGBA bytes (width * height * 4)
- * @param {number} width
- * @param {number} height
- */
-export function uploadVideoFrame(rgbaPixels, width, height) {
-  if (!state.initialized || !wasmModule) return;
-
-  const ptr = wasmModule._malloc(rgbaPixels.length);
-  wasmModule.HEAPU8.set(rgbaPixels, ptr);
-  try {
-    wasmModule.ccall('uploadVideoFrame', null, ['number', 'number', 'number'], [ptr, width, height]);
-  } finally {
-    wasmModule._free(ptr);
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PHASE 2: Canvas resizing
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
  * Resize the rendering canvas and recreate all size-dependent GPU resources.
  * Call this whenever the display canvas dimensions change.
  * @param {number} newWidth  - New canvas width in pixels
@@ -806,9 +737,7 @@ export function resizeCanvas(newWidth, newHeight) {
   wasmModule.ccall('resizeCanvas', null, ['number', 'number'], [newWidth, newHeight]);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PHASE 2: Frame capture / screenshot
-// ─────────────────────────────────────────────────────────────────────────────
+// Frame capture, screenshots, and image/video upload.
 
 /**
  * Capture the current rendered frame as RGBA8 pixel data.
@@ -915,9 +844,73 @@ export async function takeScreenshot(filename = 'screenshot.png') {
   URL.revokeObjectURL(url);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PHASE 2: Video recording
-// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Capture the current frame and return a PNG data URL (for export / sharing).
+ * Async because it uses the GPU readback path.
+ */
+export async function captureFrameDataUrl() {
+  const imageData = await captureFrame();
+  let blob;
+  if (typeof OffscreenCanvas !== 'undefined') {
+    const offscreen = new OffscreenCanvas(imageData.width, imageData.height);
+    const ctx = offscreen.getContext('2d');
+    ctx.putImageData(imageData, 0, 0);
+    blob = await offscreen.convertToBlob({ type: 'image/png' });
+  } else {
+    blob = await new Promise((resolve) => {
+      const tmp = document.createElement('canvas');
+      tmp.width = imageData.width;
+      tmp.height = imageData.height;
+      tmp.getContext('2d').putImageData(imageData, 0, 0);
+      tmp.toBlob((b) => resolve(b), 'image/png');
+    });
+  }
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Upload RGBA pixel data as an image (one-time load).
+ * @param {Uint8Array|Uint8ClampedArray} rgbaPixels - RGBA bytes (width * height * 4)
+ * @param {number} width
+ * @param {number} height
+ */
+export function uploadImageData(rgbaPixels, width, height) {
+  if (!state.initialized || !wasmModule) return;
+
+  const ptr = wasmModule._malloc(rgbaPixels.length);
+  wasmModule.HEAPU8.set(rgbaPixels, ptr);
+  try {
+    wasmModule.ccall('loadImageData', null, ['number', 'number', 'number'], [ptr, width, height]);
+  } finally {
+    wasmModule._free(ptr);
+  }
+}
+
+/**
+ * Upload RGBA pixel data as a video frame (called every frame).
+ * The C++ side uses a persistent staging buffer to avoid per-frame heap allocation.
+ * @param {Uint8Array|Uint8ClampedArray} rgbaPixels - RGBA bytes (width * height * 4)
+ * @param {number} width
+ * @param {number} height
+ */
+export function uploadVideoFrame(rgbaPixels, width, height) {
+  if (!state.initialized || !wasmModule) return;
+
+  const ptr = wasmModule._malloc(rgbaPixels.length);
+  wasmModule.HEAPU8.set(rgbaPixels, ptr);
+  try {
+    wasmModule.ccall('uploadVideoFrame', null, ['number', 'number', 'number'], [ptr, width, height]);
+  } finally {
+    wasmModule._free(ptr);
+  }
+}
+
+// Video recording via MediaRecorder and GPU readback pump.
 
 /** @type {MediaRecorder|null} */
 let _recorder      = null;
@@ -1039,6 +1032,16 @@ function startReadbackRecording(resolve, reject, { durationMs, frameRate, videoB
   pumpReadbackRecordingFrame();
 }
 
+export function setRecording(recording) {
+  if (!state.initialized || !wasmModule) return;
+  wasmModule.ccall('setRecording', null, ['number'], [recording ? 1 : 0]);
+}
+
+export function isRecordingActive() {
+  if (!state.initialized || !wasmModule) return false;
+  return wasmModule.ccall('isRecording', 'number', [], []) === 1;
+}
+
 /**
  * Start recording the renderer output to a WebM video.
  *
@@ -1127,7 +1130,8 @@ export async function recordAndDownload(
   URL.revokeObjectURL(url);
 }
 
-// Default export
+// Default export barrel — named exports live in the modules above.
+
 const wasmBridge = {
   getDiagnostics,
   initWasmRenderer,
@@ -1162,7 +1166,6 @@ const wasmBridge = {
   isInitialized,
   uploadImageData,
   uploadVideoFrame,
-  // Phase 2
   resizeCanvas,
   captureFrame,
   takeScreenshot,

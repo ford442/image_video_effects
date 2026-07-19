@@ -122,7 +122,7 @@ fn map(pos_in: vec3<f32>) -> vec2<f32> {
     let t = u.config.x * dropSpeed * (1.0 + audioReactive * 0.5);
     p.y -= t * 5.0;
     // Mouse Y-flip: screen-top = +Y/up
-    let mousePos = vec2<f32>((u.zoom_config.y - 0.5) * 20.0, ((1.0 - u.zoom_config.z) - 0.5) * 20.0);
+    let mousePos = vec2<f32>((u.zoom_config.y - 0.5) * 20.0, (u.zoom_config.z - 0.5) * 20.0);
     let dMouse = length(p.xz - mousePos);
     if (dMouse < 5.0) {
         let repelForce = (5.0 - dMouse) * 0.5;

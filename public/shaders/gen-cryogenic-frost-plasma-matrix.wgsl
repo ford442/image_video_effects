@@ -190,7 +190,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Camera
   let mouseUV = u.zoom_config.yz;
-  let mouseY = 1.0 - mouseUV.y;  // Flip Y: screen top = up
+  let mouseY = mouseUV.y;  // Flip Y: screen top = up
   let camAng = time * 0.1 + mouseUV.x * 0.5;
   let camDist = 8.0;
   let ro = vec3<f32>(

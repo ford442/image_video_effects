@@ -212,7 +212,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // z = Body Segment Density (default 20.0)
     // w = Nebula Density (default 0.8)
 
-    let mouse = vec2<f32>(u.zoom_config.y - 0.5, 0.5 - u.zoom_config.z);
+    let mouse = vec2<f32>(u.zoom_config.y - 0.5, u.zoom_config.z - 0.5);
     let mouseTarget = vec3<f32>(mouse.x * 10.0, mouse.y * 10.0, -5.0);
 
     // Camera

@@ -152,7 +152,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Camera rotation from mouse (Y-flipped: screen-top = +Y/up)
     let mouseRotY = (u.zoom_config.y - 0.5) * 3.14159;
-    let mouseRotX = (0.5 - u.zoom_config.z) * 1.5708;
+    let mouseRotX = (u.zoom_config.z - 0.5) * 1.5708;
 
     var ro = vec3<f32>(0.0, 0.0, -2.5);
     var rd = normalize(vec3<f32>(uv, 1.0));

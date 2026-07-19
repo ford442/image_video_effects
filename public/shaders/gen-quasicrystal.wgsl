@@ -154,7 +154,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let beatPulse = 1.0 + bass * 0.5;
 
     // Mouse Y-flip: screen-top = +Y/up
-    let mouseY = 1.0 - u.zoom_config.z;
+    let mouseY = u.zoom_config.z;
     let mousePos = vec2<f32>(u.zoom_config.y, mouseY);
 
     let symmetry = i32(mix(5.0, 13.0, u.zoom_params.x));

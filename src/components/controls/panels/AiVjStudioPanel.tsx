@@ -5,6 +5,7 @@ import { loadVJHistory, clearVJHistory, VJHistoryEntry } from '../../../services
 import { VJPreset, loadPresets, deletePreset } from '../../../services/vjPresets';
 import { MyVjSet, loadMyVjSets, deleteMyVjSet } from '../../../services/myVjSets';
 import { PresetPackGallery } from '../../PresetPackGallery';
+import { CommunityGallery } from '../../CommunityGallery';
 import { decodeChain, buildSharedChain } from '../../../services/layerChainShare';
 import type { SharedChain } from '../../../services/layerChainShare';
 import { buildCatalog, CatalogShader } from '../../../services/shaderCatalog';
@@ -32,6 +33,7 @@ export interface AiVjStudioPanelProps {
     onShareVjSet?: () => void;
     onSaveVjSet?: (name: string) => void;
     onApplySharedChain?: (chain: SharedChain) => void;
+    getCurrentChain?: () => SharedChain | null;
     onCopyChainShareLink?: () => void;
     autoTransitionOpen: boolean;
     setAutoTransitionOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -80,6 +82,7 @@ export const AiVjStudioPanel: React.FC<AiVjStudioPanelProps> = ({
     onShareVjSet,
     onSaveVjSet,
     onApplySharedChain,
+    getCurrentChain,
     onCopyChainShareLink,
     autoTransitionOpen,
     setAutoTransitionOpen,
@@ -104,6 +107,7 @@ export const AiVjStudioPanel: React.FC<AiVjStudioPanelProps> = ({
     const [myVjSetsOpen, setMyVjSetsOpen] = useState(false);
     const [vjSetName, setVjSetName] = useState('');
     const [presetPacksOpen, setPresetPacksOpen] = useState(false);
+    const [communityGalleryOpen, setCommunityGalleryOpen] = useState(false);
     const [presetName, setPresetName] = useState('');
     const [remixOpen, setRemixOpen] = useState(false);
     const [remixCatalog, setRemixCatalog] = useState<CatalogShader[] | null>(null);
@@ -579,6 +583,14 @@ export const AiVjStudioPanel: React.FC<AiVjStudioPanelProps> = ({
                     open={presetPacksOpen}
                     onToggle={() => setPresetPacksOpen(o => !o)}
                     onApplyPack={(chain: SharedChain) => onApplySharedChain(chain)}
+                />
+            )}
+            {onApplySharedChain && getCurrentChain && (
+                <CommunityGallery
+                    open={communityGalleryOpen}
+                    onToggle={() => setCommunityGalleryOpen(o => !o)}
+                    onApplySharedChain={onApplySharedChain}
+                    getCurrentChain={getCurrentChain}
                 />
             )}
 
