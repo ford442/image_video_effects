@@ -118,11 +118,36 @@ fn motionModulate(time: f32, bass: f32, mids: f32) -> MotionState {
 // ═══ CHUNK: domain-warp (OWNER: hop-1) ═══════════════════════════════════════
 
 fn applyDomainWarp(p: vec2<f32>, time: f32, strength: f32) -> vec2<f32> {
-    // Spine: single-level warp. Hop 1: recursive fbm(p + fbm(p + fbm(p))).
-    let drift = organicDrift(p, time, 6.0) * strength;
-    let q = p + drift;
-    let field = fbm(q * 1.8 + vec2<f32>(time * 0.04, -time * 0.03), 3);
-    return q + vec2<f32>(field - 0.5, fbm(q * 2.1 - time * 0.02, 2) - 0.5) * strength * 0.35;
+    // OWNER: claude-hop-1 2026-07-19
+    // Recursive IQ-style domain warp: three chained fbm displacement levels
+    // (q -> r -> s), organicDrift kept as a slow pre-warp layer.
+    var pp = p + organicDrift(p, time, 6.0) * strength * 0.5;
+
+    // Optional mouse bias: pull the warp domain toward the cursor while held.
+    if (u.zoom_config.w > 0.5) {
+        let mouse = (u.zoom_config.yz - vec2<f32>(0.5)) * 2.0;
+        pp += (mouse - pp) * 0.18 * strength;
+    }
+
+    let flow = vec2<f32>(time * 0.05, -time * 0.04);
+
+    let q = vec2<f32>(
+        fbm(pp * 1.6 + flow, 4),
+        fbm(pp * 1.6 + vec2<f32>(5.2, 1.3) - flow, 4)
+    ) - vec2<f32>(0.5);
+
+    let r = vec2<f32>(
+        fbm(pp * 1.9 + q * 2.3 + vec2<f32>(1.7, 9.2) + flow * 1.4, 4),
+        fbm(pp * 1.9 + q * 2.3 + vec2<f32>(8.3, 2.8) - flow * 1.1, 4)
+    ) - vec2<f32>(0.5);
+
+    let s = vec2<f32>(
+        fbm(pp * 1.4 + r * 2.7 + vec2<f32>(6.9, 4.1) + flow * 0.7, 3),
+        fbm(pp * 1.4 + r * 2.7 + vec2<f32>(3.4, 7.7) - flow * 0.9, 3)
+    ) - vec2<f32>(0.5);
+
+    // Bounded: |q|,|r|,|s| <~ 0.5 each, so total offset <~ 2.1 * strength.
+    return pp + strength * (q * 0.7 + r * 1.2 + s * 1.6);
 }
 
 // ═══ CHUNK: symmetry-fold (OWNER: hop-2) ═════════════════════════════════════
