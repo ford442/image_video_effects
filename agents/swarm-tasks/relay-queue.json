@@ -16,11 +16,12 @@
     {
       "hop": 1,
       "name": "domain-warp",
-      "owner": "unassigned",
+      "owner": "claude-hop-1",
       "chunk": "domain-warp",
       "prompt": "agents/swarm-tasks/prompts/relay-hop-1-domain-warp.md",
-      "status": "pending",
-      "target": "Recursive domain warp: fbm(p + fbm(p + fbm(p))). Stay within 6 octaves/call."
+      "status": "completed",
+      "target": "Recursive domain warp: fbm(p + fbm(p + fbm(p))). Stay within 6 octaves/call.",
+      "notes": "Three chained fbm levels (q->r->s) + organicDrift pre-warp; mouse bias on zoom_config.w. Gate: naga OK, bindgroup compatible."
     },
     {
       "hop": 2,
@@ -28,7 +29,7 @@
       "owner": "unassigned",
       "chunk": "symmetry-fold",
       "prompt": "agents/swarm-tasks/prompts/relay-hop-2-symmetry.md",
-      "status": "blocked",
+      "status": "pending",
       "target": "Polar kaleidoscope fold on UV before field sample. N-fold via zoom_params or fixed 6-fold."
     },
     {
