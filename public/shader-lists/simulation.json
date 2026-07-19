@@ -1662,6 +1662,139 @@
     ]
   },
   {
+    "id": "ripple-tank-pass2",
+    "name": "Ripple Tank (Pass 2: Optics Gather)",
+    "url": "shaders/ripple-tank-pass2.wgsl",
+    "description": "Reduces the wave field into a 10x10 caustic-energy grid in extraBuffer for same-frame use by the render pass. Second pass of the ripple-tank chain.",
+    "multipass": {
+      "pass": 2,
+      "totalPasses": 3,
+      "prevShader": "ripple-tank",
+      "nextShader": "ripple-tank-pass3"
+    },
+    "features": [
+      "multi-pass-2",
+      "compute-shader",
+      "simulation"
+    ],
+    "tags": [
+      "wave-equation",
+      "reduction",
+      "internal-pass"
+    ]
+  },
+  {
+    "id": "ripple-tank-pass3",
+    "name": "Ripple Tank (Pass 3: Render)",
+    "url": "shaders/ripple-tank-pass3.wgsl",
+    "description": "Chromatic refraction, phase-hue interference bands, specular glints, and coarse-grid caustic sparkles. Final pass of the ripple-tank chain.",
+    "multipass": {
+      "pass": 3,
+      "totalPasses": 3,
+      "prevShader": "ripple-tank-pass2",
+      "nextShader": null
+    },
+    "features": [
+      "multi-pass-3",
+      "compute-shader",
+      "audio-reactive",
+      "depth-aware",
+      "aces-tone-map"
+    ],
+    "tags": [
+      "wave-equation",
+      "caustics",
+      "internal-pass"
+    ]
+  },
+  {
+    "id": "ripple-tank",
+    "name": "Ripple Tank",
+    "url": "shaders/ripple-tank-pass1.wgsl",
+    "description": "Psychedelic 3-pass wave-interference tank — click to drop rings, hold to drive an oscillator, bass pumps the sources while caustic sparkles chase the wavefronts.",
+    "multipass": {
+      "pass": 1,
+      "totalPasses": 3,
+      "nextShader": "ripple-tank-pass2",
+      "passes": [
+        {
+          "pass": 1,
+          "name": "Wave step + inject",
+          "file": "ripple-tank-pass1.wgsl"
+        },
+        {
+          "pass": 2,
+          "name": "Coarse optics gather",
+          "file": "ripple-tank-pass2.wgsl"
+        },
+        {
+          "pass": 3,
+          "name": "Psychedelic render",
+          "file": "ripple-tank-pass3.wgsl"
+        }
+      ]
+    },
+    "params": [
+      {
+        "id": "waveSpeed",
+        "name": "Wave Speed",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Propagation speed c of the discrete wave equation (0.08–0.45 world units)"
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.65,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Velocity retention per step (0.975–0.9995) — high values ring for seconds"
+      },
+      {
+        "id": "sourceStrength",
+        "name": "Source Strength",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Amplitude and frequency of mouse driver, click ripples, and audio rain"
+      },
+      {
+        "id": "boundaryReflect",
+        "name": "Boundary Reflect",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Edge behavior: 0 = absorbing shore, 1 = fully reflecting tank walls"
+      }
+    ],
+    "features": [
+      "simulation",
+      "multi-pass",
+      "physics",
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "temporal-persistence",
+      "interactive"
+    ],
+    "tags": [
+      "wave-equation",
+      "interference",
+      "caustics",
+      "water",
+      "simulation"
+    ]
+  },
+  {
     "id": "sim-decay-system-rgba",
     "name": "Sim: Decay System RGBA",
     "url": "https://test.1ink.us/image_video_effects/shaders/sim-decay-system-rgba.wgsl",
