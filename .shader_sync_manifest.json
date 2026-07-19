@@ -2036,8 +2036,8 @@
     "synced_at": 1783584648.0662189
   },
   "chroma-lens": {
-    "hash": "22a0cc0bf02364686f93ae5c5db02dd8",
-    "synced_at": 1783584648.1761904
+    "hash": "71d70a82cbabc518161270649895b082",
+    "synced_at": 1784462438.8986394
   },
   "scan-slice": {
     "hash": "4edee8f3b432d93ef35661c8ac03edbd",
@@ -2072,8 +2072,8 @@
     "synced_at": 1784275339.2722244
   },
   "cyber-focus": {
-    "hash": "4a6a8e9457a92e30fde500abb3ea5a45",
-    "synced_at": 1783584649.1237266
+    "hash": "cdb07841b91c24a9b858027474de36e5",
+    "synced_at": 1784462438.0386326
   },
   "luma-topography": {
     "hash": "b3166e4b8585c6d2d164a94c7a3c2ab6",
@@ -2092,8 +2092,8 @@
     "synced_at": 1783584649.56649
   },
   "paper-cutout": {
-    "hash": "34346e26d7c084409fd1df407fcf9034",
-    "synced_at": 1783584649.57598
+    "hash": "ba14c6de439d9fd850a077700fef9f10",
+    "synced_at": 1784462437.3933508
   },
   "focal-pixelate": {
     "hash": "cb079d32468fbcf0085c92120ffa454c",
@@ -2136,20 +2136,20 @@
     "synced_at": 1784275338.7059746
   },
   "night-vision-scope": {
-    "hash": "6354490ed8366509eb3c24e3703fc369",
-    "synced_at": 1783584650.5630794
+    "hash": "91a40fc2271f1c702e193cfc2f5552ca",
+    "synced_at": 1784462437.405979
   },
   "mouse-gravity": {
-    "hash": "c6f8fadd9588eb1257e061c6e4c84647",
-    "synced_at": 1783584650.9190524
+    "hash": "68ecf066be4f63a6a58aaaff165345f4",
+    "synced_at": 1784462438.0482295
   },
   "luma-force": {
     "hash": "0fe1e5fa3775d1c4be47db99ae4a6493",
     "synced_at": 1783584650.9236355
   },
   "hex-mosaic": {
-    "hash": "3a7b4fc6559ebfb4d6065fc29246c5ed",
-    "synced_at": 1783584650.9417768
+    "hash": "5f87ec8675a88e63b3d4b700029dbdfd",
+    "synced_at": 1784462438.0284715
   },
   "signal-tuner": {
     "hash": "21f80df44b50f748b3ee21338b1ec446",
@@ -2168,8 +2168,8 @@
     "synced_at": 1783584651.3980377
   },
   "luma-echo-warp": {
-    "hash": "a14e40dc074c9a9d4650235e56e282aa",
-    "synced_at": 1783584651.43408
+    "hash": "f48aaea741e9a1f2e2a4cca4b425223e",
+    "synced_at": 1784462437.4533074
   },
   "interactive-emboss": {
     "hash": "8c6f3ad45fb5e0fba654b499ec0c285c",
@@ -2332,8 +2332,8 @@
     "synced_at": 1784275368.386318
   },
   "voronoi-glass": {
-    "hash": "8cec843e42b050c1145d589d02fd23eb",
-    "synced_at": 1783584691.5616415
+    "hash": "213554e73b43c8f34819addb2fd922b8",
+    "synced_at": 1784462437.3983722
   },
   "motion-heatmap": {
     "hash": "780fa91f7932a53c778a1638f3e180a0",
@@ -2376,8 +2376,8 @@
     "synced_at": 1783584692.9793718
   },
   "luma-slice-interactive": {
-    "hash": "4a26f7fb7f3cafd82817bf0b6444e9b6",
-    "synced_at": 1783584693.1997857
+    "hash": "65424dc1422729001e79d0128596595a",
+    "synced_at": 1784462437.986646
   },
   "liquid-warp": {
     "hash": "97e7995769f7dfbef3600d1cec2da080",
@@ -2556,8 +2556,8 @@
     "synced_at": 1784275376.0415742
   },
   "spectral-smear": {
-    "hash": "a10958c07a81cfe8224d70825f00b9d9",
-    "synced_at": 1783584699.7182157
+    "hash": "6b055b3f23d650d742efc2ea5b6de1a2",
+    "synced_at": 1784462437.4379723
   },
   "mouse-electromagnetic-aurora": {
     "hash": "3cded1e493fc0e5a848ff113ac9fbf01",
@@ -2648,8 +2648,8 @@
     "synced_at": 1783584703.3194215
   },
   "pixel-sort-explorer": {
-    "hash": "3b426cbf30e638166f553732b2275ee4",
-    "synced_at": 1783584703.4717171
+    "hash": "7383484953191a919e7b7d39af8e4e0c",
+    "synced_at": 1784462438.511468
   },
   "pixel-repel": {
     "hash": "f7d899b95f8a59190aad7c2318038959",
@@ -5056,12 +5056,12 @@
     "synced_at": 1784448571.2664177
   },
   "gen-relay-psychedelia": {
-    "hash": "6061af572e81b6ae3d120c0f26702b62",
-    "synced_at": 1784448573.9863665
+    "hash": "70fcb4ed926fe5690bef11e46c827fbc",
+    "synced_at": 1784462438.7238007
   },
   "gen-radiant-cyber-plasma-astro-griffin": {
-    "hash": "c34f9333604bccdb73c192b52d187b01",
-    "synced_at": 1784448681.271232
+    "hash": "47d55852f1adf3025ca99f3d0b30f28c",
+    "synced_at": 1784462438.5906026
   },
   "ripple-tank-pass2": {
     "hash": "b073fff4d0a1bdc07af8d8bcaeb86159",
