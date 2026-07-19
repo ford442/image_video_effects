@@ -128,6 +128,21 @@ export const MULTIPASS_REGISTRY: Record<string, MultipassInfo> = {
     "totalPasses": 3,
     "nextShader": null
   },
+  "ripple-tank-pass2": {
+    "pass": 2,
+    "totalPasses": 3,
+    "nextShader": "ripple-tank-pass3"
+  },
+  "ripple-tank-pass3": {
+    "pass": 3,
+    "totalPasses": 3,
+    "nextShader": null
+  },
+  "ripple-tank": {
+    "pass": 1,
+    "totalPasses": 3,
+    "nextShader": "ripple-tank-pass2"
+  },
   "sim-fluid-feedback-field": {
     "pass": 1,
     "totalPasses": 3,
