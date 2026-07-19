@@ -26,11 +26,12 @@
     {
       "hop": 2,
       "name": "symmetry-fold",
-      "owner": "unassigned",
+      "owner": "cursor-hop-2",
       "chunk": "symmetry-fold",
       "prompt": "agents/swarm-tasks/prompts/relay-hop-2-symmetry.md",
-      "status": "pending",
-      "target": "Polar kaleidoscope fold on UV before field sample. N-fold via zoom_params or fixed 6-fold."
+      "status": "completed",
+      "target": "Polar kaleidoscope fold on UV before field sample. N-fold via zoom_params or fixed 6-fold.",
+      "notes": "6-fold polar kaleidoscope; slow time spin; mouse-centers fold origin when held. No zoom_params stolen."
     },
     {
       "hop": 3,
@@ -38,7 +39,7 @@
       "owner": "unassigned",
       "chunk": "palette",
       "prompt": "agents/swarm-tasks/prompts/relay-hop-3-palette.md",
-      "status": "blocked",
+      "status": "pending",
       "target": "IQ cosine palette or enhanced psychedelicPalette. Only chunk that assigns RGB."
     },
     {
