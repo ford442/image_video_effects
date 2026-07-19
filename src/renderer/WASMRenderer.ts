@@ -2,7 +2,7 @@ import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Rend
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
 import { InputSource } from './types';
-import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
+
 import {
   computeInternalDimensions,
   INTERNAL_RENDER_RESOLUTION,
