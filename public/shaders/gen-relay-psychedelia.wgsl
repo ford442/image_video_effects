@@ -180,14 +180,35 @@ fn applySymmetry(p: vec2<f32>) -> vec2<f32> {
 // ═══ CHUNK: palette (OWNER: hop-3) — sole RGB assignment site ══════════════
 
 fn sampleField(p: vec2<f32>, time: f32) -> f32 {
-    return fbm(p * 2.4 + vec2<f32>(sin(time * 0.07), cos(time * 0.05)) * 0.3, 4);
+    // OWNER: kimi-hop-3 2026-07-19
+    // Base fbm layer + finer ridged layer so the kaleidoscope folds pick up vein detail.
+    let drift = vec2<f32>(sin(time * 0.07), cos(time * 0.05)) * 0.3;
+    let base = fbm(p * 2.4 + drift, 4);
+    let ridge = 1.0 - abs(2.0 * fbm(p * 4.8 - drift * 1.6, 3) - 1.0);
+    return clamp(mix(base, ridge, 0.3), 0.0, 1.0);
+}
+
+// Chunk-local IQ cosine palette helper (hop 3).
+fn iqPalette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
+    return a + b * cos(TAU * (c * t + d));
 }
 
 fn applyPalette(field: f32, time: f32, saturation: f32, hueShift: f32) -> vec3<f32> {
+    // OWNER: kimi-hop-3 2026-07-19
+    // Hybrid: psychedelicPalette base + IQ cosine interference bands at a slower phase.
     let t = field + time * 0.06 + hueShift * TAU;
-    var color = psychedelicPalette(t);
+    let base = psychedelicPalette(t);
+    let bands = iqPalette(
+        t * 0.5 + field * 0.7,
+        vec3<f32>(0.5, 0.5, 0.5),
+        vec3<f32>(0.5, 0.5, 0.5),
+        vec3<f32>(1.0, 1.0, 1.0),
+        vec3<f32>(0.0, 0.33, 0.67)
+    );
+    var color = mix(base, bands, 0.45);
     let gray = vec3<f32>(dot(color, vec3<f32>(0.2126, 0.7152, 0.0722)));
-    return mix(gray, color, clamp(saturation, 0.0, 1.0));
+    color = mix(gray, color, clamp(saturation, 0.0, 1.0));
+    return clamp(color, vec3<f32>(0.0), vec3<f32>(1.2));
 }
 
 // ═══ CHUNK: temporal-feedback (OWNER: hop-4) ═════════════════════════════════

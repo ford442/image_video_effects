@@ -2,7 +2,7 @@
   "id": "spectral-smear",
   "name": "Spectral Smear",
   "url": "shaders/spectral-smear.wgsl",
-  "description": "Leaves a colorful spectral trail that follows the mouse.",
+  "description": "Paints flowing spectral trails that follow the mouse, with organic noise-warped smearing and a rainbow fringe around the brush.",
   "params": [
     {
       "id": "decay",

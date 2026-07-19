@@ -3136,7 +3136,7 @@
     "id": "hex-mosaic",
     "name": "Hexagon Mosaic",
     "url": "shaders/hex-mosaic.wgsl",
-    "description": "Hexagonal tiling effect that reveals the clear image around the mouse cursor. Bass audio reactivity boosts saturation.",
+    "description": "Hexagonal glass-tile mosaic that reveals the clear image around the mouse cursor. Beveled tiles with grout seams shimmer with audio-reactive glints, bass boosts saturation, clicks send light ripples across the tiles, and holding the mouse down magnifies the mosaic under the cursor.",
     "params": [
       {
         "id": "tile-size",
@@ -3174,6 +3174,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "click-ripples",
+      "glass-tiles",
+      "vignette-grain",
       "upgraded-rgba"
     ],
     "tags": [
@@ -3181,7 +3184,9 @@
       "image-processing",
       "hexagon",
       "mosaic",
-      "interactive"
+      "interactive",
+      "glass",
+      "ripple"
     ]
   },
   {
@@ -5094,13 +5099,15 @@
   {
     "id": "luma-echo-warp",
     "url": "shaders/luma-echo-warp.wgsl",
-    "description": "Temporal echo accumulation with depth-parallax attenuation and curl-warped flow. Bass drives echo amplitude, treble adds sparkle to high-luma regions, and previous frames bleed through via dataTextureC.",
+    "description": "Temporal echo accumulation with depth-parallax attenuation and curl-noise swirl warping around the mouse. Bass drives echo amplitude and chromatic trail separation, treble adds twinkling sparkle to high-luma regions, and previous frames bleed through via dataTextureC with a luma-locked palette shimmer.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "temporal-echo",
       "depth-attenuation",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "curl-noise",
+      "chromatic-echo"
     ],
     "params": [
       {
@@ -5138,7 +5145,9 @@
       "temporal-feedback",
       "depth-aware",
       "echo",
-      "warp"
+      "warp",
+      "curl-noise",
+      "chromatic"
     ],
     "name": "Luma Echo Warp"
   },
@@ -5247,7 +5256,7 @@
     "id": "luma-slice-interactive",
     "name": "Luma Slice Interactive",
     "url": "shaders/luma-slice-interactive.wgsl",
-    "description": "Slices the image horizontally, displacing strips based on their luminance and mouse position. Audio-reactive intensity via bass.",
+    "description": "Slices the image horizontally, displacing strips based on their luminance and mouse position. Audio-reactive intensity via bass, mids-shimmered RGB fringes tinted by a cosine palette, organic fBM wobble, and a mouse-down surge ripple, finished with vignette and grain.",
     "params": [
       {
         "id": "intensity",
@@ -5282,7 +5291,11 @@
       "mouse-driven",
       "glitch",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "mouse-down-surge",
+      "fbm-wobble",
+      "palette-fringe",
+      "vignette-grain"
     ],
     "tags": [
       "filter",
@@ -8182,7 +8195,7 @@
     "id": "pixel-sort-explorer",
     "name": "Pixel Sort Explorer",
     "url": "shaders/pixel-sort-explorer.wgsl",
-    "description": "Locally sorts pixels within a mouse-controlled spotlight radius.",
+    "description": "Sorts pixels into interval-segmented luma streaks inside a mouse-driven spotlight, with organic line wobble, a traveling scan read-out, and audio-reactive lens breathing.",
     "params": [
       {
         "id": "thresh",
@@ -8214,7 +8227,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -10563,7 +10578,7 @@
     "id": "spectral-smear",
     "name": "Spectral Smear",
     "url": "shaders/spectral-smear.wgsl",
-    "description": "Leaves a colorful spectral trail that follows the mouse.",
+    "description": "Paints flowing spectral trails that follow the mouse, with organic noise-warped smearing and a rainbow fringe around the brush.",
     "params": [
       {
         "id": "decay",

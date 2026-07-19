@@ -2,7 +2,7 @@
   "id": "pixel-sort-explorer",
   "name": "Pixel Sort Explorer",
   "url": "shaders/pixel-sort-explorer.wgsl",
-  "description": "Locally sorts pixels within a mouse-controlled spotlight radius.",
+  "description": "Sorts pixels into interval-segmented luma streaks inside a mouse-driven spotlight, with organic line wobble, a traveling scan read-out, and audio-reactive lens breathing.",
   "params": [
     {
       "id": "thresh",
@@ -34,7 +34,9 @@
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
