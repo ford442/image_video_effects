@@ -2,7 +2,7 @@ import React, { RefObject } from 'react';
 import ShaderScanner from '../ShaderScanner';
 import { StorageBrowser } from '../storage';
 import { RenderMode, ShaderEntry, SlotParams, InputSource } from '../../renderer/types';
-import { SharedChain } from '../../services/layerChainShare';
+
 
 export interface AppOverlaysProps {
     rouletteFlashRef: RefObject<HTMLDivElement | null>;

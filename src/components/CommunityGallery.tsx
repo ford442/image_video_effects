@@ -54,8 +54,7 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
   const [publishName, setPublishName] = useState('');
   const [publishDescription, setPublishDescription] = useState('');
   const [publishAuthor, setPublishAuthor] = useState('');
-  const [publishStatus, setPublishStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [publishError, setPublishError] = useState<string | null>(null);
+    const [publishError, setPublishError] = useState<string | null>(null);
   const [thumbnailManifest, setThumbnailManifest] = useState<ThumbnailManifest>({});
   const fetchStartedRef = useRef(false);
   const manifestLoadedRef = useRef(false);
@@ -113,15 +112,13 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
     }
     setPublishFormOpen(true);
     setPublishError(null);
-    setPublishStatus('idle');
-    if (!publishName) setPublishName('My Preset Pack');
+        if (!publishName) setPublishName('My Preset Pack');
   }, [getCurrentChain, publishName]);
 
   const closePublishForm = useCallback(() => {
     setPublishFormOpen(false);
     setPublishError(null);
-    setPublishStatus('idle');
-  }, []);
+      }, []);
 
   const handlePublish = useCallback(
     async (e: React.FormEvent) => {
@@ -138,8 +135,7 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
       }
 
       setIsPublishing(true);
-      setPublishStatus('loading');
-      setPublishError(null);
+            setPublishError(null);
       try {
         const result = await publishPack({
           name,
@@ -148,16 +144,14 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
           chain: current,
         });
         setPacks(prev => [result.pack, ...prev.filter(p => p.id !== result.pack.id)]);
-        setPublishStatus('success');
-        setPublishFormOpen(false);
+                setPublishFormOpen(false);
         setPublishName('');
         setPublishDescription('');
         setPublishAuthor('');
         await loadPacks();
       } catch (err) {
         console.warn('[CommunityGallery] failed to publish pack:', err);
-        setPublishStatus('error');
-        setPublishError(err instanceof Error ? err.message : 'Publish failed.');
+                setPublishError(err instanceof Error ? err.message : 'Publish failed.');
       } finally {
         setIsPublishing(false);
       }

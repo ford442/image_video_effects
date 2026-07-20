@@ -56,7 +56,7 @@ function MainApp() {
     const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
     const [inputSource, setInputSource] = useState<InputSource>('image');
     const [activeGenerativeShader, setActiveGenerativeShader] = useState<string>('gen-orb');
-    const [videoSourceUrl, setVideoSourceUrl] = useState<string | undefined>(undefined);
+    const [videoSourceUrl] = useState<string | undefined>(undefined);
     const [isMuted, setIsMuted] = useState(true);
     const [selectedVideo, setSelectedVideo] = useState<string>('');
     const [videoB3hdMode, setVideoB3hdMode] = useState(false);
@@ -66,7 +66,7 @@ function MainApp() {
     const [showSidebar, setShowSidebar] = useState(true);
     const [showShaderScanner, setShowShaderScanner] = useState(false);
     const [showStorageBrowser, setShowStorageBrowser] = useState(false);
-    const [storageBrowserTab, setStorageBrowserTab] = useState<'shaders' | 'images' | 'videos'>('shaders');
+    const [storageBrowserTab] = useState<'shaders' | 'images' | 'videos'>('shaders');
     const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 });
     const [isMouseDown, setIsMouseDown] = useState(false);
     const [shadersReady, setShadersReady] = useState(false);
@@ -140,8 +140,7 @@ function MainApp() {
     });
 
     const {
-        depthEstimator,
-        isModelLoaded,
+                isModelLoaded,
         loadDepthModel,
         runDepthAnalysis,
     } = useDepthEstimation({
