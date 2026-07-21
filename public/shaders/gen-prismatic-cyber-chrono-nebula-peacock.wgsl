@@ -82,7 +82,7 @@ fn map(pos: vec3<f32>) -> vec3<f32> {
     // Mouse Interaction (Gravitational Singularity)
     // Convert mouse to world space roughly
     let mx = (u.zoom_config.y * 2.0 - 1.0) * (u.config.z / u.config.w);
-    let my = (u.zoom_config.z * 2.0 - 1.0) * -1.0;
+    let my = (u.zoom_config.z * 2.0 - 1.0);
 
     let mouseDist = length(p.xy - vec2<f32>(mx, my));
     let gravity = exp(-mouseDist * 2.0) * 0.5;

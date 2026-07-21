@@ -113,7 +113,7 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
     // Mouse Y-flip: screen-top (zoom_config.z=0) = +Y/up
     let mx = (u.zoom_config.y * 2.0 - 1.0) * 5.0;
-    let my = ((1.0 - u.zoom_config.z) * 2.0 - 1.0) * 5.0;
+    let my = (u.zoom_config.z * 2.0 - 1.0) * 5.0;
     let mousePos = vec3<f32>(mx, my, p.z);
     let distToMouse = length(p - mousePos);
     let pull = exp(-distToMouse * 0.5) * 2.0;

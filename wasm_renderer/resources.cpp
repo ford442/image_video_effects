@@ -98,6 +98,14 @@ bool WebGPURenderer::CreateResources() {
     texDesc.label = MakeStringView("Data Texture C");
     dataTextureC_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
 
+    texDesc.format = WGPUTextureFormat_RGBA32Float;
+    texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst
+                  | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopySrc;
+    texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), HISTORY_DEPTH};
+    texDesc.label = MakeStringView("History Texture");
+    historyTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
+    historyHead_ = 0;
+
     // Depth textures (r32float)
     texDesc.format = WGPUTextureFormat_R32Float;
     texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding;
@@ -167,6 +175,7 @@ void WebGPURenderer::RecreateTextures() {
     dataTextureA_.reset();
     dataTextureB_.reset();
     dataTextureC_.reset();
+    historyTexture_.reset();
     depthTextureRead_.reset();
     depthTextureWrite_.reset();
 
@@ -201,6 +210,14 @@ void WebGPURenderer::RecreateTextures() {
     texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding;
     texDesc.label = MakeStringView("Data Texture C");
     dataTextureC_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
+
+    texDesc.format = WGPUTextureFormat_RGBA32Float;
+    texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst
+                  | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopySrc;
+    texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), HISTORY_DEPTH};
+    texDesc.label = MakeStringView("History Texture");
+    historyTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
+    historyHead_ = 0;
 
     // Depth textures (r32float)
     texDesc.format = WGPUTextureFormat_R32Float;

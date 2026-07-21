@@ -107,7 +107,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
   // Orbit camera logic
   let yaw = mouse.x * 6.28;
-  let height = (1.0 - mouse.y) * 14.0 + 1.0; // Height control, Y-flip: screen top = up
+  let height = mouse.y * 14.0 + 1.0;
   let dist = 12.0;
 
   var ro = vec3<f32>(sin(yaw) * dist, height, cos(yaw) * dist);

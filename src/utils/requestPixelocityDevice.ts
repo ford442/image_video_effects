@@ -2,7 +2,7 @@
  * Request a WebGPU device with the feature set expected by Pixelocity shaders.
  * Mirrors WebGPURenderer initialization so compile-time checks match runtime.
  *
- * Cross-reference: src/renderer/webgpuDevicePolicy.ts and wasm_renderer/renderer.cpp CreateDevice().
+ * Cross-reference: src/renderer/webgpuDevicePolicy.ts and wasm_renderer/device.cpp.
  */
 import {
   assertAdapterMeetsContract,

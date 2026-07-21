@@ -216,7 +216,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let qAudio = qWind + bass * 1.2;
     let R = 0.72;
     let r = 0.30;
-    let cam = 4.0 + (0.5 - mouse.y) * 2.0;
+    let cam = 4.0 + (mouse.y - 0.5) * 2.0;
     let tumble = time * spinSpeed * 0.08;
 
     // Organic domain warp for tube modulation and background

@@ -45,6 +45,7 @@ export interface UseShareChainReturn {
     handleShareVjSet: () => Promise<void>;
     applySharedChain: (chain: SharedChain) => void;
     copyChainShareLink: () => Promise<void>;
+    getCurrentChain: () => SharedChain | null;
     openRecordingShareModal: () => void;
 }
 
@@ -276,6 +277,11 @@ export function useShareChain({
         setShowShareModal(true);
     }, [generateShareableLink]);
 
+    const getCurrentChain = useCallback((): SharedChain | null => {
+        const chain = buildSharedChain(modes, slotParams);
+        return chain.slots.some(s => s.shaderId) ? chain : null;
+    }, [modes, slotParams]);
+
     return {
         showShareModal,
         setShowShareModal,
@@ -288,6 +294,7 @@ export function useShareChain({
         handleShareVjSet,
         applySharedChain,
         copyChainShareLink,
+        getCurrentChain,
         openRecordingShareModal,
     };
 }

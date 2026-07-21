@@ -91,6 +91,7 @@ export interface ControlsProps {
     onOpenStorageBrowser?: () => void;
     onCopyChainShareLink?: () => void;
     onApplySharedChain?: (chain: SharedChain) => void;
+    getCurrentChain?: () => SharedChain | null;
     onTriggerNextTransition?: () => Promise<void> | void;
     onRandomizeSlot?: (slot: number) => void;
     onSetSlotParam?: (slot: number, param: string, value: number) => void;

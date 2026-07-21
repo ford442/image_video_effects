@@ -110,7 +110,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // === CAMERA (best of both: main's clean spherical + feature's organic drift) ===
     var mouse = u.zoom_config.yz;
     let angleX = (mouse.x - 0.5) * 6.2832;
-    let angleY = (0.5 - mouse.y) * 3.1416;  // Flip Y: mouse up = look up
+    let angleY = (mouse.y - 0.5) * 3.1416;  // Flip Y: mouse up = look up
     let camDist = 8.0;
 
     var ro = vec3<f32>(

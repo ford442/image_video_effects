@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-07-12T03:01:06.451875+00:00",
-  "definitions_scanned": 1291,
-  "wgsl_files_scanned": 1294,
+  "timestamp": "2026-07-19T05:41:40.327299+00:00",
+  "definitions_scanned": 1304,
+  "wgsl_files_scanned": 1307,
   "manifests": {
     "shader_coordinates": "public/shader_coordinates.json",
     "shader_coordinates_count": 645,
@@ -9,14 +9,14 @@
     "seed_shaders_count": 20
   },
   "summary": {
-    "local": 1291,
+    "local": 1304,
     "storage-only": 0,
     "allowlisted": 0,
     "likely-broken": 0,
     "parse-error": 0
   },
   "wgsl_summary": {
-    "cataloged": 1288,
+    "cataloged": 1301,
     "template-prefix": 4,
     "subgroup-variant": 0,
     "multipass-secondary": 2,
@@ -3836,6 +3836,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-bismuth-singularity-loom-engine",
+      "def_path": "shader_definitions/generative/gen-bismuth-singularity-loom-engine.json",
+      "expected_wgsl": "gen-bismuth-singularity-loom-engine.wgsl",
+      "local_path": "public/shaders/gen-bismuth-singularity-loom-engine.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-brutalist-monument",
       "def_path": "shader_definitions/generative/gen-brutalist-monument.json",
       "expected_wgsl": "gen-brutalist-monument.wgsl",
@@ -3990,6 +4000,16 @@
       "def_path": "shader_definitions/generative/gen-chromatic-singularity-loom.json",
       "expected_wgsl": "gen-chromatic-singularity-loom.wgsl",
       "local_path": "public/shaders/gen-chromatic-singularity-loom.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-chromatic-zonohedron",
+      "def_path": "shader_definitions/generative/gen-chromatic-zonohedron.json",
+      "expected_wgsl": "gen-chromatic-zonohedron.wgsl",
+      "local_path": "public/shaders/gen-chromatic-zonohedron.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -4553,6 +4573,16 @@
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": true,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-fireworks-dahlia-burst",
+      "def_path": "shader_definitions/generative/gen-fireworks-dahlia-burst.json",
+      "expected_wgsl": "gen-fireworks-dahlia-burst.wgsl",
+      "local_path": "public/shaders/gen-fireworks-dahlia-burst.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
       "in_seed_shaders": false
     },
     {
@@ -5176,6 +5206,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-luminescent-chrono-prism-astro-stag",
+      "def_path": "shader_definitions/generative/gen-luminescent-chrono-prism-astro-stag.json",
+      "expected_wgsl": "gen-luminescent-chrono-prism-astro-stag.wgsl",
+      "local_path": "public/shaders/gen-luminescent-chrono-prism-astro-stag.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-luminescent-cyber-chrono-void-turtle",
       "def_path": "shader_definitions/generative/gen-luminescent-cyber-chrono-void-turtle.json",
       "expected_wgsl": "gen-luminescent-cyber-chrono-void-turtle.wgsl",
@@ -5200,6 +5240,16 @@
       "def_path": "shader_definitions/generative/gen-luminescent-quantum-void-anglerfish.json",
       "expected_wgsl": "gen-luminescent-quantum-void-anglerfish.wgsl",
       "local_path": "public/shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-luminescent-quantum-void-astral-turtle",
+      "def_path": "shader_definitions/generative/gen-luminescent-quantum-void-astral-turtle.json",
+      "expected_wgsl": "gen-luminescent-quantum-void-astral-turtle.wgsl",
+      "local_path": "public/shaders/gen-luminescent-quantum-void-astral-turtle.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -5460,6 +5510,16 @@
       "def_path": "shader_definitions/generative/gen-neon-snowfall.json",
       "expected_wgsl": "gen-neon-snowfall.wgsl",
       "local_path": "public/shaders/gen-neon-snowfall.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-neon-stellated-octahedron",
+      "def_path": "shader_definitions/generative/gen-neon-stellated-octahedron.json",
+      "expected_wgsl": "gen-neon-stellated-octahedron.wgsl",
+      "local_path": "public/shaders/gen-neon-stellated-octahedron.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -5766,6 +5826,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-prismatic-mobius-helix",
+      "def_path": "shader_definitions/generative/gen-prismatic-mobius-helix.json",
+      "expected_wgsl": "gen-prismatic-mobius-helix.wgsl",
+      "local_path": "public/shaders/gen-prismatic-mobius-helix.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-prismatic-quantum-fractal-nautilus-engine",
       "def_path": "shader_definitions/generative/gen-prismatic-quantum-fractal-nautilus-engine.json",
       "expected_wgsl": "gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
@@ -6006,6 +6076,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-rainbow-icosahedron-cascade",
+      "def_path": "shader_definitions/generative/gen-rainbow-icosahedron-cascade.json",
+      "expected_wgsl": "gen-rainbow-icosahedron-cascade.wgsl",
+      "local_path": "public/shaders/gen-rainbow-icosahedron-cascade.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-raptor-mini",
       "def_path": "shader_definitions/generative/gen-raptor-mini.json",
       "expected_wgsl": "gen-raptor-mini.wgsl",
@@ -6076,10 +6156,30 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-sentient-aether-plasma-nebula-moth",
+      "def_path": "shader_definitions/generative/gen-sentient-aether-plasma-nebula-moth.json",
+      "expected_wgsl": "gen-sentient-aether-plasma-nebula-moth.wgsl",
+      "local_path": "public/shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-sentient-cyber-aurora-void-owl",
       "def_path": "shader_definitions/generative/gen-sentient-cyber-aurora-void-owl.json",
       "expected_wgsl": "gen-sentient-cyber-aurora-void-owl.wgsl",
       "local_path": "public/shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-sentient-cyber-chrono-void-serpent",
+      "def_path": "shader_definitions/generative/gen-sentient-cyber-chrono-void-serpent.json",
+      "expected_wgsl": "gen-sentient-cyber-chrono-void-serpent.wgsl",
+      "local_path": "public/shaders/gen-sentient-cyber-chrono-void-serpent.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -12296,6 +12396,36 @@
       "in_seed_shaders": false
     },
     {
+      "id": "ripple-tank-pass2",
+      "def_path": "shader_definitions/simulation/ripple-tank-pass2.json",
+      "expected_wgsl": "ripple-tank-pass2.wgsl",
+      "local_path": "public/shaders/ripple-tank-pass2.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "ripple-tank-pass3",
+      "def_path": "shader_definitions/simulation/ripple-tank-pass3.json",
+      "expected_wgsl": "ripple-tank-pass3.wgsl",
+      "local_path": "public/shaders/ripple-tank-pass3.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "ripple-tank",
+      "def_path": "shader_definitions/simulation/ripple-tank.json",
+      "expected_wgsl": "ripple-tank-pass1.wgsl",
+      "local_path": "public/shaders/ripple-tank-pass1.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "sim-decay-system-rgba",
       "def_path": "shader_definitions/simulation/sim-decay-system-rgba.json",
       "expected_wgsl": "sim-decay-system-rgba.wgsl",
@@ -14793,6 +14923,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-bismuth-singularity-loom-engine.wgsl",
+      "stem": "gen-bismuth-singularity-loom-engine",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-brutalist-monument.wgsl",
       "stem": "gen-brutalist-monument",
       "classification": "cataloged"
@@ -14875,6 +15010,11 @@
     {
       "wgsl": "gen-chromatic-vortex.wgsl",
       "stem": "gen-chromatic-vortex",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-chromatic-zonohedron.wgsl",
+      "stem": "gen-chromatic-zonohedron",
       "classification": "cataloged"
     },
     {
@@ -15160,6 +15300,11 @@
     {
       "wgsl": "gen-fireworks-crossette.wgsl",
       "stem": "gen-fireworks-crossette",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-fireworks-dahlia-burst.wgsl",
+      "stem": "gen-fireworks-dahlia-burst",
       "classification": "cataloged"
     },
     {
@@ -15468,6 +15613,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-luminescent-chrono-prism-astro-stag.wgsl",
+      "stem": "gen-luminescent-chrono-prism-astro-stag",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-luminescent-cyber-chrono-void-turtle.wgsl",
       "stem": "gen-luminescent-cyber-chrono-void-turtle",
       "classification": "cataloged"
@@ -15480,6 +15630,11 @@
     {
       "wgsl": "gen-luminescent-quantum-void-anglerfish.wgsl",
       "stem": "gen-luminescent-quantum-void-anglerfish",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-luminescent-quantum-void-astral-turtle.wgsl",
+      "stem": "gen-luminescent-quantum-void-astral-turtle",
       "classification": "cataloged"
     },
     {
@@ -15610,6 +15765,11 @@
     {
       "wgsl": "gen-neon-snowfall.wgsl",
       "stem": "gen-neon-snowfall",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-neon-stellated-octahedron.wgsl",
+      "stem": "gen-neon-stellated-octahedron",
       "classification": "cataloged"
     },
     {
@@ -15768,6 +15928,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-prismatic-mobius-helix.wgsl",
+      "stem": "gen-prismatic-mobius-helix",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-prismatic-quantum-fractal-nautilus-engine.wgsl",
       "stem": "gen-prismatic-quantum-fractal-nautilus-engine",
       "classification": "cataloged"
@@ -15893,6 +16058,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-rainbow-icosahedron-cascade.wgsl",
+      "stem": "gen-rainbow-icosahedron-cascade",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-raptor-mini-flow.wgsl",
       "stem": "gen-raptor-mini-flow",
       "classification": "cataloged"
@@ -15933,8 +16103,18 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-sentient-aether-plasma-nebula-moth.wgsl",
+      "stem": "gen-sentient-aether-plasma-nebula-moth",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-sentient-cyber-aurora-void-owl.wgsl",
       "stem": "gen-sentient-cyber-aurora-void-owl",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-sentient-cyber-chrono-void-serpent.wgsl",
+      "stem": "gen-sentient-cyber-chrono-void-serpent",
       "classification": "cataloged"
     },
     {
@@ -18450,6 +18630,21 @@
     {
       "wgsl": "ripple-bloom.wgsl",
       "stem": "ripple-bloom",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "ripple-tank-pass1.wgsl",
+      "stem": "ripple-tank-pass1",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "ripple-tank-pass2.wgsl",
+      "stem": "ripple-tank-pass2",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "ripple-tank-pass3.wgsl",
+      "stem": "ripple-tank-pass3",
       "classification": "cataloged"
     },
     {

@@ -1,4 +1,10 @@
-// --- CHROMA LENS ---
+// ═══════════════════════════════════════════════════════════════════
+//  Chroma Lens
+//  Mouse-positioned magnifying lens with barrel distortion, per-channel
+//  chromatic separation toward the rim, and a glass rim highlight.
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -28,10 +34,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     var uv = vec2<f32>(global_id.xy) / resolution;
 
-    // Params
-    let mag = u.zoom_params.x;            // Magnification (0-1)
-    let aberration = u.zoom_params.y;     // Chroma Separation (0-1)
-    let radius = u.zoom_params.z;         // Lens Radius (0-1)
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Params — bass breathes the lens, mids widen the chroma split
+    let mag = u.zoom_params.x * (1.0 + bass * 0.4);        // Magnification (0-1)
+    let aberration = u.zoom_params.y * (1.0 + mids * 0.5); // Chroma Separation (0-1)
+    let radius = u.zoom_params.z * (1.0 + bass * 0.3);     // Lens Radius (0-1)
     let blurEdges = u.zoom_params.w;      // Blur Amount (0-1)
 
     // Mouse
@@ -87,16 +96,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, finalUV_G, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, finalUV_B, 0.0).b;
 
+    // Source alpha follows the green (undisplaced) channel's sample point
+    let srcAlpha = textureSampleLevel(readTexture, u_sampler, finalUV_G, 0.0).a;
+
     // Add a rim/glass reflection effect at the edge
-    var color = vec4<f32>(r, g, b, 1.0);
+    var color = vec4<f32>(r, g, b, srcAlpha);
 
     if (dist < radius && dist > radius * 0.95) {
         let rim = smoothstep(radius * 0.95, radius, dist);
         color = mix(color, vec4<f32>(1.0), rim * 0.3 * blurEdges);
     }
 
-    // Antialiased circle edge
+    // Antialiased circle edge — glass body reads slightly more solid than the plate
     let mask = 1.0 - smoothstep(radius, radius + 0.01, dist);
+    color.a = clamp(color.a + mask * 0.15, 0.0, 1.0);
 
     // If we are outside the lens, just show original
     // But we computed lens distortion inside.
@@ -105,6 +118,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // So this is seamless.
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
 
     // Passthrough Depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

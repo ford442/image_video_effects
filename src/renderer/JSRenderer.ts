@@ -1,6 +1,6 @@
-import { IRenderer, RendererConfig } from './Renderer';
+import { Renderer, RendererConfig } from './Renderer';
 
-export class JSRenderer implements IRenderer {
+export class JSRenderer implements Renderer {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
   private config: RendererConfig;

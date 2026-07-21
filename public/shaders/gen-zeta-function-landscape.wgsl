@@ -94,7 +94,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let t_range = t_max - t_min;
     
     let t = t_min + uv.x * t_range + (mouse.x - 0.5) * 10.0;
-    let y_offset = (uv.y - 0.5) * 8.0 * (1.0 + param3 * 2.0) + (0.5 - mouse.y) * 4.0;
+    let y_offset = (uv.y - 0.5) * 8.0 * (1.0 + param3 * 2.0) + (mouse.y - 0.5) * 4.0;
     
     let terms = i32(mix(50.0, 200.0, param4 + treble * 0.3));
     let z = zetaApprox(sigma, t + y_offset * 0.1, terms);

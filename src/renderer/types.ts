@@ -51,6 +51,8 @@ export interface ShaderEntry {
     features?: string[];
     /** When true, shader requires @workgroup_size(16,16,4) = 1024-invocation support. */
     requiresDeepWorkgroup?: boolean;
+    /** When true, shader samples binding 13 (historyTexture 2d-array ring buffer). */
+    requiresHistoryRing?: boolean;
 }
 
 export interface SlotParams {

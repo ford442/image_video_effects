@@ -3458,5 +3458,15 @@
       0,
       0.5
     ]
+  },
+  "ripple-tank": {
+    "thumbnail_url": "thumbnails/ripple-tank.png",
+    "generated_at": "2026-07-19T00:00:00.000Z",
+    "params_snapshot": [
+      0.6,
+      0.65,
+      0.6,
+      0.7
+    ]
   }
 }

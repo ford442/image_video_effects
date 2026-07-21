@@ -253,7 +253,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var time = u.config.x;
 
     let yaw = (mouse.x - 0.5) * 6.28;
-    let pitch = ((0.5 - mouse.y)) * 3.14;
+    let pitch = ((mouse.y - 0.5)) * 3.14;
 
     let cam_pos = vec3<f32>(0.0, 0.0, time * 2.0);
     let ro = cam_pos;
