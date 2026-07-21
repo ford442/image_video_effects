@@ -35,7 +35,9 @@
   ],
   "features": [
     "mouse-driven",
-    "glitch"
+    "glitch",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

@@ -1,6 +1,8 @@
 // ----------------------------------------------------------------
 // Luminescent Chrono-Prism Astro-Stag
-// Category: generative
+// Raymarched prismatic void-stag with volumetric aurora bloom.
+// Features: generative, raymarch, volumetric, mouse-driven, audio-reactive, upgraded-rgba
+// Outputs: writeTexture, writeDepthTexture (march distance), dataTextureA (feedback)
 // ----------------------------------------------------------------
 
 struct Uniforms {
@@ -104,11 +106,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (fragCoord - 0.5 * resolution) / resolution.y;
     let time = u.config.x;
-    let audio = u.config.y;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let audio = bass;
     let params = u.zoom_params; // Temporal, Rift, Fractal, Refraction
 
-    // Camera
-    let ro = vec3<f32>(0.0, 0.0, -3.0);
+    // Camera — mouse orbits the prism, bass dollies it forward
+    let mouseNorm = vec2<f32>(u.zoom_config.y, u.zoom_config.z) / resolution - 0.5;
+    let ro = vec3<f32>(mouseNorm.x * 1.5, mouseNorm.y * 1.5, -3.0 + bass * 0.5);
     let rd = normalize(vec3<f32>(uv, 1.0));
 
     // Raymarching
@@ -133,11 +138,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Liquid Aurora / Prismatic colors
         let baseColor = vec3<f32>(0.1, 0.8, 1.0) + sin(p * 2.0 + time) * 0.2;
         col = baseColor * diff + fresnel * vec3<f32>(0.8, 0.2, 1.0) * params.z;
+
+        // Mids drive an iridescent spectral sheen across the surface
+        let sheen = sin(dot(n, rd) * 8.0 + time * 2.0 + mids * 6.0) * 0.5 + 0.5;
+        col += vec3<f32>(1.0, 0.4, 0.7) * sheen * mids * 0.4 * fresnel;
     }
 
-    // Bloom / Volumetric Glow
-    col += vec3<f32>(0.1, 0.3, 0.8) * exp(-t * 0.2) * params.y;
+    // Bloom / Volumetric Glow — bass pumps the volumetric haze
+    col += vec3<f32>(0.1, 0.3, 0.8) * exp(-t * 0.2) * params.y * (1.0 + bass * 0.5);
 
-    // Output
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Depth from raymarch distance, normalised into 0..1
+    let depth = clamp(t / 10.0, 0.0, 1.0);
+
+    // Alpha: surface hits are opaque, the void stays transparent
+    let alpha = clamp(select(length(col), 1.0, t < 10.0), 0.0, 1.0);
+    let outColor = vec4<f32>(col, alpha);
+
+    textureStore(writeTexture, vec2<i32>(id.xy), outColor);
+    textureStore(dataTextureA, vec2<i32>(id.xy), outColor);
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

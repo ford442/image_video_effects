@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  interactive-rgb-split-explosion
 //  Category: advanced-hybrid
-//  Features: mouse-driven, chromatic, prism, ripple
+//  Features: mouse-driven, chromatic, prism, ripple, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Chunks From: interactive-rgb-split.wgsl, mouse-chromatic-explosion.wgsl
 //  Created: 2026-04-18
@@ -53,7 +53,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   let time = u.config.x;
 
-  let prismStrength = mix(0.02, 0.12, u.zoom_params.x);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+
+  let prismStrength = mix(0.02, 0.12, u.zoom_params.x) * (1.0 + bass * 0.5);
   let falloff = u.zoom_params.y;
   let rippleStrength = u.zoom_params.z;
   let saturationBoost = u.zoom_params.w;
@@ -97,7 +100,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  let intensity = 1.0 + mouseDown * 1.5;
+  let intensity = 1.0 + mouseDown * 1.5 + bass * 0.8;
   let r = textureSampleLevel(readTexture, u_sampler, rUV + rOffset * intensity, 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, gUV + gOffset * intensity, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, bUV + bOffset * intensity, 0.0).b;
@@ -111,12 +114,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Spectral glow near mouse
   let mouseDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
   let glow = exp(-mouseDist * mouseDist * 100.0) * prismStrength * 10.0;
-  color = color + vec3<f32>(0.5, 0.3, 0.8) * glow;
+  color = color + vec3<f32>(0.5, 0.3, 0.8) * glow * (1.0 + bass * 0.7);
+
+  // Mids drive a spectral corona ring expanding from the cursor
+  let ring = exp(-pow(mouseDist * 6.0 - mids * 3.0, 2.0) * 4.0) * mids;
+  color = color + vec3<f32>(1.0, 0.55, 0.2) * ring * 0.5;
 
   let totalDisp = length(rUV - gUV) + length(gUV - bUV) + length(rOffset) + length(gOffset) + length(bOffset);
-  let alpha = clamp(totalDisp * 5.0, 0.0, 1.0);
+  let alpha = clamp(totalDisp * 5.0 + ring * 0.4, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+  let outColor = vec4<f32>(color, alpha);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
 
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));

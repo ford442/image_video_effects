@@ -11597,7 +11597,14 @@
         "step": 0.1
       }
     ],
-    "features": []
+    "features": [
+      "generative",
+      "raymarch",
+      "volumetric",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Luminescent Cyber-Chrono Void-Turtle",

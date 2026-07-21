@@ -1,7 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 //  RGB Ripple Waves - Phase-shifted RGB waves with wavelength-alpha
-//  Category: distortion
-//  Features: mouse-driven, phase-dispersion, wavelength-dependent-alpha
+//  Features: mouse-driven, phase-dispersion, wavelength-dependent-alpha, audio-reactive, upgraded-rgba
 //
 //  SCIENTIFIC MODEL:
 //  - Dispersion affects both wave phase AND alpha per channel
@@ -65,10 +64,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let dist = distance(uv_aspect, mouse_aspect);
 
-    // Parameters
-    let frequency = 50.0;
-    let speed = 5.0;
-    let amplitude = 0.02 * exp(-dist * 2.0);
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Parameters — mids tighten the wavefronts, bass drives the amplitude
+    let frequency = 50.0 * (1.0 + mids * 0.4);
+    let speed = 5.0 * (1.0 + bass * 0.3);
+    let amplitude = 0.02 * exp(-dist * 2.0) * (1.0 + bass * 0.6);
 
     // Phase shifts for RGB (simulating chromatic dispersion)
     let phase_r = 0.0;
@@ -112,13 +114,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
     let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
     
-    let finalColor = vec3<f32>(
+    var finalColor = vec3<f32>(
         r * alphaR,
         g * alphaG,
         b * alphaB
     );
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    // Bass lights the wave crests as travelling spectral rings
+    let crest = pow(max(0.0, wave_g), 8.0) * exp(-dist * 2.0);
+    finalColor = finalColor + vec3<f32>(0.4, 0.7, 1.0) * crest * bass * 0.6;
+
+    let outAlpha = clamp(finalAlpha + crest * bass * 0.3, 0.0, 1.0);
+    let outColor = vec4<f32>(finalColor, outAlpha);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -11,7 +11,10 @@
   "features": [
     "chroma-depth-tunnel",
     "spec-prismatic-dispersion",
-    "depth-aware"
+    "depth-aware",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

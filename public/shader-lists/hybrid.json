@@ -96,9 +96,11 @@
       "hex-grid",
       "voronoi",
       "image-distortion",
-      "alpha-passthrough",
       "depth-aware",
-      "randomization-safe"
+      "randomization-safe",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "hybrid",

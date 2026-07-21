@@ -1,11 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Elastic Chromatic — Advanced Alpha Upgrade
-//  Category: distortion
+//  Elastic Chromatic — Interactivist Upgrade
+//  Category: distortion / visual-effects
 //  Features: mouse-driven, depth-aware, audio-reactive, chromatic-aberration,
 //            temporal-feedback, split-tone, blackbody-temperature, aces-tone-map,
 //            ign-dither, premultiplied-alpha, alpha-layered, luminance-key,
-//            accumulative-alpha
+//            accumulative-alpha, spring-damper-mouse, click-shockwave, iq-palette
 //  Complexity: Medium
+//  Upgrade: spring-damper elastic mouse lag (state in extraBuffer) so the
+//           chromatic source overshoots and settles like a damped spring; click
+//           shockwave ring boosts the chromatic split; IQ cosine palette tint
+//           layered at low mix over the blackbody/split-tone grade.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +27,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=DeltaTime, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  zoom_params: vec4<f32>,  // x=Elasticity, y=Damping, z=ShockwaveBoost, w=PaletteMix
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -70,6 +74,14 @@ fn blackbodyRGB(T: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b);
 }
 
+// ── IQ cosine palette ──────────────────────────────────────────────
+// a + b*cos(2π(c·t + d)) — classic Inigo Quilez cosine palette.
+fn iqCosinePalette(t: f32) -> vec3<f32> {
+    let a = vec3<f32>(0.5); let b = vec3<f32>(0.5);
+    let c = vec3<f32>(1.0); let d = vec3<f32>(0.00, 0.33, 0.67);
+    return a + b * cos(TAU * (c * t + d));
+}
+
 // ── Core elastic helpers ───────────────────────────────────────────
 fn mouseInfluence(uv: vec2<f32>, mouse: vec2<f32>, aspect: f32, strength: f32) -> f32 {
     let d = distance((uv - mouse) * vec2<f32>(aspect, 1.0), vec2<f32>(0.0));
@@ -90,6 +102,29 @@ fn chromaticAberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
     let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - offset * 0.6, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     return vec3<f32>(r, g, b);
+}
+
+// ── Spring-damper integrator ───────────────────────────────────────
+// Semi-implicit Euler; returns vec4(newPos.xy, newVel.xy). Underdamped
+// settings overshoot on fast mouse moves, then settle like a real spring.
+fn springStep(pos: vec2<f32>, vel: vec2<f32>, goal: vec2<f32>, stiffness: f32, dampCoef: f32, dt: f32) -> vec4<f32> {
+    let accel = (goal - pos) * stiffness - vel * dampCoef;
+    let newVel = vel + accel * dt;
+    let newPos = pos + newVel * dt;
+    return vec4<f32>(newPos, newVel);
+}
+
+// ── Click shockwave ring ───────────────────────────────────────────
+// Expanding ring spawned on mouse-down; a thin bright band that fades
+// with age and temporarily boosts the chromatic split as it passes.
+fn shockwaveRing(uv: vec2<f32>, origin: vec2<f32>, aspect: f32, age: f32, boost: f32) -> f32 {
+    if (age <= 0.0 || age > 3.0) { return 0.0; }
+    let radius = age * 1.35;
+    let d = distance((uv - origin) * vec2<f32>(aspect, 1.0), vec2<f32>(0.0));
+    let off = d - radius;
+    let band = exp(-off * off * 64.0);   // thin gaussian band
+    let fade = exp(-age * 1.7);          // temporal decay
+    return band * fade * max(boost, 0.0);
 }
 
 // ── Advanced alpha compositor ──────────────────────────────────────
@@ -129,56 +164,106 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv01 = vec2<f32>(pixel) / res;
     let aspect = res.x / res.y;
     let time = u.config.x;
+    let dt = clamp(u.config.y, 0.001, 0.05);
     let mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w > 0.5;
+    let isLeader = global_id.x == 0u && global_id.y == 0u;
 
     let p1 = u.zoom_params.x;
     let p2 = u.zoom_params.y;
     let p3 = u.zoom_params.z;
     let p4 = u.zoom_params.w;
-
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let prev = textureLoad(dataTextureC, pixel, 0);
 
-    // User parameters
+    // ── User parameters (sliders) ──────────────────────────────────
+    // p1 Elasticity: spring stiffness + lag gain (bass widens the range)
     let elasticity = mix(0.1, 1.0, p1) * (1.0 + bass * 0.5);
-    let chromaticScale = mix(0.0, 1.0, p2);
-    let lissajousRatio = mix(0.5, 2.0, p3);
-    let damping = mix(0.1, 0.9, p4);
+    let stiffness = mix(28.0, 210.0, p1) * (1.0 + bass * 0.35);
+    // p2 Damping: spring damping ratio + legacy EMA lag scale
+    let zeta = mix(0.18, 1.05, p2);
+    let dampLag = mix(0.1, 0.9, p2);
+    // p3 Shockwave Boost: click ring strength on the chromatic split
+    let shockBoost = mix(0.4, 2.4, p3);
+    // p4 Palette Mix: IQ cosine palette tint amount over the grade
+    let paletteMix = clamp(p4, 0.0, 1.0);
+    // Legacy slider-derived constants pinned at their original defaults so
+    // the shader's established look survives the slider re-scoping.
+    let chromaticScale = 0.5;
+    let lissajousRatio = 1.25;
 
-    // Lissajous secondary chromatic source around mouse
+    // ── Spring-damper elastic mouse (state in extraBuffer[0..3]) ───
+    let rawPos = vec2<f32>(extraBuffer[0], extraBuffer[1]);
+    let rawVel = vec2<f32>(extraBuffer[2], extraBuffer[3]);
+    // Lazy init: an untouched buffer snaps to the live mouse, so there is
+    // no lurch from the origin on the first frames after load.
+    let springPosPrev = select(rawPos, mouse, rawPos == vec2<f32>(0.0));
+    let dampCoef = 2.0 * sqrt(stiffness) * zeta;
+    let spring = springStep(springPosPrev, rawVel, mouse, stiffness, dampCoef, dt);
+    let springPos = clamp(spring.xy, vec2<f32>(-0.1), vec2<f32>(1.1));
+    let springVel = clamp(spring.zw, vec2<f32>(-6.0), vec2<f32>(6.0));
+    if (isLeader) {
+        extraBuffer[0] = springPos.x;
+        extraBuffer[1] = springPos.y;
+        extraBuffer[2] = springVel.x;
+        extraBuffer[3] = springVel.y;
+    }
+
+    // ── Click shockwave state (extraBuffer[4..6], edge in [8]) ─────
+    var shockOrigin = vec2<f32>(extraBuffer[4], extraBuffer[5]);
+    var shockTime = extraBuffer[6];
+    let wasDown = extraBuffer[8] > 0.5;
+    let justPressed = mouseDown && !wasDown;
+    if (justPressed) {
+        shockOrigin = mouse;
+        shockTime = time;
+    }
+    if (isLeader) {
+        if (justPressed) {
+            extraBuffer[4] = mouse.x;
+            extraBuffer[5] = mouse.y;
+            extraBuffer[6] = time;
+        }
+        extraBuffer[8] = select(0.0, 1.0, mouseDown);
+    }
+    let ring = shockwaveRing(uv01, shockOrigin, aspect, time - shockTime, shockBoost);
+
+    // ── Lissajous secondary chromatic source riding the spring ─────
     let lissFreqX = 1.0 + mids * 0.3;
     let lissFreqY = lissajousRatio + mids * 0.2;
     let lissAmp = chromaticScale * 0.08;
-    let lissPos = mouse + vec2<f32>(
+    let springKick = springVel * 0.02;   // spring velocity nudges the source
+    let lissPos = springPos + springKick + vec2<f32>(
         lissAmp * sin(time * lissFreqX * 2.0 * (1.0 + elasticity)),
         lissAmp * sin(time * lissFreqY * 2.0 * (1.0 + elasticity))
     );
 
-    // Chromatic input sample with radial RGB shift
-    let caAmount = 0.003 * (1.0 + bass) + depth * 0.002 + chromaticScale * 0.004;
+    // ── Chromatic input sample with radial RGB shift ───────────────
+    // The shockwave ring temporarily widens the split as it sweeps past.
+    let caAmount = (0.003 * (1.0 + bass) + depth * 0.002 + chromaticScale * 0.004)
+        * (1.0 + ring);
     let source = srgbToLinear(chromaticAberration(uv01, caAmount));
 
-    // Influences
-    let influence = mouseInfluence(uv01, mouse, aspect, elasticity);
+    // ── Influences (spring position overshoots on fast moves) ──────
+    let influence = mouseInfluence(uv01, springPos, aspect, elasticity) + ring * 0.6;
     let lissInfluence = smoothstep(0.4, 0.0, distance(uv01, lissPos)) * chromaticScale;
     let depthMod = (1.0 - depth) * 0.35;
 
-    // Per-channel elastic lag
-    let lagR = clamp(elasticity + influence + depthMod + lissInfluence, 0.0, MAX_LAG) * damping;
-    let lagB = clamp(elasticity * 0.8 + influence * 0.5 + depthMod * 0.5 + lissInfluence * 0.7, 0.0, MAX_LAG) * damping;
-    let lagG = clamp(elasticity * 0.6 + influence * 0.3, 0.0, MAX_LAG) * damping;
+    // ── Per-channel elastic lag ────────────────────────────────────
+    let lagR = clamp(elasticity + influence + depthMod + lissInfluence, 0.0, MAX_LAG) * dampLag;
+    let lagB = clamp(elasticity * 0.8 + influence * 0.5 + depthMod * 0.5 + lissInfluence * 0.7, 0.0, MAX_LAG) * dampLag;
+    let lagG = clamp(elasticity * 0.6 + influence * 0.3, 0.0, MAX_LAG) * dampLag;
 
-    // Temporal chromatic accumulation in linear light
+    // ── Temporal chromatic accumulation in linear light ────────────
     var color = vec3<f32>(0.0);
     color.r = ema(source.r, prev.r, lagR);
     color.g = ema(source.g, prev.g, lagG);
     color.b = ema(source.b, prev.b, lagB);
 
-    // Audio-reactive split-tone temperature grading
+    // ── Audio-reactive split-tone temperature grading ──────────────
     let lumPre = luma(color);
     let shadowK = 2200.0 + depth * 1500.0;
     let highlightK = 5500.0 + bass * 6500.0;
@@ -186,16 +271,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let toneColor = mix(blackbodyRGB(shadowK), blackbodyRGB(highlightK), tone);
     color = color * toneColor;
 
-    // HDR clamp, ACES tone map, sRGB encode
+    // ── IQ cosine palette tint (low mix; grade stays dominant) ─────
+    let palettePhase = lumPre * 1.3 + time * 0.045 + mids * 0.12;
+    let tint = iqCosinePalette(palettePhase) * 2.0;   // mean ≈ 1.0 multiplier
+    color = mix(color, color * tint, paletteMix);
+
+    // ── HDR clamp, ACES tone map, sRGB encode ──────────────────────
     color = huePreserveClamp(color, 1.6 + mids * 0.4);
     let linearOut = acesToneMap(color * (0.95 + treble * 0.15));
 
     // Write linear history for next-frame feedback
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-    // Advanced semantic alpha: depth-layered + luminance-key + accumulative
+    // ── Advanced semantic alpha: depth-layered + luma-key + accum ──
     let lum = luma(linearOut);
-    let aberration = abs(lagR - lagB) + lissInfluence;
+    let aberration = abs(lagR - lagB) + lissInfluence + ring * 0.35;
     let intensity = 0.26 + aberration * 2.2 + treble * 0.12;
     let effectAlpha = composeAlpha(intensity, depth, lum, prev.a, max(lagR, lagB), treble);
 

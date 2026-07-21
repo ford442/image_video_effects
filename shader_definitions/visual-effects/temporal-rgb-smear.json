@@ -75,5 +75,40 @@
     "luminance-key",
     "edge-preserve",
     "accumulative"
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Smear Length",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Mouse Spring",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Sparkle Grain",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Feedback Clamp",
+      "default": 1.2,
+      "min": 1.0,
+      "max": 2.0,
+      "step": 0.05
+    }
+  ],
+  "updated": true
 }

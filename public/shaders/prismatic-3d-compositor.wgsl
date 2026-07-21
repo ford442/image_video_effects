@@ -23,6 +23,7 @@
 //    - readTexture: Pass 1 cloud color
 //    - readDepthTexture: Pass 1 cloud depth
 //  
+//  Features: compositor, parallax, volumetric-glow, mouse-driven, audio-reactive, upgraded-rgba
 //  Previous Pass: volumetric-rainbow-clouds.wgsl
 // ═══════════════════════════════════════════════════════════════
 
@@ -47,12 +48,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var mousePos = vec2<f32>(u.zoom_config.y / dims.x, u.zoom_config.z / dims.y);
     let cameraZ = u.zoom_config.w;
 
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
     // Sample Pass 1 results (assume readTexture contains Pass1 color and readDepthTexture contains Pass1 depth)
     let cloudColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // 1) Parallax shift
-    let parallax = u.zoom_params.z * depth * cameraZ;
+    let parallax = u.zoom_params.z * depth * cameraZ * (1.0 + bass * 0.4);
     let parallaxUV = uv + (mousePos - vec2<f32>(0.5, 0.5)) * parallax;
     let parallaxColor = textureSampleLevel(readTexture, u_sampler, clamp(parallaxUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
 
@@ -77,7 +81,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     glow = glow / max(count, 1.0);
 
     // 3) Chromatic aberration along depth
-    let aberration = u.zoom_params.w * depth;
+    let aberration = u.zoom_params.w * depth * (1.0 + mids * 0.5);
     let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(aberration,0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(aberration,0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
@@ -87,12 +91,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let videoColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     // blend params: videoBlend in extraBuffer[0], glowThreshold in extraBuffer[1], depthSharpness in extraBuffer[2]
     let videoBlend = 0.5;
-    let finalColor = mix(videoColor, aberrantColor + glow * glowIntensity, videoBlend);
+    // Parallax layer rides on top: depth-separated ghost that bass pushes forward
+    let layered = mix(aberrantColor, parallaxColor, clamp(depth * (0.4 + bass * 0.5), 0.0, 1.0));
+    let lit = layered + glow * glowIntensity * (1.0 + bass * 0.6);
+    let finalColor = mix(videoColor, lit, videoBlend);
 
-    // 5) Temporal feedback using history stored in dataTextureA (optional)
-    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb; // fallback attempt (may be unused)
-    let feedback = mix(finalColor, prev, 0.85);
+    // 5) Temporal feedback — mids shorten the trail so busy passages stay crisp
+    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb;
+    let feedback = mix(finalColor, prev, 0.85 - mids * 0.25);
 
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, 1.0));
+    // Alpha carries composite luminance so downstream passes can key on it
+    let alpha = clamp(length(finalColor) * 0.7 + depth * 0.3, 0.0, 1.0);
+
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, alpha));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(feedback, alpha));
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

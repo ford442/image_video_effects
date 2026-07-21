@@ -1,16 +1,16 @@
 {
-  "timestamp": "2026-07-19T10:09:58.014464",
+  "timestamp": "2026-07-21T04:54:13.801605",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 6,
-  "passed": 6,
+  "total": 8,
+  "passed": 8,
   "failed": 0,
   "skipped": 0,
   "warnings": 0,
   "workgroup_blocking": 0,
   "results": [
     {
-      "file": "public/shaders/hex-mosaic.wgsl",
+      "file": "public/shaders/bitonic-sort.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -23,7 +23,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/luma-echo-warp.wgsl",
+      "file": "public/shaders/data-slicer-interactive.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -36,7 +36,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/luma-slice-interactive.wgsl",
+      "file": "public/shaders/elastic-chromatic.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -49,7 +49,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/pixel-sort-explorer.wgsl",
+      "file": "public/shaders/interactive-magnetic-ripple.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -62,7 +62,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/ring_slicer.wgsl",
+      "file": "public/shaders/luma-pixel-sort.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -75,7 +75,33 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spectral-smear.wgsl",
+      "file": "public/shaders/pixel-depth-sort.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/pixel-stretch-cross.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/temporal-rgb-smear.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

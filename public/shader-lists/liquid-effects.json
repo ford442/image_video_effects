@@ -205,21 +205,24 @@
     "id": "liquid-fast",
     "name": "Liquid Fast",
     "url": "https://test.1ink.us/image_video_effects/shaders/liquid-fast.wgsl",
-    "description": "",
+    "description": "Fast analytical liquid ripples with low-sample motion blur, depth-aware flow, audio acceleration, and spectral edge highlights.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "liquid",
+      "motion-blur",
+      "audio-reactive"
     ],
     "params": [
       {
         "id": "viscosity",
-        "name": "Viscosity",
+        "name": "Response",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
-        "description": "Liquid thickness/resistance"
+        "description": "Ripple speed and motion-blur response"
       },
       {
         "id": "turbulence",
@@ -229,7 +232,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.y",
-        "description": "Chaotic flow intensity"
+        "description": "Ambient flow complexity"
       },
       {
         "id": "ripple_strength",
@@ -243,86 +246,168 @@
       },
       {
         "id": "color_shift",
-        "name": "Color Shift",
+        "name": "Highlight Shift",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Color manipulation amount"
+        "description": "Spectral edge-light color"
       }
     ],
     "features": [
-      "mouse-driven"
-    ]
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Response",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Highlight Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "liquid-glitch",
     "name": "Liquid Glitch",
     "url": "https://test.1ink.us/image_video_effects/shaders/liquid-glitch.wgsl",
-    "description": "",
+    "description": "Block-quantized liquid smearing with audio-reactive signal corruption, chromatic splitting, click bursts, and temporal datamosh trails.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "liquid",
+      "glitch",
+      "temporal"
     ],
     "params": [
       {
         "id": "viscosity",
-        "name": "Viscosity",
+        "name": "Block Scale",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
-        "description": "Liquid thickness/resistance"
+        "description": "Size of quantized glitch blocks"
       },
       {
         "id": "turbulence",
-        "name": "Turbulence",
+        "name": "Flow Corruption",
         "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.y",
-        "description": "Chaotic flow intensity"
+        "description": "Liquid smear and signal corruption intensity"
       },
       {
         "id": "ripple_strength",
-        "name": "Ripple Strength",
+        "name": "Burst Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.z",
-        "description": "Wave distortion amount"
+        "description": "Strength of click-triggered digital bursts"
       },
       {
         "id": "color_shift",
-        "name": "Color Shift",
+        "name": "Chromatic Shift",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Color manipulation amount"
+        "description": "RGB channel separation"
       }
     ],
     "features": [
-      "mouse-driven"
-    ]
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Block Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Corruption",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Burst Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chromatic Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "liquid-jelly",
     "name": "Liquid Jelly",
     "url": "https://test.1ink.us/image_video_effects/shaders/liquid-jelly.wgsl",
-    "description": "Elastic liquid effect with subsurface scattering and alpha physics",
+    "description": "Spring-damped jelly deformation with subsurface scattering, audio-responsive elasticity, depth masking, and temporal wobble trails.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
       "elastic-bounce",
       "volume-shading",
       "subsurface-scattering",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal"
     ],
     "tags": [
       "filter",
@@ -332,45 +417,80 @@
     "params": [
       {
         "id": "viscosity",
-        "name": "Viscosity",
+        "name": "Damping",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
-        "description": "Liquid thickness/resistance"
+        "description": "Spring damping and trail persistence"
       },
       {
         "id": "turbulence",
-        "name": "Turbulence",
+        "name": "Elasticity",
         "default": 0.4,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.y",
-        "description": "Chaotic flow intensity"
+        "description": "Jelly oscillation frequency"
       },
       {
         "id": "ripple_strength",
-        "name": "Ripple Strength",
+        "name": "Wobble Strength",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.z",
-        "description": "Wave distortion amount"
+        "description": "Elastic displacement amplitude"
       },
       {
         "id": "color_shift",
-        "name": "Color Shift",
+        "name": "Scatter Tint",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Color manipulation amount"
+        "description": "Warm-to-cool subsurface color"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Damping",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Elasticity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Wobble Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Scatter Tint",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "liquid-metal",
@@ -806,44 +926,97 @@
     "id": "liquid-perspective",
     "name": "Liquid Perspective",
     "url": "https://test.1ink.us/image_video_effects/shaders/liquid-perspective.wgsl",
-    "description": "",
+    "description": "Depth-aware liquid perspective warp with silhouette-safe parallax, canonical mouse interaction, audio-reactive ripples, and bioluminescent edges.",
     "params": [
       {
         "id": "speed",
         "name": "Speed",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Parallax and ripple animation speed"
       },
       {
         "id": "density",
         "name": "Density",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Spatial frequency of the perspective flow"
       },
       {
         "id": "intensity",
         "name": "Intensity",
         "default": 0.5,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Foreground and background warp strength"
       },
       {
         "id": "shift",
         "name": "Color Shift",
         "default": 0,
         "min": 0,
-        "max": 1
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Chromatic and bioluminescent palette shift"
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
-      "image-processing"
-    ]
+      "image-processing",
+      "liquid",
+      "parallax",
+      "bioluminescent"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "liquid-rainbow-prismatic",
@@ -904,10 +1077,13 @@
     "id": "liquid-rainbow",
     "name": "Liquid Rainbow",
     "url": "https://test.1ink.us/image_video_effects/shaders/liquid-rainbow.wgsl",
-    "description": "Liquid rainbow refraction with single-sample spectral tint mixing, Fresnel-based alpha translucency, and depth-aware compositing.",
+    "description": "Thin-film liquid refraction with spectral ripple crests, Fresnel edge color, audio-reactive dispersion, and depth-aware compositing.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "liquid",
+      "rainbow",
+      "iridescent"
     ],
     "params": [
       {
@@ -918,7 +1094,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
-        "description": "Liquid thickness/resistance"
+        "description": "Flow damping and spectral film thickness"
       },
       {
         "id": "turbulence",
@@ -928,7 +1104,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.y",
-        "description": "Chaotic flow intensity"
+        "description": "Ambient spectral flow complexity"
       },
       {
         "id": "ripple_strength",
@@ -942,28 +1118,68 @@
       },
       {
         "id": "color_shift",
-        "name": "Color Shift",
+        "name": "Dispersion",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Color manipulation amount"
+        "description": "Wavelength separation and thin-film color"
       }
     ],
     "features": [
       "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Dispersion",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "liquid-rgb",
     "name": "Liquid RGB",
     "url": "https://test.1ink.us/image_video_effects/shaders/liquid-rgb.wgsl",
-    "description": "",
+    "description": "Viscous RGB refraction with wavelength-dependent absorption, audio-reactive caustic fringes, and depth-sensitive channel separation.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "liquid",
+      "chromatic",
+      "caustics"
     ],
     "params": [
       {
@@ -974,7 +1190,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.x",
-        "description": "Liquid thickness/resistance"
+        "description": "Flow damping and wavelength absorption"
       },
       {
         "id": "turbulence",
@@ -984,7 +1200,7 @@
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.y",
-        "description": "Chaotic flow intensity"
+        "description": "Ambient flow complexity"
       },
       {
         "id": "ripple_strength",
@@ -998,18 +1214,56 @@
       },
       {
         "id": "color_shift",
-        "name": "Color Shift",
+        "name": "RGB Separation",
         "default": 0.3,
         "min": 0,
         "max": 1,
         "step": 0.01,
         "mapping": "zoom_params.w",
-        "description": "Color manipulation amount"
+        "description": "Chromatic refraction distance"
       }
     ],
     "features": [
-      "mouse-driven"
-    ]
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "RGB Separation",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "liquid-smear",
@@ -1158,54 +1412,110 @@
     "id": "liquid-viscous-grokcf1",
     "name": "Liquid Viscous Nebula grokcf1",
     "url": "https://test.1ink.us/image_video_effects/shaders/liquid-viscous-grokcf1.wgsl",
-    "description": "Enhanced viscous liquid with nebula glow, multi-layer flow, and cosmic viscosity.",
+    "description": "Cosmic viscous flow with multi-octave nebula warping, emissive veins, depth parallax, audio reactivity, and persistent trails.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "liquid",
+      "nebula",
+      "temporal"
     ],
     "params": [
       {
         "id": "param1",
-        "name": "Intensity",
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Flow damping and trail persistence"
       },
       {
         "id": "param2",
-        "name": "Speed",
+        "name": "Flow Turbulence",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.01
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Domain-warped flow complexity"
       },
       {
         "id": "param3",
-        "name": "Scale",
+        "name": "Nebula Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Emissive nebula density and brightness"
+      },
+      {
+        "id": "param4",
+        "name": "Spectral Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Nebula palette phase"
+      }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "temporal",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       },
       {
-        "id": "param4",
-        "name": "Detail",
+        "index": 1,
+        "name": "Flow Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Nebula Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Spectral Shift",
         "default": 0.5,
         "min": 0,
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "liquid-viscous-simple",
     "name": "Liquid Viscous (Simple)",
     "url": "https://test.1ink.us/image_video_effects/shaders/liquid-viscous-simple.wgsl",
-    "description": "",
+    "description": "Viscous laminar flow with cohesive smoothing, audio-reactive click vortices, depth-aware motion, and subtle spectral film.",
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "liquid",
+      "viscous",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -1250,8 +1560,46 @@
       }
     ],
     "features": [
-      "mouse-driven"
-    ]
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Viscosity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Turbulence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Ripple Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Shift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "liquid-viscous",

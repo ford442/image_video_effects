@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  chroma-depth-tunnel-prismatic
 //  Category: advanced-hybrid
-//  Features: chroma-depth-tunnel, spec-prismatic-dispersion, depth-aware
+//  Features: chroma-depth-tunnel, spec-prismatic-dispersion, depth-aware, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Chunks From: chroma-depth-tunnel, spec-prismatic-dispersion
 //  Created: 2026-04-18
@@ -62,7 +62,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let time = u.config.x;
 
-    let speed = (u.zoom_params.x - 0.5) * 2.0;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    let speed = (u.zoom_params.x - 0.5) * 2.0 * (1.0 + bass * 0.45);
     let density = u.zoom_params.y * 5.0 + 1.0;
     let chroma = u.zoom_params.z * 0.05;
     let centerFade = u.zoom_params.w;
@@ -82,7 +85,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Prismatic dispersion on tunnel-mapped UVs
     let glassCurvature = mix(0.1, 1.2, u.zoom_params.z);
-    let cauchyB = mix(0.01, 0.08, u.zoom_params.y);
+    // `chroma` widens Cauchy dispersion; mids push the spectrum further apart
+    let cauchyB = mix(0.01, 0.08, u.zoom_params.y) + chroma * (1.0 + mids * 0.6);
     let glassThickness = mix(0.3, 1.5, u.zoom_params.w);
     let spectralSat = mix(0.3, 1.2, u.zoom_params.x);
 
@@ -107,7 +111,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         finalColor = finalColor * fog;
     }
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, 1.0));
+    // Bass fires a bright ring down the tunnel throat
+    let throat = exp(-pow(radius * 8.0 - 1.0, 2.0) * 3.0) * bass;
+    finalColor += vec3<f32>(0.6, 0.8, 1.0) * throat * 0.7;
+
+    // Alpha: spectral energy — the tunnel core stays transparent
+    let alpha = clamp(dot(finalColor, vec3<f32>(0.299, 0.587, 0.114)) * (1.0 + bass * 0.4) + throat, 0.0, 1.0);
+    let outColor = vec4<f32>(finalColor, alpha);
+
+    textureStore(writeTexture, gid.xy, outColor);
+    textureStore(dataTextureA, vec2<i32>(gid.xy), outColor);
 
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(d, 0.0, 0.0, 0.0));

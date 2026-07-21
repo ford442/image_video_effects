@@ -1,173 +1,65 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Liquid RGB Shader with Alpha Physics
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid RGB
 //  Category: liquid-effects
-//  Features: RGB split, chromatic displacement, depth-aware
-//
-//  ALPHA PHYSICS:
-//  - RGB channels have slightly different opacities
-//  - Displacement magnitude affects alpha
-//  - Depth factor modulates transparency
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-07-21
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-
-struct Uniforms {
-  config: vec4<f32>,              // time, rippleCount, resolutionX, resolutionY
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,  // x, y, startTime, unused
-};
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 
-// Schlick's approximation for Fresnel
-fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
-  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
-}
-
-// Calculate RGB liquid alpha
-fn calculateRGBAlpha(
-    displacementMag: f32,
-    depthFactor: f32,
-    viewDotNormal: f32
-) -> f32 {
-  // Fresnel
-  let F0 = 0.025;
-  let fresnel = schlickFresnel(max(0.0, viewDotNormal), F0);
-  
-  // Displacement = liquid film thickness
-  let thickness = displacementMag * 5.0 + 0.1;
-  
-  // Depth factor: foreground more opaque, background more transparent
-  let depthAlpha = mix(0.9, 0.4, depthFactor);
-  
-  // Absorption
-  let absorption = exp(-thickness * 1.5);
-  let baseAlpha = mix(0.35, depthAlpha, absorption);
-  
-  let alpha = baseAlpha * (1.0 - fresnel * 0.3);
-  
-  return clamp(alpha, 0.0, 1.0);
-}
-
-// Calculate RGB color with channel-specific processing
-fn calculateRGBColor(
-    r: f32,
-    g: f32,
-    b: f32,
-    displacementMag: f32,
-    depthFactor: f32
-) -> vec3<f32> {
-  // RGB channels have slightly different "liquid" properties
-  // Red: penetrates deeper
-  // Green: balanced
-  // Blue: scatters more
-  
-  let r_absorb = exp(-displacementMag * 0.8);
-  let g_absorb = exp(-displacementMag * 1.0);
-  let b_absorb = exp(-displacementMag * 1.2);
-  
-  // Depth factor affects each channel
-  let depthAtten = 1.0 - depthFactor * 0.2;
-  
-  return vec3<f32>(
-      r * r_absorb * depthAtten,
-      g * g_absorb * depthAtten,
-      b * b_absorb * depthAtten
-  );
-}
+fn fresnel(c: f32) -> f32 { return 0.025 + 0.975 * pow(1.0 - clamp(c, 0.0, 1.0), 5.0); }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let currentTime = u.config.x;
-  let center_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
-  // --- Ambient Displacement (Background Only) ---
-  var ambientDisplacement = vec2<f32>(0.0, 0.0);
-  let background_factor = 1.0 - smoothstep(0.0, 0.1, center_depth);
-
-  if (background_factor > 0.0) {
-    let time = currentTime * 0.5;
-    let base_ambient_strength = 0.004;
-    let ambient_freq = 15.0;
-    let motion = vec2<f32>(sin(uv.y * ambient_freq + time * 1.2), cos(uv.x * ambient_freq + time));
-    ambientDisplacement = motion * base_ambient_strength * background_factor;
-  }
-
-  // --- Mouse-driven Ripples ---
-  var mouseDisplacement = vec2<f32>(0.0, 0.0);
-  let rippleCount = u32(u.config.y);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let rippleData = u.ripples[i];
-    let timeSinceClick = u.config.x - rippleData.z;
-    if (timeSinceClick > 0.0 && timeSinceClick < 3.0) {
-      let direction_vec = uv - rippleData.xy;
-      let dist = length(direction_vec);
-      if (dist > 0.0001) {
-        let rippleOriginDepthFactor = 1.0 - textureSampleLevel(readDepthTexture, non_filtering_sampler, rippleData.xy, 0.0).r;
-        let ripple_speed = mix(1.0, 2.0, rippleOriginDepthFactor);
-        let ripple_amplitude = mix(0.005, 0.015, rippleOriginDepthFactor);
-        let wave = sin(dist * 25.0 - timeSinceClick * ripple_speed);
-        let attenuation = 1.0 - smoothstep(0.0, 1.0, timeSinceClick / (3.0 * mix(0.5, 1.0, rippleOriginDepthFactor)));
-        let falloff = 1.0 / (dist * 20.0 + 1.0);
-        mouseDisplacement += (direction_vec / dist) * wave * ripple_amplitude * falloff * attenuation;
-      }
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(gid.xy); let uv = vec2<f32>(gid.xy) / resolution; let time = u.config.x;
+  let viscosity = mix(0.15, 0.95, u.zoom_params.x); let turbulence = u.zoom_params.y;
+  let rippleStrength = mix(0.002, 0.032, u.zoom_params.z); let separation = u.zoom_params.w;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  var displacement = vec2<f32>(sin(uv.y * (10.0 + turbulence * 20.0) + time * 0.5), cos(uv.x * (12.0 + turbulence * 16.0) - time * 0.45));
+  displacement *= turbulence * 0.0025 * mix(1.0, 0.3, depth) * mix(1.2, 0.55, viscosity);
+  var caustic = 0.0; let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age > 0.0 && age < 3.0) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0); let dist = max(length(delta), 0.0001);
+      let dir = delta / dist; let life = 1.0 - smoothstep(0.0, 3.0, age);
+      let wave = sin(dist * 30.0 - age * (4.0 + audio.x * 5.0)); let envelope = exp(-dist * 8.0) * life;
+      displacement += vec2<f32>(dir.x / aspect, dir.y) * wave * envelope * rippleStrength * (1.0 + audio.x * 0.65);
+      caustic += pow(max(wave, 0.0), 6.0) * envelope;
     }
   }
-
-  // --- Final Output (RGB Split) ---
-  let totalDisplacement = mouseDisplacement + ambientDisplacement;
-
-  // Chromatic Aberration based on displacement amount
-  let displacementMagnitude = length(totalDisplacement);
-  let chromaticStrength = 5.0; // Stronger effect
-  let chromaticOffset = totalDisplacement * chromaticStrength;
-
-  let redUV = uv + totalDisplacement + chromaticOffset;
-  let greenUV = uv + totalDisplacement;
-  let blueUV = uv + totalDisplacement - chromaticOffset;
-
-  let redChannel = textureSampleLevel(readTexture, u_sampler, redUV, 0.0).r;
-  let greenChannel = textureSampleLevel(readTexture, u_sampler, greenUV, 0.0).g;
-  let blueChannel = textureSampleLevel(readTexture, u_sampler, blueUV, 0.0).b;
-  
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // ALPHA CALCULATION
-  // ═══════════════════════════════════════════════════════════════════════════════
-  
-  // Approximate normal from displacement
-  let normal = normalize(vec3<f32>(
-      -totalDisplacement.x * 20.0,
-      -totalDisplacement.y * 20.0,
-      1.0
-  ));
-  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-  let viewDotNormal = dot(viewDir, normal);
-  
-  // Calculate RGB color with channel-specific absorption
-  let rgbColor = calculateRGBColor(redChannel, greenChannel, blueChannel, displacementMagnitude, center_depth);
-  
-  // Calculate alpha
-  let alpha = calculateRGBAlpha(displacementMagnitude, center_depth, viewDotNormal);
-
-  let color = vec4<f32>(rgbColor, alpha);
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-  // Update depth texture for next frame
-  let depthDisplacedUV = uv + mouseDisplacement;
-  let displacedDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, depthDisplacedUV, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(displacedDepth, 0.0, 0.0, 0.0));
+  let magnitude = length(displacement); let split = displacement * (1.0 + separation * 5.0 + audio.y * 1.5);
+  let uvR = clamp(uv + displacement + split, vec2<f32>(0.0), vec2<f32>(1.0));
+  let uvG = clamp(uv + displacement, vec2<f32>(0.0), vec2<f32>(1.0));
+  let uvB = clamp(uv + displacement - split, vec2<f32>(0.0), vec2<f32>(1.0));
+  let cR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0); let cG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0); let cB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0);
+  let thickness = magnitude * (18.0 + viscosity * 30.0);
+  let absorption = exp(-thickness * vec3<f32>(0.75, 1.0, 1.3));
+  var rgb = vec3<f32>(cR.r, cG.g, cB.b) * absorption;
+  let normal = normalize(vec3<f32>(-displacement * 28.0, 1.0)); let rim = fresnel(normal.z);
+  rgb += vec3<f32>(1.0, 0.35 + separation * 0.35, 0.75) * caustic * (0.08 + audio.z * 0.25) + rim * vec3<f32>(0.05, 0.1, 0.16);
+  let sourceAlpha = max(cR.a, max(cG.a, cB.a)); let energy = clamp(caustic * 0.2 + magnitude * 22.0, 0.0, 1.0);
+  let alpha = clamp(sourceAlpha * mix(0.78, 0.98, viscosity) + energy * 0.2, 0.0, 1.0);
+  let outputColor = vec4<f32>(rgb, alpha);
+  textureStore(writeTexture, coord, outputColor); textureStore(dataTextureA, coord, outputColor);
+  let displacedDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvG, 0.0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(displacedDepth, 0.0, 0.0, 0.0));
 }

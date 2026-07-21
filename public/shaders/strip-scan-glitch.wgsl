@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 //  Strip Scan Glitch - Vertical Strip Displacement with Alpha
-//  Category: retro-glitch
+//  Features: glitch, strip-displacement, rgb-split, mouse-driven, audio-reactive, upgraded-rgba
 //
 //  Vertical strip-based glitch effect:
 //  - Quantized X coordinates create strips
@@ -55,8 +55,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Derived values
     // Mix mouseX into strip count for interactive density
-    let stripCount = mix(10.0, 300.0, stripCountParam + (mouseX * 0.5));
-    let speed = (speedParam - 0.5) * 4.0 + (mouseY - 0.5) * 4.0;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    let stripCount = mix(10.0, 300.0, stripCountParam + (mouseX * 0.5) + mids * 0.15);
+    let speed = ((speedParam - 0.5) * 4.0 + (mouseY - 0.5) * 4.0) * (1.0 + bass * 0.5);
     let time = u.config.x;
 
     // Quantize X to create strips
@@ -77,7 +80,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Calculate Y offset
     // Sine wave pattern + constant flow
-    let yOffset = speed * time * (0.5 + 0.5 * stripHash) + sin(uv.y * 10.0 + time) * 0.05 * jitterParam;
+    // Brighter strips scan faster (as the note above intended)
+    let brightScan = 0.6 + stripBrightness * 0.8;
+    let yOffset = speed * time * (0.5 + 0.5 * stripHash) * brightScan
+                  + sin(uv.y * 10.0 + time) * 0.05 * jitterParam;
 
     // Horizontal Jitter (Glitch)
     // Occurs randomly or periodically
@@ -85,8 +91,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var xOffset = 0.0;
 
     // Apply jitter if threshold met
-    if (abs(jitter) > (1.0 - jitterParam * 0.8)) {
-        xOffset = jitter * 0.02 * jitterParam;
+    // Bass lowers the jitter threshold so beats tear more strips loose
+    if (abs(jitter) > (1.0 - jitterParam * 0.8 - bass * 0.15)) {
+        xOffset = jitter * 0.02 * jitterParam * (1.0 + bass);
     }
 
     // Final UVs per channel for RGB split
@@ -118,10 +125,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Clamp alpha
     finalAlpha = clamp(finalAlpha, 0.0, 1.0);
 
+    // Bass fires a scanline bar sweeping down the frame
+    let scanY = fract(time * 0.35);
+    let scanBar = exp(-pow(uv.y - scanY, 2.0) * 900.0) * bass;
+    finalColor = finalColor + vec3<f32>(0.3, 0.9, 0.7) * scanBar * 0.8;
+    finalAlpha = clamp(finalAlpha + scanBar * 0.3, 0.0, 1.0);
+
     let finalColorVec = vec4<f32>(finalColor, finalAlpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColorVec);
-    
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColorVec);
+
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

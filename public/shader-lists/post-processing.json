@@ -340,7 +340,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Luma Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Sort Length",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Sort Angle",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Palette Mix",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "optical-flow-tracer",
@@ -461,7 +496,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Sort Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Mids Modulation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Accent",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Feedback Clamp",
+        "default": 1.2,
+        "min": 1,
+        "max": 2,
+        "step": 0.05
+      }
+    ],
+    "updated": true
   },
   {
     "id": "pp-bloom",

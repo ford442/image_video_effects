@@ -124,3 +124,11 @@
 **Capture principle:** All this written down immediately. Future sessions read this + today's daily before touching WASM C++.
 
 (If consolidating older: 06-07 swarm details in its daily; only kept the "C++ WASM now the reliability focus" signal here.)
+
+## Liquid shader upgrade batch (2026-07-21)
+- Codex completed a Kimi-disjoint lane covering eight legacy `liquid-*` shaders.
+- Batch contract: exact 13 bindings, 16x16x1 workgroups, all four `zoom_params`, bounded
+  plasma audio, meaningful alpha/depth, `dataTextureA`, metadata synchronization, and
+  stable parameter IDs/defaults/ranges for saved-preset compatibility.
+- Target gate passed 8/8 and production build succeeded. The authoritative scan found four
+  unrelated committed generative failures; do not attribute those to the liquid batch.

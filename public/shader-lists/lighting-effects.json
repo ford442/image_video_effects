@@ -485,7 +485,9 @@
     "features": [
       "mouse-driven",
       "volumetric",
-      "atmospheric"
+      "atmospheric",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -577,7 +579,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

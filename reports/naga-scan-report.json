@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-07-05T04:40:13.817580+00:00",
-  "total": 1273,
-  "valid": 1273,
-  "invalid": 0,
+  "timestamp": "2026-07-21T02:48:12.738429+00:00",
+  "total": 1313,
+  "valid": 1309,
+  "invalid": 4,
   "shaders": [
     {
       "file": "public/shaders/4d-projection-dream-weavers.wgsl",
@@ -1515,6 +1515,26 @@
       "errors": []
     },
     {
+      "file": "public/shaders/fireworks-depth-parade.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/fireworks-edge-ignite.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/fireworks-patriotic-july4.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/fireworks-portrait-burst.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/flip-matrix.wgsl",
       "valid": true,
       "errors": []
@@ -1810,6 +1830,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-bioluminescent-chrono-plasma-astro-owl.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-bioluminescent-reaction-diffusion.wgsl",
       "valid": true,
       "errors": []
@@ -1836,6 +1861,11 @@
     },
     {
       "file": "public/shaders/gen-bismuth-crystal-citadel.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-bismuth-singularity-loom-engine.wgsl",
       "valid": true,
       "errors": []
     },
@@ -1921,6 +1951,11 @@
     },
     {
       "file": "public/shaders/gen-chromatic-vortex.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-chromatic-zonohedron.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2130,7 +2165,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-ethereal-cyber-chrono-nebula-phoenix.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2138,6 +2183,17 @@
       "file": "public/shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
       "valid": true,
       "errors": []
+    },
+    {
+      "file": "public/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
+      "valid": false,
+      "errors": [
+        {
+          "line": null,
+          "col": null,
+          "message": "error: expected assignment or increment/decrement, found \"map\""
+        }
+      ]
     },
     {
       "file": "public/shaders/gen-ethereal-glass-flora-terrarium.wgsl",
@@ -2170,7 +2226,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-fireworks-audio-symphony.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-fireworks-chrysanthemum.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-comet-trail.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2180,12 +2246,62 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-fireworks-crossette.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-dahlia-burst.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-fan-shell.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-horse-tail.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-kamuro-gold.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-fireworks-nocturne.wgsl",
       "valid": true,
       "errors": []
     },
     {
+      "file": "public/shaders/gen-fireworks-ring-shell.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-roman-candle.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-smoke-bloom.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-strobe-shell.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-fireworks-willow-cascade.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-fireworks-wind-ripple.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2435,7 +2551,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-luminescent-aether-plasma-nebula-koi.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-luminescent-chrono-prism-astro-stag.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2451,6 +2577,11 @@
     },
     {
       "file": "public/shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-luminescent-quantum-void-astral-turtle.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2585,6 +2716,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-neon-stellated-octahedron.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-neon-tropical-paradise.wgsl",
       "valid": true,
       "errors": []
@@ -2710,7 +2846,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-prismatic-cyber-auroral-manta-swarm.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2726,6 +2872,11 @@
     },
     {
       "file": "public/shaders/gen-prismatic-ion-cascade.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-prismatic-mobius-helix.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2840,6 +2991,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
+      "valid": false,
+      "errors": [
+        {
+          "line": null,
+          "col": null,
+          "message": "error: local declaration cannot be called"
+        }
+      ]
+    },
+    {
       "file": "public/shaders/gen-radiant-quantum-crystalline-forge.wgsl",
       "valid": true,
       "errors": []
@@ -2855,6 +3017,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-rainbow-icosahedron-cascade.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-raptor-mini-flow.wgsl",
       "valid": true,
       "errors": []
@@ -2866,6 +3033,11 @@
     },
     {
       "file": "public/shaders/gen-recursive-ancestral-terrains.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/gen-relay-psychedelia.wgsl",
       "valid": true,
       "errors": []
     },
@@ -2895,9 +3067,31 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
+      "valid": false,
+      "errors": [
+        {
+          "line": null,
+          "col": null,
+          "message": "error: no definition in scope for identifier: `color`"
+        }
+      ]
+    },
+    {
       "file": "public/shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
       "valid": true,
       "errors": []
+    },
+    {
+      "file": "public/shaders/gen-sentient-cyber-chrono-void-serpent.wgsl",
+      "valid": false,
+      "errors": [
+        {
+          "line": null,
+          "col": null,
+          "message": "error: Entry point main at Compute is invalid"
+        }
+      ]
     },
     {
       "file": "public/shaders/gen-sentient-ferro-silicate-swarm.wgsl",
@@ -5415,6 +5609,21 @@
       "errors": []
     },
     {
+      "file": "public/shaders/ripple-tank-pass1.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/ripple-tank-pass2.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/ripple-tank-pass3.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/rorschach-inkblot.wgsl",
       "valid": true,
       "errors": []
@@ -6336,6 +6545,21 @@
     },
     {
       "file": "public/shaders/wave-halftone.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/wave-inject.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/wave-render.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "file": "public/shaders/wave-step.wgsl",
       "valid": true,
       "errors": []
     },

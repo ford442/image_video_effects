@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  hyb-hex-voronoi-distort
 //  Category: hybrid
-//  Features: hex-grid, voronoi, image-distortion, alpha-passthrough, depth-passthrough
+//  Features: hex-grid, voronoi, image-distortion, depth-passthrough, mouse-driven, audio-reactive, upgraded-rgba
 //  Chunks: nearestHexCenter + voronoi2D
 // ═══════════════════════════════════════════════════════════════════
 
@@ -92,9 +92,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Normalize zoom_params
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Mouse pulls cells toward the cursor, bass inflates the distortion
+    let mousePos = vec2<f32>(u.zoom_config.y, u.zoom_config.z) / vec2<f32>(dims);
+    let mouseFalloff = 1.0 - smoothstep(0.0, 0.4, length(uv - mousePos));
+
     let hexScale = mix(6.0, 48.0, clamp(u.zoom_params.x, 0.0, 1.0));
-    let voronoiDensity = mix(3.0, 28.0, clamp(u.zoom_params.y, 0.0, 1.0));
-    let distortAmount = mix(0.0, 0.12, clamp(u.zoom_params.z, 0.0, 1.0));
+    let voronoiDensity = mix(3.0, 28.0, clamp(u.zoom_params.y, 0.0, 1.0)) * (1.0 + mids * 0.3);
+    let distortAmount = mix(0.0, 0.12, clamp(u.zoom_params.z, 0.0, 1.0))
+                        * (1.0 + bass * 0.5 + mouseFalloff * 0.8);
     let blend = mix(0.0, 1.0, clamp(u.zoom_params.w, 0.0, 1.0));
 
     // Hex nearest center in normalized UV space
@@ -109,13 +117,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let clampedUV = clamp(distortedUV, vec2<f32>(0.0), vec2<f32>(1.0));
     let distorted = textureSampleLevel(readTexture, u_sampler, clampedUV, 0.0);
 
-    // Edge tint from Voronoi cells
+    // Edge tint from Voronoi cells; bass ignites the cell walls
     let edge = smoothstep(0.02, 0.22, voro.dist);
     let tint = mix(vec3<f32>(1.0, 0.95, 0.85), vec3<f32>(1.0), edge);
+    let wall = (1.0 - edge) * bass;
+    let glow = vec3<f32>(0.35, 0.75, 1.0) * wall * 0.8;
 
-    let effectRGB = distorted.rgb * tint;
+    let effectRGB = distorted.rgb * tint + glow;
     let outRGB = mix(src.rgb, effectRGB, blend);
 
-    textureStore(writeTexture, coord, vec4<f32>(outRGB, src.a));
+    // Alpha: source alpha carried, lifted where cell walls are burning
+    let alpha = clamp(src.a * (0.85 + wall * 0.6) + wall * 0.2, 0.0, 1.0);
+    let outColor = vec4<f32>(outRGB, alpha);
+
+    textureStore(writeTexture, coord, outColor);
+    textureStore(dataTextureA, coord, outColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

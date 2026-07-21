@@ -1,3 +1,10 @@
+// ═══════════════════════════════════════════════════════════════
+//  Rainbow Vector Field
+//  Psychedelic polar rainbow field with audio-driven spectral rings.
+//  Features: generative, polar-rainbow, mouse-driven, audio-reactive, upgraded-rgba
+//  Outputs: writeTexture (color), writeDepthTexture (displacement), dataTextureA (feedback)
+//  Pass 1 of 2 — feeds prismatic-feedback-loop.wgsl
+// ═══════════════════════════════════════════════════════════════
 
 fn custom_custom_mod(x: f32, y: f32) -> f32 {
     return x - y * floor(x / y);
@@ -57,6 +64,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
     let clickIntensity = u.zoom_config.x;
 
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
     // Polar coordinates with center
     var center = vec2<f32>(0.5, 0.5);
     let delta = uv - center;
@@ -68,12 +78,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseWave = sin(mouseDist * u.zoom_params.x - time * 4.0) * clickIntensity * 0.5;
 
     // Rainbow hue: angle + distance + time + mouse influence
-    let hue = (angle + dist * u.zoom_params.x * 2.0 + time * 0.5 + mouseWave) / (2.0 * 3.14159);
+    // Bass drives radial spectral rings travelling outward from centre
+    let ringPhase = dist * (18.0 + mids * 12.0) - time * 2.0;
+    let rings = sin(ringPhase) * 0.5 + 0.5;
+    let ringBand = pow(rings, 3.0) * bass * 0.6;
+
+    let freq = u.zoom_params.x * (1.0 + mids * 0.4);
+    let hue = (angle + dist * freq * 2.0 + time * 0.5 + mouseWave + ringBand) / (2.0 * 3.14159);
     let hueFract = fract(hue);
 
     // HSV to RGB with psychedelic saturation/brightness
     let h = hueFract * 6.0;
-    let c = u.zoom_params.z; // brightness
+    let c = u.zoom_params.z * (1.0 + bass * 0.4); // brightness, bass-pumped
     let x = c * (1.0 - abs(custom_custom_mod(h, 2.0) - 1.0));
 
     var rainbow = vec3<f32>(0.0);
@@ -88,12 +104,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let saturation = mix(0.3, 1.0, u.zoom_params.y);
     rainbow = mix(vec3<f32>(length(rainbow)), rainbow, saturation);
 
-    // Store rainbow color
-    textureStore(writeTexture, vec2<u32>(global_id.xy), vec4<f32>(rainbow, 1.0));
+    // Ring crests bloom as bright spectral filaments
+    rainbow += vec3<f32>(ringBand * 0.9, ringBand * 0.5, ringBand) * (0.4 + bass * 0.8);
+
+    let brightness = dot(rainbow, vec3<f32>(0.299, 0.587, 0.114));
+
+    // Alpha carries field energy: bright, audio-hot regions are most opaque
+    let alpha = clamp(brightness * (0.7 + bass * 0.5) + ringBand, 0.0, 1.0);
+    let finalOut = vec4<f32>(rainbow, alpha);
+
+    textureStore(writeTexture, vec2<u32>(global_id.xy), finalOut);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalOut);
 
     // Compute displacement strength from brightness and mouse
-    let brightness = dot(rainbow, vec3<f32>(0.299, 0.587, 0.114));
-    let displacement = brightness * u.zoom_params.w + mouseWave * 2.0;
+    let displacement = brightness * u.zoom_params.w * (1.0 + bass * 0.35) + mouseWave * 2.0;
 
     // Store displacement strength in depth texture (used by Pass 2)
     textureStore(writeDepthTexture, vec2<u32>(global_id.xy), vec4<f32>(displacement, 0.0, 0.0, 0.0));

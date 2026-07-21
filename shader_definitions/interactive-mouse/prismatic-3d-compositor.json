@@ -38,7 +38,9 @@
     "volumetric",
     "depth",
     "lighting",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

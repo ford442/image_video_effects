@@ -1,10 +1,22 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Temporal RGB Smear — Advanced Alpha Compositor Upgrade
+//  Temporal RGB Smear — Interactivist Upgrade
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, temporal, depth-aware,
 //            curl-noise, domain-warp, aces-tone-map, semantic-alpha,
-//            alpha-layered, luminance-key, edge-preserve, accumulative
+//            alpha-layered, luminance-key, edge-preserve, accumulative,
+//            mouse-velocity-spring, treble-sparkle-grain, feedback-clamp
 //  Complexity: Medium
+//
+//  Interactivist upgrade notes:
+//   - Mouse velocity tracked with a spring-damper in extraBuffer; the
+//     smear direction leans into fast mouse motion and settles smoothly.
+//   - Feedback history is clamped pre-write (Feedback Clamp slider) so
+//     the temporal loop can never blow up (luma-echo-warp lesson).
+//   - Treble-reactive sparkle grain (plasmaBuffer[0].z) adds fine
+//     animated film grain over the whole frame.
+//  extraBuffer layout:
+//   [0..1] smoothed mouse uv   [2..3] mouse velocity
+//   [4..5] previous raw mouse  [6]    init flag (0 = first frame)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,14 +34,23 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=DeltaTime, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  zoom_params: vec4<f32>,  // x=SmearLen, y=MouseSpring, z=Sparkle, w=FeedbackClamp
   ripples: array<vec4<f32>, 50>,
 };
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+
+// extraBuffer slots for the persistent mouse spring state
+const SM_X: u32 = 0u;
+const SM_Y: u32 = 1u;
+const VEL_X: u32 = 2u;
+const VEL_Y: u32 = 3u;
+const PM_X: u32 = 4u;
+const PM_Y: u32 = 5u;
+const INIT_FLAG: u32 = 6u;
 
 // ── Hash & noise ──────────────────────────────────────────────────
 fn hash21(p: vec2<f32>) -> f32 {
@@ -97,6 +118,21 @@ fn luma(rgb: vec3<f32>) -> f32 {
     return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
+// ── Treble-reactive sparkle grain ─────────────────────────────────
+// Fine animated grain; two decorrelated hashes per pixel per frame so
+// highlights and shadows shimmer independently. Intensity follows treble.
+fn sparkleGrain(pixel: vec2<i32>, time: f32, treble: f32, amount: f32) -> f32 {
+    let cell = vec2<f32>(pixel);
+    let t0 = floor(time * 24.0);
+    let t1 = t0 + 1.0;
+    let tFrac = fract(time * 24.0);
+    let g0 = hash21(cell * 0.7131 + vec2<f32>(t0 * 17.17, t0 * 9.31));
+    let g1 = hash21(cell * 0.7131 + vec2<f32>(t1 * 17.17, t1 * 9.31));
+    let grain = mix(g0, g1, tFrac) - 0.5;
+    let shimmer = 0.35 + 0.65 * clamp(treble, 0.0, 2.0) * 0.5;
+    return grain * amount * shimmer;
+}
+
 // ── Advanced alpha compositing ────────────────────────────────────
 fn compositeAlpha(color: vec3<f32>, depth: f32, motion: f32,
                   displ: f32, split: f32, historyA: f32, decay: f32) -> f32 {
@@ -135,16 +171,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv01 = vec2<f32>(pixel) / res;
     let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
     let time = u.config.x;
+    let dt = clamp(u.config.y, 0.0, 0.1);
     let mouse = u.zoom_config.yz;
 
-    let p1 = u.zoom_params.x;
-    let p2 = u.zoom_params.y;
-    let p3 = u.zoom_params.z;
-    let p4 = u.zoom_params.w;
+    // ── Slider params ───────────────────────────────────────────
+    let p1 = u.zoom_params.x;                    // Smear Length
+    let springCtl = clamp(u.zoom_params.y, 0.0, 1.0);   // Mouse Spring
+    let sparkleAmt = clamp(u.zoom_params.z, 0.0, 1.0);  // Sparkle Grain
+    let clampMax = clamp(u.zoom_params.w, 1.0, 2.0);    // Feedback Clamp
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+
+    // ── Mouse-velocity spring-damper (persistent state) ─────────
+    // Spring stiffness/damping scale with the Mouse Spring slider:
+    // low = loose & floaty, high = tight & snappy.
+    var smoothMouse = vec2<f32>(extraBuffer[SM_X], extraBuffer[SM_Y]);
+    var mouseVel = vec2<f32>(extraBuffer[VEL_X], extraBuffer[VEL_Y]);
+    let initialized = extraBuffer[INIT_FLAG] > 0.5;
+    if (!initialized) {
+        smoothMouse = mouse;
+        mouseVel = vec2<f32>(0.0);
+    }
+    let springK = mix(18.0, 90.0, springCtl);
+    let damping = mix(5.0, 14.0, springCtl);
+    let accel = (mouse - smoothMouse) * springK - mouseVel * damping;
+    mouseVel = mouseVel + accel * dt;
+    smoothMouse = smoothMouse + mouseVel * dt;
+
+    extraBuffer[SM_X] = smoothMouse.x;
+    extraBuffer[SM_Y] = smoothMouse.y;
+    extraBuffer[VEL_X] = mouseVel.x;
+    extraBuffer[VEL_Y] = mouseVel.y;
+    extraBuffer[PM_X] = mouse.x;
+    extraBuffer[PM_Y] = mouse.y;
+    extraBuffer[INIT_FLAG] = 1.0;
+
+    // Velocity of the spring head drives an interactive smear lean
+    let velMag = length(mouseVel);
+    let velDir = normalize(mouseVel + vec2<f32>(0.0001));
+    let velLean = smoothstep(0.15, 1.4, velMag);
 
     // Depth-aware scaling
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
@@ -153,7 +220,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Previous frame history + motion estimate from luminance gradient
     let texel = vec2<f32>(1.0) / res;
     let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv01, 0.0);
-    let hC = luma(prev.rgb);
     let hR = luma(textureSampleLevel(dataTextureC, non_filtering_sampler,
                                     uv01 + vec2<f32>(texel.x, 0.0), 0.0).rgb);
     let hL = luma(textureSampleLevel(dataTextureC, non_filtering_sampler,
@@ -166,20 +232,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let motionStrength = length(grad);
     let motionDir = normalize(grad + vec2<f32>(0.0001));
 
-    // Base time direction blended with curl-noise swirl
-    let timeAngle = time * 0.5 + p4 * TAU;
+    // Base time direction blended with curl-noise swirl (turbulence fixed
+    // at the legacy default 0.3; interactivity moved to the mouse spring)
+    let turbulence = 0.3;
+    let timeAngle = time * 0.5 + turbulence * TAU;
     let timeDir = vec2<f32>(cos(timeAngle), sin(timeAngle));
-    let curl = curl2D(uv * (2.0 + p4 * 6.0) + time * 0.1, time * 0.2);
-    let flowDir = normalize(mix(timeDir, curl, 0.4 + p4 * 0.4));
-    let smearDir = normalize(mix(flowDir, motionDir, smoothstep(0.0, 0.05, motionStrength)));
+    let curl = curl2D(uv * (2.0 + turbulence * 6.0) + time * 0.1, time * 0.2);
+    let flowDir = normalize(mix(timeDir, curl, 0.4 + turbulence * 0.4));
+    var smearDir = normalize(mix(flowDir, motionDir, smoothstep(0.0, 0.05, motionStrength)));
+    // Fast mouse flicks bend the smear along the pointer velocity
+    smearDir = normalize(mix(smearDir, velDir, velLean * 0.65));
 
-    // Smear length + chromatic split, audio/depth modulated
-    let smearLength = mix(0.01, 0.25, p1);
-    let chromaticSplit = mix(0.0, 0.05, p3) * (1.0 + mids * 0.5);
+    // Smear length + chromatic split, audio/depth modulated.
+    // Mouse speed also stretches the smear a little for gestural feel.
+    let smearLength = mix(0.01, 0.25, p1) * (1.0 + velLean * 0.35);
+    let chromaticSplit = 0.025 * (1.0 + mids * 0.5);
     let len = smearLength * (1.0 + bass * 0.3) * depthFactor;
 
     // Domain-warped drift + Halton jitter for sample dithering
-    let drift = warpedDrift(uv * 3.0, time, p4 * 0.04);
+    let drift = warpedDrift(uv * 3.0, time, turbulence * 0.04);
     let jit = vec2<f32>(halton(global_id.x + global_id.y * 97u, 2u) - 0.5,
                         halton(global_id.x + global_id.y * 73u, 3u) - 0.5) * 0.002;
 
@@ -196,15 +267,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Effect displacement magnitude drives intensity alpha
     let displ = length(offG - uv01);
 
-    // Temporal feedback with per-channel decay variation
-    let smearDecay = mix(0.3, 0.98, p2);
+    // Temporal feedback with per-channel decay variation (decay fixed at
+    // the legacy default 0.7; stability is handled by the clamp below)
+    let smearDecay = 0.776; // = mix(0.3, 0.98, 0.7), legacy slider default
     let fb = clamp(smearDecay * (1.0 + bass * 0.08), 0.0, 0.995);
     let channelDecay = vec3<f32>(fb * 0.52, fb * 0.45, fb * 0.5);
     var history = mix(sampleRGB, prev.rgb, channelDecay);
 
-    // Treble sparkle near mouse, added before feedback storage
-    let sparkle = treble * 0.25 * smoothstep(0.25, 0.0, distance(uv01, mouse));
+    // Treble sparkle near the smoothed pointer, plus full-frame grain
+    let sparkle = treble * 0.25 * smoothstep(0.25, 0.0, distance(uv01, smoothMouse));
     history += vec3<f32>(sparkle);
+    history += vec3<f32>(sparkleGrain(pixel, time, treble, sparkleAmt * 0.35));
+
+    // ── Feedback stability: clamp pre-write (never run away) ────
+    history = clamp(history, vec3<f32>(0.0), vec3<f32>(clampMax));
 
     // Final color: ACES tone map + semantic alpha driven by luma and depth
     let color = acesToneMap(history * (1.0 + mids * 0.15));

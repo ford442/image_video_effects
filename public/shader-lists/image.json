@@ -1529,7 +1529,9 @@
     "features": [
       "crossover",
       "mouse-driven",
-      "advanced-convolution"
+      "advanced-convolution",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

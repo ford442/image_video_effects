@@ -5,9 +5,37 @@
 
 ---
 
-## Recently Completed (80 shaders)
+## Recently Completed (110 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 9 (8 shaders) — 2026-07-21
+
+8-agent swarm on the next-smallest unclaimed pool shaders. Theme: **wire 4 slider params (`u.zoom_params.x–w`) into shaders whose `updatedParams` was empty** + 2–3 techniques each (fbm/worley, IQ cosine palettes, plasmaBuffer audio bands, spring-dampers, feedback clamps). All 8 pass `wgsl_precommit_gate.py` (naga + bindgroup), JSONs parse, lists/dupes clean, Jest 321 pass. Briefs: `swarm-tasks/kimi-briefs-2026-07-21/`; notes: `swarm-outputs/kimi-upgrade-2026-07-21/`. Manifest now 1308 shaders.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 103 | `bitonic-sort` | 9 | 241→304 (+63) | 4 sliders (Sort Threshold/Warp Amplitude/Edge Glow/Sort Length); bass-lowered luma gate, pre-sort FBM warp, sentinel-key span edge glow. Sort network byte-for-byte untouched. |
+| 104 | `temporal-rgb-smear` | 9 | 220→296 (+76) | 4 sliders; spring-damper mouse velocity bends smear, treble sparkle grain, feedback blowup clamp (luma-echo-warp lesson). |
+| 105 | `elastic-chromatic` | 9 | 207→297 (+90) | 4 sliders; spring-damper overshoot mouse, click shockwave ring, IQ cosine palette over blackbody grade. |
+| 106 | `data-slicer-interactive` | 9 | 189→240 (+51) | 4 sliders; branchless fBM slice jitter, bass/mids band fix, click shockwave honoring per-ripple strength. |
+| 107 | `pixel-stretch-cross` | 9 | 223→283 (+60) | 4 sliders; velocity-steered H↔V stretch axis, bass-pulse amplitude, HDR crossing bloom pre-ACES. |
+| 108 | `interactive-magnetic-ripple` | 9 | 223→302 (+79) | 4 sliders; Worley F2−F1 field lines, spring-damped oscillator envelope, treble crest sparkle. |
+| 109 | `luma-pixel-sort` | 9 | 207→262 (+55) | 4 sliders; param sort angle, bass threshold drop, cosine palette span tint. 25-comparator network + early exits intact. |
+| 110 | `pixel-depth-sort` | 9 | 197→252 (+55) | 4 sliders; param sort radius (default = old look), mids gain, span-seam chromatic fringe, feedback clamp, pre-ACES dither. |
+
+### Batch 8b (6 shaders) — 2026-07-19
+
+6-agent swarm on the smallest single-pass shaders after the v6.0 queue emptied. Recorded late (was logged only in `memory/2026-07-19.md`). Gate 6/6 green.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 97 | `ring_slicer` | 8b | — | 2–4 techniques each: fbm/curl/worley, IQ cosine palettes, plasmaBuffer audio, mouse-down wiring. Gate green. |
+| 98 | `pixel-sort-explorer` | 8b | — | Same recipe; gate green. |
+| 99 | `hex-mosaic` | 8b | — | Same recipe; gate green. |
+| 100 | `luma-slice-interactive` | 8b | — | Same recipe; gate green. |
+| 101 | `spectral-smear` | 8b | — | Same recipe; gate green. |
+| 102 | `luma-echo-warp` | 8b | — | Same recipe + **fixed real feedback blowup** (sparkle into dataTextureA unclamped at 0.99 decay → 15–30× runaway; clamped pre-tint at 1.2). |
 
 ### Batch 8 (4 new generative geometry shaders) — 2026-07-12
 
@@ -713,15 +741,6 @@ For each shader in the Active Queue:
 ## Candidate Pool for Replenishment
 
 Next smallest shaders not yet in any batch:
-- `bitonic-sort` (3,025)
-- `temporal-rgb-smear` (3,065)
-- `elastic-chromatic` (3,089)
-- `waveform-glitch` (3,117)
-- `data-slicer-interactive` (3,163)
-- `pixel-stretch-cross` (3,163)
-- `interactive-magnetic-ripple` (3,166)
-- `luma-pixel-sort` (3,192)
-- `pixel-depth-sort` (3,195)
 - `pixel-sand` (3,208)
 - `crt-magnet` (3,230)
 - `scan-distort-gpt52` (3,236)

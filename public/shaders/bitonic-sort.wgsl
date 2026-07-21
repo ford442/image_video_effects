@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Bitonic Pixel Sort — Phase B Multi-Pass-Architect Upgrade
+//  Optimizer pass: bass-reactive sort threshold & span length, param
+//  driven pre-sort domain warp, and sorted-span edge-glow highlights.
 //  Focus: bank-conflict-free shared memory, single-sided branchless
 //  compare-and-swap, and clearly separated load/sort/store passes.
 //  Category: simulation
@@ -24,12 +26,18 @@
 
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=SortMix, y=NoiseMix, z=SortDir, w=NoiseOctaves
+  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=SortThresh, y=WarpAmp, z=EdgeGlow, w=SortLength
   ripples: array<vec4<f32>, 50>,
 };
 
 const TAU: f32 = 6.28318530718;
+
+// Fixed blend constants (formerly noise-mix / octave sliders, now re-scoped).
+const NOISE_MIX: f32 = 0.3;
+const SORT_MIX_BASE: f32 = 0.9;
+const FEEDBACK_DECAY: f32 = 0.955;
+const FIXED_OCTAVES: i32 = 4;
 
 // Workgroup layout: 16x16 threads = 256 logical elements.
 const WG_X: u32 = 16u;
@@ -122,6 +130,15 @@ fn chromaticAberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
   return vec3<f32>(r, g, b);
 }
 
+// Warm amber -> cool cyan ramp for the sorted-span boundary glow, keyed by
+// the normalized sort key so the highlight inherits local tonal structure.
+fn edgeGlowColor(t: f32) -> vec3<f32> {
+  let k = clamp(t, 0.0, 1.0);
+  let warm = vec3<f32>(1.00, 0.55, 0.20);
+  let cool = vec3<f32>(0.25, 0.70, 1.00);
+  return mix(warm, cool, k * k);
+}
+
 // Map a logical 0..255 element index to its padded physical shared-memory index.
 fn phys(i: u32) -> u32 {
   return (i >> 4u) * PAD_X + (i & 15u);
@@ -142,24 +159,39 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
   let resX = u32(u.config.z); let resY = u32(u.config.w);
   let inBounds = gx < resX && gy < resY;
 
-  let sortMix = u.zoom_params.x;
-  let noiseMix = u.zoom_params.y;
-  let sortDir = u.zoom_params.z;
-  let octaves = max(i32(u.zoom_params.w * 6.0), 1);
+  // ── Slider params (re-scoped per Optimizer brief) ────────────────
+  let sortThresh = clamp(u.zoom_params.x, 0.0, 1.0); // Sort Threshold
+  let warpAmp    = clamp(u.zoom_params.y, 0.0, 1.0); // Warp Amplitude
+  let edgeGlow   = clamp(u.zoom_params.z, 0.0, 1.0); // Edge Glow
+  let sortLen    = clamp(u.zoom_params.w, 0.0, 1.0); // Sort Length
+  let octaves    = FIXED_OCTAVES;
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let bassMod = 1.0 + bass * 0.3;
 
+  // Audio-reactive thresholds: bass smoothly lowers the sort threshold so
+  // more of the image joins the sorted run on beats, and breathes the
+  // sorted-span length wider within each workgroup.
+  let thresh = clamp(sortThresh * (1.0 - bass * 0.45), 0.02, 1.0);
+  let span = clamp(sortLen * (1.0 + bass * 0.40) + 0.05, 0.05, 1.0);
+
+  // Sort direction: ascending by default, mouse-press flips to descending
+  // (preserves the old direction toggle without spending a slider on it).
+  let globalAsc = u.zoom_config.w < 0.5;
+  let sentinelKey = select(2.0, -1.0, !globalAsc);
+
   // ── PASS 1: Build per-pixel sort key and load color into workgroup memory.
-  let kSegs = 3.0 + floor(u.zoom_params.w * 7.0);
-  let kUV = kaleido((uv - vec2<f32>(0.5)) * (2.0 + u.zoom_params.w * 4.0), kSegs) + vec2<f32>(0.5);
-  let scale = 2.0 + u.zoom_params.w * 10.0;
-  let warp = domainWarp(kUV * scale + time * 0.15, 0.25 + bass * 0.1, octaves);
-  let warpedUV = clamp(mix(kUV, warp, 0.2 + u.zoom_params.w * 0.2), vec2<f32>(0.0), vec2<f32>(1.0));
+  let kSegs = 6.0;
+  let kUV = kaleido((uv - vec2<f32>(0.5)) * 4.0, kSegs) + vec2<f32>(0.5);
+  let scale = 7.0;
+  // Subtle pre-sort domain warp; warpAmp = 0 dials it exactly to zero.
+  let warpStrength = warpAmp * (0.35 + bass * 0.15);
+  let warp = domainWarp(kUV * scale + time * 0.15, warpStrength, octaves);
+  let warpedUV = clamp(mix(kUV, warp, clamp(warpAmp * 1.4, 0.0, 1.0)), vec2<f32>(0.0), vec2<f32>(1.0));
 
   let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-  var d = distance(uv, mouse) - (0.1 + u.zoom_params.w * 0.2);
+  var d = distance(uv, mouse) - 0.2;
   for (var i: i32 = 0; i < 50; i = i + 1) {
     let rp = u.ripples[i];
     if (rp.z > 0.0) {
@@ -183,19 +215,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
     let n = fbm(uv * 8.0 + time * 0.1, octaves);
     let v = voronoiF2minusF1(uv * 6.0 + time * 0.05);
     let jitter = (halton((li + u32(time * 60.0)) % 64u, 2u) - 0.5) * 0.002;
-    key = lum * (1.0 - noiseMix) + (n * 0.7 + v * 0.3) * noiseMix + depth * 0.1 + jitter;
+    let rawKey = lum * (1.0 - NOISE_MIX) + (n * 0.7 + v * 0.3) * NOISE_MIX + depth * 0.1 + jitter;
+    // Threshold gate (pixel-sorter style): pixels whose luma falls below the
+    // bass-lowered threshold bow out of the sort and drift to the tail of the
+    // workgroup run as an unsorted region, marked by a sentinel key.
+    let participates = lum >= thresh;
+    key = select(sentinelKey, rawKey, participates);
   } else {
     p = vec4<f32>(0.0);
-    key = select(-1.0, 2.0, sortDir > 0.5);
+    key = sentinelKey;
   }
 
   sKey[pi] = key;
   sCol[pi] = p;
 
-  // ── PASS 2: Workgroup bitonic sort network.
+  // ── PASS 2: Workgroup bitonic sort network. (UNTOUCHED — the bank-
+  // conflict-free padded structure and stage order must stay intact.)
   // Each thread only writes its own slot; the partner slot is updated by the
   // partner thread, eliminating double-writes and the need for a divergent if.
-  let globalAsc = sortDir < 0.5;
   for (var k: u32 = 2u; k <= WG_N; k = k << 1u) {
     for (var j: u32 = k >> 1u; j > 0u; j = j >> 1u) {
       workgroupBarrier();
@@ -221,21 +258,47 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
     }
   }
 
-  // ── PASS 3: Write sorted result, depth, and temporal feedback.
+  // ── PASS 3: Write sorted result, depth, edge glow, and temporal feedback.
   if (inBounds) {
     let sorted = sCol[pi];
-    let effectiveMix = sortMix * mask * bassMod;
+    let sortedKey = sKey[pi];
+
+    // Sorted-span gating: only the first `span` fraction of the workgroup's
+    // sorted run contributes; bass breathes the span wider on beats.
+    let spanT = f32(li) / f32(WG_N - 1u);
+    let spanMask = 1.0 - smoothstep(span - 0.06, span + 0.06, spanT);
+
+    // A slot holds a real sorted element only when its key is not a sentinel.
+    let isSentinel = select(sortedKey > 1.5, sortedKey < -0.5, !globalAsc);
+    let elemMask = 1.0 - f32(isSentinel);
+
+    // Boundary detection: compare this slot's key with the next slot's key.
+    // A sorted<->sentinel transition (or a sharp key jump) marks the edge
+    // between the sorted span and the unsorted tail.
+    let nextLi = min(li + 1u, WG_N - 1u);
+    let nextKey = sKey[phys(nextLi)];
+    let nextSentinel = select(nextKey > 1.5, nextKey < -0.5, !globalAsc);
+    let spanEdge = abs(f32(isSentinel) - f32(nextSentinel));
+    let keyJump = smoothstep(0.06, 0.30, abs(sortedKey - nextKey));
+    let edgeMask = max(spanEdge, keyJump * spanMask) * mask;
+
+    let effectiveMix = clamp(SORT_MIX_BASE * mask * bassMod * spanMask * elemMask, 0.0, 1.0);
     let finalRgb = mix(p.rgb, sorted.rgb, effectiveMix);
     let tone = acesToneMap(finalRgb * (0.9 + mids * 0.2));
     let caStr = 0.003 * (1.0 + bass) + 0.001 * distance(uv, vec2<f32>(0.5));
-    let color = mix(tone, chromaticAberration(uv, caStr), 0.25 * effectiveMix);
+    var color = mix(tone, chromaticAberration(uv, caStr), 0.25 * effectiveMix);
+
+    // Restrained edge glow on sorted-span boundaries; pulses gently with bass.
+    let glowCol = edgeGlowColor(sortedKey);
+    color += glowCol * edgeMask * edgeGlow * (0.35 + bass * 0.30);
+    color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
+
     let alpha = mix(p.a, smoothstep(0.0, 0.3, luma(sorted.rgb)), effectiveMix);
     textureStore(writeTexture, vec2<i32>(x, y), vec4<f32>(color, alpha));
 
     textureStore(writeDepthTexture, vec2<i32>(x, y), vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-    let decay = 0.96 - u.zoom_params.w * 0.03;
-    let feedback = mix(prev.rgb * decay, color, 0.15 + bass * 0.05);
+    let feedback = mix(prev.rgb * FEEDBACK_DECAY, color, 0.15 + bass * 0.05);
     textureStore(dataTextureA, vec2<i32>(x, y), vec4<f32>(feedback, alpha));
   }
 }

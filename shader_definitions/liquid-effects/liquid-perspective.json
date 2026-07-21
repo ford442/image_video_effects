@@ -2,42 +2,67 @@
   "id": "liquid-perspective",
   "name": "Liquid Perspective",
   "url": "shaders/liquid-perspective.wgsl",
-  "description": "",
+  "description": "Depth-aware liquid perspective warp with silhouette-safe parallax, canonical mouse interaction, audio-reactive ripples, and bioluminescent edges.",
   "params": [
     {
       "id": "speed",
       "name": "Speed",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Parallax and ripple animation speed"
     },
     {
       "id": "density",
       "name": "Density",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Spatial frequency of the perspective flow"
     },
     {
       "id": "intensity",
       "name": "Intensity",
       "default": 0.5,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Foreground and background warp strength"
     },
     {
       "id": "shift",
       "name": "Color Shift",
       "default": 0,
       "min": 0,
-      "max": 1
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Chromatic and bioluminescent palette shift"
     }
   ],
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
-    "image-processing"
-  ]
+    "image-processing",
+    "liquid",
+    "parallax",
+    "bioluminescent"
+  ],
+  "updatedParams": [
+    { "index": 0, "name": "Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Density", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Color Shift", "default": 0, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "updated": true
 }

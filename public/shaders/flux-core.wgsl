@@ -1,3 +1,8 @@
+// --- FLUX CORE ---
+// Electrical arc reactor anchored to the cursor: fbm-perturbed lightning bolts
+// conduct through bright areas of the source image.
+// Features: electrical, arcs, glow, distortion, mouse-driven, audio-reactive, upgraded-rgba
+
 struct Uniforms {
   config: vec4<f32>,
   zoom_config: vec4<f32>,
@@ -62,6 +67,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Uniforms
     let time = u.config.x;
     var mouse = u.zoom_config.yz;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
     let aspect = f32(dims.x) / f32(dims.y);
 
     // Adjust UV for aspect ratio for distance calcs
@@ -86,10 +93,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Use angle and distance to create lightning bolts emanating from center
     // Perturb angle with noise based on distance and time
     let angle_noise = fbm(vec2<f32>(dist * 5.0 - time * 2.0, angle * 2.0));
-    let bolt_path = abs(sin(angle * 10.0 + angle_noise * 5.0));
+    let bolt_path = abs(sin(angle * (10.0 + mids * 6.0) + angle_noise * 5.0));
 
-    // Sharpen the bolt
-    let bolt = smoothstep(0.95, 0.98, bolt_path);
+    // Sharpen the bolt — bass widens the arc so beats throw thicker lightning
+    let boltEdge = 0.95 - bass * 0.08;
+    let bolt = smoothstep(boltEdge, boltEdge + 0.03, bolt_path);
 
     // Fade bolts with distance, but allow them to connect to bright spots
     // If luma is high, the bolt can travel further or be brighter
@@ -112,15 +120,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // 4. Combine
     // Add bolts to distorted image
     // Mouse hover adds extra energy
-    let energy = 1.0 + sin(time * 10.0) * 0.2;
+    let energy = 1.0 + sin(time * 10.0) * 0.2 + bass * 0.8;
 
     var finalColor = distortedColor + finalBolt * energy;
 
-    // Add central core
-    finalColor += hotColor * smoothstep(0.05, 0.0, dist) * 2.0;
-    finalColor += fluxColor * glow * 0.5;
+    // Add central core — bass detonates the core
+    finalColor += hotColor * smoothstep(0.05 + bass * 0.04, 0.0, dist) * 2.0 * (1.0 + bass);
+    finalColor += fluxColor * glow * 0.5 * (1.0 + bass * 0.6);
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, baseColorSample.a));
+    // Alpha: electrical energy above the source plate
+    let boltEnergy = bolt * attenuation + smoothstep(0.05, 0.0, dist);
+    let alpha = clamp(baseColorSample.a + boltEnergy * (0.5 + bass * 0.5), 0.0, 1.0);
+    let outColor = vec4<f32>(finalColor, alpha);
+
+    textureStore(writeTexture, coord, outColor);
+    textureStore(dataTextureA, coord, outColor);
 
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
