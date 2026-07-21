@@ -45,9 +45,59 @@ export interface LiveActionsHandle {
 
 const STORAGE_KEY = 'vj_control_bindings';
 const MAX_ENTRIES = 100;
+const MAX_TRIGGER_ID_LENGTH = 64;
+const MAX_PARAM_LENGTH = 128;
+const MAX_SLOT_INDEX = 2;
 
 function triggerKey(trigger: ControlTrigger): string {
   return `${trigger.source}::${trigger.id}`;
+}
+
+function clampString(value: string, maxLen: number): string {
+  return value.length <= maxLen ? value : value.slice(0, maxLen);
+}
+
+function isQuotaExceededError(err: unknown): boolean {
+  return (
+    err instanceof DOMException &&
+    (err.name === 'QuotaExceededError' || err.code === 22)
+  );
+}
+
+function normalizeBinding(binding: ControlBinding): ControlBinding {
+  const trigger: ControlTrigger = {
+    source: binding.trigger.source,
+    id: clampString(binding.trigger.id, MAX_TRIGGER_ID_LENGTH),
+  };
+
+  switch (binding.action.type) {
+    case 'setSlotParam':
+      return {
+        trigger,
+        action: {
+          type: 'setSlotParam',
+          slot: Math.max(0, Math.min(MAX_SLOT_INDEX, Math.floor(binding.action.slot))),
+          param: clampString(binding.action.param, MAX_PARAM_LENGTH),
+        },
+      };
+    case 'randomizeSlot':
+      return {
+        trigger,
+        action: {
+          type: 'randomizeSlot',
+          slot: Math.max(0, Math.min(MAX_SLOT_INDEX, Math.floor(binding.action.slot))),
+        },
+      };
+    default:
+      return { trigger, action: binding.action };
+  }
+}
+
+/** Validate, normalize, dedupe, and cap bindings before persistence or import. */
+export function sanitizeBindings(bindings: unknown[]): ControlBinding[] {
+  const valid = bindings.filter(isValidControlBinding).map(normalizeBinding);
+  const registry = new ControlBindingRegistry(valid);
+  return registry.getBindings().slice(0, MAX_ENTRIES);
 }
 
 export function makeTrigger(source: ControlSource, id: string): ControlTrigger {
@@ -137,7 +187,7 @@ export function loadBindings(): ControlBinding[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    return ControlBindingRegistry.deserialize(raw);
+    return sanitizeBindings(ControlBindingRegistry.deserialize(raw));
   } catch {
     return [];
   }
@@ -145,8 +195,40 @@ export function loadBindings(): ControlBinding[] {
 
 export function saveBindings(bindings: ControlBinding[]): void {
   if (typeof localStorage === 'undefined') return;
-  const capped = bindings.slice(0, MAX_ENTRIES);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(capped));
+
+  let attempt = sanitizeBindings(bindings);
+  let clearedStale = false;
+
+  while (true) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(attempt));
+      return;
+    } catch (err) {
+      if (!isQuotaExceededError(err)) {
+        console.warn('[controlBindings] failed to persist bindings:', err);
+        return;
+      }
+
+      if (!clearedStale) {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch {
+          // ignore
+        }
+        clearedStale = true;
+        continue;
+      }
+
+      if (attempt.length === 0) {
+        console.warn('[controlBindings] localStorage quota exceeded; bindings not saved');
+        return;
+      }
+
+      const nextLen = attempt.length <= 1 ? 0 : Math.floor(attempt.length / 2);
+      attempt = attempt.slice(0, nextLen);
+      clearedStale = false;
+    }
+  }
 }
 
 function isValidControlBinding(value: unknown): value is ControlBinding {
