@@ -68,7 +68,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var bassVel = 0.0;
   let bass = spring_damper(extraBuffer[3], bassRaw, &bassVel, 0.1, 0.08);
-  extraBuffer[3] = bass;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[3] = bass;
+  }
 
   let decay = clamp(0.85 + u.zoom_params.x * 0.13 + bass * 0.05, 0.0, 0.99);
   let echoDistance = u.zoom_params.y * 0.08 * (1.0 + mids * 0.3);
@@ -81,9 +83,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseVel = mouse - prevMouse;
   let speed = clamp(length(mouseVel) * 60.0, 0.0, 1.5);
 
-  extraBuffer[0] = mouse.x;
-  extraBuffer[1] = mouse.y;
-  extraBuffer[2] = speed;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[0] = mouse.x;
+    extraBuffer[1] = mouse.y;
+    extraBuffer[2] = speed;
+  }
 
   let velLen = max(length(mouseVel), 1e-4);
   let echoDir = mouseVel / velLen;

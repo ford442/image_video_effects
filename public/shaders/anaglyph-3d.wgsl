@@ -87,7 +87,7 @@ fn colorGrade(color: vec3<f32>, lift: vec3<f32>, gamma: vec3<f32>, gain: vec3<f3
     // Lift (shadows)
     c = c + lift * (1.0 - c);
     // Gamma (midtones)
-    c = pow(c, gamma);
+    c = pow(max(c, vec3<f32>(0.0)), gamma);
     // Gain (highlights)
     c = c * gain;
     return c;

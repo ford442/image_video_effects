@@ -127,7 +127,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Smooth bass envelope persists across frames in extraBuffer[0].
   var env = extraBuffer[0];
   env = bass_env(env, bass);
-  extraBuffer[0] = env;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[0] = env;
+  }
 
   let amplitude   = u.zoom_params.x * (1.0 + env * 0.75);
   let thickness   = max(0.0003, u.zoom_params.y * 0.02 * (1.0 + env * 0.35));

@@ -147,6 +147,164 @@ def fix_literal_two_arg_workgroup_size(content: str) -> tuple[str, int]:
     """
     return LITERAL_TWO_INT_WORKGROUP_FIX.subn(r'\1, 1)', content)
 
+
+# ---------------------------------------------------------------------------
+# Reserved extraBuffer[0..4] write convention
+#
+# Contract (docs/BINDING_CONTRACT.md): extraBuffer[0..2] are CPU-written
+# bass/mid/treble, [3] reserved, [4] = historyHead ring pointer. Shaders that
+# persist smoothed state into these slots must gate the write to a single
+# invocation (house pattern: `if (gid.x == 0u && gid.y == 0u) { ... }`),
+# otherwise every invocation of the dispatch races the same address.
+# ---------------------------------------------------------------------------
+
+# Literal write to a reserved slot: `extraBuffer[N] =` with N in 0..4
+# (compound-assign like += included; `==` excluded via negative lookahead).
+RESERVED_EXTRABUF_WRITE = re.compile(
+    r'\bextraBuffer\s*\[\s*([0-4])\s*\]\s*(?:[+\-*/%])?=(?!=)',
+    re.MULTILINE,
+)
+
+# Single-invocation gate idioms accepted inside an `if (...)` condition.
+_GATE_PAIR_X_THEN_Y = re.compile(
+    r'(\w+)\s*\.\s*x\s*==\s*0u?\s*&&\s*\1\s*\.\s*y\s*==\s*0u?'
+)
+_GATE_PAIR_Y_THEN_X = re.compile(
+    r'(\w+)\s*\.\s*y\s*==\s*0u?\s*&&\s*\1\s*\.\s*x\s*==\s*0u?'
+)
+_GATE_ALL_XY = re.compile(
+    r'all\s*\(\s*\w+\s*\.\s*xy\s*==\s*vec2\s*(?:<\s*u32\s*>)?\s*\(\s*0u?'
+)
+_GATE_VAR_DECL = re.compile(
+    r'\b(?:let|var)\s+(\w+)\s*(?::\s*bool\s*)?=\s*([^;]+);'
+)
+_IF_PATTERN = re.compile(r'\bif\s*\(')
+_ELSE_PATTERN = re.compile(r'\belse\b')
+
+
+def _is_gate_expr(cond: str, gate_vars: set) -> bool:
+    """True if an `if` condition restricts execution to invocation (0, 0)."""
+    if _GATE_PAIR_X_THEN_Y.search(cond) or _GATE_PAIR_Y_THEN_X.search(cond):
+        return True
+    if _GATE_ALL_XY.search(cond):
+        return True
+    for name in re.findall(r'\b[A-Za-z_]\w*\b', cond):
+        if name in gate_vars:
+            return True
+    return False
+
+
+def _collect_gate_vars(code: str) -> set:
+    """Names of bool variables whose initializer is a (0,0)-invocation test."""
+    gate_vars = set()
+    # Iterate to fixpoint so `let b = a && ...` chains resolve.
+    for _ in range(4):
+        before = len(gate_vars)
+        for m in _GATE_VAR_DECL.finditer(code):
+            if _GATE_PAIR_X_THEN_Y.search(m.group(2)) or \
+               _GATE_PAIR_Y_THEN_X.search(m.group(2)) or \
+               _GATE_ALL_XY.search(m.group(2)):
+                gate_vars.add(m.group(1))
+        if len(gate_vars) == before:
+            break
+    return gate_vars
+
+
+def _block_spans(code: str) -> list[tuple[int, int, str]]:
+    """
+    Return (start, end, condition) spans for `if`-gated regions of code.
+    Handles both braced blocks and single-statement (brace-less) if bodies.
+    `condition` is the parenthesized text (empty string for non-if blocks).
+    """
+    spans = []
+    stack = []  # (open_pos, condition) for '{' blocks
+    pending = None  # condition of the most recent `if` awaiting its body
+    i, n = 0, len(code)
+    while i < n:
+        m = _IF_PATTERN.match(code, i)
+        if m:
+            depth = 0
+            j = m.end() - 1
+            start = j
+            while j < n:
+                if code[j] == '(':
+                    depth += 1
+                elif code[j] == ')':
+                    depth -= 1
+                    if depth == 0:
+                        break
+                j += 1
+            pending = code[start:j + 1]
+            i = j + 1
+            continue
+        ch = code[i]
+        if ch == '{':
+            stack.append((i, pending or ''))
+            pending = None
+            i += 1
+        elif ch == '}':
+            if stack:
+                open_pos, cond = stack.pop()
+                spans.append((open_pos, i, cond))
+            pending = None
+            i += 1
+        elif pending is not None:
+            if ch.isspace():
+                i += 1
+            elif _ELSE_PATTERN.match(code, i):
+                i += _ELSE_PATTERN.match(code, i).end()
+            else:
+                # Brace-less single-statement body: gate applies until ';'.
+                semi = code.find(';', i)
+                if semi == -1:
+                    semi = n
+                spans.append((i, semi, pending))
+                pending = None
+                i = semi + 1
+        else:
+            i += 1
+    return spans
+
+
+def check_reserved_extrabuffer_writes(content: str) -> list[dict]:
+    """
+    Return issues for literal writes to reserved extraBuffer indices [0..4]
+    that are NOT gated by a single-invocation guard such as
+    `if (gid.x == 0u && gid.y == 0u)` (or a bool variable holding that test).
+    Checks comment-stripped source so commented-out code is ignored.
+    """
+    issues = []
+    stripped = strip_wgsl_comments(content)
+    gate_vars = _collect_gate_vars(stripped)
+    spans = [s for s in _block_spans(stripped) if s[2]]
+    line_starts = [0]
+    for m in re.finditer(r'\n', stripped):
+        line_starts.append(m.end())
+
+    def _line_of(pos: int) -> int:
+        lo, hi = 0, len(line_starts)
+        while lo + 1 < hi:
+            mid = (lo + hi) // 2
+            if line_starts[mid] <= pos:
+                lo = mid
+            else:
+                hi = mid
+        return lo + 1
+
+    for match in RESERVED_EXTRABUF_WRITE.finditer(stripped):
+        pos = match.start()
+        gated = any(
+            start <= pos <= end and _is_gate_expr(cond, gate_vars)
+            for start, end, cond in spans
+        )
+        if not gated:
+            issues.append({
+                "match": match.group(0).strip(),
+                "index": int(match.group(1)),
+                "line": _line_of(pos),
+            })
+    return issues
+
 BINDING_BEYOND_MAX_PATTERN = re.compile(
     r'@group\(0\)\s*@binding\((1[4-9]|[2-9]\d+)\)',
     re.MULTILINE
@@ -258,6 +416,7 @@ def parse_shader(filepath):
         "uniforms_struct": {"valid": True, "missing_fields": [], "extra_fields": []},
         "workgroup_sizes": [],
         "workgroup_size_valid": True,
+        "reserved_extrabuffer_writes": [],
         "errors": [],
         "warnings": []
     }
@@ -398,7 +557,19 @@ def parse_shader(filepath):
     if not result["texture_store_targets"]:
         result["status"] = "incompatible"
         result["errors"].append("No textureStore calls found")
-    
+
+    # Reserved extraBuffer[0..4] writes must be single-invocation gated
+    reserved_issues = check_reserved_extrabuffer_writes(content)
+    result["reserved_extrabuffer_writes"] = reserved_issues
+    if reserved_issues:
+        result["status"] = "incompatible"
+        for issue in reserved_issues:
+            result["errors"].append(
+                f"Ungated write to reserved extraBuffer[{issue['index']}] "
+                f"(line {issue['line']}): gate with "
+                f"`if (gid.x == 0u && gid.y == 0u) {{ ... }}`"
+            )
+
     return result
 
 def main():

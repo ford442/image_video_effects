@@ -154,13 +154,17 @@ let pixel = vec2<i32>(global_id.xy);
   let bass = spring_damper(extraBuffer[0], bassRaw, &bassVel, 0.12, 0.08);
   let mids = spring_damper(extraBuffer[1], midsRaw, &midsVel, 0.1, 0.09);
   let treble = spring_damper(extraBuffer[2], trebleRaw, &trebleVel, 0.14, 0.07);
-  extraBuffer[0] = bass;
-  extraBuffer[1] = mids;
-  extraBuffer[2] = treble;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[0] = bass;
+    extraBuffer[1] = mids;
+    extraBuffer[2] = treble;
+  }
 
   let clickPulse = select(0.0, 1.0, u.zoom_config.w > 0.5);
-  extraBuffer[3] = mix(extraBuffer[3], mouse.x, 0.15);
-  extraBuffer[4] = mix(extraBuffer[4], mouse.y, 0.15);
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[3] = mix(extraBuffer[3], mouse.x, 0.15);
+    extraBuffer[4] = mix(extraBuffer[4], mouse.y, 0.15);
+  }
   extraBuffer[5] = mix(extraBuffer[5], clickPulse, 0.2);
 
   // Distance-based LOD: lower quality at the screen edges.

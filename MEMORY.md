@@ -132,3 +132,11 @@
   stable parameter IDs/defaults/ranges for saved-preset compatibility.
 - Target gate passed 8/8 and production build succeeded. The authoritative scan found four
   unrelated committed generative failures; do not attribute those to the liquid batch.
+
+## WGSL audit fix swarm (2026-07-21) — complete
+- Batch 9 upgrade swarm (8 shaders) closed earlier same day; liquid batch disjoint.
+- Audit → fix agents 1–5: naga 4-pack, boids/flock feedback rewrite + entry-aware workgroup
+  parser, reserved extraBuffer[0..4] gate, **dataA primary feedback (B then A copy)**, logic
+  one-liners + guided-filter `/count`. Reports under `reports/audit-2026-07-21/fix-*.md`.
+- Host contract: when both dataA and dataB are written, **A→C last** so sim state wins.
+- Optional backlog: mechanical gid-guard for ~220 files; deeper agent-sim races (pixel-sand).

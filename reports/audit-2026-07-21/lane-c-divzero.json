@@ -1,0 +1,3316 @@
+{
+ "alucinate.wgsl": [
+  [
+   71,
+   "d",
+   "z = z / d;"
+  ]
+ ],
+ "ambient-liquid.wgsl": [
+  [
+   74,
+   "d",
+   "if      (mx == c.r) { h = (c.g - c.b) / d + select(0.0, 6.0, c.g < c.b); }"
+  ],
+  [
+   75,
+   "d",
+   "else if (mx == c.g) { h = (c.b - c.r) / d + 2.0; }"
+  ],
+  [
+   76,
+   "d",
+   "else                { h = (c.r - c.g) / d + 4.0; }"
+  ]
+ ],
+ "anisotropic-kuwahara-nlm.wgsl": [
+  [
+   198,
+   "dist",
+   "let rotated = vec2<f32>(-toRipple.y, toRipple.x) / dist;"
+  ]
+ ],
+ "anisotropic-kuwahara.wgsl": [
+  [
+   201,
+   "dist",
+   "let rotated = vec2<f32>(-toRipple.y, toRipple.x) / dist;"
+  ]
+ ],
+ "astral-kaleidoscope-gemini.wgsl": [
+  [
+   75,
+   "delta",
+   "h = fmod((c.g - c.b) / delta, 6.0);"
+  ],
+  [
+   77,
+   "delta",
+   "h = (c.b - c.r) / delta + 2.0;"
+  ],
+  [
+   79,
+   "delta",
+   "h = (c.r - c.g) / delta + 4.0;"
+  ]
+ ],
+ "astral-kaleidoscope-grokcf1.wgsl": [
+  [
+   75,
+   "delta",
+   "h = fmod((c.g - c.b) / delta, 6.0);"
+  ],
+  [
+   77,
+   "delta",
+   "h = (c.b - c.r) / delta + 2.0;"
+  ],
+  [
+   79,
+   "delta",
+   "h = (c.r - c.g) / delta + 4.0;"
+  ]
+ ],
+ "astral-kaleidoscope-julia.wgsl": [
+  [
+   150,
+   "zoom",
+   "let d = quaternionJuliaDE(p * zoom, c) / zoom;"
+  ]
+ ],
+ "astral-kaleidoscope-morph.wgsl": [
+  [
+   73,
+   "delta",
+   "h = (c.g - c.b) / delta + offset;"
+  ],
+  [
+   75,
+   "delta",
+   "h = (c.b - c.r) / delta + 2.0;"
+  ],
+  [
+   77,
+   "delta",
+   "h = (c.r - c.g) / delta + 4.0;"
+  ]
+ ],
+ "astral-kaleidoscope.wgsl": [
+  [
+   66,
+   "delta",
+   "h = (c.g - c.b) / delta + offset;"
+  ],
+  [
+   68,
+   "delta",
+   "h = (c.b - c.r) / delta + 2.0;"
+  ],
+  [
+   70,
+   "delta",
+   "h = (c.r - c.g) / delta + 4.0;"
+  ]
+ ],
+ "bio-lenia-rgba.wgsl": [
+  [
+   45,
+   "s",
+   "return exp(-pow((x - m) / s, 2.0) / 2.0);"
+  ]
+ ],
+ "bio_lenia_continuous.wgsl": [
+  [
+   40,
+   "s",
+   "return exp(-pow((x - m) / s, 2.0) / 2.0);"
+  ]
+ ],
+ "biomimetic-scales.wgsl": [
+  [
+   109,
+   "aspect",
+   "let mouseVec = (mouse - vec2<f32>(cellCenter.x / aspect, cellCenter.y));"
+  ],
+  [
+   121,
+   "aspect",
+   "finalCenter = vec2<f32>(cellCenter.x / aspect, cellCenter.y);"
+  ]
+ ],
+ "black-hole-iridescence.wgsl": [
+  [
+   101,
+   "radius",
+   "let rimDist = dist / radius;"
+  ],
+  [
+   115,
+   "aspect",
+   "let offset_uv = vec2<f32>(offset.x / aspect, offset.y);"
+  ]
+ ],
+ "black-hole.wgsl": [
+  [
+   82,
+   "aspect",
+   "let offset_uv_r = vec2<f32>(offset_r.x / aspect, offset_r.y);"
+  ],
+  [
+   83,
+   "aspect",
+   "let offset_uv_g = vec2<f32>(offset_g.x / aspect, offset_g.y);"
+  ],
+  [
+   84,
+   "aspect",
+   "let offset_uv_b = vec2<f32>(offset_b.x / aspect, offset_b.y);"
+  ]
+ ],
+ "block-distort-interactive.wgsl": [
+  [
+   48,
+   "radius",
+   "let core = exp(-d * d * (15.0 / radius));"
+  ]
+ ],
+ "blueprint-reveal-guided.wgsl": [
+  [
+   105,
+   "count",
+   "let meanGuide = sumGuide / count;"
+  ],
+  [
+   106,
+   "count",
+   "let meanInput = sumInput / count;"
+  ],
+  [
+   107,
+   "count",
+   "let meanGI = sumGuideInput / count;"
+  ],
+  [
+   108,
+   "count",
+   "let meanGuide2 = sumGuide2 / count;"
+  ]
+ ],
+ "boids-rgba-ecosystem.wgsl": [
+  [
+   116,
+   "dist",
+   "s1Sep = s1Sep - normalize(offset) / dist * ps.x;"
+  ],
+  [
+   124,
+   "dist",
+   "s2Sep = s2Sep - normalize(offset) / dist * ps.x;"
+  ]
+ ],
+ "boids.wgsl": [
+  [
+   39,
+   "radius",
+   "let normalized_dist = dist / radius;"
+  ]
+ ],
+ "breathing-kaleidoscope-morph.wgsl": [
+  [
+   73,
+   "dist",
+   "mouseDisplacement += (direction / dist) * wave * falloff * 0.05;"
+  ]
+ ],
+ "breathing-kaleidoscope.wgsl": [
+  [
+   107,
+   "aspect",
+   "let warped = center + vec2<f32>(dir.x / aspect, dir.y) * dist * petalWarp;"
+  ]
+ ],
+ "bubble-chamber.wgsl": [
+  [
+   116,
+   "aspect",
+   "let uv_velocity = velocity * vec2<f32>(1.0 / aspect, 1.0);"
+  ]
+ ],
+ "chroma-kinetic-blackbody.wgsl": [
+  [
+   94,
+   "aspect",
+   "let uvOffsetDir = vec2<f32>(rotDir.x / aspect, rotDir.y);"
+  ]
+ ],
+ "chroma-lens-iridescence.wgsl": [
+  [
+   96,
+   "radius",
+   "let ndist = dist / radius;"
+  ],
+  [
+   123,
+   "radius",
+   "let ndist = dist / radius;"
+  ]
+ ],
+ "chroma-lens.wgsl": [
+  [
+   60,
+   "radius",
+   "let ndist = dist / radius;"
+  ]
+ ],
+ "chroma-threads-gabor.wgsl": [
+  [
+   85,
+   "density",
+   "let threadUVY = (threadID + 0.5) / density;"
+  ]
+ ],
+ "chroma-threads.wgsl": [
+  [
+   64,
+   "dot",
+   "let G = min(1.0, min(2.0 * NdotH * NdotV / dot(V, H), 2.0 * NdotH * NdotL / dot(V, H)));"
+  ],
+  [
+   89,
+   "density",
+   "let threadUVY = (threadID + 0.5) / density;"
+  ]
+ ],
+ "chroma-vortex-coupled.wgsl": [
+  [
+   140,
+   "aspect",
+   "let rotR = vec2<f32>(rotR_sq.x / aspect, rotR_sq.y);"
+  ],
+  [
+   141,
+   "aspect",
+   "let rotG = vec2<f32>(rotG_sq.x / aspect, rotG_sq.y);"
+  ],
+  [
+   142,
+   "aspect",
+   "let rotB = vec2<f32>(rotB_sq.x / aspect, rotB_sq.y);"
+  ]
+ ],
+ "chromatic-focus-guided.wgsl": [
+  [
+   125,
+   "count",
+   "let meanGuide = sumGuide / count;"
+  ],
+  [
+   126,
+   "count",
+   "let meanInput = sumInput / count;"
+  ],
+  [
+   127,
+   "count",
+   "let meanGI = sumGuideInput / count;"
+  ],
+  [
+   128,
+   "count",
+   "let meanGuide2 = sumGuide2 / count;"
+  ]
+ ],
+ "chromatic-folds-gemini.wgsl": [
+  [
+   122,
+   "scale",
+   "totalDisp += hueGrad * foldStrength * 0.05 * (1.0 + curvature) / scale;"
+  ]
+ ],
+ "chromatic-swirl.wgsl": [
+  [
+   81,
+   "radius",
+   "let percent = (radius - dist) / radius;"
+  ],
+  [
+   106,
+   "aspect",
+   "let finalUV_center = vec2<f32>(rotatedX / aspect, rotatedY) + center;"
+  ]
+ ],
+ "cinematic-flare.wgsl": [
+  [
+   106,
+   "aspect",
+   "let offsetUV = uv + vec2<f32>(t * streakLen * lightDir.x / aspect, t * streakLen * lightDir.y);"
+  ]
+ ],
+ "complex-exponent-warp.wgsl": [
+  [
+   70,
+   "d",
+   "return vec2<f32>((a.x * b.x + a.y * b.y) / d, (a.y * b.x - a.x * b.y) / d);"
+  ]
+ ],
+ "conv-guided-filter-depth.wgsl": [
+  [
+   108,
+   "count",
+   "let meanGuide = sumGuide / count;"
+  ],
+  [
+   109,
+   "count",
+   "let meanInput = sumInput / count;"
+  ],
+  [
+   110,
+   "count",
+   "let meanGI = sumGuideInput / count;"
+  ],
+  [
+   111,
+   "count",
+   "let meanGuide2 = sumGuide2 / count;"
+  ]
+ ],
+ "conv-guided-video-filter.wgsl": [
+  [
+   93,
+   "count",
+   "let meanG  = sumG  / count;"
+  ],
+  [
+   94,
+   "count",
+   "let meanP  = sumP  / count;"
+  ],
+  [
+   95,
+   "count",
+   "let meanGP = sumGP / count;"
+  ],
+  [
+   96,
+   "count",
+   "let meanG2 = sumG2 / count;"
+  ]
+ ],
+ "conv-stochastic-stipple.wgsl": [
+  [
+   71,
+   "count",
+   "return sum / count;"
+  ]
+ ],
+ "crystal-mosaic.wgsl": [
+  [
+   139,
+   "density",
+   "let triCenter = (triID + vec2<f32>(0.5, 0.57735)) / density;"
+  ]
+ ],
+ "cyber-hex-armor.wgsl": [
+  [
+   38,
+   "r",
+   "let a = uv - (floor(uv / r + 0.5) * r);"
+  ],
+  [
+   39,
+   "r",
+   "let b = uv - (floor((uv - h) / r + 0.5) * r + h);"
+  ]
+ ],
+ "cyber-magnifier.wgsl": [
+  [
+   56,
+   "aspect",
+   "let aberrationOffset = vec2<f32>(safeDir.x / aspect, safeDir.y) *"
+  ]
+ ],
+ "cyber-rain-interactive.wgsl": [
+  [
+   55,
+   "aspect",
+   "let cell = floor(uv * vec2<f32>(cols, cols / aspect));"
+  ],
+  [
+   82,
+   "aspect",
+   "let gridY = floor(uv.y * cols / aspect);"
+  ]
+ ],
+ "cyber-ripples.wgsl": [
+  [
+   126,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "digital-reveal-guided.wgsl": [
+  [
+   98,
+   "count",
+   "let meanGuide = sumGuide / count;"
+  ],
+  [
+   99,
+   "count",
+   "let meanInput = sumInput / count;"
+  ],
+  [
+   100,
+   "count",
+   "let meanGI = sumGuideInput / count;"
+  ],
+  [
+   101,
+   "count",
+   "let meanGuide2 = sumGuide2 / count;"
+  ]
+ ],
+ "dimension-slicer-guided.wgsl": [
+  [
+   98,
+   "zoom",
+   "let offset = (uv - mouse) * (1.0 / zoom - 1.0);"
+  ],
+  [
+   125,
+   "count",
+   "let meanGuide = sumGuide / count;"
+  ],
+  [
+   126,
+   "count",
+   "let meanInput = sumInput / count;"
+  ],
+  [
+   127,
+   "count",
+   "let meanGI = sumGuideInput / count;"
+  ],
+  [
+   128,
+   "count",
+   "let meanGuide2 = sumGuide2 / count;"
+  ]
+ ],
+ "distortion-gravitational-prismatic.wgsl": [
+  [
+   77,
+   "radius",
+   "let temp = pow(innerRadius / radius, 0.75);"
+  ]
+ ],
+ "distortion_gravitational_lens.wgsl": [
+  [
+   67,
+   "radius",
+   "let temp = pow(innerRadius / radius, 0.75);"
+  ]
+ ],
+ "dla-crystals.wgsl": [
+  [
+   75,
+   "count",
+   "return colorSum / count;"
+  ]
+ ],
+ "double-exposure-hdr.wgsl": [
+  [
+   81,
+   "zoom",
+   "p = p / zoom;"
+  ]
+ ],
+ "double-exposure-zoom.wgsl": [
+  [
+   85,
+   "aspect",
+   "uv2.x = uv2.x / aspect;"
+  ],
+  [
+   86,
+   "zoom",
+   "uv2 = uv2 / zoom;"
+  ]
+ ],
+ "double-exposure.wgsl": [
+  [
+   120,
+   "aspect",
+   "p.x = p.x / aspect;"
+  ]
+ ],
+ "dynamic-halftone.wgsl": [
+  [
+   79,
+   "scale",
+   "let cellCenterUV = (cellIndex + cellCenter) / scale;"
+  ],
+  [
+   80,
+   "aspect",
+   "let sampleUV = vec2<f32>(cellCenterUV.x / aspect, cellCenterUV.y);"
+  ]
+ ],
+ "echo-trace.wgsl": [
+  [
+   96,
+   "s",
+   "let kPos = pPosPred / s;"
+  ],
+  [
+   97,
+   "s",
+   "let kVel = (pVelPred * dt) / s;"
+  ]
+ ],
+ "energy-shield-blackbody.wgsl": [
+  [
+   103,
+   "aspect",
+   "hexCenterUV.x = hexCenterUV.x / aspect;"
+  ]
+ ],
+ "energy-shield.wgsl": [
+  [
+   63,
+   "aspect",
+   "hexCenterUV.x = hexCenterUV.x / aspect;"
+  ]
+ ],
+ "fabric-step-gabor.wgsl": [
+  [
+   149,
+   "dist",
+   "let correction = (dist - restLen * 2.0) / dist * 0.5 * stiffness;"
+  ]
+ ],
+ "fabric-step.wgsl": [
+  [
+   207,
+   "dist",
+   "let correction = (dist - restLen) / dist * 0.5 * stiffness;"
+  ],
+  [
+   218,
+   "dist",
+   "let correction = (dist - restLen) / dist * 0.5 * stiffness;"
+  ],
+  [
+   229,
+   "dist",
+   "var correction = (dist - restLen) / dist * 0.5 * stiffness;"
+  ],
+  [
+   240,
+   "dist",
+   "var correction = (dist - restLen) / dist * 0.5 * stiffness;"
+  ]
+ ],
+ "fiber-optic-weave.wgsl": [
+  [
+   63,
+   "density",
+   "let stripCenter = (stripIndex + 0.5) / density;"
+  ]
+ ],
+ "fireworks-depth-parade.wgsl": [
+  [
+   43,
+   "min",
+   "let uv = (vec2<f32>(pixel)-res*0.5)/min(res.x,res.y);"
+  ],
+  [
+   93,
+   "min",
+   "let mUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);"
+  ]
+ ],
+ "fireworks-edge-ignite.wgsl": [
+  [
+   33,
+   "min",
+   "let e = 2.0/min(res.x,res.y);"
+  ],
+  [
+   47,
+   "min",
+   "let uv = (vec2<f32>(pixel)-res*0.5)/min(res.x,res.y);"
+  ],
+  [
+   87,
+   "min",
+   "let mUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);"
+  ]
+ ],
+ "fireworks-patriotic-july4.wgsl": [
+  [
+   51,
+   "min",
+   "let uv = (vec2<f32>(pixel)-res*0.5)/min(res.x,res.y);"
+  ],
+  [
+   91,
+   "min",
+   "let mUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);"
+  ]
+ ],
+ "fireworks-portrait-burst.wgsl": [
+  [
+   40,
+   "min",
+   "let uv = (vec2<f32>(pixel)-res*0.5)/min(res.x,res.y);"
+  ],
+  [
+   82,
+   "min",
+   "let mUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);"
+  ]
+ ],
+ "flip-matrix.wgsl": [
+  [
+   55,
+   "density",
+   "let cell_center_aspect = (cell_id + 0.5) / density;"
+  ],
+  [
+   57,
+   "aspect",
+   "let cell_center = vec2<f32>(cell_center_aspect.x / aspect, cell_center_aspect.y);"
+  ],
+  [
+   110,
+   "density",
+   "let sample_u = (cell_id.x + cell_local.x) / density / aspect;"
+  ],
+  [
+   111,
+   "density",
+   "let sample_v = (cell_id.y + source_local_y) / density;"
+  ]
+ ],
+ "flow-sort.wgsl": [
+  [
+   100,
+   "dist",
+   "var vortex = vec2<f32>(-toRipple.y, toRipple.x) / dist;"
+  ]
+ ],
+ "fluid-grid-rgba-fluid.wgsl": [
+  [
+   142,
+   "aspect",
+   "let uvOffset = vec2<f32>(offsetDir.x / aspect, offsetDir.y) * push;"
+  ]
+ ],
+ "fluid-grid.wgsl": [
+  [
+   99,
+   "aspect",
+   "let uvOffset = vec2<f32>(offsetDir.x / aspect, offsetDir.y) * push + curl;"
+  ]
+ ],
+ "fractal-boids-field-coupled.wgsl": [
+  [
+   177,
+   "dist",
+   "sep = sep + normalize(diff) / dist;"
+  ]
+ ],
+ "fractal-boids-field.wgsl": [
+  [
+   121,
+   "dist",
+   "separation += normalize(diff) / dist;"
+  ]
+ ],
+ "fractal-glass-distort.wgsl": [
+  [
+   52,
+   "s",
+   "let q1 = ifsAffine(q, r1, 1.0 / s,  0.0, 0.5);"
+  ]
+ ],
+ "frosty-window.wgsl": [
+  [
+   68,
+   "s",
+   "let sa = fract(a / s + 0.5) - 0.5;"
+  ]
+ ],
+ "galaxy-compute.wgsl": [
+  [
+   135,
+   "zoom",
+   "let centeredUV = (uv - 0.5) / zoom + 0.5 + (pan - 0.5);"
+  ]
+ ],
+ "gen-3d-sierpinski-chaos.wgsl": [
+  [
+   61,
+   "min",
+   "let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ],
+  [
+   174,
+   "count",
+   "color = acc / count;"
+  ]
+ ],
+ "gen-abyssal-chrono-coral.wgsl": [
+  [
+   110,
+   "s",
+   "let branch = (length(p.xz) - u.zoom_params.x * (1.0 + plasmaBuffer[0].x * 0.4 + ringMod * 0.3)) / s;"
+  ],
+  [
+   115,
+   "s",
+   "let node_d = length(p) / s - (0.18 + audioPulse * 0.22);"
+  ]
+ ],
+ "gen-alien-flora-ecosystem.wgsl": [
+  [
+   232,
+   "density",
+   "let cellId = floor(p.xz / density);"
+  ]
+ ],
+ "gen-astro-mechanical-quantum-furnace-engine.wgsl": [
+  [
+   142,
+   "scale",
+   "var dGears = sdTorus(q, vec2<f32>(3.0, 0.5)) / scale;"
+  ]
+ ],
+ "gen-audio-spirograph-julia.wgsl": [
+  [
+   58,
+   "r",
+   "let k = R / r;"
+  ],
+  [
+   94,
+   "min",
+   "let uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "gen-audio-spirograph.wgsl": [
+  [
+   40,
+   "r",
+   "let k = R / r;"
+  ],
+  [
+   48,
+   "r",
+   "let k = R / r;"
+  ],
+  [
+   85,
+   "min",
+   "let uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "gen-aurora-silk.wgsl": [
+  [
+   136,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-barnsley-fern.wgsl": [
+  [
+   135,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   149,
+   "scale",
+   "var p = uv * vec2<f32>(aspect * 5.0, 10.0) / scale;"
+  ],
+  [
+   160,
+   "scale",
+   "let mouseFern = (mouse - 0.5) * vec2<f32>(aspect * 5.0, 10.0) / scale;"
+  ]
+ ],
+ "gen-bioluminescent-aether-jellyfish-swarm.wgsl": [
+  [
+   173,
+   "spacing",
+   "let cell_center = floor(p_space / spacing + vec3<f32>(0.5)) * spacing;"
+  ],
+  [
+   199,
+   "spacing",
+   "local_p = local_p - floor(local_p / spacing + vec3<f32>(0.5)) * spacing;"
+  ]
+ ],
+ "gen-biomechanical-hive-julia.wgsl": [
+  [
+   113,
+   "density",
+   "let cell_size = 12.0 / density;"
+  ],
+  [
+   115,
+   "spacing",
+   "let id = floor((p + spacing * 0.5) / spacing);"
+  ],
+  [
+   116,
+   "spacing",
+   "let local_p = (fract((p + spacing * 0.5) / spacing) - 0.5) * spacing;"
+  ],
+  [
+   228,
+   "density",
+   "let cell_size = 12.0 / density;"
+  ],
+  [
+   230,
+   "spacing",
+   "let local_p = (fract((p + spacing * 0.5) / spacing) - 0.5) * spacing;"
+  ]
+ ],
+ "gen-biomechanical-hive.wgsl": [
+  [
+   174,
+   "density",
+   "let cell_size = 12.0 / density;"
+  ],
+  [
+   178,
+   "spacing",
+   "let id = floor((p + spacing * 0.5) / spacing);"
+  ],
+  [
+   179,
+   "spacing",
+   "let local_p = (fract((p + spacing * 0.5) / spacing) - 0.5) * spacing;"
+  ],
+  [
+   292,
+   "spacing",
+   "let local_p = (fract((p + spacing * 0.5) / spacing) - 0.5) * spacing;"
+  ]
+ ],
+ "gen-bismuth-singularity-loom-engine.wgsl": [
+  [
+   94,
+   "scale",
+   "let sub_box = sdBox(q, vec3<f32>(0.6 / scale));"
+  ]
+ ],
+ "gen-celestial-prism-orchid.wgsl": [
+  [
+   181,
+   "s",
+   "let c_dist = sdCappedCone(q, h, r1, r2) / s;"
+  ],
+  [
+   185,
+   "s",
+   "let v_dist = sdCapsule(q, vec3<f32>(0.0, -h, 0.0), vec3<f32>(0.0, h, 0.0), 0.02) / s;"
+  ]
+ ],
+ "gen-celestial-quantum-glass-dragonfly.wgsl": [
+  [
+   125,
+   "scale",
+   "let venation = sdBox(p_f, vec3<f32>(1.5, 0.1, 1.0)) / scale;"
+  ]
+ ],
+ "gen-celestial-weave.wgsl": [
+  [
+   76,
+   "dot",
+   "let h = sat(dot(pa, ba) / dot(ba, ba));"
+  ]
+ ],
+ "gen-chromatic-glass-lattice.wgsl": [
+  [
+   77,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-chromatic-metamorphosis.wgsl": [
+  [
+   184,
+   "min",
+   "let uv    = (vec2<f32>(gid.xy) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-chrono-kitsune-prism-weaver.wgsl": [
+  [
+   63,
+   "count",
+   "let phase = i * PI * 2.0 / count;"
+  ]
+ ],
+ "gen-chronos-monolith-resonator.wgsl": [
+  [
+   78,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-cosmic-clockwork-dyson-sphere.wgsl": [
+  [
+   221,
+   "d",
+   "ao += (d - map(p + n * d, complex, gearRatio, t)) / d;"
+  ]
+ ],
+ "gen-cosmic-slime-mold.wgsl": [
+  [
+   171,
+   "min",
+   "let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ],
+  [
+   176,
+   "min",
+   "let mouseNorm = (mouse - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ],
+  [
+   237,
+   "scale",
+   "let veinWidth = 0.015 * (1.0 + growth * 0.5) / scale;"
+  ]
+ ],
+ "gen-crystalline-chrono-dyson.wgsl": [
+  [
+   127,
+   "scale",
+   "let kifs = sdBox(kq, vec3<f32>(0.1, 0.1, 0.01)) / scale;"
+  ]
+ ],
+ "gen-cybernetic-ferro-coral.wgsl": [
+  [
+   64,
+   "density",
+   "let c = vec3<f32>(2.0 / density);"
+  ]
+ ],
+ "gen-cybernetic-liquid-chrome-engine.wgsl": [
+  [
+   50,
+   "k",
+   "return -log2(res) / k;"
+  ],
+  [
+   70,
+   "spacing",
+   "p.x = (fract(p.x / spacing + 0.5) - 0.5) * spacing;"
+  ],
+  [
+   71,
+   "spacing",
+   "p.z = (fract(p.z / spacing + 0.5) - 0.5) * spacing;"
+  ]
+ ],
+ "gen-cycloid-bloom.wgsl": [
+  [
+   47,
+   "r",
+   "let x = (R - r) * cos(t) + d * cos((R - r) / r * t);"
+  ],
+  [
+   48,
+   "r",
+   "let y = (R - r) * sin(t) - d * sin((R - r) / r * t);"
+  ]
+ ],
+ "gen-cymatic-plasma-mandalas.wgsl": [
+  [
+   81,
+   "min",
+   "var uv = (fragCoord * 2.0 - dims) / min(dims.x, dims.y);"
+  ]
+ ],
+ "gen-cymatic-quantum-silk-loom.wgsl": [
+  [
+   100,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-de-jong-attractor.wgsl": [
+  [
+   94,
+   "zoom",
+   "let viewPos = (uv - 0.5) * (4.0 / zoom) + centre;"
+  ]
+ ],
+ "gen-eldritch-quantum-fractal-eye.wgsl": [
+  [
+   101,
+   "scale",
+   "let fractalDist = length(z) / scale - 0.05;"
+  ]
+ ],
+ "gen-electric-kaleidoscope-storm.wgsl": [
+  [
+   205,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   209,
+   "min",
+   "let mousePos = (u.zoom_config.yz - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-ethereal-chrono-plasma-void-manta.wgsl": [
+  [
+   94,
+   "delta",
+   "if (v == c.r) { h = (c.g - c.b) / delta; }"
+  ],
+  [
+   95,
+   "delta",
+   "else if (v == c.g) { h = 2.0 + (c.b - c.r) / delta; }"
+  ],
+  [
+   96,
+   "delta",
+   "else { h = 4.0 + (c.r - c.g) / delta; }"
+  ],
+  [
+   166,
+   "min",
+   "var uv = (vec2<f32>(id.xy) - 0.5 * resolution) / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "gen-ethereal-cyber-aurora-hummingbird-core.wgsl": [
+  [
+   81,
+   "r",
+   "let k0 = length(p / r);"
+  ]
+ ],
+ "gen-ethereal-cyber-chrono-nebula-phoenix.wgsl": [
+  [
+   91,
+   "min",
+   "let uv = (vec2<f32>(id.xy) - 0.5 * res) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-ethereal-glass-flora-terrarium.wgsl": [
+  [
+   105,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-fireworks-audio-symphony.wgsl": [
+  [
+   91,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   96,
+   "min",
+   "let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fireworks-chrysanthemum.wgsl": [
+  [
+   88,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   93,
+   "min",
+   "let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fireworks-comet-trail.wgsl": [
+  [
+   57,
+   "min",
+   "let uv = (vec2<f32>(pixel)-res*0.5)/min(res.x,res.y);"
+  ],
+  [
+   122,
+   "min",
+   "let mUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);"
+  ]
+ ],
+ "gen-fireworks-crackle-palm.wgsl": [
+  [
+   139,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   144,
+   "min",
+   "let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fireworks-crossette.wgsl": [
+  [
+   61,
+   "min",
+   "let uv = (vec2<f32>(pixel)-res*0.5)/min(res.x,res.y);"
+  ],
+  [
+   64,
+   "min",
+   "let mouseUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);"
+  ]
+ ],
+ "gen-fireworks-dahlia-burst.wgsl": [
+  [
+   81,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res*0.5) / min(res.x, res.y);"
+  ],
+  [
+   84,
+   "min",
+   "let mouseUV = (u.zoom_config.yz - res*0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fireworks-fan-shell.wgsl": [
+  [
+   64,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res*0.5) / min(res.x, res.y);"
+  ],
+  [
+   67,
+   "min",
+   "let mouseUV = (u.zoom_config.yz - res*0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fireworks-horse-tail.wgsl": [
+  [
+   66,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res*0.5) / min(res.x, res.y);"
+  ],
+  [
+   69,
+   "min",
+   "let mouseUV = (u.zoom_config.yz - res*0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fireworks-kamuro-gold.wgsl": [
+  [
+   68,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res*0.5) / min(res.x, res.y);"
+  ],
+  [
+   71,
+   "min",
+   "let mouseUV = (u.zoom_config.yz - res*0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fireworks-nocturne.wgsl": [
+  [
+   135,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   141,
+   "min",
+   "let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fireworks-ring-shell.wgsl": [
+  [
+   64,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res*0.5) / min(res.x, res.y);"
+  ],
+  [
+   67,
+   "min",
+   "let mouseUV = (u.zoom_config.yz - res*0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fireworks-roman-candle.wgsl": [
+  [
+   40,
+   "min",
+   "let uv = (vec2<f32>(pixel)-res*0.5)/min(res.x,res.y);"
+  ],
+  [
+   42,
+   "min",
+   "let mouseUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);"
+  ]
+ ],
+ "gen-fireworks-smoke-bloom.wgsl": [
+  [
+   98,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   105,
+   "min",
+   "let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fireworks-strobe-shell.wgsl": [
+  [
+   65,
+   "min",
+   "let uv = (vec2<f32>(pixel)-res*0.5)/min(res.x,res.y);"
+  ],
+  [
+   131,
+   "min",
+   "let mUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);"
+  ]
+ ],
+ "gen-fireworks-willow-cascade.wgsl": [
+  [
+   92,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   97,
+   "min",
+   "let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fireworks-wind-ripple.wgsl": [
+  [
+   93,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   98,
+   "min",
+   "let mouseUV = (mouse - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   188,
+   "min",
+   "let rCenter = (ripple.xy - vec2<f32>(0.5)) * res / min(res.x, res.y);"
+  ]
+ ],
+ "gen-fractal-clockwork.wgsl": [
+  [
+   51,
+   "spacing",
+   "let cell = floor((p.xz + spacing * 0.5) / spacing);"
+  ],
+  [
+   52,
+   "spacing",
+   "q.x = (fract((p.x + spacing * 0.5) / spacing) - 0.5) * spacing;"
+  ],
+  [
+   53,
+   "spacing",
+   "q.z = (fract((p.z + spacing * 0.5) / spacing) - 0.5) * spacing;"
+  ]
+ ],
+ "gen-gravitational-strain.wgsl": [
+  [
+   186,
+   "r",
+   "phi     -= mass / r;"
+  ]
+ ],
+ "gen-holographic-plasma-geode.wgsl": [
+  [
+   105,
+   "min",
+   "let uv = (vec2<f32>(id.xy) * 2.0 - dims) / min(dims.x, dims.y);"
+  ]
+ ],
+ "gen-hyper-bismuth-clockwork.wgsl": [
+  [
+   77,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-hyper-dimensional-bismuth-matrix.wgsl": [
+  [
+   76,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-hyper-dimensional-tesseract-labyrinth.wgsl": [
+  [
+   80,
+   "spacing",
+   "q3.x = q3.x - round(q3.x / spacing) * spacing;"
+  ],
+  [
+   81,
+   "spacing",
+   "q3.y = q3.y - round(q3.y / spacing) * spacing;"
+  ],
+  [
+   82,
+   "spacing",
+   "q3.z = q3.z - round(q3.z / spacing) * spacing;"
+  ]
+ ],
+ "gen-hyperbolic-tessellation.wgsl": [
+  [
+   59,
+   "d",
+   "return vec2<f32>(dot(a, b), a.y*b.x - a.x*b.y) / d;"
+  ]
+ ],
+ "gen-ifs-fractal-flame.wgsl": [
+  [
+   85,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-image-pixel-detonation.wgsl": [
+  [
+   74,
+   "min",
+   "let eps = 1.5 / min(res.x, res.y);"
+  ],
+  [
+   87,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   92,
+   "min",
+   "let mUV = (mouse - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-image-pyro.wgsl": [
+  [
+   84,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   89,
+   "min",
+   "let mUV = (mouse - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-inverse-mandelbrot.wgsl": [
+  [
+   116,
+   "zoom",
+   "let c = (uv - 0.5) * 2.5 / zoom + center;"
+  ],
+  [
+   169,
+   "len",
+   "return normalize(dz / len);"
+  ]
+ ],
+ "gen-islamic-star-rose.wgsl": [
+  [
+   144,
+   "min",
+   "let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "gen-kinetic-neo-brutalist-megastructure.wgsl": [
+  [
+   96,
+   "spacing",
+   "var cell = floor(pos / spacing);"
+  ],
+  [
+   97,
+   "spacing",
+   "pos = pos - spacing * round(pos / spacing);"
+  ]
+ ],
+ "gen-liquid-crystal-hive-mind.wgsl": [
+  [
+   196,
+   "density",
+   "let hexSize = 1.5 / density;"
+  ]
+ ],
+ "gen-live-studio-tab.wgsl": [
+  [
+   57,
+   "scale",
+   "let p = (uv - pos) / scale;"
+  ],
+  [
+   122,
+   "radius",
+   "let r = length(p) / radius;"
+  ]
+ ],
+ "gen-luminescent-aether-plasma-nebula-koi.wgsl": [
+  [
+   134,
+   "delta",
+   "if (v == c.r) { h = (c.g - c.b) / delta; }"
+  ],
+  [
+   135,
+   "delta",
+   "else if (v == c.g) { h = 2.0 + (c.b - c.r) / delta; }"
+  ],
+  [
+   136,
+   "delta",
+   "else { h = 4.0 + (c.r - c.g) / delta; }"
+  ]
+ ],
+ "gen-luminescent-cyber-chrono-void-turtle.wgsl": [
+  [
+   77,
+   "r",
+   "let k0 = length(p / r);"
+  ]
+ ],
+ "gen-luminescent-quantum-glass-phoenix-egg.wgsl": [
+  [
+   85,
+   "delta",
+   "if (v == c.r) { h = (c.g - c.b) / delta; }"
+  ],
+  [
+   86,
+   "delta",
+   "else if (v == c.g) { h = 2.0 + (c.b - c.r) / delta; }"
+  ],
+  [
+   87,
+   "delta",
+   "else { h = 4.0 + (c.r - c.g) / delta; }"
+  ]
+ ],
+ "gen-luminescent-quantum-void-astral-turtle.wgsl": [
+  [
+   87,
+   "r",
+   "let k0 = length(p / r);"
+  ]
+ ],
+ "gen-magnetic-dipole-field.wgsl": [
+  [
+   139,
+   "min",
+   "let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "gen-magnetic-ferrofluid-sculpture.wgsl": [
+  [
+   63,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-micro-cosmos.wgsl": [
+  [
+   32,
+   "r",
+   "let k0 = length(p/r);"
+  ]
+ ],
+ "gen-neon-acid-geometry.wgsl": [
+  [
+   152,
+   "min",
+   "let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ],
+  [
+   156,
+   "min",
+   "let mouseNorm = (mouse - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ],
+  [
+   195,
+   "scale",
+   "let center = vec2<f32>(f32(gx), f32(gy)) * (0.18 / scale);"
+  ]
+ ],
+ "gen-neon-cyber-mandala.wgsl": [
+  [
+   159,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   163,
+   "min",
+   "let mousePos = (u.zoom_config.yz - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   222,
+   "zoom",
+   "let ringSpacing = 0.12 / zoom * (1.0 + scale * 0.5) / PHI;"
+  ],
+  [
+   261,
+   "zoom",
+   "shapeDist = sdPolygon(shapeP, 0.025 / zoom, 6);"
+  ],
+  [
+   265,
+   "zoom",
+   "shapeDist = starRays(shapeP, 0.03 / zoom, starRayCount, 0.4);"
+  ],
+  [
+   303,
+   "zoom",
+   "let starGlow = starRays(brp, 0.05 / zoom, centerRays, 0.3);"
+  ],
+  [
+   327,
+   "zoom",
+   "let psize = 0.008 / zoom;"
+  ]
+ ],
+ "gen-neon-neural-network.wgsl": [
+  [
+   136,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   139,
+   "min",
+   "let mousePos = (u.zoom_config.yz - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-neon-plasma-biomechanical-hive.wgsl": [
+  [
+   127,
+   "min",
+   "let uv = (vec2<f32>(global_id.xy) * 2.0 - res) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-neural-bioluminescence-matrix.wgsl": [
+  [
+   34,
+   "k",
+   "return -log2(res) / k;"
+  ]
+ ],
+ "gen-neuro-cosmos.wgsl": [
+  [
+   111,
+   "scale",
+   "return vec4<f32>(d / scale, cell_hash, f1, f2);"
+  ]
+ ],
+ "gen-neuro-fluid-plasma-lotus.wgsl": [
+  [
+   92,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-neuro-kinetic-bloom.wgsl": [
+  [
+   60,
+   "spacing",
+   "var cell = floor(pos / spacing);"
+  ],
+  [
+   61,
+   "spacing",
+   "pos = pos - spacing * round(pos / spacing);"
+  ]
+ ],
+ "gen-newton-fractal.wgsl": [
+  [
+   85,
+   "d",
+   "return vec2<f32>((a.x * b.x + a.y * b.y) / d, (a.y * b.x - a.x * b.y) / d);"
+  ],
+  [
+   156,
+   "zoom",
+   "var p = (uv01 - 0.5) * vec2<f32>(aspect, 1.0) * 3.5 / zoom;"
+  ]
+ ],
+ "gen-obsidian-echo-chamber.wgsl": [
+  [
+   59,
+   "spacing",
+   "let id_x = floor((pos.x + spacing * 0.5) / spacing);"
+  ],
+  [
+   60,
+   "spacing",
+   "let id_z = floor((pos.z + spacing * 0.5) / spacing);"
+  ]
+ ],
+ "gen-photonic-crystal-brain.wgsl": [
+  [
+   125,
+   "spacing",
+   "let id = floor(p / spacing);"
+  ],
+  [
+   126,
+   "spacing",
+   "p = fract(p / spacing) * spacing - spacing * 0.5;"
+  ]
+ ],
+ "gen-plasma-psychedelic-wormhole.wgsl": [
+  [
+   122,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   127,
+   "min",
+   "let mouseNorm = (mousePos - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-polar-rainbow-explosion.wgsl": [
+  [
+   125,
+   "min",
+   "let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ],
+  [
+   129,
+   "min",
+   "let mouseNorm = (mouse - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "gen-prismatic-aether-loom.wgsl": [
+  [
+   113,
+   "density",
+   "let spacing = 100.0 / density;"
+  ]
+ ],
+ "gen-prismatic-crystal-growth.wgsl": [
+  [
+   93,
+   "spacing",
+   "let id = floor(p / spacing + 0.5);"
+  ]
+ ],
+ "gen-prismatic-cyber-aurora-astral-dragonfly.wgsl": [
+  [
+   170,
+   "min",
+   "let uv = (vec2<f32>(id.xy) - 0.5 * res) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-prismatic-cyber-chrono-nebula-peacock.wgsl": [
+  [
+   50,
+   "k",
+   "return -log2(res) / k;"
+  ]
+ ],
+ "gen-prismatic-quantum-fractal-nautilus-engine.wgsl": [
+  [
+   93,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-quantum-aether-origami.wgsl": [
+  [
+   106,
+   "scale",
+   "return smin(base / scale, sphere / scale, 0.1) + fbm(domainWarp(q * 0.5, t * 0.5), 3) * 0.02;"
+  ]
+ ],
+ "gen-quantum-fluorescent-nebula-anemone.wgsl": [
+  [
+   85,
+   "delta",
+   "if (v == c.r) { h = (c.g - c.b) / delta; }"
+  ],
+  [
+   86,
+   "delta",
+   "else if (v == c.g) { h = 2.0 + (c.b - c.r) / delta; }"
+  ],
+  [
+   87,
+   "delta",
+   "else { h = 4.0 + (c.r - c.g) / delta; }"
+  ]
+ ],
+ "gen-quantum-foam.wgsl": [
+  [
+   149,
+   "min",
+   "let uv    = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-quantum-mycelium.wgsl": [
+  [
+   72,
+   "density",
+   "let c = vec3<f32>(5.0 / density);"
+  ],
+  [
+   94,
+   "density",
+   "var d = sdCylinder(q, vec3<f32>(0.0, 0.0, 0.15 / density));"
+  ]
+ ],
+ "gen-quantum-neural-lace.wgsl": [
+  [
+   60,
+   "density",
+   "let cell_size = 8.0 / density;"
+  ]
+ ],
+ "gen-quantum-singularity-forge.wgsl": [
+  [
+   98,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-quasicrystal.wgsl": [
+  [
+   146,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-radiant-chrono-glass-nautilus.wgsl": [
+  [
+   112,
+   "min",
+   "var uv = (fragCoord * 2.0 - resolution) / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "gen-radiant-cyber-chrono-void-stag.wgsl": [
+  [
+   86,
+   "r",
+   "let k0 = length(p / r);"
+  ]
+ ],
+ "gen-radiant-quantum-crystalline-forge.wgsl": [
+  [
+   73,
+   "scale",
+   "let d = (length(p) - 1.0) / scale;"
+  ]
+ ],
+ "gen-rainbow-firefly-dance.wgsl": [
+  [
+   151,
+   "min",
+   "let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ],
+  [
+   155,
+   "min",
+   "let mouseNorm = (mouse - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "gen-resonant-crystal-canyons.wgsl": [
+  [
+   108,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-resonant-quantum-plasma-dragon-eye.wgsl": [
+  [
+   95,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-sentient-aether-plasma-nebula-moth.wgsl": [
+  [
+   61,
+   "r",
+   "let k0 = length(p / r);"
+  ]
+ ],
+ "gen-silica-tsunami.wgsl": [
+  [
+   75,
+   "spacing",
+   "let id = floor(p / spacing);"
+  ],
+  [
+   76,
+   "spacing",
+   "p = fract(p / spacing) * spacing - half_spacing;"
+  ]
+ ],
+ "gen-stellar-web-loom.wgsl": [
+  [
+   102,
+   "density",
+   "let domainSpacing = 4.0 / density;"
+  ]
+ ],
+ "gen-strange-field-flow.wgsl": [
+  [
+   148,
+   "scale",
+   "let vign  = 1.0 - smoothstep(0.5, 1.1, length(q / scale));"
+  ]
+ ],
+ "gen-string-theory.wgsl": [
+  [
+   106,
+   "aspect",
+   "let caStrength = 0.003 * (1.0 + bass) / aspect;"
+  ]
+ ],
+ "gen-symbiotic-light-networks.wgsl": [
+  [
+   70,
+   "len",
+   "let dir = ab / len;"
+  ],
+  [
+   77,
+   "len",
+   "let pulsePhase = proj / len - t * 0.5 * (1.0 + bass * 0.5);"
+  ]
+ ],
+ "gen-symbiotic-plasma-reef-matrix.wgsl": [
+  [
+   99,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-tectonic-plasma-crucible.wgsl": [
+  [
+   125,
+   "k",
+   "let h = sat(0.5 + 0.5 * (b - a) / k);"
+  ]
+ ],
+ "gen-torus-knot-rainbow.wgsl": [
+  [
+   187,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-volcanic-ink.wgsl": [
+  [
+   153,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "gen-wasm-hls-physarum-swarm.wgsl": [
+  [
+   168,
+   "count",
+   "let blurResult = sum / count;"
+  ]
+ ],
+ "gen_fluffy_raincloud.wgsl": [
+  [
+   48,
+   "len",
+   "return v / len;"
+  ],
+  [
+   123,
+   "min",
+   "let pixel = 1.0 / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "gen_grok41_plasma.wgsl": [
+  [
+   103,
+   "min",
+   "let uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "gen_julia_set.wgsl": [
+  [
+   103,
+   "zoom",
+   "let scale = 2.5 / zoom;"
+  ]
+ ],
+ "gen_psychedelic_spiral.wgsl": [
+  [
+   113,
+   "aspect",
+   "historyUV.x = historyUV.x / aspect;"
+  ]
+ ],
+ "gen_rainbow_smoke.wgsl": [
+  [
+   48,
+   "len",
+   "return v / len;"
+  ],
+  [
+   56,
+   "len",
+   "return v / len;"
+  ],
+  [
+   134,
+   "min",
+   "let pixel = 1.0 / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "gen_trails.wgsl": [
+  [
+   151,
+   "dist",
+   "separation = separation + normalize(diff) / dist;"
+  ]
+ ],
+ "glass-bead-curtain-iridescence.wgsl": [
+  [
+   95,
+   "aspect",
+   "let active_uv = uv - vec2<f32>(disp.x / aspect, disp.y);"
+  ]
+ ],
+ "glass-shatter-morph.wgsl": [
+  [
+   65,
+   "scale",
+   "res.center = (g + lattice + offset) / scale;"
+  ]
+ ],
+ "glass-shatter.wgsl": [
+  [
+   58,
+   "scale",
+   "res.center = (g + lattice + offset) / scale;"
+  ]
+ ],
+ "glass-wall-prismatic.wgsl": [
+  [
+   75,
+   "scale",
+   "let cellCenter = (cellID + 0.5) / scale;"
+  ]
+ ],
+ "glass-wall.wgsl": [
+  [
+   77,
+   "scale",
+   "let cellCenter = (cellID + 0.5) / scale;"
+  ]
+ ],
+ "glitch-pixel-sort.wgsl": [
+  [
+   85,
+   "len",
+   "return dir / len;"
+  ]
+ ],
+ "gravity-lens.wgsl": [
+  [
+   90,
+   "aspect",
+   "let uvR = uv - vec2<f32>(deflect.x * 0.98 / aspect, deflect.y * 0.98);"
+  ],
+  [
+   91,
+   "aspect",
+   "let uvG = uv - vec2<f32>(deflect.x / aspect,        deflect.y);"
+  ],
+  [
+   92,
+   "aspect",
+   "let uvB = uv - vec2<f32>(deflect.x * 1.04 / aspect, deflect.y * 1.04)"
+  ],
+  [
+   93,
+   "aspect",
+   "+ vec2<f32>(bDir.x * chromAmt / aspect, bDir.y * chromAmt);"
+  ],
+  [
+   113,
+   "aspect",
+   "let phi      = atan2(delta.y, delta.x / aspect);"
+  ]
+ ],
+ "gravity-well-em.wgsl": [
+  [
+   102,
+   "aspect",
+   "let shift = vec2<f32>(shift_aspect.x / aspect, shift_aspect.y);"
+  ]
+ ],
+ "gravity-well.wgsl": [
+  [
+   87,
+   "aspect",
+   "let sampleUV = center + vec2<f32>(radialDir.x * sourceRadius / aspect, radialDir.y * sourceRadius);"
+  ]
+ ],
+ "hex-circuit.wgsl": [
+  [
+   67,
+   "r",
+   "let fractA = fract(p / r) * r - h;"
+  ],
+  [
+   68,
+   "r",
+   "let fractB = (fract((p / r) + 0.5) * r) - h;"
+  ]
+ ],
+ "hex-lens.wgsl": [
+  [
+   186,
+   "scale",
+   "let centerUV = vec2<f32>(centerScaled.x / scale / aspect, centerScaled.y / scale);"
+  ]
+ ],
+ "hex-mosaic.wgsl": [
+  [
+   87,
+   "r",
+   "let uvA = uvScaled / r;"
+  ],
+  [
+   89,
+   "r",
+   "let uvB = (uvScaled - h) / r;"
+  ]
+ ],
+ "hex-pulse.wgsl": [
+  [
+   53,
+   "s",
+   "let a = fract(uv * scale / s) * s - h;"
+  ],
+  [
+   54,
+   "s",
+   "let b = fract((uv * scale - h) / s) * s - h;"
+  ],
+  [
+   111,
+   "aspect",
+   "let rOffset = uv + vec2<f32>(edgeChroma * 0.008 / aspect, 0.0) * excitation;"
+  ],
+  [
+   112,
+   "aspect",
+   "let bOffset = uv - vec2<f32>(edgeChroma * 0.008 / aspect, 0.0) * excitation;"
+  ]
+ ],
+ "holographic-prism.wgsl": [
+  [
+   104,
+   "aspect",
+   "let facetWarp = vec2<f32>(refracted.x / aspect, refracted.y) * (0.025 + bass * 0.015) / dist;"
+  ],
+  [
+   118,
+   "dist",
+   "let rShift = refracted * dispersion * 0.8 / dist;"
+  ],
+  [
+   119,
+   "dist",
+   "let bShift = refracted * dispersion * 1.2 / dist;"
+  ]
+ ],
+ "honey-melt-blackbody.wgsl": [
+  [
+   107,
+   "r",
+   "let uvA = uvScaled / r;"
+  ],
+  [
+   109,
+   "r",
+   "let uvB = (uvScaled - h) / r;"
+  ]
+ ],
+ "honey-melt.wgsl": [
+  [
+   115,
+   "r",
+   "let uvA = uvScaled / r;"
+  ],
+  [
+   117,
+   "r",
+   "let uvB = (uvScaled - h) / r;"
+  ]
+ ],
+ "hyb-chromatic-circuit.wgsl": [
+  [
+   42,
+   "r",
+   "let uvA = uvScaled / r;"
+  ],
+  [
+   44,
+   "r",
+   "let uvB = (uvScaled - h) / r;"
+  ],
+  [
+   108,
+   "r",
+   "let cellId = floor(center / r);"
+  ]
+ ],
+ "hyb-hex-voronoi-distort.wgsl": [
+  [
+   68,
+   "r",
+   "let uvA = uvScaled / r;"
+  ],
+  [
+   70,
+   "r",
+   "let uvB = (uvScaled - h) / r;"
+  ]
+ ],
+ "hybrid-cyber-organic.wgsl": [
+  [
+   101,
+   "r",
+   "let fractA = fract(p / r) * r - h;"
+  ],
+  [
+   102,
+   "r",
+   "let fractB = (fract((p / r) + 0.5) * r) - h;"
+  ],
+  [
+   117,
+   "r",
+   "let cellId = floor(p / r);"
+  ]
+ ],
+ "hybrid-magnetic-field.wgsl": [
+  [
+   83,
+   "dist",
+   "let radial = r / dist;"
+  ]
+ ],
+ "hyperbolic-crystal-symbiosis.wgsl": [
+  [
+   88,
+   "scale",
+   "return ((q + r * 0.5) * 2.0 - vec2<f32>(1.5)) / scale;"
+  ]
+ ],
+ "hyperbolic-dreamweaver-julia.wgsl": [
+  [
+   166,
+   "zoom",
+   "let d = quaternionJuliaDE(p * zoom, c) / zoom;"
+  ]
+ ],
+ "infinite-fractal-feedback.wgsl": [
+  [
+   59,
+   "min",
+   "var uv = (uv_raw - resolution * 0.5) / min(resolution.x, resolution.y);"
+  ]
+ ],
+ "infinite-spiral-zoom.wgsl": [
+  [
+   36,
+   "d",
+   "return vec2<f32>((a.x*b.x + a.y*b.y)/d, (a.y*b.x - a.x*b.y)/d);"
+  ]
+ ],
+ "infinite-video-feedback.wgsl": [
+  [
+   83,
+   "scale",
+   "let recursiveUV = (uv - 0.5) / scale + 0.5;"
+  ]
+ ],
+ "infinite-zoom-lens.wgsl": [
+  [
+   52,
+   "aspect",
+   "return center + vec2<f32>(rotated.x / aspect, rotated.y);"
+  ],
+  [
+   92,
+   "scale",
+   "sampleUV = (sampleUV - spiralCenter) / scale + spiralCenter;"
+  ]
+ ],
+ "ink-dispersion-guided.wgsl": [
+  [
+   109,
+   "count",
+   "let meanGuide = sumGuide / count;"
+  ],
+  [
+   110,
+   "count",
+   "let meanInput = sumInput / count;"
+  ],
+  [
+   111,
+   "count",
+   "let meanGI = sumGuideInput / count;"
+  ],
+  [
+   112,
+   "count",
+   "let meanGuide2 = sumGuide2 / count;"
+  ]
+ ],
+ "interactive-fisheye.wgsl": [
+  [
+   105,
+   "aspect",
+   "let sampleUV = mouse + vec2<f32>(sampleAspect.x / aspect, sampleAspect.y);"
+  ]
+ ],
+ "interactive-glitch-cubes.wgsl": [
+  [
+   81,
+   "scale",
+   "let posOnFace = (f_st - faceCenter) / scale;"
+  ]
+ ],
+ "interactive-magnetic-ripple.wgsl": [
+  [
+   194,
+   "dist",
+   "let dir = select(vec2<f32>(0.0), dMouse / dist, dist > 0.001);"
+  ],
+  [
+   245,
+   "aspect",
+   "let rDir = select(vec2<f32>(0.0), vec2<f32>(rDiff.x / aspect, rDiff.y) / rDist, rDist > 0.001);"
+  ]
+ ],
+ "interactive-origami-coupled.wgsl": [
+  [
+   148,
+   "delta",
+   "let grad = vec2<f32>(h_right - height, h_up - height) / delta;"
+  ]
+ ],
+ "interactive-voronoi-lens.wgsl": [
+  [
+   151,
+   "density",
+   "let cell_center_corrected = (cell_id + m_point) / density;"
+  ],
+  [
+   152,
+   "aspect",
+   "let cell_center_uv = vec2<f32>(cell_center_corrected.x / aspect, cell_center_corrected.y);"
+  ],
+  [
+   160,
+   "aspect",
+   "let nudged_center_uv = vec2<f32>(nudged_center.x / aspect, nudged_center.y);"
+  ]
+ ],
+ "interactive_neural_swarm.wgsl": [
+  [
+   46,
+   "radius",
+   "let x = d / radius;"
+  ]
+ ],
+ "kaleido-portal-interactive.wgsl": [
+  [
+   79,
+   "aspect",
+   "let newRel = vec2<f32>(newRelCorrected.x / aspect, newRelCorrected.y);"
+  ]
+ ],
+ "kaleido-scope.wgsl": [
+  [
+   90,
+   "zoom",
+   "let pm = poincareMap(p / zoom, segments, rotation);"
+  ]
+ ],
+ "kaleidoscope.wgsl": [
+  [
+   133,
+   "zoom",
+   "let zoomed = vec2<f32>(cos(mirrorAngle), sin(mirrorAngle)) * dispRadius / zoom + epi;"
+  ]
+ ],
+ "kimi-flock-symphony-em.wgsl": [
+  [
+   90,
+   "radius",
+   "let t = dist / radius;"
+  ]
+ ],
+ "kimi_flock_symphony.wgsl": [
+  [
+   44,
+   "radius",
+   "let t = dist / radius;"
+  ],
+  [
+   130,
+   "d",
+   "sep += normalize(diff) / d;"
+  ],
+  [
+   139,
+   "count",
+   "ali = normalize(ali / count - vel) * 1.0;"
+  ],
+  [
+   140,
+   "count",
+   "coh = normalize(coh / count - pos) * 1.0;"
+  ]
+ ],
+ "kimi_fractal_dreams.wgsl": [
+  [
+   89,
+   "zoom",
+   "p = (p - mousePos) / zoom + mousePos;"
+  ]
+ ],
+ "kimi_ripple_touch.wgsl": [
+  [
+   126,
+   "aspect",
+   "let disp = grad * vec2<f32>(1.0 / aspect, 1.0) * 0.18;"
+  ]
+ ],
+ "kinetic_tiles.wgsl": [
+  [
+   61,
+   "aspect",
+   "let cellCenter = vec2<f32>(cellCenterAspect.x / aspect, cellCenterAspect.y);"
+  ]
+ ],
+ "knitted-fabric.wgsl": [
+  [
+   60,
+   "aspect",
+   "uv - pullDir * pullMask * pullStrength * vec2<f32>(0.18 / aspect, 0.18),"
+  ]
+ ],
+ "lava-lamp-blobs.wgsl": [
+  [
+   101,
+   "count",
+   "let phase = fi * 6.28318 / count;"
+  ],
+  [
+   103,
+   "count",
+   "let by = -0.8 + fract(fi / count + time * speed * (0.1 + seed.y * 0.2)) * 1.6;"
+  ]
+ ],
+ "lenia-on-video.wgsl": [
+  [
+   87,
+   "d",
+   "if (M == c.r)      { h = (c.g - c.b) / d;       }"
+  ],
+  [
+   88,
+   "d",
+   "else if (M == c.g) { h = 2.0 + (c.b - c.r) / d; }"
+  ],
+  [
+   89,
+   "d",
+   "else               { h = 4.0 + (c.r - c.g) / d; }"
+  ],
+  [
+   156,
+   "min",
+   "let rUV    = kernelRadius / min(res.x, res.y);"
+  ]
+ ],
+ "liquid-fast.wgsl": [
+  [
+   41,
+   "dist",
+   "let dir = delta / dist; let life = 1.0 - smoothstep(0.0, 1.6, age);"
+  ],
+  [
+   44,
+   "aspect",
+   "displacement += vec2<f32>(dir.x / aspect, dir.y) * energy * rippleStrength * (1.0 + audio.x * 0.8);"
+  ]
+ ],
+ "liquid-glitch.wgsl": [
+  [
+   50,
+   "dist",
+   "let dir = delta / dist; let shard = (hash21(block + f32(i)) - 0.5) * 2.0;"
+  ],
+  [
+   51,
+   "aspect",
+   "offset += vec2<f32>(dir.x / aspect, dir.y) * ring * envelope * shard * burstStrength * 0.055;"
+  ]
+ ],
+ "liquid-jelly.wgsl": [
+  [
+   45,
+   "aspect",
+   "displacement += vec2<f32>(dir.x / aspect, dir.y) * local * wobbleStrength * (1.0 + audio.x * 0.5);"
+  ]
+ ],
+ "liquid-optimized-pass1.wgsl": [
+  [
+   58,
+   "density",
+   "let tensionTerm = (surfaceTension * k) / density;"
+  ],
+  [
+   59,
+   "k",
+   "let gravityTerm = gravity / k;"
+  ],
+  [
+   101,
+   "density",
+   "let capillaryAcceleration = (surfaceTension / density) * biLapH * 0.001;"
+  ]
+ ],
+ "liquid-pass1.wgsl": [
+  [
+   58,
+   "density",
+   "let tensionTerm = (surfaceTension * k) / density;"
+  ],
+  [
+   59,
+   "k",
+   "let gravityTerm = gravity / k;"
+  ],
+  [
+   101,
+   "density",
+   "let capillaryAcceleration = (surfaceTension / density) * biLapH * 0.001;"
+  ]
+ ],
+ "liquid-perspective.wgsl": [
+  [
+   49,
+   "aspect",
+   "var geometryDisp = vec2<f32>(mouseDelta.x / aspect, mouseDelta.y) / mouseDist * mousePull * intensity * (1.0 + audio.x * 0.5);"
+  ],
+  [
+   56,
+   "aspect",
+   "geometryDisp += vec2<f32>(dir.x / aspect, dir.y) * wave * envelope * intensity * (1.0 + audio.x * 0.45);"
+  ]
+ ],
+ "liquid-rainbow-prismatic.wgsl": [
+  [
+   103,
+   "dist",
+   "mouseDisplacement += (direction_vec / dist) * wave * 0.01 * ripple_strength * falloff * attenuation;"
+  ]
+ ],
+ "liquid-rainbow.wgsl": [
+  [
+   45,
+   "dist",
+   "let dir = delta / dist; let life = 1.0 - smoothstep(0.0, 3.4, age);"
+  ],
+  [
+   48,
+   "aspect",
+   "displacement += vec2<f32>(dir.x / aspect, dir.y) * wave * envelope * rippleStrength * (1.0 + audio.x * 0.65);"
+  ]
+ ],
+ "liquid-rgb.wgsl": [
+  [
+   43,
+   "dist",
+   "let dir = delta / dist; let life = 1.0 - smoothstep(0.0, 3.0, age);"
+  ],
+  [
+   45,
+   "aspect",
+   "displacement += vec2<f32>(dir.x / aspect, dir.y) * wave * envelope * rippleStrength * (1.0 + audio.x * 0.65);"
+  ]
+ ],
+ "liquid-viscous-grokcf1.wgsl": [
+  [
+   58,
+   "dist",
+   "let dir = delta / dist; let tangent = vec2<f32>(-dir.y, dir.x);"
+  ],
+  [
+   62,
+   "aspect",
+   "displacement += vec2<f32>(flow.x / aspect, flow.y) * (0.006 + turbulence * 0.022) * (1.0 + audio.x * 0.5);"
+  ]
+ ],
+ "liquid-viscous-simple.wgsl": [
+  [
+   69,
+   "dist",
+   "let dir = delta / dist;"
+  ],
+  [
+   75,
+   "aspect",
+   "displacement += vec2<f32>(local.x / aspect, local.y) * rippleStrength * (1.0 + audio.x * 0.6);"
+  ]
+ ],
+ "liquid-zoom.wgsl": [
+  [
+   128,
+   "scale",
+   "let repeating_uv = (uv - zoom_center) / scale + zoom_center;"
+  ],
+  [
+   246,
+   "scale",
+   "let transformed_uv = (uv - zoom_center) / scale + zoom_center;"
+  ]
+ ],
+ "log-polar-droste.wgsl": [
+  [
+   72,
+   "scale",
+   "logZ.x = fract(logZ.x / scale) * scale + log(r1);"
+  ],
+  [
+   160,
+   "aspect",
+   "texZ.x = texZ.x / aspect;"
+  ]
+ ],
+ "luma-force.wgsl": [
+  [
+   115,
+   "aspect",
+   "let totalDisp = lumaForce + vec2<f32>(vortexForce.x / aspect, vortexForce.y) + curl;"
+  ]
+ ],
+ "magnetic-chroma.wgsl": [
+  [
+   54,
+   "d",
+   "h = (c.g - c.b) / d;"
+  ],
+  [
+   56,
+   "d",
+   "h = (c.b - c.r) / d + 2.0;"
+  ],
+  [
+   58,
+   "d",
+   "h = (c.r - c.g) / d + 4.0;"
+  ],
+  [
+   96,
+   "aspect",
+   "return vec2<f32>(field.x / aspect, field.y) + vec2<f32>(dipole.x / aspect, dipole.y);"
+  ]
+ ],
+ "magnetic-rgb.wgsl": [
+  [
+   102,
+   "aspect",
+   "let realOffsetR = vec2<f32>(offsetR.x / aspect, offsetR.y) + noise;"
+  ],
+  [
+   103,
+   "aspect",
+   "let realOffsetG = vec2<f32>(offsetG.x / aspect, offsetG.y) + noise;"
+  ],
+  [
+   104,
+   "aspect",
+   "let realOffsetB = vec2<f32>(offsetB.x / aspect, offsetB.y) + noise;"
+  ]
+ ],
+ "magnetic-ring.wgsl": [
+  [
+   78,
+   "aspect",
+   "let offsetUV = vec2<f32>(displacement.x / aspect, displacement.y);"
+  ]
+ ],
+ "mosaic-reveal.wgsl": [
+  [
+   131,
+   "s",
+   "let a = (uv - s * floor(uv / s)) - h;"
+  ],
+  [
+   132,
+   "s",
+   "let b = ((uv - h) - s * floor((uv - h) / s)) - h;"
+  ]
+ ],
+ "motion-heatmap.wgsl": [
+  [
+   102,
+   "radius",
+   "let falloff = 1.0 - (dist / radius);"
+  ]
+ ],
+ "mouse-gravity.wgsl": [
+  [
+   69,
+   "radius",
+   "let distortion = 1.0 - strength * exp(-dist / radius);"
+  ]
+ ],
+ "nano-assembler.wgsl": [
+  [
+   41,
+   "radius",
+   "let t = dist / radius;"
+  ]
+ ],
+ "nano-repair.wgsl": [
+  [
+   42,
+   "radius",
+   "let t = dist / radius;"
+  ]
+ ],
+ "neon-quantum-lattice.wgsl": [
+  [
+   52,
+   "scale",
+   "return m / scale;"
+  ]
+ ],
+ "neon-warp.wgsl": [
+  [
+   96,
+   "aspect",
+   "field.grad = field.grad + vec2<f32>(gradAspect.x / aspect, gradAspect.y);"
+  ],
+  [
+   107,
+   "aspect",
+   "field.grad = field.grad + vec2<f32>(mouseGradAspect.x / aspect, mouseGradAspect.y);"
+  ],
+  [
+   122,
+   "aspect",
+   "field.grad = field.grad + vec2<f32>(gradAspect.x / aspect, gradAspect.y);"
+  ]
+ ],
+ "neural-synapse-web.wgsl": [
+  [
+   96,
+   "len",
+   "let dir = along / len;"
+  ],
+  [
+   102,
+   "len",
+   "let sigTravel = fract((proj / len) - time * pulseSpeed * 0.3);"
+  ]
+ ],
+ "optical-feedback.wgsl": [
+  [
+   75,
+   "d",
+   "if mx == rgb.r { h = (rgb.g - rgb.b) / d + select(0.0, 6.0, rgb.g < rgb.b); }"
+  ],
+  [
+   76,
+   "d",
+   "else if mx == rgb.g { h = (rgb.b - rgb.r) / d + 2.0; }"
+  ],
+  [
+   77,
+   "d",
+   "else { h = (rgb.r - rgb.g) / d + 4.0; }"
+  ]
+ ],
+ "optical-illusion-spin.wgsl": [
+  [
+   89,
+   "scale",
+   "let centered = (uv - mouse) * vec2<f32>(aspect, 1.0) / scale;"
+  ]
+ ],
+ "oscilloscope-overlay.wgsl": [
+  [
+   102,
+   "spacing",
+   "let g = fract(uv / spacing + 0.5);"
+  ]
+ ],
+ "particle-disperse.wgsl": [
+  [
+   98,
+   "aspect",
+   "force.x = force.x / aspect;"
+  ]
+ ],
+ "perspective-tilt.wgsl": [
+  [
+   132,
+   "aspect",
+   "let texU = (u_plane / aspect) * u.zoom_params.w + 0.5;"
+  ]
+ ],
+ "physarum-gemini.wgsl": [
+  [
+   42,
+   "radius",
+   "let t = dist / radius;"
+  ]
+ ],
+ "physarum-grokcf1.wgsl": [
+  [
+   42,
+   "radius",
+   "let t = dist / radius;"
+  ]
+ ],
+ "physarum.wgsl": [
+  [
+   35,
+   "radius",
+   "let t = dist / radius;"
+  ]
+ ],
+ "pin-art-3d.wgsl": [
+  [
+   71,
+   "density",
+   "let cell_center_uv_x = (cell_id.x + 0.5) / density / aspect;"
+  ],
+  [
+   72,
+   "density",
+   "let cell_center_uv_y = (cell_id.y + 0.5) / density;"
+  ],
+  [
+   83,
+   "density",
+   "let cell_center_aspect = vec2<f32>((cell_id.x + 0.5) / density, (cell_id.y + 0.5) / density);"
+  ]
+ ],
+ "pixel-focus.wgsl": [
+  [
+   65,
+   "density",
+   "let pixelUV = floor(uv * density) / density;"
+  ]
+ ],
+ "pixel-scattering.wgsl": [
+  [
+   60,
+   "count",
+   "let radius = sqrt(idx / count);"
+  ]
+ ],
+ "pixel-sorter.wgsl": [
+  [
+   71,
+   "d",
+   "if (mx == c.r) { h = (c.g - c.b) / d; }"
+  ],
+  [
+   72,
+   "d",
+   "else if (mx == c.g) { h = 2.0 + (c.b - c.r) / d; }"
+  ],
+  [
+   73,
+   "d",
+   "else { h = 4.0 + (c.r - c.g) / d; }"
+  ]
+ ],
+ "polar-warp-interactive.wgsl": [
+  [
+   136,
+   "zoom",
+   "let r_new = pow(radius, 1.0 / zoom) - pinchExpand;"
+  ]
+ ],
+ "polka-dot-reveal.wgsl": [
+  [
+   113,
+   "density",
+   "let jitter = (hash21(uv * 131.0 + vec2<f32>(17.0, 31.0)) - 0.5) / density;"
+  ],
+  [
+   115,
+   "density",
+   "let grid_uv = floor((uv + jitter) * density) / density;"
+  ],
+  [
+   116,
+   "density",
+   "let cell_center = grid_uv + (0.5 / density);"
+  ]
+ ],
+ "polka-wave.wgsl": [
+  [
+   90,
+   "density",
+   "let centerPos = (cellId + 0.5) / density;"
+  ],
+  [
+   91,
+   "aspect",
+   "let sampleUv = vec2<f32>(centerPos.x / aspect, centerPos.y);"
+  ],
+  [
+   100,
+   "density",
+   "let aa = 0.7 / density;"
+  ]
+ ],
+ "pyramid-bandprocess-pass2.wgsl": [
+  [
+   65,
+   "delta",
+   "h = (c.g - c.b) / delta + select(6.0, 0.0, c.g >= c.b);"
+  ],
+  [
+   67,
+   "delta",
+   "h = (c.b - c.r) / delta + 2.0;"
+  ],
+  [
+   69,
+   "delta",
+   "h = (c.r - c.g) / delta + 4.0;"
+  ]
+ ],
+ "pyramid-composite-pass3.wgsl": [
+  [
+   72,
+   "delta",
+   "h = (c.g - c.b) / delta + select(6.0, 0.0, c.g >= c.b);"
+  ],
+  [
+   74,
+   "delta",
+   "h = (c.b - c.r) / delta + 2.0;"
+  ],
+  [
+   76,
+   "delta",
+   "h = (c.r - c.g) / delta + 4.0;"
+  ]
+ ],
+ "quantum-prism.wgsl": [
+  [
+   57,
+   "s",
+   "let ga = (fract(u_scaled / s) - 0.5) * s;"
+  ],
+  [
+   58,
+   "s",
+   "let ida = floor(u_scaled / s);"
+  ],
+  [
+   61,
+   "s",
+   "let gb = (fract(u_off / s) - 0.5) * s;"
+  ],
+  [
+   62,
+   "s",
+   "let idb = floor(u_off / s);"
+  ],
+  [
+   78,
+   "scale",
+   "let centerUV = vec2<f32>(center.x / scale / aspect, center.y / scale);"
+  ],
+  [
+   96,
+   "scale",
+   "let finalUV = vec2<f32>(finalUV_scaled.x / scale / aspect, finalUV_scaled.y / scale);"
+  ]
+ ],
+ "quantum-ripples.wgsl": [
+  [
+   149,
+   "min",
+   "let uv    = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "radial-hex-lens.wgsl": [
+  [
+   54,
+   "spacing",
+   "let a = (fract(uv / spacing) - 0.5) * spacing;"
+  ],
+  [
+   55,
+   "spacing",
+   "let b = (fract((uv - spacing * 0.5) / spacing) - 0.5) * spacing;"
+  ],
+  [
+   124,
+   "aspect",
+   "let sample_uv = vec2<f32>(center.x / aspect, center.y);"
+  ],
+  [
+   162,
+   "radius",
+   "textureStore(dataTextureB, global_id.xy, vec4<f32>(historyBlend, zoom, dist / radius, fog));"
+  ]
+ ],
+ "radiating-displacement.wgsl": [
+  [
+   116,
+   "d",
+   "displacement += (uv - ripple.xy) / d * wave * rippleAmp * falloff * atten;"
+  ]
+ ],
+ "rain-ripples.wgsl": [
+  [
+   142,
+   "dist",
+   "totalDisplacement -= (diff / dist) * amplitude;"
+  ]
+ ],
+ "refraction-tunnel.wgsl": [
+  [
+   116,
+   "aspect",
+   "let streakUV = uv + streakDir * vec2<f32>(0.002 / aspect, 0.002);"
+  ]
+ ],
+ "rgb-ripple-waves.wgsl": [
+  [
+   92,
+   "aspect",
+   "let dir_uv = vec2<f32>(dir_aspect.x / aspect, dir_aspect.y);"
+  ]
+ ],
+ "ring_slicer.wgsl": [
+  [
+   137,
+   "aspect",
+   "let warpedUV = vec2<f32>(newX / aspect, newY) + center;"
+  ]
+ ],
+ "ripple-blocks.wgsl": [
+  [
+   107,
+   "aspect",
+   "let gridUV = warpedUV * vec2(gridScale, gridScale / aspect);"
+  ],
+  [
+   109,
+   "aspect",
+   "let cellCenter = (cellId + 0.5) / vec2(gridScale, gridScale / aspect);"
+  ],
+  [
+   138,
+   "aspect",
+   "let cellMin = cellId / vec2(gridScale, gridScale / aspect);"
+  ],
+  [
+   139,
+   "aspect",
+   "let cellMax = (cellId + 1.0) / vec2(gridScale, gridScale / aspect);"
+  ]
+ ],
+ "ripple-tank-pass1.wgsl": [
+  [
+   81,
+   "radius",
+   "let d = sqrt(distSq) / radius;"
+  ]
+ ],
+ "sand-dunes.wgsl": [
+  [
+   120,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "spec-distance-field-text.wgsl": [
+  [
+   99,
+   "scale",
+   "let sp = p / scale;"
+  ]
+ ],
+ "spec-importance-sampled-bokeh.wgsl": [
+  [
+   92,
+   "radius",
+   "let chromaShift = chromaAmount * r / radius;"
+  ]
+ ],
+ "spec-quaternion-julia.wgsl": [
+  [
+   143,
+   "zoom",
+   "let d = quaternionJuliaDE(p * zoom, c) / zoom;"
+  ]
+ ],
+ "spectral-vortex.wgsl": [
+  [
+   81,
+   "delta",
+   "if (cmax == c.r) { h = (c.g - c.b) / delta % 6.0; }"
+  ],
+  [
+   82,
+   "delta",
+   "else if (cmax == c.g) { h = (c.b - c.r) / delta + 2.0; }"
+  ],
+  [
+   83,
+   "delta",
+   "else { h = (c.r - c.g) / delta + 4.0; }"
+  ]
+ ],
+ "split-flap-display.wgsl": [
+  [
+   45,
+   "aspect",
+   "let cell_w = cell_h / aspect;"
+  ]
+ ],
+ "stipple-engraving.wgsl": [
+  [
+   75,
+   "density",
+   "let noiseUV = uv * resolution * (0.5 / density);"
+  ]
+ ],
+ "temporal-rgb-smear.wgsl": [
+  [
+   172,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "tile-twist.wgsl": [
+  [
+   126,
+   "min",
+   "let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ],
+  [
+   182,
+   "aspect",
+   "let rotUV = vec2<f32>(rotA.x / aspect, rotA.y) + tCenter;"
+  ]
+ ],
+ "underwater_caustics.wgsl": [
+  [
+   46,
+   "k",
+   "let c = sqrt(9.8 / k);"
+  ]
+ ],
+ "video-echo-chamber.wgsl": [
+  [
+   90,
+   "scale",
+   "let echoUV = (uv - 0.5) / scale + 0.5;"
+  ]
+ ],
+ "vinyl-scratch.wgsl": [
+  [
+   173,
+   "aspect",
+   "let sampleUV = vec2<f32>(rotatedDirX / aspect, rotatedDirY) + center + vec2<f32>(wobbleOffset, wobbleOffset);"
+  ]
+ ],
+ "viscous-drag-bilateral.wgsl": [
+  [
+   87,
+   "radius",
+   "let strength = (1.0 - dist / radius) * dragStrength;"
+  ]
+ ],
+ "viscous-drag.wgsl": [
+  [
+   76,
+   "radius",
+   "let strength = (1.0 - dist / radius) * dragStrength;"
+  ]
+ ],
+ "volumetric-depth-zoom.wgsl": [
+  [
+   100,
+   "scale",
+   "let transformed_uv = (uv - zoom_center) / scale + zoom_center;"
+  ]
+ ],
+ "voronoi-chaos.wgsl": [
+  [
+   112,
+   "aspect",
+   "let sampleUV = vec2<f32>(sampleUV_Grid.x / aspect, sampleUV_Grid.y);"
+  ]
+ ],
+ "voronoi-faceted-glass.wgsl": [
+  [
+   80,
+   "density",
+   "let worldPoint = (p + point) / density;"
+  ],
+  [
+   97,
+   "density",
+   "cellCenter = (p + point) / density;"
+  ],
+  [
+   106,
+   "aspect",
+   "sampleUV.x = sampleUV.x / aspect;"
+  ]
+ ],
+ "voronoi-shatter.wgsl": [
+  [
+   85,
+   "density",
+   "let globalCellCenter = (m_id + hash22(m_id)) / density;"
+  ],
+  [
+   86,
+   "aspect",
+   "let globalCellCenterUV = vec2<f32>(globalCellCenter.x / aspect, globalCellCenter.y);"
+  ],
+  [
+   121,
+   "aspect",
+   "vec2<f32>(samplePosAspect.x / aspect, samplePosAspect.y),"
+  ]
+ ],
+ "voronoi-zoom-turbulence.wgsl": [
+  [
+   131,
+   "aspect",
+   "let uv_new = vec2<f32>(uv_scaled_new.x / aspect, uv_scaled_new.y) / density;"
+  ]
+ ],
+ "vortex-distortion.wgsl": [
+  [
+   44,
+   "r",
+   "let tangent = vec2<f32>(-d.y, d.x) / r;"
+  ],
+  [
+   111,
+   "aspect",
+   "let uvBase = uv - vec2<f32>(vel.x / aspect, vel.y) * 0.04;"
+  ]
+ ],
+ "vortex-prism.wgsl": [
+  [
+   124,
+   "aspect",
+   "dR.x = dR.x / aspect;"
+  ],
+  [
+   129,
+   "aspect",
+   "dG.x = dG.x / aspect;"
+  ],
+  [
+   134,
+   "aspect",
+   "dB.x = dB.x / aspect;"
+  ]
+ ],
+ "vortex-warp-coupled.wgsl": [
+  [
+   137,
+   "radius",
+   "percent = (radius - dist) / radius;"
+  ],
+  [
+   151,
+   "aspect",
+   "let rotatedDiff = vec2<f32>(rotatedSquareDiff.x / aspect, rotatedSquareDiff.y);"
+  ]
+ ],
+ "vortex-warp.wgsl": [
+  [
+   95,
+   "radius",
+   "percent = (radius - dist) / radius;"
+  ],
+  [
+   122,
+   "aspect",
+   "let rotatedDiff = vec2<f32>(rotatedSquareDiff.x / aspect, rotatedSquareDiff.y);"
+  ]
+ ],
+ "voxel-grid.wgsl": [
+  [
+   96,
+   "min",
+   "let uv   = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);"
+  ]
+ ],
+ "wave-equation.wgsl": [
+  [
+   154,
+   "radius",
+   "height = height + strength * (1.0 - sqrt(distSq) / radius);"
+  ]
+ ],
+ "wave-halftone.wgsl": [
+  [
+   60,
+   "density",
+   "return id / density;"
+  ]
+ ],
+ "wave-inject.wgsl": [
+  [
+   60,
+   "radius",
+   "height = height + strength * (1.0 - sqrt(distSq) / radius);"
+  ]
+ ],
+ "wolfram-data-demo.wgsl": [
+  [
+   154,
+   "radius",
+   "let x = BESSEL_J0_ZERO * dist / radius;"
+  ]
+ ]
+}

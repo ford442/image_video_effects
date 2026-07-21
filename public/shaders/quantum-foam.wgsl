@@ -188,10 +188,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flowSpeed = u.zoom_params.y;
     let diffusionRate = u.zoom_params.z * 0.9;
     let octaveCount = i32(u.zoom_params.w * 4.0 + 3.0);
-    let rotationSpeed = u.zoom_config.x * 2.0;
-    let depthParallax = u.zoom_config.y * 0.2;
-    let emissionThreshold = u.zoom_config.z * 0.5 + 0.3;
-    let chromaticSpread = u.zoom_config.w * 2.0 + 0.5;
+    let rotationSpeed = 0.5;
+    let depthParallax = 0.1;
+    let emissionThreshold = 0.55;
+    let chromaticSpread = 0.5;
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;

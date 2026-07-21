@@ -29,9 +29,20 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 | 4 | `readDepthTexture` | texture_2d\<f32\> | sample |
 | 5 | `nearestSampler` | sampler | non-filtering |
 | 6 | `writeDepthTexture` | texture_storage r32float | write |
-| 7 | `dataTextureA` | texture_storage rgba32float | write |
-| 8 | `dataTextureB` | texture_storage rgba32float | write |
+| 7 | `dataTextureA` | texture_storage rgba32float | write (primary feedback state) |
+| 8 | `dataTextureB` | texture_storage rgba32float | write (secondary / detail) |
 | 9 | `dataTextureC` | texture_2d\<f32\> | sample (previous frame) |
+
+### Feedback copy order (host)
+
+After each chained slot (and after parallel slots as a group), when any enabled shader
+samples `dataTextureC`, the host copies storage → sample:
+
+1. **`dataB → dataC`** (if the slot wrote B)
+2. **`dataA → dataC`** (if the slot wrote A) — **last**, so A wins when both are written
+
+Shaders that store sim state in A and aux/debug in B therefore read correct state next frame.
+Do **not** reverse this order. (Audit 2026-07-21: prior A-then-B order clobbered BZ / liquid-touch / acid-lissajous.)
 | 10 | `extraBuffer` | storage array\<f32\> | read_write |
 | 11 | `comparisonSampler` | sampler_comparison | compare |
 | 12 | `plasmaBuffer` | storage read-only | read |

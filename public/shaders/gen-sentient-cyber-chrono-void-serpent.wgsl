@@ -144,7 +144,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let tex_coords = vec2<i32>(id.xy);
     let dimensions = textureDimensions(writeTexture);
 
-    if (tex_coords.x >= dimensions.x || tex_coords.y >= dimensions.y) {
+    if (tex_coords.x >= i32(dimensions.x) || tex_coords.y >= i32(dimensions.y)) {
         return;
     }
 

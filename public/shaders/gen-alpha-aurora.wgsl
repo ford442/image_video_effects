@@ -181,7 +181,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Smooth bass for audio reactivity
   var prevBass = extraBuffer[0];
   let smoothBass = bass_env(prevBass, bass, 0.15, 0.02);
-  extraBuffer[0] = smoothBass;
+  if (gid.x == 0u && gid.y == 0u) {
+    extraBuffer[0] = smoothBass;
+  }
 
   // Temporal feedback: read previous frame state
   let prevState = textureLoad(dataTextureC, coord, 0);

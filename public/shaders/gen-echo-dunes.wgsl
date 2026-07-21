@@ -102,7 +102,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
   let prevBass = extraBuffer[0];
   let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
-  extraBuffer[0] = smoothBass;
+  if (gid.x == 0u && gid.y == 0u) {
+    extraBuffer[0] = smoothBass;
+  }
 
   let duneScale = mix(1.0, 10.0, zp.x);
   let windSpeed = mix(0.05, 1.4, zp.y);

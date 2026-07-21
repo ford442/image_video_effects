@@ -1,16 +1,16 @@
 {
-  "timestamp": "2026-07-21T04:54:13.801605",
+  "timestamp": "2026-07-21T13:40:36.511950",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 8,
-  "passed": 8,
+  "total": 18,
+  "passed": 18,
   "failed": 0,
   "skipped": 0,
   "warnings": 0,
   "workgroup_blocking": 0,
   "results": [
     {
-      "file": "public/shaders/bitonic-sort.wgsl",
+      "file": "public/shaders/anaglyph-3d.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -23,7 +23,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/data-slicer-interactive.wgsl",
+      "file": "public/shaders/blueprint-reveal-guided.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -36,7 +36,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/elastic-chromatic.wgsl",
+      "file": "public/shaders/boids.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -49,7 +49,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/interactive-magnetic-ripple.wgsl",
+      "file": "public/shaders/gen-acid-lissajous.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -62,7 +62,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/luma-pixel-sort.wgsl",
+      "file": "public/shaders/gen-belousov-zhabotinsky.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -75,7 +75,111 @@
       "ok": true
     },
     {
-      "file": "public/shaders/pixel-depth-sort.wgsl",
+      "file": "public/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-ghost-flame.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-sentient-cyber-chrono-void-serpent.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/gen-showcase-nebula-core.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/kaleidoscope.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/kimi_flock_symphony.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/liquid-touch.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -101,7 +205,33 @@
       "ok": true
     },
     {
-      "file": "public/shaders/temporal-rgb-smear.wgsl",
+      "file": "public/shaders/quantum-foam.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/sand-dunes.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/tornado-vortex.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

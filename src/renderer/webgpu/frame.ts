@@ -524,6 +524,26 @@ export class WebGPUFrameRenderer {
         { texture: state.readTex },
         [state.scaledW, state.scaledH, 1],
       );
+      // Feedback for parallel slots: refresh dataTexC so next frame is not frozen.
+      // Copy B first, then A — dataA is primary sim state and must win when both are written.
+      if (anyReadsC) {
+        const anyA = parallelPlans.some((p) => p.writesDataA);
+        const anyB = parallelPlans.some((p) => p.writesDataB);
+        if (anyB) {
+          encoder.copyTextureToTexture(
+            { texture: state.dataTexB },
+            { texture: state.dataTexC },
+            [state.scaledW, state.scaledH, 1],
+          );
+        }
+        if (anyA) {
+          encoder.copyTextureToTexture(
+            { texture: state.dataTexA },
+            { texture: state.dataTexC },
+            [state.scaledW, state.scaledH, 1],
+          );
+        }
+      }
     }
 
     for (const plan of chainedPlans) {
@@ -539,17 +559,22 @@ export class WebGPUFrameRenderer {
         );
       }
 
+      // dataTextureC feedback contract:
+      // - dataA (binding 7) is primary state / trail storage
+      // - dataB (binding 8) is secondary/detail
+      // - When both are written, A→C must run LAST so A is what shaders sample next frame.
+      //   (Previous order B-last clobbered sim state in liquid-touch, BZ, acid-lissajous, etc.)
       if (anyReadsC) {
-        if (plan.writesDataA) {
+        if (plan.writesDataB) {
           encoder.copyTextureToTexture(
-            { texture: state.dataTexA },
+            { texture: state.dataTexB },
             { texture: state.dataTexC },
             [state.scaledW, state.scaledH, 1],
           );
         }
-        if (plan.writesDataB) {
+        if (plan.writesDataA) {
           encoder.copyTextureToTexture(
-            { texture: state.dataTexB },
+            { texture: state.dataTexA },
             { texture: state.dataTexC },
             [state.scaledW, state.scaledH, 1],
           );

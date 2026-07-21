@@ -21,14 +21,32 @@ export function hashWgsl(code: string): string {
 }
 
 /**
- * Parse @workgroup_size(x, y) from WGSL source to determine dispatch dimensions
- * Falls back to 8x8 if parsing fails
+ * Parse @workgroup_size(x, y) from WGSL source to determine dispatch dimensions.
+ *
+ * The renderer only ever dispatches a single entry point (`main`), so when a
+ * shader declares multiple compute entry points this must return the
+ * @workgroup_size belonging to that entry point — not the first one in the
+ * file (a 1D helper kernel like `@workgroup_size(64, 1, 1) fn update_boids`
+ * would otherwise corrupt the 2D dispatch of `main`). Falls back to the first
+ * match if the requested entry point is not found, then to 8x8.
  */
-export function parseWorkgroupSize(wgslSource: string): { x: number; y: number } {
-  // Tolerant: allows whitespace/newlines/comments between @compute and @workgroup_size
-  const match = wgslSource.match(/@compute\s+@workgroup_size\(\s*(\d+)\s*,\s*(\d+)/);
-  if (match) {
-    return { x: parseInt(match[1], 10), y: parseInt(match[2], 10) };
+export function parseWorkgroupSize(
+  wgslSource: string,
+  entryPoint: string = 'main',
+): { x: number; y: number } {
+  // Per-entry-point scan: @compute @workgroup_size(x, y[, z]) fn <name>(
+  const entryRe =
+    /@compute\s+@workgroup_size\(\s*(\d+)\s*,\s*(\d+)[^)]*\)\s*fn\s+([A-Za-z_][A-Za-z0-9_]*)/g;
+  let firstMatch: RegExpExecArray | null = null;
+  let m: RegExpExecArray | null;
+  while ((m = entryRe.exec(wgslSource)) !== null) {
+    if (!firstMatch) firstMatch = m;
+    if (m[3] === entryPoint) {
+      return { x: parseInt(m[1], 10), y: parseInt(m[2], 10) };
+    }
+  }
+  if (firstMatch) {
+    return { x: parseInt(firstMatch[1], 10), y: parseInt(firstMatch[2], 10) };
   }
 
   // Fallback: search for @workgroup_size anywhere after @compute
@@ -168,8 +186,9 @@ export function compileShader(
     // Skip directly to fallback below
   }
 
-  // Parse workgroup size from shader source
-  const wgSize = parseWorkgroupSize(wgsl);
+  // Parse workgroup size from shader source (entry point `main` — the only
+  // entry point the renderer dispatches)
+  const wgSize = parseWorkgroupSize(wgsl, 'main');
 
   // Try to compile the requested shader only if validation passed
   if (validation.valid) {
@@ -217,7 +236,7 @@ export function compileShader(
       compute: { module: fallbackModule, entryPoint: 'main' },
     });
     pipelines.set(id, fallbackPipeline);
-    workgroupSizes.set(id, parseWorkgroupSize(FALLBACK_WGSL));
+    workgroupSizes.set(id, parseWorkgroupSize(FALLBACK_WGSL, 'main'));
     console.log(`[WebGPU] Using fallback shader for '${id}'`);
     return true;
   } catch (fallbackError) {

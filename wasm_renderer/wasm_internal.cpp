@@ -25,16 +25,45 @@ bool CheckLimit(const char* name, uint64_t have, uint64_t need, bool& ok) {
     return have >= need;
 }
 
+// Find the @workgroup_size attribute attached to compute entry point `entry`
+// (the renderer only ever dispatches `main`, so a 1D helper kernel declared
+// before `main` must not win). Returns nullptr if no entry-point-attached
+// match is found.
+static const char* FindWorkgroupSizeForEntry(const char* wgsl, const char* entry) {
+    const size_t entryLen = strlen(entry);
+    const char* p = wgsl;
+    while ((p = strstr(p, "@workgroup_size")) != nullptr) {
+        const char* fn = strstr(p + 15, "fn ");
+        if (fn) {
+            const char* name = fn + 3;
+            while (*name == ' ' || *name == '\t') name++;
+            if (strncmp(name, entry, entryLen) == 0) {
+                const char next = name[entryLen];
+                if (next == '(' || next == ' ' || next == '\t' ||
+                    next == '\n' || next == '\r') {
+                    return p;
+                }
+            }
+        }
+        p += 15;
+    }
+    return nullptr;
+}
+
 void ParseWorkgroupSize(const char* wgslCode, uint32_t& x, uint32_t& y) {
     x = 16;
     y = 16;
     if (!wgslCode) return;
 
-    const char* p = strstr(wgslCode, "@compute");
-    if (!p) return;
-
-    const char* ws = strstr(p + 8, "@workgroup_size");
-    if (!ws) return;
+    // Prefer the @workgroup_size belonging to entry point `main` (the only
+    // entry point the renderer dispatches); fall back to the first one.
+    const char* ws = FindWorkgroupSizeForEntry(wgslCode, "main");
+    if (!ws) {
+        const char* p = strstr(wgslCode, "@compute");
+        if (!p) return;
+        ws = strstr(p + 8, "@workgroup_size");
+        if (!ws) return;
+    }
 
     const char* r = ws + 15;
     while (*r == ' ' || *r == '\t' || *r == '\n' || *r == '\r') r++;

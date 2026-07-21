@@ -211,7 +211,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Audio-reactive: bass drives growth rate, mids drive crystal rotation
   var prevBass = extraBuffer[2];
   let smoothBass = bass_env(prevBass, bass, 0.08, 0.02);
-  extraBuffer[2] = smoothBass;
+  if (gid.x == 0u && gid.y == 0u) {
+    extraBuffer[2] = smoothBass;
+  }
 
   // Time-based growth with audio boost
   let growth = clamp((time * growthRate * (1.0 + smoothBass * 0.5)) / 10.0, 0.0, 1.0);

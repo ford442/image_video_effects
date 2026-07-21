@@ -1,0 +1,211 @@
+{
+ "histogram": {
+  "('16', '16', '1')": 1258,
+  "('256', '1', '1')": 1,
+  "('64', '1', '1')": 2,
+  "('8', '8', '1')": 54,
+  "('16', '16', '4')": 1
+ },
+ "multi_entry": [
+  {
+   "file": "boids.wgsl",
+   "entries": {
+    "update_boids": [
+     "64",
+     "1",
+     "1"
+    ],
+    "main": [
+     "16",
+     "16",
+     "1"
+    ]
+   },
+   "parser_returns": [
+    64,
+    1
+   ]
+  },
+  {
+   "file": "kimi_flock_symphony.wgsl",
+   "entries": {
+    "update_boids": [
+     "64",
+     "1",
+     "1"
+    ],
+    "main": [
+     "16",
+     "16",
+     "1"
+    ]
+   },
+   "parser_returns": [
+    64,
+    1
+   ]
+  },
+  {
+   "file": "navier-stokes-dye.wgsl",
+   "entries": {
+    "advect_velocity": [
+     "16",
+     "16",
+     "1"
+    ],
+    "main": [
+     "16",
+     "16",
+     "1"
+    ]
+   },
+   "parser_returns": [
+    16,
+    16
+   ]
+  }
+ ],
+ "parser_mismatch": [
+  {
+   "file": "_template_canonical_compute.wgsl",
+   "main_declares": null,
+   "entries": {
+    "main_compute": [
+     "16",
+     "16",
+     "1"
+    ]
+   },
+   "parser_returns": [
+    16,
+    16
+   ],
+   "note": "no `main` entry point; renderer compiles entryPoint:'main' -> compile fails or wrong kernel"
+  },
+  {
+   "file": "_template_workgroup_atomics.wgsl",
+   "main_declares": null,
+   "entries": {
+    "computeParticleHistogram": [
+     "256",
+     "1",
+     "1"
+    ]
+   },
+   "parser_returns": [
+    256,
+    1
+   ],
+   "note": "no `main` entry point; renderer compiles entryPoint:'main' -> compile fails or wrong kernel"
+  },
+  {
+   "file": "boids.wgsl",
+   "main_declares": [
+    "16",
+    "16",
+    "1"
+   ],
+   "parser_returns": [
+    64,
+    1
+   ],
+   "parse_path": "primary"
+  },
+  {
+   "file": "kimi_flock_symphony.wgsl",
+   "main_declares": [
+    "16",
+    "16",
+    "1"
+   ],
+   "parser_returns": [
+    64,
+    1
+   ],
+   "parse_path": "primary"
+  }
+ ],
+ "convention_violations": [],
+ "workgroup_memory_corrected": [
+  {
+   "file": "deep-workgroup-multi-effect-blend.wgsl",
+   "total_bytes": 16384,
+   "pct_of_16kb": 100.0,
+   "note": "4x16x16 vec4<f32> = exactly 16384 B. AT the default maxComputeWorkgroupStorageSize limit (passes, zero headroom). Also needs maxComputeInvocationsPerWorkgroup>=1024 (default limit 256) - gated via requiresDeepWorkgroup."
+  },
+  {
+   "file": "_template_workgroup_atomics.wgsl",
+   "total_bytes": 6144,
+   "pct_of_16kb": 37.5,
+   "note": "6x 256-entry u32/f32 arrays. Template only, not in catalog."
+  },
+  {
+   "file": "bitonic-sort.wgsl",
+   "total_bytes": 5440,
+   "pct_of_16kb": 33.2,
+   "note": "sKey 272x4 + sCol 272x16 (PHYS_N=272)."
+  },
+  {
+   "file": "focal-pixelate.wgsl",
+   "total_bytes": 5184,
+   "pct_of_16kb": 31.6,
+   "note": "18x18 vec4<f32> tile (16px tile + 1px apron)."
+  },
+  {
+   "file": "temporal-halation-freeze.wgsl",
+   "total_bytes": 5184,
+   "pct_of_16kb": 31.6,
+   "note": "18x18 vec4<f32> tile."
+  },
+  {
+   "file": "neon-edge-diffusion.wgsl",
+   "total_bytes": 5184,
+   "pct_of_16kb": 31.6,
+   "note": "18x18 vec3<f32>; array stride of vec3 is 16 B."
+  },
+  {
+   "file": "pyramid-downsample-pass1.wgsl",
+   "total_bytes": 5184,
+   "pct_of_16kb": 31.6,
+   "note": "18x18 vec3<f32>, stride 16."
+  },
+  {
+   "file": "radial-hex-lens.wgsl",
+   "total_bytes": 5184,
+   "pct_of_16kb": 31.6,
+   "note": "18x18 vec3<f32>, stride 16."
+  },
+  {
+   "file": "scanline-sorting.wgsl",
+   "total_bytes": 4100,
+   "pct_of_16kb": 25.0,
+   "note": "256 vec3<f32> (stride 16) + 1 atomic<u32>."
+  },
+  {
+   "file": "spec-cooperative-edge-linking.wgsl",
+   "total_bytes": 2048,
+   "pct_of_16kb": 12.5,
+   "note": "2x 256 u32."
+  },
+  {
+   "file": "_template_shared_memory.wgsl",
+   "total_bytes": 1296,
+   "pct_of_16kb": 7.9,
+   "note": "18x18 f32. Template only."
+  },
+  {
+   "file": "spec-histogram-equalize.wgsl",
+   "total_bytes": 1024,
+   "pct_of_16kb": 6.3,
+   "note": "256 atomic<u32>."
+  },
+  {
+   "file": "tone-histogram-apply.wgsl",
+   "total_bytes": 24,
+   "pct_of_16kb": 0.1,
+   "note": "6 scalars."
+  }
+ ],
+ "barrier_findings_verdict": "1 heuristic hit in _template_workgroup_atomics.wgsl: FALSE POSITIVE - workgroupBarrier() at lines 218/225/237 sits outside the `if (lid.x < d)` blocks, inside a loop whose trip count is uniform (derived from const). All barriers in repo are in uniform control flow.",
+ "missing_bounds_guard_verdict": "Heuristic over-flagged; rescan with real guard patterns stored in lane-b-guards.json. 184 shaders lack an explicit gid bounds guard, but WebGPU discards OOB textureStore and zero-fills OOB textureLoad, so impact is wasted invocations only (LOW), not corruption."
+}

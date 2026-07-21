@@ -203,7 +203,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Smooth bass for pulsing
   var prevBass = extraBuffer[1];
   let smoothBass = bass_env(prevBass, bass, 0.1, 0.03);
-  extraBuffer[1] = smoothBass;
+  if (gid.x == 0u && gid.y == 0u) {
+    extraBuffer[1] = smoothBass;
+  }
 
   // Temporal feedback
   let prevState = textureLoad(dataTextureC, coord, 0);

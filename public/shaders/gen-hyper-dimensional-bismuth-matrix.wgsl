@@ -359,7 +359,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Temporal persistence
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
   let bassEnv = extraBuffer[0];
-  extraBuffer[0] = mix(bassEnv, bass, 0.03);
+  if (gid.x == 0u && gid.y == 0u) {
+    extraBuffer[0] = mix(bassEnv, bass, 0.03);
+  }
   col = mix(col, prev.rgb * 0.96, 0.02 + extraBuffer[0] * 0.02);
 
   // Tone map

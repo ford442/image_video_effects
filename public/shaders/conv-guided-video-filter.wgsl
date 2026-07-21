@@ -90,10 +90,10 @@ fn guidedFilter(
     }
   }
 
-  let meanG  = sumG  / count;
-  let meanP  = sumP  / count;
-  let meanGP = sumGP / count;
-  let meanG2 = sumG2 / count;
+  let meanG  = sumG  / max(count, 1.0);
+  let meanP  = sumP  / max(count, 1.0);
+  let meanGP = sumGP / max(count, 1.0);
+  let meanG2 = sumG2 / max(count, 1.0);
   let varG   = meanG2 - meanG * meanG;
 
   // Linear model: q = a*G + b

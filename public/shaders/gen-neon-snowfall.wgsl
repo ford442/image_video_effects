@@ -102,7 +102,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
   let prevBass = extraBuffer[0];
   let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
-  extraBuffer[0] = smoothBass;
+  if (gid.x == 0u && gid.y == 0u) {
+    extraBuffer[0] = smoothBass;
+  }
 
   let flakeDensity = mix(20.0, 180.0, zp.x);
   let fallSpeed = mix(0.08, 2.0, zp.y);

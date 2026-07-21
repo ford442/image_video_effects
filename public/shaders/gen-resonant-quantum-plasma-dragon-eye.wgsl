@@ -336,7 +336,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Smooth bass via extraBuffer
   var prevBass = extraBuffer[0];
   let smoothBass = bass_env(prevBass, bass, 0.15, 0.02);
-  extraBuffer[0] = smoothBass;
+  if (gid.x == 0u && gid.y == 0u) {
+    extraBuffer[0] = smoothBass;
+  }
 
   // Parameters
   let zp = clamp(u.zoom_params, vec4<f32>(0.0), vec4<f32>(1.0));

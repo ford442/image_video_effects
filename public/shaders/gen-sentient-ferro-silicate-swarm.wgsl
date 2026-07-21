@@ -151,7 +151,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ═══ CHUNK: bass_env smoothing ═══
   let prevBass = extraBuffer[0];
   let bassSmooth = bass_env(prevBass, bass, 0.08, 0.02);
-  extraBuffer[0] = bassSmooth;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[0] = bassSmooth;
+  }
 
   // Pseudo-random particle seed based on pixel position
   let seed = hash2(fragCoord * 0.01 + time * 0.1);

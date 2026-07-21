@@ -194,7 +194,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloomWeight = pow(max(0.0, luma - 0.45), 2.0) * 2.5 + lightning * 0.3 + condensation * 0.15;
   let a = clamp(bloomWeight, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color * a, a));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, a));
   textureStore(dataTextureA, global_id.xy, vec4<f32>(color, a));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(condensation * 0.5 + debrisDensity * 0.2, 0.0, 0.0, 0.0));
 }

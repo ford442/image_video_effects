@@ -281,5 +281,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = col / (1.0 + col);
     col = pow(col, vec3<f32>(0.4545)); // Gamma correction
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
 }

@@ -168,7 +168,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Bass-envelope smoothing (replaces raw-bass strobing)
   let prevBass = extraBuffer[0];
   let smoothBass = bass_env(prevBass, bass, 0.35, 0.08);
-  extraBuffer[0] = smoothBass;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[0] = smoothBass;
+  }
   let transient = max(smoothBass - prevBass, 0.0) * 5.0;
 
   // SDF glitch-mask: a pulsing circle blended with a roaming segment

@@ -1,0 +1,899 @@
+{
+ "ambient-liquid-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0",
+  "dataTextureB @ vec2<i32>(0"
+ ],
+ "analog-film-degrade.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "anisotropic-kuwahara-nlm.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "anisotropic-kuwahara.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "audio_geometric_pulse.wgsl": [
+  "dataTextureA @ coord_u",
+  "writeDepthTexture @ coord_u",
+  "writeTexture @ coord_u"
+ ],
+ "bio-touch-em.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "bitonic-sort.wgsl": [
+  "dataTextureA @ vec2<i32>(x",
+  "writeDepthTexture @ vec2<i32>(x",
+  "writeTexture @ vec2<i32>(x"
+ ],
+ "block-distort-em.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "boids.wgsl": [
+  "writeTexture @ vec2<i32>(i32(coord.x)"
+ ],
+ "bubble-lens-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "byte-mosh-explosion.wgsl": [
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "chroma-depth-tunnel.wgsl": [
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "chroma-vortex-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "chromatic-focus-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "chromatic-manifold.wgsl": [
+  "writeDepthTexture @ vec2<i32>(i32(gid.x)",
+  "writeTexture @ vec2<i32>(i32(gid.x)"
+ ],
+ "cosmic-jellyfish-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "crt-clear-zone.wgsl": [
+  "writeTexture @ coords"
+ ],
+ "crt-magnet.wgsl": [
+  "dataTextureA @ vec2<i32>(0",
+  "dataTextureA @ vec2<i32>(1"
+ ],
+ "crt-scanline-damage.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "cyber-lattice.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "cyber-rain-em.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "cyber-ripples-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "data-scanner.wgsl": [
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "digital-glitch-pass1.wgsl": [
+  "dataTextureA @ texelCoord",
+  "writeTexture @ texelCoord"
+ ],
+ "digital-glitch-pass2.wgsl": [
+  "writeTexture @ texelCoord"
+ ],
+ "digital-glitch.wgsl": [
+  "dataTextureA @ texelCoord",
+  "writeTexture @ texelCoord"
+ ],
+ "dla-crystals.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "double-exposure.wgsl": [
+  "writeTexture @ coords"
+ ],
+ "dynamic-halftone.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "edge-glow-mouse-em.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "energy-shield.wgsl": [
+  "writeTexture @ vec2<i32>(vec2<f32>(global_id.xy))"
+ ],
+ "ethereal-swirl-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "fabric-step-gabor.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "dataTextureB @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "fabric-step.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "dataTextureB @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "flow-sort.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "dataTextureB @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "fractal-boids-field-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "gen-abyssal-leviathan-iridescence.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-abyssal-leviathan-scales.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-abyssal-quantum-leviathan-skeleton.wgsl": [
+  "dataTextureA @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-astro-kinetic-chrono-orrery.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-astro-mechanical-quantum-furnace-engine.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-astro-orrery-blackbody.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-audiovisual-mandelbulb-raymarcher.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-aurora-borealis-synthesis.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-auroral-ferrofluid-monolith.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-bioluminescent-aether-jellyfish-swarm.wgsl": [
+  "dataTextureA @ tex_coords",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ tex_coords"
+ ],
+ "gen-bioluminescent-aether-pulsar.wgsl": [
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-bioluminescent-chrono-plasma-astro-owl.wgsl": [
+  "writeTexture @ vec2<i32>(i32(id.x)"
+ ],
+ "gen-biomechanical-hive-julia.wgsl": [
+  "writeDepthTexture @ vec2<u32>(global_id.xy)",
+  "writeTexture @ vec2<u32>(global_id.xy)"
+ ],
+ "gen-biomechanical-hive.wgsl": [
+  "writeDepthTexture @ vec2<u32>(global_id.xy)",
+  "writeTexture @ vec2<u32>(global_id.xy)"
+ ],
+ "gen-bismuth-citadel-crystal.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-bismuth-crystal-citadel.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-bismuth-singularity-loom-engine.wgsl": [
+  "writeTexture @ id.xy"
+ ],
+ "gen-celestial-aether-seraphim-wings.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ coords"
+ ],
+ "gen-celestial-forge.wgsl": [
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-celestial-prism-orchid.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-celestial-quantum-glass-dragonfly.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-celestial-yggdrasil-matrix.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-chromatic-singularity-loom.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-chromatic-vortex.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-chrono-erosion-feedback-melting.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-chrono-kitsune-prism-weaver.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-chronodynamic-aether-weaver-automata.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-cosmic-clockwork-dyson-sphere.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-cosmic-web-filament.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-cryogenic-frost-plasma-matrix.wgsl": [
+  "writeDepthTexture @ outCoords",
+  "writeTexture @ outCoords"
+ ],
+ "gen-crystalline-chrono-dyson.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-cyber-organic-liquid-neon-pulsar.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ coords"
+ ],
+ "gen-cyber-terminal.wgsl": [
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-depth-refracted-liquid-stained-glass.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-dynamic-tessellation-ornate-fractal-tiles.wgsl": [
+  "writeTexture @ coords"
+ ],
+ "gen-eldritch-tesseract-hive-mind.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-ethereal-aurora-ghost-orchid.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-ethereal-chrono-plasma-void-manta.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-ethereal-cyber-aurora-hummingbird-core.wgsl": [
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ id.xy"
+ ],
+ "gen-ethereal-cyber-chrono-nebula-phoenix.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-ethereal-quantum-medusa.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-fractal-bioluminescence-spore-network.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-fractal-clockwork.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-fractured-monolith.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-galactic-aether-crystal-geode-core.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-glass-mosaic-liquid-refraction.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-graviton-plasma-lotus.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-holographic-lens-flare-matrix.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-holographic-plasma-geode.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-hyper-dimensional-tesseract-labyrinth.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-hyper-refractive-rain-matrix.wgsl": [
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-kinetic-neo-brutalist-megastructure.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-kryonic-quantum-aether-fractal-core.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-lenia-2.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-liquid-neon-cyber-metropolis.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-luminescent-aether-plasma-nebula-koi.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-luminescent-chrono-fluid-astrolabe.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-luminescent-chrono-prism-astro-stag.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-luminescent-cyber-chrono-void-turtle.wgsl": [
+  "writeTexture @ vec2<i32>(pixelCoords)"
+ ],
+ "gen-luminescent-quantum-void-anglerfish.wgsl": [
+  "writeTexture @ vec2<i32>(i32(global_id.x)"
+ ],
+ "gen-luminescent-quantum-void-astral-turtle.wgsl": [
+  "writeTexture @ id.xy"
+ ],
+ "gen-magnetic-ferrofluid.wgsl": [
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<u32>(id.xy)"
+ ],
+ "gen-magnetic-field-warp.wgsl": [
+  "writeTexture @ coords"
+ ],
+ "gen-nebula-light-trail-swarm.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-nebular-chrono-astrolabe.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-neural-bioluminescence-matrix.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ id.xy"
+ ],
+ "gen-neural-network-glow-synaptic-pulse.wgsl": [
+  "writeTexture @ coords"
+ ],
+ "gen-neuro-kinetic-bloom.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-neuro-kinetic-liquid-gold-lotus.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(i32(id.x)"
+ ],
+ "gen-obsidian-echo-chamber.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-photonic-crystal-brain.wgsl": [
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-physarum-sacred-geometry.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-prismatic-aether-loom.wgsl": [
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-prismatic-bismuth-lattice.wgsl": [
+  "writeDepthTexture @ vec2<u32>(global_id.xy)",
+  "writeTexture @ vec2<u32>(global_id.xy)"
+ ],
+ "gen-prismatic-cyber-aether-void-kitsune.wgsl": [
+  "writeTexture @ vec2<i32>(i32(id.x)"
+ ],
+ "gen-prismatic-cyber-aurora-astral-dragonfly.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-prismatic-cyber-auroral-manta-swarm.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-prismatic-cyber-chrono-nebula-peacock.wgsl": [
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-prismatic-cyber-chrono-void-kitsune.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-prismatic-fractal-dunes.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-prismatic-void-weaver-ouroboros.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-psychedelic-time-warp-kaleidoscope.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-quantum-aether-origami.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ id.xy"
+ ],
+ "gen-quantum-chrome-serpent-ouroboros.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ tex_coords"
+ ],
+ "gen-quantum-entangled-ferrofluid-engine.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-quantum-fluorescent-aether-moth-swarm.wgsl": [
+  "dataTextureA @ gid",
+  "writeTexture @ gid"
+ ],
+ "gen-quantum-mycelium.wgsl": [
+  "writeDepthTexture @ vec2<u32>(id.xy)",
+  "writeTexture @ vec2<u32>(id.xy)"
+ ],
+ "gen-radiant-cyber-chrono-void-stag.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-radiant-cyber-plasma-astro-griffin.wgsl": [
+  "writeTexture @ vec2<i32>(i32(id.x)"
+ ],
+ "gen-radiant-quantum-plasma-kraken-core.wgsl": [
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-raptor-mini-flow.wgsl": [
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-raptor-mini.wgsl": [
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-sentient-aether-flora-biosphere.wgsl": [
+  "writeTexture @ coords"
+ ],
+ "gen-sentient-cyber-aurora-void-owl.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-sentient-cyber-chrono-void-serpent.wgsl": [
+  "writeTexture @ tex_coords"
+ ],
+ "gen-sentient-liquid-neon-fractal-heart.wgsl": [
+  "writeTexture @ vec2<i32>(coords)"
+ ],
+ "gen-sentient-quantum-chrono-leviathan-moth.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-showcase-kinetic-bloom.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-showcase-nebula-core.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-singularity-forge-blackbody.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-singularity-forge.wgsl": [
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-sonic-lava-flow.wgsl": [
+  "dataTextureA @ id.xy",
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "gen-sonoluminescent-chrono-geode-matrix.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-stellar-plasma-ouroboros.wgsl": [
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-stellar-web-loom.wgsl": [
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "gen-superfluid-quantum-foam.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen-verlet-cloth-wind.wgsl": [
+  "dataTextureA @ gCoord"
+ ],
+ "gen-xeno-mycelial-resonance-web.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gen_capabilities.wgsl": [
+  "writeTexture @ px"
+ ],
+ "gen_grok4_life.wgsl": [
+  "writeDepthTexture @ vec2<u32>(px)",
+  "writeTexture @ vec2<u32>(px)"
+ ],
+ "gen_kimi_crystal.wgsl": [
+  "dataTextureA @ px",
+  "writeDepthTexture @ px",
+  "writeTexture @ px"
+ ],
+ "gen_kimi_nebula.wgsl": [
+  "dataTextureA @ px",
+  "writeDepthTexture @ px",
+  "writeTexture @ px"
+ ],
+ "gen_wave_equation.wgsl": [
+  "writeTexture @ px"
+ ],
+ "glass-wipes-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "glitch-slice-mirror.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "gravity-well-em.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "halftone.wgsl": [
+  "writeTexture @ coords"
+ ],
+ "hex-mosaic.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "hyper-tensor-fluid-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "infinite-fractal-feedback.wgsl": [
+  "writeDepthTexture @ vec2<u32>(global_id.xy)",
+  "writeTexture @ vec2<u32>(global_id.xy)"
+ ],
+ "interactive-fisheye.wgsl": [
+  "writeTexture @ coords"
+ ],
+ "interactive-glitch-brush.wgsl": [
+  "writeTexture @ coords"
+ ],
+ "interactive-magnetic-ripple-em.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "interactive-origami-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "kimi-flock-symphony-em.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "kimi_spotlight.wgsl": [
+  "writeTexture @ coords"
+ ],
+ "kinetic-dispersion.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "liquid-volumetric-zoom.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "log-polar-droste.wgsl": [
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "luma-slice-interactive.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "magnetic-dipole.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "dataTextureB @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "matrix_digital_rain.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "molten-gold.wgsl": [
+  "writeDepthTexture @ id.xy",
+  "writeTexture @ id.xy"
+ ],
+ "mouse-electromagnetic-aurora.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "mouse-fluid-coupling.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "mouse-paint-splatter.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "mouse-synesthetic-sound-paint.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "mouse-wormhole-lens.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "multi-fractal-compositor-lens.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "multi-fractal-compositor.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "multi-turing.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "nebula-gyroid.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "neon-edge-pulse.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "neural-raymarcher.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "parallax-glow-compositor.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "parallax_depth_layers.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "particle_dreams_alpha.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "phase-shift.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "photonic-caustics.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "physarum-gemini.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "physarum-grokcf1.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "physarum.wgsl": [
+  "dataTextureA @ vec2<i32>(i32(coord.x)",
+  "writeTexture @ vec2<i32>(i32(coord.x)"
+ ],
+ "pixel-sand.wgsl": [
+  "dataTextureB @ outPos",
+  "writeDepthTexture @ outPos",
+  "writeTexture @ outPos"
+ ],
+ "pixel-sorter.wgsl": [
+  "dataTextureB @ vec2<i32>(0"
+ ],
+ "poincare-tile.wgsl": [
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "posterize-neon-edges.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "predator-prey.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "prismatic-mosaic.wgsl": [
+  "writeDepthTexture @ vec2<u32>(gid.xy)",
+  "writeTexture @ vec2<u32>(gid.xy)"
+ ],
+ "rainbow-vector-field.wgsl": [
+  "writeDepthTexture @ vec2<u32>(global_id.xy)",
+  "writeTexture @ vec2<u32>(global_id.xy)"
+ ],
+ "scan-distort.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "signal-tuner.wgsl": [
+  "dataTextureA @ gid",
+  "writeDepthTexture @ gid",
+  "writeTexture @ gid"
+ ],
+ "sim-fluid-feedback-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "sim-slime-mold-growth-em.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "sim-volumetric-fake-em.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "spectral-bleed-confine.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "spectral-waves.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "spectrogram-displace-pass1.wgsl": [
+  "dataTextureA @ vec2<i32>(i32(coord.x)",
+  "writeDepthTexture @ vec2<i32>(i32(coord.x)",
+  "writeTexture @ vec2<i32>(i32(coord.x)"
+ ],
+ "spectrogram-displace-pass2.wgsl": [
+  "dataTextureA @ vec2<i32>(i32(coord.x)",
+  "writeDepthTexture @ vec2<i32>(i32(coord.x)",
+  "writeTexture @ vec2<i32>(i32(coord.x)"
+ ],
+ "tensor-flow-sculpt.wgsl": [
+  "dataTextureA @ vec2<i32>(id.xy)",
+  "writeDepthTexture @ vec2<i32>(id.xy)",
+  "writeTexture @ vec2<i32>(id.xy)"
+ ],
+ "time-lag-map.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "vertical-slice-wave.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "vhs-tracking-mouse.wgsl": [
+  "writeTexture @ coords"
+ ],
+ "virtual-lens.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "volumetric-depth-zoom.wgsl": [
+  "writeDepthTexture @ vec2<u32>(global_id.xy)",
+  "writeTexture @ vec2<u32>(global_id.xy)"
+ ],
+ "volumetric-god-rays.wgsl": [
+  "dataTextureA @ coords",
+  "writeDepthTexture @ coords",
+  "writeTexture @ coords"
+ ],
+ "voronoi-dynamics.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "vortex-warp-coupled.wgsl": [
+  "dataTextureA @ vec2<i32>(0"
+ ],
+ "wave-equation.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "wave-inject.wgsl": [
+  "dataTextureB @ vec2<i32>(coord)"
+ ],
+ "wave-render.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)",
+  "writeDepthTexture @ vec2<i32>(coord)",
+  "writeTexture @ vec2<i32>(coord)"
+ ],
+ "wave-step.wgsl": [
+  "dataTextureA @ vec2<i32>(coord)"
+ ]
+}

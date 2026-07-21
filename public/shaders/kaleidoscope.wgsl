@@ -86,10 +86,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
-  let audio = u.zoom_config.x;
   let audioBass = plasmaBuffer[0].x;
   let audioTreble = plasmaBuffer[0].z;
-  let audioReact = 1.0 + audio * 0.3 + audioBass * 0.2;
+  let audioReact = 1.0 + audioTreble * 0.3 + audioBass * 0.2;
 
   let segments = max(u.zoom_params.x * 16.0, 4.0);
   let speed = u.zoom_params.y * 0.5;
@@ -167,7 +166,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Edge glow intensity stored in alpha
   let segmentEdge = abs(sin(mirrorFrac * 3.14159265));
-  let edgeGlow = (1.0 - edgeFade) * 1.5 + segmentEdge * 0.25 * audio;
+  let edgeGlow = (1.0 - edgeFade) * 1.5 + segmentEdge * 0.25 * audioTreble;
   let alpha = edgeFade * frameMask + edgeGlow * edgeSoft * 8.0;
 
   let finalColor = vec4<f32>(rgb, clamp(alpha, 0.0, 1.0));

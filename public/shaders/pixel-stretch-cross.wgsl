@@ -134,10 +134,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var smVel = vec2<f32>(extraBuffer[2], extraBuffer[3]);
     let rawVel = mouse - prevMouse;
     smVel = mix(smVel, rawVel, 0.35);
-    extraBuffer[0] = mouse.x;
-    extraBuffer[1] = mouse.y;
-    extraBuffer[2] = smVel.x;
-    extraBuffer[3] = smVel.y;
+    if (global_id.x == 0u && global_id.y == 0u) {
+      extraBuffer[0] = mouse.x;
+      extraBuffer[1] = mouse.y;
+      extraBuffer[2] = smVel.x;
+      extraBuffer[3] = smVel.y;
+    }
 
     let mouseSpeed = length(smVel);
     // Confidence ramps in only when the pointer actually moves.

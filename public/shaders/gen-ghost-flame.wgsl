@@ -170,8 +170,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var prevRMS = extraBuffer[4];
   let smoothBass = bass_env(prevBass, bass, 0.12, 0.03);
   let smoothRMS = bass_env(prevRMS, rms, 0.1, 0.04);
-  extraBuffer[3] = smoothBass;
-  extraBuffer[4] = smoothRMS;
+  if (gid.x == 0u && gid.y == 0u) {
+    extraBuffer[3] = smoothBass;
+    extraBuffer[4] = smoothRMS;
+  }
 
   // Audio-reactive: bass drives flame height, RMS drives turbulence
   let audioHeight = flameHeight * (1.0 + smoothBass * 0.6);

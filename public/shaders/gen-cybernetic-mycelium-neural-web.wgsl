@@ -115,9 +115,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bassSmooth = spring_damper(prevBass, bass, &velBass, 0.12, 0.08);
   let midSmooth = spring_damper(prevMid, mid, &velMid, 0.14, 0.09);
   let trebleSmooth = spring_damper(prevTreble, treble, &velTreble, 0.16, 0.10);
-  extraBuffer[0] = bassSmooth;
-  extraBuffer[1] = midSmooth;
-  extraBuffer[2] = trebleSmooth;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[0] = bassSmooth;
+    extraBuffer[1] = midSmooth;
+    extraBuffer[2] = trebleSmooth;
+  }
 
   // ═══ CHUNK: mouse state persistence (position + click/velocity) ═══
   let mouseUV = u.zoom_config.yz;
@@ -128,8 +130,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let clickHeld = extraBuffer[6];
 
   let mouseDelta = length(mouseUV - vec2<f32>(prevMouseX, prevMouseY));
-  extraBuffer[3] = mouseUV.x;
-  extraBuffer[4] = mouseUV.y;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[3] = mouseUV.x;
+    extraBuffer[4] = mouseUV.y;
+  }
 
   var newClickCount = clickCount;
   var newClickHeld = clickHeld;

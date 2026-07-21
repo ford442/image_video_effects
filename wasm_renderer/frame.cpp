@@ -218,11 +218,12 @@ void WebGPURenderer::Render() {
 
                 CopyTex(enc, writeTexture_.get(), readTexture_.get(), W, H);
                 CopyTex(enc, depthTextureWrite_.get(), depthTextureRead_.get(), W, H);
-                if (anyReadsC && anyWritesDataA) {
-                    CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
-                }
+                // dataB first, dataA last — A is primary feedback and must win when both written
                 if (anyReadsC && anyWritesDataB) {
                     CopyTex(enc, dataTextureB_.get(), dataTextureC_.get(), W, H);
+                }
+                if (anyReadsC && anyWritesDataA) {
+                    CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
                 }
                 if (anyUsesHistory) {
                     WGPUTexelCopyTextureInfo src = {};
@@ -350,11 +351,12 @@ void WebGPURenderer::Render() {
             WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_.get(), &encDesc);
             CopyTex(enc, writeTexture_.get(),       readTexture_.get(),      W, H);
             CopyTex(enc, depthTextureWrite_.get(),  depthTextureRead_.get(), W, H);
-            if (anyReadsC && anyWritesDataA) {
-                CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
-            }
+            // dataB first, dataA last — A is primary feedback and must win when both written
             if (anyReadsC && anyWritesDataB) {
                 CopyTex(enc, dataTextureB_.get(), dataTextureC_.get(), W, H);
+            }
+            if (anyReadsC && anyWritesDataA) {
+                CopyTex(enc, dataTextureA_.get(), dataTextureC_.get(), W, H);
             }
             if (anyUsesHistory) {
                 WGPUTexelCopyTextureInfo src = {};

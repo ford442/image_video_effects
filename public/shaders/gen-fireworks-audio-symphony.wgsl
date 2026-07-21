@@ -108,7 +108,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var prevBass = extraBuffer[0];
   let envK = select(0.04, 0.18, bass > prevBass);
   let smoothBass = mix(prevBass, bass, envK);
-  extraBuffer[0] = smoothBass;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[0] = smoothBass;
+  }
   let bassPulse = max(0.0, bass - smoothBass);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(pixel) / res, 0.0).r;

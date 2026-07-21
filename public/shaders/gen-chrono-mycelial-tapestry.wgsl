@@ -177,7 +177,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Smooth audio
     var prevBass = extraBuffer[0];
     let smoothBass = bassEnv(prevBass, bass, 0.15, 0.02);
-    extraBuffer[0] = smoothBass;
+    if (gid.x == 0u && gid.y == 0u) {
+      extraBuffer[0] = smoothBass;
+    }
 
     // Aspect ratio correction
     let aspect = res.x / res.y;

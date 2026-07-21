@@ -122,10 +122,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
 
-    let meanGuide = sumGuide / count;
-    let meanInput = sumInput / count;
-    let meanGI = sumGuideInput / count;
-    let meanGuide2 = sumGuide2 / count;
+    let meanGuide = sumGuide / max(count, 1.0);
+    let meanInput = sumInput / max(count, 1.0);
+    let meanGI = sumGuideInput / max(count, 1.0);
+    let meanGuide2 = sumGuide2 / max(count, 1.0);
     let varGuide = meanGuide2 - meanGuide * meanGuide;
     let a = (meanGI - meanGuide * meanInput) / (varGuide + epsilon);
     let b = meanInput - a * meanGuide;

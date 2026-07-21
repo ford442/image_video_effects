@@ -133,9 +133,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let bassSmooth = spring_damper(prevBass, bass, &velBass, 0.08, 0.05);
     let midSmooth = spring_damper(prevMid, mids, &velMid, 0.10, 0.06);
     let trebleSmooth = spring_damper(prevTreble, treble, &velTreble, 0.12, 0.07);
-    extraBuffer[0] = bassSmooth;
-    extraBuffer[1] = midSmooth;
-    extraBuffer[2] = trebleSmooth;
+    if (id.x == 0u && id.y == 0u) {
+      extraBuffer[0] = bassSmooth;
+      extraBuffer[1] = midSmooth;
+      extraBuffer[2] = trebleSmooth;
+    }
 
     // Mouse state persistence
     let prevMouseX = extraBuffer[3];
@@ -144,8 +146,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let clickHeld = extraBuffer[6];
 
     let mouseDelta = length(mouse - vec2<f32>(prevMouseX, prevMouseY));
-    extraBuffer[3] = mouse.x;
-    extraBuffer[4] = mouse.y;
+    if (id.x == 0u && id.y == 0u) {
+      extraBuffer[3] = mouse.x;
+      extraBuffer[4] = mouse.y;
+    }
 
     var newClickCount = clickCount;
     var newClickHeld = clickHeld;

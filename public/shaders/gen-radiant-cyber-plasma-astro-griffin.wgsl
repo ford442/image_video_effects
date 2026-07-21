@@ -56,10 +56,10 @@ fn wingFeathers(p: vec3<f32>, span: f32) -> f32 {
 
     // Scale span
     let width = 0.1 + span * 0.1;
-    let length = 0.5 + span * 0.5;
+    let spanLen = 0.5 + span * 0.5;
 
     // Simple elongated box for feather
-    let d = abs(q) - vec3<f32>(width, 0.02, length);
+    let d = abs(q) - vec3<f32>(width, 0.02, spanLen);
     return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
 }
 

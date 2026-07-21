@@ -1,0 +1,65 @@
+{
+  "audit": "lane-a-naga",
+  "date": "2026-07-21",
+  "naga_version": "29.0.3",
+  "command": "naga <file.wgsl> (parse + validate, no output)",
+  "scope": "public/shaders/*.wgsl",
+  "excluded": {
+    "backup_files": [
+      "gen-art-deco-sky.wgsl.backup",
+      "gen-biomechanical-hive.wgsl.backup",
+      "gen-chromatic-metamorphosis.wgsl.backup",
+      "gen-chronos-labyrinth.wgsl.backup",
+      "gen-ethereal-anemone-bloom.wgsl.backup",
+      "gen-fractured-monolith.wgsl.backup",
+      "gen-magnetic-ferrofluid.wgsl.backup",
+      "gen-prismatic-bismuth-lattice.wgsl.backup",
+      "gen_mandelbulb_3d.wgsl.backup"
+    ],
+    "note": ".backup files are not .wgsl and were not validated"
+  },
+  "total": 1314,
+  "passed": 1310,
+  "failed_count": 4,
+  "failed": [
+    {
+      "file": "public/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
+      "error": "Could not parse WGSL:\nerror: expected assignment or increment/decrement, found \"map\"\n    \u250c\u2500 gen-ethereal-cyber-plasma-void-dragon.wgsl:114:4\n    \u2502\n114 \u2502 fn map(p: vec3<f32>, time: f32, audio: f32, mouseTarget: vec3<f32>, params: vec4<f32>) -> vec2<f32> {\n    \u2502    ^^^ expected assignment or increment/decrement"
+    },
+    {
+      "file": "public/shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
+      "error": "Could not parse WGSL:\nerror: local declaration cannot be called\n   \u250c\u2500 gen-radiant-cyber-plasma-astro-griffin.wgsl:63:12\n   \u2502\n63 \u2502     return length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);\n   \u2502            ^^^^^^ local declaration cannot be called"
+    },
+    {
+      "file": "public/shaders/gen-sentient-cyber-chrono-void-serpent.wgsl",
+      "error": "error: Entry point main at Compute is invalid\n    \u250c\u2500 gen-sentient-cyber-chrono-void-serpent.wgsl:147:9\n    \u2502\n147 \u2502     if (tex_coords.x >= dimensions.x || tex_coords.y >= dimensions.y) {\n    \u2502         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ naga::ir::Expression [7]\n    \u2502\n    = Expression [7] is invalid\n    = Operation GreaterEqual can't work with [5] (of type Scalar(Scalar { kind: Sint, width: 4 })) and [6] (of type Scalar(Scalar { kind: Uint, width: 4 }))"
+    },
+    {
+      "file": "public/shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
+      "error": "Could not parse WGSL:\nerror: no definition in scope for identifier: `color`\n    \u250c\u2500 gen-sentient-aether-plasma-nebula-moth.wgsl:284:67\n    \u2502\n284 \u2502     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));\n    \u2502                                                                   ^^^^^ unknown identifier"
+    }
+  ],
+  "bindgroup_gate_sample": {
+    "script": "scripts/wgsl_precommit_gate.py --files <50 shaders> --json",
+    "total": 50,
+    "passed": 43,
+    "failed": 6,
+    "skipped": 1,
+    "unique_failing_files": 4,
+    "note": "6 failed entries = 4 unique naga-failing shaders (2 sampled twice); all fail at naga parse/validate stage; zero bindgroup-convention violations in the 44 naga-passing sampled shaders",
+    "full_repo_bindgroup_check": {
+      "script": "scripts/bindgroup_checker.py (runs repo-wide by default)",
+      "total": 1314,
+      "compatible": 1309,
+      "incompatible": 1,
+      "templates": 4,
+      "incompatible_detail": "_hash_library.wgsl flagged only for 'No @compute/@vertex/@fragment entry points' \u2014 it is an include-only template (is_template=true); false positive"
+    }
+  },
+  "root_causes": {
+    "gen-ethereal-cyber-plasma-void-dragon.wgsl": "fn map() declared at line 114 while still inside another function body \u2014 missing closing brace before it; WGSL forbids nested function declarations",
+    "gen-radiant-cyber-plasma-astro-griffin.wgsl": "local `let length = 0.5 + span * 0.5;` (line 59) shadows builtin length(); calling length(max(d,...)) on line 63 then fails \u2014 rename the local variable",
+    "gen-sentient-cyber-chrono-void-serpent.wgsl": "line 147 compares tex_coords.x (i32) >= dimensions.x (u32) \u2014 mixed signed/unsigned comparison; cast one side (e.g. tex_coords.x >= i32(dimensions.x))",
+    "gen-sentient-aether-plasma-nebula-moth.wgsl": "line 284 uses undefined identifier `color` in final textureStore; the accumulated variable is named `col` \u2014 typo, should be col"
+  }
+}
