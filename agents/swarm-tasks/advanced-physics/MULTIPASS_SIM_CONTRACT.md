@@ -68,16 +68,15 @@ A and B are write-only within a frame; every pass reads the *previous frame's* c
 
 ---
 
-## What the graph runner will add (Tier C — blocked)
+## What the graph runner provides (Tier C — landed)
 
-Do **not** implement these until #929 lands:
+See [`docs/MULTIPASS_GRAPH.md`](../../docs/MULTIPASS_GRAPH.md) for the JSON schema and copy-barrier rules.
 
 - **Intra-frame ping-pong loops** — e.g. Jacobi pressure ×40, cloth constraints ×5, without 40 separate WGSL files
-- **Conditional branching** — skip passes when `zoom_params.w` = quality preset
-- **Fan-out / merge** — photon emit ∥ trace with reduction
-- **Cross-slot sim handoff** — slot 0 sim state → slot 1 render
+- **Repeat counts** — `repeat: N` on graph nodes
+- **Pass budgets** — `maxPassesPerFrame` + `performancePolicy` caps
 
-Until then: cap iterations at ≤4 passes per chain or unroll modest loops inside one kernel.
+Until WASM parity ([#929](https://github.com/ford442/image_video_effects/issues/929)): TS WebGPU path only.
 
 ---
 

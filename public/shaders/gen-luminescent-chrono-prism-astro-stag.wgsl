@@ -1,8 +1,10 @@
 // ----------------------------------------------------------------
 // Luminescent Chrono-Prism Astro-Stag
-// Category: generative
+// Raymarched prismatic void-stag with volumetric aurora bloom.
+// Features: generative, raymarch, volumetric, mouse-driven, audio-reactive, upgraded-rgba
+// Outputs: writeTexture, writeDepthTexture (march distance), dataTextureA (feedback)
 // ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
+
 struct Uniforms {
     config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
     zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
@@ -23,6 +25,7 @@ struct Uniforms {
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
 
 // --- SDF FUNCTIONS ---
 fn sdSphere(p: vec3<f32>, s: f32) -> f32 {
@@ -64,7 +67,9 @@ fn noise(p: vec3<f32>) -> f32 {
 }
 
 // --- SCENE MAP ---
-fn map(p: vec3<f32>, time: f32, audio: f32, params: vec4<f32>) -> f32 {
+fn map(p_in: vec3<f32>, time: f32, audio: f32, params: vec4<f32>) -> f32 {
+    let mouse = u.zoom_config.yz;
+    let p = p_in - vec3<f32>(mouse.x * 2.0, mouse.y * 2.0, 0.0);
     // Stag Core
     var body = sdCapsule(p, vec3<f32>(0.0, 0.0, -1.0), vec3<f32>(0.0, 0.0, 1.0), 0.5);
     // Add biomechanical noise details
@@ -101,12 +106,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let uv = (fragCoord - 0.5 * resolution) / resolution.y;
     let time = u.config.x;
-    let audio = u.config.y;
-    let params = u.zoom_params;
-    let mouse = u.zoom_config.yz; // Temporal, Rift, Fractal, Refraction
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let audio = bass;
+    let params = u.zoom_params; // Temporal, Rift, Fractal, Refraction
 
-    // Camera
-    let ro = vec3<f32>(0.0, 0.0, -3.0);
+    // Camera — mouse orbits the prism, bass dollies it forward
+    let mouseNorm = vec2<f32>(u.zoom_config.y, u.zoom_config.z) / resolution - 0.5;
+    let ro = vec3<f32>(mouseNorm.x * 1.5, mouseNorm.y * 1.5, -3.0 + bass * 0.5);
     let rd = normalize(vec3<f32>(uv, 1.0));
 
     // Raymarching
@@ -115,7 +122,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var p = ro;
     for (var i = 0; i < 100; i++) {
         p = ro + rd * t;
-        d = map(p - vec3<f32>(mouse.x * 2.0, mouse.y * 2.0, 0.0), time, audio, params);
+        d = map(p, time, audio, params);
         if (d < 0.001 || t > 10.0) { break; }
         t += d;
     }
@@ -131,11 +138,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Liquid Aurora / Prismatic colors
         let baseColor = vec3<f32>(0.1, 0.8, 1.0) + sin(p * 2.0 + time) * 0.2;
         col = baseColor * diff + fresnel * vec3<f32>(0.8, 0.2, 1.0) * params.z;
+
+        // Mids drive an iridescent spectral sheen across the surface
+        let sheen = sin(dot(n, rd) * 8.0 + time * 2.0 + mids * 6.0) * 0.5 + 0.5;
+        col += vec3<f32>(1.0, 0.4, 0.7) * sheen * mids * 0.4 * fresnel;
     }
 
-    // Bloom / Volumetric Glow
-    col += vec3<f32>(0.1, 0.3, 0.8) * exp(-t * 0.2) * params.y;
+    // Bloom / Volumetric Glow — bass pumps the volumetric haze
+    col += vec3<f32>(0.1, 0.3, 0.8) * exp(-t * 0.2) * params.y * (1.0 + bass * 0.5);
 
-    // Output
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Depth from raymarch distance, normalised into 0..1
+    let depth = clamp(t / 10.0, 0.0, 1.0);
+
+    // Alpha: surface hits are opaque, the void stays transparent
+    let alpha = clamp(select(length(col), 1.0, t < 10.0), 0.0, 1.0);
+    let outColor = vec4<f32>(col, alpha);
+
+    textureStore(writeTexture, vec2<i32>(id.xy), outColor);
+    textureStore(dataTextureA, vec2<i32>(id.xy), outColor);
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

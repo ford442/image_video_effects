@@ -1847,8 +1847,9 @@ async def publish_preset_pack(payload: PresetPackPublishPayload):
 async def list_preset_packs(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
+    sort_by: str = Query("date", pattern="^(date|play_count)$"),
 ):
-    """List published preset packs, newest first."""
+    """List published preset packs. Default sort is newest first; use play_count for popular packs."""
     config = STORAGE_MAP["preset_pack"]
     try:
         index = await run_io(_read_json_sync, config["index"])
@@ -1858,6 +1859,10 @@ async def list_preset_packs(
         # Ensure defaults for older entries
         for pack in index:
             pack.setdefault("play_count", 0)
+
+        if sort_by == "play_count":
+            index = sorted(index, key=lambda p: p.get("play_count", 0), reverse=True)
+        # else: index is already newest-first from publish insert(0, ...)
 
         total = len(index)
         page = index[offset : offset + limit]

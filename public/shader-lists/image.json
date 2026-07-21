@@ -1529,7 +1529,9 @@
     "features": [
       "crossover",
       "mouse-driven",
-      "advanced-convolution"
+      "advanced-convolution",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3931,7 +3933,7 @@
   {
     "id": "ring-slicer",
     "name": "Ring Slicer",
-    "description": "Slices the image into rotating concentric rings centered on the mouse.",
+    "description": "Slices the image into rotating concentric rings centered on the mouse, with organic noise-wobbled seams, palette-driven edge glow, subtle audio-reactive spin, and a mouse-down grab-and-twist.",
     "url": "shaders/ring_slicer.wgsl",
     "params": [
       {
@@ -3964,7 +3966,11 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "fbm-wobble",
+      "palette-seam-glow",
+      "mouse-grab-twist"
     ],
     "tags": [
       "filter",

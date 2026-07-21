@@ -36,7 +36,9 @@
   "features": [
     "multi-pass",
     "mouse-driven",
-    "color"
+    "color",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

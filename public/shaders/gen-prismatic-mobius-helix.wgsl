@@ -99,7 +99,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspect = res.x / max(res.y, 1.0);
   var p = vec3<f32>((uv01 - 0.5) * vec2<f32>(aspect, 1.0) * 2.0, 0.0);
   let yaw = (mouse.x - 0.5) * TAU + time * 0.2;
-  let pitch = (0.5 - mouse.y) * PI * 0.5;
+  let pitch = (mouse.y - 0.5) * PI * 0.5;
   p = rotY(rotX(p, pitch), yaw);
 
   let twist = time * mix(0.3, 1.2, u.zoom_params.x) + bass * 0.5;

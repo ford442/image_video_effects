@@ -144,7 +144,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   extraBuffer[6] = newClickHeld;
 
   let mousePos = (mouseUV - 0.5) * vec2<f32>(res.x / res.y, 1.0) * 2.5;
-  let mouseY = 1.0 - mouseUV.y;
+  let mouseY = mouseUV.y;
   let mouseWorld = vec3<f32>(mousePos.x, mouseY * 2.0, 0.0);
 
   // Click velocity injects mutation bursts

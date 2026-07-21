@@ -240,7 +240,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Mouse
   let mouseRaw = u.zoom_config.yz * 2.0 - 1.0;
-  let mousePos = vec2<f32>(mouseRaw.x, -mouseRaw.y);  // Flip Y: screen top = up
+  let mousePos = mouseRaw;  // Flip Y: screen top = up
 
   // Camera: sweeping through canyon
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);

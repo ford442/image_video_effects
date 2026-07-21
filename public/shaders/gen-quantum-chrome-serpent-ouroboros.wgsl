@@ -116,7 +116,7 @@ fn map(p: vec3<f32>, time: f32, audio: f32) -> vec2<f32> { // returns (distance,
 
     // Mouse interaction warps space
     let mx = (u.zoom_config.y * 2.0 - 1.0) * 2.0;
-    let my = -(u.zoom_config.z * 2.0 - 1.0) * 2.0;
+    let my = (u.zoom_config.z * 2.0 - 1.0) * 2.0;
     pos.x += sin(pos.y * 0.5) * mx;
     pos.z += cos(pos.y * 0.5) * my;
 

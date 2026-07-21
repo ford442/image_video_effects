@@ -1,0 +1,354 @@
+# Swarm Brief: interactive-magnetic-ripple
+
+**Role:** Algorithmist
+**Name:** Magnetic Ripple
+**Category:** interactive-mouse
+**Description:** Phase B audio-reactive magnetic ripple. Bass-pulsed ripple frequency and field strength, mids-morphing hue-cycled glow, treble sparkle on field lines, plus curl-noise field lines, click-burst shockwaves, 50 ripple-point accumulation, FBM domain warping, depth-aware compositing, temporal motion trails, chromatic split, and semantic glow-alpha.
+**Current lines:** 223
+**Target lines:** 273–313 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Algorithmist. Focus on the math and procedural structure of the effect:
+- Worley-based magnetic field-line distortion layer: add a worley-noise field that bends the ripple sampling coordinates, mixed at ~0.3 and param-controlled.
+- Spring-damped ripple envelope: ripples should overshoot and settle like a damped oscillator instead of a plain linear decay.
+- Treble sparkle on ripple crests via plasmaBuffer[0].z: sharp highlights only on the crest maxima.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w, replacing the 4 most important hardcoded constants. Add them to the JSON updatedParams with index 0-3, sensible name/default/min/max/step.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional — only declare it if the shader already uses it.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "interactive-magnetic-ripple",
+  "name": "Magnetic Ripple",
+  "url": "shaders/interactive-magnetic-ripple.wgsl",
+  "description": "Phase B audio-reactive magnetic ripple. Bass-pulsed ripple frequency and field strength, mids-morphing hue-cycled glow, treble sparkle on field lines, plus curl-noise field lines, click-burst shockwaves, 50 ripple-point accumulation, FBM domain warping, depth-aware compositing, temporal motion trails, chromatic split, and semantic glow-alpha.",
+  "params": [
+    {
+      "id": "ripple_freq",
+      "name": "Ripple Frequency",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "ripple_decay",
+      "name": "Ripple Decay",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "field_strength",
+      "name": "Field Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    {
+      "id": "chromatic_split",
+      "name": "Chromatic Split",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    }
+  ],
+  "features": [
+    "mouse-driven",
+    "distortion",
+    "audio-reactive",
+    "depth-aware",
+    "temporal-feedback",
+    "motion-trails",
+    "chromatic-aberration",
+    "aces-tone-map",
+    "upgraded-rgba"
+  ],
+  "tags": [
+    "filter",
+    "image-processing",
+    "fbm",
+    "curl-noise",
+    "worley",
+    "domain-warp",
+    "fractal",
+    "magnetic",
+    "field-lines"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Ripple Frequency",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Field-Line Mix",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Spring Damping",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Treble Sparkle",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
+// ═══════════════════════════════════════════════════════════════════
+//  Interactive Magnetic Ripple — Phase B Audio-Reactivity Upgrade
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, temporal-feedback,
+//            motion-trails, chromatic-aberration, aces-tone-map,
+//            bass-pulse, mids-morph, treble-sparkle
+//  Upgraded: 2026-07-08
+// ═══════════════════════════════════════════════════════════════════
+
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  ripples: array<vec4<f32>, 50>,
+};
+
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), u.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), u.x),
+             u.y);
+}
+
+fn fbm(p: vec2<f32>, oct: i32) -> f32 {
+  var s = 0.0;
+  var a = 0.5;
+  var f = 1.0;
+  for (var i: i32 = 0; i < oct; i = i + 1) {
+    s += a * valueNoise(p * f);
+    f *= 2.0;
+    a *= 0.5;
+  }
+  return s;
+}
+
+fn curlNoise(p: vec2<f32>, t: f32) -> vec2<f32> {
+  let e = 0.008;
+  let n0 = fbm(p + vec2<f32>(0.0,  e) + t * 0.12, 3);
+  let n1 = fbm(p + vec2<f32>(0.0, -e) + t * 0.12, 3);
+  let n2 = fbm(p + vec2<f32>( e, 0.0) + t * 0.12, 3);
+  let n3 = fbm(p + vec2<f32>(-e, 0.0) + t * 0.12, 3);
+  return vec2<f32>(n0 - n1, n3 - n2) / (2.0 * e);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn luma(rgb: vec3<f32>) -> f32 {
+  return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
+// ── Audio reactivity helpers ─────────────────────────────────────
+
+fn bass_env(prev: f32, bass: f32) -> f32 {
+  let k = select(0.15, 0.8, bass > prev);
+  return mix(prev, bass, k);
+}
+
+fn sparkle(uv: vec2<f32>, t: f32, treble: f32) -> f32 {
+  let h = hash21(uv * 300.0 + t * 15.0);
+  return pow(h, 18.0) * treble * 2.5;
+}
+
+fn colorCycle(t: f32) -> vec3<f32> {
+  return vec3<f32>(0.5 + 0.5 * cos(t + vec3<f32>(0.0, 2.094, 4.189)));
+}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let pixel = vec2<i32>(global_id.xy);
+  let res = u.config.zw;
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+
+  let uv01 = vec2<f32>(pixel) / res;
+  let aspect = res.x / res.y;
+  let time = u.config.x;
+  let mouse = u.zoom_config.yz;
+  let mouseDown = u.zoom_config.w > 0.5;
+
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+
+  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  let prev = textureLoad(dataTextureC, pixel, 0);
+
+  // Attack/release bass envelope + spring-smoothed mouse
+  let env = bass_env(prev.r, bass);
+  let k = 0.12 + env * 0.08;
+  let mSmooth = mix(prev.gb, mouse, vec2<f32>(k));
+  let mVel = mSmooth - prev.gb;
+
+  let bassPulse = 1.0 + env * 0.5;
+  let freq = u.zoom_params.x * 40.0 * (0.8 + env * 0.4);
+  let decay = u.zoom_params.y * 3.0 + 0.5;
+  let fieldStrength = u.zoom_params.z * bassPulse;
+  let chromaticSplit = u.zoom_params.w * 0.08;
+
+  let pulseStrength = fieldStrength * (1.0 + env * 0.7);
+  let clickBurst = select(0.0, 1.0, mouseDown) * (1.0 + env);
+
+  var totalDisp = vec2<f32>(0.0);
+  var rippleIntensity = 0.0;
+
+  // Treble sparkle field
+  let spark = sparkle(uv01, time, treble);
+  rippleIntensity += spark;
+
+  // Mouse-driven magnetic field
+  if (mouse.x >= 0.0) {
+    let dMouse = mSmooth - uv01;
+    let dAspect = vec2<f32>(dMouse.x * aspect, dMouse.y);
+    let dist = length(dAspect);
+    let dir = select(vec2<f32>(0.0), dMouse / dist, dist > 0.001);
+
+    let curl = curlNoise(uv01 * 3.0 + time * 0.3, time) * 0.25;
+
+    let phase = dist * freq - time * 4.0;
+    let fbmWarp = fbm(vec2<f32>(dist * 4.0, time * 0.4), 3) * 2.5;
+    let ripple = cos(phase + fbmWarp) * 0.55 + sin(phase * 1.618) * 0.45;
+    let rippleAtten = exp(-dist * decay);
+    totalDisp += dir * ripple * rippleAtten * 0.06;
+    rippleIntensity += abs(ripple) * rippleAtten;
+
+    let velBoost = 1.0 + length(mVel) * 5.0;
+    let magFalloff = fbm(vec2<f32>(dist * 6.0, time * 0.2), 3) * 0.3 + 0.7;
+    let magPull = dir * pulseStrength * velBoost * magFalloff / (dist * dist + 0.04) * 0.06;
+    totalDisp += magPull + curl * 0.04;
+    rippleIntensity += length(magPull) * 10.0;
+
+    // Mids morph field-line frequency and add sparkle
+    let lineFreq = 12.0 + mids * 8.0;
+    let fieldLine = sin(atan2(dAspect.y, dAspect.x) * lineFreq + fbm(uv01 * 5.0, 3) * 3.0);
+    let fieldLineMask = smoothstep(0.3, 0.0, abs(fieldLine)) * exp(-dist * 3.0);
+    totalDisp += dir * fieldLineMask * pulseStrength * 0.02;
+    rippleIntensity += fieldLineMask * pulseStrength + spark * fieldLineMask * 5.0;
+  }
+
+  // Click burst shockwave
+  totalDisp += normalize(uv01 - mSmooth + vec2<f32>(0.0001)) * clickBurst * 0.03 * sin(length(uv01 - mSmooth) * 40.0 - time * 10.0);
+
+  // Process stored ripple points
+  for (var i: u32 = 0u; i < 50u; i = i + 1u) {
+    let rp = u.ripples[i];
+    if (rp.z <= 0.0) { continue; }
+    let rPos = rp.xy;
+    let rAge = time - rp.z;
+    let rDiff = vec2<f32>((rPos.x - uv01.x) * aspect, rPos.y - uv01.y);
+    let rDist = length(rDiff);
+    let rDir = select(vec2<f32>(0.0), vec2<f32>(rDiff.x / aspect, rDiff.y) / rDist, rDist > 0.001);
+    let rRipple = cos(rDist * freq * 0.6 - rAge * 5.0) * exp(-rDist * decay - rAge * 1.2);
+    totalDisp += rDir * rRipple * 0.035;
+    rippleIntensity += abs(rRipple) * 0.5;
+  }
+
+  // Domain warp + depth-aware displacement scaling
+  let warp = fbm(uv01 * 4.0 + time * 0.2, 3) * 0.015;
+  totalDisp = totalDisp * (1.0 + warp);
+  totalDisp *= 0.6 + depth * 0.8;
+
+  // Chromatic aberration
+  let abNoise = fbm(uv01 * 6.0 + vec2<f32>(time * 0.1, 0.0), 3) * 0.015;
+  let abScale = 1.0 + chromaticSplit + abNoise;
+  let rUV = clamp(uv01 - totalDisp * abScale, vec2<f32>(0.0), vec2<f32>(1.0));
+  let gUV = clamp(uv01 - totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
+  let bUV = clamp(uv01 - totalDisp * (2.0 - abScale), vec2<f32>(0.0), vec2<f32>(1.0));
+
+  let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
+
+  var color = vec3<f32>(r, g, b);
+
+  // Audio-reactive glow at ripple peaks with mids color cycling
+  let glow = smoothstep(0.2, 0.8, rippleIntensity) * bassPulse;
+  let baseGlow = vec3<f32>(0.3 + mids * 0.3, 0.5 + treble * 0.3, 0.8);
+  let cycleGlow = colorCycle(time * 0.5 + mids * TAU + rippleIntensity * 3.0);
+  color += mix(baseGlow, cycleGlow, mids * 0.5) * glow * 0.4;
+
+  // Treble sparkle overlay
+  color += vec3<f32>(spark * (0.6 + treble * 0.4));
+
+  // Temporal feedback trail
+  let trailDecay = 0.94 + env * 0.04;
+  color = mix(prev.rgb * trailDecay, color, 0.18 + rippleIntensity * 0.15);
+
+  // Tone map + depth-aware compositing
+  color = acesToneMap(color * (0.95 + mids * 0.15));
+  let fog = 1.0 - exp(-depth * fieldStrength * 2.0);
+  let bgLuma = luma(color) * (1.0 - fog * 0.3);
+  color = mix(color, vec3<f32>(bgLuma), fog * 0.25);
+
+  // Semantic alpha: intensity × depth
+  let alpha = clamp(luma(color) * 1.4 + rippleIntensity * 0.35, 0.15, 0.95) * (0.6 + depth * 0.4);
+
+  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(env, mSmooth.x, mSmooth.y, rippleIntensity));
+}
+```

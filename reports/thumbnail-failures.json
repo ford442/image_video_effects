@@ -1,0 +1,24 @@
+{
+  "generated_at": "2026-07-19T04:48:26.068Z",
+  "engine": "app",
+  "summary": {
+    "success": 0,
+    "failed": 1,
+    "skipped": 0,
+    "black_frame": 1,
+    "compile": 0
+  },
+  "failures": [
+    {
+      "id": "4d-projection-dream-weavers",
+      "reason": "black_frame",
+      "detail": "meanLuminance=0.0000 activePixelRatio=0.0000",
+      "stats": {
+        "width": 2048,
+        "height": 2048,
+        "meanLuminance": 0,
+        "activePixelRatio": 0
+      }
+    }
+  ]
+}

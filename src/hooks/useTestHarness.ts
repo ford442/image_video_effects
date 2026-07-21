@@ -1,5 +1,44 @@
 import { useEffect, RefObject } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
+import { RenderQualityMode } from '../config/performancePolicy';
+
+export interface CanvasImageStats {
+    width: number;
+    height: number;
+    meanLuminance: number;
+    activePixelRatio: number;
+}
+
+function measureCanvasStats(canvas: HTMLCanvasElement): CanvasImageStats {
+    const w = canvas.width;
+    const h = canvas.height;
+    const tmp = document.createElement('canvas');
+    tmp.width = w;
+    tmp.height = h;
+    const ctx = tmp.getContext('2d');
+    if (!ctx) {
+        return { width: w, height: h, meanLuminance: 0, activePixelRatio: 0 };
+    }
+    ctx.drawImage(canvas, 0, 0);
+    const { data } = ctx.getImageData(0, 0, w, h);
+    let lumSum = 0;
+    let active = 0;
+    const pixels = w * h;
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i] / 255;
+        const g = data[i + 1] / 255;
+        const b = data[i + 2] / 255;
+        const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        lumSum += lum;
+        if (lum > 0.05) active++;
+    }
+    return {
+        width: w,
+        height: h,
+        meanLuminance: lumSum / pixels,
+        activePixelRatio: active / pixels,
+    };
+}
 
 export interface UseTestHarnessOptions {
     rendererRef: RefObject<RendererManager | null>;
@@ -43,6 +82,39 @@ export function useTestHarness({
                     if (!canvas) return null;
                     return canvas.toDataURL('image/png');
                 },
+                captureCanvasStats: (): CanvasImageStats => {
+                    const canvas = document.querySelector('canvas');
+                    if (!canvas) return { width: 0, height: 0, meanLuminance: 0, activePixelRatio: 0 };
+                    return measureCanvasStats(canvas);
+                },
+                captureThumbnailPng: async (outSize = 256): Promise<string | null> => {
+                    const canvas = document.querySelector('canvas');
+                    if (!canvas) return null;
+                    const tmp = document.createElement('canvas');
+                    tmp.width = outSize;
+                    tmp.height = outSize;
+                    const ctx = tmp.getContext('2d');
+                    if (!ctx) return null;
+                    ctx.drawImage(canvas, 0, 0, outSize, outSize);
+                    const dataUrl = tmp.toDataURL('image/png');
+                    return dataUrl.replace(/^data:image\/png;base64,/, '');
+                },
+                waitFrames: (frameCount: number): Promise<void> =>
+                    new Promise((resolve) => {
+                        let count = 0;
+                        const tick = () => {
+                            count += 1;
+                            if (count >= frameCount) resolve();
+                            else requestAnimationFrame(tick);
+                        };
+                        requestAnimationFrame(tick);
+                    }),
+                setRenderQuality: (mode: RenderQualityMode) => {
+                    manager.setRenderQuality(mode, {
+                        supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup(),
+                    });
+                },
+                loadImage: (url: string) => manager.loadImage(url),
                 runBenchmark: async (frameCount = 90) => {
                     const samples: Array<{ fps: number; gpu: ReturnType<typeof manager.getGPUTimings> }> = [];
                     for (let i = 0; i < frameCount; i++) {
@@ -70,6 +142,10 @@ export function useTestHarness({
                 },
                 getSlotState: (index: number) => manager.getSlotState(index),
                 getGPUTimings: () => manager.getGPUTimings(),
+                getAdapterSummary: () => {
+                    const diags = manager.getDiagnostics();
+                    return diags.wasm?.adapterInfo ?? '';
+                },
                 getSupportsDeepWorkgroup: () => manager.getSupportsDeepWorkgroup(),
                 takeScreenshot: (filename?: string) => manager.takeScreenshot(filename),
                 refreshFrameImage: () => manager.refreshFrameImage(),

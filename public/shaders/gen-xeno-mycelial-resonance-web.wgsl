@@ -78,7 +78,7 @@ fn gravityWell(p: vec3<f32>, mousePos: vec3<f32>, strength: f32) -> vec3<f32> {
 fn map(pos: vec3<f32>, time: f32) -> f32 {
     var p = pos;
     // Mouse in 3D: screen-top (zoom_config.z=0) = +Y/up
-    let mousePos = vec3<f32>((u.zoom_config.y - 0.5) * 8.0, (0.5 - u.zoom_config.z) * 8.0, 0.0);
+    let mousePos = vec3<f32>((u.zoom_config.y - 0.5) * 8.0, (u.zoom_config.z - 0.5) * 8.0, 0.0);
 
     // Gravity well + mouse attractor
     let gravStrength = u.zoom_params.w * 2.0 + plasmaBuffer[0].x * 1.5;
@@ -145,7 +145,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Mouse Rotation (Y-flipped: screen-top = +Y/up)
     let mouseX = (u.zoom_config.y - 0.5) * TAU;
-    let mouseY = (0.5 - u.zoom_config.z) * PI;
+    let mouseY = (u.zoom_config.z - 0.5) * PI;
 
     let roYZ = rot2(-mouseY) * ro.yz;
     ro.y = roYZ.x;
@@ -196,7 +196,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += diff * 0.1 * base_col;
 
         // Mouse-proximity chromatic enhancement
-        let mousePos = vec3<f32>((u.zoom_config.y - 0.5) * 8.0, (0.5 - u.zoom_config.z) * 8.0, 0.0);
+        let mousePos = vec3<f32>((u.zoom_config.y - 0.5) * 8.0, (u.zoom_config.z - 0.5) * 8.0, 0.0);
         let mDist = length(p - mousePos);
         let mProx = exp(-mDist * 1.5);
         col += vec3<f32>(0.4, 0.1, 0.3) * mProx * bass * 2.0;

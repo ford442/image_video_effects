@@ -121,7 +121,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspect = res.x / max(res.y, 1.0);
   var p = vec3<f32>((uv01 - 0.5) * vec2<f32>(aspect, 1.0) * 2.2, 1.5);
   let yaw = (mouse.x - 0.5) * TAU + spin;
-  let pitch = (0.5 - mouse.y) * PI * 0.6 + sin(time * 0.3) * 0.1;
+  let pitch = (mouse.y - 0.5) * PI * 0.6 + sin(time * 0.3) * 0.1;
   p = rotY(rotX(p, pitch), yaw);
 
   // Kaleidoscopic 6-fold symmetry in XY

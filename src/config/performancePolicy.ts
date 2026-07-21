@@ -29,6 +29,8 @@ export interface ResolvedPerformancePolicy {
   scale: number;
   /** Max shader slots that may be active simultaneously. */
   maxActiveSlots: number;
+  /** Max graph dispatches per frame (Tier C multipass). */
+  maxPassesPerFrame: number;
   /** Target FPS for adaptive mode (30 on low-end, 60 otherwise). */
   targetFps: number;
   /** When true, resolution scale is adjusted from measured FPS. */
@@ -40,6 +42,7 @@ export interface ResolvedPerformancePolicy {
 export interface PerformancePolicyPreset {
   scale: number;
   maxActiveSlots: number;
+  maxPassesPerFrame: number;
   targetFps: number;
   adaptive: boolean;
   preferNonDeepVariants: boolean;
@@ -50,6 +53,7 @@ export const QUALITY_PRESETS: Record<Exclude<RenderQualityMode, 'auto'>, Perform
   battery: {
     scale: 0.5,
     maxActiveSlots: 1,
+    maxPassesPerFrame: 4,
     targetFps: 30,
     adaptive: false,
     preferNonDeepVariants: true,
@@ -57,6 +61,7 @@ export const QUALITY_PRESETS: Record<Exclude<RenderQualityMode, 'auto'>, Perform
   balanced: {
     scale: 0.75,
     maxActiveSlots: 2,
+    maxPassesPerFrame: 8,
     targetFps: 60,
     adaptive: false,
     preferNonDeepVariants: true,
@@ -64,6 +69,7 @@ export const QUALITY_PRESETS: Record<Exclude<RenderQualityMode, 'auto'>, Perform
   ultra: {
     scale: 1.0,
     maxActiveSlots: 3,
+    maxPassesPerFrame: 16,
     targetFps: 60,
     adaptive: false,
     preferNonDeepVariants: false,
@@ -111,6 +117,7 @@ export function resolveAutoPolicy(hints: DevicePerformanceHints): ResolvedPerfor
       mode: 'auto',
       scale: 0.5,
       maxActiveSlots: 1,
+      maxPassesPerFrame: 4,
       targetFps: 30,
       adaptive: true,
       preferNonDeepVariants: true,
@@ -122,6 +129,7 @@ export function resolveAutoPolicy(hints: DevicePerformanceHints): ResolvedPerfor
       mode: 'auto',
       scale: 0.75,
       maxActiveSlots: 2,
+      maxPassesPerFrame: 6,
       targetFps: 60,
       adaptive: true,
       preferNonDeepVariants: true,
@@ -132,6 +140,7 @@ export function resolveAutoPolicy(hints: DevicePerformanceHints): ResolvedPerfor
     mode: 'auto',
     scale: 1.0,
     maxActiveSlots: 3,
+    maxPassesPerFrame: 12,
     targetFps: 60,
     adaptive: true,
     preferNonDeepVariants: true,

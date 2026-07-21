@@ -321,7 +321,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Camera setup with mouse orbit
     var mouse = u.zoom_config.yz;
     let angleX = (mouse.x - 0.5) * 6.2832 + time * 0.05; // Slow auto-rotation
-    let angleY = (0.5 - mouse.y) * 1.5 + 0.3; // Slight elevation (mouse up = look up)
+    let angleY = (mouse.y - 0.5) * 1.5 + 0.3; // Slight elevation (mouse up = look up)
     let cam_dist = mix(8.0, 15.0, u.zoom_params.x * 0.3);
     
     var ro = vec3<f32>(

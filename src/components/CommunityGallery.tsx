@@ -4,9 +4,6 @@
  * Live community preset-pack gallery. Fetches published shader chains from the
  * storage backend and restores them via the same SharedChain apply path used by
  * share-link hydration. Also publishes the current chain to the gallery.
- *
- * This component is intentionally self-contained and NOT wired into App.tsx or
- * Controls.tsx while PRs #936/#938 are in flight. Mount it once those land.
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
@@ -18,6 +15,23 @@ import {
   recordPresetPackPlay,
   decodeChain,
 } from '../services/communityGallery';
+
+interface ThumbnailManifestEntry {
+  thumbnail_url: string;
+}
+
+type ThumbnailManifest = Record<string, ThumbnailManifestEntry>;
+
+function getPackThumbnailUrl(
+  pack: CommunityPack,
+  manifest: ThumbnailManifest
+): string | undefined {
+  const decoded = pack.chain ? decodeChain(pack.chain) : null;
+  const firstShaderId = decoded?.slots.find(s => s.shaderId)?.shaderId;
+  if (!firstShaderId) return undefined;
+  const entry = manifest[firstShaderId];
+  return entry?.thumbnail_url ? `./${entry.thumbnail_url}` : undefined;
+}
 
 export interface CommunityGalleryProps {
   open: boolean;
@@ -40,14 +54,15 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
   const [publishName, setPublishName] = useState('');
   const [publishDescription, setPublishDescription] = useState('');
   const [publishAuthor, setPublishAuthor] = useState('');
-  const [publishStatus, setPublishStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [publishError, setPublishError] = useState<string | null>(null);
+    const [publishError, setPublishError] = useState<string | null>(null);
+  const [thumbnailManifest, setThumbnailManifest] = useState<ThumbnailManifest>({});
   const fetchStartedRef = useRef(false);
+  const manifestLoadedRef = useRef(false);
 
   const loadPacks = useCallback(async () => {
     setStatus('loading');
     try {
-      const data = await listCommunityPacks({ limit: 50 });
+      const data = await listCommunityPacks({ limit: 50, sortBy: 'play_count' });
       setPacks(data.packs);
       setStatus('loaded');
     } catch (err) {
@@ -55,6 +70,15 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
       setStatus('error');
     }
   }, []);
+
+  useEffect(() => {
+    if (!open || manifestLoadedRef.current) return;
+    manifestLoadedRef.current = true;
+    fetch('./thumbnails/manifest.json')
+      .then(r => (r.ok ? r.json() : {}))
+      .then(setThumbnailManifest)
+      .catch(() => setThumbnailManifest({}));
+  }, [open]);
 
   useEffect(() => {
     if (!open || fetchStartedRef.current) return;
@@ -88,15 +112,13 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
     }
     setPublishFormOpen(true);
     setPublishError(null);
-    setPublishStatus('idle');
-    if (!publishName) setPublishName('My Preset Pack');
+        if (!publishName) setPublishName('My Preset Pack');
   }, [getCurrentChain, publishName]);
 
   const closePublishForm = useCallback(() => {
     setPublishFormOpen(false);
     setPublishError(null);
-    setPublishStatus('idle');
-  }, []);
+      }, []);
 
   const handlePublish = useCallback(
     async (e: React.FormEvent) => {
@@ -113,25 +135,23 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
       }
 
       setIsPublishing(true);
-      setPublishStatus('loading');
-      setPublishError(null);
+            setPublishError(null);
       try {
-        await publishPack({
+        const result = await publishPack({
           name,
           description: publishDescription.trim(),
           author: publishAuthor.trim() || undefined,
           chain: current,
         });
-        setPublishStatus('success');
-        setPublishFormOpen(false);
+        setPacks(prev => [result.pack, ...prev.filter(p => p.id !== result.pack.id)]);
+                setPublishFormOpen(false);
         setPublishName('');
         setPublishDescription('');
         setPublishAuthor('');
         await loadPacks();
       } catch (err) {
         console.warn('[CommunityGallery] failed to publish pack:', err);
-        setPublishStatus('error');
-        setPublishError(err instanceof Error ? err.message : 'Publish failed.');
+                setPublishError(err instanceof Error ? err.message : 'Publish failed.');
       } finally {
         setIsPublishing(false);
       }
@@ -295,6 +315,7 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
                   .slice(0, 3)
                   .join(', ') ?? ''
               : '';
+            const thumbUrl = getPackThumbnailUrl(pack, thumbnailManifest);
             return (
               <div
                 key={pack.id}
@@ -305,38 +326,67 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
                   padding: '8px',
                 }}
               >
-                <div
-                  style={{
-                    fontSize: '12px',
-                    color: '#FFD700',
-                    fontWeight: 500,
-                    marginBottom: '4px',
-                  }}
-                >
-                  {pack.name}
-                </div>
-                <div
-                  style={{
-                    fontSize: '10px',
-                    color: 'rgba(255,255,255,0.5)',
-                    marginBottom: '6px',
-                  }}
-                >
-                  {pack.description}
-                </div>
-                <div
-                  style={{
-                    fontSize: '10px',
-                    color: 'rgba(255,255,255,0.4)',
-                    marginBottom: '6px',
-                    fontStyle: 'italic',
-                  }}
-                >
-                  {idDisplay}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {thumbUrl && (
+                    <img
+                      src={thumbUrl}
+                      alt=""
+                      style={{
+                        width: 56,
+                        height: 56,
+                        objectFit: 'cover',
+                        borderRadius: '4px',
+                        flexShrink: 0,
+                        border: '1px solid rgba(255, 215, 0, 0.15)',
+                      }}
+                    />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: '#FFD700',
+                        fontWeight: 500,
+                        marginBottom: '4px',
+                      }}
+                    >
+                      {pack.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '10px',
+                        color: 'rgba(255,255,255,0.45)',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      {pack.author || 'Anonymous'}
+                      {pack.date ? ` · ${pack.date}` : ''}
+                      {pack.play_count > 0 ? ` · ▶ ${pack.play_count}` : ''}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '10px',
+                        color: 'rgba(255,255,255,0.5)',
+                        marginBottom: '6px',
+                      }}
+                    >
+                      {pack.description}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '10px',
+                        color: 'rgba(255,255,255,0.4)',
+                        marginBottom: '6px',
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      {idDisplay}
+                    </div>
+                  </div>
                 </div>
                 <button
                   className="gold-outline-btn"
-                  style={{ fontSize: '11px', padding: '3px 8px', width: '100%' }}
+                  style={{ fontSize: '11px', padding: '3px 8px', width: '100%', marginTop: '6px' }}
                   onClick={() => handleApply(pack)}
                 >
                   Load Pack

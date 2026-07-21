@@ -1,3 +1,10 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Cyber Focus
+//  Mouse-tracked focus aperture; everything outside it gets blocky glitch
+//  offset, chromatic aberration, and box blur scaled by distance.
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -41,10 +48,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distVec = (uv - mousePos) * vec2<f32>(aspectRatio, 1.0);
     let dist = length(distVec);
 
-    let radius = u.zoom_params.x * 0.5 + 0.1; // 0.1 to 0.6
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Bass pulses the focus aperture, mids drive glitch/aberration
+    let radius = (u.zoom_params.x * 0.5 + 0.1) * (1.0 + bass * 0.35); // 0.1 to 0.6
     let blurStrength = u.zoom_params.y * 10.0;
-    let glitchIntensity = u.zoom_params.z;
-    let aberration = u.zoom_params.w * 0.05;
+    let glitchIntensity = u.zoom_params.z * (1.0 + mids * 0.5);
+    let aberration = u.zoom_params.w * 0.05 * (1.0 + mids * 0.4);
 
     // Smoothstep for focus transition
     let focusMask = smoothstep(radius, radius + 0.1, dist); // 0 inside, 1 outside (increases with distance)
@@ -95,14 +106,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             }
         }
 
-        finalColor = vec4<f32>(r_acc / weight_acc, g_acc / weight_acc, b_acc / weight_acc, 1.0);
-
         // Blend based on mask (soft edge for the focus area)
         let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+
+        // Defocused regions thin out — alpha falls off with the focus mask
+        let defocusAlpha = original.a * (1.0 - focusMask * 0.35);
+        finalColor = vec4<f32>(r_acc / weight_acc, g_acc / weight_acc, b_acc / weight_acc, defocusAlpha);
+
         finalColor = mix(original, finalColor, focusMask);
     }
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);
 
     // Pass-through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

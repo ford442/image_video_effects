@@ -40,14 +40,14 @@ def test_gate_fails_on_two_arg_changed_file():
         path.write_text((FIXTURES / "workgroup_two_arg.wgsl").read_text(encoding="utf-8"))
         report = run_gate([path], skip_naga=True)
         assert report["failed"] == 1
-        assert report["workgroup_blocking"] == 1
+        assert report.get("workgroup_blocking", 0) == 1
 
 
 def test_gate_passes_three_arg_file():
     repo = _SCRIPTS.parent
     path = repo / "public" / "shaders" / "_template_canonical_compute.wgsl"
     report = run_gate([path], skip_naga=True)
-    assert report["workgroup_blocking"] == 0
+    assert report.get("workgroup_blocking", 0) == 0
     assert report["failed"] == 0
 
 

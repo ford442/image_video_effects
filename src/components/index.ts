@@ -22,8 +22,6 @@ export { default as ShaderStarRating } from './ShaderStarRating';
 export { default as ShaderScanner } from './ShaderScanner';
 
 // Utility Components
-export { default as RendererToggle } from './RendererToggle';
-export { default as WASMToggle } from './WASMToggle';
 export { default as PerformanceDashboard } from './PerformanceDashboard';
 export { default as HLSVideoSource } from './HLSVideoSource';
 export { default as BilibiliInput } from './BilibiliInput';

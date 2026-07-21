@@ -1,6 +1,7 @@
 // --- VENETIAN BLINDS ---
 // Simulates venetian blinds covering the image.
-// Mouse Y controls the openness of the blinds.
+// Mouse Y controls the openness of the blinds; bass rattles them open on beats.
+// Features: slats, occlusion, shadow, mouse-driven, audio-reactive, upgraded-rgba
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -44,7 +45,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseInfluence = (mouse.y - 0.5);
 
     // Effective Openness: 1.0 = Fully Open (See image), 0.0 = Fully Closed (See blinds)
-    var openness = clamp(baseOpenness + mouseInfluence, 0.0, 1.0);
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Bass snaps the blinds open on each beat
+    var openness = clamp(baseOpenness + mouseInfluence + bass * 0.35, 0.0, 1.0);
 
     // Calculation
     let y = uv.y * slatCount + phaseShift;
@@ -77,7 +82,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Base Slat Color (Off-White or Dark Grey based on param)
         let baseSlat = mix(vec3<f32>(0.1, 0.1, 0.1), vec3<f32>(0.9, 0.9, 0.9), slatColorMix);
 
-        finalColor = vec4<f32>(baseSlat * light, 1.0);
+        // Mids put a travelling specular glint along the slat surface
+        let glint = pow(max(0.0, 1.0 - abs(normY)), 8.0)
+                    * (0.5 + 0.5 * sin(uv.x * 12.0 - u.config.x * 2.0)) * mids;
+        let slatRGB = baseSlat * light + vec3<f32>(0.7, 0.85, 1.0) * glint * 0.5;
+
+        // Alpha: slats are solid occluders
+        finalColor = vec4<f32>(slatRGB, 1.0);
     } else {
         // We hit the gap. Show the image.
         let baseImage = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -116,10 +127,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
              shadow = mix(0.5, 1.0, shadow);
         }
 
-        finalColor = vec4<f32>(baseImage.rgb * shadow, baseImage.a);
+        // Alpha: gaps carry the source alpha, dimmed by cast shadow
+        finalColor = vec4<f32>(baseImage.rgb * shadow, baseImage.a * shadow);
     }
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);
 
     // Passthrough Depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -2,7 +2,7 @@
   "id": "luma-slice-interactive",
   "name": "Luma Slice Interactive",
   "url": "shaders/luma-slice-interactive.wgsl",
-  "description": "Slices the image horizontally, displacing strips based on their luminance and mouse position. Audio-reactive intensity via bass.",
+  "description": "Slices the image horizontally, displacing strips based on their luminance and mouse position. Audio-reactive intensity via bass, mids-shimmered RGB fringes tinted by a cosine palette, organic fBM wobble, and a mouse-down surge ripple, finished with vignette and grain.",
   "params": [
     {
       "id": "intensity",
@@ -37,7 +37,11 @@
     "mouse-driven",
     "glitch",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "mouse-down-surge",
+    "fbm-wobble",
+    "palette-fringe",
+    "vignette-grain"
   ],
   "tags": [
     "filter",

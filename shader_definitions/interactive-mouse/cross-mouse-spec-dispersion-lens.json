@@ -15,7 +15,9 @@
   "features": [
     "crossover",
     "mouse-driven",
-    "spectral-rendering"
+    "spectral-rendering",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

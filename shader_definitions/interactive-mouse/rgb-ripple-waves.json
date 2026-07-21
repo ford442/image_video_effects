@@ -4,7 +4,9 @@
   "url": "shaders/rgb-ripple-waves.wgsl",
   "description": "Separates RGB channels into distinct ripple waves emanating from the mouse cursor.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

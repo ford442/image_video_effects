@@ -150,7 +150,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let refractionStrength = u.zoom_params.z * 0.3;
     let rippleSpeed = u.zoom_params.w * 2.0 + 0.5;
     // Mouse offset (Y-flip: screen-top = +Y/up)
-    let mouseOffset = vec2<f32>(u.zoom_config.y - 0.5, 0.5 - u.zoom_config.z) * 0.3;
+    let mouseOffset = vec2<f32>(u.zoom_config.y - 0.5, u.zoom_config.z - 0.5) * 0.3;
     // Domain-warped Voronoi mosaic
     let warpUV = domainWarp2(uv + mouseOffset, time * 0.1);
     let v = voronoi(warpUV, facetCount);

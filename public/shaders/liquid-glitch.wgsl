@@ -1,156 +1,75 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-//  Liquid Glitch Shader with Alpha Physics
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Glitch
 //  Category: liquid-effects
-//  Features: digital distortion, pixelation, data-moshing aesthetic
-//
-//  ALPHA PHYSICS:
-//  - Glitch blocks have variable transparency
-//  - Digital noise affects opacity
-//  - Block-based alpha variation
-// ═══════════════════════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-07-21
+// ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
 @group(0) @binding(5) var non_filtering_sampler: sampler;
 @group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
 @group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(9) var dataTextureC: texture_2d<f32>;
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 
-fn hash(p: vec2<f32>) -> f32 {
-    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
-// Calculate glitch alpha with digital noise
-fn calculateGlitchAlpha(
-    blockUV: vec2<f32>,
-    displacementMag: f32,
-    noise: f32
-) -> f32 {
-  // Glitch blocks have variable transparency
-  // Digital noise creates "data corruption" in alpha channel
-  
-  // Base glitch alpha: blocks are semi-transparent
-  let baseAlpha = 0.75;
-  
-  // Displacement magnitude affects opacity
-  // More displacement = more "corrupted" = slightly more transparent
-  let displacementFactor = 1.0 - displacementMag * 2.0;
-  
-  // Noise creates random alpha variation (data loss effect)
-  let noiseAlpha = mix(0.7, 1.0, noise);
-  
-  // Scanline effect reduces alpha periodically
-  let scanlineFactor = 0.95;
-  
-  let alpha = baseAlpha * displacementFactor * noiseAlpha * scanlineFactor;
-  
-  return clamp(alpha, 0.0, 1.0);
-}
-
-// Calculate glitch color with digital artifacts
-fn calculateGlitchColor(
-    r: f32,
-    g: f32,
-    b: f32,
-    scanline: f32,
-    noise: f32
-) -> vec3<f32> {
-  // Scanline darkening
-  let scanned = vec3<f32>(r, g, b) - scanline;
-  
-  // Noise adds digital artifact color
-  let artifact = vec3<f32>(noise * 0.1, 0.0, noise * 0.05);
-  
-  return scanned + artifact;
-}
+fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453); }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let currentTime = u.config.x;
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(gid.xy); let uv = vec2<f32>(gid.xy) / resolution; let time = u.config.x;
+  let blockPixels = mix(6.0, 42.0, u.zoom_params.x);
+  let corruption = u.zoom_params.y; let burstStrength = u.zoom_params.z; let chromaShift = u.zoom_params.w;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+  let blockSize = vec2<f32>(blockPixels) / resolution;
+  let block = floor(uv / blockSize); let blockUV = (block + 0.5) * blockSize;
+  let blockRand = hash21(block + floor(time * (5.0 + audio.z * 12.0)));
+  let rowRand = hash21(vec2<f32>(block.y, floor(time * 7.0)));
+  var offset = vec2<f32>((blockRand - 0.5) * corruption * 0.035, sin(block.x + time * 3.0) * corruption * 0.002);
+  let badSignal = step(0.88 - corruption * 0.15 - audio.z * 0.12, rowRand);
+  offset.x += (rowRand - 0.5) * badSignal * (0.03 + corruption * 0.12);
 
-  // --- Pixelation / Glitch Grid ---
-  // Determine block size dynamically based on mouse activity?
-  // Let's keep it constant for the "glitch" look.
-  let blockSize = vec2<f32>(16.0, 16.0); // Pixels per block
-  let blockUV = floor(uv * resolution / blockSize) * blockSize / resolution;
-
-  // Use block center for calculations to keep blocks uniform
-  let calculationUV = blockUV + (blockSize / resolution) * 0.5;
-
-  var mouseDisplacement = vec2<f32>(0.0, 0.0);
-  let rippleCount = u32(u.config.y);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let rippleData = u.ripples[i];
-    let timeSinceClick = currentTime - rippleData.z;
-
-    if (timeSinceClick > 0.0 && timeSinceClick < 1.0) { // Short, sharp glitches
-      let direction_vec = calculationUV - rippleData.xy;
-      let dist = length(direction_vec);
-
-      // Digital noise burst
-      if (dist > 0.0001) {
-        let speed = 5.0;
-        let wave = step(0.8, sin(dist * 50.0 - timeSinceClick * speed)); // Square wave!
-        let attenuation = 1.0 - smoothstep(0.0, 1.0, timeSinceClick);
-
-        // Randomize direction per block
-        let rand = hash(blockUV * 100.0 + currentTime);
-        let randDir = vec2<f32>(cos(rand * 6.28), sin(rand * 6.28));
-
-        mouseDisplacement += randDir * wave * 0.05 * attenuation;
-      }
+  let aspect = resolution.x / max(resolution.y, 1.0);
+  var burstMask = 0.0; let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age > 0.0 && age < 1.4) {
+      let delta = (blockUV - ripple.xy) * vec2<f32>(aspect, 1.0); let dist = max(length(delta), 0.0001);
+      let ring = step(0.55, sin(dist * 70.0 - age * 18.0));
+      let envelope = (1.0 - smoothstep(0.0, 1.4, age)) * exp(-dist * 5.0);
+      let dir = delta / dist; let shard = (hash21(block + f32(i)) - 0.5) * 2.0;
+      offset += vec2<f32>(dir.x / aspect, dir.y) * ring * envelope * shard * burstStrength * 0.055;
+      burstMask += ring * envelope;
     }
   }
 
-  // Add some random "bad signal" offsets occasionally
-  let noise = hash(vec2(floor(currentTime * 10.0), blockUV.y));
-  if (noise > 0.98) {
-      mouseDisplacement.x += 0.1;
-  }
-
-  let displacedUV = uv + mouseDisplacement; // Apply block offset to pixel UV
-
-  // Chromatic Aberration (Vertical only, like VHS)
-  let r = textureSampleLevel(readTexture, u_sampler, displacedUV + vec2(0.01, 0.0), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, displacedUV - vec2(0.01, 0.0), 0.0).b;
-
-  // Scanlines
-  let scanline = sin(uv.y * resolution.y * 0.5) * 0.1;
-  
-  // ═══════════════════════════════════════════════════════════════════════════════
-  // ALPHA CALCULATION
-  // ═══════════════════════════════════════════════════════════════════════════════
-  
-  let displacementMag = length(mouseDisplacement);
-  let blockNoise = hash(blockUV * 200.0 + currentTime);
-  
-  // Calculate glitch color
-  let glitchColor = calculateGlitchColor(r, g, b, scanline, blockNoise);
-  
-  // Calculate alpha
-  let alpha = calculateGlitchAlpha(blockUV, displacementMag, blockNoise);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(glitchColor, alpha));
-
-  // Pass through depth
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let smear = vec2<f32>(offset.x * (1.0 + audio.x * 0.7), offset.y);
+  let split = vec2<f32>(0.003 + chromaShift * 0.018 + audio.y * 0.005, 0.0);
+  let sampleR = textureSampleLevel(readTexture, u_sampler, clamp(uv + smear + split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let sampleG = textureSampleLevel(readTexture, u_sampler, clamp(uv + smear, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let sampleB = textureSampleLevel(readTexture, u_sampler, clamp(uv + smear - split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let historyUV = clamp(uv - smear * 0.45, vec2<f32>(0.0), vec2<f32>(1.0));
+  let history = textureSampleLevel(dataTextureC, non_filtering_sampler, historyUV, 0.0);
+  let scanline = 0.88 + 0.12 * sin(f32(gid.y) * 3.14159 + time * (8.0 + audio.z * 10.0));
+  let digitalTint = vec3<f32>(0.08, 0.0, 0.14) * blockRand * (corruption + audio.y);
+  let current = vec3<f32>(sampleR.r, sampleG.g, sampleB.b) * scanline + digitalTint;
+  let persistence = clamp(0.12 + corruption * 0.4 - burstMask * 0.12, 0.05, 0.55) * history.a;
+  let rgb = mix(current, history.rgb, persistence);
+  let sourceAlpha = max(sampleR.a, max(sampleG.a, sampleB.a));
+  let energy = clamp(length(smear) * 18.0 + burstMask * 0.35 + badSignal * 0.2, 0.0, 1.0);
+  let alpha = clamp(sourceAlpha * (0.72 + (1.0 - corruption) * 0.2) + energy * 0.25, 0.0, 1.0);
+  let outputColor = vec4<f32>(rgb, alpha);
+  textureStore(writeTexture, coord, outputColor); textureStore(dataTextureA, coord, outputColor);
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + smear, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

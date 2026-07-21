@@ -1,10 +1,10 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-07-12 (WGSL perf/quality audit considerations)
+**Last updated:** 2026-07-19 (Foundation Wave 2 #965)
 
 ## WGSL cross-cutting improvements (2026-07-12 audit)
 - **Engine wins (all shaders):** gate historyTex copy (only 11 use binding 13); reuse extraBuffer Float32Array; fix dataTexA/B→C double-copy in chained slots; merge queue submits; GPU image upload path.
-- **Shader bulk:** ~63 still on 8×8 workgroups; UV pixel-center + aspect helpers; mouse Y already flipped in renderer — audit double-flips in mouse shaders.
+- **Mouse Y convention (2026-07-19):** Removed erroneous `1.0 - y` flip in `WebGPURenderer.updateMouse` — `zoom_config.yz` is now canvas UV (0=top, 1=bottom), matching WASM + `WGSL_BUILTINS_GENERATIVE.md`. Patched ~70 WGSL files that had compensating `1.0 - zoom_config.z` / `1.0 - mouseUV.y` / `(0.5 - mouse.y)` flips. Script: `scripts/fix_mouse_y_compensation.py`.
 - **Dormant infra:** subgroup `-sg.wgsl` loader (0 files); TS timestamp-query alloc unused.
 - **Format tradeoff:** rgba32float pipeline is quality-correct for HDR/sim but 4× bandwidth — don't downgrade without tiering.
 
@@ -51,12 +51,31 @@
 - **Still open in epic:** #917 full orphan reconcile, #921 thumbnail pipeline (GPU), #916 renderer.cpp modularize, product epics (#922/#929) deferred per epic scope.
 - **Success criteria:** 4/6 have code on foundation branches; thumbnails + full god-component split remain partial.
 
+## Foundation Wave 2 — Post-#912 (#965, 2026-07-19)
+- **App strangler (#966):** `App.tsx` 2,207 → **562 LOC**; all hooks wired; overlays in `AppOverlays.tsx`; constants from `src/app/constants/`.
+- **WebGPU modularization (#967):** `WebGPUDeviceInit`, `WebGPUResourceManager`, `WebGPUShaderManager`, `WebGPUTiming` wired; monolith ~1,390 LOC (render loop + blit scale path still inline).
+- **Binding + device policy (#968/#969):** `docs/BINDING_CONTRACT.md`; binding 13 (`historyTexture`) in C++ pipeline/resources/frame; `maxBindingsPerBindGroup` 14; `npm run verify:device-policy`.
+- **Multipass graph (#970):** `docs/MULTIPASS_GRAPH_SPEC.md`, `multipassGraph.ts`, `GraphRunner.ts`; wired in `dispatchSlot()` for `quantum-foam-pass1` same-frame demo.
+- **Thumbnails (#921):** `npm run thumbs:generate -- --missing` (app engine, production build); `thumbs:status`; docs/THUMBNAIL_PIPELINE.md; CI workflow_dispatch; failure report with black_frame/compile; **346/1,302 (26.6%)** — GPU batch on real hardware.
+- **WASM promotion (#890 / #965):** **STAY TIER B** reaffirmed 2026-07-19; bench harness polish (adapter summaries, CI artifact); `reports/wasm-promotion-evidence-2026-07-19.md`; issue comment posted. GPU gates still open — human discrete-GPU runs required.
+- **Controls panel closeout (#914 residual):** `useShaderMenuOptions`, `useAiVjAutoTransition`; production `RendererToggle`/`WASMToggle` removed; StorageBrowser via `storage/` imports.
+- **Tests/build:** 274 Jest tests pass; `SKIP_WASM_BUILD=1 npm run build` green (WASM also compiles when emcc present).
+
 ## Epic: Advanced Physics & Multipass Sims (2026-07-11)
 - **Agent kit:** `swarm-tasks/advanced-physics/` — README, MULTIPASS_SIM_CONTRACT, 3 agent specs + stretch goals
 - **Tier gate:** A/B ship now (linear multipass + frame feedback); Tier C (graph runner #929) blocks heavy iterative solvers
 - **Priority:** ripple-tank multipass → fabric-of-reality → caustic accumulator
 - **Prototypes exist:** `wave-equation`, `photonic-caustics` (single-pass); `fabric-of-reality` greenfield
 - **Preamble for swarms:** `agents/WGSL_BUILTINS_GENERATIVE.md` + MULTIPASS_SIM_CONTRACT.md
+
+## WASM Tier B → A evidence (2026-07-19)
+
+- Bench report schema: `benchmarkShaderIds`, `wasmAdapterSummary`, `webgpuAdapterSummary`, `userAgent`
+- `__pixelocity__.getAdapterSummary()` in testMode; CI uploads `wasm-benchmark-report` artifact
+- VM run: `gpuBackendObserved: false` → `reports/wasm-benchmark-report-stub-2026-07-19.json`
+- Parity: 7/7 skipped (no WebGPU adapter); Gate 3 manual smoke blocked in VM
+- Gate 4: W29 partial — `wasm` green, `test-wasm-e2e` skipped (`test` failing on main)
+- Decision comment: https://github.com/ford442/image_video_effects/issues/965#issuecomment-5014449092
 
 ## WASM Tier B → A evidence (2026-07-11)
 - **Decision: STAY TIER B** — no GPU benchmark/parity evidence; 4-week CI ops gate not met
@@ -83,6 +102,18 @@
 - [x] **Product decision Tier B (2026-06-27):** WASM = experimental opt-in; TS WebGPU = production default. Policy: `WASM_BACKEND_POLICY.md`
 - Memory maintenance: review recent daily (06-07 had swarm, git sync); distill only high-signal (C++ reliability is now key infra bet).
 
+## Build & tooling hardening (#965, 2026-07-19)
+- `src/contracts/webgpu_limits.json` — shared limits SOT; Jest `webgpuLimitsContract.test.ts`; `verify:device-policy` reads JSON
+- INITIAL_MEMORY 64 MiB experiment: **reject** (no wasm size win); ASYNCIFY **+40 KiB wasm** documented in `BUILD_FLAG_EXPERIMENTS.md`
+- `measure_wasm_build_flags.sh` for reproducible flag comparisons
+- PR template checklist includes `wasm:validate`; CMake marked CI-off-limits
+- `docs/TOOLCHAIN_DECISION.md`: **stay CRA + CRACO** (Vite spike deferred)
+
+- Multi-agent shader relay experiment: `gen-relay-psychedelia` in generative category
+- CHUNK-based ownership (domain-warp, symmetry, palette, feedback, motion) — see `agents/RELAY_PROTOCOL.md`
+- Hop 0 spine done; hop 1 (recursive domain warp) prompt at `agents/swarm-tasks/prompts/relay-hop-1-domain-warp.md`
+- Validation between hops: `python3 scripts/wgsl_precommit_gate.py --files public/shaders/gen-relay-psychedelia.wgsl`
+
 ## Quick Refs (for continuity)
 - Key files: wasm_renderer/{renderer.cpp:242 CreateDevice, 658 format negotiation, 669 fatal surface, 1595 Render, 1725 PresentToSurface}, wasm_renderer/wasm_bridge.js (canonical, synced to src/wasm/), src/renderer/{WASMRenderer.ts,RendererManager.ts}, WASM_RENDERER_GAP_ANALYSIS.md, wasm_renderer/STATUS.md
 - GH: #799 (open, context init), #771 (closed windows), #736 (closed testing).
@@ -93,3 +124,11 @@
 **Capture principle:** All this written down immediately. Future sessions read this + today's daily before touching WASM C++.
 
 (If consolidating older: 06-07 swarm details in its daily; only kept the "C++ WASM now the reliability focus" signal here.)
+
+## Liquid shader upgrade batch (2026-07-21)
+- Codex completed a Kimi-disjoint lane covering eight legacy `liquid-*` shaders.
+- Batch contract: exact 13 bindings, 16x16x1 workgroups, all four `zoom_params`, bounded
+  plasma audio, meaningful alpha/depth, `dataTextureA`, metadata synchronization, and
+  stable parameter IDs/defaults/ranges for saved-preset compatibility.
+- Target gate passed 8/8 and production build succeeded. The authoritative scan found four
+  unrelated committed generative failures; do not attribute those to the liquid batch.

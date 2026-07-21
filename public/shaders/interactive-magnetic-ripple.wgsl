@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Magnetic Ripple — Phase B Audio-Reactivity Upgrade
+//  Interactive Magnetic Ripple — Algorithmist Upgrade
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal-feedback,
 //            motion-trails, chromatic-aberration, aces-tone-map,
-//            bass-pulse, mids-morph, treble-sparkle
-//  Upgraded: 2026-07-08
+//            bass-pulse, mids-morph, treble-sparkle, worley-field-lines,
+//            spring-damped-envelope, crest-sparkle
+//  Upgraded: 2026-07-08 (Phase B), re-upgraded 2026-07-21 (Algorithmist)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -24,7 +25,7 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  zoom_params: vec4<f32>,  // x=RippleFreq, y=FieldLineMix, z=SpringDamping, w=TrebleSparkle
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -63,6 +64,47 @@ fn curlNoise(p: vec2<f32>, t: f32) -> vec2<f32> {
   let n2 = fbm(p + vec2<f32>( e, 0.0) + t * 0.12, 3);
   let n3 = fbm(p + vec2<f32>(-e, 0.0) + t * 0.12, 3);
   return vec2<f32>(n0 - n1, n3 - n2) / (2.0 * e);
+}
+
+// Worley (cellular) noise: returns (F1, F2) distances with slow cell jitter.
+// The F2-F1 ridge field behaves like magnetic domain walls and is used to
+// bend the ripple sampling coordinates into curved field lines.
+fn worley(p: vec2<f32>, t: f32) -> vec2<f32> {
+  let i = floor(p);
+  let f = fract(p);
+  var f1 = 8.0;
+  var f2 = 8.0;
+  for (var gy: i32 = -1; gy <= 1; gy = gy + 1) {
+    for (var gx: i32 = -1; gx <= 1; gx = gx + 1) {
+      let g = vec2<f32>(f32(gx), f32(gy));
+      let h = hash21(i + g);
+      let pt = g + vec2<f32>(0.5 + 0.4 * sin(t * 0.7 + h * TAU),
+                             0.5 + 0.4 * cos(t * 0.6 + h * TAU * 1.7)) - f;
+      let d = dot(pt, pt);
+      if (d < f1) {
+        f2 = f1;
+        f1 = d;
+      } else if (d < f2) {
+        f2 = d;
+      }
+    }
+  }
+  return vec2<f32>(sqrt(f1), sqrt(f2));
+}
+
+fn rot2(angle: f32) -> mat2x2<f32> {
+  let c = cos(angle);
+  let s = sin(angle);
+  return mat2x2<f32>(c, -s, s, c);
+}
+
+// Under-damped spring impulse response: starts at 1, overshoots below zero,
+// then rings and settles — a damped oscillator instead of a plain exp decay.
+fn springEnvelope(x: f32, zeta: f32, omega: f32) -> f32 {
+  let z = clamp(zeta, 0.05, 0.95);
+  let wd = omega * sqrt(max(1.0 - z * z, 0.01));
+  let ring = cos(wd * x) + (z * omega / wd) * sin(wd * x);
+  return exp(-z * omega * x) * ring;
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -114,20 +156,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mSmooth = mix(prev.gb, mouse, vec2<f32>(k));
   let mVel = mSmooth - prev.gb;
 
+  // ── Slider params (zoom_params) ──────────────────────────────
+  // x = Ripple Frequency, y = Field-Line Mix (worley bend),
+  // z = Spring Damping, w = Treble Sparkle gain
+  let pFreq = u.zoom_params.x;
+  let pLineMix = clamp(u.zoom_params.y, 0.0, 1.0);
+  let pSpring = clamp(u.zoom_params.z, 0.0, 1.0);
+  let pSparkle = clamp(u.zoom_params.w, 0.0, 1.0);
+
   let bassPulse = 1.0 + env * 0.5;
-  let freq = u.zoom_params.x * 40.0 * (0.8 + env * 0.4);
-  let decay = u.zoom_params.y * 3.0 + 0.5;
-  let fieldStrength = u.zoom_params.z * bassPulse;
-  let chromaticSplit = u.zoom_params.w * 0.08;
+  let freq = pFreq * 40.0 * (0.8 + env * 0.4);
+  // Spring oscillator: zeta = damping ratio, omega = natural frequency.
+  // Low damping → long ringing overshoot; high damping → fast settle.
+  let dampZeta = 0.12 + pSpring * 0.78;
+  let springOmega = 2.5 + freq * 0.35;
+  let decay = 0.5 + pSpring * 3.0;  // spatial falloff companion to the spring
+  let fieldStrength = 0.55 * bassPulse;
+  let chromaticSplit = 0.04;
+  let sparkGain = 0.3 + pSparkle * 1.6;
 
   let pulseStrength = fieldStrength * (1.0 + env * 0.7);
   let clickBurst = select(0.0, 1.0, mouseDown) * (1.0 + env);
 
   var totalDisp = vec2<f32>(0.0);
   var rippleIntensity = 0.0;
+  var crestMask = 0.0;
 
-  // Treble sparkle field
-  let spark = sparkle(uv01, time, treble);
+  // Treble sparkle field (gain now slider-controlled)
+  let spark = sparkle(uv01, time, treble) * sparkGain;
   rippleIntensity += spark;
 
   // Mouse-driven magnetic field
@@ -137,14 +193,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = length(dAspect);
     let dir = select(vec2<f32>(0.0), dMouse / dist, dist > 0.001);
 
+    // ── Worley field-line distortion layer ─────────────────────
+    // F2-F1 ridge field rotates the sampling vector toward cell walls,
+    // bending straight ripples into curved magnetic field lines.
+    let w = worley(uv01 * 5.0 + vec2<f32>(time * 0.05, -time * 0.04), time);
+    let ridge = w.y - w.x;
+    let bendAng = (ridge - 0.35) * PI * pLineMix;
+    let sampAspect = mix(dAspect, rot2(bendAng) * dAspect, pLineMix);
+    let sampDist = max(length(sampAspect), 0.0001);
+
     let curl = curlNoise(uv01 * 3.0 + time * 0.3, time) * 0.25;
 
-    let phase = dist * freq - time * 4.0;
-    let fbmWarp = fbm(vec2<f32>(dist * 4.0, time * 0.4), 3) * 2.5;
+    let phase = sampDist * freq - time * 4.0;
+    let fbmWarp = fbm(vec2<f32>(sampDist * 4.0, time * 0.4), 3) * 2.5;
     let ripple = cos(phase + fbmWarp) * 0.55 + sin(phase * 1.618) * 0.45;
-    let rippleAtten = exp(-dist * decay);
+    // Spring-damped envelope: overshoot + ringing settle
+    let rippleAtten = springEnvelope(sampDist, dampZeta, springOmega);
     totalDisp += dir * ripple * rippleAtten * 0.06;
-    rippleIntensity += abs(ripple) * rippleAtten;
+    rippleIntensity += abs(ripple * rippleAtten);
+
+    // Crest maxima of the sprung wave (drives treble sparkle highlights)
+    crestMask += smoothstep(0.72, 0.98, ripple * rippleAtten) * exp(-dist * 2.0);
 
     let velBoost = 1.0 + length(mVel) * 5.0;
     let magFalloff = fbm(vec2<f32>(dist * 6.0, time * 0.2), 3) * 0.3 + 0.7;
@@ -152,18 +221,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     totalDisp += magPull + curl * 0.04;
     rippleIntensity += length(magPull) * 10.0;
 
-    // Mids morph field-line frequency and add sparkle
+    // Mids morph field-line frequency; worley ridge twists the angle term
     let lineFreq = 12.0 + mids * 8.0;
-    let fieldLine = sin(atan2(dAspect.y, dAspect.x) * lineFreq + fbm(uv01 * 5.0, 3) * 3.0);
+    let angTerm = atan2(sampAspect.y, sampAspect.x) * lineFreq;
+    let fieldLine = sin(angTerm + fbm(uv01 * 5.0, 3) * 3.0 + ridge * 4.0 * pLineMix);
     let fieldLineMask = smoothstep(0.3, 0.0, abs(fieldLine)) * exp(-dist * 3.0);
     totalDisp += dir * fieldLineMask * pulseStrength * 0.02;
     rippleIntensity += fieldLineMask * pulseStrength + spark * fieldLineMask * 5.0;
+    crestMask += fieldLineMask * smoothstep(0.6, 1.0, ridge) * 0.5;
   }
 
   // Click burst shockwave
   totalDisp += normalize(uv01 - mSmooth + vec2<f32>(0.0001)) * clickBurst * 0.03 * sin(length(uv01 - mSmooth) * 40.0 - time * 10.0);
 
-  // Process stored ripple points
+  // Process stored ripple points (spring-damped in age, exp falloff in space)
   for (var i: u32 = 0u; i < 50u; i = i + 1u) {
     let rp = u.ripples[i];
     if (rp.z <= 0.0) { continue; }
@@ -172,9 +243,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rDiff = vec2<f32>((rPos.x - uv01.x) * aspect, rPos.y - uv01.y);
     let rDist = length(rDiff);
     let rDir = select(vec2<f32>(0.0), vec2<f32>(rDiff.x / aspect, rDiff.y) / rDist, rDist > 0.001);
-    let rRipple = cos(rDist * freq * 0.6 - rAge * 5.0) * exp(-rDist * decay - rAge * 1.2);
+    let rEnv = springEnvelope(rAge * 0.6, dampZeta, 4.0 + freq * 0.1) * exp(-rDist * decay);
+    let rRipple = cos(rDist * freq * 0.6 - rAge * 5.0) * rEnv;
     totalDisp += rDir * rRipple * 0.035;
     rippleIntensity += abs(rRipple) * 0.5;
+    crestMask += smoothstep(0.75, 1.0, rRipple) * 0.6;
   }
 
   // Domain warp + depth-aware displacement scaling
@@ -201,8 +274,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let cycleGlow = colorCycle(time * 0.5 + mids * TAU + rippleIntensity * 3.0);
   color += mix(baseGlow, cycleGlow, mids * 0.5) * glow * 0.4;
 
-  // Treble sparkle overlay
+  // Treble sparkle overlay (ambient field)
   color += vec3<f32>(spark * (0.6 + treble * 0.4));
+
+  // Treble sparkle on ripple crests only: sharp highlights locked to the
+  // spring wave maxima, driven by plasmaBuffer[0].z and the sparkle slider.
+  let crest = clamp(crestMask, 0.0, 1.5);
+  let crestSparkle = sparkle(uv01 * 1.7 + vec2<f32>(13.1, 7.3), time * 1.3, treble) * crest * sparkGain;
+  color += vec3<f32>(crestSparkle * 0.85, crestSparkle * 0.95, crestSparkle * 1.2) * 0.7;
 
   // Temporal feedback trail
   let trailDecay = 0.94 + env * 0.04;
@@ -215,7 +294,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = mix(color, vec3<f32>(bgLuma), fog * 0.25);
 
   // Semantic alpha: intensity × depth
-  let alpha = clamp(luma(color) * 1.4 + rippleIntensity * 0.35, 0.15, 0.95) * (0.6 + depth * 0.4);
+  let alpha = clamp(luma(color) * 1.4 + rippleIntensity * 0.35 + crest * 0.1, 0.15, 0.95) * (0.6 + depth * 0.4);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

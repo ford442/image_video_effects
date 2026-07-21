@@ -2,7 +2,7 @@
   "id": "cross-conv-mouse-bilateral",
   "name": "Bilateral Paint",
   "url": "shaders/cross-conv-mouse-bilateral.wgsl",
-  "description": "Crossover shader combining bilateral convolution with mouse-driven painting. The cursor acts as a brush that applies edge-preserving smoothing — stronger near the cursor, with click boosting the effect.",
+  "description": "Crossover shader combining bilateral convolution with mouse-driven painting. The cursor acts as a brush that applies edge-preserving smoothing \u2014 stronger near the cursor, with click boosting the effect.",
   "tags": [
     "crossover",
     "convolution",
@@ -14,7 +14,9 @@
   "features": [
     "crossover",
     "mouse-driven",
-    "advanced-convolution"
+    "advanced-convolution",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

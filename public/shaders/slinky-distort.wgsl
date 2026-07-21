@@ -1,8 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Slinky Distort - Advanced Alpha
-//  Category: distortion
 //  Alpha Mode: Effect Intensity Alpha
-//  Features: advanced-alpha, spiral-distortion, spring-physics
+//  Features: advanced-alpha, spiral-distortion, spring-physics, mouse-driven, audio-reactive, upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -74,9 +73,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     
-    // Parameters
-    let coils = u.zoom_params.x * 10.0 + 3.0;        // Number of spring coils
-    let amplitude = u.zoom_params.y * 0.1;           // Displacement amplitude
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Parameters — bass stretches the spring, mids add coils
+    let coils = (u.zoom_params.x * 10.0 + 3.0) * (1.0 + mids * 0.35);
+    let amplitude = u.zoom_params.y * 0.1 * (1.0 + bass * 0.6);
     let depthWeight = u.zoom_params.z;               // Depth influence
     let tightness = u.zoom_params.w * 2.0 + 0.5;     // Coil tightness
     
@@ -96,8 +98,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let normal = vec2<f32>(cos(angle), sin(angle));
     let tangent = vec2<f32>(-sin(angle), cos(angle));
     
-    // Displace along spiral path
-    let displacement = normal * spiralOffset * (1.0 - smoothstep(0.0, 0.5, dist));
+    // Displace along spiral path, plus a tangential twist (torsion) on the beat
+    let falloff = 1.0 - smoothstep(0.0, 0.5, dist);
+    let twist = cos(spiralPhase) * amplitude * bass * 0.8;
+    let displacement = (normal * spiralOffset + tangent * twist) * falloff;
     
     let warpedUV = clamp(uv + displacement / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
     
@@ -111,13 +115,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         0.5 + 0.5 * sin(spiralPhase + 4.18)
     );
     
-    let finalColor = mix(sample.rgb, sample.rgb * colorShift, abs(spiralOffset) * 5.0);
-    
+    var finalColor = mix(sample.rgb, sample.rgb * colorShift, abs(spiralOffset) * 5.0);
+
+    // Bass puts a metallic highlight on the coil crests
+    let crest = pow(max(0.0, sin(spiralPhase)), 12.0) * falloff;
+    finalColor = finalColor + vec3<f32>(0.8, 0.9, 1.0) * crest * bass * 0.5;
+
     // ═══ ADVANCED ALPHA CALCULATION ═══
-    let alpha = calculateAdvancedAlpha(uv, warpedUV, sample.a, u.zoom_params);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-    
+    let alpha = clamp(calculateAdvancedAlpha(uv, warpedUV, sample.a, u.zoom_params)
+                      + crest * bass * 0.25, 0.0, 1.0);
+
+    let outColor = vec4<f32>(finalColor, alpha);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
+
     // Depth pass-through with spiral modulation
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, warpedUV, 0.0).r;
     let depthMod = 1.0 + abs(spiralOffset) * 0.5;

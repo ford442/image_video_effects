@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "description": "Shared WebGPU minimum compute limits for Pixelocity's 14-entry bind group (bindings 0–13). Keep in sync with src/renderer/webgpuDevicePolicy.ts and wasm_renderer/device.cpp CheckLimit + requiredLimits.",
+  "minimumComputeLimits": {
+    "maxBindingsPerBindGroup": 14,
+    "maxSampledTexturesPerShaderStage": 3,
+    "maxSamplersPerShaderStage": 3,
+    "maxStorageTexturesPerShaderStage": 4,
+    "maxStorageBuffersPerShaderStage": 2,
+    "maxUniformBuffersPerShaderStage": 1,
+    "maxUniformBufferBindingSize": 848,
+    "maxComputeWorkgroupSizeX": 16,
+    "maxComputeWorkgroupSizeY": 16,
+    "maxComputeInvocationsPerWorkgroup": 256
+  },
+  "cppReferences": {
+    "file": "wasm_renderer/device.cpp",
+    "checkLimitComment": "Adapter limits (validating against 14-entry compute contract)",
+    "requiredLimitsFields": [
+      "maxTextureDimension2D",
+      "maxBindingsPerBindGroup",
+      "maxSampledTexturesPerShaderStage",
+      "maxSamplersPerShaderStage",
+      "maxStorageTexturesPerShaderStage",
+      "maxStorageBuffersPerShaderStage",
+      "maxUniformBuffersPerShaderStage",
+      "maxUniformBufferBindingSize",
+      "maxComputeWorkgroupSizeX",
+      "maxComputeWorkgroupSizeY",
+      "maxComputeInvocationsPerWorkgroup"
+    ]
+  }
+}

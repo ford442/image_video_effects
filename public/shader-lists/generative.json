@@ -3046,6 +3046,60 @@
     "features": []
   },
   {
+    "id": "gen-bioluminescent-chrono-plasma-astro-owl",
+    "name": "Bioluminescent Chrono-Plasma Astro-Owl",
+    "url": "shaders/gen-bioluminescent-chrono-plasma-astro-owl.wgsl",
+    "description": "A hyper-dimensional, cyber-organic celestial owl forged from liquid chrono-plasma and shattered quantum-glass.",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "quantum",
+      "cosmic",
+      "volumetric",
+      "fractal",
+      "avian"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wing Plasma Distortion",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Core Gravity Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 2,
+        "name": "Nebula Particle Density",
+        "default": 0.8,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Temporal Echo Fade",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ]
+  },
+  {
     "name": "Bioluminescent Reaction-Diffusion",
     "category": "generative",
     "tags": [
@@ -11489,7 +11543,6 @@
     "features": []
   },
   {
-    "id": "gen-luminescent-chrono-prism-astro-stag",
     "name": "Luminescent Chrono-Prism Astro-Stag",
     "category": "generative",
     "tags": [
@@ -11501,39 +11554,56 @@
     ],
     "description": "A hyper-majestic, biomechanical celestial stag woven from shattered chrono-prisms and glowing liquid-aurora, elegantly galloping through a volumetric cosmic-rift while its crystalline antlers carve temporal geometric fractals into the void.",
     "url": "shaders/gen-luminescent-chrono-prism-astro-stag.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": false,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-luminescent-chrono-prism-astro-stag",
     "updatedParams": [
       {
-        "name": "Temporal Distortion",
         "index": 0,
+        "name": "Temporal Distortion",
         "default": 1,
         "min": 0,
         "max": 5,
         "step": 0.1
       },
       {
-        "name": "Rift Density",
         "index": 1,
+        "name": "Rift Density",
         "default": 1,
         "min": 0,
         "max": 3,
         "step": 0.1
       },
       {
-        "name": "Fractal Intensity",
         "index": 2,
+        "name": "Fractal Intensity",
         "default": 1,
         "min": 0,
         "max": 2,
         "step": 0.05
       },
       {
-        "name": "Prismatic Refraction",
         "index": 3,
+        "name": "Prismatic Refraction",
         "default": 1,
         "min": 0,
         "max": 5,
         "step": 0.1
       }
+    ],
+    "features": [
+      "generative",
+      "raymarch",
+      "volumetric",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ]
   },
   {
@@ -14882,6 +14952,58 @@
     "features": []
   },
   {
+    "id": "gen-prismatic-cyber-aether-void-kitsune",
+    "name": "Prismatic Cyber-Aether Void-Kitsune",
+    "category": "generative",
+    "tags": [
+      "kitsune",
+      "cybernetic",
+      "prismatic",
+      "aether",
+      "volumetric",
+      "fractal",
+      "audio-reactive"
+    ],
+    "description": "A hyper-majestic, cybernetic celestial kitsune forged from shattered prismatic glass and liquid quantum-aether, bounding violently through a multi-dimensional volumetric particle-storm while its nine radiant tails carve temporal auroral rifts into the void.",
+    "url": "shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Tail Dispersion",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.05
+      },
+      {
+        "index": 1,
+        "name": "Current Warp",
+        "default": 0.6,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 2,
+        "name": "Storm Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Rune Glow",
+        "default": 1.2,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false
+  },
+  {
     "id": "gen-prismatic-cyber-aurora-astral-dragonfly",
     "name": "Prismatic Cyber-Aurora Astral-Dragonfly",
     "description": "A majestic, hyper-organic biomechanical dragonfly forged from liquid auroral plasma and shattered chromatic crystal.",
@@ -16518,6 +16640,61 @@
     "features": []
   },
   {
+    "id": "gen-radiant-cyber-plasma-astro-griffin",
+    "name": "Radiant Cyber-Plasma Astro-Griffin",
+    "url": "shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
+    "description": "A hyper-majestic, biomechanical celestial griffin woven from shattered chrono-prisms and glowing liquid-plasma.",
+    "category": "generative",
+    "tags": [
+      "griffin",
+      "plasma",
+      "cyber",
+      "volumetric",
+      "fractal",
+      "animal",
+      "audio-reactive"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Warp Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wing Span",
+        "default": 0.7,
+        "min": 0.1,
+        "max": 1.5,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Fractal Depth",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "index": 3,
+        "name": "Plasma Glow",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      }
+    ]
+  },
+  {
     "name": "Radiant Quantum-Crystalline Forge",
     "category": "generative",
     "tags": [
@@ -16879,6 +17056,68 @@
     "features": []
   },
   {
+    "id": "gen-relay-psychedelia",
+    "name": "Relay Psychedelia",
+    "category": "generative",
+    "url": "shaders/gen-relay-psychedelia.wgsl",
+    "description": "Multi-agent relay generative shader — warped fbm field, palette-driven color, temporal feedback. See agents/RELAY_PROTOCOL.md.",
+    "tags": [
+      "generative",
+      "psychedelic",
+      "relay",
+      "domain-warping",
+      "feedback",
+      "procedural"
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal-feedback"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Warp Depth",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Saturation",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Hue Shift",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trail Echo",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true
+  },
+  {
     "name": "Resonant Crystal-Canyons",
     "category": "generative",
     "tags": [
@@ -17223,11 +17462,11 @@
         "step": 0.01
       }
     ],
-    "supportsDepth": false,
-    "supportsDof": false,
-    "updated": true,
     "id": "gen-sentient-aether-plasma-nebula-moth",
     "url": "shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
     "features": []
   },
   {
@@ -17282,6 +17521,53 @@
     "id": "gen-sentient-cyber-aurora-void-owl",
     "url": "shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-sentient-cyber-chrono-void-serpent",
+    "name": "Sentient Cyber-Chrono Void-Serpent",
+    "description": "A hyper-dimensional, endlessly twisting biomechanical serpent forged from shattered chrono-glass and liquid auroral plasma, slithering aggressively through a violently decaying temporal cosmic-rift. This shader blends razor-sharp synthetic scales and recursive geometric fracturing with fluid, audio-reactive bioluminescent shockwaves.",
+    "url": "shaders/gen-sentient-cyber-chrono-void-serpent.wgsl",
+    "tags": [
+      "organic",
+      "cybernetic",
+      "fractal",
+      "volumetric",
+      "audio-reactive"
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Time Scale",
+        "defaultValue": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Plasma Intensity",
+        "defaultValue": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Void Density",
+        "defaultValue": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "index": 3,
+        "name": "Fracture Depth",
+        "defaultValue": 2,
+        "min": 0,
+        "max": 10,
+        "step": 0.5
+      }
+    ]
   },
   {
     "name": "Sentient Ferro-Silicate Swarm",

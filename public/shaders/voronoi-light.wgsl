@@ -1,3 +1,8 @@
+// --- VORONOI LIGHT ---
+// Voronoi cell lattice lit by a mouse-driven lamp; bass swells the light
+// radius and ignites cell borders, mids drive the cell animation.
+// Features: voronoi, cellular, lighting, mouse-driven, audio-reactive, upgraded-rgba
+
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -38,11 +43,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var mouse = u.zoom_config.yz;
     let time = u.config.x;
 
-    // Params
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Params — bass swells the lamp, mids agitate the cells
     let density = mix(5.0, 50.0, u.zoom_params.x);
-    let lightRadius = u.zoom_params.y;
+    let lightRadius = u.zoom_params.y * (1.0 + bass * 0.5);
     let colorMode = u.zoom_params.z;
-    let pulseSpeed = u.zoom_params.w;
+    let pulseSpeed = u.zoom_params.w * (1.0 + mids * 0.6);
 
     // Aspect corrected UV for voronoi
     let st = uv * vec2(aspect, 1.0) * density;
@@ -93,7 +101,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let highlight = 1.0 - smoothstep(lightRadius, lightRadius + 0.1, distMouse);
 
     // Add some pulsing to the highlight
-    let pulse = 0.8 + 0.2 * sin(time * 5.0);
+    let pulse = 0.8 + 0.2 * sin(time * 5.0) + bass * 0.4;
 
     // Sample texture
     var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -120,7 +128,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color *= border;
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+    // Bass ignites every cell border across the frame, not just near the lamp
+    let ember = (1.0 - border) * bass;
+    color += vec4(1.0, 0.45, 0.15, 0.0) * ember * 0.7;
+
+    // Alpha: lit cells and burning borders are opaque, dead cells fall away
+    let alpha = clamp(highlight * pulse + ember, 0.0, 1.0);
+    let outColor = vec4<f32>(color.rgb, alpha);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));

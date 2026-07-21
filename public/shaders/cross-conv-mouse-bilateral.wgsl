@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Crossover: Convolution + Mouse — Bilateral Paint
 //  Category: image
-//  Features: crossover, mouse-driven, advanced-convolution
+//  Features: crossover, mouse-driven, advanced-convolution, audio-reactive, upgraded-rgba
 //  Crosses: conv-bilateral-dream (1C) + mouse-paint-splatter (2C)
 //  Complexity: Medium
 //  Created: 2026-04-19
@@ -58,9 +58,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w > 0.5;
     
-    // Parameters
-    let brushSize = mix(0.05, 0.25, u.zoom_params.x);
-    let edgePreserve = mix(0.02, 0.2, u.zoom_params.y);
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Parameters — bass swells the brush, mids sharpen edge preservation
+    let brushSize = mix(0.05, 0.25, u.zoom_params.x) * (1.0 + bass * 0.4);
+    let edgePreserve = mix(0.02, 0.2, u.zoom_params.y) * (1.0 + mids * 0.35);
     let strength = mix(0.0, 1.0, u.zoom_params.z);
     let clickBoost = select(1.0, 2.5, mouseDown);
     
@@ -69,8 +72,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let localStrength = strength * brushFalloff * clickBoost;
     
     if (localStrength < 0.01) {
+        // Untouched region: alpha marks zero filter coverage
         let col = sampleColor(uv);
-        textureStore(writeTexture, global_id.xy, vec4<f32>(col, 1.0));
+        let passthrough = vec4<f32>(col, 0.0);
+        textureStore(writeTexture, global_id.xy, passthrough);
+        textureStore(dataTextureA, vec2<i32>(global_id.xy), passthrough);
         let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
         textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
         return;
@@ -102,9 +108,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     let filtered = sumColor / max(sumWeight, 0.0001);
-    let finalColor = mix(centerCol, filtered, localStrength);
-    
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, 1.0));
+    var finalColor = mix(centerCol, filtered, localStrength);
+
+    // Bass lifts the smoothed region so the brush reads as a glowing sheen
+    let sheen = clamp(localStrength, 0.0, 1.0) * bass;
+    finalColor = finalColor + vec3<f32>(0.4, 0.55, 0.8) * sheen * 0.25;
+
+    // Alpha carries filter coverage — how much this pixel was actually smoothed
+    let alpha = clamp(localStrength, 0.0, 1.0);
+    let outColor = vec4<f32>(finalColor, alpha);
+
+    textureStore(writeTexture, global_id.xy, outColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

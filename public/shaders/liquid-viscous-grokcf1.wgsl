@@ -1,4 +1,11 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Viscous Nebula
+//  Category: liquid-effects
+//  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-07-21
+// ═══════════════════════════════════════════════════════════════════
+
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -12,137 +19,65 @@
 @group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 
-fn hash2(p: vec2<f32>) -> f32 {
-  return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(41.7, 289.1))) * 45758.5453); }
+fn noise21(p: vec2<f32>) -> f32 {
+  let i = floor(p); let f = fract(p); let w = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), w.x), mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0)), w.x), w.y);
 }
-
-fn noise2D(p: vec2<f32>) -> vec2<f32> {
-  var i = floor(p);
-  let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
-  let a = hash2(i);
-  let b = hash2(i + vec2<f32>(1.0, 0.0));
-  let c = hash2(i + vec2<f32>(0.0, 1.0));
-  let d = hash2(i + vec2<f32>(1.0, 1.0));
-  let h = mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-  return vec2<f32>(cos(h * 6.283185), sin(h * 6.283185));
+fn fbm(p0: vec2<f32>) -> f32 {
+  var p = p0; var value = 0.0; var amp = 0.5;
+  for (var i = 0; i < 4; i = i + 1) { value += noise21(p) * amp; p = mat2x2<f32>(1.6, 1.2, -1.2, 1.6) * p; amp *= 0.5; }
+  return value;
 }
-
-fn flowPattern(p: vec2<f32>, time: f32) -> vec2<f32> {
-  var flow = vec2<f32>(0.0);
-  var amplitude = 1.0;
-  var frequency = 1.0;
-  for (var i = 0; i < 4; i++) {
-    flow += noise2D(p * frequency + time * 0.1) * amplitude;
-    amplitude *= 0.5;
-    frequency *= 2.0;
-  }
-  return flow;
-}
-
-fn viscous_noise(p: vec2<f32>, time: f32) -> vec2<f32> {
-  var uv = p * vec2<f32>(0.1, 0.1) + time * 0.1;
-  let noiseValue = sin(uv.x * 3.14159) * cos(uv.y * 3.14159);
-  var flow = vec2<f32>(fract(noiseValue * 43758.5453), fract(noiseValue * 0.1031)) * 2.0 - 1.0;
-  return flow * exp(-length(p) * 0.5);
-}
+fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0)); }
 
 @compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
-  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-    return;
-  }
+  if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+  let coord = vec2<i32>(gid.xy); let uv = vec2<f32>(gid.xy) / resolution;
+  let aspect = resolution.x / max(resolution.y, 1.0); let time = u.config.x;
+  let viscosity = mix(0.2, 0.92, u.zoom_params.x); let turbulence = u.zoom_params.y;
+  let nebulaGlow = u.zoom_params.z; let spectralShift = u.zoom_params.w;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  var uv = vec2<f32>(global_id.xy) / resolution;
-  let currentTime = u.config.x;
-  let pixelSize = 1.0 / resolution;
-  let center_depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let depthFactor = 1.0 - center_depth;
-
-  var ambientDisplacement = vec2<f32>(0.0);
-  let background_factor = smoothstep(0.0, 0.25, depthFactor);
-  if (background_factor > 0.0) {
-    let time = currentTime * 0.2 + depthFactor * 2.0;
-    let noiseuv = uv * vec2<f32>(9.0, 7.0) + vec2<f32>(currentTime * 0.05, currentTime * 0.04);
-    var flow = flowPattern(noiseuv, time);
-    let gravity = vec2<f32>(0.0, 0.0006);
-    ambientDisplacement = (flow * 0.003 + gravity) * background_factor * (0.2 + depthFactor);
-  }
-
-  var mouseDisplacement = vec2<f32>(0.0);
-  var chromaticAccumulator = 0.0;
-  let rippleCount = u32(u.config.y);
-
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let rippleData = u.ripples[i];
-    let timeSinceClick = currentTime - rippleData.z;
-    if (timeSinceClick <= 0.0) { continue; }
-    let vortexSeed = hash2(rippleData.xy * 100.0);
-    let vortexDuration = mix(3.0, 6.0, vortexSeed);
-    let chromaticStrength = mix(0.001, 0.005, hash2(rippleData.xy * 200.0));
-
-    if (timeSinceClick < vortexDuration) {
-      let direction_vec = uv - rippleData.xy;
-      let dist = length(direction_vec);
-      if (dist > 0.0001) {
-        let rippleOriginDepthFactor = 1.0 - textureSampleLevel(readDepthTexture, non_filtering_sampler, rippleData.xy, 0.0).r;
-        let tangent = vec2<f32>(-direction_vec.y, direction_vec.x);
-        let normalizedTime = timeSinceClick / vortexDuration;
-        let angularVelocity = (1.0 - normalizedTime * normalizedTime) * 8.0;
-        let vortex_amplitude = mix(0.008, 0.022, rippleOriginDepthFactor);
-        let falloff = 1.0 / (dist * 33.0 + 1.0);
-        let attenuation = 1.0 - smoothstep(0.0, 1.0, normalizedTime);
-        let spiralFactor = sin(normalizedTime * 3.14159) * 0.3;
-        let radialComponent = (direction_vec / dist) * spiralFactor;
-        let vortexDisplacement = (tangent * angularVelocity + radialComponent) * vortex_amplitude * falloff * attenuation;
-        mouseDisplacement += vortexDisplacement;
-        chromaticAccumulator += chromaticStrength * length(vortexDisplacement) * 100.0;
-      }
+  let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  let warpA = fbm(p * mix(2.5, 7.0, turbulence) + vec2<f32>(time * 0.08, -time * 0.06));
+  let warpB = fbm(p * 4.0 + vec2<f32>(warpA, -warpA) * 2.4 - time * 0.04);
+  var displacement = vec2<f32>(warpA - 0.5, warpB - 0.5) * (0.004 + turbulence * 0.018) * mix(1.0, 0.35, depth);
+  var vortexEnergy = 0.0;
+  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i]; let age = time - ripple.z;
+    if (age > 0.0 && age < 6.0) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0); let dist = max(length(delta), 0.0001);
+      let dir = delta / dist; let tangent = vec2<f32>(-dir.y, dir.x);
+      let life = exp(-age * mix(0.35, 0.12, viscosity)); let falloff = exp(-dist * mix(8.0, 3.0, viscosity));
+      let pulse = sin(dist * 20.0 - age * (2.0 + audio.x * 3.0));
+      let flow = (tangent * (0.8 + viscosity) + dir * pulse * 0.25) * life * falloff;
+      displacement += vec2<f32>(flow.x / aspect, flow.y) * (0.006 + turbulence * 0.022) * (1.0 + audio.x * 0.5);
+      vortexEnergy += life * falloff;
     }
   }
 
-  let smoothedDisplacement = mouseDisplacement * 0.7;
-  let right = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0);
-  let left = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-pixelSize.x, 0.0), 0.0);
-  let up = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, -pixelSize.y), 0.0);
-  let down = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0);
-  let neighborAvg = (right + left + up + down) * 0.25;
-  let centerColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let cohesionEffect = (neighborAvg - centerColor) * 0.3;
-  let finalMouseDisplacement = smoothedDisplacement + cohesionEffect.xy * 0.01;
-
-  let totalDisplacement = finalMouseDisplacement + ambientDisplacement;
-  let displacementMagnitude = length(totalDisplacement);
-  let chromaticOffset = chromaticAccumulator * (1.0 - center_depth) * 0.5;
-
-  let redUV = uv + totalDisplacement * (1.0 + chromaticOffset);
-  let greenUV = uv + totalDisplacement;
-  let blueUV = uv + totalDisplacement * (1.0 - chromaticOffset);
-
-  let redChannel = textureSampleLevel(readTexture, u_sampler, redUV, 0.0).r;
-  let greenChannel = textureSampleLevel(readTexture, u_sampler, greenUV, 0.0).g;
-  let blueChannel = textureSampleLevel(readTexture, u_sampler, blueUV, 0.0).b;
-  let alpha = textureSampleLevel(readTexture, u_sampler, greenUV, 0.0).a;
-
-  var color = vec4<f32>(redChannel, greenChannel, blueChannel, alpha);
-
-  // Add nebula-like glow
-  let nebula = sin(uv.x * 20.0 + currentTime) * sin(uv.y * 20.0 + currentTime * 1.2) * 0.1;
-  color += vec4<f32>(nebula * 0.5, nebula * 0.3, nebula * 0.7, 0.0);
-
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-
-  let depthDisplacedUV = uv + finalMouseDisplacement;
-  let displacedDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, depthDisplacedUV, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(displacedDepth, 0.0, 0.0, 0.0));
+  let displacedUV = clamp(uv + displacement, vec2<f32>(0.0), vec2<f32>(1.0));
+  let base = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
+  let history = textureSampleLevel(dataTextureC, non_filtering_sampler, clamp(uv - displacement * 0.35, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let density = smoothstep(0.25, 0.85, warpA * 0.6 + warpB * 0.6 + vortexEnergy * 0.08);
+  let paletteA = vec3<f32>(0.08, 0.22, 0.5); let paletteB = vec3<f32>(0.75, 0.16, 0.72);
+  let nebula = mix(paletteA, paletteB, fract(warpB + spectralShift + time * 0.025 + audio.y * 0.2));
+  let veins = pow(clamp(1.0 - abs(warpA - warpB) * 3.0, 0.0, 1.0), 4.0);
+  var rgb = base.rgb + nebula * density * nebulaGlow * (0.35 + audio.x * 0.8) + veins * vec3<f32>(0.25, 0.55, 1.0) * (0.2 + audio.z);
+  let trailMix = clamp((0.12 + viscosity * 0.3) * history.a, 0.0, 0.48);
+  rgb = mix(rgb, history.rgb, trailMix);
+  rgb = aces(rgb);
+  let alpha = clamp(base.a * 0.75 + density * 0.22 + veins * 0.12 + history.a * trailMix * 0.15, 0.0, 1.0);
+  let outputColor = vec4<f32>(rgb, alpha);
+  textureStore(writeTexture, coord, outputColor); textureStore(dataTextureA, coord, outputColor);
+  let displacedDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, displacedUV, 0.0).r;
+  textureStore(writeDepthTexture, coord, vec4<f32>(displacedDepth, 0.0, 0.0, 0.0));
 }

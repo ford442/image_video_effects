@@ -14,6 +14,13 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 // ---------------------------------------------------
 
+// ═══════════════════════════════════════════════════════════════
+//  Quantum Superposition
+//  Mouse-stabilised glitch field; bass collapses the wavefunction
+//  into blocky chaos, mids widen the RGB split.
+//  Features: glitch, block-displacement, mouse-driven, audio-reactive, upgraded-rgba
+// ═══════════════════════════════════════════════════════════════
+
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
@@ -40,16 +47,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let audioReactivity = 1.0 + bass * 0.3;
     var mousePos = u.zoom_config.yz;
 
     // Parameters
     let chaosSpeed = u.zoom_params.x * 20.0;
     let chaosAmount = u.zoom_params.y; // 0.0 to 1.0
     let stabilityRadius = u.zoom_params.z; // 0.0 to 1.0
-    let rgbSplitStr = u.zoom_params.w * 0.05;
+    let rgbSplitStr = u.zoom_params.w * 0.05 * (1.0 + mids * 0.5);
 
     // Calculate stability field (mouse influence)
     let aspect = resolution.x / resolution.y;
@@ -76,7 +83,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Determine if this pixel is glitching
     // It glitches if the random value is less than the chaos amount masked by stability
-    let isGlitch = select(0.0, 1.0, rnd < (chaosAmount * effectiveStability));
+    // Bass widens the glitch probability — beats collapse more of the frame
+    let audioChaos = clamp(chaosAmount * (1.0 + bass * 0.45), 0.0, 1.0);
+    let isGlitch = select(0.0, 1.0, rnd < (audioChaos * effectiveStability));
 
     var finalColor = vec4<f32>(0.0);
 
@@ -111,9 +120,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     }
 
-    // Pass-through depth
+    // Pass-through depth, nudged forward where the field has collapsed
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    // Alpha encodes coherence: glitched (collapsed) pixels are less opaque
+    let alpha = clamp(1.0 - isGlitch * (0.25 + bass * 0.3), 0.0, 1.0);
+    let outColor = vec4<f32>(finalColor.rgb, alpha);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
 }

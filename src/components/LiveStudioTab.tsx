@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { HLSVideoSource } from './HLSVideoSource';
-import { RendererToggle } from './RendererToggle';
 import { PerformanceDashboard } from './PerformanceDashboard';
 import { PhysarumControls } from './PhysarumControls';
 import { DanmakuOverlay } from './DanmakuOverlay';
@@ -126,11 +125,26 @@ export const LiveStudioTab: React.FC<LiveStudioTabProps> = ({ className }) => {
       {/* Header */}
       <div style={styles.header}>
         <h2 style={styles.title}>🎥 LIVE STUDIO</h2>
-        <RendererToggle
-          isWASM={useWasm}
-          onToggle={initRenderer}
-          isLoading={isLoading}
-        />
+        <button
+          type="button"
+          onClick={() => initRenderer(!useWasm)}
+          disabled={isLoading}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '12px',
+            border: '1px solid rgba(255,255,255,0.15)',
+            background: useWasm
+              ? 'linear-gradient(135deg, #00c853, #64dd17)'
+              : 'linear-gradient(135deg, #2979ff, #448aff)',
+            color: '#fff',
+            fontWeight: 600,
+            fontSize: '12px',
+            cursor: isLoading ? 'wait' : 'pointer',
+            opacity: isLoading ? 0.6 : 1,
+          }}
+        >
+          {isLoading ? '⏳ Switching…' : useWasm ? '🔄 Switch to JS' : '⚡ Switch to WASM'}
+        </button>
       </div>
 
       {/* Main Content */}

@@ -229,7 +229,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Mouse position in 3D
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   let mouseUV = u.zoom_config.yz;
-  let mouseY = 1.0 - mouseUV.y;  // Flip Y: screen top = up
+  let mouseY = mouseUV.y;  // Flip Y: screen top = up
   let mousePos = vec3<f32>(
     (mouseUV.x * 2.0 - 1.0) * 3.0 * aspect,
     (mouseUV.y * 2.0 - 1.0) * 3.0,  // 3D position: screen top = +Y (up)

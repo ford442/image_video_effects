@@ -1,8 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Parallax Shift - Advanced Alpha
-//  Category: distortion
 //  Alpha Mode: Effect Intensity Alpha + Depth-Layered
-//  Features: advanced-alpha, parallax, depth-aware
+//  Features: advanced-alpha, parallax, depth-aware, mouse-driven, audio-reactive, upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -76,8 +75,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     
-    // Parameters
-    let shiftAmount = u.zoom_params.x * 0.1;     // Parallax shift amount
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Parameters — bass deepens the parallax separation
+    let shiftAmount = u.zoom_params.x * 0.1 * (1.0 + bass * 0.5);
     let layerCount = i32(u.zoom_params.y * 4.0 + 2.0);  // Number of depth layers
     let depthWeight = u.zoom_params.z;           // Depth influence on alpha
     let focusPlane = u.zoom_params.w;            // Focus plane depth
@@ -110,17 +112,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         maxDisplacement = max(maxDisplacement, length(layerOffset));
     }
     
-    let finalColor = accumulatedColor / max(accumulatedWeight, 0.001);
-    
+    var finalColor = accumulatedColor / max(accumulatedWeight, 0.001);
+
+    // Mids tint the layer separation — a chromatic ghost on displaced edges
+    let ghostUV = clamp(uv + parallaxDir * depthDiff * shiftAmount * 1.5, vec2<f32>(0.0), vec2<f32>(1.0));
+    let ghost = textureSampleLevel(readTexture, u_sampler, ghostUV, 0.0).rgb;
+    finalColor = finalColor + (ghost - finalColor) * vec3<f32>(0.3, 0.0, -0.3) * mids;
+
+    // Bass rim-lights the strongly displaced (off-focus-plane) regions
+    let sep = clamp(maxDisplacement * 12.0, 0.0, 1.0);
+    finalColor = finalColor + vec3<f32>(0.3, 0.5, 0.9) * sep * bass * 0.4;
+
     // Calculate displaced UV (average displacement)
     let displacedUV = clamp(uv + parallaxDir * depthDiff * shiftAmount, vec2<f32>(0.0), vec2<f32>(1.0));
     
     // ═══ ADVANCED ALPHA CALCULATION ═══
     let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let alpha = calculateAdvancedAlpha(uv, displacedUV, baseSample.a, u.zoom_params);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-    
+    let alpha = clamp(calculateAdvancedAlpha(uv, displacedUV, baseSample.a, u.zoom_params)
+                      + sep * bass * 0.2, 0.0, 1.0);
+
+    let outColor = vec4<f32>(finalColor, alpha);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
+
     // Pass through depth
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -137,7 +137,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse Y-flip: screen-top = +Y/up
     let mouseX = u.zoom_config.y;
-    let mouseY = 1.0 - u.zoom_config.z;
+    let mouseY = u.zoom_config.z;
     let mouseDist = length(uv - vec2<f32>(mouseX, mouseY));
     let mouseInfluence = smoothstep(0.5, 0.0, mouseDist);
 

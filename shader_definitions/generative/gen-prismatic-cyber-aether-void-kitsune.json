@@ -1,0 +1,52 @@
+{
+  "id": "gen-prismatic-cyber-aether-void-kitsune",
+  "name": "Prismatic Cyber-Aether Void-Kitsune",
+  "category": "generative",
+  "tags": [
+    "kitsune",
+    "cybernetic",
+    "prismatic",
+    "aether",
+    "volumetric",
+    "fractal",
+    "audio-reactive"
+  ],
+  "description": "A hyper-majestic, cybernetic celestial kitsune forged from shattered prismatic glass and liquid quantum-aether, bounding violently through a multi-dimensional volumetric particle-storm while its nine radiant tails carve temporal auroral rifts into the void.",
+  "url": "shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Tail Dispersion",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.05
+    },
+    {
+      "index": 1,
+      "name": "Current Warp",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05
+    },
+    {
+      "index": 2,
+      "name": "Storm Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Rune Glow",
+      "default": 1.2,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false
+}

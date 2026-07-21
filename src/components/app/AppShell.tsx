@@ -2,7 +2,6 @@ import React, { RefObject } from 'react';
 import WebGPUCanvas from '../WebGPUCanvas';
 import Controls from '../Controls';
 import LiveStudioTab from '../LiveStudioTab';
-import { RendererToggle } from '../RendererToggle';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
 import { RendererManager, RendererType } from '../../renderer/RendererManager';
 import { AIStatus, AutoTransitionConfig } from '../../AutoDJ';
@@ -10,6 +9,7 @@ import { VideoRecord } from '../../syncTypes';
 import { VideoSegment } from '../../services/videoSegmentManager';
 import { SharedChain } from '../../services/layerChainShare';
 import { STORAGE_API_URL } from '../../config/appConfig';
+import { RenderQualityMode } from '../../config/performancePolicy';
 
 export interface AppShellProps {
     activeTab: 'main' | 'live-studio';
@@ -95,6 +95,7 @@ export interface AppShellProps {
     setShowStorageBrowser: (show: boolean) => void;
     copyChainShareLink: () => void;
     applySharedChain: (chain: SharedChain) => void;
+    getCurrentChain: () => SharedChain | null;
     // Canvas props
     rendererRef: RefObject<RendererManager | null>;
     mousePosition: { x: number; y: number };
@@ -112,6 +113,16 @@ export interface AppShellProps {
     isRendererSwitching: boolean;
     jsFps: number;
     wasmFps: number;
+    renderQualityMode: RenderQualityMode;
+    onRenderQualityChange: (mode: RenderQualityMode) => void;
+    performanceHud: {
+        internalWidth: number;
+        internalHeight: number;
+        scale: number;
+        targetFps: number;
+        adaptive: boolean;
+        maxActiveSlots: number;
+    };
 }
 
 export function AppShell(props: AppShellProps) {
@@ -198,6 +209,7 @@ export function AppShell(props: AppShellProps) {
         setShowStorageBrowser,
         copyChainShareLink,
         applySharedChain,
+        getCurrentChain,
         rendererRef,
         mousePosition,
         setMousePosition,
@@ -213,6 +225,9 @@ export function AppShell(props: AppShellProps) {
         isRendererSwitching,
         jsFps,
         wasmFps,
+        renderQualityMode,
+        onRenderQualityChange,
+        performanceHud,
     } = props;
 
     return (
@@ -319,6 +334,11 @@ export function AppShell(props: AppShellProps) {
                         onOpenStorageBrowser={() => setShowStorageBrowser(true)}
                         onCopyChainShareLink={copyChainShareLink}
                         onApplySharedChain={applySharedChain}
+                        getCurrentChain={getCurrentChain}
+                        renderQualityMode={renderQualityMode}
+                        onRenderQualityChange={onRenderQualityChange}
+                        performanceHud={performanceHud}
+                        maxActiveSlots={performanceHud.maxActiveSlots}
                     />
                 </aside>
                 <main className="canvas-container">
@@ -354,12 +374,16 @@ export function AppShell(props: AppShellProps) {
 
                         <span
                             className={`renderer-badge renderer-badge--${activeRendererType}`}
-                            title={
+                            title={[
                                 activeRendererType === 'wasm'
                                     ? 'Experimental C++ WASM — click to cycle renderer'
-                                    : 'Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)'
-                            }
+                                    : 'Click to cycle renderer (WebGPU ↔ WASM ↔ Canvas2D)',
+                                jsFps > 0 ? `JS ${jsFps} FPS` : null,
+                                wasmFps > 0 ? `WASM ${wasmFps} FPS` : null,
+                                isRendererSwitching ? 'Switching…' : null,
+                            ].filter(Boolean).join(' · ')}
                             onClick={() => {
+                                if (isRendererSwitching) return;
                                 const cycle: Record<RendererType, RendererType> = {
                                     webgpu: 'wasm',
                                     wasm: 'js',
@@ -367,6 +391,7 @@ export function AppShell(props: AppShellProps) {
                                 };
                                 handleSwitchRenderer(cycle[activeRendererType]);
                             }}
+                            style={isRendererSwitching ? { opacity: 0.6, cursor: 'wait' } : undefined}
                         >
                             {activeRendererType === 'wasm'
                                 ? '⚡ WASM (exp.)'
@@ -374,17 +399,6 @@ export function AppShell(props: AppShellProps) {
                                   ? '🎨 Canvas2D'
                                   : '🔷 WebGPU'}
                         </span>
-
-                        <RendererToggle
-                            isWASM={activeRendererType === 'wasm'}
-                            onToggle={async (useWasm) => {
-                                const target: RendererType = useWasm ? 'wasm' : 'webgpu';
-                                await handleSwitchRenderer(target);
-                            }}
-                            isLoading={isRendererSwitching}
-                            jsFps={jsFps}
-                            wasmFps={wasmFps}
-                        />
                     </div>
                 </main>
             </div>

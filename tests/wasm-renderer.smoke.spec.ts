@@ -61,7 +61,7 @@ test('WASM renderer initializes (testMode API + diagnostics)', async ({ page }) 
 
   const filtered = criticalErrors.filter(
     (e) =>
-      !e.includes('No GPU adapter found') &&
+      !e.includes('No GPU adapter found') && !e.includes('Failed to obtain a WebGPU adapter') &&
       !e.includes('Failed to get WebGPU adapter') &&
       !e.includes('wasm-init') &&
       !e.includes('webgpu-unavailable')

@@ -122,8 +122,8 @@ _free"
 #   -O2                 — default; -O3 trades ~5-10% size for marginal shader perf.
 #                        Benchmark before switching on priority shaders.
 #   -sALLOW_MEMORY_GROWTH — needed for 2048² rgba32f ping-pong stacks + staging.
-#                        Optional tuning: -sINITIAL_MEMORY=67108864 (64 MiB) to reduce
-#                        early reallocations on large canvases.
+#                        Experiment (2026-07-19): -sINITIAL_MEMORY=67108864 had zero
+#                        .wasm size delta vs default; not adopted — see BUILD_FLAG_EXPERIMENTS.md.
 #   compatibleSurface=nullptr in device.cpp — intentional; see device.cpp comment.
 #
 # Source files are referenced by absolute path so this script can be run from

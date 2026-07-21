@@ -1,5 +1,4 @@
-import React, { useState, useMemo } from 'react';
-import type { ShaderMegaMenuOption } from '../ShaderMegaMenu';
+import React, { useState } from 'react';
 import { useShaderRatings } from '../../services/ShaderRatingIntegration';
 import { LiveStreamPanel } from '../LiveStreamPanel';
 import { RendererBackendPanel } from './panels/RendererBackendPanel';
@@ -7,7 +6,7 @@ import { ParamSlidersPanel } from './panels/ParamSlidersPanel';
 import { SlotStackPanel } from './panels/SlotStackPanel';
 import { InputSourcePanel } from './panels/InputSourcePanel';
 import { RecordingSharePanel } from './panels/RecordingSharePanel';
-import { LiveControlPanel } from './panels/LiveControlPanel';
+import { VjStudioPanel } from './panels/VjStudioPanel';
 import { RoulettePanel } from './panels/RoulettePanel';
 import { CoordinateBrowserOverlay } from './panels/CoordinateBrowserOverlay';
 import { AdvancedDebugPanel } from './panels/AdvancedDebugPanel';
@@ -21,6 +20,8 @@ import { WebcamSuggestionsPanel } from './panels/WebcamSuggestionsPanel';
 import { GenerativeSourcePanel } from './panels/GenerativeSourcePanel';
 import { useLiveControl } from './hooks/useLiveControl';
 import { useCoordinateNavigation } from './hooks/useCoordinateNavigation';
+import { useShaderMenuOptions } from './hooks/useShaderMenuOptions';
+import { useAiVjAutoTransition } from './hooks/useAiVjAutoTransition';
 import type { ControlsProps } from './types';
 import '../../styles/gold-glass-theme.css';
 
@@ -88,6 +89,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onOpenStorageBrowser,
     onCopyChainShareLink,
     onApplySharedChain,
+    getCurrentChain,
     onTriggerNextTransition,
     onRandomizeSlot,
     onSetSlotParam,
@@ -96,13 +98,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     maxActiveSlots = 3,
     performanceHud,
 }) => {
-    const [devToolsOpen, setDevToolsOpen] = useState(false);
-    const [autoTransitionOpen, setAutoTransitionOpen] = useState(false);
-    const [autoTransitionEnabled, setAutoTransitionEnabled] = useState(false);
-    const [autoTransitionSource, setAutoTransitionSource] = useState<'timer' | 'beat'>('timer');
-    const [autoTransitionIntervalMs, setAutoTransitionIntervalMs] = useState(8000);
-    const [autoTransitionDurationMs, setAutoTransitionDurationMs] = useState(2000);
-    const [autoTransitionMode, setAutoTransitionMode] = useState<'randomize' | 'cyclePresets'>('randomize');
+    const autoTransition = useAiVjAutoTransition();
+    const [studioOpen, setStudioOpen] = useState(true);
 
     const {
         coordMap,
@@ -118,71 +115,30 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
 
     const liveControl = useLiveControl({
         isAiVjMode,
-        autoTransitionEnabled,
-        setAutoTransitionEnabled,
+        autoTransitionEnabled: autoTransition.autoTransitionEnabled,
+        setAutoTransitionEnabled: autoTransition.setAutoTransitionEnabled,
         onSetSlotParam,
         onRandomizeSlot,
         onRandomizeAllSlots,
         onTriggerNextTransition,
         onStartAutoTransition,
         onStopAutoTransition,
-        autoTransitionSource,
-        autoTransitionIntervalMs,
-        autoTransitionDurationMs,
-        autoTransitionMode,
+        autoTransitionSource: autoTransition.autoTransitionSource,
+        autoTransitionIntervalMs: autoTransition.autoTransitionIntervalMs,
+        autoTransitionDurationMs: autoTransition.autoTransitionDurationMs,
+        autoTransitionMode: autoTransition.autoTransitionMode,
     });
 
     const { shaders: ratedShaders, rateShader } = useShaderRatings();
-    const ratingMap = useMemo(() => {
-        const map = new Map<string, { stars: number; ratingCount: number }>();
-        for (const s of ratedShaders) {
-            map.set(s.id, { stars: s.stars, ratingCount: s.ratingCount });
-        }
-        return map;
-    }, [ratedShaders]);
-
-    const currentModes = useMemo(() => {
-        if (shaderCategory === 'image') {
-            return availableModes.filter(entry => entry.category !== 'generative');
-        }
-        return availableModes.filter(entry => entry.category === shaderCategory);
-    }, [availableModes, shaderCategory]);
+    const { ratingMap, slotMenuOptions, generativeMenuOptions } = useShaderMenuOptions({
+        availableModes,
+        shaderCategory,
+        coordMap,
+        ratedShaders,
+    });
 
     const currentMode = modes[activeSlot];
     const currentParams = slotParams[activeSlot];
-
-    const slotMenuOptions = useMemo(
-        () => currentModes.map((m): ShaderMegaMenuOption => {
-            const rating = ratingMap.get(m.id);
-            return {
-                id: m.id,
-                name: m.name,
-                coordinate: coordMap[m.id]?.coordinate ?? null,
-                category: coordMap[m.id]?.category ?? m.category,
-                stars: rating?.stars,
-                ratingCount: rating?.ratingCount,
-            };
-        }),
-        [currentModes, coordMap, ratingMap]
-    );
-
-    const generativeMenuOptions = useMemo(
-        () => availableModes
-            .filter(m => m.category === 'generative')
-            .map((m): ShaderMegaMenuOption => {
-                const rating = ratingMap.get(m.id);
-                return {
-                    id: m.id,
-                    name: m.name,
-                    coordinate: coordMap[m.id]?.coordinate ?? null,
-                    category: coordMap[m.id]?.category ?? m.category,
-                    stars: rating?.stars,
-                    ratingCount: rating?.ratingCount,
-                };
-            }),
-        [availableModes, coordMap, ratingMap]
-    );
-
     const currentShaderEntry = availableModes.find(m => m.id === currentMode);
     const currentCoordinate = getShaderCoordinate(currentMode);
 
@@ -208,9 +164,39 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 setShaderCategory={setShaderCategory}
             />
 
-            <LiveControlPanel
-                {...liveControl}
+            <VjStudioPanel
+                studioOpen={studioOpen}
+                setStudioOpen={setStudioOpen}
                 modes={modes}
+                slotParams={slotParams}
+                activeSlot={activeSlot}
+                setActiveSlot={setActiveSlot}
+                liveControl={liveControl}
+                isAiVjMode={isAiVjMode}
+                autoTransitionOpen={autoTransition.autoTransitionOpen}
+                setAutoTransitionOpen={autoTransition.setAutoTransitionOpen}
+                autoTransitionEnabled={autoTransition.autoTransitionEnabled}
+                setAutoTransitionEnabled={autoTransition.setAutoTransitionEnabled}
+                autoTransitionSource={autoTransition.autoTransitionSource}
+                setAutoTransitionSource={autoTransition.setAutoTransitionSource}
+                autoTransitionIntervalMs={autoTransition.autoTransitionIntervalMs}
+                setAutoTransitionIntervalMs={autoTransition.setAutoTransitionIntervalMs}
+                autoTransitionDurationMs={autoTransition.autoTransitionDurationMs}
+                setAutoTransitionDurationMs={autoTransition.setAutoTransitionDurationMs}
+                autoTransitionMode={autoTransition.autoTransitionMode}
+                setAutoTransitionMode={autoTransition.setAutoTransitionMode}
+                audioReactiveParams={audioReactiveParams}
+                setAudioReactiveParams={setAudioReactiveParams}
+                audioReactiveAmount={audioReactiveAmount}
+                setAudioReactiveAmount={setAudioReactiveAmount}
+                onCopyChainShareLink={onCopyChainShareLink}
+                onShareVjSet={onShareVjSet}
+                onSaveVjSet={onSaveVjSet}
+                onApplySharedChain={onApplySharedChain}
+                getCurrentChain={getCurrentChain}
+                onUpdateStack={onUpdateStack}
+                onUpdateParams={onUpdateParams}
+                onGenerateFromVibe={onGenerateFromVibe}
             />
 
             {onRenderQualityChange && performanceHud && (
@@ -225,7 +211,6 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 />
             )}
 
-            {/* --- Renderer Switcher --- */}
             {onSwitchRenderer && activeRendererType && (
                 <RendererBackendPanel
                     activeRendererType={activeRendererType}
@@ -322,19 +307,9 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     onShareVjSet={onShareVjSet}
                     onSaveVjSet={onSaveVjSet}
                     onApplySharedChain={onApplySharedChain}
+                    getCurrentChain={getCurrentChain}
                     onCopyChainShareLink={onCopyChainShareLink}
-                    autoTransitionOpen={autoTransitionOpen}
-                    setAutoTransitionOpen={setAutoTransitionOpen}
-                    autoTransitionEnabled={autoTransitionEnabled}
-                    setAutoTransitionEnabled={setAutoTransitionEnabled}
-                    autoTransitionSource={autoTransitionSource}
-                    setAutoTransitionSource={setAutoTransitionSource}
-                    autoTransitionIntervalMs={autoTransitionIntervalMs}
-                    setAutoTransitionIntervalMs={setAutoTransitionIntervalMs}
-                    autoTransitionDurationMs={autoTransitionDurationMs}
-                    setAutoTransitionDurationMs={setAutoTransitionDurationMs}
-                    autoTransitionMode={autoTransitionMode}
-                    setAutoTransitionMode={setAutoTransitionMode}
+                    {...autoTransition}
                 />
             )}
 
@@ -383,8 +358,6 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
             )}
 
             <AdvancedDebugPanel
-                devToolsOpen={devToolsOpen}
-                setDevToolsOpen={setDevToolsOpen}
                 onOpenShaderScanner={onOpenShaderScanner}
                 activeRendererType={activeRendererType}
                 onSwitchRenderer={onSwitchRenderer}

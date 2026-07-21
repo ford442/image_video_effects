@@ -1222,7 +1222,9 @@
       "temporal-persistence",
       "interactive",
       "fluid-dynamics",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "simulation",

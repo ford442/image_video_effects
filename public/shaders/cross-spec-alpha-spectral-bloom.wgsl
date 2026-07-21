@@ -1,7 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Crossover: Spectral + Alpha — Spectral Bloom HDR
-//  Category: visual-effects
-//  Features: crossover, spectral-rendering, rgba32float-exploiting
+//  Features: crossover, spectral-rendering, rgba32float-exploiting, mouse-driven, audio-reactive, upgraded-rgba
 //  Crosses: spec-prismatic-dispersion (3C) + alpha-hdr-bloom-chain (4C)
 //  Complexity: High
 //  Created: 2026-04-19
@@ -55,9 +54,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = 1.0 / res;
     let time = u.config.x;
     
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Mouse acts as a local exposure lamp; bass drives global exposure
+    let mousePos = u.zoom_config.yz;
+    let mouseGlow = 1.0 - smoothstep(0.0, 0.35, length(uv - mousePos));
+
     let bloomRadius = mix(2.0, 8.0, u.zoom_params.x);
-    let dispersionAmt = mix(0.0, 0.015, u.zoom_params.y);
-    let exposure = mix(0.5, 3.0, u.zoom_params.z);
+    let dispersionAmt = mix(0.0, 0.015, u.zoom_params.y) * (1.0 + mids * 0.6);
+    let exposure = mix(0.5, 3.0, u.zoom_params.z) * (1.0 + bass * 0.5 + mouseGlow * 0.6);
     let chromaticShift = mix(0.0, 1.0, u.zoom_params.w);
     
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -119,9 +125,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalColor = dispersedColor + hdrBloom * 0.3;
     let tonemapped = finalColor / (1.0 + finalColor * 0.3);
     
-    // Store spectral bands in RGBA
-    textureStore(writeTexture, global_id.xy, vec4<f32>(tonemapped, bloomL * exposure));
-    
+    // Bass adds a spectral halo where the source is already hot
+    let hot = smoothstep(0.6, 1.0, inputLuma);
+    let halo = vec3<f32>(1.0, 0.6, 0.3) * hot * bass * 0.5;
+    let outRGB = tonemapped + halo;
+
+    // Alpha: bloom energy — the glow layer over the plate
+    let alpha = clamp(bloomL * exposure + hot * bass * 0.3, 0.0, 1.0);
+    let outColor = vec4<f32>(outRGB, alpha);
+
+    textureStore(writeTexture, global_id.xy, outColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
+
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

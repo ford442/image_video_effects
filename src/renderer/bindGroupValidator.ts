@@ -1,8 +1,9 @@
 /**
  * bindGroupValidator.ts
  *
- * Static WGSL validation against the fixed 13-binding compute layout.
- * Fails loudly with readable errors BEFORE pipeline creation.
+ * Static WGSL validation against the fixed 14-entry compute layout (bindings 0–12
+ * required, binding 13 optional history ring). Fails loudly with readable errors
+ * BEFORE pipeline creation.
  *
  * Subgroup variants (`-sg.wgsl`):
  *   Files that begin with `enable subgroups;` are treated identically to their

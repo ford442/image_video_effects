@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Crossover: Mouse + Spectral — Prismatic Lens
 //  Category: interactive-mouse
-//  Features: crossover, mouse-driven, spectral-rendering
+//  Features: crossover, mouse-driven, spectral-rendering, audio-reactive, upgraded-rgba
 //  Crosses: mouse-wormhole-lens (2C) + spec-prismatic-dispersion (3C)
 //  Complexity: High
 //  Created: 2026-04-19
@@ -50,8 +50,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseDown = u.zoom_config.w > 0.5;
     let time = u.config.x;
     
-    let lensRadius = mix(0.05, 0.3, u.zoom_params.x);
-    let dispersionScale = mix(0.0, 0.03, u.zoom_params.y);
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Bass breathes the lens aperture; mids widen spectral dispersion
+    let lensRadius = mix(0.05, 0.3, u.zoom_params.x) * (1.0 + bass * 0.4);
+    let dispersionScale = mix(0.0, 0.03, u.zoom_params.y) * (1.0 + mids * 0.5);
     let lensStrength = mix(0.5, 2.0, u.zoom_params.z);
     let rotationSpeed = mix(-1.0, 1.0, u.zoom_params.w);
     
@@ -94,13 +98,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var finalColor = vec3<f32>(sampleR, sampleG, sampleB);
     
     // Add chromatic aberration glow inside lens
-    let glow = lensProfile * 0.15 * clickBoost;
+    let glow = lensProfile * 0.15 * clickBoost * (1.0 + bass * 0.6);
     finalColor = finalColor + vec3<f32>(glow * 0.8, glow * 0.5, glow * 1.0);
-    
+
+    // Bass rings the lens rim with a caustic flare
+    let rim = exp(-pow((mouseDist / max(lensRadius, 0.001)) - 1.0, 2.0) * 30.0) * bass;
+    finalColor = finalColor + vec3<f32>(1.0, 0.7, 0.35) * rim * 0.6;
+
     // Alpha represents lens intensity
-    let alpha = mix(1.0, 0.9, lensProfile * 0.3);
-    
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
+    let alpha = clamp(mix(1.0, 0.9, lensProfile * 0.3) + rim * 0.3, 0.0, 1.0);
+
+    let outColor = vec4<f32>(finalColor, alpha);
+    textureStore(writeTexture, global_id.xy, outColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -190,7 +190,7 @@ let pixel = vec2<i32>(global_id.xy);
   p += (mouse - vec2<f32>(0.5)) * extraBuffer[5] * 0.08;
 
   let yaw = (mouse.x - 0.5) * TAU + time * rotSpeed;
-  let pitch = (0.5 - mouse.y) * PI * 0.8 + sin(time * 0.3) * 0.2;
+  let pitch = (mouse.y - 0.5) * PI * 0.8 + sin(time * 0.3) * 0.2;
 
   const V = array<vec3<f32>, 4>(
     vec3<f32>(0.0, 1.0, 0.0),

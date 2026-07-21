@@ -94,7 +94,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Lensing-mask alpha: brighter near the warped core, luma-keyed elsewhere
     let alpha = clamp(dot(color, vec3<f32>(0.299, 0.587, 0.114)) + (1.0 - core) * darkness * 0.5, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+    let finalOut = vec4<f32>(color, alpha);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), finalOut);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalOut);
 
     // Passthrough depth for now, or warp it too?
     // Warping depth might be more correct for compositing.

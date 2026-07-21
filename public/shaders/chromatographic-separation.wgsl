@@ -1,8 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Chromatographic Separation - Advanced Alpha with Depth-Layered
-//  Category: complex-multi-effect
 //  Alpha Mode: Depth-Layered Alpha + Effect Intensity
-//  Features: advanced-alpha, chromatic-separation, depth-aware
+//  Features: advanced-alpha, chromatic-separation, depth-aware, mouse-driven, audio-reactive, upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -79,8 +78,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Mouse acts as a prism focus — separation widens with distance from cursor
+    let mousePos = vec2<f32>(u.zoom_config.y, u.zoom_config.z) / resolution;
+    let mouseDist = length(uv - mousePos);
+    let prismFocus = mix(1.6, 0.35, smoothstep(0.0, 0.45, mouseDist));
+
     // Parameters
-    let separationAmount = u.zoom_params.x * 0.1;
+    let separationAmount = u.zoom_params.x * 0.1 * (1.0 + bass * 0.5) * prismFocus;
     let rotation = u.zoom_params.y * 6.28;
     let depthWeight = u.zoom_params.z;
     let separationMode = u.zoom_params.w;
@@ -92,8 +99,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depthOffset = (1.0 - depth) * separationAmount;
     
     // Rotation for separation direction
-    let c = cos(rotation + time * 0.2);
-    let s = sin(rotation + time * 0.2);
+    let spin = rotation + time * 0.2 + mids * 1.2;
+    let c = cos(spin);
+    let s = sin(spin);
     
     // RGB channel separation
     let rOffset = vec2<f32>(c, s) * depthOffset * (1.0 + separationMode);
@@ -114,8 +122,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ═══ ADVANCED ALPHA CALCULATION ═══
     let alpha = calculateAdvancedAlpha(finalColor, uv, displacedUV, baseSample.a, u.zoom_params);
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-    
+    let outColor = vec4<f32>(finalColor, alpha);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
+
     // Pass through depth
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -13,7 +13,9 @@
     "mouse-driven",
     "chromatic",
     "prism",
-    "ripple"
+    "ripple",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

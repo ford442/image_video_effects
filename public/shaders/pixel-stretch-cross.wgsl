@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Pixel Stretch Cross — Phase B Alpha Compositor Upgrade
+//  Pixel Stretch Cross — Visualist Cinematic Polish Upgrade
 //  Category: interactive-mouse / distortion
 //  Features: mouse-driven, audio-reactive, depth-aware,
 //            temporal-feedback, click-shockwave, aces-tone-map,
 //            upgraded-rgba, alpha-layered
-//  Upgraded: 2026-07-08
+//  Upgraded: 2026-07-08 (Phase B alpha compositor)
+//  Upgraded: 2026-07-21 (Visualist: velocity-steered axis blend,
+//            bass-pulse amplitude, HDR bloom on stretch crossings)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +33,11 @@ struct Uniforms {
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const GOLDEN_ANGLE: f32 = 2.39996322972865332;
+
+// Fixed character constants (formerly wired to legacy sliders h/v/depth/turb
+// at their 0.5 defaults — preserved so the shader's soul stays intact).
+const DEPTH_INFLUENCE: f32 = 0.5;
+const TURBULENCE: f32 = 0.5;
 
 // ── Tone mapping ──────────────────────────────────────────────────
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -86,6 +93,13 @@ fn luminance(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
+// ── HDR bloom kernel for stretch crossings (pre-tonemap only) ─────
+// Quadratic falloff keeps highlights hot without lifting the floor.
+fn crossingBloom(c: vec3<f32>, mask: f32, intensity: f32) -> vec3<f32> {
+    let hot = max(c, vec3<f32>(0.0));
+    return (hot * hot * 0.7 + hot * 0.3) * mask * intensity;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
@@ -97,10 +111,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let mouseDown = u.zoom_config.w > 0.5;
 
-    let hStretch = u.zoom_params.x * 0.3;
-    let vStretch = u.zoom_params.y * 0.3;
-    let depthInfluence = u.zoom_params.z;
-    let turbulence = u.zoom_params.w;
+    // ── Slider params (Visualist wiring, index 0–3) ───────────────
+    let stretchAmp = u.zoom_params.x;    // Stretch Amplitude
+    let axisBlendParam = u.zoom_params.y; // Axis Blend (manual H<->V bias)
+    let bloomIntensity = u.zoom_params.z; // Bloom Intensity
+    let bassResponse = u.zoom_params.w;   // Bass Response
+
+    let depthInfluence = DEPTH_INFLUENCE;
+    let turbulence = TURBULENCE;
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -110,9 +128,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let prev = textureLoad(dataTextureC, pixel, 0);
 
+    // ── Mouse velocity tracking (global scratch in extraBuffer) ───
+    // [0..1] = previous mouse uv, [2..3] = smoothed mouse velocity.
+    let prevMouse = vec2<f32>(extraBuffer[0], extraBuffer[1]);
+    var smVel = vec2<f32>(extraBuffer[2], extraBuffer[3]);
+    let rawVel = mouse - prevMouse;
+    smVel = mix(smVel, rawVel, 0.35);
+    extraBuffer[0] = mouse.x;
+    extraBuffer[1] = mouse.y;
+    extraBuffer[2] = smVel.x;
+    extraBuffer[3] = smVel.y;
+
+    let mouseSpeed = length(smVel);
+    // Confidence ramps in only when the pointer actually moves.
+    let velConf = clamp(mouseSpeed * 40.0, 0.0, 1.0);
+    // Signed axis preference: + = horizontal motion, - = vertical motion.
+    let velAxis = clamp(0.5 + (abs(smVel.x) - abs(smVel.y)) * 20.0, 0.0, 1.0);
+    // Velocity steers the manual axis blend; at rest the slider rules.
+    let axisMix = clamp(mix(axisBlendParam, velAxis, velConf * 0.8), 0.0, 1.0);
+
+    // Amplitude slider maps to a cinematic range; default 0.5 ≈ old feel.
+    let ampScale = 0.06 + stretchAmp * 0.42;
+    let hStretch = ampScale * axisMix;
+    let vStretch = ampScale * (1.0 - axisMix);
+
     // Smoothed bass envelope stored in dataTextureA.r
     let smoothBass = bass_env(prev.r, bass, 0.8, 0.15);
-    let stretchScale = 1.0 + smoothBass * 0.6;
+    // Bass-pulse: stretch magnitude breathes with the bass envelope.
+    let stretchScale = 1.0 + smoothBass * (0.15 + bassResponse * 1.1);
     let depthFactor = 1.0 - depth * depthInfluence;
 
     // Mouse distance gravity well: closer pixels stretch more toward mouse
@@ -120,13 +163,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let centerDist = length(toMouse);
     let gravity = 1.0 / (1.0 + centerDist * 4.0);
 
-    // Global rotation drifts with mids, creating emergent morphing
-    let driftAngle = mids * 0.6 * sin(time * 0.7) + turbulence * fbm(uv * 4.0 + time * 0.1, 3);
+    // Global rotation drifts with mids, creating emergent morphing.
+    // Fast mouse flicks add a transient twist to the whole field.
+    let flickTwist = clamp(mouseSpeed * 6.0, 0.0, 0.6) * sign(smVel.x + 0.0001);
+    let driftAngle = mids * 0.6 * sin(time * 0.7)
+        + turbulence * fbm(uv * 4.0 + time * 0.1, 3)
+        + flickTwist;
     let rot = rot2(driftAngle);
 
     var accum = vec3<f32>(0.0);
     var weight = 0.0;
     var maxStretch = 0.0;
+    var crossEnergy = 0.0;
 
     let numSamples: i32 = 16;
 
@@ -170,6 +218,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             accum += sampleColor * contribution;
             weight += contribution;
             maxStretch = max(maxStretch, contribution);
+            // Overlap of multiple rays = crossing; feed the bloom mask.
+            crossEnergy += contribution * inBand;
         }
     }
 
@@ -187,9 +237,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let decay = 0.92 - turbulence * 0.05;
     let trail = mix(prev.rgb * decay, color, 0.25 + smoothBass * 0.15);
 
+    // ── HDR bloom on stretch crossings (added BEFORE tonemapping) ──
+    // Crossings glow hardest near the mouse well and on strong overlaps;
+    // the bass envelope gives the bloom a subtle heartbeat.
+    let crossMask = smoothstep(0.10, 0.85, crossEnergy * (0.5 + gravity));
+    let bloomGain = bloomIntensity * 1.8 * (1.0 + smoothBass * 0.4);
+    let bloomed = trail + crossingBloom(trail, crossMask, bloomGain);
+
     // Subtle exposure boost driven by smoothed bass, then ACES tone map
     let exposure = 0.95 + smoothBass * 0.15;
-    color = acesToneMap(trail * exposure);
+    color = acesToneMap(bloomed * exposure);
 
     // ── Layered alpha compositing ───────────────────────────────────
     // Depth-layered: far pixels fade, near pixels remain solid
@@ -205,11 +262,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Audio-reactive opacity envelope
     let bassAlpha = 0.8 + smoothBass * 0.2;
 
+    // Bloom slightly thickens alpha so crossings read as luminous paint
+    let bloomAlpha = 1.0 + crossMask * bloomIntensity * 0.25;
+
     // Blend depth/luminance keys via depth-influence parameter
     let keyedAlpha = mix(lumaAlpha, depthAlpha, depthInfluence);
 
     // Source alpha composited with layered keys and effect intensity
-    var alpha = src.a * keyedAlpha * stretchAlpha * bassAlpha;
+    var alpha = src.a * keyedAlpha * stretchAlpha * bassAlpha * bloomAlpha;
 
     // Accumulative trail: feedback builds alpha like paint while preserving motion
     alpha = mix(prev.a * 0.96, alpha, 0.2 + maxStretch * 0.35);
@@ -219,5 +279,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, pixel, vec4<f32>(smoothBass, 0.0, 0.0, alpha * 0.97 + 0.03));
+    textureStore(dataTextureA, pixel, vec4<f32>(smoothBass, crossMask, 0.0, alpha * 0.97 + 0.03));
 }
