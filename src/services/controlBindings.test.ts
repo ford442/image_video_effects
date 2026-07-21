@@ -4,6 +4,7 @@ import {
   LiveActionsHandle,
   loadBindings,
   saveBindings,
+  sanitizeBindings,
 } from './controlBindings';
 
 describe('ControlBindingRegistry', () => {
@@ -168,5 +169,93 @@ describe('localStorage persistence', () => {
     saveBindings(bindings);
     const loaded = loadBindings();
     expect(loaded).toHaveLength(100);
+  });
+
+  test('saveBindings survives QuotaExceededError without throwing', () => {
+    const bindings = [
+      {
+        trigger: { source: 'key' as const, id: 'a' },
+        action: { type: 'randomizeAll' as const },
+      },
+    ];
+    const originalSetItem = Storage.prototype.setItem;
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    Storage.prototype.setItem = function setItem(key: string, value: string) {
+      if (key === 'vj_control_bindings') {
+        throw new DOMException('Quota exceeded', 'QuotaExceededError');
+      }
+      return originalSetItem.call(this, key, value);
+    };
+
+    expect(() => saveBindings(bindings)).not.toThrow();
+    expect(warnSpy).toHaveBeenCalled();
+
+    Storage.prototype.setItem = originalSetItem;
+    warnSpy.mockRestore();
+  });
+
+  test('saveBindings retries with fewer entries after quota errors', () => {
+    const bindings = Array.from({ length: 4 }, (_, i) => ({
+      trigger: { source: 'key' as const, id: `key${i}` },
+      action: { type: 'randomizeAll' as const },
+    }));
+    const originalSetItem = Storage.prototype.setItem;
+    let attempts = 0;
+
+    Storage.prototype.setItem = function setItem(key: string, value: string) {
+      if (key === 'vj_control_bindings') {
+        attempts += 1;
+        const parsed = JSON.parse(value);
+        if (parsed.length > 2) {
+          throw new DOMException('Quota exceeded', 'QuotaExceededError');
+        }
+      }
+      return originalSetItem.call(this, key, value);
+    };
+
+    saveBindings(bindings);
+    expect(attempts).toBeGreaterThan(1);
+    expect(loadBindings()).toHaveLength(2);
+
+    Storage.prototype.setItem = originalSetItem;
+  });
+});
+
+describe('sanitizeBindings', () => {
+  test('filters invalid entries and truncates oversized strings', () => {
+    const longId = 'x'.repeat(200);
+    const longParam = 'p'.repeat(300);
+    const sanitized = sanitizeBindings([
+      {
+        trigger: { source: 'midi-cc', id: longId },
+        action: { type: 'setSlotParam', slot: 99, param: longParam },
+      },
+      {
+        trigger: { source: 'bad-source', id: 'x' },
+        action: { type: 'randomizeAll' },
+      },
+    ]);
+
+    expect(sanitized).toHaveLength(1);
+    expect(sanitized[0].trigger.id).toHaveLength(64);
+    expect((sanitized[0].action as { param: string }).param).toHaveLength(128);
+    expect((sanitized[0].action as { slot: number }).slot).toBe(2);
+  });
+
+  test('dedupes bindings by trigger', () => {
+    const sanitized = sanitizeBindings([
+      {
+        trigger: { source: 'key', id: 'a' },
+        action: { type: 'randomizeAll' },
+      },
+      {
+        trigger: { source: 'key', id: 'a' },
+        action: { type: 'triggerTransition' },
+      },
+    ]);
+
+    expect(sanitized).toHaveLength(1);
+    expect(sanitized[0].action).toEqual({ type: 'triggerTransition' });
   });
 });

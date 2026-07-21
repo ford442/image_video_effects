@@ -5,7 +5,7 @@
  * Complements localStorage `myVjSets` and URL `?chain=` sharing.
  */
 
-import { ControlBinding } from './controlBindings';
+import { ControlBinding, sanitizeBindings } from './controlBindings';
 import { SharedChain, decodeChain, encodeChain, SHARED_CHAIN_VERSION } from './layerChainShare';
 import type { MyVjSet } from './myVjSets';
 
@@ -67,7 +67,9 @@ export function parseVjSetExport(raw: string): VjSetExportPayload | null {
       savedAt: typeof parsed.savedAt === 'number' ? parsed.savedAt : Date.now(),
       chain,
       chainString: typeof parsed.chainString === 'string' ? parsed.chainString : encodeChain(chain),
-      bindings: Array.isArray(parsed.bindings) ? parsed.bindings : undefined,
+      bindings: Array.isArray(parsed.bindings)
+        ? sanitizeBindings(parsed.bindings)
+        : undefined,
     };
   } catch {
     return null;
