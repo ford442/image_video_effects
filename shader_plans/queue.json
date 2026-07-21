@@ -1,4 +1,9 @@
 {
+  "pending": [
+    {
+      "filename": "2026-07-18_fractal-cyber-aether-void-whale.md",
+      "title": "Fractal Cyber-Aether Void-Whale",
+      "added": "2026-07-18T15:15:08.317617"
   "current": null,
   "queue": [
     {
@@ -1325,5 +1330,6 @@
       "added": "2026-07-20T15:39:23.592783"
     }
   ],
+  "completed": [],
   "in_progress": null
 }
