@@ -105,10 +105,18 @@ export class WebGPUShaderManager {
 
     const resolvedUrl = resolveShaderUrl(url);
 
-    if (supportsSubgroups && !id.endsWith('-sg') && resolvedUrl.endsWith('.wgsl')) {
+    // Subgroup variants (`*-sg.wgsl`) are not shipped yet (0 files in-repo).
+    // Probing them on every load floods DevTools with 404s that look like
+    // "shader failed to load". Flip this when real -sg assets land.
+    const PROBE_SUBGROUP_VARIANTS = false;
+    if (
+      PROBE_SUBGROUP_VARIANTS &&
+      supportsSubgroups &&
+      !id.endsWith('-sg') &&
+      resolvedUrl.endsWith('.wgsl')
+    ) {
       const sgUrl = resolvedUrl.replace(/\.wgsl$/, '-sg.wgsl');
-      // Optional probe — primaryOnly avoids cascading 404s to CDN/storage when
-      // no subgroup variant exists (currently zero *-sg.wgsl files in-repo).
+      // Optional probe — primaryOnly avoids cascading 404s to CDN/storage.
       const sgWgsl = await fetchShaderWgsl(`${id}-sg`, sgUrl, { primaryOnly: true });
       if (sgWgsl) {
         const ok = this.compile(device, pipelineLayout, id, sgWgsl);

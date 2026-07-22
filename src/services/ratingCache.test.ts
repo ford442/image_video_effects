@@ -103,38 +103,41 @@ describe('ratingCache', () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it('POSTs dirty ratings to the correct endpoint', async () => {
+    it('POSTs dirty ratings as JSON { rating } to the correct endpoint', async () => {
       setRating('shader-a', 4);
       fetchMock.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ id: 'shader-a', stars: 4, rating_count: 1 }),
+        json: async () => ({ shader_id: 'shader-a', rating: 4 }),
       });
 
       await flushDirtyRatings(API_URL);
 
       expect(fetchMock).toHaveBeenCalledWith(
         `${API_URL}/api/shaders/shader-a/rate`,
-        expect.objectContaining({ method: 'POST' }),
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
     });
 
-    it('sends idempotency_key in FormData without custom CORS headers', async () => {
+    it('sends idempotency_key in JSON body without custom CORS headers', async () => {
       setRating('shader-a', 4);
       fetchMock.mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ id: 'shader-a', stars: 4, rating_count: 1 }),
+        json: async () => ({ shader_id: 'shader-a', rating: 4 }),
       });
 
       await flushDirtyRatings(API_URL);
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
       const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-      expect(init.headers).toBeUndefined();
-      expect(init.body).toBeInstanceOf(FormData);
-      const body = init.body as FormData;
-      expect(body.get('stars')).toBe('4');
-      expect(typeof body.get('idempotency_key')).toBe('string');
-      expect(String(body.get('idempotency_key')).length).toBeGreaterThan(0);
+      expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
+      expect(typeof init.body).toBe('string');
+      const body = JSON.parse(String(init.body));
+      expect(body.rating).toBe(4);
+      expect(typeof body.idempotency_key).toBe('string');
+      expect(String(body.idempotency_key).length).toBeGreaterThan(0);
     });
 
     it('marks ratings as synced after a successful POST', async () => {

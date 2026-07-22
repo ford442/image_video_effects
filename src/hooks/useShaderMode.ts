@@ -3,7 +3,6 @@ import { RenderMode, ShaderEntry, InputSource, SlotParams } from '../renderer/ty
 import { RendererManager } from '../renderer/RendererManager';
 import { mapOrderedParamsToSlotParams } from '../utils/shaderParamMapping';
 import { getShaderDefaults } from '../app/constants/shaderDefaults';
-import { SHADER_WGSL_URL } from '../app/constants/fallbackContent';
 
 export interface UseShaderModeOptions {
     rendererRef: RefObject<RendererManager | null>;
@@ -124,12 +123,9 @@ export function useShaderMode({
                     });
                 }
 
-                if (ok) {
-                    fetch(`${SHADER_WGSL_URL}/${shaderEntry.id}/play`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                    }).catch(() => {});
-                }
+                // Note: production storage API has no /api/shaders/{id}/play
+                // (OpenAPI only exposes song/preset-pack play). Skipping avoids
+                // a 404 on every successful shader load that looks like a failure.
             } catch (error) {
                 console.error(`❌ Failed to load shader ${shaderEntry.id}:`, error);
                 slotShaderStatusRef.current[index] = 'error';

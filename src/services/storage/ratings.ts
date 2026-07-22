@@ -1,8 +1,12 @@
 /**
  * Shader rating endpoints — POST /api/shaders/{id}/rate
+ *
+ * Live storage API expects JSON `{ rating, notes? }` (ShaderRatingUpdate).
+ * Play recording (`/play`) is not deployed on production — no-op with warn.
  */
 
-import { encodeResourcePath, fetchJson, mapHttpError } from './http';
+import { encodeResourcePath, fetchJson } from './http';
+import { postShaderRating } from '../postShaderRating';
 import type { RateShaderResponse, ShaderItem, ShaderRatingInfo, StorageClientConfig } from './types';
 import { getShaderMeta } from './shaders';
 
@@ -10,25 +14,22 @@ export async function rateShader(
   config: StorageClientConfig,
   shaderId: string,
   stars: number,
-  _notes?: string
+  notes?: string
 ): Promise<RateShaderResponse> {
-  const encoded = encodeResourcePath(shaderId.replace(/\.json$/, ''));
-  const form = new FormData();
-  form.append('stars', String(stars));
-
-  const response = await fetch(`${config.apiUrl}/api/shaders/${encoded}/rate`, {
-    method: 'POST',
-    body: form,
+  const id = shaderId.replace(/\.json$/, '');
+  const normalized = await postShaderRating(config.apiUrl, id, stars, {
+    notes: notes ?? null,
   });
 
-  if (!response.ok) {
-    throw await mapHttpError(response);
-  }
-
-  return response.json() as Promise<RateShaderResponse>;
+  return {
+    id: normalized.id,
+    stars: normalized.stars,
+    rating_count: normalized.rating_count,
+    your_rating: normalized.your_rating,
+  };
 }
 
-/** Rating summary derived from shader metadata (no dedicated /rating route on backend). */
+/** Rating summary derived from shader metadata (no dedicated /rating route required). */
 export async function getShaderRating(
   config: StorageClientConfig,
   shaderId: string
@@ -44,10 +45,24 @@ export async function getShaderRating(
   };
 }
 
+/**
+ * Record a shader play.
+ *
+ * Production OpenAPI has no `/api/shaders/{id}/play` (only songs/preset-packs).
+ * Soft-fail so missing routes never surface as console load failures.
+ */
 export async function recordShaderPlay(
   config: StorageClientConfig,
   shaderId: string
-): Promise<{ success: boolean; id: string; play_count: number; last_played: string }> {
+): Promise<{ success: boolean; id: string; play_count: number; last_played: string } | null> {
   const encoded = encodeResourcePath(shaderId.replace(/\.json$/, ''));
-  return fetchJson(`${config.apiUrl}/api/shaders/${encoded}/play`, { method: 'POST' });
+  try {
+    return await fetchJson(`${config.apiUrl}/api/shaders/${encoded}/play`, { method: 'POST' });
+  } catch (err) {
+    // 404 = route or shader missing on this backend revision — not a load failure.
+    if (process.env.NODE_ENV !== 'production') {
+      console.debug('[storage] recordShaderPlay skipped:', shaderId, err);
+    }
+    return null;
+  }
 }

@@ -28,8 +28,12 @@ function attachShaderUrls(shaders: ShaderItem[], shaderFilesBaseUrl: string): Sh
     const wgslFilename = shader.filename.replace(/\.json$/, '.wgsl');
     const normalized: ShaderItem = { ...shader };
     normalized.url = `${base}/shaders/${wgslFilename}`;
+    // Live API uses `rating`; some clients still read `stars`.
     if (normalized.rating === null || normalized.rating === undefined) {
       normalized.rating = normalized.stars ?? null;
+    }
+    if (normalized.stars === undefined || normalized.stars === null) {
+      normalized.stars = typeof normalized.rating === 'number' ? normalized.rating : undefined;
     }
     return normalized;
   });
