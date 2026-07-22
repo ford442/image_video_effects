@@ -176,3 +176,17 @@
   one-liners + guided-filter `/count`. Reports under `reports/audit-2026-07-21/fix-*.md`.
 - Host contract: when both dataA and dataB are written, **A→C last** so sim state wins.
 - Optional backlog: mechanical gid-guard for ~220 files; deeper agent-sim races (pixel-sand).
+
+## Generative upgrade swarm — Batch 14 recovery (2026-07-22)
+- Kimi completed shader/JSON edits for all 8 targets but stopped before the
+  `spore-galaxy` note and integration closeout. Codex recovered and closed the batch.
+- Targets: gen-bioelectric-pulse, gen_grok4_life, gen_reaction_diffusion,
+  gravito-phononic-accretion, neural-mandala, phosphorescent-jellyfish, spore-galaxy,
+  topological-acoustic-knots. Tracker entries #143–150; completed count now 150.
+- Gate 8/8 green; JSON contracts preserved; shader lists and 1310-ID duplicate check clean;
+  Jest 49 suites / 339 pass / 1 skip.
+- Full Naga scan is 1314/1315. The only failure is unrelated/unmodified
+  `gen-luminescent-aether-plasma-astro-axolotl.wgsl` (`invalid left-hand side of assignment`).
+- `spore-galaxy` feedback fix is important: color now writes dataTextureA (host copies A→C
+  last), masks write dataTextureB, enabling real color trails instead of mask-as-color feedback.
+- No live visual QA in the headless VM; use real WebGPU hardware for look/slider tuning.

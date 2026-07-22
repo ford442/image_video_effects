@@ -6,6 +6,7 @@
 //  Complexity: High
 //  Created: 2026-05-30
 //  Upgraded: 2026-06-06
+//  Optimized: 2026-07-22 — feedback stabilization + real slider wiring
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -36,17 +37,6 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
-
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(controlled, color.a);
-}
-
 
 // Psychedelic Hyper-Warp
 // Advanced WGSL shader with domain warping, fractal noise, and reaction-diffusion feedback.
@@ -90,17 +80,52 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
     return a + b * cos(6.28318 * (c * t + d));
 }
 
+// Rec.601 luma — used by the feedback stabilizer's soft-knee
+fn lumaOf(c: vec3<f32>) -> f32 {
+    return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+// Stabilize the sharpened feedback history before it is re-injected:
+//   1. hard pre-tint ceiling at 1.2 (luma-echo-warp lesson) so the
+//      sharpen stage (history * 1.1 - 0.05) can never run away,
+//   2. luma soft-knee above 0.9 that desaturates overshooting highlights
+//      toward grey instead of clipping them into flat color,
+//   3. tiny 0.995 decay so the closed loop is strictly dissipative.
+fn stabilizeHistory(h: vec3<f32>) -> vec3<f32> {
+    let preTinted = clamp(h, vec3<f32>(0.0), vec3<f32>(1.2));
+    let luma = lumaOf(preTinted);
+    let knee = smoothstep(0.9, 1.2, luma);
+    return mix(preTinted, vec3<f32>(luma), knee * 0.5) * 0.995;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x * 0.2;
     let px = vec2<i32>(global_id.xy);
-    let bass = plasmaBuffer[0].x;
 
-    // --- Feedback and Coordinates ---
-    // Sample current pixel for feedback effect
-    let history = textureLoad(dataTextureC, px, 0).rgb;
+    // --- Audio Reactivity ---
+    // bass drives the radial-burst pulse and chromatic aberration,
+    // mid adds a slow hue drift, treble adds a faint sparkle to the warp.
+    let bass = plasmaBuffer[0].x;
+    let mid = plasmaBuffer[1].x;
+    let treble = plasmaBuffer[2].x;
+
+    // ═══ SLIDER WIRING (saved-preset contract: zoom_params.x/y/z/w) ═══
+    // Intensity -> warp amplitude (q weight driving the r warp layer)
+    // Speed     -> global time multiplier (replaces the old fixed 0.2)
+    // Scale     -> palette frequency + hue offset
+    // Detail    -> reaction-diffusion feedback mix (0.85 - 0.98)
+    let intensity = clamp(u.zoom_params.x, 0.0, 1.0);
+    let speedCtl = clamp(u.zoom_params.y, 0.0, 1.0);
+    let scaleCtl = clamp(u.zoom_params.z, 0.0, 1.0);
+    let detailCtl = clamp(u.zoom_params.w, 0.0, 1.0);
+
+    let warpAmp = mix(1.0, 3.2, intensity);
+    let time = u.config.x * mix(0.05, 0.45, speedCtl);
+    let palFreq = mix(0.6, 1.6, scaleCtl);
+    let hueShift = mix(0.0, 0.33, scaleCtl);
+    let feedbackMix = mix(0.85, 0.98, detailCtl);
 
     let aspect = resolution.x / resolution.y;
     var p = uv - 0.5;
@@ -126,22 +151,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
          q += mouse_warp * warp_dir * 0.5;
     }
 
+    // Intensity slider scales the q weight that feeds the r warp layer.
+    // Treble nudges the second warp layer for a subtle audio shimmer.
     var r = vec2<f32>(
-        fbm(p + q * 2.0 + vec2<f32>(1.7, 9.2) + 0.1 * time, 4, 0.6),
-        fbm(p + q * 2.0 + vec2<f32>(8.3, 2.8) + 0.1 * time, 4, 0.6)
+        fbm(p + q * warpAmp + vec2<f32>(1.7, 9.2) + 0.1 * time, 4, 0.6),
+        fbm(p + q * warpAmp + vec2<f32>(8.3, 2.8) + 0.1 * time + treble * 0.05, 4, 0.6)
     );
+
+    // --- Flow-Advected History (feedback) ---
+    // Offset the dataTextureC sample by the r warp vector so the feedback
+    // smears along the liquid flow instead of sharpening a static frame.
+    let flowVec = (r - vec2<f32>(0.5)) * (2.0 + 6.0 * intensity);
+    let maxPx = vec2<i32>(resolution) - vec2<i32>(1, 1);
+    let histPx = clamp(px + vec2<i32>(flowVec), vec2<i32>(0, 0), maxPx);
+    let history = textureLoad(dataTextureC, histPx, 0).rgb;
 
     // --- Final Pattern Generation ---
     // The final value is a mix of warped coordinates and a radial component
     let val = fbm((p + r) * 2.0, 5, 0.5);
-    // Inverted smoothstep logic
+    // Inverted smoothstep logic; bass gives the burst a gentle pulse
     let radial_burst = pow(1.0 - smoothstep(0.5, 0.0, length(p)), 2.0);
-    let final_val = val + radial_burst * 0.2;
+    let final_val = val + radial_burst * (0.2 + 0.1 * bass);
 
     // --- Advanced Color Mapping ---
-    // Blend between two psychedelic palettes based on the pattern value
-    let color1 = palette(final_val + time, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(0.0, 0.1, 0.2));
-    let color2 = palette(final_val + time, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 1.0, 0.5), vec3<f32>(0.8, 0.9, 0.3));
+    // Blend between two psychedelic palettes based on the pattern value.
+    // Scale slider drives palette frequency and a hue offset between the two.
+    let palT = final_val * palFreq + time + mid * 0.08;
+    let color1 = palette(palT, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(0.0, 0.1, 0.2));
+    let color2 = palette(palT + hueShift, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 1.0, 0.5), vec3<f32>(0.8, 0.9, 0.3));
     var color = mix(color1, color2, smoothstep(0.4, 0.6, final_val));
 
     // Boost brightness and contrast for intensity
@@ -150,14 +187,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
+
     // Opacity control
     let opacity = 0.85;
 
-    // --- Feedback and Output ---
-    // Reaction-diffusion style feedback: sharpen and blend
-    let sharpened_history = clamp(history * 1.1 - 0.05, vec3<f32>(0.0), vec3<f32>(1.0));
-    let generatedColor = mix(color, sharpened_history, 0.95);
+    // --- Stabilized Feedback and Output ---
+    // Reaction-diffusion style feedback: sharpen, then clamp hard.
+    // STABILIZATION (priority 1): the sharpened history can exceed 1.0, so it
+    // gets an explicit 1.2 pre-tint ceiling (luma-echo-warp lesson), a luma
+    // soft-knee that pulls overshooting highlights back toward grey, and a
+    // tiny decay so the loop can never amplify itself to blowout.
+    let sharpened = history * 1.1 - 0.05;
+    let safeHistory = stabilizeHistory(sharpened);
+    // Cold-start guard: while history is still black (first frames), fall
+    // back toward the freshly generated color so the loop seeds itself
+    // instead of damping the pattern to black.
+    let histEnergy = smoothstep(0.0, 0.05, lumaOf(history));
+    let seededHistory = mix(color, safeHistory, histEnergy);
+    let generatedColor = clamp(mix(color, seededHistory, feedbackMix), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // ═══ BLEND WITH INPUT ═══
     let finalColor = mix(inputColor.rgb, generatedColor, opacity);
@@ -165,9 +212,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let caStr = 0.003 * (1.0 + bass) + inputDepth * 0.001;
     let chromaticColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
-    let acesColor = acesToneMap(chromaticColor * 1.1);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), applyGenerativePrimaryControls(vec4<f32>(acesColor, finalAlpha)));
+    // Gentle vignette keeps the radial burst composition focused on center
+    let vignette = 1.0 - 0.25 * smoothstep(0.45, 0.95, length(p));
+    let acesColor = acesToneMap(chromaticColor * 1.1 * vignette);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesColor, finalAlpha));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(acesColor, finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

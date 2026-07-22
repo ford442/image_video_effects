@@ -6,8 +6,11 @@
 //  Description: Glowing jellyfish with trailing tentacle bioluminescence.
 //               Bass pulses the bell contraction, mids create tentacle wave
 //               motion, treble adds individual photophore sparkles.
-//               Mouse attracts the jellyfish swarm.
+//               Mouse attracts the jellyfish swarm (while pressed);
+//               clicks startle the nearest jelly into a jet-propulsion dart.
 //  Created: 2026-05-30
+//  Upgraded: 2026-07-22 — ACES + hue-preserving HDR clamp, per-jelly
+//            spectrum bands, click-startle dart impulse.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -32,6 +35,10 @@ struct Uniforms {
 };
 
 const PI: f32 = 3.14159265;
+// Maximum HDR stack allowed before tonemapping; anything above is
+// scaled down along its own hue vector so saturated cyans/violets
+// keep their color instead of clipping to white.
+const HDR_CEILING: f32 = 2.0;
 
 fn hash21(p: vec2<f32>) -> f32 {
   var q = fract(p * vec2<f32>(123.34, 456.21));
@@ -74,6 +81,28 @@ fn tentacleGlow(p: vec2<f32>, origin: vec2<f32>, time: f32, waveStrength: f32, c
   return glow;
 }
 
+// Hue-preserving clamp: scale the whole color vector down when its
+// brightest channel exceeds the HDR ceiling, so hue and saturation
+// survive where a per-channel clamp would wash to white.
+fn huePreserveClamp(c: vec3<f32>, ceiling: f32) -> vec3<f32> {
+  let peak = max(c.r, max(c.g, c.b));
+  if (peak > ceiling) {
+    return c * (ceiling / peak);
+  }
+  return c;
+}
+
+// ACES filmic tonemap (Narkowicz fit) — rolls the tamed HDR glow off
+// smoothly so stacked bells/tentacles stay luminous without blowout.
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -85,11 +114,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let time = u.config.x;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
   let mousePos = vec2<f32>(mouse.x * aspect, mouse.y);
+  // Mouse button state gates the swarm attraction (jet-propulsion startle).
+  let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
+  // Slider params drive this shader's real constants:
+  //   x → swarm population, y → bell radius,
+  //   z → feedback trail persistence, w → HDR glow intensity.
   let swarmCount  = mix(1.0, 5.0, u.zoom_params.x);
   let bellSize    = mix(0.08, 0.2, u.zoom_params.y);
   let trailPersistence = mix(0.85, 0.99, u.zoom_params.z);
@@ -105,36 +139,75 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let nJelly = i32(clamp(swarmCount, 1.0, 5.0));
 
-  for (var j: i32 = 0; j < nJelly; j++) {
+  // ─── Pass 1: base orbital positions (needed for "nearest jelly" tests) ───
+  var basePos: array<vec2<f32>, 5>;
+  for (var j: i32 = 0; j < 5; j++) {
+    if (j >= nJelly) { break; }
     let fj = f32(j);
     let jHash = hash22(vec2<f32>(fj, fj * 3.7));
-
-    // Orbital motion
     let orbitRadius = 0.2 + jHash.x * 0.3;
     let orbitSpeed = 0.3 + jHash.y * 0.4;
     let angle = time * orbitSpeed + fj * 1.25;
-    var jPos = vec2<f32>(cos(angle) * orbitRadius, sin(angle) * orbitRadius * 0.6);
+    basePos[j] = vec2<f32>(cos(angle) * orbitRadius, sin(angle) * orbitRadius * 0.6);
+  }
 
-    // Mouse attraction
+  // Highest valid per-band spectrum index (plasmaBuffer[0] is the global mix).
+  let bandMax = max(arrayLength(&plasmaBuffer), 1u) - 1u;
+
+  // ─── Pass 2: per-jelly glow accumulation ───
+  for (var j: i32 = 0; j < nJelly; j++) {
+    let fj = f32(j);
+    let jHash = hash22(vec2<f32>(fj, fj * 3.7));
+    var jPos = basePos[j];
+
+    // Mouse attraction — only while the button is held; the swarm
+    // drifts free otherwise. Epsilon guard keeps normalize() safe.
     let toMouse = mousePos - jPos;
     let distToMouse = length(toMouse);
-    jPos += normalize(toMouse + vec2<f32>(0.001)) * (1.0 / (1.0 + distToMouse * 3.0)) * 0.15;
+    jPos += normalize(toMouse + vec2<f32>(0.001)) * (1.0 / (1.0 + distToMouse * 3.0)) * 0.15 * mouseDown;
 
-    // Bass-driven bell pulse
-    let pulse = sin(time * 3.0 + fj) * bass * 0.5;
+    // Jet propulsion dart: each click ripple startles the single nearest
+    // jellyfish, kicking it AWAY from the click with a decaying impulse.
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+      let rp = u.ripples[i];
+      let age = time - rp.z;
+      if (age < 0.0 || age > 1.2) { continue; }
+      let rpPos = (rp.xy - 0.5) * vec2<f32>(aspect, 1.0);
+      let myDist = length(basePos[j] - rpPos);
+      var isNearest = true;
+      for (var k: i32 = 0; k < 5; k++) {
+        if (k >= nJelly) { break; }
+        if (length(basePos[k] - rpPos) < myDist - 0.0001) { isNearest = false; }
+      }
+      if (isNearest) {
+        let awayDir = normalize(basePos[j] - rpPos + vec2<f32>(0.001));
+        let kick = 1.0 - age / 1.2;
+        jPos += awayDir * kick * kick * 0.35;
+      }
+    }
+
+    // Per-jelly spectrum: jelly j pulses to its own FFT band.
+    let band = plasmaBuffer[min(u32(j) + 1u, bandMax)];
+    let bandLow = band.x;
+    let bandMid = band.y;
+    let bandHigh = band.z;
+
+    // Band-driven bell pulse (own frequency instead of global bass)
+    let pulse = sin(time * 3.0 + fj) * bandLow * 0.5;
     let size = bellSize * (0.8 + jHash.y * 0.4);
 
     // Bell distance and glow
     let bellDist = sdBell(uv - jPos, size, pulse);
     let bellGlow = exp(-bellDist * bellDist * 200.0) * glowIntensity;
 
-    // Photophore sparkles driven by treble
-    let sparkleUV = floor((uv - jPos) * 40.0 + time * 10.0 * treble);
-    let sparkle = step(0.97, hash21(sparkleUV)) * treble * 2.0;
+    // Photophore sparkles driven by this jelly's high band
+    let sparkleUV = floor((uv - jPos) * 40.0 + time * 10.0 * bandHigh);
+    let sparkle = step(0.97, hash21(sparkleUV)) * bandHigh * 2.0;
     let sparkleGlow = exp(-bellDist * bellDist * 100.0) * sparkle * glowIntensity;
 
-    // Tentacle bioluminescence driven by mids
-    let tentGlow = tentacleGlow(uv, jPos, time + fj, mids, 4.0 + jHash.x * 4.0) * glowIntensity;
+    // Tentacle bioluminescence driven by this jelly's mid band
+    let tentGlow = tentacleGlow(uv, jPos, time + fj, bandMid, 4.0 + jHash.x * 4.0) * glowIntensity;
 
     // Per-jellyfish hue (cyan → violet)
     let hue = fj / 5.0 + 0.55;
@@ -151,7 +224,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     depthVal = max(depthVal, bellGlow + tentGlow);
   }
 
-  // ═══ Chromatic dispersion on temporal feedback ═══
+  // ═══ Chromatic dispersion on temporal feedback (HDR domain) ═══
   let cStr = 0.004 + bass * 0.006;
   let cDir = normalize(uv01 - vec2<f32>(0.5) + vec2<f32>(0.001));
 
@@ -160,7 +233,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let prevB = textureSampleLevel(dataTextureC, u_sampler, uv01 - cDir * cStr * (1.2 + treble), 0.0).b;
   var prevCol = vec3<f32>(prevR, prevG, prevB);
 
-  // Temporal feedback blend
+  // Temporal feedback blend — persistence mapping untouched by design;
+  // the convergent 3-tap loop keeps its steady-state gain <= 0.33.
   col = mix(col, prevCol * trailPersistence, 0.2 + bass * 0.05);
 
   // Chromatic dispersion on current frame elements
@@ -171,10 +245,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
   col = mix(col, dispersed, 0.3);
 
-  alpha = clamp(alpha, 0.0, 1.0);
-  let luma = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
+  // HDR state feeds the feedback buffer so the trail keeps its energy;
+  // tonemapping happens only on the display path below.
+  let hdrCol = col;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, alpha));
+  // ═══ HDR taming: hue-preserving clamp at ~2.0, then ACES ═══
+  var displayCol = huePreserveClamp(hdrCol, HDR_CEILING);
+  displayCol = acesToneMap(displayCol);
+
+  let luma = dot(displayCol, vec3<f32>(0.2126, 0.7152, 0.0722));
+  alpha = clamp(alpha + luma * 0.15, 0.0, 1.0);
+  depthVal = clamp(depthVal, 0.0, 1.0);
+
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(displayCol, alpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(col, alpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(hdrCol, alpha));
 }

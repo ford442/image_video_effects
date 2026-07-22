@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Topological Acoustic Knots v2
+//  Topological Acoustic Knots v3
 //  Category: generative
 //  Features: nematic-Q-tensor, topological-charge, trefoil-sdf,
 //            schlieren-texture, audio-driven, mouse-anchoring
@@ -7,6 +7,12 @@
 //  Chunks From: nematic tensor + defect tracking + ACES tm
 //  Created: 2026-05-31
 //  By: 4-Agent Upgrade Swarm
+//  v3 (2026-07-22, Algorithmist swarm): honest slider wiring -
+//    p1 -> Kibble-Zurek quench amplitude (true defect nucleation rate)
+//    p3 -> opposite-sign annihilation rate + cascade exposure pulse
+//    sweeping polarizer accumulated in extraBuffer[136], driven by mids
+//    global defect census in extraBuffer[133..135] (state: 133..255 ONLY)
+//  dataTextureA holds SIGNED Q-tensor sim state: never clamp/tonemap it.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -95,12 +101,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cosSum = cos(n.r * 2.0) + cos(s.r * 2.0) + cos(e.r * 2.0) + cos(w.r * 2.0);
   let avgAngle = 0.5 * atan2(sinSum, cosSum);
 
+  // Diagonal neighbor reads (ADDITIVE only - used for opposite-sign defect
+  // detection; the order-dependent charge line integral below still consumes
+  // n/s/e/w in its original order and is left untouched).
+  let ne = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + ps, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let nw = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(-ps.x, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let se = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, -ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let sw = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - ps, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+
   // Relaxation with mobility
   let mobility = 0.3 + mids * 0.7 + p2 * 0.5;
   var angle = mix(prevAngle, avgAngle, mobility * 0.25);
 
   // Bass creates defect pairs (Kibble-Zurek: quench noise)
-  let quenchNoise = (hash12(uv * 23.0 + time * 0.15) - 0.5) * bass * 0.18;
+  // p1 ('Defect Density') is now HONEST: it scales the quench amplitude,
+  // so the slider directly controls how many defect pairs nucleate.
+  let quenchNoise = (hash12(uv * 23.0 + time * 0.15) - 0.5) * bass * 0.18 * (0.5 + p1);
   angle += quenchNoise;
 
   // Treble adds acoustic phonon waves
@@ -139,19 +155,68 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let Qxy = S * nx * ny;
 
   // Topological charge via line-integral approximation (curl of director)
+  // NOTE: order-dependent - neighbor reads must stay in this exact order.
   let dAngle_dx = atan2(sin(e.r - w.r), cos(e.r - w.r)) * res.x * 0.5;
   let dAngle_dy = atan2(sin(n.r - s.r), cos(n.r - s.r)) * res.y * 0.5;
   let chargeRaw = (dAngle_dx + dAngle_dy) * 0.15915; // / (2*pi)
-  let charge = clamp(chargeRaw, -1.0, 1.0);
+
+  // ── Annihilation dynamics (Defect Pairing, p3) ─────────────────────
+  // Estimate the winding of the two adjacent vertical plaquettes from the
+  // diagonal reads. Where the east and west estimates carry OPPOSITE sign,
+  // a +defect and a -defect sit side by side: p3 damps the local winding
+  // (pair annihilation) and melts the order parameter at the shared core.
+  let chargeEast = atan2(sin(ne.r - se.r), cos(ne.r - se.r)) * res.y * 0.5 * 0.15915;
+  let chargeWest = atan2(sin(nw.r - sw.r), cos(nw.r - sw.r)) * res.y * 0.5 * 0.15915;
+  let oppPair = select(0.0, 1.0, chargeEast * chargeWest < -0.0005);
+  let annihilation = oppPair * p3 * smoothstep(0.05, 0.4, abs(chargeRaw));
+  let charge = clamp(chargeRaw * (1.0 - annihilation * 0.55), -1.0, 1.0);
 
   // Defect density
   let defectDensity = smoothstep(0.15, 0.5, abs(charge));
 
-  // Store state
-  textureStore(dataTextureA, gid.xy, vec4<f32>(Qxx, Qxy, S, defectDensity));
+  // Annihilation melts the core: reduce S locally (re-derived Q stays signed)
+  let Sann = clamp(S * (1.0 - annihilation * 0.5), 0.0, 1.0);
+  let QxxAnn = Sann * (nx * nx - 0.3333);
+  let QxyAnn = Sann * nx * ny;
 
-  // Schlieren texture: dark where director aligns with polarizer
-  let polarizer = vec2<f32>(cos(time * 0.3), sin(time * 0.3));
+  // Store state (SIGNED Q-tensor sim state - never clamp/tonemap this write)
+  textureStore(dataTextureA, gid.xy, vec4<f32>(QxxAnn, QxyAnn, Sann, defectDensity));
+
+  // ── Global defect census + cascade pulse (extraBuffer state 133..136) ──
+  // [133] = smoothed defect-count estimate, [134] = previous estimate,
+  // [135] = annihilation-cascade exposure pulse, [136] = polarizer angle.
+  let cascadePulse = extraBuffer[135];
+  let polarAngle = extraBuffer[136];
+  if (gid.x == 0u && gid.y == 0u) {
+    // Coarse 16x16 census of last frame's defect-density field
+    var census = 0.0;
+    for (var cy: u32 = 0u; cy < 16u; cy = cy + 1u) {
+      for (var cx: u32 = 0u; cx < 16u; cx = cx + 1u) {
+        let suv = (vec2<f32>(f32(cx), f32(cy)) + vec2<f32>(0.5, 0.5)) / 16.0;
+        census = census + textureSampleLevel(dataTextureC, u_sampler, suv, 0.0).a;
+      }
+    }
+    let prevCount = extraBuffer[133];
+    let count = mix(prevCount, census, 0.25);
+    extraBuffer[134] = prevCount;
+    extraBuffer[133] = count;
+    // A sharp drop in the census = annihilation cascade: fire a brief
+    // global exposure pulse, then let it decay ~10% per frame.
+    let drop = prevCount - count;
+    var pulse = extraBuffer[135] * 0.90;
+    if (drop > 0.6) {
+      pulse = min(1.0, pulse + drop * 0.35);
+    }
+    extraBuffer[135] = pulse;
+    // Sweeping polarizer: slow constant drift, accelerated by mids energy
+    // so the schlieren polarization bands sweep in sync with the music.
+    extraBuffer[136] = extraBuffer[136] + 0.004 + mids * 0.035;
+  }
+
+  // Schlieren texture: dark where director aligns with polarizer.
+  // Polarizer angle sweeps continuously (accumulated in extraBuffer[136]),
+  // sped up by mids - polarization bands rotate in sync with the music.
+  let polarizer = vec2<f32>(cos(polarAngle), sin(polarAngle));
   let alignment = abs(dot(vec2<f32>(nx, ny), polarizer));
   let schlieren = 1.0 - alignment * alignment;
 
@@ -170,7 +235,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let caStr = 0.003 * (1.0 + bass);
   hdr = vec3<f32>(hdr.r + caStr, hdr.g, hdr.b - caStr * 0.5);
 
-  let tone = acesToneMap(hdr * (0.8 + p1 * 0.3));
+  // Exposure: steady base + brief HDR pulse when an annihilation cascade
+  // fires (defect census dropped sharply this frame).
+  let tone = acesToneMap(hdr * (0.85 + cascadePulse * 0.7));
 
   // Alpha: order parameter S × (1.0 + defect_charge_density)
   let alpha = clamp(S * (1.0 + defectDensity * 0.6) * 0.7, 0.0, 1.0);

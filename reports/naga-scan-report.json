@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-07-21T02:48:12.738429+00:00",
-  "total": 1313,
-  "valid": 1309,
-  "invalid": 4,
+  "timestamp": "2026-07-22T15:07:21.840090+00:00",
+  "total": 1315,
+  "valid": 1314,
+  "invalid": 1,
   "shaders": [
     {
       "file": "public/shaders/4d-projection-dream-weavers.wgsl",
@@ -2186,14 +2186,8 @@
     },
     {
       "file": "public/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "line": null,
-          "col": null,
-          "message": "error: expected assignment or increment/decrement, found \"map\""
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/gen-ethereal-glass-flora-terrarium.wgsl",
@@ -2551,6 +2545,17 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-luminescent-aether-plasma-astro-axolotl.wgsl",
+      "valid": false,
+      "errors": [
+        {
+          "line": null,
+          "col": null,
+          "message": "error: invalid left-hand side of assignment"
+        }
+      ]
+    },
+    {
       "file": "public/shaders/gen-luminescent-aether-plasma-nebula-koi.wgsl",
       "valid": true,
       "errors": []
@@ -2846,6 +2851,11 @@
       "errors": []
     },
     {
+      "file": "public/shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
+      "valid": true,
+      "errors": []
+    },
+    {
       "file": "public/shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
       "valid": true,
       "errors": []
@@ -2992,14 +3002,8 @@
     },
     {
       "file": "public/shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "line": null,
-          "col": null,
-          "message": "error: local declaration cannot be called"
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/gen-radiant-quantum-crystalline-forge.wgsl",
@@ -3068,14 +3072,8 @@
     },
     {
       "file": "public/shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "line": null,
-          "col": null,
-          "message": "error: no definition in scope for identifier: `color`"
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
@@ -3084,14 +3082,8 @@
     },
     {
       "file": "public/shaders/gen-sentient-cyber-chrono-void-serpent.wgsl",
-      "valid": false,
-      "errors": [
-        {
-          "line": null,
-          "col": null,
-          "message": "error: Entry point main at Compute is invalid"
-        }
-      ]
+      "valid": true,
+      "errors": []
     },
     {
       "file": "public/shaders/gen-sentient-ferro-silicate-swarm.wgsl",

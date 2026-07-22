@@ -4,7 +4,7 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal, hue-preserve-clamp, ign-dither
 //  Complexity: High
 //  Scientific: Dual-mode excitable media with FitzHugh-Nagumo action waves and Gray-Scott fallback kinetics
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-07-22 (kimi swarm b14: treble micro-stimulus, click spiral seeds, disentangled Stimulus slider)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -96,10 +96,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
+  // ── Slider semantics (saved-preset contract: ids/names/defaults unchanged) ──
+  //   x = Excitability → GS feed rate, pulse strength, FHN threshold aParam
+  //   y = Recovery     → GS kill rate, FHN recovery rate epsilon
+  //   z = Stimulus     → pure diffusion/timestep control (diffA, diffB, fitzDt)
+  //   w = Model Blend  → Gray-Scott ↔ FitzHugh-Nagumo morph
+  let excite = u.zoom_params.x;
+  let recover = u.zoom_params.y;
+  let stim = u.zoom_params.z;
   let fitzMode = smoothstep(0.45, 0.55, u.zoom_params.w);
-  let pulseStrength = mix(0.25, 1.3, u.zoom_params.z);
-  let mouseRadius = mix(0.035, 0.13, u.zoom_params.x);
+  // Pulse strength follows Excitability, NOT Stimulus: Stimulus (z) is now a
+  // pure excitability/diffusion control with no hidden amplitude side-effects.
+  let pulseStrength = mix(0.25, 1.3, excite);
+  let mouseRadius = mix(0.035, 0.13, excite);
 
+  // ── State load + fragile reseed-on-dead-black init detection (preserve!) ──
   let prev = textureLoad(dataTextureC, coord, 0);
   let seed = hash21(floor(uv * 32.0) + vec2<f32>(13.0, 17.0));
   let initSpot = smoothstep(0.88, 0.985, hash21(floor(uv * 24.0) + vec2<f32>(3.0, 11.0)));
@@ -113,6 +124,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse = u.zoom_config.yz;
   let mouseStim = (1.0 - smoothstep(0.0, mouseRadius, distance(uv, mouse))) * u.zoom_config.w * (0.6 + pulseStrength * 0.8);
 
+  // ── Treble micro-stimulus ──
+  // Sparse high-frequency hash speckle field scaled by treble (plasmaBuffer[0].z):
+  // hats/cymbals seed tiny wavelets across the whole substrate. The speckle
+  // lattice is quantized to a 24 Hz tick so it flickers in step with the beat
+  // instead of smearing into a DC offset.
+  let speckleTick = floor(time * 24.0);
+  let speckleCell = floor(uv * 96.0);
+  let speckleHash = hash21(speckleCell + vec2<f32>(speckleTick * 7.31, speckleTick * 3.17));
+  let speckleGate = step(0.965, speckleHash) * smoothstep(0.04, 0.55, treble);
+  let speckleAmp = 0.3 + 0.7 * hash21(speckleCell + vec2<f32>(0.5, 9.5));
+  let trebleStim = speckleGate * treble * speckleAmp;
+
+  // ── Click spiral seeds ──
+  // u.config.y = MouseClickCount (documented, previously unused). Every click
+  // drops a paired rotating stimulus at the cursor: click parity flips the
+  // chirality, and a golden-angle phase step re-winds the two-arm pattern, so
+  // successive clicks twist the excitable medium into spiral waves.
+  let clickCount = u.config.y;
+  let clickActive = step(0.5, clickCount);
+  let clickOdd = (i32(clickCount) % 2) == 1;
+  let chirality = select(1.0, -1.0, clickOdd);
+  let spiralPhase = chirality * time * 2.4 + clickCount * 2.3999632;
+  let toMouse = uv - mouse;
+  let mouseDist = length(toMouse);
+  let mouseAngle = atan2(toMouse.y, toMouse.x);
+  let spiralMask = clickActive * exp(-mouseDist * mouseDist * 900.0);
+  let spiralArms = cos(2.0 * mouseAngle - spiralPhase + mouseDist * 34.0);
+  let spiralSeed = spiralMask * smoothstep(0.25, 0.95, spiralArms) * (0.35 + 0.65 * pulseStrength);
+
+  // ── Bass-paced wandering pulse (existing audio voice, unchanged) ──
   let pacing = mix(0.35, 2.25, 0.15 + bass * 0.85);
   let pulseIndex = floor(time * pacing);
   let pulseCenter = vec2<f32>(
@@ -123,24 +164,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pulseEnvelope = exp(-pulsePhase * (14.0 - bass * 8.0)) * smoothstep(0.08, 0.95, bass + 0.15 * mids);
   let audioStim = pulseEnvelope * (1.0 - smoothstep(0.0, 0.18 + pulseStrength * 0.08, distance(uv, pulseCenter))) * (0.2 + bass * 1.9);
 
+  // ═══ Gray-Scott morphogenesis branch ═══
   let a = saturate(state.x);
   let b = saturate(state.y);
-  let feed = mix(0.026, 0.074, u.zoom_params.x);
-  let kill = mix(0.046, 0.071, u.zoom_params.y);
-  let diffA = mix(0.15, 0.28, u.zoom_params.z);
-  let diffB = mix(0.07, 0.14, u.zoom_params.z);
+  let feed = mix(0.026, 0.074, excite);
+  let kill = mix(0.046, 0.071, recover);
+  // Stimulus (z) owns diffusion only — disentangled from pulse strength.
+  let diffA = mix(0.15, 0.28, stim);
+  let diffB = mix(0.07, 0.14, stim);
   let reaction = a * b * b;
   let grayA = saturate(a + (diffA * lap.x - reaction + feed * (1.0 - a)) * 0.55 - mouseStim * 0.05);
-  let grayB = saturate(b + (diffB * lap.y + reaction - (kill + feed) * b) * 0.55 + mouseStim * 0.85 + audioStim * 0.6);
+  let grayB = saturate(b + (diffB * lap.y + reaction - (kill + feed) * b) * 0.55
+    + mouseStim * 0.85 + audioStim * 0.6 + trebleStim * 0.5 + spiralSeed * 0.9);
 
+  // ═══ FitzHugh-Nagumo action-potential branch ═══
   let uState = clamp(state.x, -2.4, 2.4);
   let vState = clamp(state.y, -1.8, 1.8);
-  let aParam = 0.7;
+  // Excitability (x) lowers the firing threshold; Recovery (y) sets the slow
+  // recovery-variable rate epsilon.
+  let aParam = mix(0.9, 0.5, excite);
   let bParam = 0.8;
-  let epsilon = 0.08;
-  let du = 0.45 * lap.x + uState - (uState * uState * uState) / 3.0 - vState + mouseStim * 1.65 + audioStim * 1.55;
+  let epsilon = mix(0.05, 0.13, recover);
+  let du = 0.45 * lap.x + uState - (uState * uState * uState) / 3.0 - vState
+    + mouseStim * 1.65 + audioStim * 1.55 + trebleStim * 0.8 + spiralSeed * 1.5;
   let dv = epsilon * (uState + aParam - bParam * vState);
-  let fitzDt = 0.055 + u.zoom_params.z * 0.04;
+  // Stimulus (z) also owns the integration timestep (diffusion-adjacent pace).
+  let fitzDt = 0.055 + stim * 0.04;
   let fitzU = clamp(uState + du * fitzDt, -2.4, 2.4);
   let fitzV = clamp(vState + dv * fitzDt, -1.8, 1.8);
 
@@ -149,7 +198,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gsActivity = abs(grayB - b) + reaction * 3.0;
   let fitzActivity = abs(fitzU - uState) + abs(fitzV - vState) + abs(lap.x) * 0.4;
   let activity = mix(gsActivity, fitzActivity, fitzMode);
-  let waveFront = smoothstep(0.05, 0.45, activity + audioStim * 0.2);
+  let waveFront = smoothstep(0.05, 0.45, activity + audioStim * 0.2 + spiralSeed * 0.15);
 
   let gsColor = mix(vec3<f32>(1.0, 0.34, 0.12), vec3<f32>(0.08, 0.64, 1.0), grayB)
     + vec3<f32>(1.0, 0.82, 0.48) * reaction * 5.5;
@@ -162,6 +211,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var fitzColor = mix(cool, warm, smoothstep(0.14, 0.72, activator));
   fitzColor += vec3<f32>(1.0, 0.58, 0.18) * waveFront * (0.7 + bass * 2.0);
   fitzColor += vec3<f32>(0.30, 0.48, 0.96) * inhibitor * 0.22;
+  // Treble speckle shimmer + faint spiral-seed glow so the new voices read on screen.
+  fitzColor += vec3<f32>(0.85, 0.95, 1.0) * trebleStim * 0.35;
+  fitzColor += vec3<f32>(0.55, 0.85, 1.0) * spiralSeed * 0.25;
 
   let generatedColor = mix(gsColor, fitzColor, fitzMode);
   let opacity = 0.9;
@@ -173,7 +225,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var outCol = acesToneMap(huePreserveClamp(finalColor * 1.1, 2.0));
   outCol += (ign(vec2<f32>(coord)) - 0.5) / 255.0;
   textureStore(writeTexture, coord, vec4<f32>(outCol, finalAlpha));
+  // dataTextureA = SIM STATE: raw rgba32float, may hold NEGATIVE FHN values.
+  // NEVER clamp/saturate/tonemap this write.
   textureStore(dataTextureA, coord, vec4<f32>(newState, waveFront, fitzMode));
+  // dataTextureB write preserved for slot chaining.
   textureStore(dataTextureB, coord, vec4<f32>(generatedColor, saturate(activity)));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }
