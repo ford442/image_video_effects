@@ -88,16 +88,23 @@ describe('WebGPUMediaInput', () => {
     const { ctx, writeTexture, sourceTex } = makeCtx();
     const state = createMediaInputState();
 
+    const pixels = new Uint8ClampedArray(64 * 48 * 4);
+    pixels[0] = 10;
+    pixels[1] = 20;
+    pixels[2] = 30;
+    pixels[3] = 255;
+
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 48;
-    const offCtx = canvas.getContext('2d', { willReadFrequently: true })!;
-    offCtx.fillStyle = 'rgb(10, 20, 30)';
-    offCtx.fillRect(0, 0, 64, 48);
+    const offCtx = {
+      getImageData: jest.fn(() => ({ data: pixels, width: 64, height: 48 })),
+    } as unknown as CanvasRenderingContext2D;
     state.offscreen = canvas;
     state.offCtx = offCtx;
 
     expect(restoreSourceFromOffscreen(ctx, state)).toBe(true);
+    expect(offCtx.getImageData).toHaveBeenCalledWith(0, 0, 64, 48);
     expect(writeTexture).toHaveBeenCalledTimes(1);
     expect(writeTexture.mock.calls[0][0].texture).toBe(sourceTex);
 
@@ -117,7 +124,9 @@ describe('WebGPUMediaInput', () => {
     canvas.width = 16;
     canvas.height = 16;
     state.offscreen = canvas;
-    state.offCtx = canvas.getContext('2d');
+    state.offCtx = {
+      getImageData: jest.fn(),
+    } as unknown as CanvasRenderingContext2D;
     expect(restoreSourceFromOffscreen(ctx, state)).toBe(false);
     expect(writeTexture).not.toHaveBeenCalled();
   });
