@@ -12,8 +12,26 @@ import {
   getDirtyRatings,
   initOfflineSync,
 } from './ratingCache';
+import { postShaderRating } from './postShaderRating';
 
 const STORAGE_MANAGER_URL = STORAGE_API_URL;
+
+/** Live list payloads use `rating`; legacy used `stars`. Normalize for the UI. */
+function normalizeListedRating(raw: Record<string, unknown>): ShaderRating {
+  const id = String(raw.id ?? '');
+  const starsRaw = raw.stars ?? raw.rating ?? 0;
+  const stars = typeof starsRaw === 'number' ? starsRaw : 0;
+  const countRaw = raw.rating_count;
+  return {
+    id,
+    stars,
+    rating_count: typeof countRaw === 'number' ? countRaw : 0,
+    play_count: typeof raw.play_count === 'number' ? raw.play_count : undefined,
+    description: typeof raw.description === 'string' ? raw.description : undefined,
+    author: typeof raw.author === 'string' ? raw.author : undefined,
+    date: typeof raw.date === 'string' ? raw.date : undefined,
+  };
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Types
@@ -68,15 +86,17 @@ export class ShaderRatingService {
       if (!response.ok) throw new Error('Failed to fetch ratings');
       const responseData = await response.json();
       
-      // Handle both array and wrapped response formats
-      let ratings: ShaderRating[];
+      // Handle both array and wrapped response formats; map `rating` → `stars`.
+      let rawList: Record<string, unknown>[];
       if (Array.isArray(responseData)) {
-        ratings = responseData;
+        rawList = responseData;
       } else if (responseData && typeof responseData === 'object' && Array.isArray(responseData.shaders)) {
-        ratings = responseData.shaders;
+        rawList = responseData.shaders;
       } else {
         throw new Error('Invalid response format');
       }
+
+      const ratings = rawList.map((r) => normalizeListedRating(r));
       
       // Update cache
       ratings.forEach(r => this.cache.set(r.id, r));
@@ -116,19 +136,21 @@ export class ShaderRatingService {
     cacheSetRating(shaderId, stars);
 
     try {
-      const formData = new FormData();
-      formData.append('stars', stars.toString());
-      
-      const response = await fetch(
-        `${STORAGE_MANAGER_URL}/api/shaders/${shaderId}/rate`,
-        { method: 'POST', body: formData }
-      );
-      
-      if (!response.ok) throw new Error('Failed to submit rating');
-      const updated: ShaderRating = await response.json();
+      const normalized = await postShaderRating(STORAGE_MANAGER_URL, shaderId, stars);
 
       // POST succeeded — mark the cached entry as synced
       markSynced(shaderId);
+
+      const cached = this.cache.get(shaderId);
+      const updated: ShaderRating = {
+        id: normalized.id,
+        stars: normalized.stars,
+        rating_count: normalized.rating_count || (cached?.rating_count ?? 0),
+        play_count: cached?.play_count,
+        description: cached?.description,
+        author: cached?.author,
+        date: cached?.date,
+      };
 
       // Update the individual cache entry and invalidate the list timestamp so
       // the next enrichWithRatings() / getRating() call fetches fresh data.

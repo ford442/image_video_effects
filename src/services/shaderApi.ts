@@ -6,6 +6,7 @@
 import { STORAGE_API_URL, API_BASE_URL, SHADER_FILES_BASE_URL } from '../config/appConfig';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
+import { postShaderRating } from './postShaderRating';
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || API_BASE_URL;
 
@@ -261,23 +262,14 @@ export async function updateShaderMetadata(
 
 /**
  * Rate a shader (1–5 stars).
- * Backend accepts FormData with a `stars` field via POST /api/shaders/{id}/rate.
+ * Live API: JSON `{ rating }` via POST /api/shaders/{id}/rate.
  */
 export async function rateShader(
   shaderId: string,
   stars: number
 ): Promise<{ id: string; stars: number; rating_count: number; your_rating: number }> {
   if (stars < 1 || stars > 5) throw new RangeError('Stars must be between 1 and 5');
-  const form = new FormData();
-  form.append('stars', String(stars));
-  
-  const res = await fetch(`${API_BASE}/api/shaders/${shaderId}/rate`, {
-    method: 'POST',
-    body: form,
-  });
-  
-  if (!res.ok) throw new Error('Rating failed');
-  return res.json();
+  return postShaderRating(API_BASE, shaderId, stars);
 }
 
 /**
