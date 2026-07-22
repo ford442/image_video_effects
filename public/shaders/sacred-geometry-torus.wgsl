@@ -2,10 +2,13 @@
 //  Sacred Geometry Torus
 //  Category: generative
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
-//            upgraded-rgba, aces-tone-map, depth-aware, branchless
+//            upgraded-rgba, aces-tone-map, depth-aware, branchless,
+//            phyllotaxis-lattice, iq-palette-strands
 //  Complexity: High
 //  Created: 2026-05-31
 //  Upgraded: 2026-06-07
+//  Visualist upgrade: 2026-07-22 — Fibonacci dot lattice, cosine-palette
+//    strand hue cycling, trail clamp @1.2, crossing bloom lift.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -33,8 +36,11 @@ struct Uniforms {
 const PHI: f32 = 1.61803398875;
 const TAU: f32 = 6.28318530718;
 const INV_PHI: f32 = 0.61803398875;
+const GOLDEN_ANGLE: f32 = 2.39996322973;   // π(3 − √5), phyllotaxis step
 const MAX_PHI_LAYERS: u32 = 7u;
 const KNOT_TAPS: u32 = 5u;
+const LATTICE_DOTS: u32 = 20u;             // phyllotaxis dot budget
+const TRAIL_CLAMP: f32 = 1.2;              // pre-tint temporal accumulation cap
 
 // ── Fast math helpers ─────────────────────────────────────────────
 fn sat(x: f32) -> f32 { return clamp(x, 0.0, 1.0); }
@@ -62,10 +68,36 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// ── IQ cosine palette (slow strand hue cycling) ───────────────────
+fn iqPalette(t: f32) -> vec3<f32> {
+    let a = vec3<f32>(0.5, 0.5, 0.5);
+    let b = vec3<f32>(0.5, 0.5, 0.5);
+    let c = vec3<f32>(1.0, 1.0, 1.0);
+    let d = vec3<f32>(0.0, 0.33, 0.67);
+    return a + b * cos(TAU * (c * t + d));
+}
+
 // ── Geometric helpers ─────────────────────────────────────────────
 fn nodeGlow(p: vec2<f32>, center: vec2<f32>, strength: f32) -> f32 {
     let d = p - center;
     return fast_exp(-dot(d, d) * strength);
+}
+
+// Phyllotaxis (golden-angle) dot lattice projected onto the torus disc.
+// Dot i sits at radius spacing·√(i+½), angle i·goldenAngle — a seed-of-life
+// grid whose intersections ride the knot strands.
+fn phyllotaxis(p: vec2<f32>, count: f32, spacing: f32, rot: f32, falloff: f32) -> f32 {
+    var acc = 0.0;
+    for (var i = 0u; i < LATTICE_DOTS; i = i + 1u) {
+        let fi = f32(i);
+        let dotMask = sat(count - fi);
+        let dp = vec2<f32>(
+            cos(fi * GOLDEN_ANGLE + rot),
+            sin(fi * GOLDEN_ANGLE + rot)
+        ) * (spacing * sqrt(fi + 0.5));
+        acc = acc + nodeGlow(p, dp, falloff) * dotMask;
+    }
+    return acc;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -82,10 +114,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
     // ── Parameter extraction (uniform-driven, computed once) ──────
+    //  knots     → knot weave frequency AND lattice angular density
+    //  spin      → strand rotation speed AND lattice swirl rate
+    //  glow      → strand brightness AND crossing bloom lift strength
+    //  phiLayers → phi-harmonic node layers AND phyllotaxis dot count
     let knots = mix(2.0, 12.0, u.zoom_params.x);
     let spin = mix(0.1, 2.5, u.zoom_params.y);
     let glow = mix(0.3, 2.0, u.zoom_params.z);
     let phiLayers = mix(1.0, 7.0, u.zoom_params.w);
+    let latticeCount = mix(2.0, 20.0, u.zoom_params.w);
 
     let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
     var p = uv * 2.0 - 1.0;
@@ -105,15 +142,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     // ── Torus knot pattern (fixed 5 taps, unrolled by compiler) ───
+    // strandIdx accumulates the intensity-weighted tap index so each
+    // strand can receive its own slow cosine-palette hue offset.
     var pattern = 0.0;
+    var strandIdx = 0.0;
     for (var i = 0u; i < KNOT_TAPS; i = i + 1u) {
         let fi = f32(i);
         let k = knots + fi * 0.5;
         let pa = a + time * spin * (1.0 + bass * 0.5) + fi * TAU * INV_PHI;
         let pr = r * (3.0 + fi * PHI) - time * (0.3 + mids * 0.4);
         let weave = abs(sin(pa * k + pr));
-        pattern = pattern + smoothstep(0.92, 1.0, weave) * pow(0.7, fi);
+        let tap = smoothstep(0.92, 1.0, weave) * pow(0.7, fi);
+        pattern = pattern + tap;
+        strandIdx = strandIdx + tap * fi;
     }
+    // Mean strand index 0..1 across taps (guard the empty-field divide).
+    let strandT = strandIdx / max(pattern, 1e-4) * (1.0 / f32(KNOT_TAPS - 1u));
 
     // ── Sacred ring mask ──────────────────────────────────────────
     let ring = smoothstep(0.55, 0.75, abs(r - 0.5 + mouse.x * 0.1));
@@ -129,20 +173,40 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         pattern = pattern + nodeGlow(p, np, falloff) * (0.6 + fi * 0.15) * layerMask;
     }
 
+    // ── Fibonacci dot lattice overlay (scaled by Phi Layers) ──────
+    let latticeRot = time * spin * 0.15 * (1.0 + mids * 0.3);
+    let lattice = phyllotaxis(p, latticeCount, 0.11, latticeRot, 900.0 + treble * 400.0);
+    // Dots bloom hardest where they sit on knot strand intersections.
+    let latticeOnStrand = lattice * (0.35 + 0.65 * sat(pattern));
+
     // ── Chromatic composition: golden / emerald / sapphire ────────
     var color = vec3<f32>(0.01, 0.01, 0.02);
-    color = color + vec3<f32>(1.0, 0.78, 0.15) * pattern * glow * (1.0 + bass * 0.2);
-    color = color + vec3<f32>(0.15, 0.85, 0.55) * ring * glow * (1.0 + mids * 0.15);
-    color = color + vec3<f32>(0.25, 0.45, 1.0) * pattern * ring * 0.4 * (1.0 + treble * 0.2);
+    let gold = vec3<f32>(1.0, 0.78, 0.15);
+    let emerald = vec3<f32>(0.15, 0.85, 0.55);
+    let sapphire = vec3<f32>(0.25, 0.45, 1.0);
 
-    // ── Temporal feedback via dataTextureC ────────────────────────
+    // Cosine-palette strand hue cycling: slow per-strand hue offset,
+    // mixed ~0.35 so the original sacred gold stays dominant.
+    let strandHue = iqPalette(strandT + time * 0.03 + bass * 0.05);
+    let strandColor = mix(gold, strandHue, 0.35);
+    color = color + strandColor * pattern * glow * (1.0 + bass * 0.2);
+    color = color + emerald * ring * glow * (1.0 + mids * 0.15);
+    color = color + sapphire * pattern * ring * 0.4 * (1.0 + treble * 0.2);
+    color = color + mix(gold, strandHue, 0.2) * latticeOnStrand * 0.8;
+
+    // ── Restrained bloom lift on strand crossings ─────────────────
+    let crossing = smoothstep(1.1, 2.2, pattern + latticeOnStrand * 0.5);
+    color = color + strandColor * crossing * glow * 0.22 * (1.0 + treble * 0.3);
+
+    // ── Temporal feedback via dataTextureC (clamped pre-tint) ─────
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    color = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
+    let accum = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
+    color = min(accum, vec3<f32>(TRAIL_CLAMP));
 
     // ── Post-process ready packaging ──────────────────────────────
-    let presence = sat(pattern * 0.9 + ring * 0.5);
+    let presence = sat(pattern * 0.9 + ring * 0.5 + latticeOnStrand * 0.4);
     let alpha = sat(0.1 + presence * 0.9);
-    let depth = sat(0.9 - pattern * 0.5 - ring * 0.3);
+    let depth = sat(0.9 - pattern * 0.5 - ring * 0.3 - latticeOnStrand * 0.2);
 
     color = acesToneMap(color * 1.1);
 
@@ -151,5 +215,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     textureStore(writeTexture, coord, outRGBA);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-    textureStore(dataTextureA, coord, vec4<f32>(pattern, ring, phiLayers * 0.1, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(pattern, ring, latticeOnStrand, alpha));
 }

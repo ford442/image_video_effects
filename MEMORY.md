@@ -133,6 +133,29 @@
 - Target gate passed 8/8 and production build succeeded. The authoritative scan found four
   unrelated committed generative failures; do not attribute those to the liquid batch.
 
+## Generative upgrade swarm — Batch 10 (2026-07-22)
+- 8 smallest generative shaders with empty `updatedParams` (pool: 99 → 91 remain).
+- Theme: wire `updatedParams` from EXISTING JSON params (preset contract — no renames),
+  rewire boilerplate slider mappings to shader-specific constants, +2–3 techniques, +50–90 lines.
+- 8/8 gate green first-pass, Jest 332, tracker #111–118. Briefs generator: temp/make_briefs_2026_07_22.py.
+- Repo trivia: root `swarm-outputs`/`swarm-tasks` are symlinks into agents/.
+
+## Generative upgrade swarm — Batch 12 (2026-07-22)
+- 8 more (calligraphic-weave, bubble-chamber, turing-veins, molten-gold,
+  phase-memory-weave, atmos_fog, mycelium, julia_set). Pool ~67 remain. Tracker #127–134.
+- 🔴 **extraBuffer index map (PERMANENT LESSON):** [0..4] reserved, **[5..132] = engine FFT
+  bins (stomped every audio frame)**, [133..255] = safe persistent state. 9 shaders from
+  Batches 10–12 remapped post-hoc. Documented in agents/WGSL_BUILTINS_GENERATIVE.md.
+  Future briefs: "use [133..255]", never "[5]+".
+- turing-veins had 4 dead sliders (JSON params, no WGSL reads) — check for this pattern.
+
+## Generative upgrade swarm — Batch 11 (2026-07-22)
+- Next 8 (gen_cyclic_automaton, holographic_interference, holographic-crystal,
+  gen_wave_equation, plasma-orb, plasma-jet-stream, sacred-geometry-torus,
+  acoustic-string-theory). Pool ~76 remain. Tracker #119–126, Jest 332.
+- 🐞 gen_wave_equation feedback bug FIXED (state→dataTextureA). Revived dead sliders
+  (arcChaos, depthWeight). gen_capabilities intentionally skipped (system-monitor demo).
+
 ## WGSL audit fix swarm (2026-07-21) — complete
 - Batch 9 upgrade swarm (8 shaders) closed earlier same day; liquid batch disjoint.
 - Audit → fix agents 1–5: naga 4-pack, boids/flock feedback rewrite + entry-aware workgroup

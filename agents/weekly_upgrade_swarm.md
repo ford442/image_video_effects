@@ -5,9 +5,54 @@
 
 ---
 
-## Recently Completed (110 shaders)
+## Recently Completed (134 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 12 (8 shaders) — 2026-07-22 — GENERATIVE EDITION 3
+
+8-agent generative swarm, next 8 smallest (160–169 lines). Theme: formalize `updatedParams` from EXISTING params (preset contract) + 2–3 tailored techniques +50–90 lines. Special wins: `generative-turing-veins` had 4 **dead sliders** (WGSL never read zoom_params — wired for real); `bubble-chamber` z-param double-duty split + backwards Speed mapping fixed; `emergent-calligraphic-weave` boilerplate controls evicted. **Cross-batch fix:** during completion, discovered engine writes 128 FFT bins to `extraBuffer[5..132]` every frame audio is active — 9 shaders from Batches 10–12 stored persistent state there (plus `holographic-crystal` writing reserved [0]). All remapped to the safe zone `[133..255]` and re-gated 9/9 green. Index map documented in `agents/WGSL_BUILTINS_GENERATIVE.md`. All 8 gate green, JSON contracts preserved, lists/dupes clean (1309 defs), Jest 332 pass. Briefs: `swarm-tasks/kimi-generative-briefs-2026-07-22-b12/`; notes: `swarm-outputs/kimi-generative-2026-07-22-b12/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 127 | `emergent-calligraphic-weave` | 12 | 160→215 (+55) | Boilerplate evicted — sliders→real brush constants (viscosity/dry-brush/chaos); curl-noise stroke flow; treble edge sizzle. |
+| 128 | `bubble-chamber` | 12 | 163→229 (+66) | Bragg-curve ionization falloff, Lorentz point-vortex mouse deflection, z-param double-duty split, backwards Speed fixed, clamp 1.2. |
+| 129 | `generative-turing-veins` | 12 | 165→244 (+79) | **Dead sliders wired**: scale→kernel radius, feed→GS regime 0.03–0.07, glow→ridge gain; bass nutrient wave; click colony seeding; state [133..136]. |
+| 130 | `molten-gold` | 12 | 165→234 (+69) | True Planckian blackbody ramp (Tanner-Helland, 1337K melt point), fresnel flow-ridge specular, bass heat waves (+420K), clamp 1.2. |
+| 131 | `phase-memory-weave` | 12 | 165→233 (+68) | Opalescent phase-gradient iridescence (0.3), memory clamp+decay (anti-latch), click thermal ring [133..136]; optimizations preserved. |
+| 132 | `atmos_volumetric_fog` | 12 | 166→233 (+67) | 10-step mouse-anchored god-ray march (fbm-occluded), 2nd fbm density breakup, shaft-revealed treble dust motes, clamp 1.2. |
+| 133 | `mycelium-network` | 12 | 166→239 (+73) | Click nutrient pulse packets [133..136], growth tropism toward cursor, bass heartbeat, worley strand thickness; anti-moire LOD intact. |
+| 134 | `gen_julia_set` | 12 | 169→254 (+85) | Bass Lissajous c-morph (mouse overrides), interior filament detail, 2-sample hash-jitter AA; smooth-iteration + 3 orbit traps intact. |
+
+### Batch 11 (8 shaders) — 2026-07-22 — GENERATIVE EDITION 2
+
+8-agent generative swarm, next 8 smallest with empty `updatedParams` (gen_capabilities skipped — system-monitor demo). Theme same as Batch 10: formalize `updatedParams` from EXISTING params (preset contract), +2–3 tailored techniques, +50–90 lines. **Bonus: fixed a real feedback bug in `gen_wave_equation`** (solver read height/velocity from dataTextureC but wrote finalColor to dataTextureA → feedback carried color, not state; now state→A, plus NaN-kill for stale color). Also revived dead sliders (plasma-orb `arcChaos`, holo_interference `depthWeight`). All 8 gate green (naga + bindgroup, 0 warnings), JSON contracts preserved, lists/dupes clean (1309 defs). Briefs: `swarm-tasks/kimi-generative-briefs-2026-07-22-b11/`; notes: `swarm-outputs/kimi-generative-2026-07-22-b11/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 119 | `gen_cyclic_automaton` | 11 | 138→200 (+62) | Wavefront leading-edge tracer, treble ignition sparks, directional mouse painting (extraBuffer[5..7]); GH state machine verbatim. |
+| 120 | `holographic_interference` | 11 | 144→194 (+50) | Treble speckle grain, thin-film IQ palette tint, mouse-tilt parallax, carrier fringe; dead depthWeight slider wired; ACES deduped. |
+| 121 | `holographic-crystal` | 11 | 148→219 (+71) | Phase dither anti-moiré, worley facet normals (cut-glass), treble glints, true chromatic dispersion on slider. |
+| 122 | `gen_wave_equation` | 11 | 149→215 (+66) | **Feedback bug fixed** (sim state→dataTextureA, NaN-kill sanitizer), 9-point Laplacian, click droplets + bass rain; KG/SG term preserved. |
+| 123 | `plasma-orb` | 11 | 149→223 (+74) | Worley F2−F1 arc branching (dead arcChaos wired), spring-damper orb drift (extraBuffer[5..8]), mids corona shimmer, glow clamp 1.2; ACES deduped. |
+| 124 | `plasma-jet-stream` | 11 | 152→214 (+62) | Divergence-free curl perturbation, analytic bass surge wave, chromatic shear fringe at jet boundaries. |
+| 125 | `sacred-geometry-torus` | 11 | 155→219 (+64) | Phyllotaxis golden-angle lattice (Phi Layers), per-strand cosine hue cycling (0.35), trail clamp 1.2, crossing bloom. |
+| 126 | `acoustic-string-theory` | 11 | 157→239 (+82) | Click-to-pluck ring-down (extraBuffer[5],[10..13]), spring-damper gravity well [6..9], per-string audio spectral weighting, clamp 1.2. |
+
+### Batch 10 (8 shaders) — 2026-07-22 — GENERATIVE EDITION
+
+8-agent generative swarm. Pool scan: 99 generative shaders with empty/missing `updatedParams`; took the 8 smallest never-in-any-batch. Theme: **formalize `updatedParams` using the EXISTING JSON param ids/defaults (saved-preset contract)** — all 8 already read `u.zoom_params.x–w` in WGSL but had no UI sliders wired — plus rewire generic boilerplate mappings (`applyGenerativePrimaryControls` etc.) to shader-specific constants, +2–3 techniques each, +50–90 lines. All 8 pass `wgsl_precommit_gate.py` (naga + bindgroup, 0 warnings), JSONs parse with param contract preserved, lists/dupes clean (1309 defs), Jest 332 pass. Briefs: `swarm-tasks/kimi-generative-briefs-2026-07-22/`; notes: `swarm-outputs/kimi-generative-2026-07-22/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 111 | `fire_smoke_volumetric` | 10 | 117→181 (+64) | Worley ember sparks (temp-gradient tinted), treble edge flicker, smoke feedback clamp 1.2; sliders→heat/density+trail/depth floor/turbulence. |
+| 112 | `multi-scale-evolutionary-cellular-gardens` | 10 | 124→174 (+50) | 8-neighbor diffusion (dist-correct weights), colony-border bioluminescence, per-epoch rule drift; boilerplate controls→real sim constants. |
+| 113 | `recursive-ancestral-terrains` | 10 | 124→182 (+58) | Ridged-fbm crest octave, IQ palette lineage strata (mix 0.3), radial bass mutation waves from mouse; sliders→real lineage/mutation constants. |
+| 114 | `neural-synapse-web` | 10 | 126→205 (+79) | Spring-damper mouse attractor + click pulse ring (extraBuffer[133..141], reserved 0..4 untouched), treble synapse sparkle masked by signal. |
+| 115 | `magnetic-flux-garden` | 10 | 128→197 (+69) | Curl-noise flux-line weave, IQ palette bloom (mix 0.3), trail clamp 1.2; sliders→line count/dipole gain/curl amp/bloom gain. |
+| 116 | `generative-psy-swirls` | 10 | 129→189 (+60) | fbm domain-warp before polar twist (breathing arms), mids per-layer hue fan, layer-memory clamp 1.2; Frequency also drives warp. |
+| 117 | `4d-projection-dream-weavers` | 10 | 132→221 (+89) | Spring-damper 4D slice angles (extraBuffer[5..8]), Worley dream-dust (treble, depth-faded), dimension tint 0.25; fixed unused `detail` bug. |
+| 118 | `symbiotic-light-propagation-networks` | 10 | 133→185 (+52) | Frame-stamped seed rings (extraBuffer[5..9]), bass glow→radial wave from seed, accumulation clamp 1.2; sliders→growth/transmission/balance/seed. |
 
 ### Batch 9 (8 shaders) — 2026-07-21
 

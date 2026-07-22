@@ -4,7 +4,7 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Medium
 //  Scientific: Greenberg-Hastings excitable media with cardinal-wave triggering, refractory cooling, and bass-driven spontaneous ignition
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-07-22 — wavefront leading-edge tracer, treble ignition sparks, directional mouse painting
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,6 +28,11 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+// extraBuffer layout (indices 0..4 are RESERVED — do not touch):
+//   [5] = previous frame mouse x (uv)
+//   [6] = previous frame mouse y (uv)
+//   [7] = previous frame mouse-down flag
+
 fn clampCoord(p: vec2<i32>, size: vec2<i32>) -> vec2<i32> {
   return clamp(p, vec2<i32>(0, 0), size - vec2<i32>(1, 1));
 }
@@ -42,6 +47,12 @@ fn decodeState(v: f32, numStates: i32) -> i32 {
 
 fn loadState(coord: vec2<i32>, size: vec2<i32>, numStates: i32) -> i32 {
   return decodeState(textureLoad(dataTextureC, clampCoord(coord, size), 0).r, numStates);
+}
+
+// Normalized refractory progress of a neighbor state (0.0 for resting/firing cells).
+fn refractoryProgressOf(state: i32, numStates: i32) -> f32 {
+  let progress = clamp(f32(max(state - 2, 0)) / max(1.0, f32(numStates - 2)), 0.0, 1.0);
+  return progress * select(0.0, 1.0, state >= 2);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -72,10 +83,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  let numStates = i32(round(mix(4.0, 24.0, u.zoom_params.x)));
-  let spontaneousBase = mix(0.0001, 0.012, u.zoom_params.y);
-  let bloomStrength = mix(0.15, 0.8, u.zoom_params.z);
-  let cooldownBoost = mix(0.85, 1.25, u.zoom_params.w);
+  // ── Slider wiring (saved-preset contract: ids/defaults unchanged) ──
+  let numStates = i32(round(mix(4.0, 24.0, u.zoom_params.x)));      // States: automaton depth
+  let spontaneousBase = mix(0.0001, 0.012, u.zoom_params.y);        // Spontaneity: ignition probability
+  let bloomStrength = mix(0.15, 0.8, u.zoom_params.z);              // Bloom: neighbor glow + tracer gain
+  let cooldownCurve = mix(1.7, 0.55, u.zoom_params.w);              // Cooldown: refractory tail persistence
+  let cooldownBoost = mix(0.85, 1.25, u.zoom_params.w);             // Cooldown: cooling color ramp
 
   let currentState = loadState(coord, size, numStates);
   let n = loadState(coord + vec2<i32>(0, -1), size, numStates);
@@ -90,12 +103,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let cardFiring = select(0, 1, n == 1) + select(0, 1, s == 1) + select(0, 1, e == 1) + select(0, 1, w == 1);
   let allFiring = cardFiring + select(0, 1, ne == 1) + select(0, 1, nw == 1) + select(0, 1, se == 1) + select(0, 1, sw == 1);
 
+  // ── Directional mouse painting ───────────────────────────────────
+  // Compare the current mouse against the previous frame (extraBuffer[133..135])
+  // and stretch the ignition footprint along the drag direction, so strokes
+  // seed cardiac-style wavefronts instead of radial blobs.
   let mouse = u.zoom_config.yz;
-  let mouseMask = (1.0 - smoothstep(0.0, 0.11, distance(uv, mouse))) * u.zoom_config.w;
+  let mouseDown = u.zoom_config.w;
+  let prevMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  let prevDown = extraBuffer[135];
+  let mouseDelta = mouse - prevMouse;
+  let mouseSpeed = length(mouseDelta) * select(0.0, 1.0, mouseDown > 0.5 && prevDown > 0.5);
+  let motionDir = mouseDelta / max(length(mouseDelta), 1e-4);
+  let toPixel = uv - mouse;
+  let pixelDist = length(toPixel);
+  let pixelDir = toPixel / max(pixelDist, 1e-4);
+  let motionGain = clamp(mouseSpeed * 45.0, 0.0, 1.0);
+  let align = dot(pixelDir, motionDir) * 0.5 + 0.5;
+  let dirWeight = mix(1.0, mix(0.18, 1.0, align * align), motionGain);
+  let mouseMask = (1.0 - smoothstep(0.0, 0.11, pixelDist)) * mouseDown * dirWeight;
+  if (coord.x == 0 && coord.y == 0) {
+    extraBuffer[133] = mouse.x;
+    extraBuffer[134] = mouse.y;
+    extraBuffer[135] = select(0.0, 1.0, mouseDown > 0.5);
+  }
+
+  // ── Ignition sources ─────────────────────────────────────────────
   let rand = hash21(vec2<f32>(f32(coord.x), f32(coord.y)) + vec2<f32>(time * 31.1, time * 17.3));
   let spontaneousProb = spontaneousBase * (0.2 + bass * 4.2);
-  let ignite = (cardFiring > 0) || (rand < spontaneousProb) || (mouseMask > 0.02);
+  // Treble ignition sparks: a fine, fast hash-noise pattern gated by hi-hat
+  // energy seeds new wave centers scattered across the field.
+  let sparkHash = hash21(vec2<f32>(f32(coord.x), f32(coord.y)) * 1.618 + vec2<f32>(time * 113.7, -time * 91.3));
+  let trebleSparkProb = spontaneousBase * treble * 9.0 * smoothstep(0.35, 0.95, sparkHash);
+  let trebleSpark = sparkHash > 1.0 - clamp(trebleSparkProb, 0.0, 0.9);
+  let ignite = (cardFiring > 0) || (rand < spontaneousProb) || trebleSpark || (mouseMask > 0.02);
 
+  // ── Greenberg-Hastings state machine (resting=0, firing=1, refractory>=2) ──
   let isResting = currentState == 0;
   let isFiring = currentState == 1;
   let isRefractory = currentState >= 2;
@@ -112,20 +154,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let neighborGlow = f32(allFiring) / 8.0;
   let bloom = neighborGlow * bloomStrength;
 
+  // ── Wavefront leading-edge tracer ────────────────────────────────
+  // The refractoryProgress gradient across the cardinal neighborhood marks
+  // where the wave just passed: a firing cell backed by a cooling trail sits
+  // on the leading edge. Render a thin bright ring there for legibility.
+  let rpN = refractoryProgressOf(n, numStates);
+  let rpS = refractoryProgressOf(s, numStates);
+  let rpE = refractoryProgressOf(e, numStates);
+  let rpW = refractoryProgressOf(w, numStates);
+  let trailMax = max(max(rpN, rpS), max(rpE, rpW));
+  let trailMin = min(min(rpN, rpS), min(rpE, rpW));
+  let trailGradient = clamp(trailMax - trailMin, 0.0, 1.0);
+  let leadingEdge = firingMask * smoothstep(0.03, 0.28, trailMax) * (0.45 + 0.55 * trailGradient);
+  let earlyRefr = refractoryMask * (1.0 - smoothstep(0.0, 0.14, refractoryProgress)) * smoothstep(0.03, 0.22, trailMax);
+  let tracer = clamp(leadingEdge + earlyRefr * 0.6, 0.0, 1.0);
+
+  // ── Coloring ─────────────────────────────────────────────────────
+  let rpCurve = pow(refractoryProgress, cooldownCurve);
   let restColor = vec3<f32>(0.01, 0.03, 0.10) + vec3<f32>(0.10, 0.18, 0.34) * bloom * 0.18;
   let firingColor = mix(vec3<f32>(1.0, 0.93, 0.56), vec3<f32>(1.0, 1.0, 1.0), smoothstep(0.4, 1.0, bass + mouseMask));
-  let refractoryColor = mix(vec3<f32>(0.18, 0.98, 1.0), vec3<f32>(0.03, 0.12, 0.45), refractoryProgress * cooldownBoost);
+  let refractoryColor = mix(vec3<f32>(0.18, 0.98, 1.0), vec3<f32>(0.03, 0.12, 0.45), clamp(rpCurve * cooldownBoost, 0.0, 1.0));
+  let tracerColor = mix(vec3<f32>(1.0, 0.98, 0.85), vec3<f32>(0.55, 0.95, 1.0), treble * 0.35);
 
   var generatedColor = mix(restColor, refractoryColor, refractoryMask);
   generatedColor = mix(generatedColor, firingColor, firingMask);
   generatedColor += vec3<f32>(1.0, 0.96, 0.72) * bloom * 0.4;
   generatedColor += vec3<f32>(0.16, 0.44, 1.0) * bloom * (1.0 - firingMask) * 0.28;
   generatedColor += vec3<f32>(0.08, 0.12, 0.22) * smoothstep(0.2, 1.0, mids) * (1.0 - refractoryMask) * 0.15;
+  generatedColor += tracerColor * tracer * (0.55 + bloomStrength * 0.9);
+  generatedColor += vec3<f32>(0.9, 0.95, 1.0) * select(0.0, 1.0, trebleSpark) * 0.35 * (1.0 - firingMask);
 
   let opacity = 0.92;
   let finalColor = mix(inputColor.rgb, generatedColor, opacity);
-  let finalAlpha = max(inputColor.a, 0.85 + firingMask * 0.15);
-  let depthSignal = max(firingMask, (1.0 - refractoryProgress) * refractoryMask);
+  let finalAlpha = max(inputColor.a, 0.85 + max(firingMask, tracer * 0.5) * 0.15);
+  let depthSignal = max(max(firingMask, tracer * 0.8), (1.0 - refractoryProgress) * refractoryMask);
   let finalDepth = mix(inputDepth, clamp(0.16 + depthSignal * 0.72 + bloom * 0.22 + treble * 0.06, 0.0, 1.0), 0.88);
 
   let caStr = 0.003 * (1.0 + bass) + finalDepth * 0.001;
@@ -133,6 +195,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   textureStore(writeTexture, coord, vec4<f32>(acesToneMap(chromaticColor * 1.1), finalAlpha));
   textureStore(dataTextureA, coord, vec4<f32>(f32(nextState) / f32(numStates), firingMask, refractoryProgress, bloom));
-  textureStore(dataTextureB, coord, vec4<f32>(f32(cardFiring) / 4.0, spontaneousProb * 20.0, mouseMask, 1.0));
+  textureStore(dataTextureB, coord, vec4<f32>(f32(cardFiring) / 4.0, tracer, mouseMask, motionGain));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

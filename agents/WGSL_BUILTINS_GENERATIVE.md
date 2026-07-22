@@ -45,6 +45,11 @@ const TAU: f32 = 6.28318530718;
 // historyHead is in extraBuffer[4] (u32 as f32); HISTORY_DEPTH = 8 layers
 ```
 
+**extraBuffer index map (2026-07-22, do NOT guess):**
+- `[0..4]` — engine-reserved (CPU-written). Never write these from WGSL.
+- `[5..132]` — **engine FFT bins** (128 bins, bin 0 at [5]). Read-only for shaders; any state you store here gets stomped every frame audio is active.
+- `[133..255]` — **safe zone for persistent shader state** (spring-dampers, click rising-edge trackers, ring origins). Buffer is 256 floats; guard with `arrayLength(&extraBuffer)` and write from a single thread (e.g. `gid.x == 0u && gid.y == 0u`).
+
 **Accessing audio** (always use these three):
 ```wgsl
 let bass   = plasmaBuffer[0].x;  // 20–200 Hz energy,   range ~0–2

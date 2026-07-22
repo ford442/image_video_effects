@@ -1,10 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Phase Memory Weave v3 — Optimized
+//  Phase Memory Weave v4 — Optimizer pass
 //  Category: generative
 //  Features: ginzburg-landau, allen-cahn, multi-scale-memory,
 //            opalescent-interfaces, audio-driven, mouse-thermal
 //  Upgrades: fast-atan2, branchless-audio, early-exit, named-consts,
 //            TAU-constant, pm-alpha, reduced-sqrt-calls
+//  v4: gradient-keyed opalescence (mix ~0.3), latch-proof memory
+//      (clamp ~1.2 + epsilon decay), expanding gaussian mouse heat
+//      ring (rising-edge via extraBuffer[133..136]), shader-specific
+//      slider rewiring (phase bias / memory kernel / turbulence /
+//      ring forcing)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -29,6 +34,9 @@ struct Uniforms {
 };
 
 const TAU: f32 = 6.28318530718;
+const MEM_CLAMP: f32 = 1.2;      // luma-echo-warp lesson: memory never exceeds this
+const MEM_DECAY: f32 = 0.9985;   // tiny epsilon decay: buffer cannot latch
+const RING_LIFETIME: f32 = 2.5;  // seconds a mouse heat ring stays active
 
 // ── Fast atan2 (max error ~0.0015 rad, saves ~2 cycles vs builtin) ─
 fn fast_atan2(y: f32, x: f32) -> f32 {
@@ -56,9 +64,20 @@ fn thinFilmIridescence(phase: f32, d: f32) -> vec3<f32> {
   );
 }
 
+// ── Opalescent palette: thin-film cosine keyed on phase gradient ───
+fn opalescentPalette(phase: f32, gradMag: f32, t: f32) -> vec3<f32> {
+  let shift = phase * TAU + gradMag * 2.0 + t * 0.35;
+  return vec3<f32>(
+    0.5 + 0.5 * cos(shift),
+    0.5 + 0.5 * cos(shift + 2.0943951),
+    0.5 + 0.5 * cos(shift + 4.1887902)
+  );
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
+  if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
   let uv = vec2<f32>(gid.xy) / res;
   let time = u.config.x * 0.5;
   let bass = plasmaBuffer[0].x;
@@ -67,10 +86,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
   let clicks = u.config.y;
-  let p1 = u.zoom_params.x;
-  let p2 = u.zoom_params.y;
-  let p3 = u.zoom_params.z;
-  let p4 = u.zoom_params.w;
+  let p1 = u.zoom_params.x; // Phase: fluid ↔ crystalline bias
+  let p2 = u.zoom_params.y; // Memory Strength: kernel blend + lerp rate
+  let p3 = u.zoom_params.z; // Turbulence: GL epsilon + chaotic jitter
+  let p4 = u.zoom_params.w; // Mouse Disturbance: thermal + ring forcing
 
   let cur = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
   let psiR = cur.r;
@@ -90,16 +109,46 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lapR = rx.r + lx.r + uy.r + dy.r - 4.0 * psiR;
   let lapI = rx.g + lx.g + uy.g + dy.g - 4.0 * psiI;
 
+  // Phase gradient magnitude (drives opalescent interface shimmer)
+  let gradR = vec2<f32>(rx.r - lx.r, uy.r - dy.r);
+  let gradI = vec2<f32>(rx.g - lx.g, uy.g - dy.g);
+  let gradMag = sqrt(dot(gradR, gradR) + dot(gradI, gradI)) * 0.5;
+
+  // ── Mouse thermal ring state (extraBuffer[133..136]; [0..4] reserved, [5..132]=FFT) ─
+  // Rising-edge detection: every thread derives identical values, so
+  // the write race is benign.
+  let prevDown = extraBuffer[133];
+  let isHeat = fract(clicks * 0.5) > 0.25;
+  if (mouseDown > 0.5 && prevDown <= 0.5) {
+    extraBuffer[134] = time;    // ring emission time
+    extraBuffer[135] = mouse.x; // ring origin u
+    extraBuffer[136] = mouse.y; // ring origin v
+  }
+  extraBuffer[133] = mouseDown;
+
+  // Expanding gaussian heat ring: forces phase change where it passes
+  let ringAge = time - extraBuffer[134];
+  let ringOrigin = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  let ringSpeed = 0.20 + p4 * 0.45;        // p4: ring expansion rate
+  let ringWidth = 0.018 + p4 * 0.03;       // p4: gaussian ring width
+  let ringFade = max(0.0, 1.0 - ringAge / RING_LIFETIME);
+  let ringDelta = (length(uv - ringOrigin) - ringAge * ringSpeed) / max(ringWidth, 1e-4);
+  let ringGauss = exp(-0.5 * ringDelta * ringDelta) * ringFade;
+  let ringForcing = ringGauss * select(-1.0, 1.0, isHeat) * (0.4 + p4 * 1.2);
+
   // Ginzburg-Landau / Allen-Cahn dynamics
-  let epsilon  = 0.035 + p3 * 0.04;
-  let mobility = 0.15 + mids * 0.6 + p2 * 0.4;
-  let reaction = rho * (1.0 - rho2);
+  // p1 (Phase) shifts the equilibrium amplitude: fluid ↔ crystalline
+  let phaseBias = (p1 - 0.5) * 0.5;
+  let equilibrium = 1.0 + phaseBias * 0.4;
+  let epsilon  = 0.035 + p3 * 0.04;        // p3: interface energy
+  let mobility = 0.15 + mids * 0.6;        // mids: grain boundary mobility
+  let reaction = rho * (equilibrium * equilibrium - rho2);
   let dR = lapR * epsilon - reaction * psiR;
   let dI = lapI * epsilon - reaction * psiI;
 
-  // Memory kernel (exponential-decay blend)
-  let memoryBlend = mix(psiR, slowMem, 0.6);
-  let memStrength = 0.2 + p2 * 0.7;
+  // Memory kernel (exponential-decay blend, clamped pre-tint, latch-proof)
+  let memoryBlend = clamp(mix(psiR, slowMem * MEM_DECAY, 0.6), -MEM_CLAMP, MEM_CLAMP);
+  let memStrength = 0.2 + p2 * 0.7;        // p2: how strongly history pulls
   let newR = mix(psiR + dR * mobility, memoryBlend, memStrength * 0.08);
   let newI = mix(psiI + dI * mobility, theta * 0.1, memStrength * 0.03);
 
@@ -108,16 +157,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                 * (fract(dot(uv, vec2<f32>(12.9898, 78.233)) + time * 0.2) - 0.5)
                 * 0.4;
 
+  // Turbulent jitter, gated to the fluid state (p3: chaos strength)
+  let fluidGate = smoothstep(0.7, 0.3, rho);
+  let turbSeed = fract(sin(dot(uv * 9.0 + vec2<f32>(time * 0.7, -time * 0.5),
+                   vec2<f32>(12.9898, 78.233))) * 43758.5453) - 0.5;
+  let turbulence = turbSeed * p3 * 0.3 * fluidGate;
+
   // Capillary waves + mouse thermal injection (branchless select)
   let capillary = sin(uv.x * 30.0 + time * 4.0)
                 * cos(uv.y * 24.0 - time * 3.5)
                 * treble * 0.06;
   let mouseDist = length(uv - mouse);
   let thermal = smoothstep(0.15, 0.0, mouseDist) * mouseDown * (1.0 + p4 * 2.0);
-  let isHeat = fract(clicks * 0.5) > 0.25;
   let thermalEffect = select(-thermal * 0.9, thermal * 0.6, isHeat);
 
-  let finalR = clamp(newR + seedNoise + capillary + thermalEffect, -1.2, 1.2);
+  let finalR = clamp(newR + seedNoise + capillary + turbulence
+                   + thermalEffect + ringForcing, -1.2, 1.2);
   let finalI = newI + capillary * 0.5;
   let finalRho = sqrt(finalR * finalR + finalI * finalI);
   let finalTheta = fast_atan2(finalI, finalR);
@@ -129,9 +184,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rhoDy = sqrt(dy.r * dy.r + dy.g * dy.g);
   let curvature = abs((rhoRx + rhoLx + rhoUy + rhoDy) - 4.0 * finalRho);
 
+  // Multi-scale memory accumulation: epsilon decay + clamp (no latch)
+  let memLerp = 0.05 + p2 * 0.12;          // p2: memory write rate
+  let newSlow = clamp(mix(slowMem * MEM_DECAY, finalR, memLerp), -MEM_CLAMP, MEM_CLAMP);
+
   // ── Early exit for quiescent background pixels ─────────────────
   if (finalRho < 0.03 && curvature < 0.02) {
-    let newSlow = mix(slowMem, finalR, 0.12);
     textureStore(dataTextureA, gid.xy, vec4<f32>(finalR, finalI, newSlow, 0.0));
     textureStore(dataTextureB, gid.xy, vec4<f32>(newSlow, finalTheta, curvature, 0.0));
     textureStore(writeTexture, gid.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
@@ -140,22 +198,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   // State writeback for slot chaining
-  let newSlow = mix(slowMem, finalR, 0.12);
   textureStore(dataTextureA, gid.xy, vec4<f32>(finalR, finalI, newSlow, 0.0));
   textureStore(dataTextureB, gid.xy, vec4<f32>(newSlow, finalTheta, curvature, 0.0));
 
   // Opalescent thin-film interference + subsurface
   let irid = thinFilmIridescence(finalTheta, curvature * 5.0)
            * smoothstep(0.1, 0.4, curvature) * 0.8;
-  let fluidMask  = smoothstep(0.5, 0.2, finalRho);
-  let crystalMask = smoothstep(0.3, 0.7, finalRho);
+  let fluidMask  = smoothstep(0.5 + phaseBias * 0.3, 0.2 + phaseBias * 0.3, finalRho);
+  let crystalMask = smoothstep(0.3 + phaseBias * 0.3, 0.7 + phaseBias * 0.3, finalRho);
   let caustic = pow(sin(finalTheta * 8.0 + time) * 0.5 + 0.5, 3.0) * fluidMask;
   let subsurface = crystalMask * vec3<f32>(0.85, 0.82, 0.75) * (0.6 + finalRho * 0.5);
 
   let fluidCol  = vec3<f32>(0.15, 0.35, 0.65) * (0.5 + caustic * 0.8);
   let crystalCol = vec3<f32>(0.92, 0.88, 0.72) * (0.5 + finalRho * 0.6);
-  let baseCol = mix(fluidCol, crystalCol, crystalMask) + irid + subsurface;
-  let tone = acesToneMap(baseCol * (0.7 + finalRho * 0.8) * (0.85 + p1 * 0.3));
+  var baseCol = mix(fluidCol, crystalCol, crystalMask) + irid + subsurface;
+
+  // Opalescent interface iridescence keyed on phase-gradient magnitude
+  // (mix ~0.3: domain boundaries shimmer like opal, base palette dominant)
+  let opal = opalescentPalette(finalTheta, gradMag * 4.0, time);
+  let opalMask = smoothstep(0.06, 0.30, gradMag) * smoothstep(0.05, 0.25, curvature);
+  baseCol = mix(baseCol, opal, opalMask * 0.3);
+
+  // Memory sheen: multi-scale history visible as a faint pre-tint glow
+  let memSheen = clamp(slowMem * MEM_DECAY + finalR * 0.15, -MEM_CLAMP, MEM_CLAMP);
+  baseCol += vec3<f32>(0.05, 0.07, 0.10) * memSheen * (0.4 + p2 * 0.6);
+
+  let tone = acesToneMap(baseCol * (0.7 + finalRho * 0.8));
 
   // Alpha encodes bloom weight (curvature = interface glow)
   let alpha = clamp(finalRho * 0.9 + curvature * 0.5, 0.0, 1.0);
