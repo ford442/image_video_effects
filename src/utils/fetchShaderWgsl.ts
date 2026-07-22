@@ -1,6 +1,16 @@
 import { STORAGE_API_URL } from '../config/appConfig';
 import { resolveShaderUrl } from './resolveShaderUrl';
 
+export interface FetchShaderWgslOptions {
+  /**
+   * When true, only try the caller-provided URL (plus a same-origin
+   * `./shaders/{id}.wgsl` probe). Skips CDN / storage API fallbacks.
+   * Use for optional assets such as `-sg.wgsl` subgroup variants so a
+   * missing file does not cascade into remote 404 spam.
+   */
+  primaryOnly?: boolean;
+}
+
 async function tryFetchWgsl(url: string): Promise<string | null> {
   try {
     const response = await fetch(url);
@@ -22,27 +32,35 @@ async function tryFetchWgsl(url: string): Promise<string | null> {
 /**
  * Fetch WGSL source for a shader, trying several hosting locations.
  *
- * Order:
- * 1. Caller-provided URL (absolute or resolved)
- * 2. Same-origin public/shaders copy (local dev + full app deploys)
- * 3. Static CDN base (test.1ink.us)
+ * Order (full cascade):
+ * 1. Same-origin public/shaders copy (local dev + full app deploys)
+ * 2. Caller-provided URL (absolute or resolved)
+ * 3. Static CDN base (test.1ink.us) via resolveShaderUrl
  * 4. Storage manager API (/api/shaders/{id}/code)
+ *
+ * With `primaryOnly: true`, only steps 1–2 run (no remote fallbacks).
  */
-export async function fetchShaderWgsl(id: string, url?: string): Promise<string | null> {
+export async function fetchShaderWgsl(
+  id: string,
+  url?: string,
+  options?: FetchShaderWgslOptions,
+): Promise<string | null> {
   const candidates: string[] = [
     `./shaders/${id}.wgsl`,
   ];
 
   if (url) {
     candidates.push(url);
-    if (!/^https?:\/\//i.test(url)) {
+    if (!options?.primaryOnly && !/^https?:\/\//i.test(url)) {
       candidates.push(resolveShaderUrl(url));
     }
-  } else {
+  } else if (!options?.primaryOnly) {
     candidates.push(resolveShaderUrl(`shaders/${id}.wgsl`));
   }
 
-  candidates.push(`${STORAGE_API_URL}/api/shaders/${id}/code`);
+  if (!options?.primaryOnly) {
+    candidates.push(`${STORAGE_API_URL}/api/shaders/${id}/code`);
+  }
 
   const seen = new Set<string>();
   for (const candidate of candidates) {

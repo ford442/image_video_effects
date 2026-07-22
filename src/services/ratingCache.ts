@@ -5,7 +5,8 @@
 //  Features:
 //  - O(1) dirty index (px_dirty_list) so getDirtyRatings() avoids a linear scan
 //  - Jittered exponential backoff + circuit breaker in flushDirtyRatings()
-//  - X-Idempotency-Key header on sync POSTs so the server can deduplicate retries
+//  - Idempotency key sent as FormData (not a custom header) so CORS preflight
+//    stays compatible with storage.noahcohn.com Access-Control-Allow-Headers
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const STORAGE_KEY_PREFIX = 'px_rating_';
@@ -32,7 +33,7 @@ export interface CachedRating {
   readonly rating: number;
   readonly dirty: boolean;
   readonly timestamp: number;
-  /** Unique key sent as X-Idempotency-Key so the server can deduplicate retries. */
+  /** Unique key sent as FormData `idempotency_key` so the server can deduplicate retries. */
   readonly idempotencyKey: string;
 }
 
@@ -205,7 +206,8 @@ export function markSynced(shaderId: string): void {
  * Attempt to flush all dirty ratings to the API.
  *
  * - Skips silently if the circuit-breaker is open.
- * - Sends X-Idempotency-Key on every POST so the server can deduplicate retries.
+ * - Sends idempotency_key in FormData (not a custom header) so CORS preflight
+ *   does not require x-idempotency-key in Access-Control-Allow-Headers.
  * - Consecutive failures open the circuit-breaker to prevent hammering a down backend.
  */
 export async function flushDirtyRatings(apiUrl: string): Promise<void> {
@@ -222,10 +224,11 @@ export async function flushDirtyRatings(apiUrl: string): Promise<void> {
     try {
       const formData = new FormData();
       formData.append('stars', entry.rating.toString());
+      // Body field — avoids custom-header CORS preflight rejection on storage API.
+      formData.append('idempotency_key', entry.idempotencyKey);
 
       const response = await fetch(`${apiUrl}/api/shaders/${shaderId}/rate`, {
         method: 'POST',
-        headers: { 'X-Idempotency-Key': entry.idempotencyKey },
         body: formData,
       });
 

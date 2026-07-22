@@ -1,12 +1,13 @@
 import { WebGPUResourcePool, createTextures } from './resources';
 
 // Minimal WebGPU globals for unit tests (no real GPU in Jest).
+// Values match the WebGPU TextureUsage bitflags.
 const TU = {
-  TEXTURE_BINDING: 0x04,
-  COPY_DST: 0x08,
   COPY_SRC: 0x01,
-  RENDER_ATTACHMENT: 0x10,
+  COPY_DST: 0x02,
+  TEXTURE_BINDING: 0x04,
   STORAGE_BINDING: 0x08,
+  RENDER_ATTACHMENT: 0x10,
 } as const;
 (global as unknown as { GPUTextureUsage: typeof TU }).GPUTextureUsage = TU;
 (global as unknown as { GPUBufferUsage: { UNIFORM: number; COPY_DST: number; STORAGE: number } }).GPUBufferUsage = {
@@ -56,5 +57,18 @@ describe('WebGPUResourcePool', () => {
     expect(set.sourceTex).toBeDefined();
     expect(set.readTex).toBeDefined();
     expect(set.readTex).not.toBe(set.sourceTex);
+  });
+
+  it('createTextures gives readTex RENDER_ATTACHMENT for scalePass', () => {
+    const device = makeMockDevice();
+    createTextures(device, 800, 600, 400, 300);
+
+    const readCall = (device.createTexture as jest.Mock).mock.calls.find(
+      ([desc]: [{ label?: string }]) => desc?.label === 'readTex',
+    );
+    expect(readCall).toBeDefined();
+    const usage = (readCall![0] as { usage: number }).usage;
+    expect(usage & TU.RENDER_ATTACHMENT).toBe(TU.RENDER_ATTACHMENT);
+    expect(usage & TU.STORAGE_BINDING).toBe(TU.STORAGE_BINDING);
   });
 });

@@ -118,7 +118,7 @@ describe('ratingCache', () => {
       );
     });
 
-    it('includes X-Idempotency-Key header in the POST', async () => {
+    it('sends idempotency_key in FormData without custom CORS headers', async () => {
       setRating('shader-a', 4);
       fetchMock.mockResolvedValueOnce({
         ok: true,
@@ -127,14 +127,14 @@ describe('ratingCache', () => {
 
       await flushDirtyRatings(API_URL);
 
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          headers: expect.objectContaining({
-            'X-Idempotency-Key': expect.any(String),
-          }),
-        }),
-      );
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(init.headers).toBeUndefined();
+      expect(init.body).toBeInstanceOf(FormData);
+      const body = init.body as FormData;
+      expect(body.get('stars')).toBe('4');
+      expect(typeof body.get('idempotency_key')).toBe('string');
+      expect(String(body.get('idempotency_key')).length).toBeGreaterThan(0);
     });
 
     it('marks ratings as synced after a successful POST', async () => {

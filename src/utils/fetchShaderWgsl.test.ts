@@ -45,4 +45,29 @@ describe('fetchShaderWgsl', () => {
     const code = await fetchShaderWgsl('liquid', 'shaders/liquid.wgsl');
     expect(code).toContain('local');
   });
+
+  it('primaryOnly skips storage API fallback for optional probes', async () => {
+    const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/shaders/')) {
+        return new Response(JSON.stringify({ code: 'should-not-reach' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response('not found', { status: 404 });
+    }) as typeof fetch;
+    global.fetch = fetchMock;
+
+    const code = await fetchShaderWgsl(
+      'motion-heatmap-sg',
+      'shaders/motion-heatmap-sg.wgsl',
+      { primaryOnly: true },
+    );
+
+    expect(code).toBeNull();
+    const urls = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.includes('/api/shaders/'))).toBe(false);
+    expect(urls.some((u) => u.includes('storage.noahcohn.com'))).toBe(false);
+  });
 });
