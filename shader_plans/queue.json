@@ -324,11 +324,6 @@
       "filename": "2026-07-15_symbiotic-aether-plasma-chrono-lotus.md",
       "title": "Symbiotic Aether-Plasma Chrono-Lotus",
       "added": "2026-07-15T15:29:49.399122"
-    },
-    {
-      "filename": "2026-07-19_luminescent-aether-plasma-astro-axolotl.md",
-      "title": "Luminescent Aether-Plasma Astro-Axolotl",
-      "added": "2026-07-19T15:28:40.874418"
     }
   ],
   "current": null,
@@ -491,6 +486,13 @@
       "added": "2026-07-20T15:39:23.592783",
       "status": "completed",
       "completed_at": "2026-07-21T07:51:32.683192"
+    },
+    {
+      "filename": "2026-07-19_luminescent-aether-plasma-astro-axolotl.md",
+      "title": "Luminescent Aether-Plasma Astro-Axolotl",
+      "added": "2026-07-19T15:28:40.874418",
+      "status": "completed",
+      "completed_at": "2026-07-22T08:00:29.082644"
     }
   ],
   "rejected": [],
