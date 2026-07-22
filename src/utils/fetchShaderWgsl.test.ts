@@ -56,8 +56,8 @@ describe('fetchShaderWgsl', () => {
         });
       }
       return new Response('not found', { status: 404 });
-    }) as typeof fetch;
-    global.fetch = fetchMock;
+    });
+    global.fetch = fetchMock as typeof fetch;
 
     const code = await fetchShaderWgsl(
       'motion-heatmap-sg',
