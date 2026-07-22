@@ -63,11 +63,14 @@ describe('WebGPUResourcePool', () => {
     const device = makeMockDevice();
     createTextures(device, 800, 600, 400, 300);
 
-    const readCall = (device.createTexture as jest.Mock).mock.calls.find(
-      ([desc]: [{ label?: string }]) => desc?.label === 'readTex',
+    const createTexture = device.createTexture as unknown as {
+      mock: { calls: Array<[{ label?: string; usage: number }]> };
+    };
+    const readCall = createTexture.mock.calls.find(
+      (call) => call[0]?.label === 'readTex',
     );
     expect(readCall).toBeDefined();
-    const usage = (readCall![0] as { usage: number }).usage;
+    const usage = readCall![0].usage;
     expect(usage & TU.RENDER_ATTACHMENT).toBe(TU.RENDER_ATTACHMENT);
     expect(usage & TU.STORAGE_BINDING).toBe(TU.STORAGE_BINDING);
   });

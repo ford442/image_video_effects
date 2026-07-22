@@ -1,16 +1,16 @@
 {
-  "timestamp": "2026-07-22T09:38:39.215501",
+  "timestamp": "2026-07-22T17:11:22.736591",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 9,
-  "passed": 9,
+  "total": 8,
+  "passed": 8,
   "failed": 0,
   "skipped": 0,
   "warnings": 0,
   "workgroup_blocking": 0,
   "results": [
     {
-      "file": "public/shaders/4d-projection-dream-weavers.wgsl",
+      "file": "public/shaders/gen-bioelectric-pulse.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -23,7 +23,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/acoustic-string-theory.wgsl",
+      "file": "public/shaders/gen_grok4_life.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -36,7 +36,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen_cyclic_automaton.wgsl",
+      "file": "public/shaders/gen_reaction_diffusion.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -49,7 +49,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen_wave_equation.wgsl",
+      "file": "public/shaders/gravito-phononic-accretion.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -62,7 +62,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/generative-turing-veins.wgsl",
+      "file": "public/shaders/neural-mandala.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -75,7 +75,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-crystal.wgsl",
+      "file": "public/shaders/phosphorescent-jellyfish.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -88,7 +88,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/mycelium-network.wgsl",
+      "file": "public/shaders/spore-galaxy.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -101,20 +101,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/phase-memory-weave.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/plasma-orb.wgsl",
+      "file": "public/shaders/topological-acoustic-knots.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

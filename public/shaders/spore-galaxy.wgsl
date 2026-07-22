@@ -7,6 +7,10 @@
 //  Complexity: High
 //  Created: 2026-05-31
 //  Upgraded: 2026-06-07
+//  Upgraded: 2026-07-22 (Visualist pass: feedback semantics fixed so
+//            dataTextureA carries display color and dataTextureB carries
+//            the arm/spore/dust masks, per-arm FFT band voices, and
+//            mouse-down spore burst rings via ripples[])
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -106,9 +110,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
+  // Slider contract: x = arm count + core sharpness, y = swirl + rotation
+  // speed + trail persistence, z = spore grid density + emission gate,
+  // w = nebula dust amount + fog density.
   let arms = mix(2.0, 8.0, u.zoom_params.x);
+  let armSharp = mix(0.35, 0.14, u.zoom_params.x);
   let swirl = mix(0.2, 3.0, u.zoom_params.y);
+  let rotSpeed = mix(0.05, 0.30, u.zoom_params.y);
+  let trailDecay = mix(0.86, 0.96, u.zoom_params.y);
   let density = mix(15.0, 120.0, u.zoom_params.z);
+  let sporeGate = mix(0.85, 0.65, u.zoom_params.z);
   let nebula = mix(0.0, 1.0, u.zoom_params.w);
 
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
@@ -118,19 +129,44 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let r = length(p);
   let a = atan2(p.y, p.x);
-  let armAngle = a + r * swirl * (3.0 + bass * 3.0) - time * 0.15;
+  let armAngle = a + r * swirl * (3.0 + bass * 3.0) - time * rotSpeed;
   let armPhase = fract(armAngle * arms / 6.28318);
   let armDist = abs(armPhase - 0.5) * 2.0;
-  let armCore = smoothstep(0.25, 0.0, armDist) * exp(-r * 2.5);
+  let armCore = smoothstep(armSharp, 0.0, armDist) * exp(-r * 2.5);
+
+  // Per-arm spectrum: each spiral arm reads its own FFT bin
+  // (plasmaBuffer[armIndex + 1]) so different arms flare to different
+  // frequency bands instead of all pulsing with the global bass.
+  let armCount = max(round(arms), 1.0);
+  let armIdxF = clamp(floor(fract(armAngle / 6.28318) * armCount), 0.0, armCount - 1.0);
+  let armIdx = u32(armIdxF);
+  let bandBin = 1u + (armIdx % 8u);
+  let armBand = clamp(plasmaBuffer[bandBin].x * 0.6 + plasmaBuffer[bandBin].z * 0.8, 0.0, 1.5);
 
   let gridUV = uv * density + vec2<f32>(time * 0.02, -time * 0.015);
   let cell = floor(gridUV);
   let local = fract(gridUV) - 0.5;
   let rnd = hash22(cell);
   let sporeD = length(local - (rnd - 0.5) * 0.8);
-  let spore = exp(-sporeD * sporeD * (50.0 + treble * 40.0)) * step(0.75, hash21(cell + vec2<f32>(13.3, 7.1)));
+  let spore = exp(-sporeD * sporeD * (50.0 + treble * 40.0)) * step(sporeGate, hash21(cell + vec2<f32>(13.3, 7.1)));
 
   let dust = hash21(floor(uv * 300.0 + time * 0.05)) * exp(-r * 1.8) * nebula;
+
+  // Spore burst: every mouse-down launches a radial exp-decay emission
+  // ring of spores outward from the cursor — a visible shockwave.
+  var burst = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let rp = u.ripples[i];
+    let elapsed = time - rp.z;
+    if (rp.z > 0.0 && elapsed > 0.0 && elapsed < 3.0) {
+      let clickPos = (rp.xy - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+      let cd = length(uv - clickPos);
+      let frontR = elapsed * 0.65;
+      let ring = exp(-abs(cd - frontR) * 16.0) * exp(-elapsed * 1.8);
+      burst = burst + ring;
+    }
+  }
 
   // Dynamic temperature from audio-reactive blackbody
   let warmTemp = 2500.0 + bass * 3500.0;
@@ -138,29 +174,39 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let warmCol = blackbodyRGB(warmTemp);
   let coolCol = blackbodyRGB(coolTemp);
 
-  // Palette-driven arm hues with OkLab mixing
-  let armHue = palette(armPhase + bass * 0.2,
+  // Palette-driven arm hues with OkLab mixing; the arm's own FFT band
+  // offsets its palette phase so arms sing in different hues.
+  let armHue = palette(armPhase + bass * 0.2 + armBand * 0.35,
     vec3<f32>(0.5,0.5,0.5), vec3<f32>(0.5,0.5,0.5),
     vec3<f32>(1.0,1.0,0.5), vec3<f32>(0.0,0.1,0.2));
   let armCol = mixOkLab(warmCol * vec3<f32>(1.2,0.9,0.6), armHue, 0.35);
 
   // HDR accumulation in linear space
   var color = vec3<f32>(0.01, 0.01, 0.03);
-  color = color + armCol * armCore * (2.5 + bass * 1.5);
+  color = color + armCol * armCore * (2.5 + bass * 1.5 + armBand * 1.2);
   color = color + mixOkLab(coolCol, vec3<f32>(0.35,0.95,0.65), 0.4) * spore * (1.2 + mids * 0.8);
   color = color + vec3<f32>(0.3,0.5,1.0) * dust * 0.8 * (1.0 + treble * 0.3);
+
+  // Burst ring emits spore-colored light and briefly seeds extra spores
+  // along the shockwave front.
+  let burstCol = mixOkLab(coolCol, vec3<f32>(0.9,0.6,1.0), 0.5);
+  color = color + burstCol * burst * (1.4 + treble * 0.8);
+  color = color + mixOkLab(coolCol, vec3<f32>(0.35,0.95,0.65), 0.4) * burst * spore * 2.0;
 
   // Volumetric fog (Beer-Lambert depth falloff)
   let fogDensity = 0.7 + nebula * 1.5;
   let fog = exp(-r * fogDensity);
   color = color * fog + mixOkLab(vec3<f32>(0.005,0.008,0.02), warmCol * 0.15, 0.5) * (1.0 - fog);
 
-  // Temporal feedback
+  // Temporal feedback: dataTextureC now carries last frame's DISPLAY
+  // COLOR (written to dataTextureA below), so this mix produces genuine
+  // star-trail persistence instead of feeding masks back as color.
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  color = mix(color, prev.rgb * 0.92, 0.02 + bass * 0.01);
+  color = mix(color, prev.rgb * trailDecay, 0.05 + bass * 0.02);
 
   // Hue-preserve clamp → ACES → dither → premultiplied write
   color = hue_preserve_clamp(color, 4.0);
+  let feedbackColor = color;
   color = aces(color);
   let dither = (ign(vec2<f32>(gid.xy)) - 0.5) / 255.0;
   color = color + vec3<f32>(dither);
@@ -168,12 +214,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Bloom-weight alpha
   let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
   let bloomWeight = pow(max(0.0, luma - 0.5), 2.0) * 3.0;
-  let alpha = sat(0.08 + sat(armCore * 0.9 + spore * 0.7 + dust * 0.4) * 0.92);
+  let alpha = sat(0.08 + sat(armCore * 0.9 + spore * 0.7 + dust * 0.4 + burst * 0.6) * 0.92);
   let finalAlpha = max(alpha, bloomWeight * 0.6);
-  let depth = sat(0.92 - armCore * 0.6 - spore * 0.25);
+  let depth = sat(0.92 - armCore * 0.6 - spore * 0.25 - burst * 0.15);
 
   let outRGB = pow(color, vec3<f32>(1.0/2.2));
   textureStore(writeTexture, coord, vec4<f32>(outRGB * finalAlpha, finalAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(armCore, spore, dust, finalAlpha));
+  // A = display color (linear, hue-preserved) for next-frame feedback.
+  textureStore(dataTextureA, coord, vec4<f32>(feedbackColor, finalAlpha));
+  // B = per-channel masks for debug / downstream passes.
+  // (Previously these masks lived in A and were read back AS color.)
+  textureStore(dataTextureB, coord, vec4<f32>(armCore, spore, dust, burst));
 }

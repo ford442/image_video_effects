@@ -5,9 +5,11 @@
 //  Features:
 //  - O(1) dirty index (px_dirty_list) so getDirtyRatings() avoids a linear scan
 //  - Jittered exponential backoff + circuit breaker in flushDirtyRatings()
-//  - Idempotency key sent as FormData (not a custom header) so CORS preflight
+//  - Idempotency key sent in JSON body (not a custom header) so CORS preflight
 //    stays compatible with storage.noahcohn.com Access-Control-Allow-Headers
 // ═══════════════════════════════════════════════════════════════════════════════
+
+import { postShaderRating } from './postShaderRating';
 
 const STORAGE_KEY_PREFIX = 'px_rating_';
 const DIRTY_LIST_KEY = 'px_dirty_list';
@@ -33,7 +35,7 @@ export interface CachedRating {
   readonly rating: number;
   readonly dirty: boolean;
   readonly timestamp: number;
-  /** Unique key sent as FormData `idempotency_key` so the server can deduplicate retries. */
+  /** Unique key sent as JSON `idempotency_key` so the server can deduplicate retries. */
   readonly idempotencyKey: string;
 }
 
@@ -206,8 +208,8 @@ export function markSynced(shaderId: string): void {
  * Attempt to flush all dirty ratings to the API.
  *
  * - Skips silently if the circuit-breaker is open.
- * - Sends idempotency_key in FormData (not a custom header) so CORS preflight
- *   does not require x-idempotency-key in Access-Control-Allow-Headers.
+ * - Sends idempotency_key in the JSON body (not a custom header) so CORS
+ *   preflight does not require x-idempotency-key in Access-Control-Allow-Headers.
  * - Consecutive failures open the circuit-breaker to prevent hammering a down backend.
  */
 export async function flushDirtyRatings(apiUrl: string): Promise<void> {
@@ -222,22 +224,12 @@ export async function flushDirtyRatings(apiUrl: string): Promise<void> {
 
     const entry = dirty[shaderId];
     try {
-      const formData = new FormData();
-      formData.append('stars', entry.rating.toString());
-      // Body field — avoids custom-header CORS preflight rejection on storage API.
-      formData.append('idempotency_key', entry.idempotencyKey);
-
-      const response = await fetch(`${apiUrl}/api/shaders/${shaderId}/rate`, {
-        method: 'POST',
-        body: formData,
+      // Live API: JSON { rating } — FormData { stars } returns 422.
+      await postShaderRating(apiUrl, shaderId, entry.rating, {
+        idempotencyKey: entry.idempotencyKey,
       });
-
-      if (response.ok) {
-        markSynced(shaderId);
-        recordSuccess();
-      } else {
-        recordFailure();
-      }
+      markSynced(shaderId);
+      recordSuccess();
     } catch (err: unknown) {
       console.warn(`[ratingCache] flush error for "${shaderId}":`, err);
       recordFailure();

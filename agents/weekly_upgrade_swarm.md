@@ -5,9 +5,39 @@
 
 ---
 
-## Recently Completed (134 shaders)
+## Recently Completed (150 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 14 (8 shaders) — 2026-07-22 — GENERATIVE EDITION 5
+
+Interrupted Kimi swarm recovered and completed. All eight shader/definition pairs were present; seven had agent notes and `spore-galaxy` was the unrecorded cutoff. The recovery pass verified the saved-preset contract, completed the missing note, regenerated shader lists, and closed the tracker. Special wins: `gen-bioelectric-pulse` fixes inverted mouse semantics and adds persistent kick envelopes; `gen_grok4_life` replaces the hardcoded 2048 wrap with resolution-aware toroidal sampling; `spore-galaxy` fixes mask-as-color feedback by moving display color to dataTextureA and masks to dataTextureB; `gravito-phononic-accretion` turns Lensing Strength into real UV deflection. Target gate 8/8 green (naga + bindgroup, 0 warnings), JSON contracts preserved, lists/dupes clean (1310 unique definitions), Jest 49 suites/339 pass. Full-fleet Naga scan is 1314/1315; the sole failure is the unrelated, unmodified `gen-luminescent-aether-plasma-astro-axolotl.wgsl`. Briefs: `swarm-tasks/kimi-generative-briefs-2026-07-22-b14/`; notes: `swarm-outputs/kimi-generative-2026-07-22-b14/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 143 | `gen-bioelectric-pulse` | 14 | 180→245 (+65) | Correct mouse-down/UV semantics; honest dataTextureC reaction trails; kick mega-pulse envelope in safe extraBuffer state. |
+| 144 | `gen_grok4_life` | 14 | 176→251 (+75) | Resolution-aware toroidal wrap; FFT ecosystem zones; age-based prey palette; extinction bloom monitor. |
+| 145 | `gen_reaction_diffusion` | 14 | 179→234 (+55) | Treble micro-stimulus; click spiral dipoles; disentangled diffusion control; raw signed sim state preserved. |
+| 146 | `gravito-phononic-accretion` | 14 | 179→248 (+69) | True gravitational UV lensing; diffusion-controlled persistence; treble relativistic jet envelope. |
+| 147 | `neural-mandala` | 14 | 177→235 (+58) | Mouse spring re-centering; click shock rings; per-ring spectrum; complexity-driven sub-symmetry fold. |
+| 148 | `phosphorescent-jellyfish` | 14 | 180→263 (+83) | Hue-preserving HDR clamp + ACES; per-jelly spectrum; nearest-jelly click propulsion dart. |
+| 149 | `spore-galaxy` | 14 | 179→229 (+50) | Feedback semantics fixed (display→A, masks→B); per-arm FFT voices; ripple-driven spore bursts. |
+| 150 | `topological-acoustic-knots` | 14 | 180→247 (+67) | Honest defect-density quench; annihilation cascades/census pulse; mids-driven persistent polarizer. |
+
+### Batch 13 (8 shaders) — 2026-07-22 — GENERATIVE EDITION 4
+
+8-agent generative swarm, next 8 smallest with empty `updatedParams` (171–175 lines). Theme unchanged: formalize `updatedParams` from EXISTING params (preset contract), kill boilerplate mappings, +2–3 tailored techniques, +50–90 lines. Special wins: `retro_phosphor_dream` had a **latent bug** (`audioPulse` bound to MouseDown, plasmaBuffer never read — rewired to bass); `gen_kimi_nebula` + `gen_hyper_warp` had placeholder param1–4 + `applyGenerativePrimaryControls` boilerplate (sliders now drive real constants, defaults reproduce legacy look); `gen_hyper_warp` feedback (×1.1 sharpen @ 0.95 mix) stabilized with hard 1.2 pre-tint clamp; `gen-neural-dust` mouse coords fixed to engine convention (`zoom_config.yz`). Sim-state feedback layouts (coral-growth envelope, crystalline-fracture stress) preserved verbatim. All 8 gate green (naga + bindgroup, 0 warnings), JSON contracts preserved, lists/dupes clean (1310 defs), Jest 49 suites/339 pass. Briefs: `swarm-tasks/kimi-generative-briefs-2026-07-22-b13/`; notes: `swarm-outputs/kimi-generative-2026-07-22-b13/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 135 | `gen-neural-dust` | 13 | 171→224 (+53) | Comet-trail feedback (clamp 1.2), per-cell plasmaBuffer[1..8] band energy, depth parallax; mouse coords fixed to zoom_config.yz. |
+| 136 | `gen_kimi_nebula` | 13 | 172→227 (+55) | Boilerplate evicted — sliders→density/time-multiplier/noise-scale/star-cutoff (defaults = legacy); mids/treble layer drift; extra fbm3 warp. |
+| 137 | `gen_hyper_warp` | 13 | 173→223 (+50) | stabilizeHistory() hard 1.2 clamp + soft-knee, flow-advected feedback, boilerplate evicted (warp amp/time/palette/feedback-mix). |
+| 138 | `supernova-remnant` | 13 | 174→232 (+58) | Blackbody age ramp (A-alpha age accumulator), click detonation rings via ripples[], inertial bass kicks; chromatic feedback untouched. |
+| 139 | `coral-growth` | 13 | 175→241 (+66) | Mids-gated 2nd-order twigs, per-branch spectralBandEnergy() tips, clamped residue trail; bass-envelope sim state verbatim. |
+| 140 | `crystalline-fracture` | 13 | 175→238 (+63) | Click stress rings (ripples[]), fbm weak grain boundaries, crack memory 0.98 (<1.0) + min(stress,6) clamp; stress/connectivity layout kept. |
+| 141 | `retro_phosphor_dream` | 13 | 175→252 (+77) | **Bug fix**: audioPulse MouseDown→bass; treble scanline jitter + hum-bar roll; mouse curvature + degauss wobble (extraBuffer[133]). |
+| 142 | `spec-analytic-noise-flow` | 13 | 175→231 (+56) | Iso-contour ridges from free analytic gradient (treble-sharpened), bass advection surge, temporal velocity smoothing; quintic math byte-identical. |
 
 ### Batch 12 (8 shaders) — 2026-07-22 — GENERATIVE EDITION 3
 

@@ -32,6 +32,7 @@ import {
   updateVideoFrame as mediaUpdateVideoFrame,
   loadImage as mediaLoadImage,
   clearSourceTexture,
+  restoreSourceFromOffscreen,
   WebGPUMediaInputContext,
 } from './webgpu/WebGPUMediaInput';
 import { ShaderSlot, SlotMode, WG_SIZE_X, WG_SIZE_Y, WG_SIZE_1D } from './webgpu/webgpuConstants';
@@ -269,6 +270,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       );
       this.blitReadTex = this.resources.blitReadTex;
       this.lastBlitReadTex = null;
+      // recreateScaleTextures destroys sourceTex/readTex. Re-upload the last
+      // image/video frame so image-effect shaders don't go blank black after
+      // adaptive quality changes scale. Generative mode intentionally stays clear.
+      if (this.inputSource !== 'generative') {
+        restoreSourceFromOffscreen(this.getMediaContext(), this.mediaState);
+      }
     }
   }
 
@@ -368,7 +375,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   setInputSource(source: 'image' | 'video' | 'webcam' | 'generative' | 'live'): void {
     this.inputSource = source;
-    if (source === 'generative') clearSourceTexture(this.getMediaContext());
+    if (source === 'generative') {
+      clearSourceTexture(this.getMediaContext());
+    } else if (source === 'image') {
+      // Leaving generative: restore last uploaded image if still in offscreen.
+      restoreSourceFromOffscreen(this.getMediaContext(), this.mediaState);
+    }
   }
 
   getInputSource() { return this.inputSource; }

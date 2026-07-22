@@ -61,7 +61,6 @@ describe('fetchShaderWgsl', () => {
       }
       return new Response('not found', { status: 404 });
     }) as typeof fetch;
-    global.fetch = fetchMock;
 
     const code = await fetchShaderWgsl(
       'motion-heatmap-sg',
@@ -70,7 +69,6 @@ describe('fetchShaderWgsl', () => {
     );
 
     expect(code).toBeNull();
-    const urls = fetchMock.mock.calls.map((c) => String(c[0]));
     expect(urls.some((u) => u.includes('/api/shaders/'))).toBe(false);
     expect(urls.some((u) => u.includes('storage.noahcohn.com'))).toBe(false);
   });

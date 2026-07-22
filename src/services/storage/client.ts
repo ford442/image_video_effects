@@ -214,7 +214,7 @@ export class StorageClient {
     id: string;
     play_count: number;
     last_played: string;
-  }> {
+  } | null> {
     return ratings.recordShaderPlay(this.config, shaderId);
   }
 

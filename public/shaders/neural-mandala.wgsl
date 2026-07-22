@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Neural Mandala — Algorithmist Upgrade
+//  Neural Mandala — Algorithmist + Interactivist Upgrade
 //  Polar kaleidoscope symmetry + Warped FBM distortion + Clifford nodes
 //  Quasi-random hue distribution with golden-ratio stepping
+//  Interactivist pass 2026-07-22: mouse spring re-centering, click shock
+//  rings (ripples[]), per-ring FFT bins, sub-symmetry fold.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -19,9 +21,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=RingCount, y=Complexity, z=PulseSpeed, w=Connections
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -89,15 +91,62 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
+  // ── Sliders (JSON contract: rings / complexity / pulse / connections) ──
+  // x = Ring Count         → number of concentric rings (4–12)
+  // y = Node Complexity    → kaleido segment count AND per-ring node count
+  //                          (coherent double-duty) + sub-fold mirror mix
+  // z = Pulse Speed        → temporal rate of ring/node pulsing (0.2–3.2 Hz)
+  // w = Connection Density → inter-ring line alpha/width + Clifford node drift
   let ringCount = 4 + i32(u.zoom_params.x * 8.0);
   let complexity = u.zoom_params.y;
-  let pulseSpeed = u.zoom_params.z * 3.0;
+  let pulseSpeed = 0.2 + u.zoom_params.z * 3.0;
   let connectionDensity = u.zoom_params.w;
 
   let aspect = res.x / res.y;
-  let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  let pRaw = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+
+  // ── Mouse spring re-centering (persistent state in extraBuffer[133..136]) ──
+  // While the mouse is held, the mandala center is pulled toward the cursor
+  // with a damped spring; on release it eases back to the screen center.
+  let mouseDown = step(0.5, u.zoom_config.w);
+  let mouseCentered = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
+  let springGoal = mouseCentered * 0.55 * mouseDown;
+  let springDT = 0.016;
+  let springK = 90.0;
+  let springDamp = 9.0;
+  var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  springVel = springVel + ((springGoal - springPos) * springK - springVel * springDamp) * springDT;
+  springPos = springPos + springVel * springDT;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+  }
+  let p = pRaw - springPos;
+
+  // ── Click shock rings: each recorded click emits an expanding wavefront ──
+  // that perturbs ring radii (and adds a brief glow) as it sweeps outward.
+  let clickCount = min(u32(u.config.y), 50u);
+  var shock = 0.0;
+  for (var i = 0u; i < clickCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age > 0.0 && age < 3.0) {
+      let clickPos = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0) - springPos;
+      let waveFront = age * 0.45;
+      let band = exp(-abs(length(p - clickPos) - waveFront) * 18.0);
+      shock = shock + band * exp(-age * 1.4);
+    }
+  }
+
   let segs = mix(3.0, 12.0, complexity);
-  let fp = kaleido(p, segs);
+  var fp = kaleido(p, segs);
+  // Sub-symmetry fold: a second kaleidoscope pass at half the segment count,
+  // mixed in by Complexity for snowflake-like internal mirroring.
+  let fpSub = kaleido(fp, max(segs * 0.5, 2.0));
+  fp = mix(fp, fpSub, complexity * 0.55);
   let seg = TAU / segs;
 
   var color = vec3<f32>(0.02, 0.01, 0.04);
@@ -105,11 +154,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   for (var ri = 0; ri < ringCount; ri = ri + 1) {
     let r = f32(ri);
+    // Per-ring audio: inner rings ride the bass bins, outer rings the treble
+    // bins, instead of the whole mandala following the global bands.
+    let ringEnergy = plasmaBuffer[u32(ri) % 8u + 1u].x;
     // Domain-warped FBM for organic ring radius distortion
     let warp = warpedFBM(p * 4.0 + r, time * 0.08) * 0.015;
-    let radius = 0.05 + r * 0.06 + warp;
+    let radius = 0.05 + r * 0.06 + warp + shock * 0.025;
     let ringPulse = sin(time * pulseSpeed + r * 1.3) * 0.5 + 0.5;
-    let ringWidth = 0.003 * (1.0 + ringPulse * bass);
+    let ringWidth = 0.003 * (1.0 + ringPulse * (0.3 + ringEnergy));
 
     let distR = length(fp);
     let ringMask = smoothstep(radius + ringWidth, radius, distR) *
@@ -125,7 +177,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     0.01 * connectionDensity;
       let nodePosPerturbed = nodePos + perturb;
       let nodeDist = length(fp - nodePosPerturbed);
-      let nodeSize = 0.008 * (1.0 + bass * 0.5) * (1.0 + ringPulse);
+      let nodeSize = 0.008 * (1.0 + ringEnergy * 0.5) * (1.0 + ringPulse);
       let nodeGlow = smoothstep(nodeSize * 2.0, 0.0, nodeDist);
 
       if (ri < ringCount - 1) {
@@ -145,7 +197,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let closest = nodePosPerturbed + lineDirNorm * proj;
         let lineDist = length(fp - closest);
         let lineGlow = smoothstep(0.003 * (1.0 + connectionDensity), 0.0, lineDist);
-        color = color + vec3<f32>(0.3, 0.6, 1.0) * lineGlow * connectionDensity * mids;
+        color = color + vec3<f32>(0.3, 0.6, 1.0) * lineGlow * connectionDensity * (0.3 + mids * 0.7);
         glow = glow + lineGlow * connectionDensity;
       }
 
@@ -155,16 +207,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let h = abs(fract(vec3<f32>(hue) + k) * 6.0 - vec3<f32>(3.0));
       let nodeColor = clamp(h - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
-      color = color + nodeColor * nodeGlow * (0.8 + treble * 0.4);
+      color = color + nodeColor * nodeGlow * (0.6 + ringEnergy * 0.6 + treble * 0.2);
       glow = glow + nodeGlow;
     }
 
-    color = color + vec3<f32>(0.2, 0.5, 0.9) * ringMask * (0.3 + mids * 0.3);
+    color = color + vec3<f32>(0.2, 0.5, 0.9) * ringMask * (0.3 + ringEnergy * 0.3);
     glow = glow + ringMask * 0.3;
   }
 
+  // Visible shock shimmer along the expanding wavefronts
+  color = color + vec3<f32>(0.9, 0.95, 1.0) * shock * 0.35;
+  glow = glow + shock * 0.4;
+
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  color = mix(color, prev.rgb * 0.92, 0.05 + bass * 0.01);
+  // Clamp accumulated color pre-tint (luma-echo-warp lesson) before feedback
+  let accum = min(color, vec3<f32>(1.2));
+  color = mix(accum, prev.rgb * 0.92, 0.05 + bass * 0.01);
 
   let caStr = 0.003 * (1.0 + bass) + glow * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);

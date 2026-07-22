@@ -6,6 +6,9 @@
 //  Complexity: Very High
 //  Created: 2026-05-31
 //  Upgraded: 2026-06-06
+//  Algorithmist pass 2026-07-22: click stress rings (ripples[]), fbm grain
+//  boundaries (spatially varying toughness), persistent crack memory
+//  (feedback 0.98, strictly < 1.0), clamped stress reservoir.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -38,6 +41,31 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(hash21(p), hash21(p + vec2<f32>(1.0, 0.0)));
 }
 
+// Value noise: bilinear-interpolated hash lattice
+fn vnoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let s = f * f * (3.0 - 2.0 * f);
+    let a = hash21(i);
+    let b = hash21(i + vec2<f32>(1.0, 0.0));
+    let c = hash21(i + vec2<f32>(0.0, 1.0));
+    let d = hash21(i + vec2<f32>(1.0, 1.0));
+    return mix(mix(a, b, s.x), mix(c, d, s.x), s.y);
+}
+
+// 3-octave fbm for grain boundary structure
+fn fbm(p: vec2<f32>) -> f32 {
+    var v = 0.0;
+    var amp = 0.5;
+    var q = p;
+    for (var i = 0; i < 3; i = i + 1) {
+        v = v + amp * vnoise(q);
+        q = q * 2.13 + vec2<f32>(7.7, 3.1);
+        amp = amp * 0.5;
+    }
+    return v;
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -62,6 +90,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
+    // ── Sliders (JSON contract: cells / glow / fracture / chromatic) ──
+    // x = Cell Density   → Voronoi grain count
+    // y = Edge Glow      → grain-edge emission + crack-tip bloom intensity
+    // z = Fracture Amount→ crack growth rate + click-ring stress amplitude
+    // w = Chromatic Shift→ edge split width + post chromatic aberration
     let cellCount = mix(3.0, 15.0, u.zoom_params.x) * (1.0 + depth * 0.5);
     let edgeGlow = u.zoom_params.y;
     let fractureAmt = u.zoom_params.z;
@@ -72,14 +105,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cellId = floor(p);
     let cellUV = fract(p);
 
-    // Stress field: bass loading + mouse point stress + temporal crack memory
+    // Weak grain boundaries: spatially varying fracture toughness from one
+    // fbm lookup, so cracks preferentially propagate along weak paths and
+    // the fracture network reads as real material grain.
+    let grainUV = uv * vec2<f32>(aspect, 1.0) * (2.0 + cellCount * 0.35);
+    let grain = fbm(grainUV);
+
+    // Stress field: bass loading + mouse point stress + temporal crack memory.
+    // Crack memory healing: prev.r * 0.98 keeps the geometric feedback ratio
+    // strictly < 1.0 while letting fracture patterns persist across frames.
     let mouseDist = length(uv - mouse);
     let mouseField = exp(-mouseDist * mouseDist * 20.0) * u.zoom_config.w;
     let mouseStress = smoothstep(0.15, 0.0, mouseDist) * u.zoom_config.w * 4.0;
-    var stress = bass * 2.0 + mouseStress + mouseField * 2.0 + prev.r * 0.5;
+    var stress = bass * 2.0 + mouseStress + mouseField * 2.0 + prev.r * 0.98;
 
-    // Fracture toughness from mids
-    let toughness = 0.4 + mids * 0.6;
+    // Click stress rings: each recorded click spawns an expanding ring-shaped
+    // stress wavefront that loads K and can trigger cracks where the ring
+    // crosses weak grain boundaries.
+    let clickCount = min(u32(u.config.y), 50u);
+    var ringStress = 0.0;
+    for (var i = 0u; i < clickCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age > 0.0 && age < 4.0) {
+            let rd = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+            let waveFront = age * 0.35;
+            let band = exp(-abs(rd - waveFront) * 24.0);
+            ringStress = ringStress + band * exp(-age * 1.2);
+        }
+    }
+    stress = stress + ringStress * (1.0 + fractureAmt * 2.0);
+
+    // Fracture toughness: mids-driven baseline modulated by grain boundaries
+    let toughness = (0.4 + mids * 0.6) * (0.55 + grain * 0.9);
 
     // Catastrophic failure events triggered by treble
     let catastrophic = step(0.8, treble) * 2.0;
@@ -111,15 +169,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeDist = secondMinDist - minDist;
     let edge = smoothstep(0.05, 0.0, edgeDist);
 
-    // Stress intensity factor K drives crack propagation
+    // Stress intensity factor K drives crack propagation; grain boundaries
+    // modulate K so cracks follow weak crystallographic paths.
     let crackSpeed = 0.1 + bass * 0.2;
-    let crackLength = hash21(nearestId) * 2.0 + time * crackSpeed * fractureAmt;
-    let K = stress * sqrt(max(crackLength, 0.0));
+    let crackLength = hash21(nearestId) * 2.0 + time * crackSpeed * (0.2 + fractureAmt * 1.2);
+    let K = stress * sqrt(max(crackLength, 0.0)) * (0.7 + grain * 0.6);
     let crack = step(toughness, K);
     let branch = step(toughness * 1.3, K) * hash21(nearestId + vec2<f32>(1.0, 0.0));
     let crackDensity = crack + branch * 0.5;
 
-    // Crack tip singularity glow
+    // Crack tip singularity glow (Edge Glow slider drives bloom energy)
     let tip = smoothstep(0.015, 0.0, minDist) * crack * (1.0 - branch);
 
     // Hackle marks on fracture surfaces
@@ -153,13 +212,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cellColor = clamp(h - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0)) * (0.3 + mids * 0.2) * (1.0 - depth * 0.3);
 
     // HDR bloom at crack tips
-    let bloom = tip * 3.0 * (1.0 + bass);
+    let bloom = tip * (0.5 + edgeGlow * 5.0) * (1.0 + bass);
     var color = cellColor + chromaEdge + irid + vec3<f32>(sss) + vec3<f32>(refraction) + vec3<f32>(bloom);
     color = color + vec3<f32>(0.35, 0.3, 0.25) * hackleMask;
     color = color + vec3<f32>(0.3, 0.25, 0.2) * hackleMask2;
 
-    // Chromatic aberration
-    let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+    // Chromatic aberration (Chromatic Shift slider drives the split)
+    let caStr = 0.001 + chromatic * (0.5 + bass) + depth * 0.001;
     color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
     // ACES tone mapping
@@ -168,8 +227,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Alpha: crack density × stress intensity × depth perspective
     let alpha = clamp(crackDensity * K * depth + edge * 0.15, 0.0, 1.0);
 
+    // Clamp the stored stress reservoir so the slow 0.98 memory decay can
+    // never accumulate without bound; layout preserved (.r stress, .g cracks).
+    let stressOut = min(stress, 6.0);
+
     color = acesToneMap(color * 1.1);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(stress, crackDensity, 0.0, alpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(stressOut, crackDensity, 0.0, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(edge * 0.5 + crackDensity * 0.3, 0.0, 0.0, 0.0));
 }

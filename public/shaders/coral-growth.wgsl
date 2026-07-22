@@ -3,10 +3,13 @@
 //  Category: generative
 //  Features: generative, audio-reactive, branching-structures, organic-patterns,
 //            upgraded-rgba, gravity-well, shockwave, video-luma, sparkle,
-//            temporal-feedback, bass-envelope
+//            temporal-feedback, bass-envelope, second-order-branching,
+//            spectral-tips, luminous-residue
 //  Complexity: High
 //  Created: 2026-05-31
 //  Upgraded: 2026-06-07
+//  Upgraded: 2026-07-22 (b13: mids-driven second-order branching,
+//            per-bin spectral tip lighting, luminous growth residue)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -59,6 +62,16 @@ fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
   return normalize(d) * strength / dist2;
 }
 
+// Spectral band energy for one branch index. Instead of lighting every tip
+// with the global treble, each branch reads its own FFT bin from
+// plasmaBuffer[1+n] so different branches pulse to different bands.
+fn spectralBandEnergy(branchIndex: i32) -> f32 {
+  let binIndex = 1 + (branchIndex % 8);
+  let binLow = plasmaBuffer[binIndex].x;
+  let binHigh = plasmaBuffer[binIndex].z;
+  return clamp(binLow * 0.6 + binHigh * 0.8, 0.0, 1.5);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = u.config.zw;
@@ -71,11 +84,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
 
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  // Bass envelope lives in feedback .r — SIM STATE, not color. Verbatim.
   let bass = bass_env(prev.r, rawBass, 0.8, 0.15);
 
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
   let mouseDown = u.zoom_config.w;
 
+  // ── Slider params (saved-preset contract: zoom_params.x/y/z/w) ──────
+  // x: Cell Density  — grid frequency AND branch thickness
+  // y: Branch Complexity — first-order branch count AND bush-out chance
+  // z: Growth Speed  — growth rate AND residue persistence boost
+  // w: Color Shift   — branch hue offset AND trail tint rotation
   let density = u.zoom_params.x * 15.0 + 5.0;
   let branchComplexity = u.zoom_params.y;
   let growthSpeed = u.zoom_params.z;
@@ -122,8 +141,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let proj = clamp(dot(toPixel, normalize(dir)), 0.0, currentLen);
     let closest = origin + normalize(dir) * proj;
     let d = length(bentCellUV - closest);
-    let branchWidth = 0.02 * (1.0 - proj / max(currentLen, 0.001));
+    // Density slider also thickens branches: denser colonies grow fleshier limbs
+    let branchWidth = 0.02 * (1.0 + u.zoom_params.x * 0.35) * (1.0 - proj / max(currentLen, 0.001));
     var branch = smoothstep(branchWidth, 0.0, d);
+
+    // Per-branch spectral band for tip lighting (see spectralBandEnergy)
+    let bandEnergy = spectralBandEnergy(bi);
 
     if (proj > currentLen * 0.5) {
       let subDir = vec2<f32>(cos(angle + 0.8), sin(angle + 0.8));
@@ -135,13 +158,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let subD = length(bentCellUV - subClosest);
       let subBranch = smoothstep(branchWidth * 0.7, 0.0, subD);
       branch = max(branch, subBranch * 0.7);
+
+      // ── Second-order sub-branching ──────────────────────────────────
+      // A first-order branch can bush out into second-order twigs. The
+      // probability is driven by mids (plasmaBuffer[0].y) so the colony
+      // visibly thickens with the music; complexity slider raises the cap.
+      let twigGate = hash21(seed + vec2<f32>(5.0, 9.0));
+      let bushChance = clamp(mids * 1.15 + branchComplexity * 0.25, 0.0, 0.9);
+      if (twigGate < bushChance && subProj > subLen * 0.4) {
+        let twigAngle = angle + 0.8 - (0.5 + twigGate) * 1.1;
+        let twigDir = vec2<f32>(cos(twigAngle), sin(twigAngle));
+        let twigLen = subLen * 0.55 * (0.6 + mids * 0.6) * (0.7 + growthSpeed * 0.4);
+        let twigOrigin = subClosest;
+        let toTwig = bentCellUV - twigOrigin;
+        let twigProj = clamp(dot(toTwig, normalize(twigDir)), 0.0, twigLen);
+        let twigClosest = twigOrigin + normalize(twigDir) * twigProj;
+        let twigD = length(bentCellUV - twigClosest);
+        let twigWidth = branchWidth * 0.45 * (1.0 - twigProj / max(twigLen, 0.001) * 0.5);
+        let twig = smoothstep(twigWidth, 0.0, twigD);
+        branch = max(branch, twig * 0.55);
+
+        // Twig tips light up on the branch's own spectral band too
+        let twigTipDist = length(bentCellUV - (twigOrigin + normalize(twigDir) * twigLen));
+        tipGlow = tipGlow + exp(-twigTipDist * twigTipDist * 260.0) * bandEnergy * 0.9;
+      }
     }
 
-    // Treble sparkle at branch tips
+    // ── Spectral tip lighting ─────────────────────────────────────────
+    // Global treble stays as a floor, but each branch index lights its tip
+    // to its own frequency band via plasmaBuffer[1 + bi % 8].
     let tipDist = length(bentCellUV - (origin + normalize(dir) * currentLen));
-    tipGlow = tipGlow + exp(-tipDist * tipDist * 200.0) * treble * 2.0;
+    tipGlow = tipGlow + exp(-tipDist * tipDist * 200.0) * (treble * 0.6 + bandEnergy * 1.4);
 
-    let hue = fract(hash21(seed) * 0.3 + colorShift + time * 0.02 + bass * 0.03);
+    // Band energy nudges the hue so different bands bloom different colors
+    let hue = fract(hash21(seed) * 0.3 + colorShift + time * 0.02 + bass * 0.03 + bandEnergy * 0.05);
     let k = vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0);
     let h = abs(fract(vec3<f32>(hue) + k) * 6.0 - vec3<f32>(3.0));
     let branchColor = clamp(h - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -155,6 +205,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Temporal accumulation with trail decay
   color = mix(color, prev.rgb * 0.94, 0.04 + bass * 0.015);
+
+  // ── Luminous growth residue ─────────────────────────────────────────
+  // The bass envelope in feedback .r stays EXACTLY as-is (sim-state
+  // contract). On top of it we mix a real RGB color trail into the output:
+  // ~0.9 decay, clamped pre-tint at ~1.2, so old growth leaves glowing
+  // history. Growth Speed slider boosts residue persistence; Color Shift
+  // rotates the tint so trails drift hue with the slider.
+  let trailRaw = min(prev.rgb * 0.9, vec3<f32>(1.2));
+  let trailTint = vec3<f32>(
+    0.85 + colorShift * 0.35,
+    0.9 + mids * 0.15,
+    1.05 - colorShift * 0.25
+  );
+  color = color + trailRaw * trailTint * (0.3 + growthSpeed * 0.25);
 
   let caStr = 0.003 * (1.0 + bass) + glow * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
@@ -170,6 +234,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = acesToneMap(color * 1.1);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, finalAlpha));
+  // dataTextureA layout is SIM STATE: .r = bass envelope, .g = glow,
+  // .b = spectral tip energy, .a = trail age. Do NOT recolor this.
   textureStore(dataTextureA, global_id.xy, vec4<f32>(bass, glow, tipGlow, finalAlpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(glow * 0.3, 0.0, 0.0, 0.0));
 }
