@@ -114,6 +114,18 @@
 - Hop 0 spine done; hop 1 (recursive domain warp) prompt at `agents/swarm-tasks/prompts/relay-hop-1-domain-warp.md`
 - Validation between hops: `python3 scripts/wgsl_precommit_gate.py --files public/shaders/gen-relay-psychedelia.wgsl`
 
+## Progress audit 2026-07-22 — next moves
+
+**Foundation vs content:** Wave 2 structure is good enough to ship product/content in parallel. Prioritize:
+1. Small engine fixes (#1007 timestamp-query TS parity) before honest benches
+2. Content: generative updatedParams (#1011), multipass physics on existing GraphRunner (#1009), thumbs on real GPU (#1012)
+3. Hygiene: bundle/AI lazy load (#1010), WASM evidence when discrete GPU available (#1013)
+4. Larger architecture: format tiering (#1008) before mobile-quality multipass
+
+**Created issues:** #1007–#1013. Existing open: #976 attract/importer, #983/#984 gate (likely mostly done — verify before more work).
+
+**Stale notes corrected:** CommunityGallery is mounted in `AiVjStudioPanel`; weekly_plan "unmounted" is outdated.
+
 ## Quick Refs (for continuity)
 - Key files: wasm_renderer/{renderer.cpp:242 CreateDevice, 658 format negotiation, 669 fatal surface, 1595 Render, 1725 PresentToSurface}, wasm_renderer/wasm_bridge.js (canonical, synced to src/wasm/), src/renderer/{WASMRenderer.ts,RendererManager.ts}, WASM_RENDERER_GAP_ANALYSIS.md, wasm_renderer/STATUS.md
 - GH: #799 (open, context init), #771 (closed windows), #736 (closed testing).
