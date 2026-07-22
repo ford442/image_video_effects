@@ -107,7 +107,9 @@ export class WebGPUShaderManager {
 
     if (supportsSubgroups && !id.endsWith('-sg') && resolvedUrl.endsWith('.wgsl')) {
       const sgUrl = resolvedUrl.replace(/\.wgsl$/, '-sg.wgsl');
-      const sgWgsl = await fetchShaderWgsl(`${id}-sg`, sgUrl);
+      // Optional probe — primaryOnly avoids cascading 404s to CDN/storage when
+      // no subgroup variant exists (currently zero *-sg.wgsl files in-repo).
+      const sgWgsl = await fetchShaderWgsl(`${id}-sg`, sgUrl, { primaryOnly: true });
       if (sgWgsl) {
         const ok = this.compile(device, pipelineLayout, id, sgWgsl);
         if (ok) {

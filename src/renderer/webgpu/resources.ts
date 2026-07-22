@@ -61,6 +61,11 @@ export function createTextures(
     GPUTextureUsage.COPY_DST |
     GPUTextureUsage.COPY_SRC;
 
+  // scalePass renders into readTex when resolutionScale < 1, so RENDER_ATTACHMENT
+  // is required in addition to the usual storage/copy usages.
+  const USAGE_READ =
+    USAGE_STANDARD | GPUTextureUsage.RENDER_ATTACHMENT;
+
   const sourceTex = device.createTexture({
     label: 'sourceTex',
     size: [fullW, fullH],
@@ -72,7 +77,7 @@ export function createTextures(
     label: 'readTex',
     size: [sw, sh],
     format: 'rgba32float',
-    usage: USAGE_STANDARD,
+    usage: USAGE_READ,
   });
 
   const writeTex = device.createTexture({
