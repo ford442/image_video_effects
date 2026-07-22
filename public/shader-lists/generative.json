@@ -64,7 +64,42 @@
         "mapping": "zoom_params.w",
         "description": "How strongly the mouse moves through the extra dimensions"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Base Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Temporal Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Fractal Detail",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "4D Mouse Sensitivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "acoustic-string-theory",
@@ -126,7 +161,42 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Strings",
+        "default": 0.46,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Tension",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Harmonics",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Resonance",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "atmos_volumetric_fog",
@@ -189,7 +259,42 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.7
+    "target_rating": 4.7,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fog Density",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Light Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Scattering",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "God Rays",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "updated": true
   },
   {
     "id": "audio_geometric_pulse",
@@ -615,7 +720,42 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "chromatic-ghost-tunnel",
@@ -1268,7 +1408,42 @@
         "mapping": "zoom_params.w",
         "description": "Adds turbulence to the orientation field"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Field Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Stroke Persistence",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Pattern Coherence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Field Chaos",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "fire_smoke_volumetric",
@@ -1333,7 +1508,42 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.7
+    "target_rating": 4.7,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fire Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Smoke Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Depth Weight",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "fractal-ice-palace",
@@ -20455,7 +20665,42 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "States",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spontaneity",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Bloom",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Cooldown",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "gen-fluffy-raincloud",
@@ -21064,7 +21309,42 @@
         "max": 1,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Zoom",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Exponent n",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Trap Mode",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trap Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "gen-kimi-crystal",
@@ -21679,7 +21959,42 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Detail",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "generative-psy-swirls",
@@ -21744,7 +22059,42 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Twist Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Layer Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Depth Reduction",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "generative-turing-veins",
@@ -21808,7 +22158,42 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Primary Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Secondary Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Feed Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Vein Glow",
+        "default": 0.65,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "gravito-phononic-accretion",
@@ -21939,7 +22324,42 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Facets",
+        "default": 0.46,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Tilt",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Interference",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Dispersion",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "holographic-entropy-vortex",
@@ -22062,7 +22482,42 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "target_rating": 4.7
+    "target_rating": 4.7,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Film Thickness",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Wave Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Depth Weight",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chromatic Aberration",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "hyperbolic-crystal-symbiosis",
@@ -22676,7 +23131,42 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Field Lines",
+        "default": 0.44,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Field Strength",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Organic",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bloom",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "molten-gold",
@@ -22739,7 +23229,42 @@
       "temporal",
       "chromatic",
       "abstract"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flow Speed / Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Specular Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Highlight Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "morphogenic-resonance",
@@ -22870,7 +23395,42 @@
         "mapping": "zoom_params.w",
         "description": "How much the mouse can locally boost growth"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Mutation Pressure",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Species Competition",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Resource Fertility",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mouse Nurturing Power",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "mycelium-network",
@@ -22929,7 +23489,42 @@
       "pulse",
       "audio-reactive",
       "organic"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Network Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Branch Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Pulse Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Glow Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "nebula-gyroid",
@@ -23190,7 +23785,42 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Node Count",
+        "default": 0.46,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Pulse Speed",
+        "default": 0.42,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Connectivity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Signal Gain",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "phase-memory-weave",
@@ -23258,7 +23888,42 @@
         "mapping": "zoom_params.w",
         "description": "How strongly the mouse can force local phase changes"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Phase",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Memory Strength",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Turbulence",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mouse Disturbance",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "phosphorescent-jellyfish",
@@ -23379,7 +24044,42 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Jet Count",
+        "default": 0.44,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Velocity",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Spread",
+        "default": 0.38,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "plasma-orb",
@@ -23444,7 +24144,42 @@
       "tokamak",
       "magnetic-reconnection",
       "synchrotron"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Arc Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Arc Chaos",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Core Brightness",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "psy-swirls",
@@ -23642,7 +24377,42 @@
         "mapping": "zoom_params.w",
         "description": "How visible the 'memory' of previous generations is"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Lineage Blend",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Mutation Rate",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Terrain Roughness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Historical Depth",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "retro_phosphor_dream",
@@ -23762,7 +24532,42 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Knots",
+        "default": 0.46,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Spin",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow",
+        "default": 0.52,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Phi Layers",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "sand-dunes",
@@ -24415,7 +25220,42 @@
         "mapping": "zoom_params.w",
         "description": "How strongly the mouse can plant new network nodes"
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Network Growth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Light Transmission",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Symbiotic Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mouse Seeding Power",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "topological-acoustic-knots",

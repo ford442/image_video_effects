@@ -6,6 +6,8 @@
 //  Complexity: High
 //  Created: 2026-05-31
 //  Upgraded: 2026-06-06
+//  Optimized: 2026-07-22 (curl-noise line weave, IQ palette bloom,
+//             feedback clamp, rewired slider mappings)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -34,7 +36,42 @@ fn sat(x: f32) -> f32 {
 }
 
 fn hash21(p: vec2<f32>) -> f32 {
-  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+
+// ── Value noise (canonical form) ─────────────────────────────────
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let s = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), s.x),
+    mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), s.x),
+    s.y
+  );
+}
+
+// ── Curl noise: perpendicular gradient of value noise ────────────
+//  Divergence-free, so flux lines weave organically without clumping.
+fn curlNoise(p: vec2<f32>) -> vec2<f32> {
+  let e = 0.1;
+  let nT = valueNoise(p + vec2<f32>(0.0, e));
+  let nB = valueNoise(p - vec2<f32>(0.0, e));
+  let nR = valueNoise(p + vec2<f32>(e, 0.0));
+  let nL = valueNoise(p - vec2<f32>(e, 0.0));
+  let grad = vec2<f32>(nR - nL, nT - nB) / (2.0 * e);
+  return vec2<f32>(grad.y, -grad.x);
+}
+
+// ── IQ cosine palette ────────────────────────────────────────────
+//  Blended into the bloom layer at low mix; teal/magenta field colors
+//  stay dominant.
+fn iqCosPalette(t: f32) -> vec3<f32> {
+  let a = vec3<f32>(0.45, 0.38, 0.55);
+  let b = vec3<f32>(0.35, 0.30, 0.35);
+  let c = vec3<f32>(1.00, 1.00, 1.00);
+  let d = vec3<f32>(0.55, 0.20, 0.75);
+  return a + b * cos(6.28318 * (c * t + d));
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -59,10 +96,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
+  // ── Slider wiring (zoom_params.x/y/z/w) ────────────────────────
+  //  x fieldLines    → number of dipole field lines traced
+  //  y fieldStrength → dipole inverse-square gain + line brightness
+  //  z organic       → curl-noise weave amplitude (plus harmonic warp)
+  //  w bloom         → glow gain + IQ palette mix on the bloom layer
   let fieldLines = mix(4.0, 24.0, u.zoom_params.x);
-  let fieldStrength = mix(0.2, 2.0, u.zoom_params.y);
-  let organic = mix(0.0, 1.0, u.zoom_params.z);
-  let bloom = mix(0.2, 1.5, u.zoom_params.w);
+  let dipoleGain = mix(0.4, 2.2, u.zoom_params.y);
+  let lineGain = mix(0.3, 1.8, u.zoom_params.y);
+  let curlAmp = u.zoom_params.z * 0.45;
+  let warpAmp = u.zoom_params.z * 0.15;
+  let bloomGain = mix(0.2, 1.5, u.zoom_params.w);
+  let paletteMix = 0.3 * sat(u.zoom_params.w * 1.4);
 
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   var p = uv * 2.0 - 1.0;
@@ -75,7 +120,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var curl = 0.0;
   var seed = 0.0;
 
-  for (var i = 0u; i < u32(fieldLines); i = i + 1u) {
+  let lineCount = u32(max(fieldLines, 1.0));
+  let curlTime = time * 0.25 + bass * 0.4;
+
+  for (var i = 0u; i < lineCount; i = i + 1u) {
     let fi = f32(i);
     let angle = fi * 6.28318 / fieldLines;
     let dir = vec2<f32>(cos(angle), sin(angle));
@@ -90,12 +138,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let distB = length(toB);
       if (distA < 0.02 || distB < 0.02) { break; }
 
-      let fieldDir = normalize(toA / (distA * distA + 0.001) - toB / (distB * distB + 0.001));
+      // Dipole field, strength scaled by Field Strength slider
+      let fieldDir = normalize(
+        toA / (distA * distA + 0.001) - toB / (distB * distB + 0.001)
+      ) * dipoleGain;
+
+      // Harmonic organic warp (original motion)
       let organicWarp = vec2<f32>(
-        sin(pos.y * 8.0 + time * 0.5 + fi) * organic * 0.15,
-        cos(pos.x * 6.0 + time * 0.3 + fi * 1.3) * organic * 0.15
+        sin(pos.y * 8.0 + time * 0.5 + fi) * warpAmp,
+        cos(pos.x * 6.0 + time * 0.3 + fi * 1.3) * warpAmp
       );
-      pos = pos + (fieldDir + organicWarp) * 0.02;
+
+      // Curl-noise perturbation: derivative-of-noise offset so lines
+      // weave organically instead of lying perfectly smooth.
+      let curlOff = curlNoise(pos * 3.0 + vec2<f32>(curlTime, fi * 0.37)) * curlAmp;
+
+      pos = pos + (fieldDir + organicWarp + curlOff) * 0.02;
 
       let pd = length(p - pos);
       lineInt = lineInt + exp(-pd * pd * 800.0);
@@ -108,14 +166,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   seed = step(0.995 - treble * 0.02, hash21(floor(uv * 250.0 + time * 0.08))) * flux;
 
-  // Chromatic: teal flux lines, magenta curls, gold seeds
+  // ── Chromatic layers: teal flux lines, magenta curls, gold seeds ──
   var color = vec3<f32>(0.01, 0.01, 0.02);
-  color = color + vec3<f32>(0.1, 0.85, 0.75) * flux * fieldStrength * bloom * (1.0 + bass * 0.2);
-  color = color + vec3<f32>(0.9, 0.35, 0.75) * curl * bloom * 0.5 * (1.0 + mids * 0.15);
+  color = color + vec3<f32>(0.1, 0.85, 0.75) * flux * lineGain * bloomGain * (1.0 + bass * 0.2);
+
+  // Bloom layer: magenta base blended toward IQ cosine palette at low
+  // mix (~0.3), param-scaled by the Bloom slider; magenta stays dominant.
+  let bloomAmt = curl * bloomGain * 0.5 * (1.0 + mids * 0.15);
+  let palCol = iqCosPalette(curl * 0.35 + flux * 0.15 + time * 0.03);
+  let bloomCol = mix(vec3<f32>(0.9, 0.35, 0.75), palCol, paletteMix);
+  color = color + bloomCol * bloomAmt;
+
   color = color + vec3<f32>(1.0, 0.85, 0.25) * seed * (0.4 + treble);
 
+  // ── Temporal feedback with pre-tint clamp (luma-echo-warp lesson) ─
+  //  Clamp the accumulated frame at ~1.2 before tinting so bloom trails
+  //  cannot blow out over time.
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  color = mix(color, prev.rgb * 0.9, 0.025 + bass * 0.01);
+  let prevClamped = min(prev.rgb, vec3<f32>(1.2));
+  color = mix(color, prevClamped * 0.9, 0.025 + bass * 0.01);
 
   let presence = sat(flux * 0.85 + curl * 0.6 + seed * 0.9);
   let alpha = sat(0.1 + presence * 0.9);

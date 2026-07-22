@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Plasma Jet Stream — Algorithmist Upgrade
+//  Plasma Jet Stream — Algorithmist Upgrade (v2)
 //  Warped FBM turbulence + Clifford drift + Gold-noise sparks
-//  Multi-scale jet boundaries with divergence-free perturbation
+//  Divergence-free curl-noise perturbation of jet boundaries
+//  Chromatic shear fringe (RGB dispersion at velocity gradients)
+//  Bass surge wave: radial pressure pulse that pumps jet spread
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -66,6 +68,21 @@ fn warpedFBM(p: vec2<f32>, t: f32) -> f32 {
   return fbm(p + 4.0 * r);
 }
 
+// Divergence-free perturbation: curl of a value-noise potential.
+// Finite-difference gradient rotated 90 deg → (dPsi/dy, -dPsi/dx).
+// Because curl fields have zero divergence, jets bend organically
+// without artificial sources or sinks in the boundary flow.
+fn curlNoise(p: vec2<f32>) -> vec2<f32> {
+  let e = 0.15;
+  let nTop    = valueNoise(p + vec2<f32>(0.0, e));
+  let nBottom = valueNoise(p - vec2<f32>(0.0, e));
+  let nRight  = valueNoise(p + vec2<f32>(e, 0.0));
+  let nLeft   = valueNoise(p - vec2<f32>(e, 0.0));
+  let dPsiDy = (nTop - nBottom) / (2.0 * e);
+  let dPsiDx = (nRight - nLeft) / (2.0 * e);
+  return vec2<f32>(dPsiDy, -dPsiDx);
+}
+
 fn clifford(p: vec2<f32>, a: f32, b: f32, c: f32, d: f32) -> vec2<f32> {
   return vec2<f32>(sin(a * p.y) + c * cos(a * p.x),
                    sin(b * p.x) + d * cos(b * p.y));
@@ -89,6 +106,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
+  // Slider contract (saved-preset mapping — do not reorder):
+  //   x = Jet Count   → number of radial jets
+  //   y = Velocity    → pulse frequency AND surge-wave propagation speed
+  //   z = Spread      → base jet width (shear-layer thickness)
+  //   w = Turbulence  → curl-noise bend amplitude + Clifford drift
   let jetCount = mix(1.0, 8.0, u.zoom_params.x);
   let velocity = mix(0.5, 4.0, u.zoom_params.y);
   let spread = mix(0.02, 0.25, u.zoom_params.z);
@@ -99,8 +121,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   p.x = p.x * aspect;
 
   let aim = mouse * 0.4;
+  let streamOrigin = aim * 0.5;
+
+  // ── Bass surge wave ─────────────────────────────────────────────
+  // A slow radial pressure pulse launched from the stream origin.
+  // As the wavefront passes a radius it locally widens jet spread,
+  // so bass hits visibly pump the jets outward.
+  let radius = length(p - streamOrigin);
+  let surgeSpeed = 0.55 + velocity * 0.35;
+  let surgePhase = radius * 5.0 - time * surgeSpeed * TAU * 0.25;
+  let surgeFront = max(sin(surgePhase), 0.0);
+  let surgeFalloff = exp(-radius * 1.2);
+  let surgeAmp = sat(bass) * 0.6;
+  let surgeBoost = 1.0 + surgeFront * surgeFront * surgeFalloff * surgeAmp;
+
   var jetIntensity = 0.0;
   var jetHeat = 0.0;
+  var shearMag = 0.0;
+  var shearHue = 0.0;
 
   for (var j = 0u; j < u32(jetCount); j = j + 1u) {
     let fj = f32(j);
@@ -111,39 +149,63 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Clifford attractor drift for organic jet origin perturbation
     let drift = clifford(vec2<f32>(fj, time * 0.1), 1.5, 2.1, 0.9, 1.3) * 0.04 * turbulence;
-    let origin = aim * 0.5 + drift;
+    let origin = streamOrigin + drift;
     let along = dot(p - origin, dir);
     let across = dot(p - origin, perp);
 
     let pulse = 0.5 + 0.5 * sin(time * velocity * (1.0 + seed * 2.0) + fj * 3.7 + bass * 4.0);
-    let width = spread * (0.6 + pulse * 0.6) * (1.0 + mids * 0.3);
+    let width = spread * (0.6 + pulse * 0.6) * (1.0 + mids * 0.3) * surgeBoost;
 
-    // Domain-warped FBM for turbulent jet boundary
-    let warp = warpedFBM(vec2<f32>(across, along) * 2.0 + seed * 10.0, time * 0.2) * turbulence * 0.12;
-    let dist = abs(across + warp);
+    // Divergence-free curl-noise bend + domain-warped FBM boundary
+    let flowP = vec2<f32>(across, along) * 2.0 + seed * 10.0 + vec2<f32>(0.0, time * 0.15);
+    let curl = curlNoise(flowP) * turbulence * 0.10;
+    let warp = warpedFBM(vec2<f32>(across, along) * 2.0 + seed * 10.0, time * 0.2) * turbulence * 0.08;
+    let dist = abs(across + curl.x + warp);
 
-    let jcore = exp(-0.5 * dist * dist / (width * width * 0.2 + 0.001)) * pulse;
-    let jhalo = exp(-0.5 * dist * dist / (width * width * 0.8 + 0.001)) * 0.4;
+    let coreVar = width * width * 0.2 + 0.001;
+    let haloVar = width * width * 0.8 + 0.001;
+    let jcore = exp(-0.5 * dist * dist / coreVar) * pulse;
+    let jhalo = exp(-0.5 * dist * dist / haloVar) * 0.4;
     jetIntensity = jetIntensity + jcore + jhalo;
     jetHeat = jetHeat + jcore * (1.0 + bass);
+
+    // Shear-layer strength: |d(core)/d(dist)| peaks at the jet boundary
+    // where the velocity gradient is steepest.
+    let shear = jcore * dist / coreVar;
+    shearMag = shearMag + shear;
+    shearHue = shearHue + shear * (0.5 + 0.5 * sign(curl.x + warp));
   }
 
   let shock = smoothstep(0.6, 1.0, jetIntensity);
   // Gold-noise spark generation (quasi-random, better temporal stability)
   let spark = step(0.996 - treble * 0.03, goldNoise(floor((uv + time * 0.1) * 200.0), time)) * shock;
 
+  // ── Chromatic shear fringe ──────────────────────────────────────
+  // High velocity-gradient zones get prismatic RGB dispersion:
+  // red lags inward, blue pushes outward, fringe hue follows the
+  // local bend direction so the prismatic edge flips with the curl.
+  let fringe = sat(shearMag * 1.6) * (1.0 - sat(jetIntensity * 0.45));
+  let fringeDir = sat(0.5 + shearHue * 2.0);
+  let fringeCol = vec3<f32>(fringeDir, 0.35 + 0.3 * treble * 0.5, 1.0 - fringeDir);
+  let dispersion = fringe * (0.28 + treble * 0.12);
+
   // Chromatic: R core, G shock, B sparks
   var color = vec3<f32>(0.01, 0.01, 0.02);
   color = color + vec3<f32>(1.0, 0.35, 0.05) * jetHeat * (1.0 + bass * 0.25);
   color = color + vec3<f32>(0.85, 0.9, 0.3) * shock * 0.5 * (1.0 + mids * 0.15);
   color = color + vec3<f32>(0.4, 0.7, 1.0) * spark * (0.5 + treble);
+  color = color + fringeCol * dispersion;
+
+  // Surge-wave shimmer: faint cyan pressure ring riding the wavefront
+  let ringGlow = surgeFront * surgeFalloff * surgeAmp * 0.18;
+  color = color + vec3<f32>(0.2, 0.55, 0.7) * ringGlow;
 
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
   color = mix(color, prev.rgb * 0.92, 0.03 + bass * 0.015);
 
-  let presence = sat(jetIntensity * 0.85 + spark * 0.8);
+  let presence = sat(jetIntensity * 0.85 + spark * 0.8 + fringe * 0.5);
   let alpha = sat(0.15 + presence * 0.85);
-  let depth = sat(0.95 - jetHeat * 0.6 - spark * 0.2);
+  let depth = sat(0.95 - jetHeat * 0.6 - spark * 0.2 - fringe * 0.1);
 
   color = acesToneMap(color * 1.1);
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));

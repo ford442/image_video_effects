@@ -63,5 +63,40 @@
       "mapping": "zoom_params.w",
       "description": "How strongly the mouse moves through the extra dimensions"
     }
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Base Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Temporal Speed",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Fractal Detail",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "4D Mouse Sensitivity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

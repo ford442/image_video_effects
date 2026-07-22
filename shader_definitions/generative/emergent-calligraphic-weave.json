@@ -73,5 +73,40 @@
       "mapping": "zoom_params.w",
       "description": "Adds turbulence to the orientation field"
     }
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Field Complexity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Stroke Persistence",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Pattern Coherence",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Field Chaos",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

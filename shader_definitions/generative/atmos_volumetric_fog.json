@@ -59,5 +59,40 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "target_rating": 4.7
+  "target_rating": 4.7,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Fog Density",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "name": "Light Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "index": 2,
+      "name": "Scattering",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "index": 3,
+      "name": "God Rays",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    }
+  ],
+  "updated": true
 }

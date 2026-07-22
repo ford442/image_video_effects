@@ -2,9 +2,11 @@
 //  Generative Psy Swirls
 //  Category: generative
 //  Features: audio-reactive, mouse-interactive, psychedelic, chromatic, temporal-layer-memory,
-//            upgraded-rgba, aces-tone-map, chromatic-hue-separation, audio-twist
+//            upgraded-rgba, aces-tone-map, chromatic-hue-separation, audio-twist,
+//            domain-warped-swirl, mids-hue-fan, feedback-clamp
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-07-22 (Visualist swarm pass: fbm domain warp, mids-driven hue
+//            separation, temporal feedback clamp, slider rewiring)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -36,20 +38,47 @@ fn hash21(p: vec2<f32>) -> f32 {
     return fract(sin(h) * 43758.5453123);
 }
 
+// ── Value noise & fbm for the swirl domain warp ───────────────────
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let s = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash21(i),                       hash21(i + vec2<f32>(1.0, 0.0)), s.x),
+        mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), s.x),
+        s.y
+    );
+}
+
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+    var sum = 0.0;
+    var amp = 0.5;
+    var freq = 1.0;
+    for (var i = 0; i < octaves; i = i + 1) {
+        sum += amp * valueNoise(p * freq);
+        freq *= 2.0;
+        amp *= 0.5;
+    }
+    return sum;
+}
+
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
   let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
   let p = abs(fract(c.xxx + k.xyz) * 6.0 - k.www);
   return c.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
-fn layeredSwirlLayer(uv: vec2<f32>, time: f32, twist: f32, freq: f32, offset: vec2<f32>) -> vec3<f32> {
+// One swirl arm layer in polar space. hueShift fans the layer's hue
+// rotation so mids energy spreads layers into rainbow fringes.
+fn layeredSwirlLayer(uv: vec2<f32>, time: f32, twist: f32, freq: f32,
+                     offset: vec2<f32>, hueShift: f32) -> vec3<f32> {
     let d = length(uv - offset);
     let a = atan2(uv.y - offset.y, uv.x - offset.x);
     let swirl = a + d * twist * freq - time * 0.5;
     let arm = sin(swirl * 3.0) * 0.5 + 0.5;
     let distRipple = sin(d * 10.0 - time * 2.0) * 0.5 + 0.5;
     let val = arm * distRipple;
-    let hue = fract(d * 0.5 + time * 0.1);
+    let hue = fract(d * 0.5 + time * 0.1 + hueShift);
     return hsv2rgb(vec3<f32>(hue, 0.8, val));
 }
 
@@ -73,6 +102,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
+    // ── Sliders (saved-preset contract: ids/defaults unchanged) ──
+    // twist          -> vortex twist strength (bass adds a kick)
+    // layers         -> number of stacked swirl layers
+    // frequency      -> polar arm frequency + domain warp scale
+    // depthReduction -> how much scene depth flattens the twist
     let twist = u.zoom_params.x * 4.0 * (1.0 + bass * 0.3);
     let layers = u.zoom_params.y * 5.0 + 2.0;
     let freq = u.zoom_params.z * 2.0 + 0.5;
@@ -85,7 +119,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
     let m = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
 
-    // Chromatic hue separation per layer
+    // ── Domain warp: fbm offset bends the swirl arms so they ──────
+    // breathe instead of rotating rigidly. Frequency slider scales
+    // the warp field; treble adds shimmer to the warp drift.
+    let warpScale = 1.5 + freq * 1.5;
+    let warpDrift = vec2<f32>(time * 0.11, -time * 0.08) * (1.0 + treble * 0.2);
+    let warp = vec2<f32>(
+        fbm(p * warpScale + warpDrift, 3),
+        fbm(p * warpScale * 1.37 + vec2<f32>(5.2, 1.3) - warpDrift.yx, 3)
+    );
+    let warpStrength = 0.10 + u.zoom_params.z * 0.10 + bass * 0.03;
+    p = p + (warp - vec2<f32>(0.5)) * warpStrength;
+
+    // ── Multi-layer swirl with mids-driven chromatic hue fan ──────
     var rLayer = vec3<f32>(0.0);
     var gLayer = vec3<f32>(0.0);
     var bLayer = vec3<f32>(0.0);
@@ -95,9 +141,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             sin(time * 0.3 + fi * 1.2) * 0.1,
             cos(time * 0.2 + fi * 0.8) * 0.1
         );
-        rLayer += layeredSwirlLayer(p, time, adjustedTwist, freq + fi * 0.2 + treble * 0.1, offset + vec2<f32>(fi * 0.02, 0.0));
-        gLayer += layeredSwirlLayer(p, time, adjustedTwist, freq + fi * 0.2, offset);
-        bLayer += layeredSwirlLayer(p, time, adjustedTwist, freq + fi * 0.2 - bass * 0.1, offset - vec2<f32>(fi * 0.02, 0.0));
+        // Per-layer hue stagger grows with mids: layers fan out into
+        // rainbow fringes on musical peaks.
+        let hueFan = fi * mids * 0.06;
+        rLayer += layeredSwirlLayer(p, time, adjustedTwist, freq + fi * 0.2 + treble * 0.1,
+                                    offset + vec2<f32>(fi * 0.02, 0.0), hueFan + mids * 0.10);
+        gLayer += layeredSwirlLayer(p, time, adjustedTwist, freq + fi * 0.2,
+                                    offset, hueFan * 0.5);
+        bLayer += layeredSwirlLayer(p, time, adjustedTwist, freq + fi * 0.2 - bass * 0.1,
+                                    offset - vec2<f32>(fi * 0.02, 0.0), hueFan - mids * 0.10);
     }
     let invLayers = 1.0 / layers;
     rLayer *= invLayers;
@@ -116,14 +168,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color += vec3<f32>(0.5, 0.3, 0.8) * ring * 0.3;
     }
 
-    // Temporal swirl layer accumulation: previous color fades in for trails
+    // ── Temporal swirl layer accumulation: previous color fades ───
+    // in for trails. FEEDBACK CLAMP: the memory write is clamped
+    // pre-tint at 1.2 (luma-echo-warp lesson) so accumulated color
+    // can never blow up across frames.
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let trail = mix(color, prev * 0.92, 0.04 + mids * 0.02);
+    let trailClamped = clamp(trail, vec3<f32>(0.0), vec3<f32>(1.2));
+    let trailTinted = trailClamped * vec3<f32>(0.98, 0.99, 1.02);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy),
+                 vec4<f32>(min(trailTinted, vec3<f32>(1.2)), 1.0));
+
     color = mix(color, prev * 0.92, 0.04 + mids * 0.02);
 
     let alpha = clamp(length(color) * 0.8 + bass * 0.05, 0.0, 1.0);
 
     color = acesToneMap(color * 1.1);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

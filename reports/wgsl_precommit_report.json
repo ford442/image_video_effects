@@ -1,16 +1,16 @@
 {
-  "timestamp": "2026-07-21T13:40:36.511950",
+  "timestamp": "2026-07-22T09:38:39.215501",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 18,
-  "passed": 18,
+  "total": 9,
+  "passed": 9,
   "failed": 0,
   "skipped": 0,
   "warnings": 0,
   "workgroup_blocking": 0,
   "results": [
     {
-      "file": "public/shaders/anaglyph-3d.wgsl",
+      "file": "public/shaders/4d-projection-dream-weavers.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -23,7 +23,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/blueprint-reveal-guided.wgsl",
+      "file": "public/shaders/acoustic-string-theory.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -36,7 +36,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/boids.wgsl",
+      "file": "public/shaders/gen_cyclic_automaton.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -49,7 +49,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-acid-lissajous.wgsl",
+      "file": "public/shaders/gen_wave_equation.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -62,7 +62,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-belousov-zhabotinsky.wgsl",
+      "file": "public/shaders/generative-turing-veins.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -75,7 +75,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
+      "file": "public/shaders/holographic-crystal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -88,7 +88,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-ghost-flame.wgsl",
+      "file": "public/shaders/mycelium-network.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -101,7 +101,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
+      "file": "public/shaders/phase-memory-weave.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -114,124 +114,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-sentient-aether-plasma-nebula-moth.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/gen-sentient-cyber-chrono-void-serpent.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/gen-showcase-nebula-core.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/kaleidoscope.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/kimi_flock_symphony.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/liquid-touch.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/pixel-stretch-cross.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/quantum-foam.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/sand-dunes.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": true,
-      "naga_skipped": false,
-      "naga_error": "",
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/tornado-vortex.wgsl",
+      "file": "public/shaders/plasma-orb.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

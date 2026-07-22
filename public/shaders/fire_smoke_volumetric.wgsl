@@ -2,9 +2,10 @@
 //  Fire Smoke Volumetric
 //  Category: simulation
 //  Features: advanced-alpha, fire, smoke, volumetric,
-//            chromatic-temperature, temporal-smoke, audio-turbulence
+//            chromatic-temperature, temporal-smoke, audio-turbulence,
+//            worley-embers, treble-edge-flicker, feedback-clamped
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-07-22 (Visualist swarm pass)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,6 +32,36 @@ struct Uniforms {
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
 
+// ── Hashes ────────────────────────────────────────────────────────
+fn hash(p: vec3<f32>) -> f32 {
+    return fract(sin(dot(p, vec3<f32>(12.9898, 78.233, 54.53))) * 43758.5453);
+}
+
+fn hash21(p: vec2<f32>) -> f32 {
+    let h = dot(p, vec2<f32>(127.1, 311.7));
+    return fract(sin(h) * 43758.5453123);
+}
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+    return vec2<f32>(hash21(p), hash21(p + vec2<f32>(17.0, 31.0)));
+}
+
+// ── Worley (cellular) noise — nearest feature point distance ──────
+fn worley(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    var d = 1.0;
+    for (var oy = -1; oy <= 1; oy++) {
+        for (var ox = -1; ox <= 1; ox++) {
+            let g = vec2<f32>(f32(ox), f32(oy));
+            let o = hash22(i + g);
+            d = min(d, length(g + o - f));
+        }
+    }
+    return d;
+}
+
+// ── Volumetric helpers ────────────────────────────────────────────
 fn physicalTransmittance(baseColor: vec3<f32>, opticalDepth: f32, absorptionCoeff: vec3<f32>) -> vec3<f32> {
     let transmittance = exp(-absorptionCoeff * opticalDepth);
     return baseColor * transmittance;
@@ -42,12 +73,10 @@ fn volumetricAlpha(density: f32, thickness: f32) -> f32 {
 
 fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthAlpha = mix(0.3, 1.0, depth);
+    // Higher depth weight pushes the far-layer floor darker (deeper occlusion)
+    let depthFloor = mix(0.45, 0.15, depthWeight);
+    let depthAlpha = mix(depthFloor, 1.0, depth);
     return mix(1.0, depthAlpha, depthWeight);
-}
-
-fn hash(p: vec3<f32>) -> f32 {
-    return fract(sin(dot(p, vec3<f32>(12.9898, 78.233, 54.53))) * 43758.5453);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -59,10 +88,25 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// ── Ember field: rising worley cells, tinted by temperature ───────
+fn emberField(uv: vec2<f32>, time: f32, turbOffset: f32, fireShape: f32, tempColor: vec3<f32>, intensity: f32) -> vec3<f32> {
+    // Cells scroll upward; turbulence bends the ember column sideways
+    let emberUV = vec2<f32>(uv.x * 9.0 + turbOffset * 0.5, uv.y * 9.0 - time * 1.6);
+    let w = worley(emberUV);
+    let core = pow(clamp(1.0 - w, 0.0, 1.0), 14.0);
+    // Per-cell twinkle so sparks pulse as they rise
+    let twinkle = 0.6 + 0.4 * sin(time * 7.0 + hash21(floor(emberUV)) * TAU);
+    // Restrained: embers live inside the flame and fade toward the top
+    let mask = fireShape * smoothstep(0.95, 0.25, uv.y);
+    let embers = core * twinkle * mask * intensity * 0.35;
+    return tempColor * embers;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let pixel = vec2<i32>(global_id.xy);
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
@@ -71,19 +115,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
 
+    // ── Slider params (saved-preset contract: ids/defaults unchanged) ──
     let dM = length(uv - mouse);
     let mouseHeat = exp(-dM * dM * 8.0) * (mouseDown * 0.6 + 0.2);
+    // p1 Fire Intensity → core heat / brightness scale
     let fireIntensity = u.zoom_params.x * 2.0 * (1.0 + bass * 0.4 + mouseHeat * 0.5);
+    // p2 Smoke Density → soot density AND volumetric slab thickness
     let smokeDensity = u.zoom_params.y;
+    let slabThickness = 0.6 + smokeDensity * 2.4;
+    // p3 Depth Weight → strength + contrast of depth-layered occlusion
     let depthWeight = u.zoom_params.z;
-    let turbulence = u.zoom_params.w * (1.0 + bass * 0.3);
+    // p4 Turbulence → flame-silhouette distortion amplitude, crackled by treble
+    let edgeFlicker = 1.0 + treble * 0.8;
+    let turbulence = u.zoom_params.w * (1.0 + bass * 0.3) * edgeFlicker;
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    let noiseUV = vec3<f32>(uv * 5.0, time * 0.5);
-    let n = hash(vec3<f32>(noiseUV * 10.0));
-
+    // Flame silhouette: animated turbulence distorts the vertical falloff
+    let n = hash(vec3<f32>(uv * 50.0, time * 5.0));
     let fireShape = smoothstep(0.3, 0.7, 1.0 - uv.y + n * turbulence);
     let density = fireShape * smokeDensity;
 
@@ -92,26 +142,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fireR = mix(1.0, 0.9, temp) * (1.0 + treble * 0.2);
     let fireG = mix(0.8, 0.3, temp) * (1.0 + mids * 0.2);
     let fireB = mix(0.1, 0.05, temp) * (1.0 + bass * 0.1);
-    let fireColor = vec3<f32>(fireR, fireG, fireB) * fireShape;
+    let tempColor = vec3<f32>(fireR, fireG, fireB);
+    let fireColor = tempColor * fireShape * (0.5 + fireIntensity * 0.5);
 
     let smokeColor = vec3<f32>(0.3, 0.3, 0.35) * density;
     let effectColor = mix(smokeColor, fireColor, fireShape);
 
-    // Temporal smoke persistence via dataTextureC
+    // Worley-noise ember sparks riding the flame, tinted by the same gradient
+    let emberColor = emberField(uv, time, turbulence, fireShape, tempColor, fireIntensity);
+
+    // Temporal smoke persistence via dataTextureC (feedback path)
     let prevSmoke = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
-    let persistentSmoke = mix(effectColor, prevSmoke * 0.92, 0.08 + bass * 0.02);
+    let decay = 0.92 + smokeDensity * 0.04;
+    // Feedback stability: clamp accumulation pre-write at 1.2 (luma-echo-warp lesson)
+    let decayedPrev = min(prevSmoke * decay, vec3<f32>(1.2));
+    let smokeBlend = clamp(0.08 + bass * 0.02 + smokeDensity * 0.05, 0.0, 0.5);
+    let persistentSmoke = mix(effectColor, decayedPrev, smokeBlend);
 
-    let opticalDepth = density * (1.0 + turbulence);
+    // Physical transmittance through the smoke slab
+    let opticalDepth = density * (1.0 + turbulence) * slabThickness;
     let absorptionCoeff = vec3<f32>(0.5, 0.6, 0.7);
-    let transmitted = physicalTransmittance(persistentSmoke, opticalDepth, absorptionCoeff);
+    let transmitted = physicalTransmittance(persistentSmoke + emberColor, opticalDepth, absorptionCoeff);
 
-    let volAlpha = volumetricAlpha(density, 1.0);
+    // Depth-layered volumetric alpha + restrained ember alpha contribution
+    let volAlpha = volumetricAlpha(density, slabThickness);
     let effectAlpha = volAlpha * depthLayeredAlpha(uv, depthWeight);
+    let emberAlpha = clamp(dot(emberColor, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.6, 0.0, 0.25);
+    let combinedAlpha = clamp(effectAlpha + emberAlpha, 0.0, 1.0);
 
-    let finalColor = mix(baseColor.rgb, transmitted, effectAlpha);
-    let finalAlpha = mix(baseColor.a, 1.0, effectAlpha * 0.7);
+    let finalColor = mix(baseColor.rgb, transmitted, combinedAlpha);
+    let finalAlpha = mix(baseColor.a, 1.0, combinedAlpha * 0.7);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap((finalColor) * 1.1), finalAlpha));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0, 0, 0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(finalColor * 1.1), finalAlpha));
+    // dataTextureA feeds next frame's dataTextureC: write the clamped smoke state
+    let smokeState = min(persistentSmoke, vec3<f32>(1.2));
+    textureStore(dataTextureA, pixel, vec4<f32>(smokeState, combinedAlpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

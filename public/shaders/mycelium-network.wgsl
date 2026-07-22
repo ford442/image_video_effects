@@ -2,10 +2,11 @@
 //  Mycelium Network
 //  Category: generative
 //  Features: generative, audio-reactive, branching-network, pulsing-nutrients,
-//            upgraded-rgba, branchless, anti-moire
+//            upgraded-rgba, branchless, anti-moire, click-pulse-packets,
+//            growth-tropism, bass-heartbeat, worley-thickness
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-06-07, interactivist upgrade 2026-07-22
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -41,6 +42,21 @@ fn hash21(p: vec2<f32>) -> f32 {
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(hash21(p), hash21(p + vec2<f32>(1.0, 0.0)));
+}
+
+// ── Worley (cellular) noise: per-region hyphal thickness variation ─
+fn worley(p: vec2<f32>) -> f32 {
+    let id = floor(p);
+    let f = fract(p);
+    var d = 8.0;
+    for (var oy = -1; oy <= 1; oy = oy + 1) {
+        for (var ox = -1; ox <= 1; ox = ox + 1) {
+            let g = vec2<f32>(f32(ox), f32(oy));
+            let o = hash22(id + g);
+            d = min(d, length(g + o - f));
+        }
+    }
+    return d;
 }
 
 // ── Fast math ─────────────────────────────────────────────────────
@@ -79,6 +95,37 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pulseSpeed = u.zoom_params.z * 3.0;
     let glowIntensity = u.zoom_params.w;
 
+    // ── Click state: rising-edge nutrient pulse packet ────────────
+    // extraBuffer[0..4] reserved, [5..132] = engine FFT bins. This shader uses [133..136]:
+    //   [5] = previous mouse-down state (rising-edge detector)
+    //   [6] = time of last click (packet launch time)
+    //   [7..8] = UV of last click (packet origin)
+    // Only thread (0,0) writes; all threads read last frame's state.
+    let mouseUV = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
+    let prevDown = extraBuffer[133];
+    let clickTime = extraBuffer[134];
+    let clickPos = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (gid.x == 0u && gid.y == 0u) {
+        extraBuffer[133] = mouseDown;
+        if (mouseDown > 0.5 && prevDown < 0.5) {
+            extraBuffer[134] = time;
+            extraBuffer[135] = mouseUV.x;
+            extraBuffer[136] = mouseUV.y;
+        }
+    }
+
+    // Expanding pulse packet traveling outward from the click point.
+    // Speed scales with the Pulse Speed slider; decays with age.
+    let aspect = vec2<f32>(res.x / res.y, 1.0);
+    let pulseAge = max(time - clickTime, 0.0);
+    let packetRadius = pulseAge * (0.2 + pulseSpeed * 0.25);
+    let clickDist = length((uv - clickPos) * aspect);
+    let packet = exp(-abs(clickDist - packetRadius) * 16.0) * exp(-pulseAge * 0.9);
+
+    // ── Bass heartbeat: network-wide gentle throb ─────────────────
+    let heartbeat = pow(0.5 + 0.5 * sin(time * (2.0 + bass * 5.0)), 3.0) * (0.25 + bass * 0.75);
+
     // ── Anti-moire LOD: attenuate high-frequency detail when dense
     let minRes = min(res.x, res.y);
     let lod = clamp(log2(networkDensity * 300.0 / minRes), 0.0, 2.0);
@@ -90,6 +137,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var color = vec3<f32>(0.03, 0.02, 0.04);
     var glow = 0.0;
+    var hypha = 0.0;   // accumulated hypha mask for packet lighting
 
     // ── Cell seeding ──────────────────────────────────────────────
     let seed = cellId;
@@ -97,12 +145,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let trunkLen = 0.3 + hash21(seed + vec2<f32>(1.0, 0.0)) * 0.4;
     let branchCount = 2 + i32(hash21(seed + vec2<f32>(2.0, 0.0)) * 3.0);
 
-    let trunkEnd = trunkDir * trunkLen;
+    // ── Growth tropism: colony leans toward the cursor ────────────
+    // Pulse Speed slider doubles as the lean rate (0 = wild growth,
+    // 1 = strongly phototropic). Branch angles inherit the lean
+    // because trunkAngle is derived from the grown trunk direction.
+    let cellCenterUV = (cellId + vec2<f32>(0.5)) / networkDensity;
+    let toMouse = (mouseUV - cellCenterUV) * aspect;
+    let mouseDir = normalize(toMouse + vec2<f32>(1e-6));
+    let leanRate = u.zoom_params.z * 0.7;
+    let grownDir = normalize(mix(normalize(trunkDir + vec2<f32>(1e-6)), mouseDir, leanRate) + vec2<f32>(1e-6));
+
+    // ── Worley thickness: strands vary in width, heartbeat swells ─
+    let thickVar = 0.6 + worley(p * 0.5) * 0.8;
+    let trunkWidth = TRUNK_WIDTH * thickVar * (1.0 + heartbeat * 0.2);
+
+    let trunkEnd = grownDir * trunkLen;
     let trunkN = normalize(trunkEnd + vec2<f32>(1e-6));
     let trunkProj = clamp(dot(cellUV, trunkN), 0.0, trunkLen);
     let trunkClosest = trunkN * trunkProj;
     let trunkDist = length(cellUV - trunkClosest);
-    let trunk = smoothstep(TRUNK_WIDTH, 0.0, trunkDist) * lodFade;
+    let trunk = smoothstep(trunkWidth, 0.0, trunkDist) * lodFade;
 
     // Nutrient pulse
     let pulsePos = fract(time * pulseSpeed * 0.1 + hash21(seed + vec2<f32>(3.0, 0.0)));
@@ -112,6 +174,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color = color + vec3<f32>(0.4, 0.8, 0.5) * trunk * (0.3 + mids * 0.3);
     color = color + vec3<f32>(1.0, 0.9, 0.6) * pulse * trunk;
     glow = glow + trunk + pulse * 2.0;
+    hypha = hypha + trunk;
 
     // ── Branches (branchless: fixed 5 iterations, masked) ─────────
     let trunkAngle = fast_atan2(trunkEnd.y, trunkEnd.x);
@@ -124,7 +187,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let bProj = clamp(dot(cellUV - trunkClosest, bDir), 0.0, bLen);
         let bClosest = trunkClosest + bDir * bProj;
         let bDist = length(cellUV - bClosest);
-        let bWidth = TRUNK_WIDTH * 0.6;
+        let bWidth = trunkWidth * 0.6;
         let branch = smoothstep(bWidth, 0.0, bDist) * isActive * lodFade;
 
         let tipDist = abs(bProj - bLen);
@@ -138,7 +201,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         color = color + vec3<f32>(0.8, 1.0, 0.7) * tipGlow * branch * glowIntensity;
         color = color + vec3<f32>(1.0, 0.95, 0.7) * bPulse * branch;
         glow = glow + (branch + tipGlow * 0.5 + bPulse) * isActive;
+        hypha = hypha + branch;
     }
+
+    // ── Click pulse packet: brightens hyphae as the wavefront passes ─
+    let hyphaMask = clamp(hypha, 0.0, 1.0);
+    let packetLight = packet * hyphaMask * (0.5 + glowIntensity);
+    color = color + vec3<f32>(1.0, 0.85, 0.45) * packetLight * 1.5;
+    glow = glow + packetLight * 2.0;
+
+    // ── Heartbeat swell: gentle warm rise across the whole network ─
+    color = color + vec3<f32>(0.2, 0.35, 0.25) * heartbeat * hyphaMask * 0.5;
 
     // ── Spore clouds ──────────────────────────────────────────────
     let spore = hash21(cellId + vec2<f32>(time * 0.1, 0.0));
