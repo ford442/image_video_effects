@@ -34,18 +34,15 @@ export function createMediaInputState(): WebGPUMediaInputState {
   };
 }
 
-export function uploadRGBA8(
-  ctx: WebGPUMediaInputContext,
+function rgba8ToFloat32(
   data: Uint8ClampedArray,
   srcW: number,
   srcH: number,
-): void {
-  if (!ctx.device) return;
-  const dstW = ctx.canvasW;
-  const dstH = ctx.canvasH;
+  dstW: number,
+  dstH: number,
+): { floats: Float32Array; cW: number; cH: number } {
   const cW = Math.min(srcW, dstW);
   const cH = Math.min(srcH, dstH);
-
   const floats = new Float32Array(cW * cH * 4);
   for (let y = 0; y < cH; y++) {
     for (let x = 0; x < cW; x++) {
@@ -57,6 +54,34 @@ export function uploadRGBA8(
       floats[di + 3] = data[si + 3] / 255;
     }
   }
+  return { floats, cW, cH };
+}
+
+/** Upload pixels into sourceTex only (full-res). Frame loop copies/scales into readTex. */
+export function uploadSourceRGBA8(
+  ctx: WebGPUMediaInputContext,
+  data: Uint8ClampedArray,
+  srcW: number,
+  srcH: number,
+): void {
+  if (!ctx.device) return;
+  const { floats, cW, cH } = rgba8ToFloat32(data, srcW, srcH, ctx.canvasW, ctx.canvasH);
+  ctx.device.queue.writeTexture(
+    { texture: ctx.sourceTex },
+    floats,
+    { bytesPerRow: cW * 16, rowsPerImage: cH },
+    [cW, cH],
+  );
+}
+
+export function uploadRGBA8(
+  ctx: WebGPUMediaInputContext,
+  data: Uint8ClampedArray,
+  srcW: number,
+  srcH: number,
+): void {
+  if (!ctx.device) return;
+  const { floats, cW, cH } = rgba8ToFloat32(data, srcW, srcH, ctx.canvasW, ctx.canvasH);
 
   ctx.device.queue.writeTexture(
     { texture: ctx.sourceTex },
@@ -64,12 +89,42 @@ export function uploadRGBA8(
     { bytesPerRow: cW * 16, rowsPerImage: cH },
     [cW, cH],
   );
-  ctx.device.queue.writeTexture(
-    { texture: ctx.readTex },
-    floats,
-    { bytesPerRow: cW * 16, rowsPerImage: cH },
-    [cW, cH],
-  );
+  // readTex may be resolution-scaled; only write when dimensions match canvas
+  // (scale === 1). Otherwise the frame loop's scalePass/copy restores from sourceTex.
+  const readW = (ctx.readTex as GPUTexture & { width?: number }).width ?? ctx.canvasW;
+  const readH = (ctx.readTex as GPUTexture & { height?: number }).height ?? ctx.canvasH;
+  if (readW === ctx.canvasW && readH === ctx.canvasH) {
+    ctx.device.queue.writeTexture(
+      { texture: ctx.readTex },
+      floats,
+      { bytesPerRow: cW * 16, rowsPerImage: cH },
+      [cW, cH],
+    );
+  }
+}
+
+/**
+ * Re-upload the last letterboxed image/video frame from the CPU offscreen canvas
+ * into sourceTex after GPU textures were recreated (e.g. adaptive resolution scale).
+ * Without this, image-effect shaders go blank black after a scale change while
+ * generative shaders keep working (they don't need source pixels).
+ */
+export function restoreSourceFromOffscreen(
+  ctx: WebGPUMediaInputContext,
+  state: WebGPUMediaInputState,
+): boolean {
+  if (!ctx.device || !state.offscreen || !state.offCtx) return false;
+  if (state.offscreen.width !== ctx.canvasW || state.offscreen.height !== ctx.canvasH) {
+    return false;
+  }
+  try {
+    const imageData = state.offCtx.getImageData(0, 0, ctx.canvasW, ctx.canvasH);
+    uploadSourceRGBA8(ctx, imageData.data, ctx.canvasW, ctx.canvasH);
+    return true;
+  } catch (e) {
+    console.warn('[WebGPU] Failed to restore source texture from offscreen:', e);
+    return false;
+  }
 }
 
 export function clearSourceTexture(ctx: WebGPUMediaInputContext): void {
