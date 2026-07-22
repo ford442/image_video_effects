@@ -11644,6 +11644,62 @@
     "features": []
   },
   {
+    "id": "gen-luminescent-aether-plasma-astro-axolotl",
+    "name": "Luminescent Aether-Plasma Astro-Axolotl",
+    "url": "shaders/gen-luminescent-aether-plasma-astro-axolotl.wgsl",
+    "description": "A hyper-dimensional, cyber-organic celestial axolotl drifting gracefully through a fluid-dynamic quantum nebula.",
+    "category": "generative",
+    "tags": [
+      "axolotl",
+      "plasma",
+      "aether",
+      "organic",
+      "volumetric",
+      "fractal",
+      "aquatic",
+      "audio-reactive"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Gill Expansion",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.05
+      },
+      {
+        "index": 1,
+        "name": "Current Warp",
+        "default": 0.6,
+        "min": 0,
+        "max": 2,
+        "step": 0.05
+      },
+      {
+        "index": 2,
+        "name": "Nebula Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bioluminescence",
+        "default": 1.2,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      }
+    ]
+  },
+  {
     "id": "gen-luminescent-aether-plasma-nebula-koi",
     "name": "Luminescent Aether-Plasma Nebula-Koi",
     "category": "generative",
