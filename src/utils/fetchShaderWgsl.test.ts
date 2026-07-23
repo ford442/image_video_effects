@@ -50,15 +50,6 @@ describe('fetchShaderWgsl', () => {
     const urls: string[] = [];
     global.fetch = jest.fn(async (input: RequestInfo | URL) => {
       urls.push(String(input));
-      if (String(input).includes('/api/shaders/')) {
-    const fetchMock = jest.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('/api/shaders/')) {
-        return new Response(JSON.stringify({ code: 'should-not-reach' }), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        });
-      }
       return new Response('not found', { status: 404 });
     }) as typeof fetch;
 
