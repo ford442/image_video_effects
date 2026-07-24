@@ -7,6 +7,15 @@
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
     config: vec4<f32>,
@@ -64,14 +73,14 @@ fn sdWeb(p: vec3<f32>) -> f32 {
     let web_complexity = u.zoom_params.x; // Web Complexity
     let p_scaled = p * web_complexity;
     let thread1 = length(p_scaled.xy) - 0.02;
-    let thread2 = length(fract(p_scaled * 2.0) - 0.5) - 0.01;
+    let thread2 = length(fract(p_scaled * 2.0) - vec3<f32>(0.5)) - 0.01;
     return min(thread1, thread2) / web_complexity;
 }
 
 fn map(p: vec3<f32>, time: f32, audioReact: f32, mouse: vec2<f32>) -> f32 {
     let gravity_distortion = u.zoom_params.y; // Gravity Distortion
 
-    let distortedP = p + vec3<f32>(fbm(p + time * 0.5)) * gravity_distortion;
+    let distortedP = p + vec3<f32>(fbm(p + vec3<f32>(time * 0.5))) * gravity_distortion;
     let displacedP = distortedP - vec3<f32>(mouse.x * 2.0, mouse.y * 2.0, 0.0);
 
     let spider = sdSpider(displacedP, audioReact);
