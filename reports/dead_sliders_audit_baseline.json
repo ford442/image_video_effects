@@ -1,0 +1,727 @@
+{
+  "generated": "2026-07-26T05:04:27.845729+00:00",
+  "reason": "Triaged legacy dead sliders present at audit introduction (2026-07-26). Do NOT add new entries; wire the param in WGSL or remove it from the definition instead.",
+  "entries": [
+    {
+      "id": "alpha-crystal-growth-phase",
+      "category": "simulation",
+      "dead_param_ids": [
+        "impurity"
+      ]
+    },
+    {
+      "id": "alpha-depth-fog-volumetric",
+      "category": "visual-effects",
+      "dead_param_ids": [
+        "colorTemp"
+      ]
+    },
+    {
+      "id": "alpha-em-field-simulation",
+      "category": "simulation",
+      "dead_param_ids": [
+        "waveSpeed"
+      ]
+    },
+    {
+      "id": "alpha-erosion-terrain",
+      "category": "simulation",
+      "dead_param_ids": [
+        "sedimentCapacity"
+      ]
+    },
+    {
+      "id": "alpha-fire-temperature",
+      "category": "simulation",
+      "dead_param_ids": [
+        "smokeDensity",
+        "emberGlow"
+      ]
+    },
+    {
+      "id": "alpha-hdr-bloom-chain",
+      "category": "visual-effects",
+      "dead_param_ids": [
+        "saturation"
+      ]
+    },
+    {
+      "id": "alpha-luminance-history",
+      "category": "visual-effects",
+      "dead_param_ids": [
+        "diffusion"
+      ]
+    },
+    {
+      "id": "alpha-multi-layer-glass",
+      "category": "visual-effects",
+      "dead_param_ids": [
+        "roughness"
+      ]
+    },
+    {
+      "id": "alpha-multi-state-ecosystem",
+      "category": "simulation",
+      "dead_param_ids": [
+        "diffusion",
+        "toxinStrength"
+      ]
+    },
+    {
+      "id": "alpha-paint-thickness",
+      "category": "artistic",
+      "dead_param_ids": [
+        "specularPower",
+        "dryingRate"
+      ]
+    },
+    {
+      "id": "alpha-watercolor-wetness",
+      "category": "artistic",
+      "dead_param_ids": [
+        "flowStrength"
+      ]
+    },
+    {
+      "id": "alucinate-hdr",
+      "category": "advanced-hybrid",
+      "dead_param_ids": [
+        "glyphProminence"
+      ]
+    },
+    {
+      "id": "ascii-flow",
+      "category": "retro-glitch",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "ascii-shockwave",
+      "category": "visual-effects",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "aurora-rift-2-pass1",
+      "category": "lighting-effects",
+      "dead_param_ids": [
+        "param3"
+      ]
+    },
+    {
+      "id": "aurora-rift-2-pass2",
+      "category": "lighting-effects",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param4"
+      ]
+    },
+    {
+      "id": "aurora-rift-pass1",
+      "category": "lighting-effects",
+      "dead_param_ids": [
+        "param3"
+      ]
+    },
+    {
+      "id": "aurora-rift-pass2",
+      "category": "lighting-effects",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param4"
+      ]
+    },
+    {
+      "id": "boids",
+      "category": "artistic",
+      "dead_param_ids": [
+        "param4"
+      ]
+    },
+    {
+      "id": "boids-rgba-ecosystem",
+      "category": "advanced-hybrid",
+      "dead_param_ids": [
+        "diffusion",
+        "toxinStrength"
+      ]
+    },
+    {
+      "id": "byte-mosh",
+      "category": "retro-glitch",
+      "dead_param_ids": [
+        "operationMix",
+        "bitShift",
+        "errorRate",
+        "blockSize"
+      ]
+    },
+    {
+      "id": "chroma-vortex",
+      "category": "visual-effects",
+      "dead_param_ids": [
+        "twist",
+        "spread",
+        "radius",
+        "centerBias"
+      ]
+    },
+    {
+      "id": "chromatic-shockwave",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "ring_count"
+      ]
+    },
+    {
+      "id": "color-blindness",
+      "category": "image",
+      "dead_param_ids": [
+        "unused"
+      ]
+    },
+    {
+      "id": "cyber-scan",
+      "category": "visual-effects",
+      "dead_param_ids": [
+        "scanWidth",
+        "gridIntensity",
+        "colorSpeed",
+        "edgeStrength"
+      ]
+    },
+    {
+      "id": "cyber-slit-scan",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "hue_shift",
+        "unused"
+      ]
+    },
+    {
+      "id": "data-slicer",
+      "category": "distortion",
+      "dead_param_ids": [
+        "slideSpeed",
+        "sliceHeight",
+        "chaos",
+        "aberration"
+      ]
+    },
+    {
+      "id": "digital-glitch-pass1",
+      "category": "retro-glitch",
+      "dead_param_ids": [
+        "error_propagation",
+        "decay_rate"
+      ]
+    },
+    {
+      "id": "digital-glitch-pass2",
+      "category": "retro-glitch",
+      "dead_param_ids": [
+        "corruption_intensity",
+        "bit_manipulation"
+      ]
+    },
+    {
+      "id": "digital-haze",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "haze_density"
+      ]
+    },
+    {
+      "id": "digital-moss",
+      "category": "simulation",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "digital-waves",
+      "category": "retro-glitch",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "dimension-slicer",
+      "category": "distortion",
+      "dead_param_ids": [
+        "sliceAngle",
+        "zoomWarp",
+        "chromaticAmount",
+        "depthModulation"
+      ]
+    },
+    {
+      "id": "dynamic-halftone",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "density",
+        "radius",
+        "contrast"
+      ]
+    },
+    {
+      "id": "echo-trace",
+      "category": "artistic",
+      "dead_param_ids": [
+        "velocity_threshold"
+      ]
+    },
+    {
+      "id": "flux-core",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "fractal-kaleidoscope",
+      "category": "distortion",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "glass-wall",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3"
+      ]
+    },
+    {
+      "id": "glitch-cathedral",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "rgbSplit",
+        "sortStrength",
+        "patternSpeed"
+      ]
+    },
+    {
+      "id": "hex-lens",
+      "category": "image",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "holographic-flicker",
+      "category": "visual-effects",
+      "dead_param_ids": [
+        "flickerSpeed",
+        "glitchAmt",
+        "hologramIntensity",
+        "ghostAmt"
+      ]
+    },
+    {
+      "id": "hyb-chromatic-circuit",
+      "category": "hybrid",
+      "dead_param_ids": [
+        "grid_scale",
+        "trace_width",
+        "chroma_spread",
+        "effect_mix"
+      ]
+    },
+    {
+      "id": "hyb-temporal-fbm-ghost",
+      "category": "hybrid",
+      "dead_param_ids": [
+        "temporal_shift",
+        "fbm_scale",
+        "warp_amount",
+        "effect_mix"
+      ]
+    },
+    {
+      "id": "hyper-space-jump",
+      "category": "visual-effects",
+      "dead_param_ids": [
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "hyper-space-jump-blackbody",
+      "category": "advanced-hybrid",
+      "dead_param_ids": [
+        "param4"
+      ]
+    },
+    {
+      "id": "interactive-kuwahara",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "hardness"
+      ]
+    },
+    {
+      "id": "liquid-oil",
+      "category": "liquid-effects",
+      "dead_param_ids": [
+        "viscosity",
+        "turbulence",
+        "ripple_strength",
+        "color_shift"
+      ]
+    },
+    {
+      "id": "liquid-optimized-pass1",
+      "category": "liquid-effects",
+      "dead_param_ids": [
+        "turbidity"
+      ]
+    },
+    {
+      "id": "liquid-optimized-pass2",
+      "category": "liquid-effects",
+      "dead_param_ids": [
+        "gravityScale",
+        "damping"
+      ]
+    },
+    {
+      "id": "liquid-pass1",
+      "category": "liquid-effects",
+      "dead_param_ids": [
+        "color_shift"
+      ]
+    },
+    {
+      "id": "liquid-pass2",
+      "category": "liquid-effects",
+      "dead_param_ids": [
+        "turbulence",
+        "ripple_strength"
+      ]
+    },
+    {
+      "id": "liquid-v1",
+      "category": "liquid-effects",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "liquid-volumetric-zoom",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "parallax"
+      ]
+    },
+    {
+      "id": "matrix_digital_rain",
+      "category": "lighting-effects",
+      "dead_param_ids": [
+        "param3"
+      ]
+    },
+    {
+      "id": "mouse-pixel-sort",
+      "category": "artistic",
+      "dead_param_ids": [
+        "threshold",
+        "length",
+        "direction",
+        "mode"
+      ]
+    },
+    {
+      "id": "multi-fractal-compositor",
+      "category": "advanced-hybrid",
+      "dead_param_ids": [
+        "domain_warp"
+      ]
+    },
+    {
+      "id": "neural-raymarcher",
+      "category": "advanced-hybrid",
+      "dead_param_ids": [
+        "glow"
+      ]
+    },
+    {
+      "id": "parallax-glow-compositor",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "aberration"
+      ]
+    },
+    {
+      "id": "parallax_depth_layers",
+      "category": "artistic",
+      "dead_param_ids": [
+        "param3"
+      ]
+    },
+    {
+      "id": "particle_dreams_alpha",
+      "category": "artistic",
+      "dead_param_ids": [
+        "param3"
+      ]
+    },
+    {
+      "id": "phase-shift",
+      "category": "distortion",
+      "dead_param_ids": [
+        "param3"
+      ]
+    },
+    {
+      "id": "pixel-drag-smear",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "mode"
+      ]
+    },
+    {
+      "id": "pixel-explode",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "pixel-rain",
+      "category": "retro-glitch",
+      "dead_param_ids": [
+        "trail_fade"
+      ]
+    },
+    {
+      "id": "plasma",
+      "category": "artistic",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "predator-prey-rgba",
+      "category": "advanced-hybrid",
+      "dead_param_ids": [
+        "toxinStrength"
+      ]
+    },
+    {
+      "id": "prism-displacement",
+      "category": "distortion",
+      "dead_param_ids": [
+        "zoomAmount",
+        "chromatic",
+        "rotationSpeed",
+        "depthWeight"
+      ]
+    },
+    {
+      "id": "prismatic-mosaic",
+      "category": "distortion",
+      "dead_param_ids": [
+        "saturation_boost"
+      ]
+    },
+    {
+      "id": "pyramid-bandprocess-pass2",
+      "category": "image",
+      "dead_param_ids": [
+        "param4"
+      ]
+    },
+    {
+      "id": "pyramid-downsample-pass1",
+      "category": "image",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "quantum-foam-pass1",
+      "category": "simulation",
+      "dead_param_ids": [
+        "param3"
+      ]
+    },
+    {
+      "id": "quantum-foam-pass2",
+      "category": "simulation",
+      "dead_param_ids": [
+        "param4"
+      ]
+    },
+    {
+      "id": "quantum-foam-pass3",
+      "category": "simulation",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "quantum-prism",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "rgb-ripple-waves",
+      "category": "interactive-mouse",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "sim-fluid-feedback-field",
+      "category": "simulation",
+      "dead_param_ids": [
+        "glow"
+      ]
+    },
+    {
+      "id": "soft-vignette-bloom",
+      "category": "post-processing",
+      "dead_param_ids": [
+        "vignetteStrength",
+        "bloomRadius",
+        "hazeAmount",
+        "bloomIntensity"
+      ]
+    },
+    {
+      "id": "spectrogram-displace-pass2",
+      "category": "artistic",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param4"
+      ]
+    },
+    {
+      "id": "spectrum-bleed",
+      "category": "retro-glitch",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "stella-orbit",
+      "category": "artistic",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "temporal-feedback-zoom-tracer",
+      "category": "post-processing",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "temporal-phosphor-burn",
+      "category": "post-processing",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "temporal-rgb-ghost",
+      "category": "post-processing",
+      "dead_param_ids": [
+        "param1",
+        "param2",
+        "param3",
+        "param4"
+      ]
+    },
+    {
+      "id": "vortex-warp",
+      "category": "distortion",
+      "dead_param_ids": [
+        "turbulence"
+      ]
+    },
+    {
+      "id": "wave-tank",
+      "category": "simulation",
+      "dead_param_ids": [
+        "sourceStrength"
+      ]
+    },
+    {
+      "id": "xerox-degrade",
+      "category": "retro-glitch",
+      "dead_param_ids": [
+        "contrast",
+        "grain",
+        "smear",
+        "threshold"
+      ]
+    }
+  ]
+}
