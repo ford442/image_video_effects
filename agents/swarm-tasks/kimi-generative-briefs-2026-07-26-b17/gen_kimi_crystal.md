@@ -1,25 +1,145 @@
+# Swarm Brief: gen_kimi_crystal
+
+**Role:** Optimizer
+**Name:** Kimi Crystal
+**Category:** generative
+**Description:** Animated crystalline structures growing on a hexagonal grid with physical light transmission. Features ice IOR-based Fresnel reflection, purity-based absorption, and variable crystal thickness.
+**Current lines:** 211
+**Target lines:** 261–301 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Optimizer. This ice-crystal shader is missing the mandatory bounds guard and has no tonemap - harden it, then add the physics-flavored extras:
+- ADD THE MISSING OOB GUARD (priority 1): every sibling shader has the `if (pixel.x >= res.x || pixel.y >= res.y) { return; }` bounds guard - this one relies on WebGPU OOB-store discard. Add the standard guard. Also add a hue-preserving clamp at ~1.2 + ACES before the store (edgeGlow + sparkle + mouseGlow can exceed 1).
+- Spectral dispersion: split the Fresnel edgeGlow into 3 spectral samples with slightly different IORs (1.31/1.32/1.33 - ice dispersion) for cheap physically-flavored chromatic fringing on crystal edges.
+- Audio growth: bass (`plasmaBuffer[0].x`) pulses the crystal growth; per-bin FFT (`plasmaBuffer[1..8]`) shimmers individual hex rows.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the physical transmission block VERBATIM (crystalMask, Fresnel-Schlick with F0 from IOR_ICE=1.31, Beer absorption exp(-k*path*mask), transmission product) - it is the shader's stated identity. Also preserve the odd-row hex offset logic exactly.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "gen-kimi-crystal",
+  "name": "Kimi Crystal",
+  "url": "shaders/gen_kimi_crystal.wgsl",
+  "description": "Animated crystalline structures growing on a hexagonal grid with physical light transmission. Features ice IOR-based Fresnel reflection, purity-based absorption, and variable crystal thickness.",
+  "features": [
+    "mouse-driven",
+    "generative",
+    "geometric",
+    "crystalline",
+    "alpha-transmission"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Grid Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Density of hexagonal crystal grid",
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "purity",
+      "name": "Crystal Purity",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "description": "Ice crystal clarity: affects transmission and absorption",
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "growth",
+      "name": "Growth Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Animation speed of crystal growth",
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "thickness",
+      "name": "Crystal Thickness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "description": "Physical thickness affecting light path length",
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "crystal",
+    "ice",
+    "hexagonal",
+    "transmission",
+    "physical"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Grid Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Crystal Purity",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Growth Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Crystal Thickness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════
 //  Gen Kimi Crystal - Physical Light Transmission with Alpha
 //  Category: generative
-//  Features: hexagonal grid, crystal growth, icy transmission,
-//            spectral dispersion, audio-reactive growth, ACES
+//  Features: hexagonal grid, crystal growth, icy transmission
 //  Animated crystalline structures with physical alpha
 // ═══════════════════════════════════════════════════════════════
-//
-//  Upgrade notes (Batch 17, Optimizer role):
-//   - Standard OOB bounds guard (no longer relies on WebGPU
-//     OOB-store discard for edge invocations).
-//   - Hue-preserving clamp at ~1.2 + ACES tonemap before store
-//     (edgeGlow + sparkle + mouseGlow can push HDR > 1).
-//   - Spectral dispersion: the Fresnel edge glow is split into
-//     three spectral samples with ice-dispersion IORs
-//     (1.31 / 1.32 / 1.33) for chromatic fringing on edges.
-//   - Audio growth: bass (plasmaBuffer[0].x) pulses the crystal
-//     growth cycle; per-bin FFT (plasmaBuffer[1..8]) shimmers
-//     individual hex rows.
-//  The physical transmission block (crystalMask, Fresnel-Schlick
-//  with F0 from IOR_ICE = 1.31, Beer absorption, transmission
-//  product) and the odd-row hex offset logic are preserved.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -42,12 +162,7 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
-// Ice refractive index (mean) - identity constant of this shader.
 const IOR_ICE: f32 = 1.31;
-// Spectral dispersion of ice: slight IOR variation per channel.
-const IOR_ICE_R: f32 = 1.31;
-const IOR_ICE_G: f32 = 1.32;
-const IOR_ICE_B: f32 = 1.33;
 
 fn hash(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -74,213 +189,160 @@ fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-// Hue-preserving clamp: scale down uniformly so the brightest
-// channel never exceeds maxVal, keeping the hue of HDR highlights.
-fn hueLimit(c: vec3<f32>, maxVal: f32) -> vec3<f32> {
-    let peak = max(c.r, max(c.g, c.b));
-    if (peak > maxVal) {
-        return c * (maxVal / peak);
-    }
-    return c;
-}
-
-// Filmic ACES approximation (Narkowicz fit) for the final store.
-fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51;
-    let b = 0.03;
-    let c = 2.43;
-    let d = 0.59;
-    let e = 0.14;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
-    // Standard bounds guard: discard out-of-range invocations.
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
     let px = vec2<i32>(global_id.xy);
-
+    
     // ═══════════════════════════════════════════════════════════════
-    // Parameters via zoom_params (saved-preset contract):
-    // x: grid density      -> hex grid scale 2..5
-    // y: crystal purity    -> transmission / absorption 0.3..1
-    // z: growth speed      -> animation rate 0.05..0.3
-    // w: thickness / depth -> physical light path 0.1..1
+    // Parameters via zoom_params:
+    // x: grid density
+    // y: crystal purity / transmission
+    // z: growth speed
+    // w: thickness / depth
     // ═══════════════════════════════════════════════════════════════
-
+    
     let gridDensity = mix(2.0, 5.0, u.zoom_params.x);
     let crystalPurity = mix(0.3, 1.0, u.zoom_params.y);
     let growthSpeed = mix(0.05, 0.3, u.zoom_params.z);
     let crystalThickness = mix(0.1, 1.0, u.zoom_params.w);
-
-    // ── Audio reactivity ────────────────────────────────────────
-    // Bass energy pulses the crystal growth cycle.
-    let bass = plasmaBuffer[0].x;
-    let bassGrowth = 1.0 + bass * 0.6;
-
+    
     // Mouse interaction
     var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
-
+    
     // Center and aspect correct
     var p = uv * 2.0 - 1.0;
     p.x *= resolution.x / resolution.y;
-
+    
     // Mouse position in crystal space
     var mousePos = mouse * 2.0 - 1.0;
     mousePos.x *= resolution.x / resolution.y;
-
+    
     // Crystal grid
     let gridScale = gridDensity;
     var gridUV = p * gridScale;
-
+    
     // Hexagonal grid
     let hexSize = 0.5;
     let hexSpacing = vec2<f32>(1.732, 2.0) * hexSize;
-
+    
     // Calculate hex grid coordinates
     let hexUV = vec2<f32>(gridUV.x / hexSpacing.x, gridUV.y / hexSpacing.y);
     let hexId = floor(hexUV);
     let hexFract = fract(hexUV);
-
+    
     // Offset every other row
     var offset = vec2<f32>(0.0);
     if (i32(hexId.y) % 2 == 1) {
         offset.x = 0.5;
     }
-
+    
     // Local hex coordinate
     var hexLocal = hexFract - vec2<f32>(0.5);
     if (i32(hexId.y) % 2 == 1) {
         hexLocal.x -= 0.5;
     }
-
-    // Per-row FFT shimmer: map each hex row onto engine FFT bins 1..8.
-    let rowIndex = i32(hexId.y);
-    let rowBin = 1 + ((rowIndex % 8) + 8) % 8;
-    let rowFFT = plasmaBuffer[rowBin].x;
-    let rowShimmer = rowFFT * (0.5 + 0.5 * sin(time * 6.0 + f32(rowIndex) * 1.7));
-
-    // Animated crystal growth (bass pulses the cycle and the size)
-    let hexHash = hash(hexId + floor(time * growthSpeed * bassGrowth));
-    let growthPhase = fract(time * growthSpeed * bassGrowth * 0.5 + hexHash * 10.0);
-    let sizePulse = 1.0 + bass * 0.15 * sin(time * 4.0 + hexHash * 6.28);
-    let crystalSize = smoothstep(0.0, 0.8, growthPhase) * hexSize * 0.8 * sizePulse;
-
+    
+    // Animated crystal growth
+    let hexHash = hash(hexId + floor(time * growthSpeed));
+    let growthPhase = fract(time * growthSpeed * 0.5 + hexHash * 10.0);
+    let crystalSize = smoothstep(0.0, 0.8, growthPhase) * hexSize * 0.8;
+    
     // Mouse influence on nearby crystals
     let mouseHex = mousePos * gridScale / hexSpacing;
     let distToMouseHex = length(hexUV + offset - mouseHex);
     let mouseGlow = smoothstep(2.0, 0.0, distToMouseHex) * mouseDown;
-
+    
     // Rotate crystal based on time and mouse
     let rotation = time * 0.2 + hexHash * 6.28 + mouseGlow * 2.0;
     hexLocal = rotate(hexLocal, rotation);
-
+    
     // Distance to crystal edge
     let d = sdHexagon(hexLocal, crystalSize);
-
-    // Crystal interior pattern (row shimmer brightens the facets)
-    let interiorPattern = (sin(length(hexLocal) * 20.0 - time * 2.0) * 0.5 + 0.5) * (1.0 + rowShimmer * 0.6);
-
+    
+    // Crystal interior pattern
+    let interiorPattern = sin(length(hexLocal) * 20.0 - time * 2.0) * 0.5 + 0.5;
+    
     // Color palette - icy blues and warm gold accents
     let bgColor = vec3<f32>(0.02, 0.03, 0.05);
     let crystalBase = vec3<f32>(0.4, 0.7, 0.9);      // Ice blue
     let crystalHighlight = vec3<f32>(0.8, 0.95, 1.0); // White highlight
     let crystalDeep = vec3<f32>(0.1, 0.3, 0.6);      // Deep blue
     let goldAccent = vec3<f32>(1.0, 0.8, 0.3);       // Gold
-
+    
     // ═══════════════════════════════════════════════════════════════
     // Physical Transmission Calculation
     // ═══════════════════════════════════════════════════════════════
-
+    
     // Crystal mask (1 inside, 0 outside)
     let crystalMask = smoothstep(0.02, -0.02, d);
-
+    
     // Distance from crystal center (for Fresnel)
     let distFromCenter = length(hexLocal) / max(crystalSize, 0.01);
     let cosTheta = 1.0 - distFromCenter * 0.5; // Approximate view angle
-
+    
     // Fresnel for ice
     let F0 = pow((IOR_ICE - 1.0) / (IOR_ICE + 1.0), 2.0);
     let fresnel = fresnelSchlick(max(cosTheta, 0.0), F0);
-
+    
     // Path length through crystal (thicker at center)
     let pathLength = crystalThickness * (1.0 - distFromCenter * 0.3) / crystalPurity;
-
+    
     // Absorption (ice absorbs slightly, more if impure)
     let absorptionCoeff = mix(0.5, 3.0, 1.0 - crystalPurity);
     let absorption = exp(-absorptionCoeff * pathLength * crystalMask);
-
+    
     // Transmission coefficient
     let transmission = absorption * (1.0 - fresnel) * crystalPurity;
-
+    
     // Mix colors based on crystal shape
     var color = bgColor;
-
+    
     // Crystal body with depth layers
     color = mix(color, crystalDeep, crystalMask * 0.5 * (1.0 - distFromCenter * 0.5));
     color = mix(color, crystalBase, crystalMask * interiorPattern * transmission);
     color = mix(color, crystalHighlight, crystalMask * smoothstep(0.0, 0.3, -d) * transmission);
-
-    // ── Spectral dispersion edge glow ───────────────────────────
-    // Split the Fresnel edge into 3 spectral samples with the ice
-    // dispersion IORs (1.31/1.32/1.33) and slightly offset edge
-    // distances per channel for cheap chromatic fringing.
-    let cosT = max(cosTheta, 0.0);
-    let F0r = pow((IOR_ICE_R - 1.0) / (IOR_ICE_R + 1.0), 2.0);
-    let F0g = pow((IOR_ICE_G - 1.0) / (IOR_ICE_G + 1.0), 2.0);
-    let F0b = pow((IOR_ICE_B - 1.0) / (IOR_ICE_B + 1.0), 2.0);
-    let edgeR = smoothstep(0.05, 0.0, abs(d - 0.008)) * fresnelSchlick(cosT, F0r);
-    let edgeG = smoothstep(0.05, 0.0, abs(d)) * fresnelSchlick(cosT, F0g);
-    let edgeB = smoothstep(0.05, 0.0, abs(d + 0.008)) * fresnelSchlick(cosT, F0b);
-    let spectralEdge = vec3<f32>(edgeR, edgeG, edgeB);
-    color += goldAccent * spectralEdge * 0.8;
-
-    // Row shimmer glow on crystal bodies
-    color += crystalBase * rowShimmer * crystalMask * 0.2;
-
+    
+    // Edge glow (Fresnel reflection)
+    let edgeGlow = smoothstep(0.05, 0.0, abs(d));
+    color += goldAccent * edgeGlow * fresnel * 0.8;
+    
     // Mouse interaction glow
     color += vec3<f32>(0.5, 0.8, 1.0) * mouseGlow * 0.3 * transmission;
-
+    
     // Sparkles at vertices (specular highlights)
     let vertexDist = sdHexagon(hexLocal, crystalSize * 0.9);
     let sparkle = select(0.0, 1.0, vertexDist > 0.0 && vertexDist < 0.05 && hash(hexId + vec2<f32>(time)) > 0.95);
     color += vec3<f32>(1.0) * sparkle * fresnel;
-
+    
     // Final intensity adjustment
     color = pow(color, vec3<f32>(0.9)) * 1.1;
-
-    // HDR safety: hue-preserving clamp at ~1.2, then ACES tonemap
-    // so edgeGlow + sparkle + mouseGlow cannot blow out the store.
-    color = hueLimit(color, 1.2);
-    color = acesToneMap(color);
-
+    
     // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-
+    
     // Opacity control - blend crystal over input
     let opacity = 0.9;
-
+    
     // Calculate alpha based on crystal transmission
     let crystalAlpha = mix(1.0, transmission, crystalMask);
-
+    
     // ═══ BLEND WITH INPUT ═══
     // Where crystal exists, blend based on transmission
     // Where no crystal, pass through input
     let finalColor = mix(inputColor.rgb, color, crystalMask * opacity);
     let finalAlpha = mix(inputColor.a, crystalAlpha, crystalMask * opacity);
-
+    
     textureStore(writeTexture, px, vec4<f32>(finalColor, finalAlpha));
     textureStore(dataTextureA, px, vec4<f32>(finalColor, crystalMask * transmission));
-
+    
     // Depth based on crystal presence
     let generatedDepth = crystalMask * 0.5 + 0.5;
     let finalDepth = mix(inputDepth, generatedDepth, crystalMask * opacity);
     textureStore(writeDepthTexture, px, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }
+```

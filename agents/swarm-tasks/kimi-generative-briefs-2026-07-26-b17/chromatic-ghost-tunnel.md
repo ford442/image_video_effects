@@ -1,22 +1,146 @@
+# Swarm Brief: chromatic-ghost-tunnel
+
+**Role:** Visualist
+**Name:** Chromatic Ghost Tunnel
+**Category:** generative
+**Description:** A perspective tunnel of chromatic ghost echoes. Each ring is RGB-split by audio bands. Bass warps tunnel depth, mids add spiral rotation, treble creates stroboscopic ring flashes. Mouse steers tunnel flight.
+**Current lines:** 202
+**Target lines:** 252–292 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Visualist. This tunnel is already reference-quality - do not fix what is not broken. Add spectral individuality and touch:
+- Per-bin ring voices: drive each ghost echo ring i from `plasmaBuffer[1 + (i % 8)].x` instead of only the global bands, so individual rings flare to individual FFT bins.
+- Click tunnel shockwaves: loop the ripples[] uniform (guard `min(u32(u.config.y), 50u)`) sending a decaying brightness/chromatic shockwave down the tunnel z-axis from each click.
+- Inertial flight: spring-damper the mouse tunnel offset (extraBuffer[133..136], critically damped) so steering has momentum.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the OkLab mix + blackbody temperature palette and the hue_preserve_clamp(5.0) -> ACES -> IGN dither -> gamma output chain VERBATIM and in order - it is the shader's signature look. extraBuffer in [133..255] ONLY ([0..4] reserved, [5..132] = engine FFT bins).
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "chromatic-ghost-tunnel",
+  "name": "Chromatic Ghost Tunnel",
+  "url": "shaders/chromatic-ghost-tunnel.wgsl",
+  "description": "A perspective tunnel of chromatic ghost echoes. Each ring is RGB-split by audio bands. Bass warps tunnel depth, mids add spiral rotation, treble creates stroboscopic ring flashes. Mouse steers tunnel flight.",
+  "tags": [
+    "generative",
+    "tunnel",
+    "perspective",
+    "chromatic",
+    "ghost",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "temporal"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Tunnel Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Spiral Twist",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Ghost Echo Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Flash Intensity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Tunnel Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Spiral Twist",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Ghost Echo Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Flash Intensity",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════════
 //  Chromatic Ghost Tunnel
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, chromatic, depth-aware,
-//            aces-tone-map, oklab-mix, blackbody-temp, volumetric-fog, ign-dither,
-//            per-bin-ring-voices, click-shockwaves, inertial-flight
+//            aces-tone-map, oklab-mix, blackbody-temp, volumetric-fog, ign-dither
 //  Complexity: High
 //  Created: 2026-05-30
 //  Upgraded: 2026-06-07
-//  Upgraded: 2026-07-26 (Batch 17 — swarm upgrade)
-//    • Per-bin ring voices: ghost echo ring i reads plasmaBuffer[1 + (i % 8)].x
-//      so individual rings flare to individual FFT bins.
-//    • Click tunnel shockwaves: ripples[] uniform emits a decaying
-//      brightness/chromatic shockwave down the tunnel z-axis per click.
-//    • Inertial flight: critically damped spring-damper on the mouse tunnel
-//      offset (persistent state in extraBuffer[133..136]) so steering has
-//      momentum.
-//  Signature chain (preserved verbatim): OkLab mix + blackbody temperature
-//  palette -> hue_preserve_clamp(5.0) -> ACES -> IGN dither -> gamma out.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -108,38 +232,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   let uv = (uv01 - 0.5) * vec2<f32>(aspect, 1.0);
   let time = u.config.x;
-
-  // ── Inertial flight ─────────────────────────────────────────────
-  // Critically damped spring-damper on the mouse tunnel offset so
-  // steering carries momentum instead of snapping to the cursor.
-  // Persistent state lives in extraBuffer[133..136] (safe zone).
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
-  let mouseGoal = vec2<f32>(mouse.x * aspect, mouse.y) * 0.4;
-  let springDT = 0.016;
-  let springOmega = 7.0; // natural frequency; damping ratio = 1 (critical)
-  var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  springVel = springVel + ((mouseGoal - springPos) * springOmega * springOmega
-                         - springVel * 2.0 * springOmega) * springDT;
-  springPos = springPos + springVel * springDT;
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-  }
-  let mouseOffset = springPos;
+  let mouseOffset = vec2<f32>(mouse.x * aspect, mouse.y) * 0.4;
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Slider wiring (zoom_params) — each slider drives a real constant of
-  // THIS shader's algorithm:
-  //   x Tunnel Speed    -> tunnel z travel rate
-  //   y Spiral Twist    -> angular twist per unit depth
-  //   z Ghost Echo Count-> number of ghost echo rings
-  //   w Flash Intensity -> treble strobe flash strength
   let tunnelSpeed   = mix(0.2, 2.0, u.zoom_params.x);
   let spiralTwist   = mix(0.0, 3.0, u.zoom_params.y);
   let echoCount     = mix(2.0, 8.0, u.zoom_params.z);
@@ -153,27 +252,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let moveZ = time * tunnelSpeed;
   let twist = angle + z * spiralTwist * (0.5 + mids) + moveZ;
 
-  // ── Click tunnel shockwaves ─────────────────────────────────────
-  // Each recorded click sends a decaying brightness + chromatic
-  // shockwave racing down the tunnel z-axis from the click point.
-  let clickCount = min(u32(u.config.y), 50u);
-  var shockBright = 0.0;
-  var shockChroma = 0.0;
-  for (var ri: u32 = 0u; ri < clickCount; ri = ri + 1u) {
-    let ripple = u.ripples[ri];
-    let age = time - ripple.z;
-    if (age > 0.0 && age < 4.0) {
-      let clickUV = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0) + mouseOffset;
-      let clickDist = length(uv - clickUV + mouseOffset);
-      let clickZ = 1.0 / (clickDist + 0.01);
-      let waveZ = clickZ + age * 4.0;
-      let zBand = exp(-abs(z - waveZ) * 0.45);
-      let decay = exp(-age * 1.2);
-      shockBright += zBand * decay;
-      shockChroma += exp(-abs(z - waveZ * 0.85) * 0.7) * decay;
-    }
-  }
-
   var col = vec3<f32>(0.0);
   var alpha = 0.0;
   let nRings = i32(clamp(echoCount, 2.0, 12.0));
@@ -183,21 +261,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   for (var i: i32 = 0; i < nRings; i++) {
     let fi = f32(i);
-    // Per-bin ring voice: ring i listens to its own FFT bin so individual
-    // ghost echoes flare to individual frequency bins.
-    let binVoice = plasmaBuffer[1 + (i % 8)].x;
-    let voiceBoost = 1.0 + binVoice * 1.2;
-
     let ringPhase = fract(z * 2.0 - fi * 0.15 + moveZ * 0.3);
     let ringRadius = ringPhase * 0.6;
-    let ringWidth = (0.02 + ringPhase * 0.01) * (1.0 + binVoice * 0.6);
+    let ringWidth = 0.02 + ringPhase * 0.01;
     let ringDist = abs(dist - ringRadius);
     let ringMask = exp(-ringDist * ringDist / (ringWidth * ringWidth));
 
-    // Chromatic split: global bands plus the ring's own bin voice.
-    let rOffset = (bass * 0.03 + binVoice * 0.02) * ringPhase;
-    let gOffset = (mids * 0.04 + binVoice * 0.02) * ringPhase;
-    let bOffset = (treble * 0.02 + binVoice * 0.02) * ringPhase;
+    let rOffset = bass * 0.03 * ringPhase;
+    let gOffset = mids * 0.04 * ringPhase;
+    let bOffset = treble * 0.02 * ringPhase;
 
     let ringR = exp(-abs(dist - (ringRadius + rOffset)) * abs(dist - (ringRadius + rOffset)) / (ringWidth * ringWidth));
     let ringG = exp(-abs(dist - (ringRadius + gOffset)) * abs(dist - (ringRadius + gOffset)) / (ringWidth * ringWidth));
@@ -207,7 +279,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flashMask = ringMask * (1.0 + flash * 3.0);
     let echoFade = 1.0 - fi / echoCount;
 
-    let hue = ringPhase + fi * 0.1 + binVoice * 0.15;
+    let hue = ringPhase + fi * 0.1;
     let ringColRaw = vec3<f32>(
       0.5 + 0.5 * cos(6.28318 * (hue + 0.0 + bass * 0.1)),
       0.5 + 0.5 * cos(6.28318 * (hue + 0.33 + mids * 0.1)),
@@ -215,18 +287,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     let ringCol = mixOkLab(ringColRaw * coolCol, warmCol, ringPhase * (1.0 + bass));
 
-    col.r += ringR * ringCol.r * echoFade * flashMask * 1.5 * voiceBoost;
-    col.g += ringG * ringCol.g * echoFade * flashMask * 1.5 * voiceBoost;
-    col.b += ringB * ringCol.b * echoFade * flashMask * 1.5 * voiceBoost;
+    col.r += ringR * ringCol.r * echoFade * flashMask * 1.5;
+    col.g += ringG * ringCol.g * echoFade * flashMask * 1.5;
+    col.b += ringB * ringCol.b * echoFade * flashMask * 1.5;
     alpha += ringMask * echoFade * flashMask;
   }
-
-  // Shockwave light: bright band sweeping the tunnel, with a chromatic
-  // red/blue fringe trailing the wavefront.
-  let shockCol = mixOkLab(coolCol, warmCol, 0.5 + 0.5 * sin(z * 0.5 - time * 2.0));
-  col += shockCol * shockBright * (0.35 + treble * 0.3);
-  col = col + vec3<f32>(shockChroma * 0.10, 0.0, -shockChroma * 0.10);
-  alpha += shockBright * 0.25;
 
   let streak = sin(twist * 6.0) * 0.5 + 0.5;
   let streakMask = exp(-dist * dist * 4.0) * (1.0 - dist * 1.5);
@@ -270,3 +335,4 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(col, a));
 }
+```

@@ -1,20 +1,142 @@
+# Swarm Brief: audio_geometric_pulse
+
+**Role:** Algorithmist
+**Name:** Geometric Pulse
+**Category:** generative
+**Description:** Audio-reactive geometric patterns with kaleidoscope symmetry, shape morphing, neon glow, and frequency band visualization
+**Current lines:** 211
+**Target lines:** 261–301 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Algorithmist. This shader calls itself audio-reactive but its 'audio' is the mouse button - fix the headline bug, then make the name true:
+- FIX THE FAKE AUDIO (priority 1): `let audioPulse = u.zoom_config.w;` is mouse-DOWN, not audio - the whole 'audio-reactive' feature is click-reactive and plasmaBuffer is never read. Rewire: `audioPulse` from bass (`plasmaBuffer[0].x`), and drive the 5 band rings from real per-bin FFT `plasmaBuffer[1..5]` instead of the mouse flag. Change ONLY the source of audioPulse - keep all downstream uses.
+- Click SDF rings: loop ripples[] (guard `min(u32(u.config.y), 50u)`) spawning expanding geometric SDF rings from each click point that fade with ripple age.
+- Treble symmetry modulation: let treble (`plasmaBuffer[0].z`) subtly modulate the kaleidoscope segment count around the Symmetry slider value; spring-damper the mouse center offset (extraBuffer[133..136]).
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the exact kaleidoscope fold math (mod_val + segment mirror) and the SDF set (sdCircle/sdBox/sdTriangle/sdHexagon) VERBATIM. When rewiring audio, replace only the SOURCE of audioPulse, never its downstream uses. extraBuffer in [133..255] ONLY.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "audio_geometric_pulse",
+  "name": "Geometric Pulse",
+  "url": "shaders/audio_geometric_pulse.wgsl",
+  "description": "Audio-reactive geometric patterns with kaleidoscope symmetry, shape morphing, neon glow, and frequency band visualization",
+  "tags": [
+    "geometric",
+    "audio",
+    "kaleidoscope",
+    "neon",
+    "sacred-geometry"
+  ],
+  "features": [
+    "audio-reactive",
+    "mouse-control",
+    "kaleidoscope",
+    "neon"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Symmetry",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Shape Morph",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Pulse Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Complexity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "target_rating": 4.6,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Symmetry",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "name": "Shape Morph",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "index": 2,
+      "name": "Pulse Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "index": 3,
+      "name": "Complexity",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════════
 //  audio_geometric_pulse
 //  Category: audio-reactive
-//  Features: upgraded-rgba, depth-aware, true-audio, click-ripples
+//  Features: upgraded-rgba, depth-aware
 //  Upgraded: 2026-03-22
-//  Swarm upgrade: 2026-07-26 (Batch 17)
-//    * FIXED fake audio: audioPulse now driven by bass (plasmaBuffer[0].x)
-//      instead of the mouse-down flag (zoom_config.w). All downstream
-//      uses of audioPulse are unchanged — only its source was rewired.
-//    * 5 frequency band rings now driven by real per-bin FFT energy
-//      (plasmaBuffer[1..5].x) instead of the click flag.
-//    * Treble (plasmaBuffer[0].z) subtly modulates the kaleidoscope
-//      segment count around the Symmetry slider value.
-//    * Spring-damped mouse center offset in extraBuffer[133..136]
-//      (pos.xy + vel.xy) — cursor glides instead of teleporting.
-//    * Click SDF rings: expanding geometric rings spawn from each
-//      recorded click (u.ripples) and fade with ripple age.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -118,159 +240,107 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let coord = vec2<i32>(global_id.xy);
     let coord_u = vec2<u32>(global_id.xy);
-
+    
     if (f32(coord.x) >= resolution.x || f32(coord.y) >= resolution.y) {
         return;
     }
-
+    
     let uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / resolution.y;
     let uvFull = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-
-    // ── Real audio (plasmaBuffer FFT) ──────────────────────────────
-    // FIXED: audioPulse was u.zoom_config.w (mouse-DOWN flag). It is now
-    // the bass band energy. Downstream uses below are unchanged.
-    let audioPulse = plasmaBuffer[0].x;               // bass
-    let mids = plasmaBuffer[0].y;                     // mids (ring accents)
-    let treble = plasmaBuffer[0].z;                   // treble (symmetry mod)
-
-    // Parameters (saved-preset contract: ids/defaults/mapping fixed)
-    // Treble subtly modulates the kaleidoscope segment count around the
-    // Symmetry slider value (±2 segments, clamped to a sane range).
-    let symmetry = i32(clamp(3.0 + u.zoom_params.x * 9.0 + treble * 2.0, 3.0, 14.0));
+    
+    // Parameters
+    let symmetry = i32(3.0 + u.zoom_params.x * 9.0);    // 3-12 segments
     let shapeMorph = u.zoom_params.y;                    // 0-1 shape blend
     let pulseSpeed = 1.0 + u.zoom_params.z * 4.0;        // 1-5
     let complexity = u.zoom_params.w;                    // 0-1
-
-    // ── Spring-damped mouse center offset ──────────────────────────
-    // extraBuffer[133..134] = damped center xy, [135..136] = velocity xy.
-    // Only invocation (0,0) integrates the spring to avoid write races.
-    let mouseTarget = (u.zoom_config.yz - 0.5) * 2.0;
-    var dampedPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var dampedVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (global_id.x == 0u && global_id.y == 0u) {
-        // Cold start: snap to the cursor so the pattern doesn't glide in
-        // from the origin on the very first frames.
-        if (dampedPos.x == 0.0 && dampedPos.y == 0.0 && dampedVel.x == 0.0 && dampedVel.y == 0.0) {
-            dampedPos = mouseTarget;
-        }
-        // Underdamped spring: snappy but with a soft trailing overshoot.
-        dampedVel = (dampedVel + (mouseTarget - dampedPos) * 0.18) * 0.82;
-        dampedPos = dampedPos + dampedVel;
-        extraBuffer[133] = dampedPos.x;
-        extraBuffer[134] = dampedPos.y;
-        extraBuffer[135] = dampedVel.x;
-        extraBuffer[136] = dampedVel.y;
-    }
-
-    // Kaleidoscope UV (center glides with the spring-damped cursor)
-    let kUV = kaleidoscope(uv - dampedPos * 0.3, symmetry);
-
+    
+    // Audio input
+    let audioPulse = u.zoom_config.w;
+    let mousePos = (u.zoom_config.yz - 0.5) * 2.0;
+    
+    // Kaleidoscope UV
+    let kUV = kaleidoscope(uv - mousePos * 0.3, symmetry);
+    
     // Multiple concentric shapes
     var color = vec3<f32>(0.0);
     let numShapes = i32(3.0 + complexity * 5.0);
-
+    
     for (var i: i32 = 0; i < numShapes; i = i + 1) {
         let fi = f32(i);
         let t = time * 0.5 + fi * 0.5;
-
+        
         // Pulsing radius
         let baseRadius = 0.1 + fi * 0.08;
         let pulse = sin(time * pulseSpeed + fi) * 0.02 * (1.0 + audioPulse);
         let radius = baseRadius + pulse;
-
+        
         // Rotation
         let rotAngle = t * (0.2 + audioPulse * 0.5);
         let rotatedUV = rotate(kUV, rotAngle);
-
+        
         // Shape morphing
         let d1 = sdCircle(rotatedUV, radius);
         let d2 = sdHexagon(rotatedUV, radius * 0.9);
         let d3 = sdTriangle(rotatedUV, radius * 1.1);
-
+        
         // Morph between shapes
         var dist = mix(d1, d2, sin(shapeMorph * PI + fi * 0.5) * 0.5 + 0.5);
         dist = mix(dist, d3, cos(shapeMorph * PI * 2.0 + fi * 0.3) * 0.5 + 0.5);
-
+        
         // Neon glow
         let thickness = 0.003 + audioPulse * 0.005;
         let intensity = 1.0 + audioPulse * 2.0;
         let glow = neonGlow(dist, thickness, intensity);
-
+        
         // Color based on ring and audio
         let band = fi / f32(numShapes);
         let shapeColor = audioColor(band, audioPulse);
-
+        
         // Add to accumulator
         color += shapeColor * glow * (1.0 - fi * 0.1);
-
+        
         // Inner fill for some shapes
         if (i % 2 == 0) {
             let fill = smoothstep(0.0, thickness * 3.0, -dist) * 0.2;
             color += shapeColor * fill;
         }
     }
-
-    // Central pulse burst (mids add a warm shimmer on top of bass drive)
+    
+    // Central pulse burst
     let centerPulse = pulseWave(uv, time, pulseSpeed * 2.0, 20.0 + audioPulse * 30.0);
-    color += vec3<f32>(1.0, 0.8, 0.6) * max(centerPulse, 0.0) * (0.5 + audioPulse + mids * 0.3);
-
-    // ── Click SDF rings ────────────────────────────────────────────
-    // Each recorded click spawns an expanding geometric ring (hexagon
-    // SDF, rotated over its life) that fades with ripple age.
-    let aspect = resolution.x / resolution.y;
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
-        let ripple = u.ripples[ri];
-        let age = time - ripple.z;
-        if (age > 0.0 && age < 2.5) {
-            // Click position: ripples are in 0..1 full-frame space.
-            let rippleCenter = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0);
-            let rel = uv - rippleCenter;
-            let life = 1.0 - age / 2.5;
-            // Expanding ring radius, rotating hexagon edge, kaleidoscope-folded
-            // so ripples respect the symmetry too.
-            let ringRadius = 0.05 + age * 0.35;
-            let ringUV = rotate(rel, age * 0.6);
-            let ringDist = abs(sdHexagon(ringUV, ringRadius));
-            let ringGlow = smoothstep(0.012 + age * 0.004, 0.0, ringDist);
-            let ringColor = audioColor(fract(age * 0.4 + f32(ri) * 0.13), audioPulse * 0.5);
-            color += ringColor * ringGlow * life * life * (0.6 + audioPulse * 0.8);
-        }
-    }
-
-    // ── Frequency band rings (real per-bin FFT visualization) ──────
-    // Each ring's radius, thickness and brightness follow its own FFT bin
-    // (plasmaBuffer[1..5].x) instead of the old mouse-down flag.
+    color += vec3<f32>(1.0, 0.8, 0.6) * max(centerPulse, 0.0) * (0.5 + audioPulse);
+    
+    // Frequency band rings (visualization)
     let bands = 5;
     for (var b: i32 = 0; b < bands; b = b + 1) {
         let fb = f32(b);
-        let binEnergy = plasmaBuffer[1 + b].x;
-        let bandRadius = 0.15 + fb * 0.06 + binEnergy * 0.04;
+        let bandRadius = 0.15 + fb * 0.06;
         let bandDist = abs(length(uv) - bandRadius);
-        let bandGlow = smoothstep(0.01 + binEnergy * 0.02, 0.0, bandDist);
-        let bandColor = audioColor(fb / f32(bands), binEnergy * 0.5);
-        color += bandColor * bandGlow * (0.3 + binEnergy);
+        let bandGlow = smoothstep(0.01 + audioPulse * 0.02, 0.0, bandDist);
+        let bandColor = audioColor(fb / f32(bands), audioPulse * 0.5);
+        color += bandColor * bandGlow * (0.3 + audioPulse);
     }
-
+    
     // Tone mapping
     color = color / (1.0 + color);
-
+    
     // Vignette
     let vignette = 1.0 - length(uvFull - 0.5) * 0.4;
     color *= vignette;
-
+    
     // Sample depth for alpha calculation
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvFull, 0.0).r;
-
+    
     // Calculate luminance-based alpha
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = mix(0.7, 1.0, luma);
     let finalAlpha = mix(alpha * 0.8, alpha, depth);
-
+    
     textureStore(writeTexture, coord_u, vec4<f32>(color, finalAlpha));
     textureStore(writeDepthTexture, coord_u, vec4<f32>(length(color), 0.0, 0.0, finalAlpha));
-
+    
     // Store for feedback
     textureStore(dataTextureA, coord_u, vec4<f32>(color, finalAlpha));
 }
+```

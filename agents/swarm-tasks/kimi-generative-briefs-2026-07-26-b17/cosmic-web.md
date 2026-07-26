@@ -1,13 +1,144 @@
+# Swarm Brief: cosmic-web
+
+**Role:** Algorithmist
+**Name:** Cosmic Web Filament
+**Category:** generative
+**Description:** Simulates the large-scale structure of the universe with dark matter filaments and voids. Mouse acts as a gravity well; audio and depth drive intensity and color shifts. Alpha is layered via luminance keying, edge preservation, and depth fade.
+**Current lines:** 206
+**Target lines:** 256–296 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Algorithmist. This cosmic web has a feedback discontinuity hiding in its void path - fix the temporal coherence, then smooth the gravity:
+- FIX THE VOID FEEDBACK GAP (priority 1): the early-exit void path writes constant voidColor and SKIPS the temporal feedback mix, so voids shimmer at filament edges. Route void pixels through the same feedback path (move the early-exit after the temporal mix) so the whole frame is temporally coherent.
+- Per-octave spectrum: the filament stack already bands bass/mids/treble - refine it so filament octave o reads `plasmaBuffer[(o % 8) + 1].x`, making large structure follow bass bins and fine structure follow treble bins.
+- Spring-damper gravity well: ease the mouse gravity center with a critically-damped spring (extraBuffer[133..136]) so the well lags the cursor organically.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the branchless voronoi3 F1/F2 and the filamentDensity constants (FILAMENT_SHARP=10, BIAS=0.05) VERBATIM - filament sharpness is numerically tuned. Keep the compositeAlpha multi-factor alpha untouched (3-slot compositor contract). dataTextureA holds pre-ACES HDR color - do not add a clamp that changes the feedback equilibrium; only reroute the void path. extraBuffer in [133..255] ONLY.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "cosmic-web",
+  "name": "Cosmic Web Filament",
+  "url": "shaders/cosmic-web.wgsl",
+  "description": "Simulates the large-scale structure of the universe with dark matter filaments and voids. Mouse acts as a gravity well; audio and depth drive intensity and color shifts. Alpha is layered via luminance keying, edge preservation, and depth fade.",
+  "tags": [
+    "space",
+    "procedural",
+    "organic",
+    "scifi",
+    "dark-matter",
+    "generative"
+  ],
+  "features": [
+    "mouse-driven",
+    "temporal",
+    "audio-reactive",
+    "depth-aware",
+    "aces-tone-map",
+    "chromatic-aberration",
+    "alpha-layered"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Warp Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Filament Density",
+      "default": 1,
+      "min": 0.1,
+      "max": 3,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Flow Speed",
+      "default": 0.2,
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Warp Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Filament Density",
+      "default": 1,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.1
+    },
+    {
+      "index": 2,
+      "name": "Flow Speed",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Color Shift",
+      "default": 0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══ Cosmic Web Filament ═══════════════════════════════════════════
 //  Category: generative
 //  Features: mouse-driven, organic, temporal, audio-reactive, depth-aware,
 //            aces-tone-map, chromatic-aberration, alpha-layered
-//  Batch 17 upgrade:
-//   - void path routed through the SAME temporal feedback mix as filaments
-//     (no early-exit shimmer at filament edges)
-//   - per-octave spectrum: filament octave o follows plasmaBuffer[(o % 8) + 1].x
-//     (large structure rides bass bins, fine structure rides treble bins)
-//   - critically-damped spring-damper gravity well (extraBuffer[133..136])
 
 // ── IMMUTABLE 13-BINDING CONTRACT ─────────────────────────────────
 @group(0) @binding(0) var u_sampler: sampler;
@@ -25,8 +156,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = ripple_count, .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1), .w = mouse_down (>0.5 = pressed)
+  config: vec4<f32>,       // .x = time, .y = delta_time, .zw = resolution (width, height)
+  zoom_config: vec4<f32>,  // .x = zoom, .yz = mouse_uv (0-1), .w = mouse_down (>0.5 = pressed)
   zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
   ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = time_created, .w = strength
 };
@@ -43,16 +174,6 @@ const GALAXY_THRESH: f32 = 0.55;
 const NODE_THRESHOLD: f32 = 0.35;
 const DECAY: f32 = 0.96;
 const FEEDBACK: f32 = 0.25;
-
-// Filament octave stack (numerically tuned with FILAMENT_SHARP/BIAS above)
-const FILAMENT_OCTAVES: i32 = 3;
-const OCTAVE_AMP_SUM: f32 = 1.75;    // 1 + 0.5 + 0.25 amplitude normalization
-const OCTAVE_BIN_BASE: f32 = 0.75;   // audio floor so silence keeps structure
-const OCTAVE_BIN_GAIN: f32 = 0.5;    // audio gain per octave bin
-
-// Spring-damper gravity well (critically damped, extraBuffer[133..136])
-const SPRING_FREQ: f32 = 6.0;        // natural frequency (rad/s)
-const SPRING_DT: f32 = 0.016;        // fixed integration step (~60 fps)
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
     var p3 = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -83,7 +204,7 @@ fn voronoi3(p: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(sqrt(f1), sqrt(f2));
 }
 
-// 3-octave FBM over 3D Voronoi (domain warp only — filament stack is below)
+// 3-octave FBM over 3D Voronoi
 fn fbm(p: vec3<f32>) -> f32 {
     var v = 0.0;
     var a = 0.5;
@@ -142,11 +263,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = res.x / res.y;
     var uv = (uv01 - 0.5) * vec2<f32>(aspect, 1.0) + 0.5;
 
-    // Slider wiring (saved-preset contract — ids/defaults unchanged):
-    //   x = Warp Strength, y = Filament Density, z = Flow Speed, w = Color Shift
+    let time = u.config.x * u.zoom_params.z;
     let warpStrength = u.zoom_params.x;
     let densityScale = u.zoom_params.y;
-    let time = u.config.x * u.zoom_params.z;
     let colorShift = u.zoom_params.w;
 
     let bass = plasmaBuffer[0].x;
@@ -155,34 +274,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let prev = textureLoad(dataTextureC, pixel, 0);
 
-    // ── Spring-damper gravity well ────────────────────────────────
-    // Critically-damped spring eases the well center toward the cursor so the
-    // gravity lags organically. Persistent state (safe zone [133..255]):
-    //   extraBuffer[133/134] = smoothed well position (aspect-corrected uv)
-    //   extraBuffer[135/136] = spring velocity
-    let rawMouse = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0) + 0.5;
-    var wellPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var wellVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    // First-frame init: snap the spring to the cursor (avoids a corner swoop)
-    if (u.config.x < SPRING_DT) {
-        wellPos = rawMouse;
-        wellVel = vec2<f32>(0.0);
-    }
-    // Critical damping: accel = w²·(target − pos) − 2w·vel
-    let springAccel = SPRING_FREQ * SPRING_FREQ * (rawMouse - wellPos)
-                    - 2.0 * SPRING_FREQ * wellVel;
-    wellVel += springAccel * SPRING_DT;
-    wellPos += wellVel * SPRING_DT;
-    // Single invocation commits the shared spring state (benign 1-frame lag)
-    if (global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[133] = wellPos.x;
-        extraBuffer[134] = wellPos.y;
-        extraBuffer[135] = wellVel.x;
-        extraBuffer[136] = wellVel.y;
-    }
-
     // Mouse gravity well — branchless normalization
-    let toMouse = wellPos - uv;
+    let mouse = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0) + 0.5;
+    let toMouse = mouse - uv;
     let distMouse = length(toMouse);
     let dirToMouse = select(vec2<f32>(0.0), toMouse / distMouse, distMouse > 0.001);
     uv += dirToMouse * (0.3 * smoothstep(0.8, 0.0, distMouse));
@@ -192,27 +286,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warp = fbm(p);
     p += vec3<f32>(warp * (warpStrength + bass * 0.15));
 
-    // ── Per-octave filament stack ─────────────────────────────────
-    // Octave o reads spectrum bin plasmaBuffer[(o % 8) + 1].x, so large-scale
-    // structure follows the bass bins and fine structure follows treble bins.
-    // Amplitudes halve per octave; OCTAVE_AMP_SUM renormalizes to [0,1].
-    var density = 0.0;
-    var f1base = 0.0;
-    var amp = 1.0;
-    var po = p;
-    for (var o = 0; o < FILAMENT_OCTAVES; o = o + 1) {
-        let vo = voronoi3(po);
-        let binLevel = plasmaBuffer[(u32(o) % 8u) + 1u].x;
-        let od = filamentDensity(vo.y - vo.x, densityScale);
-        density += amp * od * (OCTAVE_BIN_BASE + binLevel * OCTAVE_BIN_GAIN);
-        f1base = select(f1base, vo.x, o == 0);   // base octave drives nodes
-        po = po * 2.0 + vec3<f32>(100.0);
-        amp *= 0.5;
-    }
-    density = clamp(density / OCTAVE_AMP_SUM, 0.0, 1.0);
-    let f1 = f1base;
+    // Voronoi evaluation (reused for filament and node pass)
+    let v = voronoi3(p);
+    let f1 = v.x;
+    let f2 = v.y;
+    let density = filamentDensity(f2 - f1, densityScale);
 
     let voidColor = vec3<f32>(0.05, 0.0, 0.1);
+
+    if (density < VOID_CUTOFF) {
+        textureStore(writeTexture, pixel, vec4<f32>(voidColor, 0.0));
+        textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+        textureStore(dataTextureA, pixel, vec4<f32>(voidColor, 0.0));
+        return;
+    }
 
     var colFilament = vec3<f32>(0.2, 0.6, 1.0);
     let colCore = vec3<f32>(1.0, 1.0, 1.0);
@@ -221,14 +308,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = mix(voidColor, colFilament, density);
     color = mix(color, colCore, smoothstep(0.8, 1.0, density));
 
-    // ── VOID FEEDBACK FIX ─────────────────────────────────────────
-    // No early-exit: void pixels fall through the SAME temporal feedback mix
-    // as filament pixels, so the whole frame stays temporally coherent and
-    // voids no longer shimmer at filament edges.
-    let isVoid = density < VOID_CUTOFF;
-    color = select(color, voidColor, isVoid);
-
-    // Cluster nodes at Voronoi vertices (base octave F1)
+    // Cluster nodes at Voronoi vertices
     let nodeMetric = smoothstep(NODE_THRESHOLD, 0.0, f1) * density;
 
     // Galaxy point field along filaments
@@ -246,21 +326,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Depth-aware intensity boost
     color *= 1.0 + depth * 0.25;
 
-    // Temporal feedback — now applied to voids and filaments alike
+    // Temporal feedback
     let temporal = mix(prev.rgb * DECAY, color, FEEDBACK);
 
     // Chromatic aberration + ACES tone map
     color = genChromaticShift(temporal, uv01, 0.003 * (1.0 + bass));
     color = acesToneMap(color * (0.9 + mids * 0.2));
 
-    // Layered alpha: luminance-keyed, edge-preserved, depth-layered.
-    // voidColor luma ≈ 0.018 → lumaKey = 0 → void alpha stays 0 (unchanged).
+    // Layered alpha: luminance-keyed, edge-preserved, depth-layered
     let alpha = compositeAlpha(color, density, galaxy, nodeMetric, depth);
     let temporalAlpha = mix(prev.a * DECAY, alpha, FEEDBACK);
 
-    // dataTextureA carries pre-ACES HDR color (no clamp — feedback equilibrium)
     textureStore(dataTextureA, pixel, vec4<f32>(temporal, temporalAlpha));
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-    // Preserve the original void depth output (0.0) exactly
-    textureStore(writeDepthTexture, pixel, vec4<f32>(select(density, 0.0, isVoid), 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(density, 0.0, 0.0, 0.0));
 }
+```

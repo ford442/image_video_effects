@@ -1,0 +1,351 @@
+# Swarm Brief: stellar-plasma
+
+**Role:** Visualist
+**Name:** Stellar Plasma
+**Category:** generative
+**Description:** An endlessly morphing procedural cosmos powered by domain-warped fractional brownian motion. Creates swirling, liquid-like cosmic nebulae with interactive mouse gravity.
+**Current lines:** 206
+**Target lines:** 256–296 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Visualist. This IQ-style nebula is healthy but its comments lie and its chromatic aberration is fake - clean the signal:
+- FIX THE LYING COMMENTS (priority 1, docs-only): the struct comments claim config.y/z/w = AudioLow/Mid/High and zoom_config.x = MouseX - all wrong (config.y = rippleCount, zw = resolution, zoom_config.x = time, mouse = .yz). Correct the comments to the verified engine truth; code behavior unchanged.
+- Real chromatic aberration: replace the additive caStr tint with 3 actual spectral samples of the fbm field at sub-pixel offsets (cheap because the warp coords are reused) - true prismatic fringing on the nebula filaments.
+- IQ cosine palette: replace the 4 hardcoded base colors with an IQ cosine palette driven by the Hue Shift slider (defaults reproduce the legacy look), and spring-damper the mouse gravity (extraBuffer[133..136]).
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the nested double domain-warp structure (q then r then f) VERBATIM including the 4.0x warp amplitude and offset constants (1.7, 9.2 / 8.3, 2.8) - this is the classic IQ nebula signature; changing the warp amplitude destroys the look. extraBuffer in [133..255] ONLY.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "stellar-plasma",
+  "name": "Stellar Plasma",
+  "url": "shaders/stellar-plasma.wgsl",
+  "description": "An endlessly morphing procedural cosmos powered by domain-warped fractional brownian motion. Creates swirling, liquid-like cosmic nebulae with interactive mouse gravity.",
+  "tags": [
+    "generative",
+    "procedural",
+    "nebula",
+    "cosmic",
+    "plasma",
+    "fbm",
+    "fluid",
+    "loops",
+    "domain-warping",
+    "audio",
+    "music",
+    "reactive"
+  ],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "audio-driven",
+    "upgraded-rgba",
+    "aces-tone-map",
+    "temporal-feedback",
+    "chromatic-aberration"
+  ],
+  "author": "Gemini 3.1 Pro Vertex",
+  "params": [
+    {
+      "id": "hueShift",
+      "name": "Hue Shift",
+      "default": 0,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "flowSpeed",
+      "name": "Flow Speed",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "zoomScale",
+      "name": "Zoom / Scale",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mouseGravity",
+      "name": "Mouse Gravity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Hue Shift",
+      "default": 0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Flow Speed",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Zoom / Scale",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Mouse Gravity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
+// ═══════════════════════════════════════════════════════════════
+//  Stellar Plasma - Endless procedural cosmic nebula (OPTIMIZED)
+//  Category: generative
+//  Features: generative, procedural, loops, audio-reactivity,
+//            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
+//
+//  OPTIMIZATIONS APPLIED:
+//  - Precomputed noise hash values
+//  - Added audio reactivity hooks
+//  - Distance-based FBM octaves
+//  - Cached rotation matrix
+//  - Early exit for distant regions
+//  Author: Gemini 3.1 Pro Vertex (optimized)
+//  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
+//  Upgraded: 2026-06-14
+//  By: Claude Code Batch 3B
+// ═══════════════════════════════════════════════════════════════
+
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=AudioLow, z=AudioMid, w=AudioHigh
+  zoom_config: vec4<f32>,  // x=MouseX, y=MouseY, z=unused, w=unused
+  zoom_params: vec4<f32>,  // x=HueShift, y=Speed, z=ZoomScale, w=MouseInfluence
+  ripples: array<vec4<f32>, 50>,
+};
+
+// OPTIMIZATION: Precomputed hash constants
+const HASH_CONST1: vec3<f32> = vec3<f32>(0.1031, 0.1031, 0.1031);
+const HASH_CONST2: vec3<f32> = vec3<f32>(33.33, 33.33, 33.33);
+
+// Pseudo-random hash (optimized)
+fn hash(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * HASH_CONST1);
+    p3 += dot(p3, p3.yzx + HASH_CONST2);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+// 2D Value Noise
+fn noise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    var f = fract(p);
+    let u_f = f * f * (3.0 - 2.0 * f);
+    return mix(
+        mix(hash(i + vec2<f32>(0.0, 0.0)), hash(i + vec2<f32>(1.0, 0.0)), u_f.x),
+        mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), u_f.x),
+        u_f.y
+    );
+}
+
+// OPTIMIZATION: Fractional Brownian Motion with LOD
+fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
+    var v = 0.0;
+    var a = 0.5;
+    let shift = vec2<f32>(100.0, 100.0);
+    
+    // Precomputed rotation (cos(0.5), sin(0.5))
+    let c: f32 = 0.87758256189;
+    let s: f32 = 0.4794255386;
+    let rot = mat2x2<f32>(vec2<f32>(c, s), vec2<f32>(-s, c));
+    
+    var p_mut = p;
+    for (var i: i32 = 0; i < octaves; i = i + 1) {
+        v += a * noise(p_mut);
+        p_mut = rot * p_mut * 2.0 + shift;
+        a *= 0.5;
+    }
+    return v;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Hue shift function
+fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32> {
+    let k = vec3<f32>(0.57735, 0.57735, 0.57735);
+    let cosAngle = cos(hue);
+    return color * cosAngle + cross(k, color) * sin(hue) + k * dot(k, color) * (1.0 - cosAngle);
+}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    let res = u.config.zw;
+    
+    if (global_id.x >= u32(res.x) || global_id.y >= u32(res.y)) {
+        return;
+    }
+
+    // Normalize UV coordinates (-1.0 to 1.0) and fix aspect ratio
+    var uv = vec2<f32>(global_id.xy) / res;
+    var p = uv * 2.0 - 1.0;
+    p.x *= res.x / res.y;
+    
+    // Calculate distance for LOD
+    let dist = length(p);
+    let lodFactor = smoothstep(1.5, 2.5, dist);
+    
+    // OPTIMIZATION: Early exit for distant regions
+    if (dist > 3.0) {
+        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 1.0));
+        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+        textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 1.0));
+        return;
+    }
+
+    // Parameters mapped from UI
+    let hue_offset = u.zoom_params.x * 6.28318; 
+    let speed = mix(0.5, 2.0, u.zoom_params.y);
+    let scale = mix(1.0, 4.0, u.zoom_params.z);
+    let mouse_influence = u.zoom_params.w;
+    
+    // OPTIMIZATION: Audio reactivity hooks (bass/mid/treble from plasmaBuffer)
+    let audioLow = plasmaBuffer[0].x;
+    let audioMid = plasmaBuffer[0].y;
+    let audioHigh = plasmaBuffer[0].z;
+    let audioReactivity = 1.0 + audioMid * 0.3;
+
+    let time = u.config.x * speed * audioReactivity;
+
+    // Mouse Interaction
+    var mouse_pos = u.zoom_config.yz * 2.0 - 1.0;
+    mouse_pos.x *= res.x / res.y;
+    let dist_to_mouse = length(p - mouse_pos);
+    let interaction = exp(-dist_to_mouse * 3.0) * mouse_influence;
+
+    // Apply scaling and interaction displacement
+    var q_pos = p * scale + interaction;
+    
+    // OPTIMIZATION: LOD-based FBM octaves
+    let octaves = i32(mix(6.0, 3.0, lodFactor));
+
+    // Domain Warping Step 1
+    var q = vec2<f32>(
+        fbm(q_pos + vec2<f32>(0.0, time * 0.2), octaves),
+        fbm(q_pos + vec2<f32>(1.0, 2.0) + time * 0.2, octaves)
+    );
+
+    // Domain Warping Step 2 (Nested FBM)
+    var r = vec2<f32>(
+        fbm(q_pos + 4.0 * q + vec2<f32>(1.7, 9.2) + time * 0.15, octaves),
+        fbm(q_pos + 4.0 * q + vec2<f32>(8.3, 2.8) + time * 0.126, octaves)
+    );
+
+    // Final Noise Value
+    var f = fbm(q_pos + 4.0 * r, octaves);
+    
+    // OPTIMIZATION: Audio-reactive color modulation
+    let audioHueShift = (audioLow - audioHigh) * 0.1;
+
+    // Color Palette Mixing
+    var base_col1 = vec3<f32>(0.1, 0.6, 0.7); // Cyan
+    var base_col2 = vec3<f32>(0.7, 0.2, 0.5); // Magenta
+    var base_col3 = vec3<f32>(0.0, 0.0, 0.2); // Deep Blue
+    var base_col4 = vec3<f32>(1.0, 0.9, 0.5); // Bright Yellow/White glow
+    
+    // Audio-reactive color shifts
+    base_col1 = mix(base_col1, vec3<f32>(0.2, 0.8, 0.9), audioLow * 0.3);
+    base_col2 = mix(base_col2, vec3<f32>(0.9, 0.3, 0.6), audioHigh * 0.3);
+
+    // Construct color based on warping layers
+    var color = mix(base_col1, base_col2, clamp(f * f * 4.0, 0.0, 1.0));
+    color = mix(color, base_col3, clamp(length(q), 0.0, 1.0));
+    color = mix(color, base_col4, clamp(length(r.x), 0.0, 1.0));
+
+    // Apply hue shift from params + audio
+    color = hueShift(color, hue_offset + time * 0.1 + audioHueShift);
+
+    // Enhance contrast and glow
+    let glowIntensity = 1.0 + audioMid * 0.5;
+    color = (f * f * f + 0.6 * f * f + 0.5 * f) * color * glowIntensity;
+
+    let coord = vec2<i32>(global_id.xy);
+
+    // ═══ CHUNK: temporal-feedback (dataTextureC → dataTextureA) ═══
+    let prev = textureLoad(dataTextureC, coord, 0);
+    color = mix(color, prev.rgb * 0.92, 0.05 + audioLow * 0.01);
+
+    // ═══ CHUNK: chromatic-aberration ═══
+    let caStr = 0.003 * (1.0 + audioLow) + glowIntensity * 0.001;
+    color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
+
+    color = acesToneMap(color * 1.2);
+
+    // Output final color with semantic alpha
+    let lumaOut = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(lumaOut * 0.8 + 0.1, 0.0, 1.0);
+    let final_color = vec4<f32>(color, alpha);
+    textureStore(writeTexture, coord, final_color);
+    textureStore(dataTextureA, coord, final_color);
+
+    // Write empty depth
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+}
+```

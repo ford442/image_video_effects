@@ -1,15 +1,152 @@
+# Swarm Brief: crystalline-veins
+
+**Role:** Visualist
+**Name:** Crystalline Veins
+**Category:** generative
+**Description:** Mineral vein patterns growing through dark stone. FBM-based crack and vein generation with gold, copper, and silver chromatic veins. Bass drives vein pulse, mids control growth density, treble adds crystalline sparkles. Mouse attracts vein growth.
+**Current lines:** 203
+**Target lines:** 253–293 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Visualist. These mineral veins can blow out their highlights (sparkle x2.5 stacked on pulse x1.4, no tonemap). Tame the HDR, then enrich the geology:
+- TAME THE BLOWOUT (priority 1): add a hue-preserving clamp at ~1.2 followed by ACES tonemapping AFTER the accumulation/feedback section (not inside it), so treble-hit sparkles stop clipping to white. This also sanitizes the raw-color feedback loop.
+- Worley crack complement: add a Worley F2-F1 crack layer as a cheaper secondary vein generator, modulated by per-bin FFT (`plasmaBuffer[1..8]`) so cracks shimmer across the spectrum.
+- IQ mineral palette: replace the hardcoded gold/copper/silver lerps with an IQ cosine palette driven by the Mineral Shift slider for richer mineral variety (keep defaults visually close to the legacy gold look).
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the FBM domain-warp `veinNoise` ridge formula (`1.0 - abs(n-0.5)*2.0` + `pow(combined, 2.5)`) VERBATIM - it defines the vein geometry. Any tonemap goes AFTER the accumulation block, never inside it.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "crystalline-veins",
+  "name": "Crystalline Veins",
+  "category": "generative",
+  "url": "shaders/crystalline-veins.wgsl",
+  "description": "Mineral vein patterns growing through dark stone. FBM-based crack and vein generation with gold, copper, and silver chromatic veins. Bass drives vein pulse, mids control growth density, treble adds crystalline sparkles. Mouse attracts vein growth.",
+  "features": [
+    "audio-reactive",
+    "temporal-feedback",
+    "chromatic-dispersion",
+    "fbm-veins",
+    "mineral-growth",
+    "mouse-driven"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Vein Density",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "glow",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "growth",
+      "name": "Growth Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "mineral",
+      "name": "Mineral Shift",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "crystal",
+    "veins",
+    "mineral",
+    "gold",
+    "copper",
+    "silver",
+    "audio-reactive",
+    "chromatic",
+    "organic",
+    "abstract"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Vein Density",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Growth Speed",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Mineral Shift",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════════
 //  Crystalline Veins
 //  Category: generative
 //  Features: audio-reactive, temporal-feedback, chromatic-dispersion,
-//            fbm-veins, worley-cracks, iq-palette, mineral-growth,
-//            mouse-attraction, aces-tonemap
+//            fbm-veins, mineral-growth, mouse-attraction
 //  Complexity: High
 //  Created: 2026-05-30
-//  Upgraded: 2026-07-26 (Batch 17) — HDR tamed with hue-preserving
-//            clamp + ACES after accumulation; Worley F2-F1 crack layer
-//            shimmering across per-bin FFT; IQ cosine mineral palette
-//            driven by the Mineral Shift slider.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -83,7 +220,7 @@ fn fbmDomainWarp(p: vec2<f32>, time: f32) -> vec2<f32> {
   return p + 1.5 * r;
 }
 
-// Crack/vein generation using FBM ridges — DO NOT ALTER the ridge formula.
+// Crack/vein generation using FBM ridges
 fn veinNoise(p: vec2<f32>, time: f32, density: f32) -> f32 {
   let warped = fbmDomainWarp(p * density, time);
   let n1 = fbm2(warped + vec2<f32>(time * 0.02, 0.0), 5);
@@ -92,58 +229,6 @@ fn veinNoise(p: vec2<f32>, time: f32, density: f32) -> f32 {
   let ridge2 = 1.0 - abs(n2 - 0.5) * 2.0;
   let combined = max(ridge1 * 0.7, ridge2 * 0.5);
   return pow(combined, 2.5);
-}
-
-// Worley (Voronoi) F2-F1: cheap secondary crack generator. Returns
-// the raw F2-F1 distance; thin cell borders map to dark fracture lines.
-fn worleyCrack(p: vec2<f32>, time: f32) -> f32 {
-  let ip = floor(p);
-  let fp = fract(p);
-  var f1 = 8.0;
-  var f2 = 8.0;
-  for (var j: i32 = -1; j <= 1; j = j + 1) {
-    for (var i: i32 = -1; i <= 1; i = i + 1) {
-      let g = vec2<f32>(f32(i), f32(j));
-      let o = hash22(ip + g);
-      // Slow drift of feature points so cracks creep like cooling stone.
-      let wob = 0.5 + 0.35 * sin(time * 0.4 + 6.2831 * o);
-      let d = length(g + wob - fp);
-      if (d < f1) {
-        f2 = f1;
-        f1 = d;
-      } else if (d < f2) {
-        f2 = d;
-      }
-    }
-  }
-  return f2 - f1;
-}
-
-// IQ cosine palette: a + b*cos(2π(c·t + d)). The Mineral Shift slider
-// sweeps t; constants are tuned so t≈0 lands on the legacy gold look.
-fn mineralPalette(t: f32) -> vec3<f32> {
-  let a = vec3<f32>(0.62, 0.48, 0.32);
-  let b = vec3<f32>(0.42, 0.36, 0.30);
-  let c = vec3<f32>(1.00, 1.00, 1.00);
-  let d = vec3<f32>(0.00, 0.10, 0.22);
-  return a + b * cos(6.28318 * (c * t + d));
-}
-
-// Hue-preserving highlight clamp: scales the whole RGB triplet down when
-// the brightest channel exceeds maxV, keeping mineral hues intact.
-fn huePreserveClamp(col: vec3<f32>, maxV: f32) -> vec3<f32> {
-  let peak = max(col.r, max(col.g, col.b));
-  if (peak > maxV) {
-    return col * (maxV / peak);
-  }
-  return col;
-}
-
-// ACES fitted tonemap (Narkowicz). Applied AFTER accumulation/feedback.
-fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
-  let num = x * (2.51 * x + vec3<f32>(0.03, 0.03, 0.03));
-  let den = x * (2.43 * x + vec3<f32>(0.59, 0.59, 0.59)) + vec3<f32>(0.14, 0.14, 0.14);
-  return clamp(num / den, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 1.0, 1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -160,7 +245,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
 
-  // Slider wiring (zoom_params contract: x=density, y=glow, z=growth, w=mineral)
   let veinDensity = mix(1.5, 5.0, u.zoom_params.x);
   let glowIntensity = u.zoom_params.y;
   let growthSpeed = u.zoom_params.z;
@@ -184,23 +268,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let attractedVeins = veinNoise(p + normalize(p - mouseUVAspect + vec2<f32>(0.001)) * mouseAttraction, time, veinDensity);
   let mixedVeins = mix(veins, attractedVeins, mouseAttraction * 2.0);
 
-  // Worley crack complement: fine fracture web between the main veins.
-  // Per-bin FFT (plasmaBuffer[1..8]) shimmers the crack width per cell.
-  let cellId = floor(p * veinDensity * 2.0);
-  let cellHash = hash22(cellId);
-  let binIndex = 1u + u32(cellHash.y * 7.999) % 8u;
-  let binFFT = plasmaBuffer[binIndex].x;
-  let crackScale = veinDensity * 2.5;
-  let crackRaw = worleyCrack(p * crackScale + vec2<f32>(time * 0.01, 0.0), time);
-  let crackWidth = 0.04 + binFFT * 0.10;
-  let crackLine = 1.0 - smoothstep(0.0, crackWidth, crackRaw);
-  let crackVein = pow(crackLine, 2.0) * (0.4 + binFFT * 0.8);
-
   // Growth threshold: veins "grow" over time
   let growthThreshold = 0.3 + growthMask * 0.5;
   let veinMask = smoothstep(growthThreshold, growthThreshold - 0.15, mixedVeins);
   let thinVeins = smoothstep(growthThreshold + 0.1, growthThreshold, mixedVeins) * (1.0 - veinMask);
-  let crackMask = crackVein * (1.0 - veinMask) * growthMask;
 
   // Bass drives vein pulse
   let pulse = 1.0 + bass * sin(time * 4.0 + mixedVeins * 20.0) * 0.4;
@@ -209,16 +280,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let densityPattern = fbm2(p * 3.0 + vec2<f32>(time * 0.01), 4);
   let densityMod = 1.0 + mids * densityPattern;
 
-  // Mineral palette: IQ cosine palette swept by the Mineral Shift slider.
-  // t≈cellHash alone stays close to the legacy gold; the slider rotates
-  // the hue through copper, silver and rarer mineral bands.
-  let mineralT = fract(cellHash.x * 0.65 + mineralShift);
-  let mineralColor = mineralPalette(mineralT);
-  let crackColor = mineralPalette(fract(mineralT + 0.13));
+  // Mineral types: gold, copper, silver based on cell hash
+  let cellHash = hash22(floor(p * veinDensity * 2.0));
+  let mineralType = fract(cellHash.x + mineralShift * 0.5);
+
+  // Gold veins
+  let goldColor = vec3<f32>(1.0, 0.84, 0.0);
+  // Copper veins
+  let copperColor = vec3<f32>(0.72, 0.45, 0.2);
+  // Silver veins
+  let silverColor = vec3<f32>(0.75, 0.75, 0.8);
+
+  let mineralColor = mix(
+    mix(goldColor, copperColor, smoothstep(0.33, 0.66, mineralType)),
+    silverColor,
+    smoothstep(0.66, 1.0, mineralType)
+  );
 
   // Chromatic dispersion: R/G/B offsets for each mineral type
   let caStrength = 0.012 * (1.0 + treble);
-  let rOffset = vec2<f32>(caStrength * sin(mineralT * 6.28), caStrength * cos(mineralT * 6.28));
+  let rOffset = vec2<f32>(caStrength * sin(mineralType * 6.28), caStrength * cos(mineralType * 6.28));
   let gOffset = vec2<f32>(-caStrength * 0.7, caStrength * 0.5);
   let bOffset = vec2<f32>(caStrength * 0.3, -caStrength * 0.8);
 
@@ -245,29 +326,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sparkle = step(1.0 - 0.08 * treble, sparkleNoise) * veinMask * treble * 2.5;
   let sparkleColor = vec3<f32>(1.0, 0.98, 0.95) * sparkle;
 
-  // Thin vein filaments + Worley crack ore seams
+  // Thin vein filaments
   let filamentColor = mineralColor * thinVeins * 0.4 * pulse;
-  let crackOreColor = crackColor * crackMask * 0.55 * (0.6 + bass * 0.4);
 
-  var color = stoneColor + chromaVein + glowColor + sparkleColor + filamentColor + crackOreColor;
+  var color = stoneColor + chromaVein + glowColor + sparkleColor + filamentColor;
 
   // Temporal feedback: trailing glow from previous frame
   let feedbackColor = prev.rgb * 0.85;
   let feedbackMask = smoothstep(0.1, 0.5, prev.a) * 0.3;
   color = mix(color, feedbackColor + glowColor * 0.5, feedbackMask);
 
-  // ── HDR taming (AFTER accumulation/feedback, never inside it) ──
-  // 1) Hue-preserving clamp at ~1.2 stops stacked sparkle/pulse blowout.
-  // 2) ACES tonemap rolls highlights off smoothly instead of clipping.
-  color = huePreserveClamp(color, 1.2);
-  color = acesTonemap(color);
-
-  // Semantic alpha: based on vein presence + glow + sparkles + cracks
-  let alpha = clamp(veinMask * 0.9 + glow * 0.5 + sparkle * 0.4 + thinVeins * 0.3 + crackMask * 0.25, 0.0, 1.0);
-
-  let depthVal = veinMask * 0.6 + glow * 0.3 + sparkle * 0.2 + crackMask * 0.15;
+  // Semantic alpha: based on vein presence + glow + sparkles
+  let alpha = clamp(veinMask * 0.9 + glow * 0.5 + sparkle * 0.4 + thinVeins * 0.3, 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
   textureStore(dataTextureA, global_id.xy, vec4<f32>(color, alpha));
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(veinMask * 0.6 + glow * 0.3 + sparkle * 0.2, 0.0, 0.0, 0.0));
 }
+```

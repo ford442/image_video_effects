@@ -8,9 +8,16 @@
 //              polynomial approximation to Bessel J₀…J₃ on GPU,
 //              audio bands activate different (m,n) mode families:
 //              bass→(0,1)(0,2), mids→(1,1)(2,1), treble→(1,2)(3,1),
+//              each mode weighted by its matching FFT bin (true cymatics),
 //              Chladni node-line colour coding (zero-crossings → white),
-//              multi-mode interference creates quasi-chaotic patterns
-//  Upgraded: Phase B
+//              click strikes inject decaying impulse ripples into u_total,
+//              mouse genuinely re-centres the drum via the polar mapping
+//  Sliders:  x=ModeScale  y=ColourMode (hue rotation of base colour)
+//            z=NodeSharpness  w=ModeCount
+//  State:    dataTextureA = (u_total, r, phi/2π, blendAlpha) — raw sim state,
+//            never tone-mapped; extraBuffer is declared but never written
+//            (all persistent data lives in the uniform ripple ring buffer).
+//  Upgraded: Phase B → Batch 17 (honest sliders, live strikes, FFT weights)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0)  var u_sampler: sampler;
@@ -30,19 +37,9 @@
 struct Uniforms {
     config:      vec4<f32>,
     zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,  // x=ModeScale, y=ColorMode, z=NodeSharpness, w=ModeCount
+    zoom_params: vec4<f32>,  // x=ModeScale, y=ColourMode, z=NodeSharpness, w=ModeCount
     ripples:     array<vec4<f32>, 50>,
 }
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
-}
-
 
 // ─── Polynomial Bessel approximations (Abramowitz & Stegun 9.4) ───
 // J₀(x)  — accurate for x ∈ [0, 8] via two-range polynomial
@@ -102,6 +99,12 @@ fn drumMode(r: f32, phi: f32, t: f32, m: i32, alpha_mn: f32, omega: f32, phi0: f
     return bessel * cos(f32(m) * phi + phi0) * cos(omega * t);
 }
 
+// Cymatic weight: each mode family is driven by its matching FFT bin.
+// plasmaBuffer[0] holds bass/mids/treble bands; bins live in [1..8] here.
+fn fftModeWeight(mode: u32) -> f32 {
+    return 0.6 + 0.9 * clamp(plasmaBuffer[1u + (mode % 8u)].x, 0.0, 1.0);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -109,6 +112,23 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let d = 0.59;
   let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// HSV → RGB for the displacement colouring
+fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
+    let hh = fract(h);
+    let hi = floor(hh * 6.0);
+    let f  = hh * 6.0 - hi;
+    let p_ = v * (1.0 - s);
+    let q_ = v * (1.0 - f * s);
+    let tv = v * (1.0 - (1.0 - f) * s);
+    let m  = i32(hi) % 6;
+    if (m == 0) { return vec3<f32>(v, tv, p_); }
+    if (m == 1) { return vec3<f32>(q_, v, p_); }
+    if (m == 2) { return vec3<f32>(p_, v, tv); }
+    if (m == 3) { return vec3<f32>(p_, q_, v); }
+    if (m == 4) { return vec3<f32>(tv, p_, v); }
+    return vec3<f32>(v, p_, q_);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -123,84 +143,114 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let modeScale   = mix(0.5, 2.5, u.zoom_params.x);
-    let nodeSharp   = mix(2.0, 30.0, u.zoom_params.z);
-    let modeCount   = floor(u.zoom_params.w * 6.0) + 2.0;
+    // ─── Sliders (all four honestly wired to this shader's algorithm) ───
+    let modeScale  = mix(0.5, 2.5, clamp(u.zoom_params.x, 0.0, 1.0));  // x: radial mode scale ONLY
+    let colourMode = clamp(u.zoom_params.y, 0.0, 1.0);                 // y: hue rotation of base colour
+    let nodeSharp  = mix(2.0, 30.0, clamp(u.zoom_params.z, 0.0, 1.0)); // z: Chladni node-line sharpness
+    let modeCount  = floor(clamp(u.zoom_params.w, 0.0, 1.0) * 6.0) + 2.0; // w: active mode families
 
-    // Polar coords centred on screen
-    let p     = (uv - 0.5) * 2.0;
-    let r     = length(p) * modeScale;
-    let phi   = atan2(p.y, p.x);
+    // ─── Polar coords centred on the drum — mouse genuinely re-centres it ───
+    let mouse      = u.zoom_config.yz;                    // [mouseX, mouseY] in uv space
+    let drumCenter = vec2<f32>(0.5) + (mouse - vec2<f32>(0.5)) * 0.45;
+    let p          = (uv - drumCenter) * 2.0;
+    let r          = length(p) * modeScale;
+    let phi        = atan2(p.y, p.x);
 
-    // Mouse offset shifts the drum centre
-    let mouse = u.zoom_config.yz;
-    let rc    = length((uv - mouse) * 2.0) * modeScale;
-    let phic  = atan2((uv.y - mouse.y), (uv.x - mouse.x));
-
-    // ─── Mode family activation by audio band ───
+    // ─── Mode family activation by audio band, FFT-bin weighted ───
     // First zeros of J_m: J0→2.4048, 5.5201; J1→3.8317, 7.0156; J2→5.1356; J3→6.3802
+    //
+    // Physical model: an ideal circular membrane of radius R fixed at its rim
+    // vibrates in orthogonal modes u_{mn}. The radial part J_m(α_{mn}·r/R)
+    // vanishes at r = R because α_{mn} is the n-th zero of J_m; the azimuthal
+    // part cos(m·φ+φ₀) creates m nodal diameters; ω_{mn}·t animates the
+    // standing wave. Superposing modes with mismatched frequencies yields the
+    // quasi-chaotic interference figures seen on real Chladni plates.
+    //
+    // Cymatic coupling: each mode's amplitude is additionally modulated by
+    // its matching FFT bin, so the spectrum of the audio literally selects
+    // which eigenmodes are excited — the same way a loudspeaker under a
+    // sand-covered plate picks out resonant patterns.
     var u_total = 0.0;
 
     // Bass → (0,1) and (0,2) radially symmetric modes
-    u_total += drumMode(r, phi, time, 0, 2.4048, 2.4048 * 0.5, 0.0) * (0.5 + bass * 0.5);
+    u_total += drumMode(r, phi, time, 0, 2.4048, 2.4048 * 0.5, 0.0) * (0.5 + bass * 0.5) * fftModeWeight(0u);
     if (modeCount >= 3.0) {
-        u_total += drumMode(r, phi, time, 0, 5.5201, 5.5201 * 0.5, 0.0) * (0.3 + bass * 0.3);
+        u_total += drumMode(r, phi, time, 0, 5.5201, 5.5201 * 0.5, 0.0) * (0.3 + bass * 0.3) * fftModeWeight(1u);
     }
 
     // Mids → (1,1) and (2,1)
-    u_total += drumMode(r, phi, time, 1, 3.8317, 3.8317 * 0.5, 0.7) * (0.4 + mids * 0.5);
+    u_total += drumMode(r, phi, time, 1, 3.8317, 3.8317 * 0.5, 0.7) * (0.4 + mids * 0.5) * fftModeWeight(2u);
     if (modeCount >= 4.0) {
-        u_total += drumMode(r, phi, time, 2, 5.1356, 5.1356 * 0.5, 1.2) * (0.3 + mids * 0.4);
+        u_total += drumMode(r, phi, time, 2, 5.1356, 5.1356 * 0.5, 1.2) * (0.3 + mids * 0.4) * fftModeWeight(3u);
     }
 
     // Treble → (1,2) and (3,1)
     if (modeCount >= 5.0) {
-        u_total += drumMode(r, phi, time, 1, 7.0156, 7.0156 * 0.5, 0.3) * (0.2 + treble * 0.5);
+        u_total += drumMode(r, phi, time, 1, 7.0156, 7.0156 * 0.5, 0.3) * (0.2 + treble * 0.5) * fftModeWeight(4u);
     }
     if (modeCount >= 6.0) {
-        u_total += drumMode(r, phi, time, 3, 6.3802, 6.3802 * 0.5, 2.1) * (0.15 + treble * 0.4);
+        u_total += drumMode(r, phi, time, 3, 6.3802, 6.3802 * 0.5, 2.1) * (0.15 + treble * 0.4) * fftModeWeight(5u);
+    }
+
+    // ─── Membrane strikes: each click injects a decaying drum hit ───
+    // ripples[i] = (uv.x, uv.y, spawnTime, strength); live count from config.y.
+    // A strike is a localised displacement impulse (mallet hit) whose energy
+    // radiates outward as a damped wave packet, then rings down exponentially.
+    let strikeCount = min(u32(u.config.y), 50u);
+    var strikeGlow  = 0.0;
+    for (var i: u32 = 0u; i < strikeCount; i = i + 1u) {
+        let rp  = u.ripples[i];
+        let age = time - rp.z;
+        if (rp.w > 0.001 && age >= 0.0 && age < 2.5) {
+            // Click point mapped into the same drum-centred polar frame
+            let hitP    = (rp.xy - drumCenter) * 2.0;
+            let d       = distance(p, hitP);
+            // Localized decaying impulse + outward-travelling wave packet
+            let impulse = exp(-d * d * 10.0) * cos(d * 22.0 - age * 14.0);
+            u_total += rp.w * 0.8 * exp(-age * 3.0) * impulse;
+            // Impact flash: bright contact point that fades with the ring-down
+            strikeGlow += rp.w * exp(-d * d * 24.0) * exp(-age * 4.5);
+        }
     }
 
     // ─── Boundary: circular membrane fixed at r = R ───
-    let R     = 0.9;
+    // Dirichlet condition u(R) = 0, softened over a thin rim for anti-aliasing.
+    let R      = 0.9;
     let inside = smoothstep(R + 0.03, R, r / modeScale);
     u_total *= inside;
 
     // ─── Chladni node-line colouring ───
     // Nodes are zero-crossings: glow proportional to |u_total|
-    let nodeEdge  = abs(u_total);
-    let nodeGlow  = smoothstep(0.0, 0.5 / nodeSharp, nodeEdge) *
-                    smoothstep(1.5 / nodeSharp, 0.5 / nodeSharp, nodeEdge);
+    let nodeEdge = abs(u_total);
+    let nodeGlow = smoothstep(0.0, 0.5 / nodeSharp, nodeEdge) *
+                   smoothstep(1.5 / nodeSharp, 0.5 / nodeSharp, nodeEdge);
 
-    // Displacement → hue
-    let hue    = fract(u_total * 0.15 + time * 0.04 + bass * 0.08);
-    let sat    = 0.85;
-    let val    = clamp(abs(u_total) * 1.5, 0.0, 1.0) * inside;
-    // HSV → RGB
-    let hi = floor(hue * 6.0);
-    let f  = hue * 6.0 - hi;
-    let p_ = val * (1.0 - sat);
-    let q_ = val * (1.0 - f * sat);
-    let tv = val * (1.0 - (1.0 - f) * sat);
-    let m  = i32(hi) % 6;
-    var baseColor: vec3<f32>;
-    if (m == 0) { baseColor = vec3<f32>(val, tv, p_); }
-    else if (m == 1) { baseColor = vec3<f32>(q_, val, p_); }
-    else if (m == 2) { baseColor = vec3<f32>(p_, val, tv); }
-    else if (m == 3) { baseColor = vec3<f32>(p_, q_, val); }
-    else if (m == 4) { baseColor = vec3<f32>(tv, p_, val); }
-    else             { baseColor = vec3<f32>(val, p_, q_); }
+    // Displacement → hue, then COLOUR MODE rotates the base hue
+    let hue = fract(u_total * 0.15 + time * 0.04 + bass * 0.08 + colourMode);
+    let sat = 0.85;
+    let val = clamp(abs(u_total) * 1.5, 0.0, 1.0) * inside;
+    let baseColor = hsv2rgb(hue, sat, val);
 
-    // Nodes → white/gold Chladni lines
-    let chladniColor = mix(baseColor, vec3<f32>(1.0, 0.9, 0.7), nodeGlow * 0.7);
+    // Nodes → white/gold Chladni lines (hue rotation happens BEFORE this mix)
+    var chladniColor = mix(baseColor, vec3<f32>(1.0, 0.9, 0.7), nodeGlow * 0.7);
 
-    // Blend with image input
+    // Strike flash tints the impact zone hot white while the hit rings down
+    chladniColor = mix(chladniColor, vec3<f32>(1.0, 0.98, 0.92), clamp(strikeGlow, 0.0, 1.0) * 0.6);
+
+    // Fixed rim: the clamped edge of the membrane catches a faint highlight,
+    // anchoring the drum visually where the boundary condition pins u = 0.
+    let rim     = smoothstep(0.05, 0.0, abs(r / modeScale - R)) * 0.35;
+    chladniColor += vec3<f32>(0.9, 0.85, 0.7) * rim;
+
+    // Blend with image input: the membrane figure overlays the source frame
+    // wherever displacement or node glow is strong.
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let blendAlpha = clamp(val * 0.85 + nodeGlow * 0.3 + bass * 0.05, 0.0, 1.0);
+    let blendAlpha = clamp(val * 0.85 + nodeGlow * 0.3 + bass * 0.05 + strikeGlow * 0.25, 0.0, 1.0);
     let finalColor = mix(inputColor, chladniColor, blendAlpha);
 
-    textureStore(writeTexture, coord, applyGenerativePrimaryControls(vec4<f32>(finalColor, 1.0)));
+    // Output (tone-mapped display), sim state (raw, never clamped), depth pass-through.
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(finalColor * 1.1), 1.0));
     textureStore(dataTextureA, coord, vec4<f32>(u_total, r, phi / 6.28318, blendAlpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 }

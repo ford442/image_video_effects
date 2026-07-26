@@ -1,16 +1,8 @@
 {
-  "generated": "2026-07-26T05:04:51.055332+00:00",
-  "defs_scanned": 1,
-  "defs_with_params": 1,
-  "new_dead_sliders": [
-    {
-      "id": "_audit_probe",
-      "category": "generative",
-      "param_id": "ghost",
-      "name": "Ghost",
-      "field": "x"
-    }
-  ],
+  "generated": "2026-07-26T05:20:05.850644+00:00",
+  "defs_scanned": 8,
+  "defs_with_params": 8,
+  "new_dead_sliders": [],
   "known_dead_sliders": [],
   "errors": [],
   "baseline": "reports/dead_sliders_audit_baseline.json"

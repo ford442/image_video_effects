@@ -1,16 +1,7 @@
 {
-  "generated": "2026-07-26T05:04:51.004716+00:00",
-  "files_scanned": 1,
-  "new_violations": [
-    {
-      "file": "public/shaders/_audit_probe.wgsl",
-      "line": 3,
-      "expr": "7",
-      "op": "=",
-      "index": 7,
-      "class": "fft-zone"
-    }
-  ],
+  "generated": "2026-07-26T05:20:05.800769+00:00",
+  "files_scanned": 8,
+  "new_violations": [],
   "known_violations": [],
   "dynamic_writes": 0,
   "out_of_range_writes": 0,

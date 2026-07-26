@@ -1,12 +1,145 @@
+# Swarm Brief: gen_fluffy_raincloud
+
+**Role:** Algorithmist
+**Name:** Vorticity Raincloud
+**Category:** generative
+**Description:** Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow.
+**Current lines:** 215
+**Target lines:** 265–305 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Algorithmist. This vorticity raincloud has the cleanest architecture of the batch - protect it, and add storm interactivity around the edges:
+- Storm gusts on click: loop ripples[] (guard `min(u32(u.config.y), 50u)`) injecting radial velocity impulses into the SIM STATE (the .gb velocity channels) at each click point - gusts that the vorticity confinement then naturally swirls.
+- Per-bin rain audio: mids bins (`plasmaBuffer[3..5]`) micro-modulate rain intensity, treble bins (`plasmaBuffer[6..8]`) raise the rain-sheet streak noise threshold so hi-hats read as rain texture.
+- Long-session precision fix: wrap the noise-coordinate time (`mod(time, 3600.0)`) so the fbm field does not degrade after hours of runtime; spring-damper the mouse gust center (extraBuffer[133..136]).
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the dataTextureA channel packing `(density, velocity.x, velocity.y, moisture)` and dataTextureB packing `(rain, omega*0.5+0.5, silverEdge, lightning)` VERBATIM - the vorticity-confinement neighbor reads depend on .gb = velocity layout; any repack breaks the fluid sim. Sim-state channels stay raw (never tonemapped). extraBuffer in [133..255] ONLY.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "gen-fluffy-raincloud",
+  "name": "Vorticity Raincloud",
+  "url": "shaders/gen_fluffy_raincloud.wgsl",
+  "description": "Audio-reactive cloudscape with curl-noise advection, buoyant thunderheads, Mie silver lining, and rain sheets driven by stored flow.",
+  "features": [
+    "upgraded-rgba",
+    "depth-aware",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "clouds",
+    "rain",
+    "storm",
+    "audio-reactive"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Coverage",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Turbulence",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Rain",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Wind",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Coverage",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Turbulence",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Rain",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Wind",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════════
 //  Vorticity Raincloud Convection
 //  Category: generative
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Curl-noise cloud advection with vorticity confinement, buoyant convection, Mie silver lining, and rain-sheet transport
-//  Upgraded: 2026-07-26 (Batch 17) — click storm gusts into sim velocity,
-//            per-bin rain audio (mids intensity / treble streak texture),
-//            long-session noise-time wrap, spring-damped mouse gust center.
+//  Upgraded: 2026-06-06
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -26,7 +159,7 @@
 struct Uniforms {
   config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Coverage, y=Turbulence, z=Rain, w=Wind
+  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -122,10 +255,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let size = vec2<i32>(i32(resolution.x), i32(resolution.y));
   let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
   let time = u.config.x;
-  // Long-session precision fix: wrap the noise-coordinate time so the fbm
-  // fields do not degrade into banding after hours of runtime. Simulation
-  // state lives in dataTextureA, so only procedural coordinates need this.
-  let noiseTime = mod(time, 3600.0);
   let pixel = 1.0 / min(resolution.x, resolution.y);
 
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -135,91 +264,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Per-bin rain audio: mids bins [3..5] micro-modulate rain intensity,
-  // treble bins [6..8] raise the rain-sheet streak threshold so hi-hats
-  // read as rain texture instead of a global brightness flicker.
-  let midBins = (plasmaBuffer[3].x + plasmaBuffer[4].x + plasmaBuffer[5].x) * 0.333333;
-  let trebleBins = (plasmaBuffer[6].x + plasmaBuffer[7].x + plasmaBuffer[8].x) * 0.333333;
-
-  // Slider wiring (saved-preset contract — ids/defaults unchanged):
-  //   Coverage   -> cloud threshold + curl field scale (how much sky fills)
-  //   Turbulence -> curl forcing gain + vorticity confinement strength
-  //   Rain       -> rain-sheet intensity + moisture generation rate
-  //   Wind       -> horizontal drift of clouds and rain streaks
   let coverage = saturate(u.zoom_params.x);
   let turbulence = saturate(u.zoom_params.y);
   let rainIntensity = saturate(u.zoom_params.z);
   let windX = (u.zoom_params.w * 2.0 - 1.0) * 0.014;
-  let rainAudio = saturate(rainIntensity * (1.0 + (midBins - 0.5) * 0.35));
-  let streakLo = clamp(0.42 + trebleBins * 0.22, 0.42, 0.78);
-
-  // Spring-damped mouse gust center (persistent state, safe zone only):
-  //   extraBuffer[133..134] = eased gust center (uv)
-  //   extraBuffer[135..136] = spring velocity
-  // A damped spring keeps the buoyant updraft smooth when the pointer jumps,
-  // so mouse gusts read as wind shear instead of teleporting columns.
-  // Only invocation (0,0) integrates; every pixel reads the eased value.
-  let rawMouse = u.zoom_config.yz;
-  var gustCenter = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  var gustVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    if (time < 0.1) {
-      gustCenter = rawMouse; // cold start: snap to avoid a startup swoop
-      gustVel = vec2<f32>(0.0, 0.0);
-    } else {
-      let dt = 1.0 / 60.0;
-      let springK = 34.0;
-      let springDamp = 9.0;
-      let springAccel = (rawMouse - gustCenter) * springK - gustVel * springDamp;
-      gustVel += springAccel * dt;
-      gustCenter += gustVel * dt;
-    }
-    extraBuffer[133] = gustCenter.x;
-    extraBuffer[134] = gustCenter.y;
-    extraBuffer[135] = gustVel.x;
-    extraBuffer[136] = gustVel.y;
-  }
-  let mouse = gustCenter;
 
   let prev = textureLoad(dataTextureC, coord, 0);
   let prevVelocity = vec2<f32>(prev.g, prev.b);
   let advected = sampleState(uv - prevVelocity, resolution, size);
   let advectedVelocity = vec2<f32>(advected.g, advected.b);
 
-  let noiseField = fbm(vec2<f32>(uv.x * 3.2 + windX * noiseTime * 8.0, uv.y * 4.4 - noiseTime * 0.05));
+  let noiseField = fbm(vec2<f32>(uv.x * 3.2 + windX * time * 8.0, uv.y * 4.4 - time * 0.05));
   let altitude = 1.0 - uv.y;
   let cloudBand = smoothstep(0.18, 0.74, altitude);
   let baseCloud = smoothstep(0.48 - coverage * 0.22, 0.96, noiseField) * cloudBand;
 
+  let mouse = u.zoom_config.yz;
   let mouseMask = (1.0 - smoothstep(0.0, 0.16, distance(uv, mouse))) * (0.18 + u.zoom_config.w * 1.25);
 
   var density = mix(advected.r, baseCloud, 0.06 + coverage * 0.06);
   var moisture = mix(advected.a, baseCloud * (0.45 + rainIntensity * 0.5), 0.045);
 
-  let curl = curlNoise(uv * mix(1.5, 4.8, coverage) + vec2<f32>(noiseTime * 0.02, -noiseTime * 0.016), noiseTime, pixel * 5.0);
+  let curl = curlNoise(uv * mix(1.5, 4.8, coverage) + vec2<f32>(time * 0.02, -time * 0.016), time, pixel * 5.0);
   var velocity = advectedVelocity * 0.97 + curl * (0.0015 + turbulence * 0.0095);
   velocity.x += windX;
-
-  // Storm gusts on click: each click injects a decaying radial velocity
-  // impulse into the sim state (.gb velocity channels); the vorticity
-  // confinement pass below then naturally swirls the gusts into eddies.
-  let rippleCount = min(u32(u.config.y), 50u);
-  var gust = vec2<f32>(0.0, 0.0);
-  var gustDensity = 0.0;
-  for (var ci: u32 = 0u; ci < rippleCount; ci = ci + 1u) {
-    let click = u.ripples[ci];
-    let clickAge = time - click.z;
-    if (clickAge > 0.0 && clickAge < 4.0) {
-      let toPixel = uv - click.xy;
-      let clickDist = length(toPixel);
-      let ring = exp(-clickDist * clickDist * 260.0);
-      let decay = exp(-clickAge * 1.6);
-      let gustDir = safeNormalize2(toPixel, vec2<f32>(0.0, 1.0));
-      gust += gustDir * ring * decay * 0.028;
-      gustDensity += ring * decay;
-    }
-  }
-  velocity += gust;
 
   let vN = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(0, -1), size), 0).gb;
   let vS = textureLoad(dataTextureC, clampCoord(coord + vec2<i32>(0, 1), size), 0).gb;
@@ -236,13 +304,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   velocity.x += (uv.x - mouse.x) * mouseMask * 0.01;
 
   let pulseBoost = smoothstep(0.82, 0.98, bass);
-  density = saturate(density * 0.995 + mouseMask * 0.06 + pulseBoost * 0.015 + gustDensity * 0.05);
-  moisture = saturate(moisture * 0.996 + density * 0.018 + mouseMask * 0.05 + gustDensity * 0.04);
+  density = saturate(density * 0.995 + mouseMask * 0.06 + pulseBoost * 0.015);
+  moisture = saturate(moisture * 0.996 + density * 0.018 + mouseMask * 0.05);
 
-  let aboveState = sampleState(uv - vec2<f32>(windX * 5.0, 0.028 + rainAudio * 0.05), resolution, size);
-  let rainCore = smoothstep(0.45, 0.88, aboveState.r) * smoothstep(0.25, 0.95, aboveState.a) * rainAudio;
-  let rainNoise = fbm(vec2<f32>(uv.x * 72.0 + windX * 100.0, uv.y * 160.0 - noiseTime * 6.0));
-  let rain = rainCore * smoothstep(streakLo, 0.92, rainNoise) * smoothstep(0.18, 0.92, uv.y);
+  let aboveState = sampleState(uv - vec2<f32>(windX * 5.0, 0.028 + rainIntensity * 0.05), resolution, size);
+  let rainCore = smoothstep(0.45, 0.88, aboveState.r) * smoothstep(0.25, 0.95, aboveState.a) * rainIntensity;
+  let rainNoise = fbm(vec2<f32>(uv.x * 72.0 + windX * 100.0, uv.y * 160.0 - time * 6.0));
+  let rain = rainCore * smoothstep(0.42, 0.92, rainNoise) * smoothstep(0.18, 0.92, uv.y);
   moisture = saturate(moisture - rain * 0.09);
   density = saturate(density - rain * 0.025);
 
@@ -259,8 +327,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let cosTheta = dot(lightDir2, safeNormalize2(-gradientDir, vec2<f32>(0.0, 1.0)));
   let mie = phaseMie(cosTheta, 0.72);
 
-  let lightningGate = smoothstep(0.9, 1.0, bass + 0.06 * sin(noiseTime * 27.0 + hash21(floor(uv * 26.0)) * 9.0));
-  let lightningShape = smoothstep(0.55, 0.95, fbm(vec2<f32>(uv.x * 18.0, uv.y * 42.0 - noiseTime * 4.0)));
+  let lightningGate = smoothstep(0.9, 1.0, bass + 0.06 * sin(time * 27.0 + hash21(floor(uv * 26.0)) * 9.0));
+  let lightningShape = smoothstep(0.55, 0.95, fbm(vec2<f32>(uv.x * 18.0, uv.y * 42.0 - time * 4.0)));
   let lightning = lightningGate * lightningShape * density;
 
   let skyColor = mix(vec3<f32>(0.42, 0.56, 0.80), vec3<f32>(0.86, 0.92, 0.98), altitude);
@@ -275,12 +343,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let finalAlpha = max(inputColor.a, saturate(0.42 + density * 0.55 + rain * 0.12 + lightning * 0.2));
   let finalDepth = mix(inputDepth, saturate(0.18 + density * 0.64 + rain * 0.18 + lightning * 0.16), 0.92);
 
-  // Channel packing contract (vorticity-confinement neighbor reads depend on
-  // .gb = velocity layout — do NOT repack; sim state stays raw, never toned):
-  //   dataTextureA = (density, velocity.x, velocity.y, moisture)
-  //   dataTextureB = (rain, omega * 0.5 + 0.5, silverEdge, lightning)
   textureStore(writeTexture, coord, vec4<f32>(acesToneMap((finalColor) * 1.1), finalAlpha));
   textureStore(dataTextureA, coord, vec4<f32>(density, velocity.x, velocity.y, moisture));
   textureStore(dataTextureB, coord, vec4<f32>(rain, omega * 0.5 + 0.5, silverEdge, lightning));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }
+```

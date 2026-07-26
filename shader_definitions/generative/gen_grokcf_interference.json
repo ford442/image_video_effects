@@ -2,7 +2,7 @@
   "id": "gen-grokcf-interference",
   "name": "Cylindrical Drum Modes",
   "url": "shaders/gen_grokcf_interference.wgsl",
-  "description": "Vibrating circular membrane Bessel function modal synthesis: u_{mn} = J_m(α_{mn}·r/R)·cos(mφ)·cos(ω_{mn}·t). GPU polynomial Bessel J₀–J₃ (Abramowitz & Stegun). Audio bands activate mode families (bass→radial, mids→azimuthal, treble→higher-order). Chladni node-line colouring.",
+  "description": "Vibrating circular membrane Bessel function modal synthesis: u_{mn} = J_m(\u03b1_{mn}\u00b7r/R)\u00b7cos(m\u03c6)\u00b7cos(\u03c9_{mn}\u00b7t). GPU polynomial Bessel J\u2080\u2013J\u2083 (Abramowitz & Stegun). Audio bands activate mode families (bass\u2192radial, mids\u2192azimuthal, treble\u2192higher-order). Chladni node-line colouring.",
   "features": [
     "upgraded-rgba",
     "depth-aware",
@@ -61,5 +61,40 @@
       "mapping": "zoom_params.w",
       "description": "Controls mouse-driven or secondary variation influence."
     }
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Mode Scale",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Colour Mode",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Node Sharpness",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Mode Count",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

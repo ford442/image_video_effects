@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-26T05:33:33.489636",
+  "timestamp": "2026-07-26T07:20:05.730832",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": false,
   "total": 8,
@@ -10,7 +10,7 @@
   "workgroup_blocking": 0,
   "results": [
     {
-      "file": "public/shaders/bio_lenia_continuous.wgsl",
+      "file": "public/shaders/audio_geometric_pulse.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -23,7 +23,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/bioluminescent-bloom.wgsl",
+      "file": "public/shaders/chromatic-ghost-tunnel.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -36,7 +36,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/chrono-voronoi-mycelium.wgsl",
+      "file": "public/shaders/cosmic-web.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -49,7 +49,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/cosmic-jellyfish.wgsl",
+      "file": "public/shaders/crystalline-veins.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -62,7 +62,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-ethereal-cyber-chrono-nebula-phoenix.wgsl",
+      "file": "public/shaders/gen_fluffy_raincloud.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -75,7 +75,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/liquid_magnetic_ferro.wgsl",
+      "file": "public/shaders/gen_grokcf_interference.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -88,7 +88,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spec-quaternion-julia.wgsl",
+      "file": "public/shaders/gen_kimi_crystal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -101,7 +101,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/tornado-vortex.wgsl",
+      "file": "public/shaders/stellar-plasma.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
