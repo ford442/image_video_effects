@@ -5,7 +5,7 @@
 ## WGSL cross-cutting improvements (2026-07-12 audit)
 - **Engine wins (all shaders):** gate historyTex copy (only 11 use binding 13); reuse extraBuffer Float32Array; fix dataTexA/B→C double-copy in chained slots; merge queue submits; GPU image upload path.
 - **Mouse Y convention (2026-07-19):** Removed erroneous `1.0 - y` flip in `WebGPURenderer.updateMouse` — `zoom_config.yz` is now canvas UV (0=top, 1=bottom), matching WASM + `WGSL_BUILTINS_GENERATIVE.md`. Patched ~70 WGSL files that had compensating `1.0 - zoom_config.z` / `1.0 - mouseUV.y` / `(0.5 - mouse.y)` flips. Script: `scripts/fix_mouse_y_compensation.py`.
-- **Dormant infra:** subgroup `-sg.wgsl` loader (0 files; probe disabled 2026-07-22 to stop 404 spam); TS timestamp-query alloc unused.
+- **Dormant infra:** subgroup `-sg.wgsl` loader (0 files; probe disabled 2026-07-22 to stop 404 spam); TS timestamp-query **wired 2026-07-26** (feature request + ring-buffered readback + honesty gate `hasRealGpuTimings`).
 - **Live rating API (2026-07-22):** `POST /api/shaders/{id}/rate` wants JSON `{ rating }` not FormData `{ stars }`. No `/api/shaders/{id}/play` on production. Use `postShaderRating()`.
 - **Format tradeoff:** rgba32float pipeline is quality-correct for HDR/sim but 4× bandwidth — don't downgrade without tiering.
 

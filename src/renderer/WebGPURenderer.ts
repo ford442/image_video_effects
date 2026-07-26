@@ -11,7 +11,13 @@ import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
 import { initializeWebGPUDevice, attachDeviceLostHandler } from './webgpu/device';
 import { WebGPUResourcePool } from './webgpu/resources';
 import { WebGPUPipelineModule, createComputeBindGroup } from './webgpu/pipeline';
-import { setupTimestampQueries, buildGPUTimings } from './webgpu/WebGPUTiming';
+import {
+  setupTimestampQueries,
+  buildGPUTimings,
+  destroyTimestampQueries,
+  createDisabledTimestampQueries,
+  WebGPUTimestampQueries,
+} from './webgpu/WebGPUTiming';
 import {
   createAudioDepthState,
   updateAudioData,
@@ -72,9 +78,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private scaledH = 0;
 
   private supportsTimestampQuery = false;
-  private querySet: GPUQuerySet | null = null;
-  private queryBuffer: GPUBuffer | null = null;
-  private gpuTimings = { parallelTime: 0, chainedTime: 0, totalTime: 0 };
+  private timestampRuntime: WebGPUTimestampQueries = createDisabledTimestampQueries();
+  private gpuTimings = this.timestampRuntime.gpuTimings;
 
   private initialized = false;
   private animationId: number | null = null;
@@ -112,6 +117,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
     attachDeviceLostHandler(outcome.device, outcome.context, () => {
       this.initialized = false;
+      this.timestampRuntime.hasRealGpuTimings = false;
+      this.timestampRuntime.readbackPending = false;
     });
 
     this.updateScaledDimensions();
@@ -151,9 +158,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.lastBlitScaledH = this.scaledH;
 
     const timing = setupTimestampQueries(d);
+    this.timestampRuntime = timing;
     this.supportsTimestampQuery = timing.supportsTimestampQuery;
-    this.querySet = timing.querySet;
-    this.queryBuffer = timing.queryBuffer;
+    this.gpuTimings = timing.gpuTimings;
   }
 
   private getMediaContext(): WebGPUMediaInputContext {
@@ -171,7 +178,11 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   getGPUTimings(): GPUTimings {
-    return buildGPUTimings(this.gpuTimings, this.supportsTimestampQuery);
+    return buildGPUTimings(
+      this.gpuTimings,
+      this.supportsTimestampQuery,
+      this.timestampRuntime.hasRealGpuTimings,
+    );
   }
 
   applyTestRenderState(state: {
@@ -396,6 +407,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   destroy(): void {
     if (this.frameState) this.frameRenderer.stopRenderLoop(this.frameState);
     this.initialized = false;
+    destroyTimestampQueries(this.timestampRuntime);
+    this.supportsTimestampQuery = false;
     this.pipeline.clear();
     this.resources.destroyWorkingTextures();
     this.resources.destroyBuffers();

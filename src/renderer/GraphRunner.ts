@@ -31,6 +31,14 @@ export interface GraphRunnerContext {
   scaledW: number;
   scaledH: number;
   maxPassesPerFrame: number;
+  /**
+   * Optional: return timestampWrites for the Nth compute dispatch in this graph run
+   * (0-based among successfully encoded compute passes). Interior passes may return undefined.
+   */
+  getTimestampWrites?: (
+    dispatchIndex: number,
+    dispatchCount: number,
+  ) => GPUComputePassTimestampWrites | undefined;
 }
 
 function encodeCopy(
@@ -64,31 +72,46 @@ export class GraphRunner {
       expanded = expanded.slice(0, cap);
     }
 
-    for (const dispatch of expanded) {
-      this.runDispatch(encoder, dispatch, ctx);
+    // Resolve pipelines once (avoids double getPipeline side effects in tests/callers).
+    const prepared = expanded.map((dispatch) => ({
+      dispatch,
+      pipeline: ctx.getPipeline(dispatch.entry),
+    }));
+    const dispatchCount = prepared.filter((p) => !!p.pipeline).length;
+    let encodedIndex = 0;
+
+    for (const { dispatch, pipeline } of prepared) {
+      if (this.runDispatch(encoder, dispatch, pipeline, ctx, encodedIndex, dispatchCount)) {
+        encodedIndex++;
+      }
     }
   }
 
   private runDispatch(
     encoder: GPUCommandEncoder,
     dispatch: ExpandedDispatch,
+    pipeline: GPUComputePipeline | undefined,
     ctx: GraphRunnerContext,
-  ): void {
+    dispatchIndex: number,
+    dispatchCount: number,
+  ): boolean {
     for (const copy of dispatch.copiesBefore) {
       encodeCopy(encoder, ctx, copy);
     }
 
-    const pipeline = ctx.getPipeline(dispatch.entry);
     if (!pipeline) {
       console.warn(`[GraphRunner] Pipeline missing for "${dispatch.entry}"`);
-      return;
+      return false;
     }
 
     const bindGroup = ctx.createBindGroupForRoles(ctx.textures);
     const wg = ctx.getWorkgroupSize(dispatch.entry);
 
     const label = `graph-${dispatch.nodeId}-${dispatch.iteration}-${dispatch.entry}`;
-    const pass = encoder.beginComputePass({ label });
+    const timestampWrites = ctx.getTimestampWrites?.(dispatchIndex, dispatchCount);
+    const pass = encoder.beginComputePass(
+      timestampWrites ? { label, timestampWrites } : { label },
+    );
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, bindGroup);
     pass.dispatchWorkgroups(
@@ -97,6 +120,7 @@ export class GraphRunner {
       1,
     );
     pass.end();
+    return true;
   }
 }
 

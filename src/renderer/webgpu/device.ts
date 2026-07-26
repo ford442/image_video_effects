@@ -87,6 +87,10 @@ export async function initializeWebGPUDevice(
   if (adapter.features.has('float32-filterable')) {
     wantFeatures.push('float32-filterable');
   }
+  // Required for GPU timestamp readback (#1007 / #1030). Guarded — absent adapters skip it.
+  if (adapter.features.has('timestamp-query')) {
+    wantFeatures.push('timestamp-query');
+  }
 
   const subgroupFeatureName: GPUFeatureName | null =
     adapter.features.has('subgroups')

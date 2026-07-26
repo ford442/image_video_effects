@@ -7,7 +7,7 @@
 
 import { GPUTimings } from '../Renderer';
 import { resolveMultipassChain } from '../multipassRegistry';
-import { resolveGraphForShader } from '../multipassGraph';
+import { resolveGraphForShader, expandGraph } from '../multipassGraph';
 import { analyzeGraphBindingUsage, graphRunner } from '../GraphRunner';
 import { ShaderBindingUsage } from '../ShaderCompilation';
 import {
@@ -26,6 +26,15 @@ import {
   WG_SIZE_X,
   WG_SIZE_Y,
 } from './webgpuConstants';
+import {
+  WebGPUTimestampQueries,
+  buildGPUTimings,
+  pickComputeTimestampWrites,
+  pickPresentTimestampWrites,
+  encodeResolveAndCopy,
+  scheduleTimestampReadback,
+  SlotTimingMode,
+} from './WebGPUTiming';
 
 export interface WebGPUFrameState {
   device: GPUDevice | null;
@@ -101,6 +110,8 @@ export interface WebGPUFrameState {
 
   supportsTimestampQuery: boolean;
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
+  /** Mutable GPU timestamp runtime (shared with WebGPURenderer). */
+  timestampRuntime: WebGPUTimestampQueries;
 }
 
 /** Minimal host surface the frame loop reads/writes through getters. */
@@ -168,6 +179,7 @@ export interface WebGPUFrameHost {
   lastBlitScaledH: number;
   supportsTimestampQuery: boolean;
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
+  timestampRuntime: WebGPUTimestampQueries;
 }
 
 /** Dependencies passed from WebGPURenderer to build a frame host. */
@@ -215,6 +227,7 @@ export interface RendererFrameDeps {
   lastBlitScaledH: number;
   supportsTimestampQuery: boolean;
   gpuTimings: { parallelTime: number; chainedTime: number; totalTime: number };
+  timestampRuntime: WebGPUTimestampQueries;
   maxPassesPerFrame: number;
 }
 
@@ -300,6 +313,7 @@ export function createRendererFrameHost(d: RendererFrameDeps): WebGPUFrameHost {
     set lastBlitScaledH(v) { d.lastBlitScaledH = v; },
     get supportsTimestampQuery() { return d.supportsTimestampQuery; },
     get gpuTimings() { return d.gpuTimings; },
+    get timestampRuntime() { return d.timestampRuntime; },
   };
 }
 
@@ -379,6 +393,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     set lastBlitScaledH(v) { h.lastBlitScaledH = v; },
     get supportsTimestampQuery() { return h.supportsTimestampQuery; },
     get gpuTimings() { return h.gpuTimings; },
+    get timestampRuntime() { return h.timestampRuntime; },
   };
 }
 
@@ -405,11 +420,12 @@ export class WebGPUFrameRenderer {
   }
 
   getGPUTimings(state: WebGPUFrameState): GPUTimings {
-    return {
-      ...state.gpuTimings,
-      available: state.supportsTimestampQuery,
-      timingSource: state.supportsTimestampQuery ? 'gpu-timestamp' : 'wall-clock',
-    };
+    const rt = state.timestampRuntime;
+    return buildGPUTimings(
+      state.gpuTimings,
+      rt.supportsTimestampQuery,
+      rt.hasRealGpuTimings,
+    );
   }
 
   renderFrame(state: WebGPUFrameState): void {
@@ -502,6 +518,25 @@ export class WebGPUFrameRenderer {
     const singleChained = enabled.length === 1 && enabled[0].mode === 'chained';
     state.blitReadTex = state.readTex;
 
+    const timing = state.timestampRuntime;
+    timing.tracker.reset();
+    const wallStart = performance.now();
+    let wallParallel = 0;
+    let wallChained = 0;
+
+    // Pre-count compute passes so we can mark the last pass of the frame.
+    const orderedPlans = [...parallelPlans, ...chainedPlans];
+    const totalComputePasses = orderedPlans.reduce(
+      (sum, plan) => sum + countSlotComputePasses(state, plan.slot),
+      0,
+    );
+    let computePassIndex = 0;
+    const nextPassMeta = (mode: SlotTimingMode): { isLast: boolean; mode: SlotTimingMode } => {
+      const isLast = computePassIndex === totalComputePasses - 1;
+      computePassIndex++;
+      return { isLast, mode };
+    };
+
     if (process.env.NODE_ENV === 'development' && state.frameCount % 60 === 0) {
       console.log(
         `[WebGPURenderer] Parallel slots: ${parallelPlans.length}, Chained slots: ${chainedPlans.length}`,
@@ -515,7 +550,9 @@ export class WebGPUFrameRenderer {
     }
 
     for (const plan of parallelPlans) {
-      this.dispatchSlot(state, encoder, plan.slot, 'parallel');
+      const slotStart = performance.now();
+      this.dispatchSlot(state, encoder, plan.slot, 'parallel', nextPassMeta);
+      wallParallel += performance.now() - slotStart;
     }
 
     if (parallelPlans.length > 0) {
@@ -547,7 +584,9 @@ export class WebGPUFrameRenderer {
     }
 
     for (const plan of chainedPlans) {
-      this.dispatchSlot(state, encoder, plan.slot, 'chained');
+      const slotStart = performance.now();
+      this.dispatchSlot(state, encoder, plan.slot, 'chained', nextPassMeta);
+      wallChained += performance.now() - slotStart;
 
       if (singleChained) {
         state.blitReadTex = state.writeTex;
@@ -593,7 +632,21 @@ export class WebGPUFrameRenderer {
     this.updateBlitBindGroup(state);
     this.encodeBlit(state, encoder);
 
+    const resolveSlot = encodeResolveAndCopy(encoder, timing);
+
     state.device.queue.submit([encoder.finish()]);
+
+    if (resolveSlot !== null) {
+      scheduleTimestampReadback(timing, resolveSlot);
+    }
+
+    const wallTotal = performance.now() - wallStart;
+    if (!timing.hasRealGpuTimings) {
+      timing.gpuTimings.parallelTime = wallParallel;
+      timing.gpuTimings.chainedTime = wallChained;
+      timing.gpuTimings.totalTime = wallTotal;
+    }
+
     if (anyUsesHistory) {
       state.audioDepth.historyHead = (state.audioDepth.historyHead + 1) % HISTORY_DEPTH;
     }
@@ -625,8 +678,14 @@ export class WebGPUFrameRenderer {
     encoder: GPUCommandEncoder,
     slot: ShaderSlot,
     labelPrefix: string,
+    nextPassMeta: (mode: SlotTimingMode) => { isLast: boolean; mode: SlotTimingMode },
   ): void {
     if (!slot.shaderId || !state.device) return;
+
+    const mode = labelPrefix as SlotTimingMode;
+    const timing = state.timestampRuntime;
+    const querySet =
+      timing.supportsTimestampQuery && timing.querySet ? timing.querySet : null;
 
     const graph = resolveGraphForShader(slot.shaderId);
     if (graph) {
@@ -648,6 +707,12 @@ export class WebGPUFrameRenderer {
         scaledW: state.scaledW,
         scaledH: state.scaledH,
         maxPassesPerFrame: state.maxPassesPerFrame,
+        getTimestampWrites: querySet
+          ? (_dispatchIndex, _dispatchCount) => {
+              const { isLast } = nextPassMeta(mode);
+              return pickComputeTimestampWrites(timing.tracker, querySet, mode, isLast);
+            }
+          : undefined,
       });
       return;
     }
@@ -659,7 +724,15 @@ export class WebGPUFrameRenderer {
         continue;
       }
       const wg = state.getWorkgroupSize(shaderId);
-      const pass = encoder.beginComputePass({ label: `${labelPrefix}-${shaderId}` });
+      const { isLast } = nextPassMeta(mode);
+      const timestampWrites = querySet
+        ? pickComputeTimestampWrites(timing.tracker, querySet, mode, isLast)
+        : undefined;
+      const pass = encoder.beginComputePass(
+        timestampWrites
+          ? { label: `${labelPrefix}-${shaderId}`, timestampWrites }
+          : { label: `${labelPrefix}-${shaderId}` },
+      );
       pass.setPipeline(pipeline);
       pass.setBindGroup(0, state.computeBindGroup);
       pass.dispatchWorkgroups(
@@ -717,6 +790,11 @@ export class WebGPUFrameRenderer {
       state.inputSource === 'generative'
         ? state.generativeBlitPipeline
         : state.blitPipeline;
+    const timing = state.timestampRuntime;
+    const timestampWrites =
+      timing.supportsTimestampQuery && timing.querySet
+        ? pickPresentTimestampWrites(timing.tracker, timing.querySet)
+        : undefined;
     const pass = encoder.beginRenderPass({
       colorAttachments: [
         {
@@ -726,6 +804,7 @@ export class WebGPUFrameRenderer {
           clearValue: { r: 0, g: 0, b: 0, a: 1 },
         },
       ],
+      ...(timestampWrites ? { timestampWrites } : {}),
     });
     pass.setPipeline(pipeline);
     pass.setBindGroup(0, state.blitBindGroup);
@@ -763,6 +842,18 @@ export class WebGPUFrameRenderer {
     state.lastBlitScaledW = state.scaledW;
     state.lastBlitScaledH = state.scaledH;
   }
+}
+
+/** Count compute passes a slot will encode (mirrors dispatchSlot / GraphRunner caps). */
+function countSlotComputePasses(state: WebGPUFrameState, slot: ShaderSlot): number {
+  if (!slot.shaderId) return 0;
+  const graph = resolveGraphForShader(slot.shaderId);
+  if (graph) {
+    const cap = Math.min(graph.maxPassesPerFrame, state.maxPassesPerFrame);
+    const expanded = expandGraph(graph).slice(0, cap);
+    return expanded.filter((d) => state.hasPipeline(d.entry)).length;
+  }
+  return resolveMultipassChain(slot.shaderId).filter((id) => state.hasPipeline(id)).length;
 }
 
 export function computeScaledDimensions(

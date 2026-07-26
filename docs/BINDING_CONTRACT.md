@@ -102,7 +102,7 @@ Both backends validate adapter limits before device creation and request explici
 | Feature | TypeScript | C++ WASM | Purpose |
 |---------|------------|----------|---------|
 | `float32-filterable` | Requested when adapter supports | Logged only | rgba32float texture sampling on bindings 1/9/13 |
-| `timestamp-query` | Not requested | Requested when available | GPU timing in WASM path |
+| `timestamp-query` | Requested when adapter supports; ring-buffered readback in `WebGPUTiming.ts` / `frame.ts` | Requested when available | GPU timing — `available`/`gpu-timestamp` only after valid readback (`hasRealGpuTimings`) |
 | `subgroups` | Requested when available | N/A | `-sg.wgsl` variants |
 
 ### WASM surface notes
