@@ -1,16 +1,147 @@
+# Swarm Brief: gen_grok41_mandelbrot
+
+**Role:** Optimizer
+**Name:** Buddhabrot Nebula
+**Category:** generative
+**Description:** Audio-reactive Buddhabrot orbit accumulation with bass-breathing sample count, mids hue shift, treble sparkle stars, mouse-driven panning, orbital rainbow trails, and ACES temporal accumulation.
+**Current lines:** 221
+**Target lines:** 271–311 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Optimizer. This Buddhabrot has the same tonemapped-feedback decay as quantum-foam-lattice, plus a missing bounds guard - fix the accumulation integrity:
+- FIX THE DOUBLE-TONEMAP FEEDBACK (priority 1): dataTextureA stores ACES-tonemapped color read back next frame - progressive contrast fade. Store LINEAR pre-tonemap accumulation (density stays Reinhard-soft-clamped), apply ACES only to the display output after the history mix. Also add the missing OOB bounds guard.
+- Gliding navigation: spring-damper the zoom/center targets (extraBuffer[133..136]) so Center X/Y/Zoom slider moves glide instead of jumping; add click ripples (guard `min(u32(u.config.y), 50u)`) that re-target the zoom center to the click point.
+- Spectral stars: drive star density per band from per-bin FFT (`plasmaBuffer[1..8]`) so the starfield follows the spectrum.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve `cmul`/`escapes` and the orbit-points accumulation loops VERBATIM - Buddhabrot correctness depends on exact iteration order. param4's dual purpose (evolution speed + historyBlend) is intentional - keep both couplings. extraBuffer in [133..255] ONLY.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "gen-grok41-mandelbrot",
+  "name": "Buddhabrot Nebula",
+  "url": "shaders/gen_grok41_mandelbrot.wgsl",
+  "description": "Audio-reactive Buddhabrot orbit accumulation with bass-breathing sample count, mids hue shift, treble sparkle stars, mouse-driven panning, orbital rainbow trails, and ACES temporal accumulation.",
+  "features": [
+    "mouse-driven",
+    "depth-aware",
+    "upgraded-rgba",
+    "audio-reactive",
+    "temporal",
+    "fractal"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "fractal",
+    "mandelbrot",
+    "buddhabrot",
+    "nebula",
+    "audio-reactive",
+    "vj"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Center X",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Center Y",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Zoom Scale",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Evolution Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Center X",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Center Y",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Zoom Scale",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Evolution Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════════
-//  Buddhabrot Nebula v3 - Audio-reactive orbit accumulation
+//  Buddhabrot Nebula v2 - Audio-reactive orbit accumulation
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven,
 //            temporal, procedural, animated-accumulation
 //  Upgraded: 2026-05-02 (Tier-1 integration pass)
-//  Optimizer pass: 2026-07-26 (Batch 18)
-//    - FIXED double-tonemap feedback: dataTextureA now stores LINEAR
-//      pre-tonemap accumulation; ACES applies only to display output
-//    - Added OOB bounds guard for rounded-up dispatch
-//    - Gliding navigation: spring-damped center/zoom (extraBuffer[133..136])
-//    - Click ripples re-target the zoom center to the click point
-//    - Spectral stars: per-bin FFT (plasmaBuffer[1..8]) drives star density
 //  Creative additions: bass-breathing sample count, orbital rainbow trails
 // ═══════════════════════════════════════════════════════════════════
 
@@ -41,7 +172,7 @@ fn hash2(p: vec2<f32>) -> vec2<f32> {
 }
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
-    let p3 = vec3<f3>(
+    let p3 = vec3<f32>(
         dot(p, vec3<f32>(127.1, 311.7, 74.7)),
         dot(p, vec3<f32>(269.5, 183.3, 246.1)),
         dot(p, vec3<f32>(113.5, 271.9, 124.6))
@@ -104,12 +235,6 @@ fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let time = u.config.x;
-
-    // ─── OOB bounds guard: dispatch is rounded up to workgroup multiples ───
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-
     let uv = (vec2<f32>(global_id.xy) / resolution - 0.5) * 2.0;
     let coord = vec2<i32>(global_id.xy);
     let aspect = resolution.x / max(resolution.y, 1.0);
@@ -119,55 +244,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // ─── Gliding navigation state (extraBuffer[133..136], safe zone) ───
-    // [133] = smoothed center X, [134] = smoothed center Y,
-    // [135] = smoothed zoom slider param, [136] = init flag
-    let targetCX = mix(-2.0, 1.0, u.zoom_params.x);
-    let targetCY = mix(-1.5, 1.5, u.zoom_params.y);
-    let targetZP = u.zoom_params.z;
-    let navInit = extraBuffer[136] > 0.5;
-    var navCenter = vec2<f32>(targetCX, targetCY);
-    var navZoom = targetZP;
-    if (navInit) {
-        navCenter = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        navZoom = extraBuffer[135];
-    }
-
-    // Click ripples re-target the zoom center to the click point: each live
-    // ripple pulls the spring goal toward its complex-plane click position
-    // with a weight that decays over ~1.4s.
-    let rippleCount = min(u32(u.config.y), 50u);
-    var clickCenter = navCenter;
-    var clickPull = 0.0;
-    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-        let ripple = u.ripples[i];
-        let age = time - ripple.z;
-        if (age > 0.0 && age < 1.4) {
-            let w = (1.0 - age / 1.4) * clamp(ripple.w, 0.0, 1.0);
-            let curScale = mix(0.05, 2.5, navZoom);
-            let cUV = (ripple.xy - 0.5) * 2.0;
-            let cPoint = navCenter + vec2<f32>(cUV.x * aspect, cUV.y) * curScale;
-            clickCenter = mix(clickCenter, cPoint, w);
-            clickPull = max(clickPull, w);
-        }
-    }
-    let goalCenter = mix(navCenter, clickCenter, clickPull);
-
-    // Single invocation integrates the spring-damper; all invocations read
-    // the persistent state (racy by one frame at worst, visually benign).
-    if (global_id.x == 0u && global_id.y == 0u) {
-        let glide = 0.07; // critically-damped per-frame approach rate
-        let newCenter = mix(navCenter, goalCenter, glide);
-        let newZoom = mix(navZoom, targetZP, glide);
-        extraBuffer[133] = newCenter.x;
-        extraBuffer[134] = newCenter.y;
-        extraBuffer[135] = newZoom;
-        extraBuffer[136] = 1.0;
-    }
-
     // Domain-specific params: Center X, Center Y, Zoom Scale, Evolution Speed
-    var view_center = navCenter;
-    var view_scale = mix(0.05, 2.5, navZoom) / max(1.0 + bass * 0.6, 0.0001); // bass zooms
+    let centerX = mix(-2.0, 1.0, u.zoom_params.x);
+    let centerY = mix(-1.5, 1.5, u.zoom_params.y);
+    var view_center = vec2<f32>(centerX, centerY);
+    var view_scale = mix(0.05, 2.5, u.zoom_params.z) / max(1.0 + bass * 0.6, 0.0001); // bass zooms
     let evolution_speed = mix(0.05, 1.5, u.zoom_params.w);
 
     // Mouse-driven panning when mouse-down
@@ -226,7 +307,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let evolution = sin(t + length(c_pixel) * 3.0) * 0.1 + 1.0;
     density = density * evolution / f32(sample_count);
     density = density * 50.0;
-    // Reinhard soft clamp on density (kept; accumulation stays linear)
     density = density / (1.0 + density);
 
     rainbow = rainbow / max(f32(sample_count) * 8.0, 1.0);
@@ -235,55 +315,46 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = nebula_color(density, t, mids * 0.5);
     color = color + rainbow * 0.6;
 
-    // ─── Spectral stars: per-bin FFT drives star density per band ───
-    // Each star is assigned one of 8 spectrum bands (plasmaBuffer[1..8]);
-    // the band's energy loosens its threshold and boosts its gain, so the
-    // starfield dances with the spectrum instead of just global treble.
-    let starSel = hash2(pixel_seed * 0.37 + vec2<f32>(13.7, 91.3));
-    let starBin = 1u + u32(floor(starSel.y * 7.999));
-    let bandEnergy = plasmaBuffer[starBin].x;
+    // Treble: sparkle stars
     let star_noise = hash3(vec3<f32>(pixel_seed * 0.01, t * 0.01));
-    let starThresh = 0.998 - treble * 0.003 - bandEnergy * 0.004;
+    let starThresh = 0.998 - treble * 0.005;
     if (star_noise.x > starThresh) {
         let star_brightness = hash2(pixel_seed + vec2<f32>(t)).x;
-        let twinkle = 0.6 + 0.4 * sin(t * 8.0 + starSel.x * 6.28);
-        let starGain = clamp(0.5 + bandEnergy * 1.5, 0.0, 1.25);
-        color = mix(color, vec3<f32>(1.0), star_brightness * 0.8 * twinkle * starGain);
+        color = mix(color, vec3<f32>(1.0), star_brightness * 0.8);
     }
 
     // Vignette
     let vignette = 1.0 - length(uv) * 0.3;
     color = color * vignette;
 
-    // ─── Temporal accumulation in LINEAR space (double-tonemap fix) ───
-    // dataTextureA/C carry pre-tonemap linear color. Previous version stored
-    // ACES-tonemapped output and read it back, progressively fading contrast.
+    // Temporal accumulation: blend with previous frame from dataTextureC
+    // Param4 doubles as history blend (high evolution_speed → less persistence)
     let uv_norm = vec2<f32>(global_id.xy) / resolution;
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv_norm, 0.0).rgb;
-    // Param4 doubles as history blend (high evolution_speed → less persistence)
     let historyBlend = clamp(0.85 - u.zoom_params.w * 0.5, 0.0, 0.85);
-    let linearColor = mix(color, prev, historyBlend);
+    color = mix(color, prev, historyBlend);
 
-    // Persist LINEAR accumulation for next frame's temporal feedback
-    let presence = smoothstep(0.05, 0.2, density);
-    textureStore(dataTextureA, coord, vec4<f32>(linearColor, presence));
-
-    // ACES tone mapping — display path only, never fed back
-    let displayColor = acesToneMapping(linearColor);
+    // ACES tone mapping (replaces pow(color, 0.8))
+    color = acesToneMapping(color);
 
     // Sample input
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv_norm, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv_norm, 0.0).r;
 
     let opacity = 0.9;
-    let luma = dot(displayColor, vec3<f32>(0.299, 0.587, 0.114));
+    let presence = smoothstep(0.05, 0.2, density);
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let generatedAlpha = max(presence, smoothstep(0.04, 0.4, luma));
 
-    let finalColor = mix(inputColor.rgb, displayColor, generatedAlpha * opacity);
+    let finalColor = mix(inputColor.rgb, color, generatedAlpha * opacity);
     let finalAlpha = max(inputColor.a, generatedAlpha * opacity);
 
     textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
 
     let finalDepth = mix(inputDepth, density, generatedAlpha * opacity);
     textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
+
+    // Persist accumulated nebula for temporal feedback
+    textureStore(dataTextureA, coord, vec4<f32>(color, generatedAlpha));
 }
+```

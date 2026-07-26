@@ -1,10 +1,145 @@
+# Swarm Brief: gen_rainbow_smoke
+
+**Role:** Algorithmist
+**Name:** Rainbow Smoke with Dual Scattering
+**Category:** generative
+**Description:** Multi-scale rainbow smoke with vorticity confinement, buoyancy, Rayleigh edge glow, and Mie-lit cores driven by bass and treble.
+**Current lines:** 220
+**Target lines:** 270–310 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Algorithmist. This is the best-engineered shader of the batch - one stability risk to shore up, then add spectral emitters:
+- CFL SAFETY (priority 1): velocity in the sim state is NOT clamped - vorticity confinement scaled by (1 + bass*3.0) can push |v| past 1 px/frame on hard bass hits, destabilizing the semi-Lagrangian advection. Add a magnitude clamp (`clampMag(velocity, 0.05)`) inside the sim update - nothing else about the solver changes.
+- Spectral emitters: add 2 extra emission centers whose intensities track per-bin FFT (`plasmaBuffer[1..8]`), positioned on a slow Lissajous drift, so different frequency ranges ignite different smoke sources.
+- Click smoke bursts: loop ripples[] (guard `min(u32(u.config.y), 50u)`) injecting radial velocity + density impulses at each click point; spring-damper the mouse stir point (extraBuffer[133..135]).
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the state channel packing `vec4(velocity, density, temperature)` and the decay constants (0.972/0.994/0.992) VERBATIM - the whole sim chain depends on them. dataTextureA is SIM STATE - never tonemap it. extraBuffer in [133..255] ONLY.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "gen-rainbow-smoke",
+  "name": "Rainbow Smoke with Dual Scattering",
+  "url": "shaders/gen_rainbow_smoke.wgsl",
+  "description": "Multi-scale rainbow smoke with vorticity confinement, buoyancy, Rayleigh edge glow, and Mie-lit cores driven by bass and treble.",
+  "features": [
+    "upgraded-rgba",
+    "depth-aware",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "smoke",
+    "audio-reactive",
+    "scattering",
+    "volumetric"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Emission",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Turbulence",
+      "default": 0.65,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Scattering",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Advection",
+      "default": 0.55,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Emission",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Turbulence",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Scattering",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Advection",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════════
 //  Rainbow Smoke with Dual Scattering
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Multi-scale curl-noise smoke with vorticity confinement, buoyancy, Rayleigh edge scattering, and Mie forward glow
-//  Upgraded: 2026-07-26 (Batch 18: CFL velocity clamp, spectral FFT emitters, click bursts, spring mouse)
+//  Upgraded: 2026-05-23
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -56,28 +191,6 @@ fn safeNormalize3(v: vec3<f32>, fallback: vec3<f32>) -> vec3<f32> {
     return v / len;
   }
   return fallback;
-}
-
-// CFL guard: cap |v| so the semi-Lagrangian backtrace never jumps more than
-// maxMag of the domain per frame, even on hard bass-boosted confinement kicks.
-fn clampMag(v: vec2<f32>, maxMag: f32) -> vec2<f32> {
-  let len = length(v);
-  if (len > maxMag) {
-    return v * (maxMag / len);
-  }
-  return v;
-}
-
-// Average energy across a range of per-bin FFT slots (plasmaBuffer[1..8]).
-fn fftRangeAvg(lo: u32, hi: u32) -> f32 {
-  var sum = 0.0;
-  var count = 0.0;
-  for (var i: u32 = lo; i <= hi; i = i + 1u) {
-    let bin = plasmaBuffer[i];
-    sum += bin.x + bin.y + bin.z + bin.w;
-    count += 4.0;
-  }
-  return sum / max(count, 1.0);
 }
 
 fn valueNoise(p: vec2<f32>) -> f32 {
@@ -162,43 +275,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Slider wiring (saved-preset contract — ids/defaults unchanged):
-  //   Emission    -> base emitter gain + spectral FFT emitter gains + click burst density
-  //   Turbulence  -> multi-scale curl forcing + vorticity confinement strength
-  //   Scattering  -> Mie/Rayleigh gains, body brightness, extinction alpha
-  //   Advection   -> semi-Lagrangian backtrace distance (0.45x..1.45x)
   let emissionControl = saturate(u.zoom_params.x);
   let turbulenceControl = saturate(u.zoom_params.y);
   let scatteringControl = saturate(u.zoom_params.z);
   let advectionControl = mix(0.45, 1.45, u.zoom_params.w);
-
-  // Spring-damped mouse stir point (persistent state, safe zone only):
-  //   extraBuffer[133..134] = eased stir position (uv)
-  //   extraBuffer[135..136] = stir spring velocity
-  // A damped spring smooths pointer jumps so stirring reads as a continuous
-  // swirl instead of teleporting the forcing center across the domain.
-  // Only invocation (0,0) integrates; every pixel reads the eased value.
-  let rawMouse = u.zoom_config.yz;
-  var stirPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  var stirVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    if (time < 0.1) {
-      stirPos = rawMouse; // cold start: snap to avoid a startup swoop
-      stirVel = vec2<f32>(0.0, 0.0);
-    } else {
-      let dt = 1.0 / 60.0;
-      let springK = 30.0;
-      let springDamp = 8.5;
-      let springAccel = (rawMouse - stirPos) * springK - stirVel * springDamp;
-      stirVel += springAccel * dt;
-      stirPos += stirVel * dt;
-    }
-    extraBuffer[133] = stirPos.x;
-    extraBuffer[134] = stirPos.y;
-    extraBuffer[135] = stirVel.x;
-    extraBuffer[136] = stirVel.y;
-  }
-  let mouse = stirPos;
 
   let prev = textureLoad(dataTextureC, coord, 0);
   let prevVelocity = prev.rg;
@@ -208,23 +288,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var density = advected.b * 0.994;
   var temperature = advected.a * 0.992;
 
+  let mouse = u.zoom_config.yz;
   let mouseMask = (1.0 - smoothstep(0.0, 0.22, distance(uv, mouse))) * (0.2 + u.zoom_config.w * 1.35);
   let mouseDir = safeNormalize2(mouse - vec2<f32>(0.5, 0.5), vec2<f32>(1.0, 0.0));
 
   let baseEmissionCenter = vec2<f32>(0.5 + 0.18 * sin(time * 0.18), 0.88);
   let baseEmission = (1.0 - smoothstep(0.0, 0.24, distance(uv, baseEmissionCenter))) * (0.03 + emissionControl * 0.12 + bass * 0.18);
-
-  // Spectral emitters: two extra smoke sources drifting on slow Lissajous
-  // paths, ignited by per-bin FFT energy so different frequency ranges light
-  // up different parts of the domain (low bins -> warm left source, high bins
-  // -> cool right source).
-  let lissLow = vec2<f32>(0.32 + 0.22 * sin(time * 0.11), 0.55 + 0.26 * sin(time * 0.17 + 1.3));
-  let lissHigh = vec2<f32>(0.68 + 0.22 * sin(time * 0.07 + 2.1), 0.45 + 0.26 * sin(time * 0.13 + 4.2));
-  let fftLow = fftRangeAvg(1u, 4u);
-  let fftHigh = fftRangeAvg(5u, 8u);
-  let specEmissionLow = (1.0 - smoothstep(0.0, 0.17, distance(uv, lissLow))) * fftLow * (0.10 + emissionControl * 0.16);
-  let specEmissionHigh = (1.0 - smoothstep(0.0, 0.14, distance(uv, lissHigh))) * fftHigh * (0.08 + emissionControl * 0.13);
-  let spectralEmission = specEmissionLow + specEmissionHigh;
 
   let curl1 = curlNoise(uv, time, 2.0, 0.0, pixel * 5.0);
   let curl2 = curlNoise(uv + vec2<f32>(1.7, -2.3), time * 1.2, 4.5, 7.1, pixel * 4.0);
@@ -245,33 +314,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   velocity.y -= mouseMask * 0.005;
   velocity.y -= 0.0015 + temperature * 0.014 + density * 0.004;
 
-  // Click smoke bursts: each recorded click injects a radial velocity pulse
-  // plus density/temperature impulses that decay over ~3 seconds.
-  var clickDensity = 0.0;
-  var clickHeat = 0.0;
-  let clickCount = min(u32(u.config.y), 50u);
-  for (var ci: u32 = 0u; ci < clickCount; ci = ci + 1u) {
-    let click = u.ripples[ci];
-    let clickAge = time - click.z;
-    if (clickAge > 0.0 && clickAge < 3.0) {
-      let toPixel = uv - click.xy;
-      let clickDist = length(toPixel);
-      let ring = exp(-clickDist * clickDist * 180.0);
-      let decay = exp(-clickAge * 1.8);
-      let burstDir = safeNormalize2(toPixel, vec2<f32>(0.0, 1.0));
-      velocity += burstDir * ring * decay * 0.02;
-      clickDensity += ring * decay * 0.45;
-      clickHeat += ring * decay * 0.35;
-    }
-  }
-
-  // CFL safety clamp: confinement scaled by (1 + bass*3) plus click bursts can
-  // push |v| past 1 px/frame on hard hits; cap magnitude to keep the
-  // semi-Lagrangian advection stable. Nothing else about the solver changes.
-  velocity = clampMag(velocity, 0.05);
-
-  density = saturate(density + baseEmission + spectralEmission + clickDensity * (0.4 + emissionControl * 0.6) + mouseMask * 0.02 - 0.003);
-  temperature = saturate(temperature + baseEmission * (0.8 + bass * 1.4) + spectralEmission * (0.5 + mids * 0.6) + clickHeat * 0.6 + mouseMask * 0.05 - 0.002);
+  density = saturate(density + baseEmission + mouseMask * 0.02 - 0.003);
+  temperature = saturate(temperature + baseEmission * (0.8 + bass * 1.4) + mouseMask * 0.05 - 0.002);
 
   let densityN = sampleState(uv + vec2<f32>(0.0, -pixel * 2.0), resolution, size).b;
   let densityS = sampleState(uv + vec2<f32>(0.0, pixel * 2.0), resolution, size).b;
@@ -309,3 +353,4 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(dataTextureB, coord, vec4<f32>(omega * 0.5 + 0.5, edge, bass, treble));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }
+```

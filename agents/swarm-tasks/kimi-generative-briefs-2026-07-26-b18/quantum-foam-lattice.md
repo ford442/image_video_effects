@@ -1,18 +1,153 @@
+# Swarm Brief: quantum-foam-lattice
+
+**Role:** Algorithmist
+**Name:** Quantum Foam Lattice
+**Category:** generative
+**Description:** Quantum foam visualization: bubbling vacuum fluctuations forming a crystalline lattice that pulses to bass. Mids drive lattice distortions, treble creates sparkles at node intersections. Mouse warps the lattice locally.
+**Current lines:** 220
+**Target lines:** 270–310 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Algorithmist. This lattice feeds ACES-tonemapped color back into itself - a slow contrast-decay bug. Fix the feedback order, then spectralize the cells:
+- FIX THE DOUBLE-TONEMAP FEEDBACK (priority 1): dataTextureA stores ACES-tonemapped display color which is read back next frame via dataTextureC - each frame re-tonemaps, progressively flattening contrast. Restructure: read prev (dataTextureC) and blend in LINEAR space, store linear HDR (clamp pre-tint ~1.2) to dataTextureA, and apply ACES only to the final display output after the feedback mix.
+- Per-cell spectrum: rotate each voronoi cell's hue by its own FFT bin (`plasmaBuffer[1 + (cellId % 8)].x`) so the lattice shimmers across the spectrum.
+- Lattice displacement waves: loop ripples[] (guard `min(u32(u.config.y), 50u)`) sending a decaying radial displacement through the lattice from each click.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the voronoi F2-F1 edge logic and the 3-channel chromatic-dispersion re-evaluation VERBATIM - the shader's signature look. The feedback restructure must keep the same blend weights (0.25 + bass*0.15); only the tonemap position changes.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "quantum-foam-lattice",
+  "name": "Quantum Foam Lattice",
+  "category": "generative",
+  "url": "shaders/quantum-foam-lattice.wgsl",
+  "description": "Quantum foam visualization: bubbling vacuum fluctuations forming a crystalline lattice that pulses to bass. Mids drive lattice distortions, treble creates sparkles at node intersections. Mouse warps the lattice locally.",
+  "features": [
+    "audio-reactive",
+    "temporal-feedback",
+    "chromatic-dispersion",
+    "quantum-foam",
+    "crystalline-lattice",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal"
+  ],
+  "params": [
+    {
+      "id": "density",
+      "name": "Lattice Density",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "foam",
+      "name": "Foam Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "warp",
+      "name": "Warp Strength",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "sparkle",
+      "name": "Sparkle Amount",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "quantum",
+    "foam",
+    "lattice",
+    "crystalline",
+    "audio-reactive",
+    "chromatic",
+    "abstract",
+    "futuristic",
+    "particles"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Lattice Density",
+      "default": 0.35,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Foam Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Warp Strength",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Sparkle Amount",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════════
 //  Quantum Foam Lattice
 //  Category: generative
 //  Features: audio-reactive, temporal-feedback, chromatic-dispersion,
-//            quantum-foam, crystalline-lattice, mouse-warp,
-//            spectral-cells, ripple-waves
+//            quantum-foam, crystalline-lattice, mouse-warp
 //  Complexity: High
 //  Created: 2026-05-30
-//  Upgraded: 2026-07-26 (Batch 18 — Algorithmist)
-//    · Fixed double-tonemap feedback: dataTextureA now stores linear
-//      HDR (clamped ~1.2); ACES applied only to display output.
-//    · Per-cell FFT spectrum: each voronoi cell rotates hue by its own
-//      plasmaBuffer FFT bin.
-//    · Click ripples send decaying radial displacement waves through
-//      the lattice.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -74,14 +209,6 @@ fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
   return v;
 }
 
-// Hue rotation helper: cheap spectral shift of an RGB triple by a
-// cyclic hue offset in [0,1). Used to give each cell its own FFT hue.
-fn hueRotate(hue: f32) -> vec3<f32> {
-  let k = vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0);
-  let h = abs(fract(vec3<f32>(hue) + k) * 6.0 - vec3<f32>(3.0));
-  return clamp(h - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = x * (x * 0.15 + 0.05) + 0.004;
   let b = x * (x * 0.15 + 0.50) + 0.06;
@@ -138,15 +265,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
-  // Previous frame now stores LINEAR HDR (not tonemapped), so the
-  // feedback blend below stays in linear space.
   let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
 
-  // ── Slider wiring (saved-preset contract: ids/defaults unchanged) ──
-  // density  → lattice cell density (2..12 cells across the short axis)
-  // foam     → vacuum-fluctuation amplitude: bubble threshold + gain
-  // warp     → mouse + click-ripple displacement strength
-  // sparkle  → treble sparkle density at node intersections
   let latticeDensity = mix(2.0, 12.0, u.zoom_params.x);
   let foamIntensity = u.zoom_params.y;
   let warpStrength = u.zoom_params.z;
@@ -161,31 +281,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseWarp = p - mouseUVAspect;
   let mouseDist = length(mouseWarp);
   let mouseInfluence = exp(-mouseDist * mouseDist * 3.0) * warpStrength;
-  var warpedP = p + normalize(mouseWarp + vec2<f32>(0.001)) * mouseInfluence * 2.0;
-
-  // Click ripples: decaying radial displacement waves travelling
-  // outward through the lattice from each click point.
-  var rippleDisp = vec2<f32>(0.0);
-  var rippleGlow = 0.0;
-  let rippleCount = min(u32(u.config.y), 50u);
-  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
-    let rp = u.ripples[i];
-    let age = time - rp.z;
-    if (age > 0.0 && age < 3.0) {
-      let rpPos = rp.xy * vec2<f32>(aspect, 1.0) * latticeDensity;
-      let toP = warpedP - rpPos;
-      let rd = length(toP);
-      // Expanding wavefront: crest radius grows with age, decays with
-      // both distance from the crest and elapsed time.
-      let crest = age * 4.0;
-      let band = exp(-abs(rd - crest) * 2.5);
-      let decay = exp(-age * 1.6);
-      let amp = band * decay * warpStrength * rp.w;
-      rippleDisp = rippleDisp + normalize(toP + vec2<f32>(0.001)) * amp * sin(rd * 6.0 - age * 10.0) * 0.6;
-      rippleGlow = rippleGlow + band * decay * rp.w;
-    }
-  }
-  warpedP = warpedP + rippleDisp;
+  let warpedP = p + normalize(mouseWarp + vec2<f32>(0.001)) * mouseInfluence * 2.0;
 
   // Quantum foam: bubbling vacuum fluctuations
   // Planck time 5.39e-44 s drives foam animation speed conceptually
@@ -195,10 +291,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let foamNoise = fbm2(warpedP * foamScale + vec2<f32>(foamTime * 0.2, foamTime * 0.15), 4);
   let planckFluctuation = planckScaleNoise(warpedP, time);
   let bubbleField = sin(foamNoise * 12.0 + foamTime + planckFluctuation * 2.0) * 0.5 + 0.5;
-  // Foam slider lowers the bubble threshold and raises bubble gain.
-  let bubbleLo = 0.62 - foamIntensity * 0.14;
-  let bubbleHi = 0.80 - foamIntensity * 0.10;
-  let bubbleMask = smoothstep(bubbleLo, bubbleHi, bubbleField) * (0.25 + foamIntensity * 0.95);
+  let bubbleMask = smoothstep(0.55, 0.75, bubbleField) * foamIntensity;
 
   // Crystalline lattice from voronoi
   let v = voronoi(warpedP + vec2<f32>(sin(time * 0.1), cos(time * 0.08)), time);
@@ -234,43 +327,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Treble creates sparkles at node intersections
   let sparkleNoise = hash31(vec3<f32>(floor(warpedP * latticeDensity), fract(time * 10.0)));
-  let sparkle = step(1.0 - sparkleAmount * 0.15, sparkleNoise) * treble * node * 3.0 * sparkleAmount;
+  let sparkle = step(1.0 - sparkleAmount * 0.15, sparkleNoise) * treble * node * 3.0;
 
-  // Per-cell spectrum: rotate each voronoi cell's hue by its own FFT
-  // bin so the lattice shimmers across the spectrum as audio plays.
-  let cellBin = u32(floor(cellId * 256.0)) % 8u;
-  let cellFFT = plasmaBuffer[1u + cellBin].x;
-  let hue = cellId + time * 0.02 + cellFFT * 0.85;
-  let cellColor = hueRotate(hue);
+  // Colors: quantum foam hues
+  let hue = cellId + time * 0.02;
+  let k = vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0);
+  let h = abs(fract(vec3<f32>(hue) + k) * 6.0 - vec3<f32>(3.0));
+  let cellColor = clamp(h - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
   let latticeColor = vec3<f32>(edgeR, edgeG, edgeB) * cellColor * pulse * (0.6 + bass * 0.6);
   let nodeColor = vec3<f32>(0.8, 0.9, 1.0) * node * pulse * (1.0 + bass);
   let sparkleColor = vec3<f32>(1.0, 0.95, 0.8) * sparkle;
 
-  // Foam bubbles with chromatic tint (also spectralized per cell)
-  let bubbleHue = fract(cellId * 0.7 + time * 0.03 + cellFFT * 0.5);
-  let bubbleColor = hueRotate(bubbleHue);
+  // Foam bubbles with chromatic tint
+  let bubbleHue = fract(cellId * 0.7 + time * 0.03);
+  let bubbleH = abs(fract(vec3<f32>(bubbleHue) + k) * 6.0 - vec3<f32>(3.0));
+  let bubbleColor = clamp(bubbleH - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
   let bubbles = bubbleColor * bubbleMask * (0.4 + treble * 0.4);
 
-  // Ripple crests leave a faint energy glow on the lattice
-  let rippleGlowColor = cellColor * rippleGlow * 0.35;
+  var color = latticeColor + nodeColor + sparkleColor + bubbles;
 
-  var color = latticeColor + nodeColor + sparkleColor + bubbles + rippleGlowColor;
-
-  // Temporal feedback in LINEAR space (same blend weights as before:
-  // 0.25 + bass * 0.15). prev.rgb is linear HDR, so no double-tonemap.
+  // Temporal feedback: blend with previous frame
   let feedback = mix(color, prev.rgb, 0.25 + bass * 0.15);
+  color = feedback;
 
-  // Store linear HDR (clamped pre-tint ~1.2) for next frame's feedback.
-  let linearHDR = clamp(feedback, vec3<f32>(0.0), vec3<f32>(1.2));
-
-  // ACES tone mapping applied ONLY to the final display output.
-  color = acesToneMap(feedback);
+  // ACES tone mapping
+  color = acesToneMap(color);
 
   // Semantic alpha: based on edge density + bubble presence + sparkle
-  let alpha = clamp(distortedEdge * 0.7 + bubbleMask * 0.5 + node * 0.6 + sparkle * 0.3 + rippleGlow * 0.2, 0.0, 1.0);
+  let alpha = clamp(distortedEdge * 0.7 + bubbleMask * 0.5 + node * 0.6 + sparkle * 0.3, 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(linearHDR, alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(distortedEdge * 0.5 + node * 0.3 + bubbleMask * 0.2, 0.0, 0.0, 0.0));
 }
+```

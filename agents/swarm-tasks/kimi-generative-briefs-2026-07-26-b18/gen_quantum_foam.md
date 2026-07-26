@@ -1,15 +1,146 @@
+# Swarm Brief: gen_quantum_foam
+
+**Role:** Visualist
+**Name:** Quantum Foam
+**Category:** generative
+**Description:** Quantum vacuum fluctuation visualization with virtual particle pairs, entanglement webs, and HDR volumetric glow
+**Current lines:** 216
+**Target lines:** 266–306 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Visualist. This quantum foam claims 'audio-reactive' but reads mouse Y as its audio source - make it honest, then give the vacuum a voice:
+- FIX THE FAKE AUDIO (priority 1): `audioPulse = u.zoom_config.z` is mouse Y (the comment even admits 'proxy') - and plasmaBuffer is never read. Rewire: bass (`plasmaBuffer[0].x`) drives the foam burst/pair-production rate; per-bin FFT (`plasmaBuffer[1..8]`) modulates the entanglement-web density spatially.
+- Entanglement strikes: loop ripples[] (guard `min(u32(u.config.y), 50u)`) perturbing the web field with a decaying shockwave from each click point.
+- Spring-damper the mouse warp point (extraBuffer[133..135]) so the vacuum polarity eases instead of snapping; delete the dead `n` variable in noise() and make the dead dataTextureA write carry real display color (it currently stores a biased finalColor*0.5+0.5 that nothing reads - either wire dataTextureC feedback with a bounded mix <= 0.1 or store clean display color).
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve `quantumFoam()` + `entanglementWeb()` and `acesToneMap()` VERBATIM - the visual identity is the fbm correlation math. extraBuffer in [133..255] ONLY ([0..4] reserved, [5..132] = engine FFT bins).
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "gen_quantum_foam",
+  "name": "Quantum Foam",
+  "url": "shaders/gen_quantum_foam.wgsl",
+  "description": "Quantum vacuum fluctuation visualization with virtual particle pairs, entanglement webs, and HDR volumetric glow",
+  "tags": [
+    "quantum",
+    "generative",
+    "entanglement",
+    "volumetric",
+    "hdr"
+  ],
+  "features": [
+    "hdr",
+    "audio-reactive",
+    "temporal-coherence",
+    "fbm-noise"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Foam Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Web Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Evolution Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "target_rating": 4.6,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Foam Scale",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "name": "Web Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "index": 2,
+      "name": "Glow Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "index": 3,
+      "name": "Evolution Speed",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════════════════════
 //  gen_quantum_foam.wgsl - Quantum Foam Entanglement Shader
 //  
-//  Agent: Algorithmist + Visualist (Batch 18 upgrade)
+//  Agent: Algorithmist + Visualist
 //  Techniques:
 //    - Quantum fluctuation simulation (virtual particle pairs)
 //    - Entanglement visualization (correlated particle networks)
 //    - HDR volumetric glow with chromatic dispersion
 //    - Temporal coherence for smooth evolution
-//    - Honest audio reactivity (plasmaBuffer bass + per-bin FFT)
-//    - Entanglement strikes (click shockwaves perturbing the web field)
-//    - Spring-dampered vacuum polarity warp (extraBuffer[133..136])
 //  
 //  Target: 4.6★ rating
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -38,13 +169,6 @@ struct Uniforms {
 const PI: f32 = 3.14159265359;
 const PHI: f32 = 1.61803398875;
 
-// extraBuffer persistent state slots (safe zone [133..255] only)
-const WARP_POS_X: i32 = 133;
-const WARP_POS_Y: i32 = 134;
-const WARP_VEL_X: i32 = 135;
-const WARP_VEL_Y: i32 = 136;
-const WARP_TIME: i32 = 137;
-
 // Hash functions
 fn hash3(p: vec3<f32>) -> f32 {
     var q = fract(p * 0.1031);
@@ -62,6 +186,7 @@ fn noise(p: vec3<f32>) -> f32 {
     var f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
     
+    let n = i.x + i.y * 57.0 + i.z * 113.0;
     return mix(
         mix(
             mix(hash3(i), hash3(i + vec3<f32>(1, 0, 0)), f.x),
@@ -158,7 +283,6 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let coord = vec2<u32>(global_id.xy);
-    let coordI = vec2<i32>(global_id.xy);
     
     if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) {
         return;
@@ -171,97 +295,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     
-    // ═══ SLIDER WIRING (saved-preset contract: ids/defaults unchanged) ═══
-    //   Foam Scale      -> fbm domain scale of quantumFoam (3..12)
-    //   Web Density     -> entanglement connection count ceiling (0..1)
-    //   Glow Intensity  -> volumetric glow accumulation gain (0..1.4)
-    //   Evolution Speed -> vacuum fluctuation time rate (0.2..1.5)
-    let foamScale = 3.0 + u.zoom_params.x * 9.0;
-    let webDensity = u.zoom_params.y;
-    let glowGain = u.zoom_params.z * 1.4;
-    let evolutionSpeed = 0.2 + u.zoom_params.w * 1.3;
-    
-    // ═══ HONEST AUDIO (plasmaBuffer, not mouse-Y proxy) ═══
-    // Bass drives the virtual pair-production rate and the vacuum burst.
-    let bass = clamp(plasmaBuffer[0].x, 0.0, 2.0);
-    let pairRate = 1.0 + bass * 1.5;
-    let burst = 1.0 + bass * 1.2;
-    // Per-bin FFT [1..8] modulates entanglement-web density spatially:
-    // screen column selects its bin, so the web thickens where its band lives.
-    let binPos = clamp(u32(floor(uv.x * 8.0)), 0u, 7u);
-    let fftLocal = plasmaBuffer[1u + binPos].x;
-    let localDensity = clamp(webDensity * (0.45 + fftLocal * 1.1), 0.0, 1.0);
-    
-    // ═══ SPRING-DAMPERED VACUUM POLARITY WARP ═══
-    // extraBuffer[133..136] = eased mouse warp point + velocity (safe zone).
-    // Invocation (0,0) integrates; every pixel reads the eased value so the
-    // vacuum polarity eases toward the cursor instead of snapping.
-    let rawMouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
-    var warpPos = vec2<f32>(extraBuffer[WARP_POS_X], extraBuffer[WARP_POS_Y]);
-    var warpVel = vec2<f32>(extraBuffer[WARP_VEL_X], extraBuffer[WARP_VEL_Y]);
-    if (global_id.x == 0u && global_id.y == 0u) {
-        let dt = clamp(time - extraBuffer[WARP_TIME], 0.0, 0.1);
-        if (time < 0.1) {
-            warpPos = rawMouse; // cold start: snap once to avoid a startup swoop
-            warpVel = vec2<f32>(0.0);
-        } else {
-            let stiffness = 42.0;
-            let damping = 9.0;
-            let accel = (rawMouse - warpPos) * stiffness - warpVel * damping;
-            warpVel += accel * dt;
-            warpPos += warpVel * dt;
-        }
-        extraBuffer[WARP_POS_X] = warpPos.x;
-        extraBuffer[WARP_POS_Y] = warpPos.y;
-        extraBuffer[WARP_VEL_X] = warpVel.x;
-        extraBuffer[WARP_VEL_Y] = warpVel.y;
-        extraBuffer[WARP_TIME] = time;
-    }
-    // Polarity warp: eased cursor bends the vacuum domain; mouse-down deepens it.
-    let polarity = (warpPos - vec2<f32>(0.5)) * (0.15 + u.zoom_config.w * 0.25);
-    let warpedUV = uv + polarity;
+    // Parameters
+    let foamScale = 4.0 + u.zoom_params.x * 8.0;      // 4-12
+    let webDensity = u.zoom_params.y;                  // 0-1
+    let glowIntensity = 0.5 + u.zoom_params.z;         // 0.5-1.5
+    let evolutionSpeed = 0.3 + u.zoom_params.w * 0.7;  // 0.3-1.0
     
     // Opacity control
     let opacity = 0.85;
     
-    // Quantum foam base (bass-accelerated pair production)
-    var generatedColor = quantumFoam(warpedUV, time * evolutionSpeed * pairRate, foamScale);
+    // Audio reactivity (from mouse Y as proxy)
+    let audioPulse = u.zoom_config.z;
     
-    // ═══ ENTANGLEMENT STRIKES (click shockwaves perturbing the web field) ═══
-    var shock = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
-        let strike = u.ripples[ri];
-        let age = time - strike.z;
-        if (age > 0.0 && age < 5.0) {
-            let dist = length(uv - strike.xy);
-            let wavefront = age * 0.55;
-            let ring = exp(-pow((dist - wavefront) * 14.0, 2.0));
-            shock += ring * exp(-age * 1.4);
-        }
-    }
+    // Quantum foam base
+    var generatedColor = quantumFoam(uv, time * evolutionSpeed, foamScale);
     
-    // Add entanglement web (FFT-local density + strike perturbation)
-    let strikeDensity = clamp(localDensity + shock * 0.5, 0.0, 1.0);
-    let web = entanglementWeb(warpedUV, time * evolutionSpeed * 0.5, strikeDensity);
+    // Add entanglement web
+    let web = entanglementWeb(uv, time * evolutionSpeed * 0.5, webDensity);
     generatedColor += vec3<f32>(web * 0.8, web * 0.9, web * 1.2);
-    generatedColor += vec3<f32>(0.6, 0.8, 1.2) * shock * 0.6; // strike flash
     
-    // Bass-driven vacuum burst
-    generatedColor *= burst;
+    // Audio-reactive burst
+    generatedColor *= 1.0 + audioPulse * 2.0;
     
     // Volumetric glow simulation (blur approximation)
     let glowRadius = 2;
     var glowAccum = vec3<f32>(0.0);
     for (var gx: i32 = -glowRadius; gx <= glowRadius; gx = gx + 1) {
         for (var gy: i32 = -glowRadius; gy <= glowRadius; gy = gy + 1) {
-            let sampleUV = warpedUV + vec2<f32>(f32(gx), f32(gy)) / resolution * 4.0;
-            let sampleFoam = quantumFoam(sampleUV, time * evolutionSpeed * pairRate, foamScale);
+            let sampleUV = uv + vec2<f32>(f32(gx), f32(gy)) / resolution * 4.0;
+            let sampleFoam = quantumFoam(sampleUV, time * evolutionSpeed, foamScale);
             glowAccum += sampleFoam;
         }
     }
     glowAccum /= f32((glowRadius * 2 + 1) * (glowRadius * 2 + 1));
-    generatedColor += glowAccum * glowGain * (0.8 + bass * 0.4);
+    generatedColor += glowAccum * glowIntensity * 0.5;
     
     // HDR tone mapping
     generatedColor = acesToneMap(generatedColor * 0.8);
@@ -269,10 +336,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Vignette
     let vignette = 1.0 - length(uv - 0.5) * 0.3;
     generatedColor *= vignette;
-    
-    // ═══ TEMPORAL COHERENCE (bounded feedback <= 0.1 from dataTextureC) ═══
-    let prevColor = textureLoad(dataTextureC, coordI, 0).rgb;
-    generatedColor = mix(generatedColor, prevColor, 0.08);
     
     // ═══ BLEND WITH INPUT ═══
     let finalColor = mix(inputColor.rgb, generatedColor, opacity);
@@ -282,6 +345,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
     
-    // Store clean display color for next-frame feedback (dataTextureC)
-    textureStore(dataTextureA, coord, vec4<f32>(finalColor, finalAlpha));
+    // Store foam state for temporal continuity
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor * 0.5 + 0.5, finalAlpha));
 }
+```

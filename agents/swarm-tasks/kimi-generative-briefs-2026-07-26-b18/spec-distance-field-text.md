@@ -1,10 +1,154 @@
+# Swarm Brief: spec-distance-field-text
+
+**Role:** Algorithmist
+**Name:** Distance Field Text
+**Category:** generative
+**Description:** SDF-based procedural glyph overlay with audio-reactive domain warp, depth-aware shadows, temporal feedback trails, ACES tone mapping, and chromatic aberration. Generates abstract runes and symbols as signed distance fields with smooth scaling, glowing edges, and chromatic cycling.
+**Current lines:** 220
+**Target lines:** 270–310 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Algorithmist. This glyph shader samples depth with the wrong UV space and advertises feedback trails that do not exist - fix both honestly:
+- FIX THE DEPTH UV (priority 1): the depth passthrough samples readDepthTexture with `uv` (the -1..1 remapped coord) instead of `uv01` - out-of-range samples clamp to edge texels and poison the downstream depth chain. Fix both sample sites to `uv01`.
+- MAKE THE TRAILS REAL: JSON/tags claim temporal feedback but dataTextureC is never read. Implement it: store (glyphColor, d) to dataTextureA as now, read back via dataTextureC with decay ~0.92 mixed at <= 0.3 (clamp accumulated pre-tint ~1.2) so glyphs leave phosphor trails. Keep it stable.
+- Spectral glyphs: select the active glyph index from per-bin FFT energy (`plasmaBuffer[1..4]`, one bin per glyph) so the dominant band picks the symbol; click ripples (guard `min(u32(u.config.y), 50u)`) as expanding SDF displacement rings.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve `sdGlyph0..3` and the branchless `sdGlyph` index-weight selection VERBATIM - glyph shapes are hand-tuned segment sets. Keep the `overlayMix < 0.001` early-exit passthrough intact.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "spec-distance-field-text",
+  "name": "Distance Field Text",
+  "url": "shaders/spec-distance-field-text.wgsl",
+  "description": "SDF-based procedural glyph overlay with audio-reactive domain warp, depth-aware shadows, temporal feedback trails, ACES tone mapping, and chromatic aberration. Generates abstract runes and symbols as signed distance fields with smooth scaling, glowing edges, and chromatic cycling.",
+  "tags": [
+    "SDF",
+    "distance-field",
+    "procedural-text",
+    "glyph",
+    "overlay",
+    "runes",
+    "audio-reactive",
+    "depth-aware",
+    "temporal-feedback",
+    "ACES",
+    "chromatic-aberration",
+    "HDR"
+  ],
+  "features": [
+    "SDF",
+    "procedural-text",
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "temporal-feedback",
+    "ACES-tone-map",
+    "chromatic-aberration"
+  ],
+  "params": [
+    {
+      "id": "glyph_scale",
+      "name": "Glyph Scale",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "glyph_width",
+      "name": "Glyph Width",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "glow",
+      "name": "Glow Radius",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "overlay",
+      "name": "Overlay Mix",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "target_rating": 4.5,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Glyph Scale",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Glyph Width",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Glow Radius",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Overlay Mix",
+      "default": 0.7,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══ spec-distance-field-text ═══════════════════════════════════════════
 //  Category: generative
 //  Phase: B
 //  Features: SDF, procedural-text, glyph, audio-reactive, depth-aware,
 //            temporal-feedback, aces-tone-map, chromatic-aberration,
-//            signed-distance-field, slot-chain, LOD, spectral-glyph-select,
-//            click-ripples, phosphor-trails
+//            signed-distance-field, slot-chain, LOD
 //  Complexity: Medium
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -31,10 +175,6 @@ struct Uniforms {
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const HASH_K: f32 = 43758.5453123;
-// Phosphor trail feedback constants (dataTextureA -> dataTextureC chain).
-const TRAIL_DECAY: f32 = 0.92;
-const TRAIL_CLAMP: f32 = 1.2;
-const TRAIL_MIX: f32 = 0.25;
 
 // ── Core math ─────────────────────────────────────────────────────────
 fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
@@ -109,44 +249,13 @@ fn sdGlyph(p: vec2<f32>, idx: i32, scale: f32) -> f32 {
     return (d0 * w0 + d1 * w1 + d2 * w2 + d3 * w3) * scale;
 }
 
-// Dominant-band selector: one FFT bin per glyph (plasmaBuffer[1..4]).
-// Branchless argmax over the four band energies — loudest band picks the rune.
-fn spectralGlyphIndex(b0: f32, b1: f32, b2: f32, b3: f32) -> i32 {
-    var idx = 0;
-    var best = b0;
-    if (b1 > best) { best = b1; idx = 1; }
-    if (b2 > best) { best = b2; idx = 2; }
-    if (b3 > best) { best = b3; idx = 3; }
-    return idx;
-}
-
-fn sdGlyphGrid(p: vec2<f32>, gridScale: f32, time: f32,
-               spectralIdx: i32, spectralGain: f32) -> f32 {
+fn sdGlyphGrid(p: vec2<f32>, gridScale: f32, time: f32) -> f32 {
     let cell = floor(p * gridScale);
     let local = fract(p * gridScale) - 0.5;
     let h = hash21(cell);
-    // Audio hijack: dominant band overrides the hash pick as energy rises.
-    let hashIdx = i32(h * 4.0);
-    let glyphIdx = select(hashIdx, spectralIdx, h < spectralGain);
+    let glyphIdx = i32(h * 4.0);
     let pulse = 1.0 + sin(time * 2.0 + cell.x * 3.0 + cell.y * 2.0) * 0.1;
     return sdGlyph(local, glyphIdx, pulse / gridScale);
-}
-
-// Click ripples as expanding SDF displacement rings (uv01 space, guarded).
-fn rippleDisplacement(uv01: vec2<f32>, time: f32) -> f32 {
-    var disp = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let ripple = u.ripples[i];
-        let age = time - ripple.z;
-        if (age > 0.0 && age < 2.5) {
-            let dist = length(uv01 - ripple.xy);
-            let ring = dist - age * 0.45;
-            let envelope = fast_exp(-ring * ring * 900.0) * fast_exp(-age * 1.6);
-            disp += sin(ring * 60.0) * envelope;
-        }
-    }
-    return disp;
 }
 
 // ── Color utilities ───────────────────────────────────────────────────
@@ -178,17 +287,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    // Per-bin FFT energy, one bin per glyph slot.
-    let bin0 = plasmaBuffer[1].x;
-    let bin1 = plasmaBuffer[2].x;
-    let bin2 = plasmaBuffer[3].x;
-    let bin3 = plasmaBuffer[4].x;
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
-    // Parameter mapping — each slider drives a real constant of this shader.
-    let glyphScale = mix(2.0, 12.0, p1);      // grid density of the rune field
-    let glyphWidth = mix(0.003, 0.02, p2);    // SDF stroke half-width
-    let glowRadius = mix(0.0, 0.05, p3);      // gaussian halo falloff radius
+    // Parameter mapping
+    let glyphScale = mix(2.0, 12.0, p1);
+    let glyphWidth = mix(0.003, 0.02, p2);
+    let glowRadius = mix(0.0, 0.05, p3);
 
     // Base image from slot chain
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb;
@@ -196,7 +300,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Early exit when the overlay is disabled — keeps base image intact.
     if (overlayMix < 0.001) {
         let alpha = clamp(luma(baseColor) * 1.5, 0.2, 0.95) * (0.7 + depth * 0.3);
-        let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
+        let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
         textureStore(writeTexture, pixel, vec4<f32>(baseColor, alpha));
         textureStore(dataTextureA, pixel, vec4<f32>(0.0));
         textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
@@ -211,20 +315,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warpStr = 0.02 + bass * 0.03;
     let warpedUV = domainWarpLOD(uv, warpStr, lodOct);
 
-    // Spectral glyph selection: the loudest FFT band picks the symbol.
-    let spectralIdx = spectralGlyphIndex(bin0, bin1, bin2, bin3);
-    let spectralGain = clamp((bin0 + bin1 + bin2 + bin3) * 0.375, 0.0, 1.0);
-
     // Glyph SDF
-    var d = sdGlyphGrid(warpedUV, glyphScale, time, spectralIdx, spectralGain);
+    var d = sdGlyphGrid(warpedUV, glyphScale, time);
 
     // Branchless mouse reveal
     let mouseDist = length(uv01 - mouse);
     let reveal = fast_exp(-mouseDist * mouseDist * 800.0) * step(0.5, u.zoom_config.w);
     d -= reveal * 0.02;
-
-    // Click ripples displace the SDF field as expanding rings.
-    d -= rippleDisplacement(uv01, time) * 0.04;
 
     // SDF masks
     let glyphMask = 1.0 - smoothstep(-glyphWidth, glyphWidth, d);
@@ -238,7 +335,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         0.5 + 0.5 * cos(TAU * (hue + 0.3333)),
         0.5 + 0.5 * cos(TAU * (hue + 0.6667))
     );
-    let glowColor = glyphColor * (1.5 + bass) * (0.5 + p3);
+    let glowColor = glyphColor * (1.5 + bass);
 
     // Composite with depth-aware shadow
     let depthMod = 0.5 + depth * 0.5;
@@ -247,15 +344,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                    shadowMask * 0.4 * overlayMix * depthMod);
     outColor = mix(outColor, outColor + glowColor * glowMask, glowMask * overlayMix);
     outColor = mix(outColor, glyphColor, glyphMask * overlayMix);
-
-    // Temporal feedback: phosphor trails read back from last frame (dataTextureC).
-    let prev = textureLoad(dataTextureC, pixel, 0);
-    let trailAccum = min(prev.rgb * TRAIL_DECAY, vec3<f32>(TRAIL_CLAMP));
-    let trailMix = TRAIL_MIX * overlayMix * (1.0 - glyphMask);
-    outColor = mix(outColor, outColor + trailAccum, trailMix);
-    // Persist (color, d): fresh glyph stroke wins, decayed trail accumulates.
-    let trailStore = clamp(glyphColor * glyphMask + trailAccum * (1.0 - glyphMask),
-                           vec3<f32>(0.0), vec3<f32>(TRAIL_CLAMP));
 
     // Generative chromatic aberration
     let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
@@ -271,7 +359,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = clamp(luma(outColor) * 1.5, 0.2, 0.95) * (0.7 + depth * 0.3);
 
     textureStore(writeTexture, pixel, vec4<f32>(outColor, alpha));
-    textureStore(dataTextureA, pixel, vec4<f32>(trailStore, d));
-    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv01, 0.0).r;
+    textureStore(dataTextureA, pixel, vec4<f32>(glyphColor, d));
+    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }
+```

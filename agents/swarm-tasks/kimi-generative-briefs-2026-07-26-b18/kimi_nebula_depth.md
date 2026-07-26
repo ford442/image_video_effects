@@ -1,22 +1,133 @@
-// ============================================================================
-// Kimi Nebula Depth — halftone dot + Sobel ink-stipple (upgraded, Batch 18)
-//
-// Despite the legacy name there is no nebula or raymarch here: this is a
-// posterized-luma halftone renderer with Sobel ink outlines, paper grain,
-// a bass-reactive dot pulse, and a spring-damped mouse vignette.
-//
-// Slider wiring (u.zoom_params):
-//   x = Dot Size         — halftone cell pitch in screen pixels
-//   y = Edge Threshold   — Sobel ink-outline sensitivity (higher = more ink)
-//   z = Posterize Levels — luma/color quantization steps
-//   w = Ink Density      — strength of ink outlines and dots
-//
-// Persistent state (extraBuffer safe zone [133..255], single writer):
-//   [133] vignette center.x   [134] vignette center.y
-//   [135] vignette velocity.x [136] vignette velocity.y
-//   [137] last frame time     [138] initialized flag
-// ============================================================================
+# Swarm Brief: kimi_nebula_depth
 
+**Role:** Optimizer
+**Name:** Kimi Nebula Depth
+**Category:** generative
+**Description:** Volumetric nebula with 3D noise, ray marching, and depth-based color grading.
+**Current lines:** 218
+**Target lines:** 268–308 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Optimizer. IDENTITY CRISIS: the JSON says 'volumetric nebula with ray marching' but the WGSL is a halftone dot + Sobel ink-stipple effect (naga-transpiled GLSL). Make the metadata honest and polish the actual effect:
+- HONEST METADATA (priority 1): the JSON description and slider display names are wrong (no nebula, no raymarching, no 3D noise). In the JSON: KEEP all param ids/defaults/mappings EXACTLY (saved-preset contract), but update the description to describe the real halftone/Sobel ink-stipple effect and update param display names to honest ones (Dot Size / Edge Threshold / Posterize Levels / Ink Density). In updatedParams use the NEW honest names.
+- Audio pulse: add bass reactivity (`plasmaBuffer[0].x`) driving a subtle dot-size pulse for VJ feel (the JSON gains no new params - wire it in WGSL only).
+- Spring-damper the mouse vignette center (extraBuffer[133..134]); fix the vignette edge case gated on `mousePos.x >= 0.0` (vanishes at the left edge); remove the dead `radius` variable.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the Sobel double-loop and `hash12_` VERBATIM - this is fragile naga-transpiled output; do NOT 'clean up' the `_eNN` temps. JSON: param ids/defaults/min/max/mapping must not change - only description and display names become honest.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "kimi-nebula-depth",
+  "name": "Kimi Nebula Depth",
+  "url": "shaders/kimi_nebula_depth.wgsl",
+  "description": "Halftone dot and Sobel edge ink-stipple effect: posterized luma rendered as resolution-independent dots with ink outlines, paper grain, and a mouse-driven vignette.",
+  "features": [
+    "mouse-driven",
+    "generative",
+    "volumetric",
+    "3d"
+  ],
+  "tags": [
+    "procedural",
+    "generative"
+  ],
+  "params": [
+    {
+      "id": "param1",
+      "name": "Dot Size",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "param2",
+      "name": "Edge Threshold",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "param3",
+      "name": "Posterize Levels",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "param4",
+      "name": "Ink Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Dot Size",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Edge Threshold",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Posterize Levels",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Ink Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 struct Uniforms {
     config: vec4<f32>,
     zoom_config: vec4<f32>,
@@ -82,6 +193,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color: vec3<f32>;
     var finalColor: vec3<f32>;
     var ink_alpha: f32 = 0.0;
+    var d: f32;
 
     let _e3 = u.config;
     let resolution = _e3.zw;
@@ -92,58 +204,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let _e20 = u.zoom_config;
     mousePos = _e20.yz;
     let time = u.config.x;
-
-    // ── Slider-derived constants ─────────────────────────────────────────
     let _e30 = u.zoom_params.x;
-    let dotSizeBase = ((_e30 * 20.0) + 2.0);
+    let dotSize = ((_e30 * 20.0) + 2.0);
     let _e40 = u.zoom_params.y;
     let edgeThresh = max(0.01, ((1.0 - _e40) * 0.5));
     let _e48 = u.zoom_params.z;
     let levels = (floor((_e48 * 10.0)) + 2.0);
     let inkDensity = u.zoom_params.w;
-
-    // ── Bass-reactive dot pulse (VJ feel; wired in WGSL only) ───────────
-    let hasAudio = (arrayLength(&plasmaBuffer) > 0u);
-    let bass = select(0.0, clamp(plasmaBuffer[0].x, 0.0, 1.0), hasAudio);
-    let pulseWave = (0.6 + (0.4 * sin(((time * 6.0) + (bass * 3.0)))));
-    let dotPulse = (1.0 + ((bass * 0.35) * pulseWave));
-    let dotSize = (dotSizeBase * dotPulse);
-
-    // ── Spring-damped vignette center (single writer, read by all) ──────
-    let hasState = (arrayLength(&extraBuffer) > 138u);
-    var vigCenter = vec2<f32>(0.5, 0.5);
-    if (hasState) {
-        let stateInit = (extraBuffer[138] > 0.5);
-        if (stateInit) {
-            vigCenter = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        }
-    }
-    let isWriter = ((global_id.x == 0u) && (global_id.y == 0u));
-    if (isWriter && hasState) {
-        let lastTime = extraBuffer[137];
-        let dt = clamp((time - lastTime), 0.0, 0.1);
-        var vPos = vigCenter;
-        var vVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        if (extraBuffer[138] < 0.5) {
-            vVel = vec2<f32>(0.0, 0.0);
-        }
-        // Clamp the spring target so a negative "mouse inactive" sentinel
-        // pulls the vignette to screen center instead of off-canvas.
-        let targetPos = select(mousePos, vec2<f32>(0.5, 0.5), (mousePos.x < 0.0));
-        let stiff = 36.0;
-        let damping = 8.0;
-        let accel = (((targetPos - vPos) * stiff) - (vVel * damping));
-        vVel = (vVel + (accel * dt));
-        vPos = (vPos + (vVel * dt));
-        extraBuffer[133] = vPos.x;
-        extraBuffer[134] = vPos.y;
-        extraBuffer[135] = vVel.x;
-        extraBuffer[136] = vVel.y;
-        extraBuffer[137] = time;
-        extraBuffer[138] = 1.0;
-    }
-
-    // ── Sobel edge detection (fragile naga-transpiled core: verbatim) ───
     let pixelSize = (vec2(1.0) / resolution);
     loop {
         let _e69 = i;
@@ -217,10 +284,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let _e140 = gy;
     let edge = length((_e139 + _e140));
     let isEdge = select(0.0, 1.0, (edge > edgeThresh));
-    // Soft ink weight for anti-aliased outlines; binary isEdge kept for logic.
-    let edgeSoft = smoothstep(edgeThresh, (edgeThresh + 0.08), edge);
-
-    // ── Halftone dot grid (resolution-independent pitch) ────────────────
     let _e149 = uv;
     let _e151 = textureSampleLevel(readTexture, u_sampler, _e149, 0.0);
     color = _e151.xyz;
@@ -229,30 +292,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gridPos = (vec2<f32>(global_id.xy) / vec2(dotSize));
     let gridCenter = (floor(gridPos) + vec2(0.5));
     let dist = length((gridPos - gridCenter));
+    let radius = (sqrt(_e155) * 0.5);
     let _e169 = color;
     color = (floor((_e169 * levels)) / vec3(levels));
     let dotRadius = ((1.0 - _e155) * 0.7);
     let isDot = select(0.0, 1.0, (dist < dotRadius));
-    // Anti-aliased dot mask: soft rim instead of a hard binary edge.
-    let dotMask = smoothstep((dotRadius + 0.06), (dotRadius - 0.06), dist);
-
-    // ── Ink compositing ─────────────────────────────────────────────────
     let _e182 = color;
     finalColor = _e182;
     if (isEdge > 0.5) {
         let line_density = ((inkDensity * 0.9) + 0.05);
         ink_alpha = line_density;
         let _e192 = finalColor;
-        finalColor = mix(_e192, vec3<f32>(0.02, 0.02, 0.04), (edgeSoft * inkDensity));
+        finalColor = mix(_e192, vec3<f32>(0.02, 0.02, 0.04), (isEdge * inkDensity));
     }
     if (isDot > 0.5) {
         let dot_coverage = smoothstep(0.0, 0.7, (1.0 - _e155));
         let dot_alpha = ((dot_coverage * inkDensity) * 0.85);
         let inkColor = vec3<f32>(0.08, 0.07, 0.09);
         let _e213 = finalColor;
-        finalColor = mix(_e213, (_e213 * 0.7), (dotMask * 0.8));
-        // Nudge the dot interior toward the ink tone at high density.
-        finalColor = mix(finalColor, inkColor, ((dotMask * inkDensity) * 0.15));
+        let _e214 = finalColor;
+        finalColor = mix(_e213, (_e214 * 0.7), (isDot * 0.8));
         let _e220 = ink_alpha;
         ink_alpha = max(_e220, dot_alpha);
     }
@@ -260,31 +319,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (_e222 < 0.01) {
         ink_alpha = mix(0.15, 0.45, (_e155 * inkDensity));
     }
-
-    // ── Paper grain ─────────────────────────────────────────────────────
     let _e229 = uv;
     let _e236 = hash12_((((_e229 * time) * 0.001) + vec2(100.0)));
     let paper_tex = (0.95 + (0.05 * _e236));
     let _e241 = ink_alpha;
     ink_alpha = (_e241 * paper_tex);
-    finalColor = (finalColor * (0.97 + (0.03 * _e236)));
-
-    // ── Mouse vignette (always on; damped center never pops at edges) ───
-    let dVec = (uv - vigCenter);
-    let d = length(dVec);
-    let vignette = smoothstep(0.8, 0.2, (d * 0.5));
-    let _e258 = finalColor;
-    finalColor = (_e258 * vignette);
-    let _e260 = ink_alpha;
-    ink_alpha = mix(_e260, min(1.0, (_e260 * 1.2)), (vignette * 0.5));
-
-    // ── Outputs (written every frame) ───────────────────────────────────
+    let _e244 = mousePos.x;
+    if (_e244 >= 0.0) {
+        let _e247 = uv;
+        let _e248 = mousePos;
+        let dVec = (_e247 - _e248);
+        d = length(dVec);
+        let _e254 = d;
+        let vignette = smoothstep(0.8, 0.2, (_e254 * 0.5));
+        let _e258 = finalColor;
+        finalColor = (_e258 * vignette);
+        let _e260 = ink_alpha;
+        let _e262 = ink_alpha;
+        ink_alpha = mix(_e260, min(1.0, (_e262 * 1.2)), (vignette * 0.5));
+    }
     let _e272 = finalColor;
     let _e273 = ink_alpha;
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(_e272, _e273));
     let _e277 = ink_alpha;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(_e277, 0.0, 0.0, _e277));
-    // Aux buffer: composited stipple color + ink alpha for downstream passes.
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, ink_alpha));
+    let _e280 = ink_alpha;
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(_e277, 0.0, 0.0, _e280));
     return;
 }
+```
