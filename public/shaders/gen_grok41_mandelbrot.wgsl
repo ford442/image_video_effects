@@ -41,7 +41,7 @@ fn hash2(p: vec2<f32>) -> vec2<f32> {
 }
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
-    let p3 = vec3<f3>(
+    let p3 = vec3<f32>(
         dot(p, vec3<f32>(127.1, 311.7, 74.7)),
         dot(p, vec3<f32>(269.5, 183.3, 246.1)),
         dot(p, vec3<f32>(113.5, 271.9, 124.6))

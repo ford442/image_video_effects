@@ -22,7 +22,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.x"
+      "mapping": "zoom_params.x",
+      "audio": "bass"
     },
     {
       "id": "foam",
@@ -31,7 +32,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.y"
+      "mapping": "zoom_params.y",
+      "audio": "mid"
     },
     {
       "id": "warp",
@@ -40,7 +42,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.z"
+      "mapping": "zoom_params.z",
+      "audio": "treble"
     },
     {
       "id": "sparkle",
@@ -49,7 +52,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.w"
+      "mapping": "zoom_params.w",
+      "audio": "overall"
     }
   ],
   "tags": [

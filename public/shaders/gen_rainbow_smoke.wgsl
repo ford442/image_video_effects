@@ -58,8 +58,7 @@ fn safeNormalize3(v: vec3<f32>, fallback: vec3<f32>) -> vec3<f32> {
   return fallback;
 }
 
-// CFL guard: cap |v| so the semi-Lagrangian backtrace never jumps more than
-// maxMag of the domain per frame, even on hard bass-boosted confinement kicks.
+// CFL guard: cap |v| so the semi-Lagrangian backtrace stays stable on bass hits.
 fn clampMag(v: vec2<f32>, maxMag: f32) -> vec2<f32> {
   let len = length(v);
   if (len > maxMag) {
