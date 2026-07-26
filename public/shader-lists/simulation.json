@@ -781,6 +781,118 @@
     ]
   },
   {
+    "id": "fabric-of-reality",
+    "name": "Fabric of Reality",
+    "url": "shaders/fabric-verlet.wgsl",
+    "description": "Mass-spring cloth grid with Verlet integration, constraint relaxation, tear strain, and woven textile rendering. Tier C graph runner.",
+    "requiresRgba32Float": true,
+    "multipass": {
+      "graph": {
+        "maxPassesPerFrame": 10,
+        "nodes": [
+          {
+            "id": "verlet",
+            "entry": "fabric-verlet",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "dataA"
+            ]
+          },
+          {
+            "id": "constraint",
+            "entry": "fabric-constraint",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "dataA"
+            ],
+            "repeat": 4
+          },
+          {
+            "id": "tear",
+            "entry": "fabric-tear",
+            "reads": [
+              "dataA"
+            ],
+            "writes": [
+              "dataB"
+            ]
+          },
+          {
+            "id": "render",
+            "entry": "fabric-render",
+            "reads": [
+              "dataA"
+            ],
+            "writes": [
+              "color",
+              "dataA"
+            ]
+          }
+        ]
+      }
+    },
+    "params": [
+      {
+        "id": "stiffness",
+        "name": "Stiffness",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Spring constraint stiffness"
+      },
+      {
+        "id": "tearThreshold",
+        "name": "Tear Threshold",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Strain before cloth tears"
+      },
+      {
+        "id": "gravity",
+        "name": "Gravity",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Downward bias on the cloth"
+      },
+      {
+        "id": "selfHeal",
+        "name": "Self Heal",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Broken springs slowly reconnect when > 0.5"
+      }
+    ],
+    "features": [
+      "simulation",
+      "multi-pass",
+      "graph-runner",
+      "physics",
+      "mouse-driven",
+      "interactive"
+    ],
+    "tags": [
+      "cloth",
+      "fabric",
+      "simulation",
+      "physics"
+    ]
+  },
+  {
     "id": "ferrofluid-spikes",
     "name": "Ferrofluid Spikes",
     "category": "simulation",
@@ -1153,6 +1265,108 @@
     ]
   },
   {
+    "id": "photonic-caustics-graph",
+    "name": "Photonic Caustics",
+    "url": "shaders/photonic-emitter.wgsl",
+    "description": "Temporal caustic accumulator with chromatic dispersion, Fresnel glints, and iridescent micro-ripple normals. Tier C graph runner.",
+    "requiresRgba32Float": true,
+    "multipass": {
+      "graph": {
+        "maxPassesPerFrame": 8,
+        "nodes": [
+          {
+            "id": "emit",
+            "entry": "photonic-emitter",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "dataB",
+              "dataA"
+            ]
+          },
+          {
+            "id": "trace",
+            "entry": "photonic-trace",
+            "reads": [],
+            "writes": [
+              "dataA"
+            ],
+            "repeat": 2
+          },
+          {
+            "id": "accumulate",
+            "entry": "photonic-accumulate",
+            "reads": [
+              "dataA",
+              "dataC"
+            ],
+            "writes": [
+              "color",
+              "dataA"
+            ]
+          }
+        ]
+      }
+    },
+    "params": [
+      {
+        "id": "ior",
+        "name": "IOR",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Index of refraction base"
+      },
+      {
+        "id": "lightSize",
+        "name": "Light Size",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Area light radius for photon seeding"
+      },
+      {
+        "id": "dispersion",
+        "name": "Dispersion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "Chromatic IOR split + aberration"
+      },
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Caustic brightness and alpha key"
+      }
+    ],
+    "features": [
+      "simulation",
+      "multi-pass",
+      "graph-runner",
+      "mouse-driven",
+      "audio-reactive",
+      "physics"
+    ],
+    "tags": [
+      "caustics",
+      "light",
+      "refraction",
+      "simulation"
+    ]
+  },
+  {
     "id": "photonic-caustics",
     "name": "Photonic Caustics",
     "url": "shaders/photonic-caustics.wgsl",
@@ -1412,119 +1626,6 @@
     ]
   },
   {
-    "id": "quantum-foam-pass2",
-    "name": "Quantum Foam (Pass 2: Particle Advection)",
-    "url": "shaders/quantum-foam-pass2.wgsl",
-    "description": "Advects particles through the quantum field. Second pass of 3-pass system.",
-    "features": [
-      "multi-pass-2",
-      "compute-shader",
-      "temporal"
-    ],
-    "multipass": {
-      "pass": 2,
-      "totalPasses": 3,
-      "prevShader": "quantum-foam-pass1",
-      "nextShader": "quantum-foam-pass3"
-    },
-    "tags": [
-      "quantum",
-      "particles",
-      "advection",
-      "simulation"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "quantum-foam-pass3",
-    "name": "Quantum Foam (Pass 3: Compositing)",
-    "url": "shaders/quantum-foam-pass3.wgsl",
-    "description": "Volumetric rendering and final compositing with glow and tone mapping. Third pass of 3-pass system.",
-    "features": [
-      "multi-pass-3",
-      "compute-shader",
-      "post-processing"
-    ],
-    "multipass": {
-      "pass": 3,
-      "totalPasses": 3,
-      "prevShader": "quantum-foam-pass2"
-    },
-    "tags": [
-      "quantum",
-      "compositing",
-      "glow",
-      "tone-mapping"
-    ],
-    "params": [
-      {
-        "id": "param1",
-        "name": "Intensity",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param2",
-        "name": "Speed",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param3",
-        "name": "Scale",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "param4",
-        "name": "Detail",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
     "id": "rd-on-video-pass1",
     "name": "RD on Video (Pass 1: State Update)",
     "url": "shaders/rd-on-video-pass1.wgsl",
@@ -1583,191 +1684,57 @@
     ]
   },
   {
-    "id": "rd-on-video-pass2",
-    "name": "RD on Video (Pass 2: Turing Color Map)",
-    "url": "shaders/rd-on-video-pass2.wgsl",
-    "description": "Color-maps reaction-diffusion chemistry into vivid Turing pattern fields.",
-    "features": [
-      "multi-pass-2",
-      "temporal",
-      "color-map"
-    ],
-    "multipass": {
-      "pass": 2,
-      "totalPasses": 3,
-      "prevShader": "rd-on-video-pass1",
-      "nextShader": "rd-on-video-pass3"
-    },
-    "tags": [
-      "reaction-diffusion",
-      "turing",
-      "palette",
-      "organic"
-    ],
-    "params": [
-      {
-        "id": "gamma",
-        "name": "Pattern Gamma",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "edge_gain",
-        "name": "Edge Gain",
-        "default": 0.35,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "seed_gain",
-        "name": "Seed Gain",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "hue_shift",
-        "name": "Hue Shift",
-        "default": 0.5,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "rd-on-video-pass3",
-    "name": "RD on Video (Pass 3: Composite)",
-    "url": "shaders/rd-on-video-pass3.wgsl",
-    "description": "Composites Turing color output over video using luminance-aware masking.",
-    "features": [
-      "multi-pass-3",
-      "video-composite",
-      "luma-mask",
-      "webcam-friendly"
-    ],
-    "multipass": {
-      "pass": 3,
-      "totalPasses": 3,
-      "prevShader": "rd-on-video-pass2"
-    },
-    "tags": [
-      "reaction-diffusion",
-      "composite",
-      "video",
-      "luma-mask"
-    ],
-    "params": [
-      {
-        "id": "luma_gate",
-        "name": "Luma Gate",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "mask_softness",
-        "name": "Mask Softness",
-        "default": 0.4,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "glow",
-        "name": "Glow",
-        "default": 0.45,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      },
-      {
-        "id": "blend",
-        "name": "Blend",
-        "default": 0.65,
-        "min": 0,
-        "max": 1,
-        "step": 0.01
-      }
-    ]
-  },
-  {
-    "id": "ripple-tank-pass2",
-    "name": "Ripple Tank (Pass 2: Optics Gather)",
-    "url": "shaders/ripple-tank-pass2.wgsl",
-    "description": "Reduces the wave field into a 10x10 caustic-energy grid in extraBuffer for same-frame use by the render pass. Second pass of the ripple-tank chain.",
-    "multipass": {
-      "pass": 2,
-      "totalPasses": 3,
-      "prevShader": "ripple-tank",
-      "nextShader": "ripple-tank-pass3"
-    },
-    "features": [
-      "multi-pass-2",
-      "compute-shader",
-      "simulation"
-    ],
-    "tags": [
-      "wave-equation",
-      "reduction",
-      "internal-pass"
-    ]
-  },
-  {
-    "id": "ripple-tank-pass3",
-    "name": "Ripple Tank (Pass 3: Render)",
-    "url": "shaders/ripple-tank-pass3.wgsl",
-    "description": "Chromatic refraction, phase-hue interference bands, specular glints, and coarse-grid caustic sparkles. Final pass of the ripple-tank chain.",
-    "multipass": {
-      "pass": 3,
-      "totalPasses": 3,
-      "prevShader": "ripple-tank-pass2",
-      "nextShader": null
-    },
-    "features": [
-      "multi-pass-3",
-      "compute-shader",
-      "audio-reactive",
-      "depth-aware",
-      "aces-tone-map"
-    ],
-    "tags": [
-      "wave-equation",
-      "caustics",
-      "internal-pass"
-    ]
-  },
-  {
     "id": "ripple-tank",
     "name": "Ripple Tank",
-    "url": "shaders/ripple-tank-pass1.wgsl",
-    "description": "Psychedelic 3-pass wave-interference tank — click to drop rings, hold to drive an oscillator, bass pumps the sources while caustic sparkles chase the wavefronts.",
+    "url": "shaders/ripple-tank-step.wgsl",
+    "description": "Psychedelic Tier C wave-interference tank — click to drop rings, hold to drive an oscillator, bass pumps the sources while caustic sparkles chase the wavefronts.",
+    "requiresRgba32Float": true,
     "multipass": {
-      "pass": 1,
-      "totalPasses": 3,
-      "nextShader": "ripple-tank-pass2",
-      "passes": [
-        {
-          "pass": 1,
-          "name": "Wave step + inject",
-          "file": "ripple-tank-pass1.wgsl"
-        },
-        {
-          "pass": 2,
-          "name": "Coarse optics gather",
-          "file": "ripple-tank-pass2.wgsl"
-        },
-        {
-          "pass": 3,
-          "name": "Psychedelic render",
-          "file": "ripple-tank-pass3.wgsl"
-        }
-      ]
+      "graph": {
+        "maxPassesPerFrame": 10,
+        "nodes": [
+          {
+            "id": "step",
+            "entry": "ripple-tank-step",
+            "reads": [
+              "dataC"
+            ],
+            "writes": [
+              "dataA"
+            ],
+            "repeat": 4
+          },
+          {
+            "id": "inject",
+            "entry": "ripple-tank-inject",
+            "reads": [
+              "dataA"
+            ],
+            "writes": [
+              "dataB"
+            ]
+          },
+          {
+            "id": "gather",
+            "entry": "ripple-tank-pass2",
+            "reads": [
+              "dataB"
+            ],
+            "writes": []
+          },
+          {
+            "id": "render",
+            "entry": "ripple-tank-pass3",
+            "reads": [
+              "dataB"
+            ],
+            "writes": [
+              "color",
+              "dataA"
+            ]
+          }
+        ]
+      }
     },
     "params": [
       {
@@ -1814,6 +1781,7 @@
     "features": [
       "simulation",
       "multi-pass",
+      "graph-runner",
       "physics",
       "mouse-driven",
       "audio-reactive",
@@ -1826,7 +1794,8 @@
       "interference",
       "caustics",
       "water",
-      "simulation"
+      "simulation",
+      "showcase"
     ]
   },
   {
@@ -3028,6 +2997,7 @@
         "description": "Edge absorption (0) vs reflection (1)"
       }
     ],
+    "requiresRgba32Float": true,
     "features": [
       "simulation",
       "multi-pass",

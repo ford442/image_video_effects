@@ -1,16 +1,18 @@
 {
-  "timestamp": "2026-07-26T07:33:00.910141",
+  "timestamp": "2026-07-26T14:38:26.865595",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": false,
   "total": 1,
   "passed": 1,
   "failed": 0,
   "skipped": 0,
-  "warnings": 0,
   "workgroup_blocking": 0,
+  "workgroup_warnings": 0,
+  "workgroup_grace_skipped": 0,
+  "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/interactive_neural_swarm.wgsl",
+      "file": "public/shaders/gen_grid.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -20,6 +22,8 @@
       "bindgroup_errors": [],
       "workgroup_errors": [],
       "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
       "ok": true
     }
   ]

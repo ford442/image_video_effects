@@ -5,6 +5,8 @@
 //            domain-warping, FBM-noise
 //  Upgraded: 2026-05-02 (Tier-1 integration pass)
 //  Creative additions: recursive mini-grid moiré, chromatic dispersion edges
+//  Batch-19: per-cell FFT moiré shimmer, click ripple warp pulses,
+//            spring-damped gravity well (extraBuffer[133..136])
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -113,6 +115,23 @@ fn colorPalette(t: f32, shift: f32) -> vec3<f32> {
     return color;
 }
 
+// Critically-damped spring step toward the cursor aim point.
+// State lives in extraBuffer[133..136] (pos.xy, vel.xy); single-writer guarded.
+fn springStep(pos: vec2<f32>, vel: vec2<f32>, aim: vec2<f32>, omega: f32, dt: f32) -> vec4<f32> {
+    let accel = omega * omega * (aim - pos) - 2.0 * omega * vel;
+    let newVel = vel + accel * dt;
+    let newPos = pos + newVel * dt;
+    return vec4<f32>(newPos, newVel);
+}
+
+// Pick an FFT band (plasmaBuffer[1..8]) per grid cell so each cell's
+// moiré sub-grid shimmers on its own frequency band.
+fn cellBin(cell: vec2<f32>) -> f32 {
+    let h = hash12(cell * 1.618 + vec2<f32>(7.31, 2.17));
+    let idx = u32(h * 7.999) + 1u;
+    return plasmaBuffer[idx].x;
+}
+
 fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
     let b = 0.03;
@@ -152,13 +171,53 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var p = uv;
     p.x = p.x * aspect;
 
-    // Mouse attractor (gravity well)
+    // Mouse attractor (gravity well) — spring-damped so the well glides
+    // toward the cursor with visible lag instead of teleporting.
     var mouseUV = u.zoom_config.yz;
     mouseUV.x = mouseUV.x * aspect;
     let mouseDown = step(0.5, u.zoom_config.w);
     let attractorStrength = mix(0.05, 0.5, mouseDown);
 
-    let warpedP = domainWarp(p, time, gridDensity * 2.0, warpAmount, mouseUV, attractorStrength);
+    var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (time < 0.1) {
+        // First frames: snap the spring onto the cursor, zero velocity.
+        springPos = mouseUV;
+        springVel = vec2<f32>(0.0, 0.0);
+    }
+    let springState = springStep(springPos, springVel, mouseUV, 5.0, 0.016);
+    let attractor = springState.xy;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[133] = springState.x;
+        extraBuffer[134] = springState.y;
+        extraBuffer[135] = springState.z;
+        extraBuffer[136] = springState.w;
+    }
+
+    // ─── Click ripples: decaying warp pulses radiating through the grid ───
+    var rippleWarp = vec2<f32>(0.0, 0.0);
+    var rippleGlow = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age > 0.0 && age < 3.0) {
+            // Click position in aspect-corrected space.
+            let center = ripple.xy * vec2<f32>(aspect, 1.0);
+            let rel = p - center;
+            let dist = length(rel);
+            let life = 1.0 - age / 3.0;
+            // Expanding sine wavefront, decaying with age and distance.
+            let wave = sin(dist * 24.0 - age * 9.0) * exp(-dist * 3.0) * life * life;
+            rippleWarp = rippleWarp + (rel / max(dist, 1e-4)) * wave * 0.08;
+            // Faint luminous ring riding the wavefront.
+            let ring = smoothstep(0.02, 0.0, abs(dist - age * 0.35));
+            rippleGlow = rippleGlow + ring * life;
+        }
+    }
+    let pulsedP = p + rippleWarp;
+
+    let warpedP = domainWarp(pulsedP, time, gridDensity * 2.0, warpAmount, attractor, attractorStrength);
     let distortionMag = length(warpedP - p);
 
     let gridSize = 8.0 * gridDensity;
@@ -168,23 +227,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ─── Creative: chromatic dispersion — sample the grid 3 times slightly offset ───
     let dispersion = thickness * (0.6 + bass * 0.6);
-    let warpR = domainWarp(p + vec2<f32>(dispersion, 0.0), time, gridDensity * 2.0, warpAmount, mouseUV, attractorStrength);
-    let warpB = domainWarp(p - vec2<f32>(dispersion, 0.0), time, gridDensity * 2.0, warpAmount, mouseUV, attractorStrength);
+    let warpR = domainWarp(pulsedP + vec2<f32>(dispersion, 0.0), time, gridDensity * 2.0, warpAmount, attractor, attractorStrength);
+    let warpB = domainWarp(pulsedP - vec2<f32>(dispersion, 0.0), time, gridDensity * 2.0, warpAmount, attractor, attractorStrength);
     let lineR = gridLine(warpR, gridSize, thickness).x;
     let lineB = gridLine(warpB, gridSize, thickness).x;
     let chromaLine = vec3<f32>(lineR, lineIntensity, lineB);
 
-    // ─── Creative: recursive mini-grid (moiré) ───
+    // ─── Creative: recursive mini-grid (moiré) — per-cell FFT shimmer ───
+    // Each grid cell listens to its own FFT band (bins 1..8): the band
+    // energy drives both the moiré spin speed and the sub-grid intensity.
     let intDist = intersectionDist(warpedP, gridSize);
     let nearIntersection = smoothstep(0.18, 0.0, intDist);
-    let miniRot = time * 0.4;
+    let cellId = floor(warpedP * gridSize);
+    let binEnergy = cellBin(cellId);
+    let miniRot = time * (0.4 + binEnergy * 1.4) + binEnergy * 2.0;
     let cR = cos(miniRot);
     let sR = sin(miniRot);
     let miniUV = vec2<f32>(
         warpedP.x * cR - warpedP.y * sR,
         warpedP.x * sR + warpedP.y * cR
     );
-    let mini = gridLine(miniUV, gridSize * 4.0, thickness * 0.5).x * nearIntersection * 0.6;
+    let miniShimmer = 0.35 + binEnergy * 0.9;
+    let mini = gridLine(miniUV, gridSize * 4.0, thickness * 0.5).x * nearIntersection * miniShimmer;
 
     // Color composition
     let colorT = distortionMag * 2.0 + time * 0.05 + shift;
@@ -200,6 +264,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     generatedColor = generatedColor + chromaLine * 0.35;
     generatedColor = generatedColor + accentColor * mini;
     generatedColor = generatedColor + accentColor * distortionMag * 0.15;
+    // Click ripple wavefront glow
+    generatedColor = generatedColor + lineColor * rippleGlow * 0.6;
 
     // Treble sparkle on grid intersections
     let sparkleSeed = hash12(floor(warpedP * gridSize) + vec2<f32>(time * 4.0, 0.0));
