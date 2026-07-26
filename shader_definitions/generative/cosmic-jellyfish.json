@@ -54,5 +54,40 @@
       "step": 0.1,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Pulse Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Tentacle Activity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Hue Shift",
+      "default": 0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Glow Intensity",
+      "default": 1,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    }
+  ],
+  "updated": true
 }

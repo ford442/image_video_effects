@@ -1,8 +1,143 @@
-// tornado-vortex.wgsl — Interactivist upgrade (Batch 16)
-// Rankine vortex with OkLab mixing, blackbody lightning, volumetric fog.
-// Radial inflow / vertical updraft now actually advect debris (dead physics
-// activated). Clicks spawn decaying satellite vortices via ripples[].
-// Per-bin treble FFT drives lightning branch count so strikes follow hi-hats.
+# Swarm Brief: tornado-vortex
+
+**Role:** Interactivist
+**Name:** Tornado Vortex
+**Category:** generative
+**Description:** Rankine vortex model with viscous core, radial inflow, and vertical updraft. Lagrangian debris advection with condensation funnel and subsurface scattering. Lightning flash illumination. Audio drives Fujita-scale intensity. Mouse acts as a probe flung by vorticity. Depth controls debris perspective.
+**Current lines:** 200
+**Target lines:** 250–290 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Interactivist. This is the cleanest shader of the batch - but its advertised radial inflow/updraft physics is dead code. Bring it to life, then add touch:
+- ACTIVATE THE DEAD PHYSICS (priority 1): `vRadial` and `vVertical` are computed but never used - the JSON description advertises radial inflow/vertical updraft that never happens. Advect debris angle/radius by vRadial and lift debris/brightness by vVertical so particles visibly spiral inward and rise.
+- Click secondary vortices: loop the ripples[] uniform (guard `min(u32(u.config.y), 50u)`) spawning a temporary satellite vortex at each click point with its own decaying circulation that perturbs the funnel field as it lives (~2s).
+- Per-bin lightning: drive lightning branch count/intensity from treble FFT bins (`plasmaBuffer[1..8]` high bins) so strikes follow hi-hats instead of only the global treble band.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the Rankine vortex `select()` core/outer branch, the blackbodyRGB coefficients, and the OkLab matrices VERBATIM - physical/perceptual correctness. The hue-preserve clamp 8.0 -> ACES(x1.5) -> IGN dither stack is exemplary - keep it byte-identical. dataTextureA stores display color here (not sim state).
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "tornado-vortex",
+  "name": "Tornado Vortex",
+  "category": "generative",
+  "url": "shaders/tornado-vortex.wgsl",
+  "description": "Rankine vortex model with viscous core, radial inflow, and vertical updraft. Lagrangian debris advection with condensation funnel and subsurface scattering. Lightning flash illumination. Audio drives Fujita-scale intensity. Mouse acts as a probe flung by vorticity. Depth controls debris perspective.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "rankine-vortex",
+    "lagrangian-debris",
+    "upgraded-rgba",
+    "lightning",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "spin",
+      "name": "Spin Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "debris",
+      "name": "Debris Amount",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "lightning",
+      "name": "Lightning",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "tornado",
+    "vortex",
+    "storm",
+    "spiral",
+    "debris",
+    "lightning",
+    "audio-reactive",
+    "physics",
+    "rankine"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Spin Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Debris Amount",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Lightning",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
+// tornado-vortex.wgsl — Visualist upgrade
+// Rankine vortex with OkLab mixing, blackbody lightning, volumetric fog
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -87,13 +222,6 @@ fn ign(p: vec2<f32>) -> f32 {
     return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
-// Interactivist: engine treble FFT bins 1..8 live in plasmaBuffer[1].xyzw
-// and plasmaBuffer[2].xyzw (plasmaBuffer[0] = bass/mids/treble bands).
-fn plasmaBin(idx: u32) -> f32 {
-    let v = plasmaBuffer[1u + idx / 4u];
-    return v[idx % 4u];
-}
-
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = u.config.zw;
@@ -107,11 +235,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse = u.zoom_config.yz;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  // Slider wiring (saved-preset contract: ids/defaults unchanged).
-  let intensity = u.zoom_params.x;      // Rankine circulation + inflow/updraft strength
-  let spinSpeed = u.zoom_params.y * 5.0; // funnel spiral + debris swirl rate
-  let debrisAmt = u.zoom_params.z;       // debris count, size, brightness
-  let lightningAmt = u.zoom_params.w;    // flash probability + bolt energy
+  let intensity = u.zoom_params.x;
+  let spinSpeed = u.zoom_params.y * 5.0;
+  let debrisAmt = u.zoom_params.z;
+  let lightningAmt = u.zoom_params.w;
 
   let aspect = res.x / res.y;
   let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
@@ -125,30 +252,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let vRadial = -0.02 * intensity * smoothstep(0.3, 0.0, dist);
   let vVertical = 0.1 * intensity * smoothstep(-0.3, 0.4, uv.y) * smoothstep(0.0, 0.1, dist);
 
-  // Interactivist: clicks spawn satellite vortices with decaying circulation.
-  // Each ripple lives ~2s, spinning its own mini-funnel and tugging the main
-  // funnel field while it is alive.
-  var satellite = 0.0;
-  var satellitePull = vec2<f32>(0.0, 0.0);
-  let satCount = min(u32(u.config.y), 50u);
-  for (var ri = 0u; ri < satCount; ri = ri + 1u) {
-    let rp = u.ripples[ri];
-    let age = time - rp.z;
-    let alive = step(0.0, age) * (1.0 - step(2.0, age));
-    let sPos = (rp.xy - 0.5) * vec2<f32>(aspect, 1.0);
-    let rel = p - sPos;
-    let sDist = max(length(rel), 1e-3);
-    let decay = clamp(1.0 - age * 0.5, 0.0, 1.0) * alive;
-    let sCore = 0.025 + age * 0.015;
-    let sCirc = 0.12 * decay * decay;
-    let sVTheta = select(sCirc / (6.28318530718 * sDist), sCirc * sDist / (6.28318530718 * sCore * sCore), sDist > sCore);
-    let sAngle = atan2(rel.y, rel.x);
-    let sBands = sin(sAngle * 3.0 + sVTheta * time * 50.0 - age * 6.0) * 0.5 + 0.5;
-    let sMask = smoothstep(0.16, 0.02, sDist) * decay;
-    satellite = satellite + sMask * sBands;
-    satellitePull = satellitePull - (rel / sDist) * sVTheta * 0.35 * sMask;
-  }
-
   // Volumetric fog density (Beer-Lambert)
   let fogDensity = exp(-dist * 3.0) * 0.15 * intensity;
 
@@ -156,9 +259,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var debrisDensity = 0.0;
   var condensation = 0.0;
 
-  // Funnel condensation (satellite vortices dent the funnel wall while alive)
+  // Funnel condensation
   let funnelWidth = coreRadius + (uv.y + 0.5) * 0.22 * (1.0 + mids * 0.4);
-  let funnelDist = abs(dist - funnelWidth * (0.55 + sin(uv.y * 12.0 + time * 0.8) * 0.08 * intensity) + satellite * 0.018);
+  let funnelDist = abs(dist - funnelWidth * (0.55 + sin(uv.y * 12.0 + time * 0.8) * 0.08 * intensity));
   condensation = smoothstep(0.045 * intensity, 0.0, funnelDist) * smoothstep(-0.5, 0.5, uv.y);
   let sss = condensation * condensation * vec3<f32>(0.35, 0.42, 0.48) * 0.6;
 
@@ -167,25 +270,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let spiral = sin(spiralPhase) * 0.5 + 0.5;
   let spiralMask = condensation * spiral * (0.4 + mids * 0.4);
 
-  // Debris advection — Interactivist: the previously dead vRadial / vVertical
-  // terms now visibly drive the particles: debris spirals inward along the
-  // radial inflow, climbs with the updraft, and brightens as it rises.
-  let debrisCount = 8 + i32(debrisAmt * 24.0);
+  // Debris advection
+  let debrisCount = 24;
   for (var di = 0; di < debrisCount; di = di + 1) {
     let df = f32(di);
     let seed = hash21(vec2<f32>(df, 0.0));
     let dh = fract(df / f32(debrisCount) + time * 0.08 * (1.0 + bass) + seed * 0.3);
-    let dAngle = df * 2.39996 + dh * 8.0 + time * spinSpeed * 0.25 + vTheta * 10.0 + vRadial * dh * 20.0;
-    let dRadius = max(0.015 + dh * funnelWidth * 1.1 + vRadial * dh * 9.0, 0.004);
-    let dLift = vVertical * dh * 3.0;
-    let dPos = vec2<f32>(cos(dAngle), sin(dAngle)) * dRadius + vec2<f32>(0.0, dLift) + satellitePull * 0.25;
+    let dAngle = df * 2.39996 + dh * 8.0 + time * spinSpeed * 0.25 + vTheta * 10.0;
+    let dRadius = 0.015 + dh * funnelWidth * 1.1;
+    let dPos = vec2<f32>(cos(dAngle), sin(dAngle)) * dRadius;
     let dd = length(p - dPos);
     let dSize = 0.0025 * (1.0 + debrisAmt) * (1.0 + depth * 0.5);
     let particle = smoothstep(dSize, 0.0, dd);
     let sizeFade = 1.0 - smoothstep(0.0, 0.35, dh);
-    let liftGlow = 1.0 + vVertical * 6.0 * dh;
     debrisDensity = debrisDensity + particle * sizeFade;
-    color = color + vec3<f32>(0.55, 0.50, 0.45) * particle * debrisAmt * sizeFade * liftGlow;
+    color = color + vec3<f32>(0.55, 0.50, 0.45) * particle * debrisAmt * sizeFade;
   }
 
   // Mouse probe
@@ -194,31 +293,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fling = smoothstep(0.12, 0.0, mouseDist) * vTheta * 3.0 * intensity;
   color = color + vec3<f32>(0.7, 0.65, 0.55) * fling;
 
-  // Satellite vortex glow (small OkLab-mixed condensation funnel per click)
-  let satBody = clamp(satellite, 0.0, 1.0);
-  let satBase = mixOkLab(vec3<f32>(0.10, 0.12, 0.15), vec3<f32>(0.38, 0.42, 0.48), satellite * 0.5);
-  color = mixOkLab(color, satBase, satBody * 0.45);
-
-  // Lightning with blackbody temperature — Interactivist: branch count and
-  // strike probability follow the high treble FFT bins (hi-hats), not only
-  // the global treble band.
-  var binSum = 0.0;
-  var hiSum = 0.0;
-  for (var bi = 0u; bi < 8u; bi = bi + 1u) {
-    let bv = plasmaBin(bi);
-    binSum = binSum + bv;
-    hiSum = hiSum + select(0.0, bv, bi >= 5u);
-  }
-  binSum = binSum * 0.125;
-  hiSum = hiSum * 0.3333;
-  let branchCount = 5.0 + floor(clamp(hiSum, 0.0, 1.0) * 7.0);
-  let flashTime = floor(time * (6.0 + treble * 8.0 + binSum * 6.0));
+  // Lightning with blackbody temperature
+  let flashTime = floor(time * (6.0 + treble * 8.0));
   let flash = hash31(vec3<f32>(flashTime, 0.0, 0.0));
-  var lightning = step(1.0 - lightningAmt * 0.12 - treble * 0.08 - hiSum * 0.10, flash) * smoothstep(0.35, 0.0, dist);
-  let lightningBranch = sin(angle * branchCount + flashTime * 3.7) * 0.5 + 0.5;
-  lightning = lightning * (0.4 + lightningBranch * 0.6) * (0.5 + lightningAmt * 0.5);
-  let lightningTemp = blackbodyRGB(6500.0 + treble * 8000.0 + hiSum * 4000.0);
-  color += lightningTemp * lightning * (1.5 + treble * 2.0 + binSum * 1.5);
+  var lightning = step(1.0 - lightningAmt * 0.12 - treble * 0.08, flash) * smoothstep(0.35, 0.0, dist);
+  let lightningBranch = sin(angle * 9.0 + flashTime * 3.7) * 0.5 + 0.5;
+  lightning = lightning * (0.4 + lightningBranch * 0.6);
+  let lightningTemp = blackbodyRGB(6500.0 + treble * 8000.0);
+  color += lightningTemp * lightning * (1.5 + treble * 2.0);
 
   // Ground dust
   let dust = hash21(uv * 55.0 + time * 0.4) * smoothstep(0.0, -0.25, uv.y) * 0.25 * intensity;
@@ -247,10 +329,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Bloom-weight alpha
   let luma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
-  let bloomWeight = pow(max(0.0, luma - 0.45), 2.0) * 2.5 + lightning * 0.3 + condensation * 0.15 + satBody * 0.1;
+  let bloomWeight = pow(max(0.0, luma - 0.45), 2.0) * 2.5 + lightning * 0.3 + condensation * 0.15;
   let a = clamp(bloomWeight, 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, a));
   textureStore(dataTextureA, global_id.xy, vec4<f32>(color, a));
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(condensation * 0.5 + debrisDensity * 0.2 + satBody * 0.1, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(condensation * 0.5 + debrisDensity * 0.2, 0.0, 0.0, 0.0));
 }
+```

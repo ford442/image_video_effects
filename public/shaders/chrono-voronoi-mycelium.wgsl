@@ -3,16 +3,29 @@
 //  Category: generative
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven,
 //            voronoi-colonies, mycelium-hyphae, spore-bursts,
-//            golden-ratio, nutrient-pulse, growth-rings
+//            golden-ratio, nutrient-pulse, growth-rings,
+//            spectral-seed-jitter, spring-damped-inoculation
 //  Complexity: High
 //  Chunks From: standard voronoi + temporal feedback patterns
 //  Description: Voronoi cells represent fungal colonies.
 //  Cell edges glow as mycelium hyphae. Temporal feedback accumulates
 //  growth rings. Bass = nutrient pulse triggers spore bursts.
 //  Mouse inoculates new colonies. Golden-ratio seed displacement.
+//  Per-bin FFT jitter makes colonies shimmer with the spectrum.
 //  Created: 2026-05-31
 //  By: Grok (creative technical artist)
 //  Upgraded: 2026-06-07
+//  Upgraded: 2026-07-26 (Batch 16 - Algorithmist)
+//    * Evicted generic applyGenerativePrimaryControls boilerplate;
+//      sliders now drive real mycelium constants:
+//        x Growth Bias        -> ageMix blend exponent (young vs old)
+//        y Temporal Scale     -> layer clock time multiplier
+//        z Decay Influence    -> layer decay rate mix(0.970, 0.995, z)
+//        w Pattern Complexity -> primary voronoi scale
+//    * Cleaned feedback path (single dataTextureC read, no dead
+//      dataTextureB store; A packs layer1->r, layer2->g, layer3->b).
+//    * Spectral seed jitter from plasmaBuffer FFT bins.
+//    * Spring-damped inoculation point in extraBuffer[133..134].
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -43,23 +56,15 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(controlled, color.a);
-}
-
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
 
-// Voronoi returning nearest + second-nearest distance for mycelium hyphae edges
+// Voronoi returning nearest + second-nearest distance for mycelium hyphae edges.
+// Each seed is additionally offset by a per-bin FFT term so whole colonies
+// shimmer with the spectrum instead of only pulsing with the bass band.
 fn voronoi(p: vec2<f32>, time: f32, seed: f32, nutrient: f32) -> vec4<f32> {
     let n = floor(p);
     let f = fract(p);
@@ -71,9 +76,15 @@ fn voronoi(p: vec2<f32>, time: f32, seed: f32, nutrient: f32) -> vec4<f32> {
         for (var i = -1; i <= 1; i++) {
             let g = vec2<f32>(f32(i), f32(j));
             let h = hash12(n + g + seed);
+            // Spectral seed jitter: stable per-cell id picks one of 8 FFT bins
+            let cellId = u32(h * 4096.0);
+            let spectral = plasmaBuffer[(cellId % 8u) + 1u].x;
+            let shimmer = vec2<f32>(cos(spectral * 6.2831 + h * 12.0),
+                                    sin(spectral * 6.2831 + h * 12.0)) * spectral * 0.08;
             // Nutrient pulse: bass displaces seeds = faster fungal spread
             let o = vec2<f32>(h, fract(h * GOLDEN)) * (1.0 + nutrient * 0.4)
-                  + vec2<f32>(cos(time * nutrient * 2.0), sin(time * nutrient * 2.0)) * nutrient * 0.2;
+                  + vec2<f32>(cos(time * nutrient * 2.0), sin(time * nutrient * 2.0)) * nutrient * 0.2
+                  + shimmer;
             let r = g + o - f;
             let d = dot(r, r);
             if (d < minDist) {
@@ -88,11 +99,35 @@ fn voronoi(p: vec2<f32>, time: f32, seed: f32, nutrient: f32) -> vec4<f32> {
     return vec4<f32>(minDist, secondDist, minO.x, minO.y);
 }
 
+// Expanding spore ring emitted from a center point on strong bass hits.
+// The ring radius advances at a golden-ratio-scaled rate and fades as it
+// travels, seeding new colonies in its wake like a sporulation wavefront.
+fn sporeRing(uv: vec2<f32>, center: vec2<f32>, time: f32, bass: f32) -> f32 {
+    let d = length(uv - center);
+    let phase = fract(time * 0.5 * GOLDEN * 0.309); // golden-scaled expansion
+    let radius = phase * 0.45;
+    let band = smoothstep(0.03, 0.0, abs(d - radius));
+    let trigger = smoothstep(0.5, 0.8, bass);
+    return band * trigger * (1.0 - phase);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     let uv = vec2<f32>(gid.xy) / res;
-    let time = u.config.x * 0.4;
+
+    // ── Slider wiring (saved-preset contract: ids/defaults unchanged) ──
+    // Growth Bias (x)        -> ageMix blend exponent: favors new vs old layers
+    // Temporal Scale (y)     -> actual time multiplier of the layer clocks
+    // Decay Influence (z)    -> layer decay rate
+    // Pattern Complexity (w) -> primary voronoi scale
+    let growthBias = clamp(u.zoom_params.x, 0.0, 1.0);
+    let temporalScale = clamp(u.zoom_params.y, 0.0, 1.0);
+    let decayInfluence = clamp(u.zoom_params.z, 0.0, 1.0);
+    let complexity = clamp(u.zoom_params.w, 0.0, 1.0);
+
+    // Layer clock: default (y = 0.5) reproduces the legacy 0.4x time rate
+    let time = u.config.x * mix(0.15, 0.65, temporalScale);
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -106,20 +141,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Nutrient pulse from bass drives faster spread / seed displacement
     let nutrient = bass * 0.7;
 
-    // Mouse inoculates new colonies
+    // Spring-damped inoculation point: persistent state glides toward the
+    // cursor instead of teleporting, so seeded colonies trail smoothly.
+    // extraBuffer[133..134] = damped inoculation xy (shader state range only).
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
-    let mouseDist = length(uv - mouse);
+    var inoc = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    if (inoc.x <= 0.0 && inoc.y <= 0.0) {
+        inoc = mouse; // cold start: avoid gliding in from the corner
+    }
+    inoc = mix(inoc, mouse, 0.08); // critically-damped style follow
+    extraBuffer[133] = inoc.x;
+    extraBuffer[134] = inoc.y;
+    let mouseDist = length(uv - inoc);
     let mouseInoculate = smoothstep(0.12, 0.0, mouseDist) * mouseDown * 3.0;
 
-    // Read previous temporal layers
-    let prevLayer1 = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let prevLayer2 = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // Read previous temporal layers (single fetch: A packs r/g/b = L1/L2/L3)
+    let prevLayers = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
 
-    // Multi-scale Voronoi growth
-    let scale1 = 8.0 + seasonVolatile * 6.0;
-    let scale2 = 18.0 + seasonBloom * 8.0;
-    let scale3 = 32.0;
+    // Multi-scale Voronoi growth — Pattern Complexity drives the primary
+    // scale; secondary/tertiary scales keep their legacy 2.25x / 4x ratios.
+    let scale1 = mix(2.0, 14.0, complexity) + seasonVolatile * 6.0;
+    let scale2 = scale1 * 2.25 + seasonBloom * 8.0;
+    let scale3 = scale1 * 4.0;
 
     let v1 = voronoi(uv * scale1, time * (0.6 + seasonHarsh * 0.4), 0.0, nutrient);
     let v2 = voronoi(uv * scale2, time * (0.9 + seasonBloom * 0.3), 1.3, nutrient);
@@ -138,11 +182,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let growth3 = smoothstep(0.01, 0.08, v3.x) * (0.4 + seasonHarsh * 0.3)
                 + smoothstep(0.03, 0.0, hyphae3) * 0.25;
 
-    // Combine layers with decay
-    let decay = 0.985 - seasonHarsh * 0.02;
-    var layer1 = prevLayer1.r * decay + growth1 * 0.7;
-    var layer2 = prevLayer2.g * (decay - 0.01) + growth2 * 0.65;
-    var layer3 = prevLayer1.b * (decay - 0.02) + growth3 * 0.55;
+    // Combine layers with decay — Decay Influence sets the base rate;
+    // the per-layer offsets (-0.01 / -0.02) and harsh-season term are kept.
+    let decay = mix(0.970, 0.995, decayInfluence) - seasonHarsh * 0.02;
+    var layer1 = prevLayers.r * decay + growth1 * 0.7;
+    var layer2 = prevLayers.g * (decay - 0.01) + growth2 * 0.65;
+    var layer3 = prevLayers.b * (decay - 0.02) + growth3 * 0.55;
 
     // Bass triggers spore bursts (new seed points appear)
     let sporeBurst = smoothstep(0.55, 0.85, bass) * (0.5 + 0.5 * sin(time * 10.0));
@@ -150,7 +195,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     layer2 += sporeBurst * 0.35;
     layer3 += sporeBurst * 0.25;
 
-    // Mouse inoculation affects all layers
+    // Sporulation wavefront: an expanding ring radiates from the damped
+    // inoculation point on hard bass hits, seeding every generation it
+    // crosses — strongest on the youngest layer, faintest on the oldest.
+    let ringWave = sporeRing(uv, inoc, u.config.x, bass);
+    layer1 += ringWave * 0.55;
+    layer2 += ringWave * 0.40;
+    layer3 += ringWave * 0.30;
+
+    // Mouse inoculation affects all layers (cap values preserved verbatim)
     layer1 = min(layer1 + mouseInoculate * 0.8, 1.8);
     layer2 = min(layer2 + mouseInoculate * 0.6, 1.6);
     layer3 = min(layer3 + mouseInoculate * 0.9, 1.9);
@@ -160,13 +213,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let growthRing = smoothstep(0.92, 0.98, ringAge) * 0.3 * (1.0 + bass);
     layer1 += growthRing;
 
-    // Store temporal layers
+    // Store temporal layers — SIM STATE, never clamped/tonemapped.
+    // Packing contract: layer1->r, layer2->g, layer3->b.
     textureStore(dataTextureA, gid.xy, vec4<f32>(layer1, layer2, layer3, 0.0));
-    textureStore(dataTextureB, gid.xy, vec4<f32>(layer2, layer3, layer1, 0.0));
 
-    // Visualization — layered organic colors
-    let ageMix = vec3<f32>(layer1, layer2 * 0.8, layer3 * 0.6);
+    // Visualization — layered organic colors.
+    // Growth Bias reshapes the blend exponent: >0.5 favors fresh growth,
+    // <0.5 lets the older generations dominate. Default 0.5 = exponent 1.0.
+    let ageExp = mix(1.4, 0.6, growthBias);
+    let ageMix = pow(max(vec3<f32>(layer1, layer2 * 0.8, layer3 * 0.6), vec3<f32>(0.0)),
+                     vec3<f32>(ageExp));
     var col = mix(vec3<f32>(0.1, 0.15, 0.1), vec3<f32>(0.9, 0.95, 0.7), ageMix);
+
+    // Spectral tint on the hyphae threads so colonies shimmer with the FFT
+    let threadTint = vec3<f32>(treble * 0.12, mids * 0.08, bass * 0.10);
+    col += threadTint * (hyphae1 + hyphae2 * 0.5);
 
     // Temporal feedback blend
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
@@ -175,9 +236,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Subtle depth from layers
     let depth = (layer1 * 0.3 + layer2 * 0.5 + layer3 * 0.7) * 0.6 + 0.2;
 
-    // Apply generative controls
-    let controlled = applyGenerativePrimaryControls(vec4<f32>(col, 1.0));
-    var color = controlled.rgb;
+    var color = col;
 
     // Chromatic aberration
     let caStr = 0.003 * (1.0 + bass);

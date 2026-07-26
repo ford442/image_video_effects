@@ -2,6 +2,18 @@
 //  Cosmic Jellyfish - A majestic, translucent jellyfish in a cosmic void.
 //  Category: generative
 //  Features: 3d, raymarching, bioluminescent, space, organic, calm
+//
+//  Upgrade notes (Batch 16):
+//   - The temporal feedback buffer (dataTextureA) is now DISPLAYED:
+//     the displayed frame blends toward the accumulated trail so the
+//     jelly leaves bioluminescent motion trails behind it.
+//   - writeDepthTexture now stores the real normalized raymarch hit
+//     distance instead of a flat 0.0, so chained shaders see honest depth.
+//   - Bass (plasmaBuffer[0].x) drives the bell pulse amplitude,
+//     treble (plasmaBuffer[0].z) drives the tentacle wave frequency.
+//   - Glow color uses an IQ cosine palette (cheaper + smoother than the
+//     old Rodrigues RGB hue rotation).
+//   - ACES tonemap + hue-preserving clamp tame Glow Intensity up to 5.0.
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -19,9 +31,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // [time, rippleCount, resW, resH]
+  zoom_config: vec4<f32>,  // [time, mouseX, mouseY, mouseDown]
+  zoom_params: vec4<f32>,  // [pulseSpeed, tentacleActivity, hueShift, glowIntensity]
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -37,11 +49,43 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-// SDF for the Jellyfish
+// IQ cosine palette: cheap, smooth periodic color ramp.
+fn cosinePalette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
+    return a + b * cos(6.2831853 * (c * t + d));
+}
+
+// Narkowicz ACES filmic tonemap (in/out roughly linear, clamped 0..1).
+fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Hue-preserving clamp: scale the whole color toward maxVal instead of
+// clipping per-channel, so saturated glow keeps its hue instead of
+// washing out to white.
+fn huePreserveClamp(col: vec3<f32>, maxVal: f32) -> vec3<f32> {
+    let peak = max(col.r, max(col.g, col.b));
+    if (peak > maxVal) {
+        return col * (maxVal / peak);
+    }
+    return col;
+}
+
+// SDF for the Jellyfish (silhouette hand-tuned: bell hollow +
+// 8-tentacle capsule loop, smin k=0.2 - preserved verbatim).
 fn map(p: vec3<f32>, time: f32) -> f32 {
+    // Audio: bass drives the bell pulse amplitude, treble the tentacle
+    // wave frequency. Read here (inside map) so the SDF stays honest.
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+
     // Pulse animation
     let pulse_speed = u.zoom_params.x * 2.0;
-    let pulse = sin(time * pulse_speed) * 0.1;
+    let pulse = sin(time * pulse_speed) * (0.1 + bass * 0.12);
 
     // Tentacle Activity
     let tentacle_amp = u.zoom_params.y;
@@ -60,15 +104,16 @@ fn map(p: vec3<f32>, time: f32) -> f32 {
     // Tentacles
     var d_tentacles = 100.0;
     let num_tentacles = 8.0;
+    let wave_freq = 2.0 + treble * 4.0;
     for (var i = 0.0; i < num_tentacles; i = i + 1.0) {
         var angle = (i / num_tentacles) * 6.28318;
         let radius = 0.3;
         let tentacle_pos = vec3<f32>(cos(angle) * radius, 0.0, sin(angle) * radius);
         var p_t = p - tentacle_pos;
 
-        // Waving motion
-        p_t.x += sin(p_t.y * 3.0 + time * 2.0 + i) * 0.1 * tentacle_amp;
-        p_t.z += cos(p_t.y * 3.0 + time * 2.0 + i) * 0.1 * tentacle_amp;
+        // Waving motion (treble-modulated frequency)
+        p_t.x += sin(p_t.y * 3.0 + time * wave_freq + i) * 0.1 * tentacle_amp;
+        p_t.z += cos(p_t.y * 3.0 + time * wave_freq + i) * 0.1 * tentacle_amp;
 
         // Capsule shape for tentacle
         p_t.y += 1.0; // Shift down
@@ -108,6 +153,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / resolution.y;
     let time = u.config.x;
     let texUV = vec2<f32>(global_id.xy) / resolution;
+    let pixel = vec2<i32>(global_id.xy);
+
+    // Previous frame's temporal trail (dataTextureA of last frame,
+    // mirrored read-only through dataTextureC).
     let prev = textureSampleLevel(dataTextureC, u_sampler, texUV, 0.0);
 
     // Camera
@@ -122,8 +171,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ro.y = cam_rot[0][0] * ro.y + cam_rot[0][1] * ro.z;
     ro.z = cam_rot[1][0] * ro.y + cam_rot[1][1] * ro.z;
 
-    let target_pos = vec3<f32>(0.0, 0.0, 0.0);
-    let f = normalize(target_pos - ro);
+    let look_at = vec3<f32>(0.0, 0.0, 0.0);
+    let f = normalize(look_at - ro);
     let r = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), f));
     let up = cross(f, r);
     let rd = normalize(f + r * uv.x + up * uv.y);
@@ -172,24 +221,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col = base_color * diff * 0.5 + base_color * fresnel * 0.8;
     }
 
-    // Add accumulated glow (bioluminescence)
+    // Add accumulated glow (bioluminescence) via IQ cosine palette.
+    // Hue Shift slider (zoom_params.z) phases the palette around the
+    // spectrum; default 0.0 lands on a deep bioluminescent blue that
+    // matches the original look.
     let hue_shift = u.zoom_params.z;
-    var glowColor = vec3<f32>(0.1, 0.4, 0.9); // Base Blue
-
-    // Simple hue shift logic (rotate RGB)
-    var angle = hue_shift * 6.28;
-    let k = vec3<f32>(0.57735, 0.57735, 0.57735);
-    let cos_angle = cos(angle);
-    glowColor = glowColor * cos_angle + cross(k, glowColor) * sin(angle) + k * dot(k, glowColor) * (1.0 - cos_angle);
+    let glowColor = max(cosinePalette(
+        hue_shift,
+        vec3<f32>(0.30, 0.40, 0.55),
+        vec3<f32>(0.35, 0.35, 0.45),
+        vec3<f32>(1.00, 1.00, 1.00),
+        vec3<f32>(0.50, 0.33, 0.00)
+    ), vec3<f32>(0.0));
 
     let glow_intensity = u.zoom_params.w;
     col += glow * glowColor * glow_intensity * 0.02;
 
-    // Temporal feedback via dataTextureA
+    // ── Temporal feedback: compute the trail AND display it ──────────
+    // decay stays < 1.0 so the accumulation is stable; the accumulated
+    // trail is clamped pre-tint at ~1.2 so old frames cannot blow out.
     let decay = 0.96;
-    let temporal = mix(prev.rgb * decay, col, 0.25);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(temporal, 1.0));
+    var temporal = mix(prev.rgb * decay, col, 0.25);
+    temporal = min(temporal, vec3<f32>(1.2));
+    textureStore(dataTextureA, pixel, vec4<f32>(temporal, 1.0));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    // Blend the live frame toward the accumulated trail: the jelly now
+    // leaves visible bioluminescent motion trails instead of dropping
+    // the feedback on the floor.
+    col = mix(col, temporal, 0.6);
+
+    // Tone pipeline: ACES filmic curve, then a hue-preserving clamp so
+    // Glow Intensity up to 5.0 stays colorful instead of clipping white.
+    col = acesTonemap(col);
+    col = huePreserveClamp(col, 1.0);
+
+    // Honest depth: normalized raymarch hit distance (1.0 = miss / far
+    // plane at t = 10.0) so chained shaders get real scene depth.
+    var depth_out = 1.0;
+    if (hit) {
+        depth_out = clamp(t / 10.0, 0.0, 1.0);
+    }
+
+    textureStore(writeTexture, pixel, vec4<f32>(col, 1.0));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth_out, 0.0, 0.0, 0.0));
 }

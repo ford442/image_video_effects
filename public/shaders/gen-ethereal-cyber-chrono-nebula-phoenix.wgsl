@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------
-// Ethereal Cyber-Chrono Nebula-Phoenix (upgraded)
+// Ethereal Cyber-Chrono Nebula-Phoenix (upgraded: live audio + HDR tamed)
 // Category: generative
 // ----------------------------------------------------------------
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,6 +22,15 @@ struct Uniforms {
 @group(0) @binding(11) var comparison_sampler: sampler_comparison;
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 const PI: f32 = 3.14159265359;
+// Persistent halo-spring state. extraBuffer layout contract:
+//   [0..4] reserved, [5..132] engine FFT bins, [133..255] shader state.
+//   [133..134] = eased halo position, [135..136] = spring velocity,
+//   [137] = initialized flag.
+const HALO_POS_X: u32 = 133u;
+const HALO_POS_Y: u32 = 134u;
+const HALO_VEL_X: u32 = 135u;
+const HALO_VEL_Y: u32 = 136u;
+const HALO_INIT: u32 = 137u;
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     let c = cos(a);
@@ -52,11 +61,24 @@ fn domainWarp(p: vec2<f32>, t: f32) -> vec2<f32> {
     let q = vec2<f32>(fbm(p + vec2<f32>(0.0, t), 3), fbm(p + vec2<f32>(5.2, 1.3), 3));
     return p + 0.25 * q;
 }
-// Clifford-like strange attractor used as a chrono-orbit trap
-fn attractorTrap(p: vec2<f32>, t: f32, audio: f32) -> f32 {
+// Hue-preserving clamp: scale by the brightest channel so hue survives.
+fn huePreserveClamp(c: vec3<f32>, maxC: f32) -> vec3<f32> {
+    let peak = max(c.r, max(c.g, c.b));
+    let scale = min(1.0, maxC / max(peak, 1e-4));
+    return c * scale;
+}
+// ACES filmic tonemap (Narkowicz approximation).
+fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
+    let num = x * (2.51 * x + vec3<f32>(0.03));
+    let den = x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14);
+    return clamp(num / den, vec3<f32>(0.0), vec3<f32>(1.0));
+}
+// Clifford-like strange attractor used as a chrono-orbit trap.
+// Constants (-1.4, 1.6, 1.0, 0.7, 24 iters) preserved verbatim.
+fn attractorTrap(p: vec2<f32>, t: f32, bass: f32) -> f32 {
     var z = p * 2.0;
     var trap = 100.0;
-    let a = -1.4 + audio * 0.3;
+    let a = -1.4 + bass * 0.3;
     let b = 1.6 + sin(t * 0.2) * 0.1;
     let c = 1.0;
     let d = 0.7;
@@ -70,7 +92,8 @@ fn attractorTrap(p: vec2<f32>, t: f32, audio: f32) -> f32 {
     return trap;
 }
 
-// SDF silhouette: cybernetic phoenix body, wings and tail
+// SDF silhouette: cybernetic phoenix body, wings and tail.
+// Hand-tuned constants preserved verbatim.
 fn sdPhoenix(p: vec2<f32>, wingspan: f32) -> f32 {
     let body = length(vec2<f32>(p.x * 4.0, max(0.0, abs(p.y) - 0.22))) - 0.06;
     let wingY = p.y - 0.12;
@@ -91,26 +114,55 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let uv = (vec2<f32>(id.xy) - 0.5 * res) / min(res.x, res.y);
 
     let time = u.config.x;
-    let audio = u.config.y;
-    let mouse = u.zoom_config.yz;
+    // LIVE AUDIO: plasmaBuffer[0] = [bass, mid, treble, level] FFT bands.
+    // u.config.y is the ripple COUNT (near-constant), not sound — the old
+    // "audio" read was dead; bass/treble now drive the reaction for real.
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+    let rawMouse = u.zoom_config.yz;
     let wingspan = clamp(u.zoom_params.x, 0.05, 0.5);
-    let plasma = u.zoom_params.y;
+    let plasma = clamp(u.zoom_params.y, 0.1, 1.0);
+
+    // Critically-damped spring halo: thread (0,0) integrates once per
+    // frame, every thread reads the eased center so the phoenix's
+    // attention glides instead of snapping to the cursor.
+    if (id.x == 0u && id.y == 0u) {
+        var haloPos = vec2<f32>(extraBuffer[HALO_POS_X], extraBuffer[HALO_POS_Y]);
+        var haloVel = vec2<f32>(extraBuffer[HALO_VEL_X], extraBuffer[HALO_VEL_Y]);
+        if (extraBuffer[HALO_INIT] < 0.5) {
+            haloPos = rawMouse;
+            haloVel = vec2<f32>(0.0);
+        }
+        let omega = 7.0;   // spring natural frequency
+        let dt = 0.016;    // fixed step keeps the semi-implicit spring stable
+        let accel = omega * omega * (rawMouse - haloPos) - 2.0 * omega * haloVel;
+        haloVel += accel * dt;
+        haloPos += haloVel * dt;
+        extraBuffer[HALO_POS_X] = haloPos.x;
+        extraBuffer[HALO_POS_Y] = haloPos.y;
+        extraBuffer[HALO_VEL_X] = haloVel.x;
+        extraBuffer[HALO_VEL_Y] = haloVel.y;
+        extraBuffer[HALO_INIT] = 1.0;
+    }
+    let mouse = vec2<f32>(extraBuffer[HALO_POS_X], extraBuffer[HALO_POS_Y]);
 
     let video = textureSampleLevel(readTexture, u_sampler, uv01, 0.0);
     let inDepthUV = clamp(uv01, vec2<f32>(0.0), vec2<f32>(1.0));
     let inDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, inDepthUV, 0.0).r;
 
-    // Domain-warped FBM nebula background
+    // Domain-warped FBM nebula background; bass breathes through the gas.
     let warp = domainWarp(uv * 2.0 + vec2<f32>(time * 0.02), time * 0.05);
     var nebula = fbm(warp * 3.0, 5);
-    nebula += 0.5 * fbm(warp * 6.0 + audio, 4);
-    let bgColor = vec3<f32>(0.08, 0.05, 0.15) * nebula * (1.0 + audio * 2.0);
+    nebula += 0.5 * fbm(warp * 6.0 + bass, 4);
+    let bgColor = vec3<f32>(0.08, 0.05, 0.15) * nebula * (1.0 + bass * 2.0);
 
-    // Strange-attractor chrono fractal as an orbit trap
-    let trap = attractorTrap(uv * 1.5, time, audio);
-    let chronoGlow = exp(-trap * 6.0) * (0.5 + 0.5 * audio);
+    // Strange-attractor chrono fractal: bass wobbles the orbit constant,
+    // treble drives the shimmer of the chrono glow.
+    let trap = attractorTrap(uv * 1.5, time, bass);
+    let shimmer = 0.85 + 0.3 * sin(time * 9.0 + trap * 14.0) * treble;
+    let chronoGlow = exp(-trap * 6.0) * (0.5 + 0.5 * treble) * shimmer;
 
-    // Phoenix SDF and orbit-trap coloring
+    // Phoenix SDF and orbit-trap coloring.
     var p = uv;
     p = rot(mouse.x * 2.0 + time * 0.1) * p;
     let d = sdPhoenix(p, wingspan);
@@ -118,24 +170,46 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let density = smoothstep(0.12, 0.0, d);
     let shell = exp(-edge * 12.0);
 
-    // Cosmic palette driven by orbit traps and audio
-    let pal = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(0.0, 0.33, 0.67) * PI * 2.0 + time * 0.5 - trap * 2.0);
-    var phoenixColor = pal * (density + shell * 0.6);
-    phoenixColor += vec3<f32>(1.0, 0.4, 0.1) * chronoGlow * plasma;
+    // Click ripple rings: expanding shockwaves that momentarily flare
+    // the wing plasma as the ring sweeps across it.
+    let rippleCount = min(u32(u.config.y), 50u);
+    var rippleFlare = 0.0;
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        let ringRadius = age * 0.7;
+        let ringDist = length(uv01 - rp.xy);
+        let ring = exp(-abs(ringDist - ringRadius) * 28.0) * exp(-age * 2.2) * step(0.0, age);
+        rippleFlare += ring;
+    }
+    rippleFlare = min(rippleFlare, 1.5);
 
-    // Branchless mouse-interaction halo
+    // Bass-driven wing plasma pulse, kicked harder by click ripples.
+    let wingPulse = 1.0 + bass * 1.6 + rippleFlare * 2.0 * plasma;
+
+    // Cosmic palette driven by orbit traps and audio.
+    let pal = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(0.0, 0.33, 0.67) * PI * 2.0 + time * 0.5 - trap * 2.0);
+    var phoenixColor = pal * (density + shell * 0.6 * wingPulse);
+    phoenixColor += vec3<f32>(1.0, 0.4, 0.1) * chronoGlow * plasma;
+    phoenixColor += vec3<f32>(1.0, 0.55, 0.2) * rippleFlare * shell * plasma * 1.5;
+
+    // Spring-eased phoenix attention halo (was a snap-to-mouse glow).
     let mouseDist = length(uv01 - mouse);
-    let mouseGlow = exp(-mouseDist * 20.0) * (0.3 + audio);
+    let mouseGlow = exp(-mouseDist * 20.0) * (0.3 + bass);
     phoenixColor += vec3<f32>(0.4, 0.8, 1.0) * mouseGlow;
 
-    // Composite over video background
+    // Composite over video background.
     var color = mix(video.rgb, phoenixColor, clamp(density + shell * 0.5, 0.0, 1.0));
     color = mix(color, bgColor, 0.35 * (1.0 - density));
 
-    // Meaningful alpha: emission + occlusion, not forced to 1.0
+    // HDR taming: hue-preserving clamp at ~2.0, then ACES before store.
+    color = huePreserveClamp(color, 2.0);
+    color = acesTonemap(color);
+
+    // Meaningful alpha: emission + occlusion, not forced to 1.0.
     let alpha = clamp(density + shell * 0.4 + chronoGlow * 0.2, 0.0, 1.0);
 
-    // Depth: phoenix in front, input depth preserved where transparent
+    // Depth: phoenix in front, input depth preserved where transparent.
     let depth = mix(inDepth, 0.2 + density * 0.6, clamp(density + shell * 0.5, 0.0, 1.0));
 
     textureStore(writeTexture, id.xy, vec4<f32>(color, alpha));
