@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-24T08:35:52.126123",
+  "timestamp": "2026-07-25T08:20:59.509301",
   "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": true,
   "total": 1,
@@ -10,7 +10,7 @@
   "workgroup_blocking": 0,
   "results": [
     {
-      "file": "public/shaders/gen-crystalline-nebula-weaver-void-spider.wgsl",
+      "file": "public/shaders/gen-radiant-cyber-bismuth-nebula-colossus.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

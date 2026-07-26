@@ -17075,6 +17075,61 @@
     "features": []
   },
   {
+    "name": "Radiant Cyber-Bismuth Nebula-Colossus",
+    "category": "generative",
+    "tags": [
+      "cosmic",
+      "bismuth",
+      "fractal",
+      "bioluminescence",
+      "audio-reactive",
+      "quantum",
+      "colossus"
+    ],
+    "description": "A colossal, hyper-dimensional biomechanical titan woven from shattered cyber-bismuth lattices and liquid auroral plasma, drifting endlessly through a violently decaying quantum-particle storm.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fractal Fold Scale",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Nebula Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Audio Reactivity",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Iridiscent Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "id": "gen-radiant-cyber-bismuth-nebula-colossus",
+    "url": "shaders/gen-radiant-cyber-bismuth-nebula-colossus.wgsl"
+  },
+  {
     "name": "Radiant Cyber-Chrono Void-Stag",
     "category": "generative",
     "tags": [
