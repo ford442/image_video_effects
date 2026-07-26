@@ -334,11 +334,6 @@
       "filename": "2026-07-21_abyssal-cyber-aether-void-kraken.md",
       "title": "Abyssal Cyber-Aether Void-Kraken",
       "added": "2026-07-21T15:38:11.047675"
-    },
-    {
-      "filename": "2026-07-24_radiant-cyber-bismuth-nebula-colossus.md",
-      "title": "Radiant Cyber-Bismuth Nebula-Colossus",
-      "added": "2026-07-24T15:25:14.752443"
     }
   ],
   "current": null,
@@ -522,6 +517,13 @@
       "added": "2026-07-23T15:12:12.064687",
       "status": "completed",
       "completed_at": "2026-07-24T08:08:28.576586+00:00"
+    },
+    {
+      "filename": "2026-07-24_radiant-cyber-bismuth-nebula-colossus.md",
+      "title": "Radiant Cyber-Bismuth Nebula-Colossus",
+      "added": "2026-07-24T15:25:14.752443",
+      "status": "completed",
+      "completed_at": "2026-07-25T08:17:07.650452"
     }
   ],
   "rejected": [],
