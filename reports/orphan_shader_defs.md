@@ -1,12 +1,12 @@
 # Shader catalog hygiene audit
 
-Generated: 2026-07-19T05:41:40.327299+00:00
+Generated: 2026-07-26T11:25:19.533454+00:00
 
 ## Definition → WGSL
 
 | Classification | Count |
 |----------------|------:|
-| `local` | 1304 |
+| `local` | 1313 |
 | `storage-only` | 0 |
 | `allowlisted` | 0 |
 | `likely-broken` | 0 |
@@ -16,10 +16,10 @@ Generated: 2026-07-19T05:41:40.327299+00:00
 
 | Classification | Count |
 |----------------|------:|
-| `cataloged` | 1301 |
+| `cataloged` | 1310 |
 | `template-prefix` | 4 |
 | `subgroup-variant` | 0 |
-| `multipass-secondary` | 2 |
+| `multipass-secondary` | 12 |
 | `orphan` | 0 |
 
 **only_def** (defs without WGSL): 0

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ShadertoyImportPanel } from './ShadertoyImportPanel';
 
 export interface AdvancedDebugPanelProps {
     onOpenShaderScanner?: () => void;
@@ -6,6 +7,8 @@ export interface AdvancedDebugPanelProps {
     onSwitchRenderer?: (type: 'webgpu' | 'wasm' | 'js') => Promise<void>;
     onOpenCoordinateBrowser: () => void;
     onOpenStorageBrowser?: () => void;
+    onPreviewImportShader?: (id: string, wgsl: string, name: string) => void;
+    onImportStatus?: (message: string) => void;
 }
 
 export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
@@ -14,6 +17,8 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
     onSwitchRenderer,
     onOpenCoordinateBrowser,
     onOpenStorageBrowser,
+    onPreviewImportShader,
+    onImportStatus,
 }) => {
     const [devToolsOpen, setDevToolsOpen] = useState(false);
 
@@ -71,6 +76,10 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
                                     </div>
                                 </div>
                             )}
+                            <ShadertoyImportPanel
+                                onPreviewShader={onPreviewImportShader}
+                                onStatus={onImportStatus}
+                            />
                         </div>
                     )}
                 </div>

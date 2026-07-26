@@ -1,0 +1,89 @@
+{
+  "id": "photonic-caustics-graph",
+  "name": "Photonic Caustics",
+  "url": "shaders/photonic-emitter.wgsl",
+  "description": "Temporal caustic accumulator with chromatic dispersion, Fresnel glints, and iridescent micro-ripple normals. Tier C graph runner.",
+  "requiresRgba32Float": true,
+  "multipass": {
+    "graph": {
+      "maxPassesPerFrame": 8,
+      "nodes": [
+        {
+          "id": "emit",
+          "entry": "photonic-emitter",
+          "reads": ["dataC"],
+          "writes": ["dataB", "dataA"]
+        },
+        {
+          "id": "trace",
+          "entry": "photonic-trace",
+          "reads": [],
+          "writes": ["dataA"],
+          "repeat": 2
+        },
+        {
+          "id": "accumulate",
+          "entry": "photonic-accumulate",
+          "reads": ["dataA", "dataC"],
+          "writes": ["color", "dataA"]
+        }
+      ]
+    }
+  },
+  "params": [
+    {
+      "id": "ior",
+      "name": "IOR",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Index of refraction base"
+    },
+    {
+      "id": "lightSize",
+      "name": "Light Size",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Area light radius for photon seeding"
+    },
+    {
+      "id": "dispersion",
+      "name": "Dispersion",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Chromatic IOR split + aberration"
+    },
+    {
+      "id": "intensity",
+      "name": "Intensity",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Caustic brightness and alpha key"
+    }
+  ],
+  "features": [
+    "simulation",
+    "multi-pass",
+    "graph-runner",
+    "mouse-driven",
+    "audio-reactive",
+    "physics"
+  ],
+  "tags": [
+    "caustics",
+    "light",
+    "refraction",
+    "simulation"
+  ]
+}

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "performance_policy.h"
 #include <webgpu/webgpu.h>
 #include <array>
 #include <vector>
@@ -254,6 +255,8 @@ public:
     int  GetSlotEnabled(int slotIndex) const;
     int  GetSlotMode(int slotIndex) const;  // 0=chained, 1=parallel
     bool GetSupportsDeepWorkgroup() const { return supportsDeepWorkgroup_; }
+    int GetColorFormat() const { return static_cast<int>(colorFormat_); }
+    void SetColorFormat(int formatEnum);
 
     // Render timings from the last frame (ms). GPU timestamp queries when
     // supported; otherwise CPU wall-clock with available()==false.
@@ -453,6 +456,7 @@ private:
     // Adapter capability (set during CreateDevice)
     uint32_t maxComputeInvocations_ = 256;
     bool     supportsDeepWorkgroup_ = false;
+    policy::InternalColorFormat colorFormat_ = policy::kUltraColorFormat;
 
     // Wall-clock render timings from last frame (ms) — always updated.
     float lastParallelTimeMs_ = 0.0f;

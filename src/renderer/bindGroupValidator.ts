@@ -6,9 +6,8 @@
  * BEFORE pipeline creation.
  *
  * Subgroup variants (`-sg.wgsl`):
- *   Files that begin with `enable subgroups;` are treated identically to their
- *   base counterparts.  The validator only checks bind-group declarations and
- *   the entry-point signature — module-level `enable` directives are ignored.
+ *   Not shipped. Shaders may use `enable subgroups;` inline when the device
+ *   supports the feature — no separate variant files are loaded.
  */
 
 export interface BindGroupValidationResult {

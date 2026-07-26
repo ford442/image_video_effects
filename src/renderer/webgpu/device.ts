@@ -13,6 +13,13 @@ import {
   logAdapterFeatures,
   requestAdapterWithFallback,
 } from '../webgpuDevicePolicy';
+import {
+  AdapterGpuType,
+  DeviceFormatCapabilities,
+  parseAdapterGpuType,
+  probeFormatCapabilities,
+} from '../../config/formatPolicy';
+import { isMobileDevice } from '../../config/performancePolicy';
 
 export interface WebGPUDeviceInitResult {
   ok: true;
@@ -24,6 +31,8 @@ export interface WebGPUDeviceInitResult {
   supportsSubgroups: boolean;
   supportsDeepWorkgroup: boolean;
   hasF32Filterable: boolean;
+  adapterGpuType: AdapterGpuType;
+  formatCapabilities: DeviceFormatCapabilities;
   adapterSummary: string;
   adapterAttemptLabel: string | null;
 }
@@ -36,6 +45,83 @@ export interface WebGPUDeviceInitFailure {
 }
 
 export type WebGPUDeviceInitOutcome = WebGPUDeviceInitResult | WebGPUDeviceInitFailure;
+
+/** Pixelocity optional features requested when the adapter offers them. */
+const PIXELOCITY_OPTIONAL_FEATURES = [
+  'float32-filterable',
+  'timestamp-query',
+  'subgroups',
+  'chromium-experimental-subgroups',
+] as const;
+
+/**
+ * Collect optional device features to request (mirrors wasm_renderer/device.cpp order).
+ * timestamp-query is always-on when available (#1007 / #1030).
+ */
+export function collectOptionalDeviceFeatures(adapter: GPUAdapter): GPUFeatureName[] {
+  const features: GPUFeatureName[] = [];
+  if (adapter.features.has('float32-filterable')) {
+    features.push('float32-filterable');
+  }
+  if (adapter.features.has('timestamp-query')) {
+    features.push('timestamp-query');
+  }
+  const subgroupFeatureName: GPUFeatureName | null =
+    adapter.features.has('subgroups')
+      ? 'subgroups'
+      : adapter.features.has('chromium-experimental-subgroups' as GPUFeatureName)
+        ? ('chromium-experimental-subgroups' as GPUFeatureName)
+        : null;
+  if (subgroupFeatureName) {
+    features.push(subgroupFeatureName);
+  }
+  return features;
+}
+
+/** Compact diagnostics string for enabled Pixelocity-requested features. */
+export function formatEnabledDeviceFeatures(device: GPUDevice): string {
+  const enabled = PIXELOCITY_OPTIONAL_FEATURES.filter((f) =>
+    device.features.has(f as GPUFeatureName),
+  );
+  return `features=[${enabled.join(',')}]`;
+}
+
+/** Canvas context configure options (parity with WASM JS_CreateSurfaceFromCanvas). */
+export function buildCanvasConfigureOptions(
+  device: GPUDevice,
+  format: GPUTextureFormat,
+): GPUCanvasConfiguration {
+  return {
+    device,
+    format,
+    alphaMode: 'opaque',
+    usage: GPUTextureUsage.RENDER_ATTACHMENT,
+  };
+}
+
+/** Append post-device fields to adapterSummary in WASM-aligned order. */
+export function appendAdapterSummaryFields(
+  base: string,
+  device: GPUDevice,
+  canvasFormat: GPUTextureFormat,
+): string {
+  let summary = base;
+  if (device.limits) {
+    const dl = device.limits;
+    summary += ` | device: maxTex2D=${dl.maxTextureDimension2D} computeInvocations=${dl.maxComputeInvocationsPerWorkgroup}`;
+  }
+  summary += ` | ${formatEnabledDeviceFeatures(device)}`;
+  summary += ` | surfaceFormat=${canvasFormat}`;
+  return summary;
+}
+
+export function resolveSubgroupFeatureName(adapter: GPUAdapter): GPUFeatureName | null {
+  if (adapter.features.has('subgroups')) return 'subgroups';
+  if (adapter.features.has('chromium-experimental-subgroups' as GPUFeatureName)) {
+    return 'chromium-experimental-subgroups' as GPUFeatureName;
+  }
+  return null;
+}
 
 export async function initializeWebGPUDevice(
   canvas: HTMLCanvasElement,
@@ -83,24 +169,8 @@ export async function initializeWebGPUDevice(
 
   let adapterSummary = `Adapter attempt=${attemptLabel ?? 'unknown'} | limits: ${formatAdapterLimitsSummary(adapter)} (sufficient)`;
 
-  const wantFeatures: GPUFeatureName[] = [];
-  if (adapter.features.has('float32-filterable')) {
-    wantFeatures.push('float32-filterable');
-  }
-  // Required for GPU timestamp readback (#1007 / #1030). Guarded — absent adapters skip it.
-  if (adapter.features.has('timestamp-query')) {
-    wantFeatures.push('timestamp-query');
-  }
-
-  const subgroupFeatureName: GPUFeatureName | null =
-    adapter.features.has('subgroups')
-      ? 'subgroups'
-      : adapter.features.has('chromium-experimental-subgroups' as GPUFeatureName)
-        ? ('chromium-experimental-subgroups' as GPUFeatureName)
-        : null;
-  if (subgroupFeatureName) {
-    wantFeatures.push(subgroupFeatureName);
-  }
+  const wantFeatures = collectOptionalDeviceFeatures(adapter);
+  const subgroupFeatureName = resolveSubgroupFeatureName(adapter);
 
   let device: GPUDevice;
   try {
@@ -119,7 +189,6 @@ export async function initializeWebGPUDevice(
 
   if (device.limits) {
     const dl = device.limits;
-    adapterSummary += ` | device: maxTex2D=${dl.maxTextureDimension2D} computeInvocations=${dl.maxComputeInvocationsPerWorkgroup}`;
     console.log(
       '[WebGPU] Device limits:',
       `maxTex2D=${dl.maxTextureDimension2D} storageTex=${dl.maxStorageTexturesPerShaderStage} ` +
@@ -129,11 +198,15 @@ export async function initializeWebGPUDevice(
 
   const supportsSubgroups = !!(subgroupFeatureName && device.features.has(subgroupFeatureName));
   if (supportsSubgroups) {
-    console.log('[WebGPU] Subgroup operations enabled — fast -sg variants will be preferred');
+    console.log('[WebGPU] Subgroup operations enabled');
   }
 
   const maxInvocations = adapter.limits?.maxComputeInvocationsPerWorkgroup ?? 256;
   const supportsDeepWorkgroup = maxInvocations >= 1024;
+  const adapterGpuType = parseAdapterGpuType(
+    (adapter.info as GPUAdapterInfo & { adapterType?: string })?.adapterType,
+  );
+  const formatCapabilities = probeFormatCapabilities(adapter, isMobileDevice());
   if (supportsDeepWorkgroup) {
     console.log('[WebGPU] Deep-workgroup (16×16×4 = 1024 invocations) supported');
   } else {
@@ -157,7 +230,10 @@ export async function initializeWebGPUDevice(
   } catch {
     // Context might not have been configured yet
   }
-  context.configure({ device, format: canvasFormat, alphaMode: 'opaque' });
+  context.configure(buildCanvasConfigureOptions(device, canvasFormat));
+
+  adapterSummary = appendAdapterSummaryFields(adapterSummary, device, canvasFormat);
+  console.log('[WebGPU] Negotiated settings:', adapterSummary);
 
   return {
     ok: true,
@@ -169,6 +245,8 @@ export async function initializeWebGPUDevice(
     supportsSubgroups,
     supportsDeepWorkgroup,
     hasF32Filterable: device.features.has('float32-filterable'),
+    adapterGpuType,
+    formatCapabilities,
     adapterSummary,
     adapterAttemptLabel: attemptLabel,
   };

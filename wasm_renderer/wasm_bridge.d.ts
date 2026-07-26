@@ -89,6 +89,9 @@ export function uploadImageData(rgbaPixels: Uint8Array | Uint8ClampedArray, widt
 export function uploadVideoFrame(rgbaPixels: Uint8Array | Uint8ClampedArray, width: number, height: number): void;
 
 export function resizeCanvas(newWidth: number, newHeight: number): void;
+/** 0=rgba32float, 1=rgba16float */
+export function setColorFormat(formatEnum: 0 | 1): void;
+export function getColorFormat(): 0 | 1;
 export function captureFrame(): Promise<ImageData>;
 export function captureFrameDataUrl(): Promise<string>;
 export function takeScreenshot(filename?: string): Promise<void>;

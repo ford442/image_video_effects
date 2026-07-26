@@ -11,8 +11,8 @@ import {
   CONSERVATIVE_BINDING_USAGE,
   ShaderBindingUsage,
 } from '../ShaderCompilation';
+import type { InternalColorFormat } from '../../config/formatPolicy';
 import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
-import { resolveShaderUrl } from '../../utils/resolveShaderUrl';
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
 import { HISTORY_DEPTH } from './webgpuConstants';
 import {
@@ -42,6 +42,17 @@ export class WebGPUShaderManager {
   private pipelineHashes = new Map<string, string>();
   private workgroupSizes = new Map<string, { x: number; y: number }>();
   private bindingUsages = new Map<string, ShaderBindingUsage>();
+  private colorFormat: InternalColorFormat = 'rgba32float';
+
+  setColorFormat(format: InternalColorFormat): void {
+    if (this.colorFormat === format) return;
+    this.colorFormat = format;
+    this.clear();
+  }
+
+  getColorFormat(): InternalColorFormat {
+    return this.colorFormat;
+  }
 
   getPipeline(id: string): GPUComputePipeline | undefined {
     return this.pipelines.get(id);
@@ -87,6 +98,7 @@ export class WebGPUShaderManager {
       this.pipelines,
       this.pipelineHashes,
       this.workgroupSizes,
+      this.colorFormat,
     );
     if (ok) {
       this.bindingUsages.set(id, analyzeShaderBindings(wgsl));
@@ -97,40 +109,10 @@ export class WebGPUShaderManager {
   async loadShader(
     device: GPUDevice | null,
     pipelineLayout: GPUPipelineLayout | null,
-    supportsSubgroups: boolean,
     id: string,
     url: string,
   ): Promise<boolean> {
     if (!device || !pipelineLayout) return false;
-
-    const resolvedUrl = resolveShaderUrl(url);
-
-    // Subgroup variants (`*-sg.wgsl`) are not shipped yet (0 files in-repo).
-    // Probing them on every load floods DevTools with 404s that look like
-    // "shader failed to load". Flip this when real -sg assets land.
-    const PROBE_SUBGROUP_VARIANTS = false;
-    if (
-      PROBE_SUBGROUP_VARIANTS &&
-      supportsSubgroups &&
-      !id.endsWith('-sg') &&
-      resolvedUrl.endsWith('.wgsl')
-    ) {
-      const sgUrl = resolvedUrl.replace(/\.wgsl$/, '-sg.wgsl');
-      // Optional probe — primaryOnly avoids cascading 404s to CDN/storage.
-      const sgWgsl = await fetchShaderWgsl(`${id}-sg`, sgUrl, { primaryOnly: true });
-      if (sgWgsl) {
-        const ok = this.compile(device, pipelineLayout, id, sgWgsl);
-        if (ok) {
-          if (process.env.NODE_ENV !== 'production') {
-            console.log(`[WebGPU] "${id}": loaded subgroup variant (-sg.wgsl)`);
-          }
-          return true;
-        }
-      }
-      if (process.env.NODE_ENV !== 'production') {
-        console.log(`[WebGPU] "${id}": no -sg variant found, using base variant`);
-      }
-    }
 
     const wgsl = await fetchShaderWgsl(id, url);
     if (!wgsl) return false;
@@ -141,6 +123,7 @@ export class WebGPUShaderManager {
 export function createComputeBindGroupLayout(
   device: GPUDevice,
   hasF32Filt: boolean,
+  colorFormat: InternalColorFormat = 'rgba32float',
 ): WebGPUComputeLayout {
   const fST: GPUTextureSampleType = hasF32Filt ? 'float' : 'unfilterable-float';
   const V = GPUShaderStage.COMPUTE;
@@ -150,13 +133,13 @@ export function createComputeBindGroupLayout(
     entries: [
       { binding: 0, visibility: V, sampler: { type: 'filtering' } },
       { binding: 1, visibility: V, texture: { sampleType: fST } },
-      { binding: 2, visibility: V, storageTexture: { access: 'write-only', format: 'rgba32float' } },
+      { binding: 2, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
       { binding: 3, visibility: V, buffer: { type: 'uniform' } },
       { binding: 4, visibility: V, texture: { sampleType: 'unfilterable-float' } },
       { binding: 5, visibility: V, sampler: { type: 'non-filtering' } },
       { binding: 6, visibility: V, storageTexture: { access: 'write-only', format: 'r32float' } },
-      { binding: 7, visibility: V, storageTexture: { access: 'write-only', format: 'rgba32float' } },
-      { binding: 8, visibility: V, storageTexture: { access: 'write-only', format: 'rgba32float' } },
+      { binding: 7, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
+      { binding: 8, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
       { binding: 9, visibility: V, texture: { sampleType: fST } },
       { binding: 10, visibility: V, buffer: { type: 'storage' } },
       { binding: 11, visibility: V, sampler: { type: 'comparison' } },
@@ -271,6 +254,7 @@ export function createBlitPipeline(
   device: GPUDevice,
   canvasFormat: GPUTextureFormat,
   blitReadTex: GPUTexture,
+  internalColorFormat: InternalColorFormat = 'rgba32float',
 ): WebGPUBlitResources {
   const blitBindGroupLayout = device.createBindGroupLayout({
     label: 'blitBGL',
@@ -323,7 +307,7 @@ export function createBlitPipeline(
     label: 'scaleCopyPipeline',
     layout: device.createPipelineLayout({ bindGroupLayouts: [blitBindGroupLayout] }),
     vertex: { module: scaleModule, entryPoint: 'vs' },
-    fragment: { module: scaleModule, entryPoint: 'fs', targets: [{ format: 'rgba32float' }] },
+    fragment: { module: scaleModule, entryPoint: 'fs', targets: [{ format: internalColorFormat }] },
     primitive: { topology: 'triangle-list' },
   });
 
@@ -354,7 +338,7 @@ export function createBlitPipeline(
       fragment: {
         module: videoModule,
         entryPoint: 'fs_main',
-        targets: [{ format: 'rgba32float' }],
+        targets: [{ format: internalColorFormat }],
       },
       primitive: { topology: 'triangle-list' },
     });
@@ -396,11 +380,22 @@ export class WebGPUPipelineModule {
   videoCopyPipeline: GPURenderPipeline | null = null;
   videoCopyBindGroupLayout: GPUBindGroupLayout | null = null;
   supportsExternalTexture = false;
+  colorFormat: InternalColorFormat = 'rgba32float';
+  private hasF32Filterable = false;
+  private canvasFormat: GPUTextureFormat = 'bgra8unorm';
+  private blitReadTex!: GPUTexture;
 
   readonly shaderManager = new WebGPUShaderManager();
 
-  setupComputeLayout(device: GPUDevice, hasF32Filt: boolean): void {
-    const layout = createComputeBindGroupLayout(device, hasF32Filt);
+  setupComputeLayout(
+    device: GPUDevice,
+    hasF32Filt: boolean,
+    colorFormat: InternalColorFormat = 'rgba32float',
+  ): void {
+    this.hasF32Filterable = hasF32Filt;
+    this.colorFormat = colorFormat;
+    this.shaderManager.setColorFormat(colorFormat);
+    const layout = createComputeBindGroupLayout(device, hasF32Filt, colorFormat);
     this.bindGroupLayout = layout.bindGroupLayout;
     this.pipelineLayout = layout.pipelineLayout;
   }
@@ -409,8 +404,12 @@ export class WebGPUPipelineModule {
     device: GPUDevice,
     canvasFormat: GPUTextureFormat,
     blitReadTex: GPUTexture,
+    colorFormat: InternalColorFormat = this.colorFormat,
   ): void {
-    const blit = createBlitPipeline(device, canvasFormat, blitReadTex);
+    this.canvasFormat = canvasFormat;
+    this.blitReadTex = blitReadTex;
+    this.colorFormat = colorFormat;
+    const blit = createBlitPipeline(device, canvasFormat, blitReadTex, colorFormat);
     this.blitPipeline = blit.blitPipeline;
     this.generativeBlitPipeline = blit.generativeBlitPipeline;
     this.scaleCopyPipeline = blit.scaleCopyPipeline;
@@ -419,6 +418,14 @@ export class WebGPUPipelineModule {
     this.videoCopyPipeline = blit.videoCopyPipeline;
     this.videoCopyBindGroupLayout = blit.videoCopyBindGroupLayout;
     this.supportsExternalTexture = blit.supportsExternalTexture;
+  }
+
+  setColorFormat(device: GPUDevice, colorFormat: InternalColorFormat): void {
+    if (this.colorFormat === colorFormat) return;
+    this.setupComputeLayout(device, this.hasF32Filterable, colorFormat);
+    if (this.blitReadTex) {
+      this.setupBlitPipelines(device, this.canvasFormat, this.blitReadTex, colorFormat);
+    }
   }
 
   createBindGroupForPass(

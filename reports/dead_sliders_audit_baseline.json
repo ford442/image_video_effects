@@ -288,6 +288,14 @@
       ]
     },
     {
+      "id": "fabric-of-reality",
+      "category": "simulation",
+      "dead_param_ids": [
+        "stiffness",
+        "tearThreshold"
+      ]
+    },
+    {
       "id": "flux-core",
       "category": "interactive-mouse",
       "dead_param_ids": [
@@ -505,6 +513,16 @@
       ]
     },
     {
+      "id": "photonic-caustics-graph",
+      "category": "simulation",
+      "dead_param_ids": [
+        "ior",
+        "lightSize",
+        "dispersion",
+        "intensity"
+      ]
+    },
+    {
       "id": "pixel-drag-smear",
       "category": "interactive-mouse",
       "dead_param_ids": [
@@ -621,6 +639,13 @@
         "param2",
         "param3",
         "param4"
+      ]
+    },
+    {
+      "id": "ripple-tank",
+      "category": "simulation",
+      "dead_param_ids": [
+        "sourceStrength"
       ]
     },
     {

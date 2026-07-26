@@ -8,6 +8,10 @@ import {
   ShaderMetadata
 } from '../services/shaderApi';
 import './ShaderBrowser.css';
+import { getMultipassBadgeLabel } from '../utils/multipassBadge';
+import { getAudioReactiveBadgeLabel } from '../utils/audioReactiveBadge';
+import { useThumbnailManifest } from '../hooks/useThumbnailManifest';
+import { ShaderThumbPlaceholder } from './ShaderThumbPlaceholder';
 
 // Local type definitions
 interface ShaderMeta extends ShaderMetadata {}
@@ -76,6 +80,7 @@ export const ShaderBrowser: React.FC<{
   onSelect: (shader: ShaderMeta, code: string) => void;
   selectedId?: string;
 }> = ({ onSelect, selectedId }) => {
+  const { manifest } = useThumbnailManifest();
   const [shaders, setShaders] = useState<ShaderMeta[]>([]);
   const [searchText, setSearchText] = useState('');
   const [filter, setFilter] = useState('');
@@ -177,6 +182,20 @@ export const ShaderBrowser: React.FC<{
     }
   };
 
+  const resolveThumbUrl = (shader: ShaderMeta): string | null => {
+    if (shader.thumbnail_url) return shader.thumbnail_url;
+    const entry = manifest[shader.id];
+    if (entry?.thumbnail_url) return `./${entry.thumbnail_url}`;
+    return null;
+  };
+
+  const inferCategory = (shader: ShaderMeta): string | undefined => {
+    const tag = shader.tags?.find(t =>
+      ['generative', 'simulation', 'distortion', 'image', 'artistic'].includes(t),
+    );
+    return tag;
+  };
+
   const filteredShaders = shaders.filter(s => {
     const query = searchQuery || filter;
     return (
@@ -221,17 +240,39 @@ export const ShaderBrowser: React.FC<{
         ) : filteredShaders.length === 0 ? (
           <div className="shader-empty">No shaders found</div>
         ) : (
-          filteredShaders.map(shader => (
+          filteredShaders.map(shader => {
+            const multipassBadge = getMultipassBadgeLabel(shader.id);
+            const audioBadge = getAudioReactiveBadgeLabel(shader);
+            const thumbUrl = resolveThumbUrl(shader);
+            return (
             <div 
               key={shader.id}
               className={`shader-card ${selectedId === shader.id ? 'selected' : ''}`}
               onClick={() => handleSelect(shader)}
             >
-              {shader.thumbnail_url ? (
-                <div className="shader-card-thumb-wrap">
-                  <img src={shader.thumbnail_url} alt={shader.name} className="shader-card-thumb" />
-                </div>
+              {multipassBadge ? (
+                <span className="shader-multipass-badge" title="Multipass compute graph">
+                  {multipassBadge}
+                </span>
               ) : null}
+              {audioBadge ? (
+                <span className="shader-audio-badge" title="Audio-reactive param mappings verified">
+                  {audioBadge}
+                </span>
+              ) : null}
+              {thumbUrl ? (
+                <div className="shader-card-thumb-wrap">
+                  <img src={thumbUrl} alt={shader.name} className="shader-card-thumb" />
+                </div>
+              ) : (
+                <div className="shader-card-thumb-wrap">
+                  <ShaderThumbPlaceholder
+                    name={shader.name}
+                    category={inferCategory(shader)}
+                    className="shader-browser-thumb-placeholder"
+                  />
+                </div>
+              )}
 
               <div className="shader-header">
                 <h4>{shader.name}</h4>
@@ -295,27 +336,38 @@ export const ShaderBrowser: React.FC<{
                 Preview
               </button>
             </div>
-          ))
+          );
+          })
         )}
       </div>
       {previewOpen && previewShader && (
-        <PreviewModal shader={previewShader} onClose={() => setPreviewOpen(false)} />
+        <PreviewModal
+          shader={previewShader}
+          thumbUrl={resolveThumbUrl(previewShader)}
+          category={inferCategory(previewShader)}
+          onClose={() => setPreviewOpen(false)}
+        />
       )}
     </div>
   );
 };
 
-const PreviewModal: React.FC<{ shader: ShaderMeta; onClose: () => void }> = ({ shader, onClose }) => (
+const PreviewModal: React.FC<{
+  shader: ShaderMeta;
+  thumbUrl: string | null;
+  category?: string;
+  onClose: () => void;
+}> = ({ shader, thumbUrl, category, onClose }) => (
   <div className="shader-preview-backdrop" onClick={onClose}>
     <div className="shader-preview-modal" onClick={e => e.stopPropagation()}>
       <button className="modal-close" onClick={onClose}>×</button>
       <div className="shader-preview-grid">
         <section className="preview-card preview-thumb">
           <h3>{shader.name}</h3>
-          {shader.thumbnail_url ? (
-            <img src={shader.thumbnail_url} alt={shader.name} />
+          {thumbUrl ? (
+            <img src={thumbUrl} alt={shader.name} />
           ) : (
-            <div className="shader-thumb-placeholder">No thumbnail available</div>
+            <ShaderThumbPlaceholder name={shader.name} category={category} />
           )}
           <p>{shader.description}</p>
         </section>

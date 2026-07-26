@@ -12,6 +12,7 @@ MODULES=(
   state.js
   diagnostics.js
   init.js
+  wgslFormat.js
   shader.js
   uniforms.js
   capture.js

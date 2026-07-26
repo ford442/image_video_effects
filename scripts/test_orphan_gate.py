@@ -2,7 +2,6 @@
 """Unit tests for orphan definition CI gate (no pytest required)."""
 
 import json
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -14,8 +13,6 @@ sys.path.insert(0, str(_SCRIPTS))
 from audit_orphan_shader_defs import (  # noqa: E402
     BASELINE_JSON,
     evaluate_ci_gate,
-    classify_definition,
-    DEFINITIONS_DIR,
 )
 
 

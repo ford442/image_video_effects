@@ -6,11 +6,17 @@ import { WebGPURenderer } from './WebGPURenderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
 import {
   computeInternalDimensions,
+  estimateInternalTextureMiB,
   INTERNAL_RENDER_RESOLUTION,
   RenderQualityMode,
   ResolvedPerformancePolicy,
   resolvePerformancePolicy,
 } from '../config/performancePolicy';
+import {
+  DEFAULT_FORMAT_CAPABILITIES,
+  DeviceFormatCapabilities,
+  InternalColorFormat,
+} from '../config/formatPolicy';
 import { AdaptivePerformanceController } from './adaptivePerformance';
 import { getGraphEntryIds, hasGraph } from './multipassRegistry';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
@@ -32,11 +38,14 @@ export interface RendererPerformanceStatus {
   targetFps: number;
   adaptive: boolean;
   fps: number;
+  colorFormat: InternalColorFormat;
+  estimatedTextureMiB: number;
 }
 
 export interface ShaderLoadMeta {
   requiresDeepWorkgroup?: boolean;
   requiresHistoryRing?: boolean;
+  requiresRgba32Float?: boolean;
 }
 
 export interface RendererDiagnostics {
@@ -93,6 +102,7 @@ export class RendererManager {
   });
   private qualityMode: RenderQualityMode = 'auto';
   private resolutionScale = 1.0;
+  private formatCapabilities: DeviceFormatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
   private adaptiveController: AdaptivePerformanceController;
 
   /** Max shader slots shared by WebGPU and WASM backends. */
@@ -171,6 +181,7 @@ export class RendererManager {
       if (type === 'wasm') this.lastFailedWasmRenderer = null;
 
       if (video) renderer.setVideo(video);
+      this.refreshFormatCapabilities();
       this.applyPerformancePolicyToRenderer();
       this.startMetricsCollection();
     } else {
@@ -264,6 +275,19 @@ export class RendererManager {
       return false;
     }
 
+    if (
+      meta?.requiresRgba32Float
+      && this.performancePolicy.colorFormat !== 'rgba32float'
+    ) {
+      console.warn(
+        `[RendererManager] "${id}" requires rgba32float — bumping render quality to ultra`,
+      );
+      this.setRenderQuality('ultra', {
+        supportsDeepWorkgroup: this.getSupportsDeepWorkgroup(),
+        formatCaps: this.formatCapabilities,
+      });
+    }
+
     try {
       const ok = await backend.loadShader(id, url);
       if (ok && hasGraph(id)) {
@@ -300,6 +324,7 @@ export class RendererManager {
       shaders.map(s => this.loadShader(s.id, s.url, {
         requiresDeepWorkgroup: s.requiresDeepWorkgroup,
         requiresHistoryRing: s.requiresHistoryRing,
+        requiresRgba32Float: s.requiresRgba32Float,
       }))
     );
     const failed = results.filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value)).length;
@@ -396,6 +421,7 @@ export class RendererManager {
       const ok = await this.loadShader(entry.id, entry.url, {
         requiresDeepWorkgroup: entry.requiresDeepWorkgroup,
         requiresHistoryRing: entry.requiresHistoryRing,
+        requiresRgba32Float: entry.requiresRgba32Float,
       });
       if (ok) {
         this.setSlotShader(i, entry.id);
@@ -481,6 +507,20 @@ export class RendererManager {
   /** Forwards deep-workgroup capability query to the active renderer. */
   getSupportsDeepWorkgroup(): boolean {
     return this.currentRenderer?.getSupportsDeepWorkgroup?.() ?? false;
+  }
+
+  getFormatCapabilities(): DeviceFormatCapabilities {
+    return this.formatCapabilities;
+  }
+
+  private refreshFormatCapabilities(): void {
+    const r = this.currentRenderer;
+    const fromRenderer = r && 'getFormatCapabilities' in r
+      ? (r as WebGPURenderer).getFormatCapabilities?.()
+      : undefined;
+    if (fromRenderer) {
+      this.formatCapabilities = fromRenderer;
+    }
   }
 
   getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: 'chained' | 'parallel' } | null {
@@ -691,11 +731,15 @@ export class RendererManager {
   /** Apply a user-facing quality preset (persisted by the UI layer). */
   setRenderQuality(
     mode: RenderQualityMode,
-    hints?: { supportsDeepWorkgroup?: boolean },
+    hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities },
   ): void {
     this.qualityMode = mode;
     const supportsDeep = hints?.supportsDeepWorkgroup ?? this.getSupportsDeepWorkgroup();
-    this.performancePolicy = resolvePerformancePolicy(mode, { supportsDeepWorkgroup: supportsDeep });
+    const formatCaps = hints?.formatCaps ?? this.formatCapabilities;
+    this.performancePolicy = resolvePerformancePolicy(mode, {
+      supportsDeepWorkgroup: supportsDeep,
+      formatCaps,
+    });
     this.applyPerformancePolicyToRenderer();
   }
 
@@ -720,6 +764,12 @@ export class RendererManager {
       targetFps: this.performancePolicy.targetFps,
       adaptive: this.performancePolicy.adaptive,
       fps: this.getCurrentFPS(),
+      colorFormat: this.performancePolicy.colorFormat,
+      estimatedTextureMiB: estimateInternalTextureMiB(
+        scaleInfo.scaled.w,
+        scaleInfo.scaled.h,
+        this.performancePolicy.colorFormat,
+      ),
     };
   }
 
@@ -748,12 +798,22 @@ export class RendererManager {
 
   private applyPerformancePolicyToRenderer(): void {
     this.applyResolutionScale(this.performancePolicy.scale);
+    this.applyColorFormat(this.performancePolicy.colorFormat);
     const r = this.currentRenderer;
     if (r instanceof WebGPURenderer) {
       r.setAdaptiveQuality(false);
       r.setMaxPassesPerFrame(this.performancePolicy.maxPassesPerFrame);
     }
     this.adaptiveController.updatePolicy(this.performancePolicy);
+  }
+
+  private applyColorFormat(format: InternalColorFormat): void {
+    const r = this.currentRenderer;
+    if (r instanceof WebGPURenderer) {
+      r.setColorFormat(format);
+    } else if (r instanceof WASMRenderer) {
+      r.setColorFormat(format);
+    }
   }
 
   private applyResolutionScale(scale: number): void {

@@ -24,7 +24,8 @@
       "min": 0,
       "max": 1,
       "step": 0.1,
-      "mapping": "zoom_params.x"
+      "mapping": "zoom_params.x",
+      "audio": "bass"
     },
     {
       "id": "param2",
@@ -33,7 +34,8 @@
       "min": 0,
       "max": 1,
       "step": 0.1,
-      "mapping": "zoom_params.y"
+      "mapping": "zoom_params.y",
+      "audio": "mid"
     },
     {
       "id": "param3",
@@ -42,7 +44,8 @@
       "min": 0,
       "max": 1,
       "step": 0.1,
-      "mapping": "zoom_params.z"
+      "mapping": "zoom_params.z",
+      "audio": "treble"
     },
     {
       "id": "param4",
@@ -51,7 +54,8 @@
       "min": 0,
       "max": 1,
       "step": 0.1,
-      "mapping": "zoom_params.w"
+      "mapping": "zoom_params.w",
+      "audio": "overall"
     }
   ],
   "target_rating": 4.6,

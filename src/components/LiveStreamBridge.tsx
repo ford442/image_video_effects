@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import Hls from 'hls.js';
+import type Hls from 'hls.js';
 
 interface LiveStreamBridgeProps {
   streamUrl: string;
@@ -20,7 +20,9 @@ export const LiveStreamBridge: React.FC<LiveStreamBridgeProps> = ({
     const video = videoRef.current;
     if (!video || !streamUrl) return;
 
-    // Clean up previous HLS instance
+    let cancelled = false;
+    let listenerCleanup: (() => void) | undefined;
+
     if (hlsRef.current) {
       hlsRef.current.destroy();
       hlsRef.current = null;
@@ -28,92 +30,101 @@ export const LiveStreamBridge: React.FC<LiveStreamBridgeProps> = ({
 
     setIsReady(false);
 
-    const initHLS = () => {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          enableWorker: true,
-          lowLatencyMode: true,
-          backBufferLength: 90,
-          // Optimize for real-time shader processing
-          maxBufferHole: 0.5,
-          highBufferWatchdogPeriod: 1,
-        });
-
-        hlsRef.current = hls;
-
-        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-          console.log('🔴 Live Stream: Media attached');
-        });
-
-        hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
-          console.log(`🔴 Live Stream: Manifest parsed - ${data.levels.length} quality levels`);
-          video.play().catch(e => {
-            console.log('Autoplay prevented (expected for unmuted):', e);
-            // Still mark as ready, user can interact
-          });
-        });
-
-        hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
-          const level = hls.levels[data.level];
-          console.log(`🔴 Live Stream: Quality switched to ${level?.height || 'unknown'}p`);
-        });
-
-        hls.on(Hls.Events.ERROR, (_event, data) => {
-          console.error('🔴 Live Stream HLS Error:', data);
-          if (data.fatal) {
-            switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR:
-                console.log('🔴 Live Stream: Network error, attempting recovery...');
-                hls.startLoad();
-                break;
-              case Hls.ErrorTypes.MEDIA_ERROR:
-                console.log('🔴 Live Stream: Media error, attempting recovery...');
-                hls.recoverMediaError();
-                break;
-              default:
-                onError?.(`Fatal error: ${data.type}`);
-                hls.destroy();
-                break;
-            }
-          }
-        });
-
-        // Critical: Wait for video to be ready before notifying
-        const handleCanPlay = () => {
-          if (!isReady) {
-            console.log('🔴 Live Stream: Video ready for WebGPU');
+    const run = async () => {
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = streamUrl;
+        const handleNativeReady = () => {
+          if (!cancelled) {
             setIsReady(true);
             onVideoReady(video);
           }
         };
-
-        video.addEventListener('canplay', handleCanPlay);
-        video.addEventListener('loadedmetadata', handleCanPlay);
-
-        hls.loadSource(streamUrl);
-        hls.attachMedia(video);
-
-        return () => {
-          video.removeEventListener('canplay', handleCanPlay);
-          video.removeEventListener('loadedmetadata', handleCanPlay);
-        };
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS support (Safari) — keep a reference so the listener can be removed
-        video.src = streamUrl;
-        const handleNativeReady = () => { setIsReady(true); onVideoReady(video); };
         video.addEventListener('loadedmetadata', handleNativeReady);
-        return () => video.removeEventListener('loadedmetadata', handleNativeReady);
-      } else {
-        onError?.('HLS not supported in this browser');
+        listenerCleanup = () => video.removeEventListener('loadedmetadata', handleNativeReady);
+        return;
       }
+
+      const HlsModule = (await import(/* webpackChunkName: "hls" */ 'hls.js')).default;
+      if (cancelled) return;
+
+      if (!HlsModule.isSupported()) {
+        onError?.('HLS not supported in this browser');
+        return;
+      }
+
+      const hls = new HlsModule({
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 90,
+        maxBufferHole: 0.5,
+        highBufferWatchdogPeriod: 1,
+      });
+
+      hlsRef.current = hls;
+
+      hls.on(HlsModule.Events.MEDIA_ATTACHED, () => {
+        console.log('🔴 Live Stream: Media attached');
+      });
+
+      hls.on(HlsModule.Events.MANIFEST_PARSED, (_event, data) => {
+        console.log(`🔴 Live Stream: Manifest parsed - ${data.levels.length} quality levels`);
+        video.play().catch(e => {
+          console.log('Autoplay prevented (expected for unmuted):', e);
+        });
+      });
+
+      hls.on(HlsModule.Events.LEVEL_SWITCHED, (_event, data) => {
+        const level = hls.levels[data.level];
+        console.log(`🔴 Live Stream: Quality switched to ${level?.height || 'unknown'}p`);
+      });
+
+      hls.on(HlsModule.Events.ERROR, (_event, data) => {
+        console.error('🔴 Live Stream HLS Error:', data);
+        if (data.fatal) {
+          switch (data.type) {
+            case HlsModule.ErrorTypes.NETWORK_ERROR:
+              console.log('🔴 Live Stream: Network error, attempting recovery...');
+              hls.startLoad();
+              break;
+            case HlsModule.ErrorTypes.MEDIA_ERROR:
+              console.log('🔴 Live Stream: Media error, attempting recovery...');
+              hls.recoverMediaError();
+              break;
+            default:
+              onError?.(`Fatal error: ${data.type}`);
+              hls.destroy();
+              break;
+          }
+        }
+      });
+
+      const handleCanPlay = () => {
+        if (!isReady && !cancelled) {
+          console.log('🔴 Live Stream: Video ready for WebGPU');
+          setIsReady(true);
+          onVideoReady(video);
+        }
+      };
+
+      video.addEventListener('canplay', handleCanPlay);
+      video.addEventListener('loadedmetadata', handleCanPlay);
+
+      hls.loadSource(streamUrl);
+      hls.attachMedia(video);
+
+      listenerCleanup = () => {
+        video.removeEventListener('canplay', handleCanPlay);
+        video.removeEventListener('loadedmetadata', handleCanPlay);
+      };
     };
 
-    const cleanup = initHLS();
+    run();
 
     return () => {
-      cleanup?.();
+      cancelled = true;
+      listenerCleanup?.();
       hlsRef.current?.destroy();
       hlsRef.current = null;
     };

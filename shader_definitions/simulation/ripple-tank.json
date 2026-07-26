@@ -1,17 +1,40 @@
 {
   "id": "ripple-tank",
   "name": "Ripple Tank",
-  "url": "shaders/ripple-tank-pass1.wgsl",
-  "description": "Psychedelic 3-pass wave-interference tank — click to drop rings, hold to drive an oscillator, bass pumps the sources while caustic sparkles chase the wavefronts.",
+  "url": "shaders/ripple-tank-step.wgsl",
+  "description": "Psychedelic Tier C wave-interference tank — click to drop rings, hold to drive an oscillator, bass pumps the sources while caustic sparkles chase the wavefronts.",
+  "requiresRgba32Float": true,
   "multipass": {
-    "pass": 1,
-    "totalPasses": 3,
-    "nextShader": "ripple-tank-pass2",
-    "passes": [
-      { "pass": 1, "name": "Wave step + inject", "file": "ripple-tank-pass1.wgsl" },
-      { "pass": 2, "name": "Coarse optics gather", "file": "ripple-tank-pass2.wgsl" },
-      { "pass": 3, "name": "Psychedelic render", "file": "ripple-tank-pass3.wgsl" }
-    ]
+    "graph": {
+      "maxPassesPerFrame": 10,
+      "nodes": [
+        {
+          "id": "step",
+          "entry": "ripple-tank-step",
+          "reads": ["dataC"],
+          "writes": ["dataA"],
+          "repeat": 4
+        },
+        {
+          "id": "inject",
+          "entry": "ripple-tank-inject",
+          "reads": ["dataA"],
+          "writes": ["dataB"]
+        },
+        {
+          "id": "gather",
+          "entry": "ripple-tank-pass2",
+          "reads": ["dataB"],
+          "writes": []
+        },
+        {
+          "id": "render",
+          "entry": "ripple-tank-pass3",
+          "reads": ["dataB"],
+          "writes": ["color", "dataA"]
+        }
+      ]
+    }
   },
   "params": [
     {
@@ -58,6 +81,7 @@
   "features": [
     "simulation",
     "multi-pass",
+    "graph-runner",
     "physics",
     "mouse-driven",
     "audio-reactive",
@@ -70,6 +94,7 @@
     "interference",
     "caustics",
     "water",
-    "simulation"
+    "simulation",
+    "showcase"
   ]
 }

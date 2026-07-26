@@ -33,6 +33,8 @@ const state = {
   lastLoadError: null,
   initStartTime: 0,
   initEndTime: 0,
+  /** 0=rgba32float, 1=rgba16float — see docs/FORMAT_TIERS.md */
+  colorFormat: 0,
 };
 
 /** Maps WebGPURenderer::InitStage (C++) to a readable name. */

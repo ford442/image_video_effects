@@ -45,6 +45,7 @@
       "description": "Edge absorption (0) vs reflection (1)"
     }
   ],
+  "requiresRgba32Float": true,
   "features": [
     "simulation",
     "multi-pass",

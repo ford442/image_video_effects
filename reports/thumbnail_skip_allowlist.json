@@ -1,0 +1,6 @@
+{
+  "description": "Shaders excluded from coverage denominator and generation queue",
+  "ids": [
+    "deep-workgroup-multi-effect-blend"
+  ]
+}

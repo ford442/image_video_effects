@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-07-19T05:41:40.327299+00:00",
-  "definitions_scanned": 1304,
-  "wgsl_files_scanned": 1307,
+  "timestamp": "2026-07-26T11:25:19.533454+00:00",
+  "definitions_scanned": 1313,
+  "wgsl_files_scanned": 1326,
   "manifests": {
     "shader_coordinates": "public/shader_coordinates.json",
     "shader_coordinates_count": 645,
@@ -9,17 +9,17 @@
     "seed_shaders_count": 20
   },
   "summary": {
-    "local": 1304,
+    "local": 1313,
     "storage-only": 0,
     "allowlisted": 0,
     "likely-broken": 0,
     "parse-error": 0
   },
   "wgsl_summary": {
-    "cataloged": 1301,
+    "cataloged": 1310,
     "template-prefix": 4,
     "subgroup-variant": 0,
-    "multipass-secondary": 2,
+    "multipass-secondary": 12,
     "orphan": 0
   },
   "only_def_count": 0,
@@ -3796,6 +3796,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-bioluminescent-chrono-plasma-astro-owl",
+      "def_path": "shader_definitions/generative/gen-bioluminescent-chrono-plasma-astro-owl.json",
+      "expected_wgsl": "gen-bioluminescent-chrono-plasma-astro-owl.wgsl",
+      "local_path": "public/shaders/gen-bioluminescent-chrono-plasma-astro-owl.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-bioluminescent-reaction-diffusion",
       "def_path": "shader_definitions/generative/gen-bioluminescent-reaction-diffusion.json",
       "expected_wgsl": "gen-bioluminescent-reaction-diffusion.wgsl",
@@ -4180,6 +4190,16 @@
       "def_path": "shader_definitions/generative/gen-crystalline-mandala-bloom.json",
       "expected_wgsl": "gen-crystalline-mandala-bloom.wgsl",
       "local_path": "public/shaders/gen-crystalline-mandala-bloom.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-crystalline-nebula-weaver-void-spider",
+      "def_path": "shader_definitions/generative/gen-crystalline-nebula-weaver-void-spider.json",
+      "expected_wgsl": "gen-crystalline-nebula-weaver-void-spider.wgsl",
+      "local_path": "public/shaders/gen-crystalline-nebula-weaver-void-spider.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -5186,6 +5206,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-luminescent-aether-plasma-astro-axolotl",
+      "def_path": "shader_definitions/generative/gen-luminescent-aether-plasma-astro-axolotl.json",
+      "expected_wgsl": "gen-luminescent-aether-plasma-astro-axolotl.wgsl",
+      "local_path": "public/shaders/gen-luminescent-aether-plasma-astro-axolotl.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-luminescent-aether-plasma-nebula-koi",
       "def_path": "shader_definitions/generative/gen-luminescent-aether-plasma-nebula-koi.json",
       "expected_wgsl": "gen-luminescent-aether-plasma-nebula-koi.wgsl",
@@ -5220,6 +5250,16 @@
       "def_path": "shader_definitions/generative/gen-luminescent-cyber-chrono-void-turtle.json",
       "expected_wgsl": "gen-luminescent-cyber-chrono-void-turtle.wgsl",
       "local_path": "public/shaders/gen-luminescent-cyber-chrono-void-turtle.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-luminescent-quantum-flora-symphony",
+      "def_path": "shader_definitions/generative/gen-luminescent-quantum-flora-symphony.json",
+      "expected_wgsl": "gen-luminescent-quantum-flora-symphony.wgsl",
+      "local_path": "public/shaders/gen-luminescent-quantum-flora-symphony.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -5766,6 +5806,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-prismatic-cyber-aether-void-kitsune",
+      "def_path": "shader_definitions/generative/gen-prismatic-cyber-aether-void-kitsune.json",
+      "expected_wgsl": "gen-prismatic-cyber-aether-void-kitsune.wgsl",
+      "local_path": "public/shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-prismatic-cyber-aurora-astral-dragonfly",
       "def_path": "shader_definitions/generative/gen-prismatic-cyber-aurora-astral-dragonfly.json",
       "expected_wgsl": "gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
@@ -6036,10 +6086,30 @@
       "in_seed_shaders": false
     },
     {
+      "id": "gen-radiant-cyber-bismuth-nebula-colossus",
+      "def_path": "shader_definitions/generative/gen-radiant-cyber-bismuth-nebula-colossus.json",
+      "expected_wgsl": "gen-radiant-cyber-bismuth-nebula-colossus.wgsl",
+      "local_path": "public/shaders/gen-radiant-cyber-bismuth-nebula-colossus.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "gen-radiant-cyber-chrono-void-stag",
       "def_path": "shader_definitions/generative/gen-radiant-cyber-chrono-void-stag.json",
       "expected_wgsl": "gen-radiant-cyber-chrono-void-stag.wgsl",
       "local_path": "public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-radiant-cyber-plasma-astro-griffin",
+      "def_path": "shader_definitions/generative/gen-radiant-cyber-plasma-astro-griffin.json",
+      "expected_wgsl": "gen-radiant-cyber-plasma-astro-griffin.wgsl",
+      "local_path": "public/shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -6100,6 +6170,16 @@
       "def_path": "shader_definitions/generative/gen-recursive-ancestral-terrains.json",
       "expected_wgsl": "gen-recursive-ancestral-terrains.wgsl",
       "local_path": "public/shaders/gen-recursive-ancestral-terrains.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "gen-relay-psychedelia",
+      "def_path": "shader_definitions/generative/gen-relay-psychedelia.json",
+      "expected_wgsl": "gen-relay-psychedelia.wgsl",
+      "local_path": "public/shaders/gen-relay-psychedelia.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -12236,6 +12316,16 @@
       "in_seed_shaders": false
     },
     {
+      "id": "fabric-of-reality",
+      "def_path": "shader_definitions/simulation/fabric-of-reality.json",
+      "expected_wgsl": "fabric-verlet.wgsl",
+      "local_path": "public/shaders/fabric-verlet.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
+      "in_seed_shaders": false
+    },
+    {
       "id": "ferrofluid-spikes",
       "def_path": "shader_definitions/simulation/ferrofluid-spikes.json",
       "expected_wgsl": "ferrofluid-spikes.wgsl",
@@ -12303,6 +12393,16 @@
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": true,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "photonic-caustics-graph",
+      "def_path": "shader_definitions/simulation/photonic-caustics-graph.json",
+      "expected_wgsl": "photonic-emitter.wgsl",
+      "local_path": "public/shaders/photonic-emitter.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
       "in_seed_shaders": false
     },
     {
@@ -12396,30 +12496,10 @@
       "in_seed_shaders": false
     },
     {
-      "id": "ripple-tank-pass2",
-      "def_path": "shader_definitions/simulation/ripple-tank-pass2.json",
-      "expected_wgsl": "ripple-tank-pass2.wgsl",
-      "local_path": "public/shaders/ripple-tank-pass2.wgsl",
-      "local_exists": true,
-      "classification": "local",
-      "in_shader_coordinates": false,
-      "in_seed_shaders": false
-    },
-    {
-      "id": "ripple-tank-pass3",
-      "def_path": "shader_definitions/simulation/ripple-tank-pass3.json",
-      "expected_wgsl": "ripple-tank-pass3.wgsl",
-      "local_path": "public/shaders/ripple-tank-pass3.wgsl",
-      "local_exists": true,
-      "classification": "local",
-      "in_shader_coordinates": false,
-      "in_seed_shaders": false
-    },
-    {
       "id": "ripple-tank",
       "def_path": "shader_definitions/simulation/ripple-tank.json",
-      "expected_wgsl": "ripple-tank-pass1.wgsl",
-      "local_path": "public/shaders/ripple-tank-pass1.wgsl",
+      "expected_wgsl": "ripple-tank-step.wgsl",
+      "local_path": "public/shaders/ripple-tank-step.wgsl",
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": false,
@@ -12603,6 +12683,16 @@
       "local_exists": true,
       "classification": "local",
       "in_shader_coordinates": true,
+      "in_seed_shaders": false
+    },
+    {
+      "id": "wave-tank",
+      "def_path": "shader_definitions/simulation/wave-tank.json",
+      "expected_wgsl": "wave-step.wgsl",
+      "local_path": "public/shaders/wave-step.wgsl",
+      "local_exists": true,
+      "classification": "local",
+      "in_shader_coordinates": false,
       "in_seed_shaders": false
     },
     {
@@ -14523,6 +14613,16 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "fabric-constraint.wgsl",
+      "stem": "fabric-constraint",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "fabric-render.wgsl",
+      "stem": "fabric-render",
+      "classification": "multipass-secondary"
+    },
+    {
       "wgsl": "fabric-step-gabor.wgsl",
       "stem": "fabric-step-gabor",
       "classification": "cataloged"
@@ -14530,6 +14630,16 @@
     {
       "wgsl": "fabric-step.wgsl",
       "stem": "fabric-step",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "fabric-tear.wgsl",
+      "stem": "fabric-tear",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "fabric-verlet.wgsl",
+      "stem": "fabric-verlet",
       "classification": "cataloged"
     },
     {
@@ -14893,6 +15003,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-bioluminescent-chrono-plasma-astro-owl.wgsl",
+      "stem": "gen-bioluminescent-chrono-plasma-astro-owl",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-bioluminescent-reaction-diffusion.wgsl",
       "stem": "gen-bioluminescent-reaction-diffusion",
       "classification": "cataloged"
@@ -15105,6 +15220,11 @@
     {
       "wgsl": "gen-crystalline-mandala-bloom.wgsl",
       "stem": "gen-crystalline-mandala-bloom",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-crystalline-nebula-weaver-void-spider.wgsl",
+      "stem": "gen-crystalline-nebula-weaver-void-spider",
       "classification": "cataloged"
     },
     {
@@ -15603,6 +15723,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-luminescent-aether-plasma-astro-axolotl.wgsl",
+      "stem": "gen-luminescent-aether-plasma-astro-axolotl",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-luminescent-aether-plasma-nebula-koi.wgsl",
       "stem": "gen-luminescent-aether-plasma-nebula-koi",
       "classification": "cataloged"
@@ -15620,6 +15745,11 @@
     {
       "wgsl": "gen-luminescent-cyber-chrono-void-turtle.wgsl",
       "stem": "gen-luminescent-cyber-chrono-void-turtle",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-luminescent-quantum-flora-symphony.wgsl",
+      "stem": "gen-luminescent-quantum-flora-symphony",
       "classification": "cataloged"
     },
     {
@@ -15898,6 +16028,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-prismatic-cyber-aether-void-kitsune.wgsl",
+      "stem": "gen-prismatic-cyber-aether-void-kitsune",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
       "stem": "gen-prismatic-cyber-aurora-astral-dragonfly",
       "classification": "cataloged"
@@ -16038,8 +16173,18 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "gen-radiant-cyber-bismuth-nebula-colossus.wgsl",
+      "stem": "gen-radiant-cyber-bismuth-nebula-colossus",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "gen-radiant-cyber-chrono-void-stag.wgsl",
       "stem": "gen-radiant-cyber-chrono-void-stag",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-radiant-cyber-plasma-astro-griffin.wgsl",
+      "stem": "gen-radiant-cyber-plasma-astro-griffin",
       "classification": "cataloged"
     },
     {
@@ -16075,6 +16220,11 @@
     {
       "wgsl": "gen-recursive-ancestral-terrains.wgsl",
       "stem": "gen-recursive-ancestral-terrains",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "gen-relay-psychedelia.wgsl",
+      "stem": "gen-relay-psychedelia",
       "classification": "cataloged"
     },
     {
@@ -18063,6 +18213,11 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "photonic-accumulate.wgsl",
+      "stem": "photonic-accumulate",
+      "classification": "multipass-secondary"
+    },
+    {
       "wgsl": "photonic-caustics-iridescence.wgsl",
       "stem": "photonic-caustics-iridescence",
       "classification": "cataloged"
@@ -18071,6 +18226,16 @@
       "wgsl": "photonic-caustics.wgsl",
       "stem": "photonic-caustics",
       "classification": "cataloged"
+    },
+    {
+      "wgsl": "photonic-emitter.wgsl",
+      "stem": "photonic-emitter",
+      "classification": "cataloged"
+    },
+    {
+      "wgsl": "photonic-trace.wgsl",
+      "stem": "photonic-trace",
+      "classification": "multipass-secondary"
     },
     {
       "wgsl": "physarum-gemini.wgsl",
@@ -18633,18 +18798,23 @@
       "classification": "cataloged"
     },
     {
-      "wgsl": "ripple-tank-pass1.wgsl",
-      "stem": "ripple-tank-pass1",
-      "classification": "cataloged"
+      "wgsl": "ripple-tank-inject.wgsl",
+      "stem": "ripple-tank-inject",
+      "classification": "multipass-secondary"
     },
     {
       "wgsl": "ripple-tank-pass2.wgsl",
       "stem": "ripple-tank-pass2",
-      "classification": "cataloged"
+      "classification": "multipass-secondary"
     },
     {
       "wgsl": "ripple-tank-pass3.wgsl",
       "stem": "ripple-tank-pass3",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "ripple-tank-step.wgsl",
+      "stem": "ripple-tank-step",
       "classification": "cataloged"
     },
     {
@@ -19573,6 +19743,21 @@
       "classification": "cataloged"
     },
     {
+      "wgsl": "wave-inject.wgsl",
+      "stem": "wave-inject",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "wave-render.wgsl",
+      "stem": "wave-render",
+      "classification": "multipass-secondary"
+    },
+    {
+      "wgsl": "wave-step.wgsl",
+      "stem": "wave-step",
+      "classification": "cataloged"
+    },
+    {
       "wgsl": "waveform-glitch.wgsl",
       "stem": "waveform-glitch",
       "classification": "cataloged"
@@ -19602,7 +19787,5 @@
       "stem": "zoom-burst",
       "classification": "cataloged"
     }
-  ],
-  "changed_definitions_checked": 0,
-  "changed_definition_failures": 0
+  ]
 }

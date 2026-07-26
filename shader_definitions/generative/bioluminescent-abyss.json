@@ -57,5 +57,40 @@
       "step": 0.05,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Worm Density",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "name": "Current Strength",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.1
+    },
+    {
+      "index": 2,
+      "name": "Glow Intensity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.1
+    },
+    {
+      "index": 3,
+      "name": "Water Clarity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.05
+    }
+  ],
+  "updated": true
 }

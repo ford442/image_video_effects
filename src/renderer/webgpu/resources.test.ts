@@ -59,6 +59,19 @@ describe('WebGPUResourcePool', () => {
     expect(set.readTex).not.toBe(set.sourceTex);
   });
 
+  it('createTextures uses rgba16float when requested', () => {
+    const device = makeMockDevice();
+    createTextures(device, 1920, 1080, 960, 544, 'rgba16float');
+
+    const createTexture = device.createTexture as unknown as {
+      mock: { calls: Array<[{ label?: string; format: string }]> };
+    };
+    const sourceCall = createTexture.mock.calls.find(
+      (call) => call[0]?.label === 'sourceTex',
+    );
+    expect(sourceCall?.[0].format).toBe('rgba16float');
+  });
+
   it('createTextures gives readTex RENDER_ATTACHMENT for scalePass', () => {
     const device = makeMockDevice();
     createTextures(device, 800, 600, 400, 300);

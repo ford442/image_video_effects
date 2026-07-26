@@ -12,13 +12,15 @@ export function loadShader(id, wgslCode) {
     return false;
   }
 
+  const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
+
   const idLen = wasmModule.lengthBytesUTF8(id) + 1;
   const idPtr = wasmModule._malloc(idLen);
   wasmModule.stringToUTF8(id, idPtr, idLen);
 
-  const codeLen = wasmModule.lengthBytesUTF8(wgslCode) + 1;
+  const codeLen = wasmModule.lengthBytesUTF8(rewritten) + 1;
   const codePtr = wasmModule._malloc(codeLen);
-  wasmModule.stringToUTF8(wgslCode, codePtr, codeLen);
+  wasmModule.stringToUTF8(rewritten, codePtr, codeLen);
 
   let result;
   try {
@@ -48,13 +50,15 @@ export function reloadShader(id, wgslCode) {
     return false;
   }
 
+  const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
+
   const idLen = wasmModule.lengthBytesUTF8(id) + 1;
   const idPtr = wasmModule._malloc(idLen);
   wasmModule.stringToUTF8(id, idPtr, idLen);
 
-  const codeLen = wasmModule.lengthBytesUTF8(wgslCode) + 1;
+  const codeLen = wasmModule.lengthBytesUTF8(rewritten) + 1;
   const codePtr = wasmModule._malloc(codeLen);
-  wasmModule.stringToUTF8(wgslCode, codePtr, codeLen);
+  wasmModule.stringToUTF8(rewritten, codePtr, codeLen);
 
   let result;
   try {

@@ -1,6 +1,6 @@
 import { useEffect, RefObject } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
-import { ImageRecord } from '../AutoDJ';
+import type { ImageRecord } from '../types/aiVj';
 import { VideoRecord } from '../syncTypes';
 import { fetchContentManifest } from '../services/contentLoader';
 import { hydrateDurations } from '../services/videoSegmentManager';

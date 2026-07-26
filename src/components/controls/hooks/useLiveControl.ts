@@ -15,7 +15,7 @@ import {
     subscribeKeyEvents,
     captureKeyOnce,
 } from '../../../services/midiControl';
-import { AutoTransitionConfig } from '../../../AutoDJ';
+import type { AutoTransitionConfig } from '../../../types/aiVj';
 import { shouldShowMidiControls } from '../../../utils/deviceCapabilities';
 
 export interface UseLiveControlOptions {

@@ -1,0 +1,95 @@
+{
+  "id": "fabric-of-reality",
+  "name": "Fabric of Reality",
+  "url": "shaders/fabric-verlet.wgsl",
+  "description": "Mass-spring cloth grid with Verlet integration, constraint relaxation, tear strain, and woven textile rendering. Tier C graph runner.",
+  "requiresRgba32Float": true,
+  "multipass": {
+    "graph": {
+      "maxPassesPerFrame": 10,
+      "nodes": [
+        {
+          "id": "verlet",
+          "entry": "fabric-verlet",
+          "reads": ["dataC"],
+          "writes": ["dataA"]
+        },
+        {
+          "id": "constraint",
+          "entry": "fabric-constraint",
+          "reads": ["dataC"],
+          "writes": ["dataA"],
+          "repeat": 4
+        },
+        {
+          "id": "tear",
+          "entry": "fabric-tear",
+          "reads": ["dataA"],
+          "writes": ["dataB"]
+        },
+        {
+          "id": "render",
+          "entry": "fabric-render",
+          "reads": ["dataA"],
+          "writes": ["color", "dataA"]
+        }
+      ]
+    }
+  },
+  "params": [
+    {
+      "id": "stiffness",
+      "name": "Stiffness",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Spring constraint stiffness"
+    },
+    {
+      "id": "tearThreshold",
+      "name": "Tear Threshold",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Strain before cloth tears"
+    },
+    {
+      "id": "gravity",
+      "name": "Gravity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "Downward bias on the cloth"
+    },
+    {
+      "id": "selfHeal",
+      "name": "Self Heal",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Broken springs slowly reconnect when > 0.5"
+    }
+  ],
+  "features": [
+    "simulation",
+    "multi-pass",
+    "graph-runner",
+    "physics",
+    "mouse-driven",
+    "interactive"
+  ],
+  "tags": [
+    "cloth",
+    "fabric",
+    "simulation",
+    "physics"
+  ]
+}

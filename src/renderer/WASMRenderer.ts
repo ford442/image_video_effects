@@ -8,6 +8,7 @@ import {
   INTERNAL_RENDER_RESOLUTION,
   snapRenderScale,
 } from '../config/performancePolicy';
+import type { InternalColorFormat } from '../config/formatPolicy';
 
 type SlotMode = 'chained' | 'parallel';
 
@@ -254,6 +255,15 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
   /** Adaptive quality is driven by RendererManager; kept for API parity. */
   setAdaptiveQuality(_enabled: boolean, _targetFps = 60): void {
     // no-op — RendererManager AdaptivePerformanceController owns WASM scale changes
+  }
+
+  setColorFormat(format: InternalColorFormat): void {
+    const wasmFormat = format === 'rgba32float' ? 0 : 1;
+    WasmBridge.setColorFormat(wasmFormat);
+  }
+
+  getColorFormat(): InternalColorFormat {
+    return WasmBridge.getColorFormat?.() === 1 ? 'rgba16float' : 'rgba32float';
   }
 
   // ── Phase 2: Screenshot capture ───────────────────────────────────────────

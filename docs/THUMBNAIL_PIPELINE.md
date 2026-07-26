@@ -86,24 +86,42 @@ npm run thumbs:generate:minimal -- --category=generative --limit=20
     "failed": 3,
     "skipped": 1,
     "black_frame": 2,
+    "magenta_frame": 0,
+    "error_frame": 0,
     "compile": 1
   },
   "failures": [
     {
       "id": "some-shader",
       "reason": "black_frame",
-      "detail": "meanLuminance=0.0020 activePixelRatio=0.0010",
-      "stats": { "meanLuminance": 0.002, "activePixelRatio": 0.001, "width": 1024, "height": 1024 }
+      "detail": "meanLuminance=0.0020 activePixelRatio=0.0010 magentaPixelRatio=0.0000",
+      "stats": {
+        "meanLuminance": 0.002,
+        "activePixelRatio": 0.001,
+        "magentaPixelRatio": 0,
+        "width": 1024,
+        "height": 1024
+      }
     }
   ]
 }
 ```
 
-Failure reasons: `black_frame`, `compile`, `pipeline`, `no_wgsl`, `gpu_unavailable`, `load_failed`, `capture_failed`.
+Failure reasons: `black_frame`, `magenta_frame`, `error_frame`, `compile`, `pipeline`, `no_wgsl`, `gpu_unavailable`, `load_failed`, `capture_failed`.
+
+Skipped shaders (intentional): listed in `reports/thumbnail_skip_allowlist.json` — excluded from generation queue and eligible coverage denominator.
 
 ## Coverage strategy (target ≥80%)
 
 Current catalog is ~1,300 shaders. Run in waves on a GPU workstation:
+
+```bash
+SKIP_WASM_BUILD=1 npm run build
+bash scripts/run-thumbnail-waves.sh          # all waves
+bash scripts/run-thumbnail-waves.sh --wave=W1
+python3 scripts/audit_thumbnail_integrity.py
+npm run thumbs:status
+```
 
 | Wave | Categories | Notes |
 |------|------------|-------|

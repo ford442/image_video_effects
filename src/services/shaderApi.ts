@@ -4,6 +4,7 @@
  */
 
 import { STORAGE_API_URL, API_BASE_URL, SHADER_FILES_BASE_URL } from '../config/appConfig';
+import { inferRequiresRgba32Float } from '../config/formatPolicy';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 import { fetchShaderWgsl } from '../utils/fetchShaderWgsl';
 import { postShaderRating } from './postShaderRating';
@@ -35,6 +36,10 @@ export interface ShaderMetadata {
   format?: 'glsl' | 'wgsl';
   converted?: boolean;
   glsl_code?: string;
+  /** Shader parameter definitions (local manifest / shader-lists). */
+  params?: ShaderParam[];
+  /** Feature flags from shader definition JSON (e.g. audio-reactive). */
+  features?: string[];
 }
 
 export interface ShaderImportResult {
@@ -109,61 +114,8 @@ export function extractShaderId(urlOrId: string): string | null {
   return null;
 }
 
-/**
- * Convert Shadertoy's mainImage to a WGSL compute shader
- * This is a simplified conversion - full conversion requires TintWASM
- */
-export function wrapShadertoyGlsl(glslCode: string, uniforms: string = ''): string {
-  return `
-// Auto-generated WGSL wrapper for Shadertoy shader
-// Original GLSL is preserved in comments for reference
-
-struct Uniforms {
-  resolution: vec2<f32>,
-  time: f32,
-  mouse: vec4<f32>,
-  frame: i32,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-
-// Shadertoy compatibility functions
-fn iResolution() -> vec2<f32> { return u.resolution; }
-fn iTime() -> f32 { return u.time; }
-fn iMouse() -> vec4<f32> { return u.mouse; }
-fn iFrame() -> i32 { return u.frame; }
-
-// Sample from previous frame (for buffers)
-fn iChannel0(uv: vec2<f32>) -> vec4<f32> {
-  return textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-}
-
-${uniforms}
-
-// Converted mainImage function will be inserted here
-// Original GLSL:
-/*
-${glslCode.substring(0, 2000)}
-*/
-
-@compute @workgroup_size(16, 16, 1)
-fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-  let uv = vec2<f32>(id.xy) / u.resolution;
-  var fragColor: vec4<f32>;
-  var fragCoord = vec2<f32>(id.xy);
-  
-  // mainImage(fragColor, fragCoord) equivalent:
-  // TODO: Insert converted WGSL code here
-  
-  fragColor = vec4<f32>(uv, 0.5 + 0.5 * sin(u.time), 1.0);
-  
-  textureStore(writeTexture, vec2<i32>(id.xy), fragColor);
-}
-`;
-}
+/** @deprecated Use convertShadertoyGlsl from shadertoyToPixelocity.ts */
+export { wrapShadertoyGlsl } from './shadertoyToPixelocity';
 
 // --- API Functions ---
 
@@ -318,6 +270,8 @@ export interface ShaderParam {
   max: number;
   step?: number;
   labels?: string[];
+  mapping?: string;
+  audio?: 'bass' | 'mid' | 'treble' | 'overall' | { fft: number };
 }
 
 export interface ApiShaderEntry {
@@ -335,11 +289,14 @@ export interface ApiShaderEntry {
   category?: string;         // Shader category (e.g., 'image', 'generative', 'distortion')
   tags: string[];
   url?: string;
-  params?: ShaderParam[];  // Shader parameter definitions for UI sliders
+  /** Shader parameter definitions for UI sliders */
+  params?: ShaderParam[];
   /** When true, shader requires @workgroup_size(16,16,4) = 1024-invocation support. */
   requiresDeepWorkgroup?: boolean;
   /** When true, shader samples binding 13 (historyTexture 2d-array ring buffer). */
   requiresHistoryRing?: boolean;
+  /** When true, shader requires rgba32float storage (physics / RD sims). */
+  requiresRgba32Float?: boolean;
 }
 
 export interface ShaderCoordinateData {
@@ -491,6 +448,11 @@ class ShaderApiService {
           url: shader.url ? resolveShaderUrl(shader.url) : resolveShaderUrl(`shaders/${shader.id}.wgsl`),
           requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
           requiresHistoryRing: shader.requiresHistoryRing === true,
+          requiresRgba32Float: inferRequiresRgba32Float({
+            requiresRgba32Float: shader.requiresRgba32Float === true,
+            category: shader.category || category,
+            tags: shader.tags || [],
+          }),
           params: (shader.params || []).map((p: any, idx: number) => ({
             id: p.id || p.name || `param${idx + 1}`,
             name: p.label || p.name || `Parameter ${idx + 1}`,
@@ -499,6 +461,8 @@ class ShaderApiService {
             max: p.max ?? 1,
             step: p.step ?? 0.01,
             labels: p.labels,
+            mapping: p.mapping,
+            audio: p.audio,
           })),
         } as ApiShaderEntry));
       })

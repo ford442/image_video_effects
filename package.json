@@ -4,8 +4,6 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
-    "@craco/craco": "^7.1.0",
-    "@huggingface/transformers": "^4.2.0",
     "@mlc-ai/web-llm": "^0.2.80",
     "@types/node": "^16.18.126",
     "@types/react": "^19.1.11",
@@ -13,18 +11,15 @@
     "@webgpu/types": "^0.1.64",
     "@xenova/transformers": "npm:@huggingface/transformers@^4.2.0",
     "hls.js": "^1.6.15",
-    "patch-package": "^8.0.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-scripts": "^5.0.1",
-    "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "prestart": "node scripts/buildMultipassRegistry.js && node scripts/generate_shader_lists.js --base-url=https://test.1ink.us/image_video_effects/ && npm run build:manifest",
     "start": "craco start",
     "prebuild": "npm run wasm:build && node scripts/buildMultipassRegistry.js && node scripts/generate_shader_lists.js --base-url=https://test.1ink.us/image_video_effects/ && npm run build:manifest",
-    "build": "craco build && npm run wasm:build",
+    "build": "craco build",
     "build:manifest": "tsx --tsconfig scripts/tsconfig.scripts.json scripts/build-unified-manifest.ts",
     "test": "craco test",
     "eject": "craco eject",
@@ -59,7 +54,12 @@
     "deploy:full": "npm run build && python scripts/deploy_app_only.py && python scripts/sync_shaders_to_storage.py",
     "sync:shaders": "python scripts/sync_shaders_to_storage.py",
     "sync:shaders:dry": "python scripts/sync_shaders_to_storage.py --dry-run",
-    "swarm:upgrade": "node scripts/run-upgrade-swarm.js"
+    "swarm:upgrade": "node scripts/run-upgrade-swarm.js",
+    "shader:import:gate": "python3 scripts/accept_imported_shader.py",
+    "audit:audio-mappings": "python3 scripts/audit_audio_mappings.py",
+    "audit:extrabuffer": "python3 scripts/audit_extrabuffer.py",
+    "audit:dead-sliders": "python3 scripts/audit_dead_sliders.py",
+    "audit:dead-sliders:generative": "python3 scripts/audit_dead_sliders.py --category generative"
   },
   "eslintConfig": {
     "extends": [
@@ -94,10 +94,11 @@
     "customize-cra": "^1.0.0",
     "patch-package": "^8.0.1",
     "playwright": "^1.57.0",
+    "react-app-rewired": "^2.2.1",
     "react-scripts": "^5.0.1",
     "text-encoding": "^0.7.0",
-    "react-app-rewired": "^2.2.1",
     "tsx": "^4.22.1",
+    "typescript": "~5.4.5",
     "webpack-cli": "^7.1.0",
     "xml2js": "^0.6.2",
     "yaml": "^2.8.2"

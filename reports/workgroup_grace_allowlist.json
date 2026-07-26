@@ -1,0 +1,4 @@
+{
+  "description": "Grandfathered shader paths exempt from @workgroup_size convention checks. Shrink over time as shaders are fixed.",
+  "files": []
+}

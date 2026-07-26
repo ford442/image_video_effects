@@ -1,0 +1,84 @@
+name: Thumbnail Coverage Status
+
+# Weekly coverage report — no GPU required. Posts status to tracking issue.
+
+on:
+  schedule:
+    - cron: '17 9 * * 1'  # Monday 09:17 UTC (off-peak)
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'GitHub issue number for status comment'
+        required: false
+        default: '921'
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  coverage-status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Coverage status
+        id: status
+        run: |
+          npm run thumbs:status | tee /tmp/thumb-status.txt
+          echo "remaining=$(grep 'remaining' /tmp/thumb-status.txt | head -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Integrity audit
+        continue-on-error: true
+        run: python3 scripts/audit_thumbnail_integrity.py
+
+      - name: Build status comment
+        id: comment
+        run: |
+          ISSUE="${{ inputs.issue_number || '921' }}"
+          FAIL_SUMMARY=""
+          if [ -f reports/thumbnail-failures.json ]; then
+            FAIL_SUMMARY=$(node -e "
+              const fs=require('fs');
+              const p='reports/thumbnail-failures.json';
+              if(!fs.existsSync(p)) process.exit(0);
+              const j=JSON.parse(fs.readFileSync(p,'utf8'));
+              const s=j.summary||{};
+              console.log('Last failure report ('+(j.generated_at||'unknown')+'): success='+ (s.success||0)+' failed='+(s.failed||0)+' black_frame='+(s.black_frame||0)+' magenta_frame='+(s.magenta_frame||0));
+            ")
+          fi
+          INTEGRITY=""
+          if [ -f reports/thumbnail_integrity_audit.json ]; then
+            INTEGRITY=$(node -e "
+              const j=JSON.parse(require('fs').readFileSync('reports/thumbnail_integrity_audit.json','utf8'));
+              console.log('Integrity audit: scanned='+j.scanned+' flagged='+j.flagged);
+            ")
+          fi
+          {
+            echo "## Thumbnail coverage (weekly)"
+            echo ""
+            cat /tmp/thumb-status.txt
+            echo ""
+            if [ -n "$FAIL_SUMMARY" ]; then echo "$FAIL_SUMMARY"; echo ""; fi
+            if [ -n "$INTEGRITY" ]; then echo "$INTEGRITY"; echo ""; fi
+            echo "Run full batch on GPU: \`SKIP_WASM_BUILD=1 npm run build && bash scripts/run-thumbnail-waves.sh\`"
+            echo "Docs: [THUMBNAIL_PIPELINE.md](docs/THUMBNAIL_PIPELINE.md)"
+          } > /tmp/thumb-comment.md
+
+      - name: Post issue comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE="${{ inputs.issue_number || '921' }}"
+          gh issue comment "$ISSUE" --body-file /tmp/thumb-comment.md
+
+      - name: Job summary
+        if: always()
+        run: cat /tmp/thumb-status.txt >> "$GITHUB_STEP_SUMMARY"

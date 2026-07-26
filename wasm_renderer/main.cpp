@@ -77,6 +77,13 @@ void setSlotMode(int slotIndex, int mode) {
     }
 }
 
+EMSCRIPTEN_KEEPALIVE
+void setColorFormat(int formatEnum) {
+    if (g_renderer) {
+        g_renderer->SetColorFormat(formatEnum);
+    }
+}
+
 // ─── Input ────────────────────────────────────────────────────────────────────
 
 EMSCRIPTEN_KEEPALIVE

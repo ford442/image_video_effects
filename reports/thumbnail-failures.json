@@ -1,23 +1,29 @@
 {
-  "generated_at": "2026-07-19T04:48:26.068Z",
+  "generated_at": "2026-07-26T12:35:25.135Z",
   "engine": "app",
   "summary": {
     "success": 0,
     "failed": 1,
     "skipped": 0,
     "black_frame": 1,
+    "magenta_frame": 0,
+    "error_frame": 0,
     "compile": 0
   },
   "failures": [
     {
-      "id": "4d-projection-dream-weavers",
+      "id": "gen-abyssal-quantum-leviathan-skeleton",
       "reason": "black_frame",
-      "detail": "meanLuminance=0.0000 activePixelRatio=0.0000",
+      "detail": "meanLuminance=0.0000 activePixelRatio=0.0000 magentaPixelRatio=0.0000 meanRGB=(0.000,0.000,0.000)",
       "stats": {
         "width": 2048,
         "height": 2048,
         "meanLuminance": 0,
-        "activePixelRatio": 0
+        "activePixelRatio": 0,
+        "magentaPixelRatio": 0,
+        "meanR": 0,
+        "meanG": 0,
+        "meanB": 0
       }
     }
   ]

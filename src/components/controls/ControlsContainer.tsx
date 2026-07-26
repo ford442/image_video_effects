@@ -97,6 +97,14 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onRenderQualityChange,
     maxActiveSlots = 3,
     performanceHud,
+    generativeShowcaseActive = false,
+    generativeShowcaseLocked = false,
+    generativeShowcaseDelay = 12,
+    onStartGenerativeShowcase,
+    onStopGenerativeShowcase,
+    onSetGenerativeShowcaseDelay,
+    onPreviewImportShader,
+    onImportStatus,
 }) => {
     const autoTransition = useAiVjAutoTransition();
     const [studioOpen, setStudioOpen] = useState(true);
@@ -208,6 +216,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     scale={performanceHud.scale}
                     adaptive={performanceHud.adaptive}
                     targetFps={performanceHud.targetFps}
+                    colorFormat={performanceHud.colorFormat}
+                    estimatedTextureMiB={performanceHud.estimatedTextureMiB}
                 />
             )}
 
@@ -346,6 +356,12 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     activeGenerativeShader={activeGenerativeShader}
                     setActiveGenerativeShader={setActiveGenerativeShader}
                     generativeMenuOptions={generativeMenuOptions}
+                    generativeShowcaseActive={generativeShowcaseActive}
+                    generativeShowcaseLocked={generativeShowcaseLocked}
+                    generativeShowcaseDelay={generativeShowcaseDelay}
+                    onStartGenerativeShowcase={onStartGenerativeShowcase}
+                    onStopGenerativeShowcase={onStopGenerativeShowcase}
+                    onSetGenerativeShowcaseDelay={onSetGenerativeShowcaseDelay}
                 />
             )}
 
@@ -363,6 +379,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 onSwitchRenderer={onSwitchRenderer}
                 onOpenCoordinateBrowser={() => setShowCoordinateBrowser(true)}
                 onOpenStorageBrowser={onOpenStorageBrowser}
+                onPreviewImportShader={onPreviewImportShader}
+                onImportStatus={onImportStatus}
             />
         </div>
     );

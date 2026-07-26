@@ -24,13 +24,13 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 |---------|-----------|------|--------|
 | 0 | `readSampler` | sampler | filtering |
 | 1 | `readTexture` | texture_2d\<f32\> | sample |
-| 2 | `writeTexture` | texture_storage rgba32float | write |
+| 2 | `writeTexture` | texture_storage rgba32float (ultra) / rgba16float (balanced+) | write |
 | 3 | `uniforms` | uniform `Uniforms` | read |
 | 4 | `readDepthTexture` | texture_2d\<f32\> | sample |
 | 5 | `nearestSampler` | sampler | non-filtering |
 | 6 | `writeDepthTexture` | texture_storage r32float | write |
-| 7 | `dataTextureA` | texture_storage rgba32float | write (primary feedback state) |
-| 8 | `dataTextureB` | texture_storage rgba32float | write (secondary / detail) |
+| 7 | `dataTextureA` | texture_storage rgba32float (ultra) / rgba16float (balanced+) | write (primary feedback state) |
+| 8 | `dataTextureB` | texture_storage rgba32float (ultra) / rgba16float (balanced+) | write (secondary / detail) |
 | 9 | `dataTextureC` | texture_2d\<f32\> | sample (previous frame) |
 
 ### Feedback copy order (host)
@@ -68,6 +68,10 @@ Do **not** reverse this order. (Audit 2026-07-21: prior A-then-B order clobbered
 - Shaders that sample `@binding(13) var historyTexture` must declare the binding; others omit it
 - Copy is gated by static analysis (`analyzeShaderBindings` / C++ `AnalyzeShaderBindings`) — skipped when no shader references binding 13
 
+### Runtime format tiers (#1008)
+
+WGSL sources remain authored as **rgba32float** canonical. At pipeline compile the host rewrites bindings 2/7/8 for non-ultra tiers. See [`docs/FORMAT_TIERS.md`](FORMAT_TIERS.md).
+
 ## Device policy
 
 Both backends validate adapter limits before device creation and request explicit `requiredLimits`.
@@ -99,16 +103,18 @@ Both backends validate adapter limits before device creation and request explici
 
 ### Optional features
 
+See [DEVICE_FEATURES.md](./DEVICE_FEATURES.md) for canvas configure and timestamp-honesty details.
+
 | Feature | TypeScript | C++ WASM | Purpose |
 |---------|------------|----------|---------|
 | `float32-filterable` | Requested when adapter supports | Logged only | rgba32float texture sampling on bindings 1/9/13 |
 | `timestamp-query` | Requested when adapter supports; ring-buffered readback in `WebGPUTiming.ts` / `frame.ts` | Requested when available | GPU timing — `available`/`gpu-timestamp` only after valid readback (`hasRealGpuTimings`) |
-| `subgroups` | Requested when available | N/A | `-sg.wgsl` variants |
+| `subgroups` | Requested when available (for WGSL `enable subgroups` shaders) | N/A | **Not used** — `-sg.wgsl` file variants were removed 2026-07-26 |
 
 ### WASM surface notes
 
 - `compatibleSurface=nullptr` on adapter request is intentional — surface is created separately via `JS_CreateSurfaceFromCanvas` after device creation.
-- Canvas format: preferred format + `alphaMode: opaque` (#818 path).
+- Canvas format: `navigator.gpu.getPreferredCanvasFormat()` + `alphaMode: opaque` + explicit `usage: GPUTextureUsage.RENDER_ATTACHMENT` on both TS (`buildCanvasConfigureOptions`) and WASM (`JS_CreateSurfaceFromCanvas`) paths (#818).
 
 ## Parity checklist
 

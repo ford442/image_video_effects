@@ -42,6 +42,8 @@ import {
   WebGPUMediaInputContext,
 } from './webgpu/WebGPUMediaInput';
 import { ShaderSlot, SlotMode, WG_SIZE_X, WG_SIZE_Y, WG_SIZE_1D } from './webgpu/webgpuConstants';
+import type { InternalColorFormat } from '../config/formatPolicy';
+import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities } from '../config/formatPolicy';
 
 export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private device: GPUDevice | null = null;
@@ -94,12 +96,17 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private inputSource: 'image' | 'video' | 'webcam' | 'generative' | 'live' = 'image';
   private supportsSubgroups = false;
   private supportsDeepWorkgroup = false;
+  private colorFormat: InternalColorFormat = 'rgba32float';
+  private hasF32Filterable = false;
+  private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
 
   private frameState?: WebGPUFrameState;
 
   constructor(private config: RendererConfig) {}
 
   getSupportsDeepWorkgroup(): boolean { return this.supportsDeepWorkgroup; }
+  getColorFormat(): InternalColorFormat { return this.colorFormat; }
+  getFormatCapabilities(): DeviceFormatCapabilities { return this.formatCapabilities; }
 
   async init(canvas: HTMLCanvasElement): Promise<boolean> {
     if (this.initialized) return true;
@@ -114,6 +121,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.canvasH = outcome.canvasH;
     this.supportsSubgroups = outcome.supportsSubgroups;
     this.supportsDeepWorkgroup = outcome.supportsDeepWorkgroup;
+    this.hasF32Filterable = outcome.hasF32Filterable;
+    this.formatCapabilities = outcome.formatCapabilities;
 
     attachDeviceLostHandler(outcome.device, outcome.context, () => {
       this.initialized = false;
@@ -122,7 +131,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     });
 
     this.updateScaledDimensions();
-    this.setupGpuResources(outcome.hasF32Filterable);
+    this.setupGpuResources(outcome.hasF32Filterable, this.colorFormat);
 
     this.frameState = createFrameState(createRendererFrameHost(this as unknown as RendererFrameDeps));
     this.initialized = true;
@@ -140,10 +149,11 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     return true;
   }
 
-  private setupGpuResources(hasF32Filt: boolean): void {
+  private setupGpuResources(hasF32Filt: boolean, colorFormat: InternalColorFormat): void {
     const d = this.device!;
-    this.pipeline.setupComputeLayout(d, hasF32Filt);
-    this.resources.setup(d, this.canvasW, this.canvasH, this.scaledW, this.scaledH);
+    this.colorFormat = colorFormat;
+    this.pipeline.setupComputeLayout(d, hasF32Filt, colorFormat);
+    this.resources.setup(d, this.canvasW, this.canvasH, this.scaledW, this.scaledH, colorFormat);
     this.computeBindGroup = createComputeBindGroup(
       d,
       this.pipeline.bindGroupLayout,
@@ -152,7 +162,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.resources.getSamplerSet(),
     );
     this.blitReadTex = this.resources.blitReadTex;
-    this.pipeline.setupBlitPipelines(d, this.canvasFormat, this.blitReadTex);
+    this.pipeline.setupBlitPipelines(d, this.canvasFormat, this.blitReadTex, colorFormat);
     this.lastBlitReadTex = this.blitReadTex;
     this.lastBlitScaledW = this.scaledW;
     this.lastBlitScaledH = this.scaledH;
@@ -170,6 +180,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       readTex: this.resources.readTex,
       canvasW: this.canvasW,
       canvasH: this.canvasH,
+      colorFormat: this.colorFormat,
       filterSampler: this.resources.filterSampler,
       supportsExternalTexture: this.pipeline.supportsExternalTexture,
       videoCopyPipeline: this.pipeline.videoCopyPipeline,
@@ -198,7 +209,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   async loadShader(id: string, url: string): Promise<boolean> {
     return this.pipeline.shaderManager.loadShader(
-      this.device, this.pipeline.pipelineLayout, this.supportsSubgroups, id, url,
+      this.device, this.pipeline.pipelineLayout, id, url,
     );
   }
 
@@ -274,7 +285,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.resolutionScale = snapped;
     this.updateScaledDimensions();
     if (this.device && this.initialized) {
-      this.resources.recreateScaleTextures(this.device, this.canvasW, this.canvasH, this.scaledW, this.scaledH);
+      this.resources.recreateScaleTextures(
+        this.device, this.canvasW, this.canvasH, this.scaledW, this.scaledH, this.colorFormat,
+      );
       this.computeBindGroup = createComputeBindGroup(
         this.device, this.pipeline.bindGroupLayout,
         this.resources.getTextureSet(), this.resources.getBufferSet(), this.resources.getSamplerSet(),
@@ -287,6 +300,29 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       if (this.inputSource !== 'generative') {
         restoreSourceFromOffscreen(this.getMediaContext(), this.mediaState);
       }
+    }
+  }
+
+  setColorFormat(format: InternalColorFormat): void {
+    if (this.colorFormat === format) return;
+    this.colorFormat = format;
+    if (!this.device || !this.initialized) return;
+
+    this.pipeline.setColorFormat(this.device, format);
+    this.resources.recreateScaleTextures(
+      this.device, this.canvasW, this.canvasH, this.scaledW, this.scaledH, format,
+    );
+    this.computeBindGroup = createComputeBindGroup(
+      this.device,
+      this.pipeline.bindGroupLayout,
+      this.resources.getTextureSet(),
+      this.resources.getBufferSet(),
+      this.resources.getSamplerSet(),
+    );
+    this.blitReadTex = this.resources.blitReadTex;
+    this.lastBlitReadTex = null;
+    if (this.inputSource !== 'generative') {
+      restoreSourceFromOffscreen(this.getMediaContext(), this.mediaState);
     }
   }
 

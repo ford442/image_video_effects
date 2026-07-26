@@ -1,7 +1,23 @@
 /**
  * Shared render-performance policy for TypeScript and C++ (wasm_renderer/performance_policy.h).
  * Keep numeric values in sync across both files.
+ * Format tiers: docs/FORMAT_TIERS.md
  */
+
+import {
+  DEFAULT_FORMAT_CAPABILITIES,
+  DeviceFormatCapabilities,
+  InternalColorFormat,
+  resolveColorFormat,
+} from './formatPolicy';
+
+export type { InternalColorFormat, DeviceFormatCapabilities } from './formatPolicy';
+export {
+  bytesPerPixel,
+  estimateInternalTextureMiB,
+  formatLabel,
+  resolveColorFormat,
+} from './formatPolicy';
 
 /** Full internal buffer dimension before quality scaling. */
 export const INTERNAL_RENDER_RESOLUTION = 2048;
@@ -37,6 +53,8 @@ export interface ResolvedPerformancePolicy {
   adaptive: boolean;
   /** Skip shaders flagged requiresDeepWorkgroup when a standard variant exists. */
   preferNonDeepVariants: boolean;
+  /** Internal rgba storage/sample format for sim textures (bindings 2/7/8 + pool). */
+  colorFormat: InternalColorFormat;
 }
 
 export interface PerformancePolicyPreset {
@@ -79,6 +97,7 @@ export const QUALITY_PRESETS: Record<Exclude<RenderQualityMode, 'auto'>, Perform
 export interface DevicePerformanceHints {
   supportsDeepWorkgroup: boolean;
   isMobile?: boolean;
+  formatCaps?: DeviceFormatCapabilities;
 }
 
 export function isMobileDevice(): boolean {
@@ -112,6 +131,9 @@ export function resolveAutoPolicy(hints: DevicePerformanceHints): ResolvedPerfor
   const mobile = hints.isMobile ?? isMobileDevice();
   const lowEnd = isLowEndGPU(hints.supportsDeepWorkgroup);
 
+  const formatCaps = hints.formatCaps ?? DEFAULT_FORMAT_CAPABILITIES;
+  const colorFormat = resolveColorFormat('auto', formatCaps);
+
   if (lowEnd) {
     return {
       mode: 'auto',
@@ -121,6 +143,7 @@ export function resolveAutoPolicy(hints: DevicePerformanceHints): ResolvedPerfor
       targetFps: 30,
       adaptive: true,
       preferNonDeepVariants: true,
+      colorFormat,
     };
   }
 
@@ -133,6 +156,7 @@ export function resolveAutoPolicy(hints: DevicePerformanceHints): ResolvedPerfor
       targetFps: 60,
       adaptive: true,
       preferNonDeepVariants: true,
+      colorFormat,
     };
   }
 
@@ -144,6 +168,7 @@ export function resolveAutoPolicy(hints: DevicePerformanceHints): ResolvedPerfor
     targetFps: 60,
     adaptive: true,
     preferNonDeepVariants: true,
+    colorFormat,
   };
 }
 
@@ -159,5 +184,7 @@ export function resolvePerformancePolicy(
   if (isLowEndGPU(hints.supportsDeepWorkgroup)) {
     maxActiveSlots = Math.min(maxActiveSlots, 1);
   }
-  return { mode, ...preset, maxActiveSlots };
+  const formatCaps = hints.formatCaps ?? DEFAULT_FORMAT_CAPABILITIES;
+  const colorFormat = resolveColorFormat(mode, formatCaps);
+  return { mode, ...preset, maxActiveSlots, colorFormat };
 }

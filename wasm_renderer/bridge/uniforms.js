@@ -256,3 +256,19 @@ export function resizeCanvas(newWidth, newHeight) {
   state.canvasHeight = newHeight;
   wasmModule.ccall('resizeCanvas', null, ['number', 'number'], [newWidth, newHeight]);
 }
+
+/**
+ * Switch internal rgba storage format (0=rgba32float, 1=rgba16float).
+ * @param {number} formatEnum
+ */
+export function setColorFormat(formatEnum) {
+  if (!state.initialized || !wasmModule) return;
+  const fmt = formatEnum === 1 ? 1 : 0;
+  if (state.colorFormat === fmt) return;
+  state.colorFormat = fmt;
+  wasmModule.ccall('setColorFormat', null, ['number'], [fmt]);
+}
+
+export function getColorFormat() {
+  return state.colorFormat;
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RenderMode, SlotParams } from '../../../renderer/types';
-import { AIStatus } from '../../../AutoDJ';
+import type { AIStatus } from '../../../types/aiVj';
 import { loadVJHistory, clearVJHistory, VJHistoryEntry } from '../../../services/vjHistory';
 import { VJPreset, loadPresets, deletePreset } from '../../../services/vjPresets';
 import { MyVjSet, loadMyVjSets, deleteMyVjSet } from '../../../services/myVjSets';

@@ -85,6 +85,8 @@ Cursor Cloud and similar VMs **lack a GPU adapter** — WebGPU init fails and th
 
 Outbound requests to `storage.noahcohn.com`, `storage.googleapis.com`, and Unsplash may be **network-blocked** — use local `public/` assets. See [`AGENTS.md`](AGENTS.md) Cloud VM section.
 
+**Thumbnail batch capture** (`npm run thumbs:generate`) requires a real WebGPU GPU — cannot run in this VM. Use `npm run thumbs:status` to check coverage; run generation on a discrete-GPU workstation ([`docs/THUMBNAIL_PIPELINE.md`](docs/THUMBNAIL_PIPELINE.md)).
+
 Setup script for agent environments: `bash scripts/jules-setup.sh` (uses committed WASM artifacts, `SKIP_WASM_BUILD=1`).
 
 ## Storage: Local vs VPS
@@ -200,6 +202,18 @@ Production path: `wasm:build` runs **once** in `prebuild`, not again in `build`.
 | `npm run test:wasm:bench` | WASM benchmark (needs GPU) |
 | `npm run test:wasm` | Unit + e2e smoke |
 | `npm run test:wasm:full` | Unit + e2e + GPU parity/bench |
+
+### Thumbnails (GPU workstation)
+
+| Command | Purpose |
+|---------|---------|
+| `npm run thumbs:status` | Coverage vs catalog (+ eligible % excl. skip list) |
+| `npm run thumbs:generate -- --missing` | Batch capture via production renderer (needs GPU + build) |
+| `npm run thumbs:generate:minimal` | Fast generative-only inline WebGPU path |
+| `bash scripts/run-thumbnail-waves.sh` | W1→W3 category waves (after `npm run build`) |
+| `python3 scripts/audit_thumbnail_integrity.py` | Flag near-black/magenta committed PNGs |
+
+See [`docs/THUMBNAIL_PIPELINE.md`](docs/THUMBNAIL_PIPELINE.md). CI: **Generate Thumbnails** (manual smoke) + **Thumbnail Coverage Status** (weekly issue comment).
 
 ### Storage, deploy, swarm
 

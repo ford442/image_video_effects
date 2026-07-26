@@ -8,7 +8,10 @@ const {
   hasExistingThumbnail,
   classifyFailure,
   extractDefaultParams,
+  warmupFramesForShader,
+  WARMUP_SHADER_IDS,
 } = require('./generate-shader-thumbnails');
+const frameAnalysis = require('./lib/thumbnailFrameAnalysis');
 
 describe('generate-shader-thumbnails', () => {
   it('parseArgs defaults to app engine and all-catalog', () => {
@@ -52,10 +55,31 @@ describe('generate-shader-thumbnails', () => {
     assert.equal(hasExistingThumbnail('nonexistent-shader-id-xyz', { foo: {} }), false);
   });
 
-  it('classifyFailure maps compile and black_frame', () => {
+  it('classifyFailure maps compile and error frame reasons', () => {
     assert.equal(classifyFailure('compile: line 1 error'), 'compile');
     assert.equal(classifyFailure('black_frame'), 'black_frame');
+    assert.equal(classifyFailure('magenta_frame'), 'magenta_frame');
+    assert.equal(classifyFailure('error_frame'), 'error_frame');
     assert.equal(classifyFailure('no GPU adapter'), 'gpu_unavailable');
+  });
+
+  it('warmupFramesForShader boosts simulation and multipass shaders', () => {
+    assert.equal(warmupFramesForShader({ id: 'plasma', category: 'generative' }, 60), 60);
+    assert.equal(warmupFramesForShader({ id: 'wave-tank', category: 'simulation' }, 60), 120);
+    const multipassId = WARMUP_SHADER_IDS.size > 0 ? [...WARMUP_SHADER_IDS][0] : 'ripple-tank';
+    assert.equal(warmupFramesForShader({ id: multipassId, category: 'distortion' }, 60), 120);
+  });
+
+  it('isErrorFrame detects black and magenta frames', () => {
+    assert.equal(frameAnalysis.isErrorFrame({ meanLuminance: 0, activePixelRatio: 0 }), true);
+    assert.equal(
+      frameAnalysis.isErrorFrame({ meanLuminance: 0.5, activePixelRatio: 0.5, magentaPixelRatio: 0.2 }),
+      true,
+    );
+    assert.equal(
+      frameAnalysis.isErrorFrame({ meanLuminance: 0.5, activePixelRatio: 0.5, magentaPixelRatio: 0.01 }),
+      false,
+    );
   });
 
   it('extractDefaultParams reads zoom_params mappings', () => {

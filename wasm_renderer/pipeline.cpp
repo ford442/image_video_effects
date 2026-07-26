@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "performance_policy.h"
 #include "wasm_internal.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
@@ -17,6 +18,14 @@ using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
 using wasm_internal::ParseWorkgroupSize;
 using wasm_internal::AnalyzeShaderBindings;
+
+namespace {
+WGPUTextureFormat RgbaStorageFormat(policy::InternalColorFormat fmt) {
+    return fmt == policy::InternalColorFormat::Rgba16Float
+        ? WGPUTextureFormat_RGBA16Float
+        : WGPUTextureFormat_RGBA32Float;
+}
+}  // namespace
 
 bool WebGPURenderer::CreateBindGroupLayout() {
     // 14 bindings (0–13) matching the universal compute shader layout.
@@ -37,7 +46,7 @@ bool WebGPURenderer::CreateBindGroupLayout() {
     entries[2].binding = 2;
     entries[2].visibility = WGPUShaderStage_Compute;
     entries[2].storageTexture.access = WGPUStorageTextureAccess_WriteOnly;
-    entries[2].storageTexture.format = WGPUTextureFormat_RGBA32Float;
+    entries[2].storageTexture.format = RgbaStorageFormat(colorFormat_);
     entries[2].storageTexture.viewDimension = WGPUTextureViewDimension_2D;
     
     // Binding 3: Uniform buffer
@@ -67,14 +76,14 @@ bool WebGPURenderer::CreateBindGroupLayout() {
     entries[7].binding = 7;
     entries[7].visibility = WGPUShaderStage_Compute;
     entries[7].storageTexture.access = WGPUStorageTextureAccess_WriteOnly;
-    entries[7].storageTexture.format = WGPUTextureFormat_RGBA32Float;
+    entries[7].storageTexture.format = RgbaStorageFormat(colorFormat_);
     entries[7].storageTexture.viewDimension = WGPUTextureViewDimension_2D;
     
     // Binding 8: Data texture B (write)
     entries[8].binding = 8;
     entries[8].visibility = WGPUShaderStage_Compute;
     entries[8].storageTexture.access = WGPUStorageTextureAccess_WriteOnly;
-    entries[8].storageTexture.format = WGPUTextureFormat_RGBA32Float;
+    entries[8].storageTexture.format = RgbaStorageFormat(colorFormat_);
     entries[8].storageTexture.viewDimension = WGPUTextureViewDimension_2D;
     
     // Binding 9: Data texture C (read)
@@ -248,7 +257,7 @@ bool WebGPURenderer::CreateBindGroups() {
     WGPUTextureViewDescriptor viewDesc = {};
     viewDesc.nextInChain = nullptr;
     viewDesc.label = MakeStringView(nullptr);
-    viewDesc.format = WGPUTextureFormat_RGBA32Float;
+    viewDesc.format = RgbaStorageFormat(colorFormat_);
     viewDesc.dimension = WGPUTextureViewDimension_2D;
     viewDesc.baseMipLevel = 0;
     viewDesc.mipLevelCount = 1;
@@ -282,7 +291,7 @@ bool WebGPURenderer::CreateBindGroups() {
     entries[6].textureView = wgpuTextureCreateView(depthTextureWrite_.get(), &viewDesc);
 
     entries[7].binding = 7;
-    viewDesc.format = WGPUTextureFormat_RGBA32Float;
+    viewDesc.format = RgbaStorageFormat(colorFormat_);
     entries[7].textureView = wgpuTextureCreateView(dataTextureA_.get(), &viewDesc);
 
     entries[8].binding = 8;
@@ -306,7 +315,7 @@ bool WebGPURenderer::CreateBindGroups() {
 
     entries[13].binding = 13;
     WGPUTextureViewDescriptor historyView = {};
-    historyView.format = WGPUTextureFormat_RGBA32Float;
+    historyView.format = RgbaStorageFormat(colorFormat_);
     historyView.dimension = WGPUTextureViewDimension_2DArray;
     historyView.baseMipLevel = 0;
     historyView.mipLevelCount = 1;
@@ -362,7 +371,7 @@ void WebGPURenderer::CreateRenderBindGroup() {
     if (!layout) return;
 
     WGPUTextureViewDescriptor viewDesc = {};
-    viewDesc.format          = WGPUTextureFormat_RGBA32Float;
+    viewDesc.format          = RgbaStorageFormat(colorFormat_);
     viewDesc.dimension       = WGPUTextureViewDimension_2D;
     viewDesc.baseMipLevel    = 0;
     viewDesc.mipLevelCount   = 1;
@@ -397,7 +406,7 @@ void WebGPURenderer::CreateRenderBindGroup() {
 WGPUBindGroup WebGPURenderer::CreateComputeBindGroup(WGPUTexture readTex, WGPUTexture writeTex) {
     static constexpr uint32_t BINDING_COUNT = 14;
     WGPUTextureViewDescriptor rgbaView = {};
-    rgbaView.format          = WGPUTextureFormat_RGBA32Float;
+    rgbaView.format          = RgbaStorageFormat(colorFormat_);
     rgbaView.dimension       = WGPUTextureViewDimension_2D;
     rgbaView.baseMipLevel    = 0;
     rgbaView.mipLevelCount   = 1;

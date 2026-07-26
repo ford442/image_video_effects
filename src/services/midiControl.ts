@@ -115,7 +115,7 @@ export class MidiControlAdapter {
 
     try {
       const access = await nav.requestMIDIAccess({ sysex: false });
-      this.attachAccess(access);
+      this.attachAccess(access as unknown as MIDIAccessLike);
       return true;
     } catch {
       return false;

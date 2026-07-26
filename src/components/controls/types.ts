@@ -1,5 +1,5 @@
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
-import { AIStatus, AutoTransitionConfig } from '../../AutoDJ';
+import type { AIStatus, AutoTransitionConfig } from '../../types/aiVj';
 import { VideoRecord } from '../../syncTypes';
 import type { SharedChain } from '../../services/layerChainShare';
 import type { RenderQualityMode } from '../../config/performancePolicy';
@@ -104,5 +104,15 @@ export interface ControlsProps {
         scale: number;
         targetFps: number;
         adaptive: boolean;
+        colorFormat?: import('../../config/formatPolicy').InternalColorFormat;
+        estimatedTextureMiB?: number;
     };
+    generativeShowcaseActive?: boolean;
+    generativeShowcaseLocked?: boolean;
+    generativeShowcaseDelay?: number;
+    onStartGenerativeShowcase?: () => void;
+    onStopGenerativeShowcase?: () => void;
+    onSetGenerativeShowcaseDelay?: (seconds: number) => void;
+    onPreviewImportShader?: (id: string, wgsl: string, name: string) => void;
+    onImportStatus?: (message: string) => void;
 }

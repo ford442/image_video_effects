@@ -15,6 +15,7 @@ from audit_orphan_shader_defs import (  # noqa: E402
 from bindgroup_checker import (  # noqa: E402
     check_workgroup_size_convention,
     fix_literal_two_arg_workgroup_size,
+    split_workgroup_issues,
 )
 from wgsl_precommit_gate import run_gate  # noqa: E402
 
@@ -31,6 +32,35 @@ def test_workgroup_two_arg_flagged():
 def test_workgroup_three_arg_passes():
     content = (FIXTURES / "workgroup_three_arg_ok.wgsl").read_text(encoding="utf-8")
     assert check_workgroup_size_convention(content) == []
+
+
+def test_gate_fails_on_one_arg_override():
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "override.wgsl"
+        path.write_text(
+            (FIXTURES / "workgroup_override_one_arg.wgsl").read_text(encoding="utf-8")
+        )
+        report = run_gate([path], skip_naga=True)
+        assert report["failed"] == 1
+        assert report.get("workgroup_warnings", 0) == 1
+
+
+def test_split_workgroup_two_arg_blocking_one_arg_warning():
+    two_arg = check_workgroup_size_convention(
+        (FIXTURES / "workgroup_two_arg.wgsl").read_text(encoding="utf-8")
+    )
+    one_arg = check_workgroup_size_convention(
+        (FIXTURES / "workgroup_override_one_arg.wgsl").read_text(encoding="utf-8")
+    )
+    blocking, warnings = split_workgroup_issues(two_arg)
+    assert len(blocking) == 1
+    assert blocking[0]["arg_count"] == 2
+    assert warnings == []
+    blocking2, warnings2 = split_workgroup_issues(one_arg)
+    assert blocking2 == []
+    assert len(warnings2) == 1
+    assert warnings2[0]["arg_count"] == 1
 
 
 def test_gate_fails_on_two_arg_changed_file():
@@ -136,6 +166,8 @@ def main() -> int:
     tests = [
         test_workgroup_two_arg_flagged,
         test_workgroup_three_arg_passes,
+        test_gate_fails_on_one_arg_override,
+        test_split_workgroup_two_arg_blocking_one_arg_warning,
         test_gate_fails_on_two_arg_changed_file,
         test_gate_passes_three_arg_file,
         test_autofix_literal_two_arg,

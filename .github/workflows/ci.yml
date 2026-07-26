@@ -224,24 +224,36 @@ jobs:
         rustup update stable
         cargo install naga-cli --version 30.0.0
 
+    - name: Full-tree workgroup convention scan
+      run: python3 scripts/wgsl_precommit_gate.py --full-tree
+
     - name: Run WGSL pre-commit gate on changed files
       run: python3 scripts/wgsl_precommit_gate.py --base origin/main
 
     - name: Audit shader catalog hygiene (defs ↔ WGSL)
-      run: python3 scripts/audit_orphan_shader_defs.py --base origin/main
+      run: python3 scripts/audit_orphan_shader_defs.py --ci-gate
+
+    - name: Audit extraBuffer reserved zone (blocking)
+      run: python3 scripts/audit_extrabuffer.py
+
+    - name: Audit dead sliders (blocking)
+      run: python3 scripts/audit_dead_sliders.py
 
     - name: Workgroup gate unit tests
       run: |
         python3 scripts/test_workgroup_gate.py
         python3 scripts/test_authoring_gates.py
         python3 scripts/test_bindgroup_checker.py
+        python3 scripts/test_orphan_gate.py
+        python3 scripts/test_audit_extrabuffer.py
+        python3 scripts/test_audit_dead_sliders.py
 
     - name: Publish gate summary
       if: always()
       run: |
         echo "## WGSL pre-commit gate" >> "$GITHUB_STEP_SUMMARY"
         if [ -f reports/wgsl_precommit_report.json ]; then
-          python3 -c "import json; r=json.load(open('reports/wgsl_precommit_report.json')); print(f\"- Files: {r['total']} passed {r['passed']} failed {r['failed']} workgroup_errors {r.get('workgroup_failures', 0)}\"); print(f\"- naga available: {r.get('naga_available', True)}\")" >> "$GITHUB_STEP_SUMMARY"
+          python3 -c "import json; r=json.load(open('reports/wgsl_precommit_report.json')); print(f\"- Files: {r['total']} passed {r['passed']} failed {r['failed']} workgroup_errors {r.get('workgroup_blocking', 0)} workgroup_warnings {r.get('workgroup_warnings', 0)}\"); print(f\"- naga available: {r.get('naga_available', True)}\")" >> "$GITHUB_STEP_SUMMARY"
         else
           echo "- No precommit report generated" >> "$GITHUB_STEP_SUMMARY"
         fi
@@ -249,6 +261,16 @@ jobs:
         echo "## Orphan shader definitions" >> "$GITHUB_STEP_SUMMARY"
         if [ -f reports/orphan_shader_defs.md ]; then
           cat reports/orphan_shader_defs.md >> "$GITHUB_STEP_SUMMARY"
+        fi
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "## extraBuffer write audit" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f reports/extrabuffer_write_audit.md ]; then
+          cat reports/extrabuffer_write_audit.md >> "$GITHUB_STEP_SUMMARY"
+        fi
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "## Dead slider audit" >> "$GITHUB_STEP_SUMMARY"
+        if [ -f reports/dead_sliders_audit.md ]; then
+          cat reports/dead_sliders_audit.md >> "$GITHUB_STEP_SUMMARY"
         fi
 
     - name: Upload gate reports
@@ -260,6 +282,10 @@ jobs:
           reports/wgsl_precommit_report.json
           reports/orphan_shader_defs.json
           reports/orphan_shader_defs.md
+          reports/extrabuffer_write_audit.json
+          reports/extrabuffer_write_audit.md
+          reports/dead_sliders_audit.json
+          reports/dead_sliders_audit.md
         retention-days: 30
 
   lint:

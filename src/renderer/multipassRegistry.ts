@@ -130,21 +130,6 @@ export const MULTIPASS_REGISTRY: Record<string, MultipassInfo> = {
     "totalPasses": 3,
     "nextShader": null
   },
-  "ripple-tank-pass2": {
-    "pass": 2,
-    "totalPasses": 3,
-    "nextShader": "ripple-tank-pass3"
-  },
-  "ripple-tank-pass3": {
-    "pass": 3,
-    "totalPasses": 3,
-    "nextShader": null
-  },
-  "ripple-tank": {
-    "pass": 1,
-    "totalPasses": 3,
-    "nextShader": "ripple-tank-pass2"
-  },
   "sim-fluid-feedback-field": {
     "pass": 1,
     "totalPasses": 3,
@@ -153,6 +138,90 @@ export const MULTIPASS_REGISTRY: Record<string, MultipassInfo> = {
 };
 
 export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
+  "fabric-of-reality": {
+    "maxPassesPerFrame": 10,
+    "nodes": [
+      {
+        "id": "verlet",
+        "entry": "fabric-verlet",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "constraint",
+        "entry": "fabric-constraint",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ],
+        "repeat": 4
+      },
+      {
+        "id": "tear",
+        "entry": "fabric-tear",
+        "reads": [
+          "dataA"
+        ],
+        "writes": [
+          "dataB"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "fabric-render",
+        "reads": [
+          "dataA"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
+  "photonic-caustics-graph": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "emit",
+        "entry": "photonic-emitter",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataB",
+          "dataA"
+        ]
+      },
+      {
+        "id": "trace",
+        "entry": "photonic-trace",
+        "reads": [],
+        "writes": [
+          "dataA"
+        ],
+        "repeat": 2
+      },
+      {
+        "id": "accumulate",
+        "entry": "photonic-accumulate",
+        "reads": [
+          "dataA",
+          "dataC"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
   "quantum-foam-pass1": {
     "maxPassesPerFrame": 8,
     "nodes": [
@@ -184,6 +253,51 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
         ],
         "writes": [
           "color"
+        ]
+      }
+    ]
+  },
+  "ripple-tank": {
+    "maxPassesPerFrame": 10,
+    "nodes": [
+      {
+        "id": "step",
+        "entry": "ripple-tank-step",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ],
+        "repeat": 4
+      },
+      {
+        "id": "inject",
+        "entry": "ripple-tank-inject",
+        "reads": [
+          "dataA"
+        ],
+        "writes": [
+          "dataB"
+        ]
+      },
+      {
+        "id": "gather",
+        "entry": "ripple-tank-pass2",
+        "reads": [
+          "dataB"
+        ],
+        "writes": []
+      },
+      {
+        "id": "render",
+        "entry": "ripple-tank-pass3",
+        "reads": [
+          "dataB"
+        ],
+        "writes": [
+          "color",
+          "dataA"
         ]
       }
     ]

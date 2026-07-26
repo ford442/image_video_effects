@@ -6,6 +6,7 @@
  */
 
 import { UNIFORM_FLOATS } from '../UniformBuffer';
+import type { InternalColorFormat } from '../../config/formatPolicy';
 import {
   EXTRA_FLOATS,
   HISTORY_DEPTH,
@@ -43,6 +44,7 @@ export function createTextures(
   canvasH: number,
   scaledW: number,
   scaledH: number,
+  colorFormat: InternalColorFormat = 'rgba32float',
 ): WebGPUTextureSet {
   const fullW = canvasW;
   const fullH = canvasH;
@@ -66,52 +68,54 @@ export function createTextures(
   const USAGE_READ =
     USAGE_STANDARD | GPUTextureUsage.RENDER_ATTACHMENT;
 
+  const rgbaFormat = colorFormat;
+
   const sourceTex = device.createTexture({
     label: 'sourceTex',
     size: [fullW, fullH],
-    format: 'rgba32float',
+    format: rgbaFormat,
     usage: USAGE_SOURCE,
   });
 
   const readTex = device.createTexture({
     label: 'readTex',
     size: [sw, sh],
-    format: 'rgba32float',
+    format: rgbaFormat,
     usage: USAGE_READ,
   });
 
   const writeTex = device.createTexture({
     label: 'writeTex',
     size: [sw, sh],
-    format: 'rgba32float',
+    format: rgbaFormat,
     usage: USAGE_STANDARD,
   });
 
   const dataTexA = device.createTexture({
     label: 'dataTexA',
     size: [sw, sh],
-    format: 'rgba32float',
+    format: rgbaFormat,
     usage: USAGE_STANDARD,
   });
 
   const dataTexB = device.createTexture({
     label: 'dataTexB',
     size: [sw, sh],
-    format: 'rgba32float',
+    format: rgbaFormat,
     usage: USAGE_STANDARD,
   });
 
   const dataTexC = device.createTexture({
     label: 'dataTexC',
     size: [sw, sh],
-    format: 'rgba32float',
+    format: rgbaFormat,
     usage: USAGE_STANDARD,
   });
 
   const historyTex = device.createTexture({
     label: 'historyTex',
     size: { width: sw, height: sh, depthOrArrayLayers: HISTORY_DEPTH },
-    format: 'rgba32float',
+    format: rgbaFormat,
     usage:
       GPUTextureUsage.TEXTURE_BINDING |
       GPUTextureUsage.STORAGE_BINDING |
@@ -205,6 +209,8 @@ export function createBuffers(device: GPUDevice): WebGPUBufferSet {
 
 /** Manages GPU textures, buffers, samplers, and the default compute bind group. */
 export class WebGPUResourcePool {
+  colorFormat: InternalColorFormat = 'rgba32float';
+
   sourceTex!: GPUTexture;
   readTex!: GPUTexture;
   writeTex!: GPUTexture;
@@ -232,8 +238,10 @@ export class WebGPUResourcePool {
     canvasH: number,
     scaledW: number,
     scaledH: number,
+    colorFormat: InternalColorFormat = 'rgba32float',
   ): void {
-    const textures = createTextures(device, canvasW, canvasH, scaledW, scaledH);
+    this.colorFormat = colorFormat;
+    const textures = createTextures(device, canvasW, canvasH, scaledW, scaledH, colorFormat);
     this.applyTextureSet(textures);
 
     const samplers = createSamplers(device);
@@ -307,9 +315,11 @@ export class WebGPUResourcePool {
     canvasH: number,
     scaledW: number,
     scaledH: number,
+    colorFormat: InternalColorFormat = this.colorFormat,
   ): WebGPUTextureSet {
+    this.colorFormat = colorFormat;
     this.destroyWorkingTextures();
-    const textures = createTextures(device, canvasW, canvasH, scaledW, scaledH);
+    const textures = createTextures(device, canvasW, canvasH, scaledW, scaledH, colorFormat);
     this.applyTextureSet(textures);
     return textures;
   }

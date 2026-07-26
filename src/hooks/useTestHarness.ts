@@ -112,10 +112,21 @@ export function useTestHarness({
                 setRenderQuality: (mode: RenderQualityMode) => {
                     manager.setRenderQuality(mode, {
                         supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup(),
+                        formatCaps: manager.getFormatCapabilities(),
                     });
                 },
                 loadImage: (url: string) => manager.loadImage(url),
-                runBenchmark: async (frameCount = 90) => {
+                runBenchmark: async (
+                    frameCount = 90,
+                    options?: { qualityMode?: RenderQualityMode },
+                ) => {
+                    if (options?.qualityMode) {
+                        manager.setRenderQuality(options.qualityMode, {
+                            supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup(),
+                            formatCaps: manager.getFormatCapabilities(),
+                        });
+                    }
+                    const perf = manager.getPerformanceStatus();
                     const samples: Array<{ fps: number; gpu: ReturnType<typeof manager.getGPUTimings> }> = [];
                     for (let i = 0; i < frameCount; i++) {
                         await new Promise<void>((r) => requestAnimationFrame(() => r()));
@@ -134,6 +145,9 @@ export function useTestHarness({
                         avgTotalMs,
                         gpuTimingsAvailable: samples.some((s) => s.gpu.available),
                         rendererType: manager.getActiveRendererType(),
+                        qualityMode: options?.qualityMode ?? perf.qualityMode,
+                        colorFormat: perf.colorFormat,
+                        estimatedTextureMiB: perf.estimatedTextureMiB,
                         samples: samples.slice(-5),
                     };
                 },

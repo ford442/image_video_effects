@@ -5,6 +5,8 @@
  */
 
 import { reportError } from '../ErrorHandling';
+import type { InternalColorFormat } from '../../config/formatPolicy';
+import { packRgbaUploadData } from '../../config/formatPolicy';
 
 export interface WebGPUMediaInputContext {
   device: GPUDevice | null;
@@ -12,6 +14,7 @@ export interface WebGPUMediaInputContext {
   readTex: GPUTexture;
   canvasW: number;
   canvasH: number;
+  colorFormat: InternalColorFormat;
   filterSampler: GPUSampler;
   supportsExternalTexture: boolean;
   videoCopyPipeline: GPURenderPipeline | null;
@@ -66,10 +69,11 @@ export function uploadSourceRGBA8(
 ): void {
   if (!ctx.device) return;
   const { floats, cW, cH } = rgba8ToFloat32(data, srcW, srcH, ctx.canvasW, ctx.canvasH);
+  const packed = packRgbaUploadData(floats, cW, cH, ctx.colorFormat);
   ctx.device.queue.writeTexture(
     { texture: ctx.sourceTex },
-    floats,
-    { bytesPerRow: cW * 16, rowsPerImage: cH },
+    packed.data,
+    { bytesPerRow: packed.bytesPerRow, rowsPerImage: packed.rowsPerImage },
     [cW, cH],
   );
 }
@@ -82,11 +86,12 @@ export function uploadRGBA8(
 ): void {
   if (!ctx.device) return;
   const { floats, cW, cH } = rgba8ToFloat32(data, srcW, srcH, ctx.canvasW, ctx.canvasH);
+  const packed = packRgbaUploadData(floats, cW, cH, ctx.colorFormat);
 
   ctx.device.queue.writeTexture(
     { texture: ctx.sourceTex },
-    floats,
-    { bytesPerRow: cW * 16, rowsPerImage: cH },
+    packed.data,
+    { bytesPerRow: packed.bytesPerRow, rowsPerImage: packed.rowsPerImage },
     [cW, cH],
   );
   // readTex may be resolution-scaled; only write when dimensions match canvas
@@ -96,8 +101,8 @@ export function uploadRGBA8(
   if (readW === ctx.canvasW && readH === ctx.canvasH) {
     ctx.device.queue.writeTexture(
       { texture: ctx.readTex },
-      floats,
-      { bytesPerRow: cW * 16, rowsPerImage: cH },
+      packed.data,
+      { bytesPerRow: packed.bytesPerRow, rowsPerImage: packed.rowsPerImage },
       [cW, cH],
     );
   }

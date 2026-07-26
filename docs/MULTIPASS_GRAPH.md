@@ -137,7 +137,10 @@ Wired into `prestart` / `prebuild` alongside `generate_shader_lists.js`.
 
 | Shader | Pattern |
 |--------|---------|
-| `wave-tank` | step×3 → inject → render (Jacobi-style wave sim) |
+| `ripple-tank` | step×4 → inject → optics gather → render (flagship Tier C physics demo) |
+| `fabric-of-reality` | verlet → constraint×4 → tear → render (cloth sim) |
+| `photonic-caustics-graph` | emit → trace×2 → accumulate (caustic transport) |
+| `wave-tank` | step×3 → inject → render (minimal graph reference / tests) |
 | `quantum-foam-pass1` | 3-node graph (field → particles → composite) |
 
 ## WASM follow-up

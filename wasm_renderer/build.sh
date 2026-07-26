@@ -40,6 +40,12 @@ if ! command -v emcc &> /dev/null; then
     exit 1
 fi
 
+if [ "${SKIP_WASM_BUILD:-}" = "1" ]; then
+    echo "[INFO] SKIP_WASM_BUILD=1 — skipping emcc compile (bridge was concatenated above)."
+    echo "       Use committed artifacts in public/wasm/."
+    exit 0
+fi
+
 # Set writable cache location for TOT emscripten
 
 export EM_CACHE=/tmp/emscripten_cache
@@ -152,7 +158,6 @@ emcc -std=c++20 -O2 \
     -sNO_EXIT_RUNTIME=1 \
     -sMODULARIZE=1 \
     -sEXPORT_NAME=PixelocityWASM \
-    -sGROWABLE_ARRAYBUFFERS=0 \
     -sASYNCIFY \
     -o "$BUILD_DIR/pixelocity_wasm.js"
 

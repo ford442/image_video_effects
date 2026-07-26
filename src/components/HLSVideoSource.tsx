@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import Hls from 'hls.js';
+import type Hls from 'hls.js';
 
 interface HLSVideoSourceProps {
   streamUrl: string;
@@ -22,7 +22,6 @@ export const HLSVideoSource: React.FC<HLSVideoSourceProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [quality, setQuality] = useState<string>('auto');
 
-  // Frame callback for WASM
   const frameLoop = useCallback(() => {
     const video = videoRef.current;
     if (video && onFrame && video.readyState >= 2) {
@@ -31,13 +30,35 @@ export const HLSVideoSource: React.FC<HLSVideoSourceProps> = ({
     frameRef.current = requestAnimationFrame(frameLoop);
   }, [onFrame]);
 
-  // Initialize HLS
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !streamUrl) return;
 
-    if (Hls.isSupported()) {
-      const hls = new Hls({
+    let cancelled = false;
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    const run = async () => {
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = streamUrl;
+        if (autoPlay) {
+          video.play().catch(e => console.log('Autoplay prevented:', e));
+        }
+        return;
+      }
+
+      const HlsModule = (await import(/* webpackChunkName: "hls" */ 'hls.js')).default;
+      if (cancelled) return;
+
+      if (!HlsModule.isSupported()) {
+        onError?.('HLS not supported in this browser');
+        return;
+      }
+
+      const hls = new HlsModule({
         maxBufferLength: 30,
         maxMaxBufferLength: 60,
         enableWorker: true,
@@ -47,25 +68,25 @@ export const HLSVideoSource: React.FC<HLSVideoSourceProps> = ({
 
       hlsRef.current = hls;
 
-      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+      hls.on(HlsModule.Events.MEDIA_ATTACHED, () => {
         console.log('✅ HLS: Media attached');
       });
 
-      hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+      hls.on(HlsModule.Events.MANIFEST_PARSED, (_event, data) => {
         console.log(`✅ HLS: Manifest parsed - ${data.levels.length} quality levels`);
         if (autoPlay) {
           video.play().catch(e => console.log('Autoplay prevented:', e));
         }
       });
 
-      hls.on(Hls.Events.ERROR, (event, data) => {
+      hls.on(HlsModule.Events.ERROR, (_event, data) => {
         if (data.fatal) {
           switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
+            case HlsModule.ErrorTypes.NETWORK_ERROR:
               console.log('HLS: Network error, attempting recovery...');
               hls.startLoad();
               break;
-            case Hls.ErrorTypes.MEDIA_ERROR:
+            case HlsModule.ErrorTypes.MEDIA_ERROR:
               console.log('HLS: Media error, attempting recovery...');
               hls.recoverMediaError();
               break;
@@ -77,35 +98,29 @@ export const HLSVideoSource: React.FC<HLSVideoSourceProps> = ({
         }
       });
 
-      hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+      hls.on(HlsModule.Events.LEVEL_SWITCHED, (_event, data) => {
         const level = hls.levels[data.level];
         console.log(`HLS: Quality switched to ${level?.height || 'unknown'}p`);
       });
 
       hls.loadSource(streamUrl);
       hls.attachMedia(video);
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native HLS support (Safari)
-      video.src = streamUrl;
-      if (autoPlay) {
-        video.play().catch(e => console.log('Autoplay prevented:', e));
-      }
-    } else {
-      onError?.('HLS not supported in this browser');
-    }
+    };
 
-    // Start frame loop
+    run();
+
     frameRef.current = requestAnimationFrame(frameLoop);
 
     return () => {
+      cancelled = true;
       if (frameRef.current) {
         cancelAnimationFrame(frameRef.current);
       }
       hlsRef.current?.destroy();
+      hlsRef.current = null;
     };
   }, [streamUrl, autoPlay, frameLoop, onError]);
 
-  // Video event handlers
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -122,13 +137,12 @@ export const HLSVideoSource: React.FC<HLSVideoSourceProps> = ({
     };
   }, []);
 
-  // Quality selector helper
   const setQualityLevel = useCallback((level: number) => {
     const hls = hlsRef.current;
     if (!hls) return;
 
     if (level === -1) {
-      hls.currentLevel = -1; // Auto
+      hls.currentLevel = -1;
       setQuality('auto');
     } else {
       hls.currentLevel = level;

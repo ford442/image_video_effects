@@ -1,0 +1,19 @@
+import { getMultipassBadgeLabel } from '../utils/multipassBadge';
+
+describe('multipassBadge', () => {
+  it('returns graph pass count for ripple-tank', () => {
+    expect(getMultipassBadgeLabel('ripple-tank')).toBe('graph · 7 passes');
+  });
+
+  it('returns graph pass count for quantum-foam graph entry', () => {
+    expect(getMultipassBadgeLabel('quantum-foam-pass1')).toBe('graph · 3 passes');
+  });
+
+  it('returns linear pass count for multipass chains', () => {
+    expect(getMultipassBadgeLabel('rd-on-video-pass1')).toBe('3-pass');
+  });
+
+  it('returns null for single-pass shaders', () => {
+    expect(getMultipassBadgeLabel('wave-equation')).toBeNull();
+  });
+});

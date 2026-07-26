@@ -21,6 +21,60 @@ const missingFiles = [];
 const skippedDuplicates = [];
 const invalidShaders = [];  // Shaders with fatal WGSL content errors
 const warnShaders = [];     // Shaders with non-fatal WGSL content warnings
+const skippedMultipassSecondaries = [];
+
+/**
+ * First pass: collect all definitions and ids referenced only as multipass secondaries.
+ */
+function collectMultipassSecondaryIds(definitionsDir) {
+    const allDefs = [];
+    const secondaryIds = new Set();
+
+    const categories = fs.readdirSync(definitionsDir).filter((file) => {
+        return fs.statSync(path.join(definitionsDir, file)).isDirectory();
+    });
+
+    for (const dir of categories) {
+        const dirPath = path.join(definitionsDir, dir);
+        const files = fs.readdirSync(dirPath).filter((f) => f.endsWith('.json'));
+        for (const file of files) {
+            const filePath = path.join(dirPath, file);
+            try {
+                let shaderDef = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+                if (Array.isArray(shaderDef)) {
+                    shaderDef = shaderDef.length > 0 ? shaderDef[0] : null;
+                }
+                if (shaderDef?.id) {
+                    allDefs.push({ dir, file, shaderDef });
+                }
+            } catch (e) {
+                console.warn(`Skipping ${filePath} during secondary scan: ${e.message}`);
+            }
+        }
+    }
+
+    for (const { shaderDef } of allDefs) {
+        const primaryId = shaderDef.id;
+        const multipass = shaderDef.multipass || {};
+
+        if (multipass.nextShader) {
+            secondaryIds.add(multipass.nextShader);
+        }
+        for (const pass of multipass.passes || []) {
+            if (pass.file) {
+                const stem = pass.file.replace(/\.wgsl$/i, '');
+                if (stem && stem !== primaryId) secondaryIds.add(stem);
+            }
+        }
+        for (const node of multipass.graph?.nodes || []) {
+            if (node.entry && node.entry !== primaryId) {
+                secondaryIds.add(node.entry);
+            }
+        }
+    }
+
+    return secondaryIds;
+}
 
 /**
  * Validates WGSL shader content for common issues that would cause runtime failures.
@@ -63,6 +117,10 @@ function validateWgslContent(wgslContent, id) {
 
 console.log("Generating shader lists...");
 
+const multipassSecondaryIds = fs.existsSync(DEFINITIONS_DIR)
+    ? collectMultipassSecondaryIds(DEFINITIONS_DIR)
+    : new Set();
+
 if (fs.existsSync(DEFINITIONS_DIR)) {
     // Group shaders by their folder/directory name. The folder structure is the
     // single source of truth for categorization; the category field in shader
@@ -104,6 +162,12 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
                 }
                 if (!url) {
                     console.warn(`WARNING: Missing 'url' field in ${dir}/${file} (shader: ${id}) - SKIPPING`);
+                    return;
+                }
+
+                if (multipassSecondaryIds.has(id)) {
+                    console.log(`Skipping multipass secondary '${id}' in ${dir}/${file}`);
+                    skippedMultipassSecondaries.push({ id, file: `${dir}/${file}` });
                     return;
                 }
 
@@ -175,6 +239,10 @@ if (fs.existsSync(DEFINITIONS_DIR)) {
 
     // Summary Report
     console.log("\n--- Generation Summary ---");
+    if (skippedMultipassSecondaries.length > 0) {
+        console.log(`\nSKIPPED MULTIPASS SECONDARIES (${skippedMultipassSecondaries.length}):`);
+        skippedMultipassSecondaries.forEach((s) => console.log(`  - ${s.id} (${s.file})`));
+    }
     if (skippedDuplicates.length > 0) {
         console.log(`\nSKIPPED DUPLICATES (${skippedDuplicates.length}):`);
         skippedDuplicates.forEach(d => console.log(`  - ${d.id} (in ${d.file}, duplicate of ${d.original})`));

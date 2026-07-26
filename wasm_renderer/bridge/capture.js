@@ -142,6 +142,7 @@ export async function captureFrameDataUrl() {
  */
 export function uploadImageData(rgbaPixels, width, height) {
   if (!state.initialized || !wasmModule) return;
+  if (!width || !height || !rgbaPixels?.length) return;
 
   const ptr = wasmModule._malloc(rgbaPixels.length);
   wasmModule.HEAPU8.set(rgbaPixels, ptr);

@@ -65,6 +65,41 @@ describe('multipassGraph', () => {
     expect(graph?.nodes).toHaveLength(3);
   });
 
+  it('validates and expands ripple-tank Tier C graph from registry', () => {
+    const graph = resolveGraphForShader('ripple-tank');
+    expect(graph).not.toBeNull();
+    expect(graph?.nodes).toHaveLength(4);
+    expect(validateGraph(graph!)).toEqual([]);
+    expect(countGraphPasses(graph!)).toBe(7);
+
+    const expanded = expandGraph(graph!);
+    expect(expanded).toHaveLength(7);
+    expect(expanded[0].entry).toBe('ripple-tank-step');
+    expect(expanded[4].entry).toBe('ripple-tank-inject');
+    expect(expanded[5].entry).toBe('ripple-tank-pass2');
+    expect(expanded[6].entry).toBe('ripple-tank-pass3');
+    expect(expanded[1].copiesBefore[0]?.from).toBe('dataA');
+    expect(expanded[4].copiesBefore[0]?.from).toBe('dataA');
+    expect(expanded[5].copiesBefore[0]?.from).toBe('dataB');
+  });
+
+  it('analyzes ripple-tank graph binding usage', () => {
+    const graph = resolveGraphForShader('ripple-tank');
+    const usage = analyzeGraphBindingUsage(graph!);
+    expect(usage.writesDataA).toBe(true);
+    expect(usage.writesDataB).toBe(true);
+    expect(usage.readsDataC).toBe(true);
+  });
+
+  it('validates fabric-of-reality and photonic-caustics-graph', () => {
+    const fabric = resolveGraphForShader('fabric-of-reality');
+    const photonic = resolveGraphForShader('photonic-caustics-graph');
+    expect(validateGraph(fabric!)).toEqual([]);
+    expect(validateGraph(photonic!)).toEqual([]);
+    expect(countGraphPasses(fabric!)).toBe(7);
+    expect(countGraphPasses(photonic!)).toBe(4);
+  });
+
   it('analyzes graph binding usage', () => {
     const usage = analyzeGraphBindingUsage(createWaveTankGraph());
     expect(usage.writesDataA).toBe(true);

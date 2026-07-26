@@ -1,4 +1,4 @@
-import { ImageRecord } from '../AutoDJ';
+import type { ImageRecord } from '../types/aiVj';
 import { VideoRecord } from '../syncTypes';
 import {
     BUCKET_BASE_URL,

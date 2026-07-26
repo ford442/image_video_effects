@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, RefObject } from 'react';
 import { RenderMode, ShaderEntry, InputSource, SlotParams } from '../renderer/types';
-import { Alucinate } from '../AutoDJ';
+import type { Alucinate } from '../AutoDJ';
 import { buildCatalog } from '../services/shaderCatalog';
 import { mapVJStackToSharedChain } from '../services/vjToSharedChain';
 import {

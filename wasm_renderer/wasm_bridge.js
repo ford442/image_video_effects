@@ -42,6 +42,8 @@ const state = {
   lastLoadError: null,
   initStartTime: 0,
   initEndTime: 0,
+  /** 0=rgba32float, 1=rgba16float — see docs/FORMAT_TIERS.md */
+  colorFormat: 0,
 };
 
 /** Maps WebGPURenderer::InitStage (C++) to a readable name. */
@@ -322,6 +324,20 @@ export function shutdownWasmRenderer() {
   state.initialized = false;
 }
 
+// WGSL storage format rewrite — keep in sync with src/renderer/wgslFormatRewrite.ts
+
+const RGBA32_STORAGE_RE =
+  /texture_storage_2d\s*<\s*rgba32float\s*,\s*write\s*>/g;
+
+/**
+ * @param {string} wgsl
+ * @param {number} colorFormatWasm 0=rgba32float, 1=rgba16float
+ */
+export function rewriteWgslStorageFormats(wgsl, colorFormatWasm) {
+  if (colorFormatWasm === 0) return wgsl;
+  return wgsl.replace(RGBA32_STORAGE_RE, 'texture_storage_2d<rgba16float, write>');
+}
+
 // Shader load, hot-reload, and slot assignment.
 
 /**
@@ -336,13 +352,15 @@ export function loadShader(id, wgslCode) {
     return false;
   }
 
+  const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
+
   const idLen = wasmModule.lengthBytesUTF8(id) + 1;
   const idPtr = wasmModule._malloc(idLen);
   wasmModule.stringToUTF8(id, idPtr, idLen);
 
-  const codeLen = wasmModule.lengthBytesUTF8(wgslCode) + 1;
+  const codeLen = wasmModule.lengthBytesUTF8(rewritten) + 1;
   const codePtr = wasmModule._malloc(codeLen);
-  wasmModule.stringToUTF8(wgslCode, codePtr, codeLen);
+  wasmModule.stringToUTF8(rewritten, codePtr, codeLen);
 
   let result;
   try {
@@ -372,13 +390,15 @@ export function reloadShader(id, wgslCode) {
     return false;
   }
 
+  const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
+
   const idLen = wasmModule.lengthBytesUTF8(id) + 1;
   const idPtr = wasmModule._malloc(idLen);
   wasmModule.stringToUTF8(id, idPtr, idLen);
 
-  const codeLen = wasmModule.lengthBytesUTF8(wgslCode) + 1;
+  const codeLen = wasmModule.lengthBytesUTF8(rewritten) + 1;
   const codePtr = wasmModule._malloc(codeLen);
-  wasmModule.stringToUTF8(wgslCode, codePtr, codeLen);
+  wasmModule.stringToUTF8(rewritten, codePtr, codeLen);
 
   let result;
   try {
@@ -737,6 +757,22 @@ export function resizeCanvas(newWidth, newHeight) {
   wasmModule.ccall('resizeCanvas', null, ['number', 'number'], [newWidth, newHeight]);
 }
 
+/**
+ * Switch internal rgba storage format (0=rgba32float, 1=rgba16float).
+ * @param {number} formatEnum
+ */
+export function setColorFormat(formatEnum) {
+  if (!state.initialized || !wasmModule) return;
+  const fmt = formatEnum === 1 ? 1 : 0;
+  if (state.colorFormat === fmt) return;
+  state.colorFormat = fmt;
+  wasmModule.ccall('setColorFormat', null, ['number'], [fmt]);
+}
+
+export function getColorFormat() {
+  return state.colorFormat;
+}
+
 // Frame capture, screenshots, and image/video upload.
 
 /**
@@ -881,6 +917,7 @@ export async function captureFrameDataUrl() {
  */
 export function uploadImageData(rgbaPixels, width, height) {
   if (!state.initialized || !wasmModule) return;
+  if (!width || !height || !rgbaPixels?.length) return;
 
   const ptr = wasmModule._malloc(rgbaPixels.length);
   wasmModule.HEAPU8.set(rgbaPixels, ptr);
@@ -1155,6 +1192,7 @@ const wasmBridge = {
   clearRipples,
   getFPS,
   getSupportsDeepWorkgroup,
+  getColorFormat,
   getSlotState,
   getGPUTimings,
   setRecording,
@@ -1167,6 +1205,7 @@ const wasmBridge = {
   uploadImageData,
   uploadVideoFrame,
   resizeCanvas,
+  setColorFormat,
   captureFrame,
   takeScreenshot,
   startRecording,

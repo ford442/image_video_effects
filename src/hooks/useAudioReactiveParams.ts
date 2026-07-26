@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, RefObject, Dispatch, SetState
 import { RenderMode, ShaderEntry, SlotParams } from '../renderer/types';
 import { RendererManager } from '../renderer/RendererManager';
 import { useAudioAnalyzer } from './useAudioAnalyzer';
+import { resolveAudioTargets, sampleAudioSource } from '../utils/audioParamMapping';
 
 export interface UseAudioReactiveParamsOptions {
     rendererRef: RefObject<RendererManager | null>;
@@ -33,7 +34,7 @@ export function useAudioReactiveParams({
     const { startAudio: startAudioAnalyzer, stopAudio: stopAudioAnalyzer, getAudioData: getAudioAnalyzerData, getAudioBins } =
         useAudioAnalyzer();
 
-    const audioParamSmoothedRef = useRef<[number, number, number, number]>([0.5, 0.5, 0.5, 0.5]);
+    const audioParamSmoothedRef = useRef<Record<string, number>>({});
 
     const updateAudioReactiveParams = useCallback(() => {
         const manager = rendererRef.current;
@@ -48,25 +49,31 @@ export function useAudioReactiveParams({
 
         const overall = (bass + mid + treble) / 3.0;
         const amount = audioReactiveAmount;
-
-        const smoothed = audioParamSmoothedRef.current;
-        const smoothing = 0.15;
-        smoothed[0] += (bass - smoothed[0]) * smoothing;
-        smoothed[1] += (mid - smoothed[1]) * smoothing;
-        smoothed[2] += (treble - smoothed[2]) * smoothing;
-        smoothed[3] += (overall - smoothed[3]) * smoothing;
+        const bands = { bass, mid, treble, overall };
+        const fftBins = getAudioBins();
 
         const currentShader = modes[0];
         const shaderEntry = availableModes.find(m => m.id === currentShader);
         if (shaderEntry && shaderEntry.category === 'generative') {
+            const targets = resolveAudioTargets(shaderEntry);
             const baseDefaults = getShaderDefaults(currentShader, 4);
+            const modulated: Partial<SlotParams> = {};
+            const smoothing = 0.15;
 
-            const modulated = {
-                zoomParam1: Math.max(0, Math.min(1, baseDefaults[0] + (smoothed[0] - 0.5) * amount)),
-                zoomParam2: Math.max(0, Math.min(1, baseDefaults[1] + (smoothed[1] - 0.5) * amount)),
-                zoomParam3: Math.max(0, Math.min(1, baseDefaults[2] + (smoothed[2] - 0.5) * amount)),
-                zoomParam4: Math.max(0, Math.min(1, baseDefaults[3] + (smoothed[3] - 0.5) * amount)),
-            };
+            targets.forEach((target, idx) => {
+                const raw = sampleAudioSource(target.audioSource, bands, fftBins);
+                const key = target.slotParamKey;
+                const prev = audioParamSmoothedRef.current[key] ?? raw;
+                const smoothed = prev + (raw - prev) * smoothing;
+                audioParamSmoothedRef.current[key] = smoothed;
+
+                const baseDefault = baseDefaults[idx] ?? target.default;
+                const value = Math.max(
+                    target.min,
+                    Math.min(target.max, baseDefault + (smoothed - 0.5) * amount),
+                );
+                modulated[key] = value;
+            });
 
             updateSlotParam(0, modulated);
             rendererRef.current?.updateSlotParams(modulated, 0);
@@ -101,6 +108,7 @@ export function useAudioReactiveParams({
             startAudioAnalyzer();
         } else {
             stopAudioAnalyzer();
+            audioParamSmoothedRef.current = {};
         }
     }, [audioReactiveParams, startAudioAnalyzer, stopAudioAnalyzer]);
 

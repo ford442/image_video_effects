@@ -138,15 +138,91 @@ export async function waitFrames(page, frameCount) {
   await page.evaluate((n) => window.__pixelocity__?.waitFrames(n), frameCount);
 }
 
+function analyzeImageDataInPage(data, w, h) {
+  let lumSum = 0;
+  let active = 0;
+  let magenta = 0;
+  let rSum = 0;
+  let gSum = 0;
+  let bSum = 0;
+  const pixels = w * h;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i] / 255;
+    const g = data[i + 1] / 255;
+    const b = data[i + 2] / 255;
+    rSum += r;
+    gSum += g;
+    bSum += b;
+    const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    lumSum += lum;
+    if (lum > 0.05) active++;
+    if (r > 0.8 && g < 0.2 && b > 0.8) magenta++;
+  }
+  return {
+    width: w,
+    height: h,
+    meanLuminance: lumSum / pixels,
+    activePixelRatio: active / pixels,
+    magentaPixelRatio: magenta / pixels,
+    meanR: rSum / pixels,
+    meanG: gSum / pixels,
+    meanB: bSum / pixels,
+  };
+}
+
 /** Sample canvas pixels in-browser (works for WebGPU-backed canvases). */
 export async function captureCanvasStats(page) {
   return page.evaluate(() => {
+    const analyze = (data, w, h) => {
+      let lumSum = 0;
+      let active = 0;
+      let magenta = 0;
+      let rSum = 0;
+      let gSum = 0;
+      let bSum = 0;
+      const pixels = w * h;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i] / 255;
+        const g = data[i + 1] / 255;
+        const b = data[i + 2] / 255;
+        rSum += r;
+        gSum += g;
+        bSum += b;
+        const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        lumSum += lum;
+        if (lum > 0.05) active++;
+        if (r > 0.8 && g < 0.2 && b > 0.8) magenta++;
+      }
+      return {
+        width: w,
+        height: h,
+        meanLuminance: lumSum / pixels,
+        activePixelRatio: active / pixels,
+        magentaPixelRatio: magenta / pixels,
+        meanR: rSum / pixels,
+        meanG: gSum / pixels,
+        meanB: bSum / pixels,
+      };
+    };
+
     if (typeof window.__pixelocity__?.captureCanvasStats === 'function') {
-      return window.__pixelocity__.captureCanvasStats();
+      const stats = window.__pixelocity__.captureCanvasStats();
+      if (stats.magentaPixelRatio != null) return stats;
+      const canvas = document.querySelector('canvas');
+      if (!canvas) return stats;
+      const w = canvas.width;
+      const h = canvas.height;
+      const tmp = document.createElement('canvas');
+      tmp.width = w;
+      tmp.height = h;
+      const ctx = tmp.getContext('2d');
+      if (!ctx) return stats;
+      ctx.drawImage(canvas, 0, 0);
+      return analyze(ctx.getImageData(0, 0, w, h).data, w, h);
     }
     const canvas = document.querySelector('canvas');
     if (!canvas) {
-      return { width: 0, height: 0, meanLuminance: 0, activePixelRatio: 0 };
+      return { width: 0, height: 0, meanLuminance: 0, activePixelRatio: 0, magentaPixelRatio: 0 };
     }
     const w = canvas.width;
     const h = canvas.height;
@@ -155,33 +231,55 @@ export async function captureCanvasStats(page) {
     tmp.height = h;
     const ctx = tmp.getContext('2d');
     if (!ctx) {
-      return { width: w, height: h, meanLuminance: 0, activePixelRatio: 0 };
+      return { width: w, height: h, meanLuminance: 0, activePixelRatio: 0, magentaPixelRatio: 0 };
     }
     ctx.drawImage(canvas, 0, 0);
-    const { data } = ctx.getImageData(0, 0, w, h);
-    let lumSum = 0;
-    let active = 0;
-    const pixels = w * h;
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i] / 255;
-      const g = data[i + 1] / 255;
-      const b = data[i + 2] / 255;
-      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      lumSum += lum;
-      if (lum > 0.05) active++;
-    }
-    return {
-      width: w,
-      height: h,
-      meanLuminance: lumSum / pixels,
-      activePixelRatio: active / pixels,
-    };
+    return analyze(ctx.getImageData(0, 0, w, h).data, w, h);
   });
 }
 
 export function isBlackFrame(stats, { minActive = 0.02, minLuminance = 0.01 } = {}) {
   return stats.activePixelRatio < minActive || stats.meanLuminance < minLuminance;
 }
+
+export function isMagentaFrame(stats, { minMagentaRatio = 0.15 } = {}) {
+  if (stats.magentaPixelRatio != null) {
+    return stats.magentaPixelRatio >= minMagentaRatio;
+  }
+  const r = stats.meanR ?? 0;
+  const g = stats.meanG ?? 0;
+  const b = stats.meanB ?? 0;
+  return r > 0.75 && g < 0.25 && b > 0.75;
+}
+
+export function isErrorFrame(stats, opts = {}) {
+  return isBlackFrame(stats, opts) || isMagentaFrame(stats, opts);
+}
+
+export function classifyErrorFrame(stats) {
+  const black = isBlackFrame(stats);
+  const magenta = isMagentaFrame(stats);
+  if (black && magenta) return 'error_frame';
+  if (black) return 'black_frame';
+  if (magenta) return 'magenta_frame';
+  return null;
+}
+
+export function formatFrameStats(stats) {
+  const parts = [
+    `meanLuminance=${(stats.meanLuminance ?? 0).toFixed(4)}`,
+    `activePixelRatio=${(stats.activePixelRatio ?? 0).toFixed(4)}`,
+  ];
+  if (stats.magentaPixelRatio != null) {
+    parts.push(`magentaPixelRatio=${stats.magentaPixelRatio.toFixed(4)}`);
+  }
+  if (stats.meanR != null) {
+    parts.push(`meanRGB=(${stats.meanR.toFixed(3)},${stats.meanG.toFixed(3)},${stats.meanB.toFixed(3)})`);
+  }
+  return parts.join(' ');
+}
+
+export { analyzeImageDataInPage };
 
 /** Capture canvas as base64 PNG, optionally downscaled to size×size. */
 export async function captureThumbnailPng(page, size = 256) {

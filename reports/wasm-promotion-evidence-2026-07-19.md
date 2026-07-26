@@ -36,7 +36,7 @@ lspci | grep -iE 'vga|3d|display'          # Device 1234:1111 (QEMU)
 ## Human GPU checklist (still required)
 
 ```bash
-npm run wasm:build && npm run build
+npm run build
 WASM_GPU_TESTS=1 npm run test:wasm:bench
 WASM_GPU_TESTS=1 npm run test:wasm:parity
 # Then WASM_SMOKE_TEST.md Tests 1–5 without testMode

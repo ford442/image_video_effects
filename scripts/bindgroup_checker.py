@@ -122,10 +122,9 @@ def split_workgroup_issues(issues: list[dict]) -> tuple[list[dict], list[dict]]:
     """
     Split workgroup convention issues into blocking vs warning.
 
-    Note: as of the 2-arg permit change, check_workgroup_size_convention only
-    returns issues for <2 args (1-arg forms). 2-arg literals are accepted.
-    - Blocking: reserved for <2 in legacy split paths (currently unused for standard issues).
+    - Blocking: 2-arg literals (arg_count == 2).
     - Warning: 1-arg override/expression forms (valid WGSL, non-standard convention).
+      The pre-commit gate treats warnings as failures unless the file is on the grace allowlist.
     """
     blocking: list[dict] = []
     warnings: list[dict] = []

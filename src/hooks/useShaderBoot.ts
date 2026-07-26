@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { RenderMode, ShaderEntry, InputSource } from '../renderer/types';
-import { ImageRecord } from '../AutoDJ';
+import type { ImageRecord } from '../types/aiVj';
 
 export interface UseShaderBootOptions {
     rendererReady: boolean;

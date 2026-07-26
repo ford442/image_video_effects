@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { RenderMode, ShaderEntry, SlotParams } from '../renderer/types';
+import { pickWeightedShader } from '../utils/thumbnailWeightedPick';
 
 export interface UseRouletteOptions {
     availableModes: ShaderEntry[];
@@ -8,6 +9,8 @@ export interface UseRouletteOptions {
     setMode: (index: number, mode: RenderMode) => void;
     updateSlotParam: (slotIndex: number, updates: Partial<SlotParams>) => void;
     setStatus: (status: string) => void;
+    /** Prefer shaders with preview thumbnails. */
+    hasThumbnail?: (id: string) => boolean;
 }
 
 export interface UseRouletteReturn {
@@ -28,6 +31,7 @@ export function useRoulette({
     setMode,
     updateSlotParam,
     setStatus,
+    hasThumbnail = () => false,
 }: UseRouletteOptions): UseRouletteReturn {
     const [isRouletteActive, setIsRouletteActive] = useState(false);
     const [chaosModeEnabled, setChaosModeEnabled] = useState(false);
@@ -46,9 +50,8 @@ export function useRoulette({
             return true;
         });
         if (validShaders.length === 0) return null;
-        const randomIndex = Math.floor(Math.random() * validShaders.length);
-        return validShaders[randomIndex];
-    }, [availableModes]);
+        return pickWeightedShader(validShaders, hasThumbnail);
+    }, [availableModes, hasThumbnail]);
 
     const randomizeSlotParams = useCallback((): SlotParams => {
         return {

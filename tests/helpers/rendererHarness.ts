@@ -30,6 +30,9 @@ export interface BenchResult {
   gpuTimingsAvailable: boolean;
   timingSource?: string;
   p95TotalMs: number;
+  qualityMode?: string;
+  colorFormat?: string;
+  estimatedTextureMiB?: number;
 }
 
 export interface BenchComparison {

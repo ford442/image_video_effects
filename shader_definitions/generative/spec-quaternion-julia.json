@@ -26,7 +26,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.x"
+      "mapping": "zoom_params.x",
+      "audio": "bass"
     },
     {
       "id": "morph_speed",
@@ -35,7 +36,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.y"
+      "mapping": "zoom_params.y",
+      "audio": "mid"
     },
     {
       "id": "color_cycles",
@@ -44,7 +46,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.z"
+      "mapping": "zoom_params.z",
+      "audio": "treble"
     },
     {
       "id": "detail",
@@ -53,7 +56,8 @@
       "min": 0,
       "max": 1,
       "step": 0.01,
-      "mapping": "zoom_params.w"
+      "mapping": "zoom_params.w",
+      "audio": "overall"
     }
   ],
   "target_rating": 4.9,

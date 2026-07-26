@@ -1,0 +1,150 @@
+{
+  "pool_size": 24,
+  "verified": 24,
+  "results": [
+    {
+      "id": "gen-showcase-nebula-core",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "gen-showcase-kinetic-bloom",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "gen-showcase-crystalline-pulse",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "stellar-plasma",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "quantum-foam-lattice",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "audio_geometric_pulse",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "crystalline-veins",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "chromatic-ghost-tunnel",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "cosmic-web",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "gen_kimi_crystal",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "gen_fluffy_raincloud",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "gen_grokcf_interference",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "bioluminescent-bloom",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "cosmic-jellyfish",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "liquid_magnetic_ferro",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "lava-lamp-blobs",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "kimi_quantum_field",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "kimi_fractal_dreams",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "supernova-core",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "molten-gold",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "gen-ethereal-cyber-chrono-nebula-phoenix",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "chrono-voronoi-mycelium",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "spec-quaternion-julia",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    },
+    {
+      "id": "bio_lenia_continuous",
+      "ok": true,
+      "issues": [],
+      "param_count": 4
+    }
+  ]
+}

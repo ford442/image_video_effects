@@ -9,6 +9,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import './ShaderCoordinateMenu.css';
+import { getMultipassBadgeLabel } from '../utils/multipassBadge';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Types
@@ -536,6 +537,7 @@ const ShaderCard: React.FC<ShaderCardProps> = ({
   onHover,
   showCoordinate = false,
 }) => {
+  const multipassBadge = getMultipassBadgeLabel(shader.id);
   return (
     <div
       id={`shader-card-${shader.id}`}
@@ -547,6 +549,7 @@ const ShaderCard: React.FC<ShaderCardProps> = ({
     >
       {isFavorite && <span className="badge fav">★</span>}
       {isRecent && <span className="badge recent">◷</span>}
+      {multipassBadge && <span className="badge multipass">{multipassBadge}</span>}
       {showCoordinate && <span className="coord-badge">#{shader.coordinate}</span>}
       <span className="shader-name">{shader.name}</span>
       <span className="shader-tags">{shader.tags.slice(0, 2).join(', ')}</span>

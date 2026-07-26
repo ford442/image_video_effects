@@ -92,7 +92,7 @@ export function createTimestampQueries(device: GPUDevice): WebGPUTimestampQuerie
     return emptyTimingState();
   }
 
-  const periodNs = device.queue.timestampPeriod ?? 0;
+  const periodNs = (device.queue as GPUQueue & { timestampPeriod?: number }).timestampPeriod ?? 0;
   if (periodNs === 0) {
     console.warn(
       '[WebGPU] Timestamp queries: queue timestamp period is 0 — using wall-clock fallback',

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { RenderMode } from '../renderer/types';
-import { Alucinate, AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from '../AutoDJ';
+import type { Alucinate } from '../AutoDJ';
+import type { AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from '../types/aiVj';
 import { ShaderEntry } from '../renderer/types';
 import { savePreset } from '../services/vjPresets';
 import { IMAGE_SUGGESTIONS_URL } from '../app/constants/fallbackContent';
@@ -53,7 +54,10 @@ export function useAiVjHandlers({
                 setStatus("Content not loaded yet, cannot start AI VJ.");
                 return;
             }
-            const vj = new Alucinate(
+            const { Alucinate: AlucinateClass } = await import(
+                /* webpackChunkName: "auto-dj" */ '../AutoDJ'
+            );
+            const vj = new AlucinateClass(
                 (url) => handleLoadImage(url),
                 handleUpdateStack,
                 () => {

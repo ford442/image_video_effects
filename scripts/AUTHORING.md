@@ -44,14 +44,17 @@ python3 scripts/new_shader.py "My Cool Effect" --category generative
 
 ## `wgsl_precommit_gate.py`
 
-Fast, changed-files-only validation. Runs naga and the bindgroup checker on the
-`.wgsl` files that differ from a base ref.
+Fast validation. Runs naga and the bindgroup checker on changed `.wgsl` files,
+or a full-tree workgroup/bindgroup scan with `--full-tree`.
 
 Usage:
 
 ```bash
-# Against origin/main (default)
+# Against origin/main (default) — changed files only
 python3 scripts/wgsl_precommit_gate.py
+
+# Full-tree convention scan (CI; skips naga for speed)
+python3 scripts/wgsl_precommit_gate.py --full-tree
 
 # Against a different base
 python3 scripts/wgsl_precommit_gate.py --base develop
@@ -63,24 +66,23 @@ python3 scripts/wgsl_precommit_gate.py --files public/shaders/my-effect.wgsl
 python3 scripts/wgsl_precommit_gate.py --json
 ```
 
-It exits non-zero if any changed compute shader fails naga, bindgroup checks, or
-uses a **2-arg** `@workgroup_size` (blocking). **1-arg override** forms are
-reported as warnings only.
-It exits non-zero if any changed compute shader fails naga, bindgroup, or
-workgroup-size checks.
+It exits non-zero if any compute shader fails naga, bindgroup checks, or
+workgroup-size convention checks.
 
 ### `@workgroup_size` convention (3 explicit dimensions — **blocking**)
 
 Pixelocity requires **three explicit workgroup dimensions** on compute entry points
-(e.g. `@workgroup_size(16, 16, 1)`). WGSL allows two-arg forms (Z defaults to 1);
-naga accepts them, but the gate **blocks** 2-arg forms on changed compute shaders.
-naga accepts them, but the gate **fails** changed files with fewer than 3 args.
+(e.g. `@workgroup_size(16, 16, 1)`). WGSL allows shorter forms; naga accepts
+them, but the gate **fails** any compute shader with fewer than 3 args.
 
 | Form | Gate |
 |------|------|
-| `@workgroup_size(16, 16, 1)` | ✅ pass |
-| `@workgroup_size(8, 8)` | ❌ **blocking** |
-| `@workgroup_size(block_width)` (override) | ⚠️ warning (valid WGSL, non-standard) |
+| `@workgroup_size(16, 16, 1)` | pass |
+| `@workgroup_size(8, 8)` | **blocking** (2-arg) |
+| `@workgroup_size(block_width)` (override) | **blocking** (1-arg) |
+
+Grandfathered paths may be listed in `reports/workgroup_grace_allowlist.json`
+(shrink over time as shaders are fixed).
 
 The check counts comma-separated arguments after stripping comments.
 
@@ -90,9 +92,9 @@ Local auto-fix (literal `(int, int)` only):
 python3 scripts/wgsl_precommit_gate.py --files public/shaders/my-effect.wgsl --fix
 ```
 
-Only **changed** `.wgsl` files (vs `--base origin/main`) are enforced — legacy
-two-arg shaders in untouched files do not block unrelated PRs.
-```
+**Changed-files gate** (`--base origin/main`): naga + bindgroup + workgroup on
+diff only. **Full-tree scan** (`--full-tree`): bindgroup + workgroup on all
+`public/shaders/*.wgsl` (no naga).
 
 Never auto-fixes override or single-arg forms.
 
@@ -101,18 +103,21 @@ Never auto-fixes override or single-arg forms.
 Offline report for `shader_definitions/**/*.json` entries missing local WGSL:
 
 ```bash
-python3 scripts/audit_orphan_shader_defs.py --ci-gate --base origin/main
+python3 scripts/audit_orphan_shader_defs.py --ci-gate
 python3 scripts/audit_orphan_shader_defs.py --base origin/main
 ```
 
 Writes `reports/orphan_shader_defs.{json,md}`. Audits **both directions** (full tree).
 
-**Forward-only enforcement** (with `--base`): exits 1 only when a **changed**
-definition JSON is `likely-broken` or `parse-error`. `local`, `storage-only`, and
-`allowlisted` always pass. Intentional data-only definitions belong in
-`ALLOWLIST_IDS` / `ALLOWLIST_PREFIXES` inside `audit_orphan_shader_defs.py`.
+**CI gate** (`--ci-gate`): exits 1 when any full-tree definition is
+`likely-broken` or `parse-error` and its id is not in
+`reports/orphan_baseline.json`. `local`, `storage-only`, and `allowlisted` always pass.
 
-Use `--no-fail` for report-only runs. `--fail-all` restores legacy full-tree failure.
+**Forward-only enforcement** (with `--base`): exits 1 only when a **changed**
+definition JSON is `likely-broken` or `parse-error`. Use for local pre-commit hooks.
+
+Use `--no-fail` for report-only runs. `--fail-all` restores legacy full-tree
+failure (includes orphan WGSL files).
 
 Templates (`_*.wgsl`) and multipass secondaries are excluded — see
 `docs/SHADER_TEMPLATES.md`.
@@ -124,9 +129,58 @@ python3 scripts/seed_orphan_shader_defs.py --write
 node scripts/generate_shader_lists.js
 ```
 
-**CI gate:** fails when a **changed** definition is `likely-broken`, or when a
-**new** `likely-broken` id appears outside `reports/orphan_baseline.json`
-(pre-existing accepted orphans do not retroactively break CI).
+## Swarm guardrail audits
+
+Two offline auditors catch recurring generative-swarm regressions. Both use a
+**forward-only triage baseline** — legacy violations are grandfathered in
+`reports/*_baseline.json`; only **new** violations fail CI.
+
+### `audit_extrabuffer.py` — FFT-zone footgun (blocking in CI)
+
+Index map (`agents/WGSL_BUILTINS_GENERATIVE.md`):
+
+| Range | Owner |
+|-------|-------|
+| `[0..4]` | Engine-reserved (CPU-written) |
+| `[5..132]` | Engine FFT bins — **stomped every audio frame** |
+| `[133..255]` | Safe persistent shader state |
+
+```bash
+npm run audit:extrabuffer
+python3 scripts/audit_extrabuffer.py --files public/shaders/my-effect.wgsl
+```
+
+Fails on any WGSL **write** to `extraBuffer[i]` for `i` in `0..132` not in the
+triage baseline. Reads are allowed. Dynamic-index writes are reported as
+warnings (use `--strict` to fail).
+
+The pre-commit gate (`wgsl_precommit_gate.py`) also runs this check on changed
+compute shaders (baseline-aware).
+
+### `audit_dead_sliders.py` — JSON params never read in WGSL
+
+Compares `params` / `controls` uniform mappings against WGSL reads of
+`u.zoom_params.x/y/z/w` (including alias and index forms).
+
+```bash
+npm run audit:dead-sliders
+npm run audit:dead-sliders:generative   # faster swarm loop
+python3 scripts/audit_dead_sliders.py --files my-shader-id
+```
+
+Writes `reports/dead_sliders_audit.{json,md}`. CI runs this in a **grace
+period** (non-blocking) until the generative `updatedParams` pool is closed;
+then flip to blocking.
+
+### Generative batch completion checklist
+
+After each 8-shader upgrade batch:
+
+1. `python3 scripts/wgsl_precommit_gate.py --files public/shaders/<batch>.wgsl`
+2. `npm run audit:extrabuffer` (or `--files` on batch WGSL)
+3. `npm run audit:dead-sliders -- --files <id1> <id2> …`
+4. `node scripts/generate_shader_lists.js` + duplicate check
+5. `npx react-scripts test --watchAll=false --ci`
 
 ## Local pre-commit hook
 

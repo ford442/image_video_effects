@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-07-26T13:25:30.710Z",
+  "strictGpuMode": true,
+  "gpuBackendObserved": false,
+  "benchmarkShaderIds": [
+    "sim-fluid-feedback-coupled",
+    "gen-lichen-reaction-diffusion",
+    "cyber-ripples"
+  ],
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.7827.55 Safari/537.36",
+  "results": [],
+  "comparisons": [],
+  "promotionGateMet": false,
+  "promotionMinShaders": 3,
+  "promotionSpeedupRatio": 1.25,
+  "notes": "Cloud VM stub after Phase 1 hygiene (#1013). No WebGPU adapter — not promotion evidence. Human discrete-GPU run required."
+}

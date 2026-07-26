@@ -11,6 +11,7 @@ sys.path.insert(0, str(_SCRIPTS))
 from bindgroup_checker import (  # noqa: E402
     check_workgroup_size_convention,
     fix_literal_two_arg_workgroup_size,
+    split_workgroup_issues,
     strip_wgsl_comments,
 )
 
@@ -62,6 +63,21 @@ def test_autofix_literal_two_arg_only():
     assert unchanged == override
 
 
+def test_split_workgroup_issues_classification():
+    two_arg = check_workgroup_size_convention(
+        (FIXTURES / "workgroup_two_arg.wgsl").read_text(encoding="utf-8")
+    )
+    one_arg = check_workgroup_size_convention(
+        (FIXTURES / "workgroup_override_one_arg.wgsl").read_text(encoding="utf-8")
+    )
+    blocking, warnings = split_workgroup_issues(two_arg)
+    assert len(blocking) == 1 and blocking[0]["arg_count"] == 2
+    assert warnings == []
+    blocking2, warnings2 = split_workgroup_issues(one_arg)
+    assert blocking2 == []
+    assert len(warnings2) == 1 and warnings2[0]["arg_count"] == 1
+
+
 def test_gen_showcase_nebula_core_if_present():
     repo = _SCRIPTS.parent
     target = repo / "public" / "shaders" / "gen-showcase-nebula-core.wgsl"
@@ -78,6 +94,7 @@ def main() -> int:
         test_override_one_arg_detected,
         test_three_arg_ok,
         test_autofix_literal_two_arg_only,
+        test_split_workgroup_issues_classification,
         test_gen_showcase_nebula_core_if_present,
     ]
     failed = 0

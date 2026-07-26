@@ -35,6 +35,7 @@ function makeCtx(overrides: Partial<{
     readTex,
     canvasW: overrides.canvasW ?? 64,
     canvasH: overrides.canvasH ?? 48,
+    colorFormat: 'rgba32float',
     filterSampler: {} as GPUSampler,
     supportsExternalTexture: false,
     videoCopyPipeline: null,

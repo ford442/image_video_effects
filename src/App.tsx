@@ -3,12 +3,14 @@ import { AppShell } from './components/app/AppShell';
 import { AppOverlays } from './components/app/AppOverlays';
 import { DEFAULT_B3HD_SEGMENT_LENGTH, DEFAULT_B3HD_INTERVAL_SECONDS } from './config/appConfig';
 import { RenderQualityMode } from './config/performancePolicy';
+import type { InternalColorFormat } from './config/formatPolicy';
+import type { ImageRecord } from './types/aiVj';
 import { isRenderQualityMode, loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
 import { RendererManager } from './renderer/RendererManager';
-import { ImageRecord } from './AutoDJ';
 import { VideoRecord } from './syncTypes';
 import { VideoSegment } from './services/videoSegmentManager';
 import { saveMyVjSet } from './services/myVjSets';
+import { MidiControlAdapter } from './services/midiControl';
 import {
     useDepthEstimation,
     useRendererBackend,
@@ -28,6 +30,7 @@ import {
     useRemoteSync,
     useTestHarness,
 } from './hooks';
+import { useThumbnailManifest } from './hooks/useThumbnailManifest';
 import { WEBCAM_FUN_SHADERS, getShaderDefaults } from './app/constants/shaderDefaults';
 import { defaultSlotParams } from './app/constants/defaultSlotParams';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
@@ -69,6 +72,8 @@ function MainApp() {
     const [storageBrowserTab] = useState<'shaders' | 'images' | 'videos'>('shaders');
     const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 });
     const [isMouseDown, setIsMouseDown] = useState(false);
+    const [midiEngageSignal, setMidiEngageSignal] = useState(0);
+    const previewBlobUrlsRef = useRef<string[]>([]);
     const [shadersReady, setShadersReady] = useState(false);
     const [renderQualityMode, setRenderQualityMode] = useState<RenderQualityMode>(() => {
         if (typeof window !== 'undefined') {
@@ -77,13 +82,24 @@ function MainApp() {
         }
         return loadRenderQualityMode();
     });
-    const [performanceHud, setPerformanceHud] = useState({
+    const [performanceHud, setPerformanceHud] = useState<{
+        internalWidth: number;
+        internalHeight: number;
+        scale: number;
+        targetFps: number;
+        adaptive: boolean;
+        maxActiveSlots: number;
+        colorFormat: InternalColorFormat;
+        estimatedTextureMiB: number;
+    }>({
         internalWidth: 2048,
         internalHeight: 2048,
         scale: 1,
         targetFps: 60,
         adaptive: true,
         maxActiveSlots: 3,
+        colorFormat: 'rgba32float',
+        estimatedTextureMiB: 0,
     });
 
     const rendererRef = useRef<RendererManager | null>(null);
@@ -304,6 +320,8 @@ function MainApp() {
         setSelectedVideo,
     });
 
+    const { hasThumbnail } = useThumbnailManifest();
+
     const {
         isRouletteActive,
         chaosModeEnabled,
@@ -320,11 +338,16 @@ function MainApp() {
         setMode,
         updateSlotParam,
         setStatus,
+        hasThumbnail,
     });
 
     const {
         generativeShowcaseActive,
         generativeShowcaseLocked,
+        generativeShowcaseDelay,
+        setGenerativeShowcaseDelay,
+        startGenerativeShowcase,
+        stopGenerativeShowcase,
     } = useGenerativeShowcase({
         availableModes,
         setMode,
@@ -332,7 +355,52 @@ function MainApp() {
         syncInputSourceToRenderer,
         setActiveGenerativeShader,
         setStatus,
+        hasThumbnail,
+        isMouseDown,
+        mousePosition,
+        midiEngageSignal,
     });
+
+    // MIDI engagement while attract mode is active (independent of Live Control panel)
+    useEffect(() => {
+        if (!generativeShowcaseActive || generativeShowcaseLocked) return;
+        const adapter = new MidiControlAdapter();
+        let cancelled = false;
+        void adapter.requestAccess().then((ok) => {
+            if (!ok || cancelled) return;
+            adapter.subscribe(() => {
+                setMidiEngageSignal((s) => s + 1);
+            });
+        });
+        return () => {
+            cancelled = true;
+            adapter.disable();
+        };
+    }, [generativeShowcaseActive, generativeShowcaseLocked]);
+
+    const handlePreviewImportShader = useCallback(async (id: string, wgsl: string, name: string) => {
+        const manager = rendererRef.current;
+        if (!manager) {
+            setStatus('Renderer not ready for preview');
+            return;
+        }
+        const blobUrl = URL.createObjectURL(new Blob([wgsl], { type: 'text/plain' }));
+        previewBlobUrlsRef.current.push(blobUrl);
+        const loaded = await manager.loadShader(id, blobUrl);
+        if (!loaded) {
+            setStatus(`Failed to load preview shader: ${name}`);
+            return;
+        }
+        syncInputSourceToRenderer('generative');
+        setActiveGenerativeShader(id);
+        setMode(0, id as RenderMode);
+        setShaderCategory('generative');
+        setStatus(`Preview loaded: ${name}`);
+    }, [syncInputSourceToRenderer, setMode, setStatus]);
+
+    useEffect(() => () => {
+        previewBlobUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    }, []);
 
     const {
         isRecording,
@@ -380,6 +448,7 @@ function MainApp() {
         if (!manager) return;
         manager.setRenderQuality(renderQualityMode, {
             supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup(),
+            formatCaps: manager.getFormatCapabilities(),
         });
     }, [rendererReady, renderQualityMode]);
 
@@ -398,7 +467,10 @@ function MainApp() {
         saveRenderQualityMode(mode);
         const manager = rendererRef.current;
         if (manager) {
-            manager.setRenderQuality(mode, { supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup() });
+            manager.setRenderQuality(mode, {
+                supportsDeepWorkgroup: manager.getSupportsDeepWorkgroup(),
+                formatCaps: manager.getFormatCapabilities(),
+            });
         }
     }, []);
 
@@ -434,6 +506,8 @@ function MainApp() {
                 targetFps: perf.targetFps,
                 adaptive: perf.adaptive,
                 maxActiveSlots: perf.maxActiveSlots,
+                colorFormat: perf.colorFormat,
+                estimatedTextureMiB: perf.estimatedTextureMiB,
             });
         };
         tick();
@@ -539,6 +613,12 @@ function MainApp() {
                 status={status}
                 generativeShowcaseActive={generativeShowcaseActive}
                 generativeShowcaseLocked={generativeShowcaseLocked}
+                generativeShowcaseDelay={generativeShowcaseDelay}
+                onStartGenerativeShowcase={startGenerativeShowcase}
+                onStopGenerativeShowcase={stopGenerativeShowcase}
+                onSetGenerativeShowcaseDelay={setGenerativeShowcaseDelay}
+                onPreviewImportShader={handlePreviewImportShader}
+                onImportStatus={setStatus}
                 isRendererSwitching={isRendererSwitching}
                 jsFps={jsFps}
                 wasmFps={wasmFps}

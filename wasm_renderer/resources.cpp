@@ -18,6 +18,14 @@ using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
 using wasm_internal::ParseWorkgroupSize;
 
+namespace {
+WGPUTextureFormat RgbaStorageFormat(policy::InternalColorFormat fmt) {
+    return fmt == policy::InternalColorFormat::Rgba16Float
+        ? WGPUTextureFormat_RGBA16Float
+        : WGPUTextureFormat_RGBA32Float;
+}
+}  // namespace
+
 bool WebGPURenderer::CreateResources() {
     // canvasWidth_/canvasHeight_ are set at init; defaults align with policy::kInternalRenderResolution.
     (void)policy::kInternalRenderResolution;
@@ -78,8 +86,8 @@ bool WebGPURenderer::CreateResources() {
     texDesc.mipLevelCount = 1;
     texDesc.sampleCount = 1;
 
-    // Ping-pong textures (rgba32float)
-    texDesc.format = WGPUTextureFormat_RGBA32Float;
+    // Ping-pong textures (tier-selected rgba format)
+    texDesc.format = RgbaStorageFormat(colorFormat_);
     texDesc.usage = WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopySrc;
     texDesc.label = MakeStringView("Read Texture");
     readTexture_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
@@ -98,7 +106,7 @@ bool WebGPURenderer::CreateResources() {
     texDesc.label = MakeStringView("Data Texture C");
     dataTextureC_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
 
-    texDesc.format = WGPUTextureFormat_RGBA32Float;
+    texDesc.format = RgbaStorageFormat(colorFormat_);
     texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst
                   | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopySrc;
     texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), HISTORY_DEPTH};
@@ -190,8 +198,8 @@ void WebGPURenderer::RecreateTextures() {
     texDesc.mipLevelCount = 1;
     texDesc.sampleCount = 1;
 
-    // Ping-pong textures (rgba32float)
-    texDesc.format = WGPUTextureFormat_RGBA32Float;
+    // Ping-pong textures (tier-selected rgba format)
+    texDesc.format = RgbaStorageFormat(colorFormat_);
     texDesc.usage = WGPUTextureUsage_CopyDst | WGPUTextureUsage_StorageBinding
                   | WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopySrc;
     texDesc.label = MakeStringView("Read Texture");
@@ -211,7 +219,7 @@ void WebGPURenderer::RecreateTextures() {
     texDesc.label = MakeStringView("Data Texture C");
     dataTextureC_.reset(wgpuDeviceCreateTexture(device_.get(), &texDesc));
 
-    texDesc.format = WGPUTextureFormat_RGBA32Float;
+    texDesc.format = RgbaStorageFormat(colorFormat_);
     texDesc.usage = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst
                   | WGPUTextureUsage_StorageBinding | WGPUTextureUsage_CopySrc;
     texDesc.size = {static_cast<uint32_t>(canvasWidth_), static_cast<uint32_t>(canvasHeight_), HISTORY_DEPTH};
@@ -337,6 +345,28 @@ void WebGPURenderer::ClearReadTexture() {
 
     wgpuQueueWriteTexture(queue_.get(), &dest, videoStagingBuffer_.data(),
                           floatCount * sizeof(float), &layout, &extent);
+}
+
+void WebGPURenderer::SetColorFormat(int formatEnum) {
+    if (!initialized_ || deviceLost_) return;
+    const auto fmt = formatEnum == 1
+        ? policy::InternalColorFormat::Rgba16Float
+        : policy::InternalColorFormat::Rgba32Float;
+    if (colorFormat_ == fmt) return;
+
+    printf("[WASM] Switching internal color format to %s\n",
+           fmt == policy::InternalColorFormat::Rgba16Float ? "rgba16float" : "rgba32float");
+    colorFormat_ = fmt;
+    shaders_.clear();
+
+    computeBindGroupLayout_.reset();
+    computePipelineLayout_.reset();
+    if (!CreateBindGroupLayout()) {
+        printf("❌ SetColorFormat: CreateBindGroupLayout failed\n");
+        return;
+    }
+
+    RecreateTextures();
 }
 
 // ─── CreateComputeBindGroup ───────────────────────────────────────────────────

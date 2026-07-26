@@ -1,0 +1,95 @@
+// Photonic Caustics — temporal accumulation + iridescent present (graph node 3)
+
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
+};
+
+fn calculateAdvancedAlpha(color: vec3<f32>, uv: vec2<f32>) -> f32 {
+  let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+  let intensity = u.zoom_params.w * 0.5 + 0.4;
+  let threshold = u.zoom_params.y * 0.15 + 0.05;
+  let softness = u.zoom_params.z * 0.1 + 0.02;
+  let depthWeight = u.zoom_params.x * 0.5;
+  let lumaAlpha = smoothstep(threshold - softness, threshold + softness, luma) * intensity;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthAlpha = mix(0.3, 1.0, depth);
+  return clamp(mix(lumaAlpha, depthAlpha, depthWeight), 0.0, 1.0);
+}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
+  let coord = gid.xy;
+  if (coord.x >= size.x || coord.y >= size.y) { return; }
+
+  let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
+  let time = u.config.x;
+  let dispersion = mix(0.0, 0.1, u.zoom_params.z);
+  let treble = plasmaBuffer[0].z;
+
+  let prevCaustic = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  let thisTrace = textureLoad(dataTextureA, vec2<i32>(coord), 0);
+  let emitter = textureLoad(dataTextureB, vec2<i32>(coord), 0);
+  let surfaceNormal = emitter.rgb;
+  let lightPos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  let lightHeight = emitter.a;
+
+  var causticAccum = thisTrace.rgb;
+  for (var i = 0; i < 50; i = i + 1) {
+    let ripple = u.ripples[i];
+    if (ripple.z > 0.0) {
+      let rippleAge = time - ripple.z;
+      if (rippleAge > 0.0 && rippleAge < 3.0) {
+        let toRipple = uv - ripple.xy;
+        let dist = length(toRipple);
+        let rippleStrength = (1.0 - rippleAge / 3.0) * 0.5;
+        let wave = sin(dist * 30.0 - rippleAge * 5.0) * 0.5 + 0.5;
+        let causticRing = wave * rippleStrength / (1.0 + dist * 10.0);
+        causticAccum = causticAccum + vec3<f32>(causticRing * 0.5, causticRing * 0.7, causticRing * 1.0);
+      }
+    }
+  }
+
+  let blendFactor = 0.15 + treble * 0.05;
+  let accumulatedCaustic = mix(prevCaustic.rgb, causticAccum, blendFactor);
+
+  let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let refractDisplace = surfaceNormal.xy * 0.02 * (1.0 + treble * 0.2);
+  let chromaOffset = dispersion * 0.01;
+  let colorR = textureSampleLevel(readTexture, u_sampler, uv + refractDisplace + vec2<f32>(chromaOffset, 0.0), 0.0).r;
+  let colorG = textureSampleLevel(readTexture, u_sampler, uv + refractDisplace, 0.0).g;
+  let colorB = textureSampleLevel(readTexture, u_sampler, uv + refractDisplace - vec2<f32>(chromaOffset, 0.0), 0.0).b;
+  let refractedChromatic = vec3<f32>(colorR, colorG, colorB);
+
+  var finalColor = mix(sourceColor, refractedChromatic, 0.3);
+  finalColor = finalColor + accumulatedCaustic;
+
+  let viewDir = vec3<f32>(0.0, 0.0, 1.0);
+  let reflectDir = reflect(-viewDir, surfaceNormal);
+  let lightDir = normalize(vec3<f32>(lightPos - uv, lightHeight));
+  let specular = pow(max(dot(reflectDir, lightDir), 0.0), 64.0);
+  finalColor = finalColor + vec3<f32>(specular * 0.5);
+
+  let alpha = calculateAdvancedAlpha(finalColor, uv);
+  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, alpha));
+  textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(accumulatedCaustic, 1.0));
+}

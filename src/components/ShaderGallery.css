@@ -166,12 +166,20 @@
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.shader-gallery-preview-toggle {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  color: var(--text-muted, #606070);
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.04), rgba(0, 0, 0, 0.2));
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted, #a0a0b0);
+  cursor: pointer;
+  user-select: none;
+}
+
+.shader-gallery-preview-toggle input {
+  accent-color: #e94560;
 }
 
 .shader-gallery-stars-overlay {

@@ -27,9 +27,12 @@ const OUT_DIR = path.join(ROOT, 'public', 'thumbnails');
 const MANIFEST_PATH = path.join(OUT_DIR, 'manifest.json');
 const BUILD_DIR = path.join(ROOT, 'build');
 const DEFAULT_REPORT = path.join(ROOT, 'reports', 'thumbnail-failures.json');
+const MULTIPASS_REGISTRY_PATH = path.join(ROOT, 'src', 'renderer', 'multipassRegistry.ts');
+const { loadThumbnailSkipIds } = require('./lib/thumbnailSkipAllowlist');
 
 const DEFAULT_SIZE = 256;
 const DEFAULT_FRAMES = 60;
+const SIM_WARMUP_FRAMES = 120;
 const DEFAULT_TIME = 1.5;
 const DEFAULT_QUALITY = 'battery';
 
@@ -127,10 +130,63 @@ function classifyFailure(error) {
   const msg = String(error || '');
   if (msg.startsWith('compile:')) return 'compile';
   if (msg.startsWith('pipeline:')) return 'pipeline';
-  if (msg === 'black_frame') return 'black_frame';
+  if (msg === 'black_frame' || msg === 'magenta_frame' || msg === 'error_frame') return msg;
   if (msg.includes('no GPU') || msg.includes('navigator.gpu')) return 'gpu_unavailable';
   if (msg.includes('loadShader failed')) return 'load_failed';
   return 'unknown';
+}
+
+function emptySummary() {
+  return { success: 0, failed: 0, skipped: 0, black_frame: 0, magenta_frame: 0, error_frame: 0, compile: 0 };
+}
+
+function bumpErrorSummary(summary, reason) {
+  if (reason === 'black_frame') summary.black_frame++;
+  else if (reason === 'magenta_frame') summary.magenta_frame++;
+  else if (reason === 'error_frame') summary.error_frame++;
+}
+
+/** Parse multipass + graph registry ids from generated TS for warmup heuristics. */
+function loadWarmupShaderIds() {
+  const ids = new Set();
+  if (!fs.existsSync(MULTIPASS_REGISTRY_PATH)) return ids;
+  const src = fs.readFileSync(MULTIPASS_REGISTRY_PATH, 'utf8');
+  const multipassBlock = src.match(/export const MULTIPASS_REGISTRY[^=]*=\s*\{([\s\S]*?)\n\};/);
+  if (multipassBlock) {
+    const passRe = /"([^"]+)":\s*\{[^}]*"pass":\s*(\d+)/g;
+    let m;
+    while ((m = passRe.exec(multipassBlock[1])) !== null) {
+      ids.add(m[1]);
+    }
+  }
+  const graphBlock = src.match(/export const GRAPH_REGISTRY[^=]*=\s*\{([\s\S]*?)\n\};/);
+  if (graphBlock) {
+    const graphRe = /"([^"]+)":\s*\{/g;
+    let m;
+    while ((m = graphRe.exec(graphBlock[1])) !== null) {
+      ids.add(m[1]);
+    }
+  }
+  return ids;
+}
+
+const WARMUP_SHADER_IDS = loadWarmupShaderIds();
+
+function warmupFramesForShader(shader, defaultFrames) {
+  const category = shader.category || '';
+  if (category === 'simulation' || WARMUP_SHADER_IDS.has(shader.id)) {
+    return Math.max(defaultFrames, SIM_WARMUP_FRAMES);
+  }
+  return defaultFrames;
+}
+
+function recordErrorFrameFailure(failures, summary, shaderId, stats, harness) {
+  const reason = harness.classifyErrorFrame(stats) || 'error_frame';
+  bumpErrorSummary(summary, reason);
+  summary.failed++;
+  const detail = harness.formatFrameStats(stats);
+  failures.push({ id: shaderId, reason, detail, stats });
+  return { reason, detail };
 }
 
 function writeFailureReport(reportPath, payload) {
@@ -324,7 +380,7 @@ async function renderThumbnailInPage({ wgsl, zoomParams, size, time, id }) {
 }
 
 async function runMinimalEngine(args, shaders, manifest) {
-  const summary = { success: 0, failed: 0, skipped: 0, black_frame: 0, compile: 0 };
+  const summary = emptySummary();
   const failures = [];
 
   const browser = await chromium.launch({
@@ -383,7 +439,7 @@ async function runMinimalEngine(args, shaders, manifest) {
 
 async function runAppEngine(args, shaders, manifest) {
   const harness = await import('./lib/thumbnailHarness.mjs');
-  const summary = { success: 0, failed: 0, skipped: 0, black_frame: 0, compile: 0 };
+  const summary = emptySummary();
   const failures = [];
 
   if (!fs.existsSync(path.join(BUILD_DIR, 'index.html'))) {
@@ -445,19 +501,13 @@ async function runAppEngine(args, shaders, manifest) {
         mouseY: 0.5,
         mouseDown: 0,
       });
-      await harness.waitFrames(page, args.frames);
+      const frameCount = warmupFramesForShader(shader, args.frames);
+      await harness.waitFrames(page, frameCount);
 
       const stats = await harness.captureCanvasStats(page);
-      if (harness.isBlackFrame(stats)) {
-        summary.black_frame++;
-        summary.failed++;
-        console.log(`${progress} ${shader.id}: FAIL (black_frame lum=${stats.meanLuminance.toFixed(4)} active=${stats.activePixelRatio.toFixed(4)})`);
-        failures.push({
-          id: shader.id,
-          reason: 'black_frame',
-          detail: `meanLuminance=${stats.meanLuminance.toFixed(4)} activePixelRatio=${stats.activePixelRatio.toFixed(4)}`,
-          stats,
-        });
+      if (harness.isErrorFrame(stats)) {
+        const { reason, detail } = recordErrorFrameFailure(failures, summary, shader.id, stats, harness);
+        console.log(`${progress} ${shader.id}: FAIL (${reason} ${detail})`);
         continue;
       }
 
@@ -499,11 +549,12 @@ async function runAppEngine(args, shaders, manifest) {
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   let shaders = loadShaderList(args.category);
+  const skipIds = loadThumbnailSkipIds();
+  shaders = shaders.filter(s => !skipIds.has(s.id));
   if (args.ids) shaders = shaders.filter(s => args.ids.includes(s.id));
   if (args.shardIndex !== null && args.shardCount !== null) {
     shaders = shaders.filter((_, i) => i % args.shardCount === args.shardIndex);
   }
-  if (args.limit) shaders = shaders.slice(0, args.limit);
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const manifest = fs.existsSync(MANIFEST_PATH)
@@ -514,9 +565,15 @@ async function main() {
     shaders = shaders.filter(s => !hasExistingThumbnail(s.id, manifest));
   }
 
+  if (args.limit) shaders = shaders.slice(0, args.limit);
+
   if (shaders.length === 0) {
     console.log('No shaders to process.');
     return;
+  }
+
+  if (skipIds.size > 0) {
+    console.log(`[thumbnails] Skipping ${skipIds.size} allowlisted shader(s)`);
   }
 
   console.log(
@@ -539,7 +596,7 @@ async function main() {
     const payload = {
       generated_at: new Date().toISOString(),
       engine: args.engine,
-      summary: { success: 0, failed: 1, skipped: 0, black_frame: 0, compile: 0 },
+      summary: emptySummary(),
       failures: [{ id: '*', reason, detail: err.message }],
     };
     writeFailureReport(args.report, payload);
@@ -561,6 +618,8 @@ async function main() {
   console.log('');
   console.log(`[thumbnails] Done. success=${summary.success} failed=${summary.failed} skipped=${summary.skipped}`);
   if (summary.black_frame > 0) console.log(`[thumbnails] black_frame=${summary.black_frame}`);
+  if (summary.magenta_frame > 0) console.log(`[thumbnails] magenta_frame=${summary.magenta_frame}`);
+  if (summary.error_frame > 0) console.log(`[thumbnails] error_frame=${summary.error_frame}`);
   if (summary.compile > 0) console.log(`[thumbnails] compile=${summary.compile}`);
   console.log(`[thumbnails] Manifest: ${MANIFEST_PATH}`);
   if (failures.length > 0) console.log(`[thumbnails] Failures: ${args.report}`);
@@ -573,4 +632,12 @@ if (require.main === module) {
   });
 }
 
-module.exports = { parseArgs, hasExistingThumbnail, classifyFailure, extractDefaultParams };
+module.exports = {
+  parseArgs,
+  hasExistingThumbnail,
+  classifyFailure,
+  extractDefaultParams,
+  warmupFramesForShader,
+  emptySummary,
+  WARMUP_SHADER_IDS,
+};

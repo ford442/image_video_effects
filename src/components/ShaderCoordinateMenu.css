@@ -414,6 +414,21 @@
   color: #4a9eff;
 }
 
+.badge.multipass {
+  right: 4px;
+  top: auto;
+  bottom: 4px;
+  left: auto;
+  color: #7ee787;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 1px 4px;
+  border-radius: 4px;
+  max-width: calc(100% - 8px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .coord-badge {
   font-family: 'SF Mono', Monaco, monospace;
   font-size: 10px;

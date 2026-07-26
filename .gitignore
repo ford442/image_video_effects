@@ -15,3 +15,9 @@ __pycache__/
 public/shader-manifest-unified.json
 playwright-report/
 test-results/
+
+# Emscripten accidental outputs at repo root
+/a.out.js
+/a.out.wasm
+/upg.zip
+/patch*.diff

@@ -40,6 +40,21 @@ Bindings persist in `localStorage` (`vj_control_bindings`).
 
 On phones and tablets, MIDI controls are hidden. Use touch sliders and chain URLs. Keyboard learn may still work with external keyboards on some tablets.
 
+## Tier C physics demo: Ripple Tank
+
+**Shader id:** `ripple-tank` (Simulation category — look for the **graph · 7 passes** badge)
+
+A psychedelic 2D wave-interference tank using the Tier C graph runner:
+
+- **Click** anywhere to drop expanding ring ripples
+- **Hold** the mouse to drive a local oscillator
+- **Audio** bass boosts source strength; treble adds ambient rain droplets
+- **4 wave steps per frame** (Jacobi-style propagation) under the performance pass budget
+
+Works best on desktop WebGPU at **balanced** quality or higher (`requiresRgba32Float`). Target: 60 fps on a discrete GPU (e.g. RTX 3060-class) at 1080p internal resolution. If frame rate dips, switch to **battery** quality (fewer graph dispatches per frame).
+
+Parameters: Wave Speed, Damping, Source Strength, Boundary Reflect — all four map to `zoom_params`.
+
 ## Troubleshooting
 
 | Issue | Fix |

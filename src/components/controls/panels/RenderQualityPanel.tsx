@@ -1,5 +1,6 @@
 import React from 'react';
 import { RenderQualityMode } from '../../../config/performancePolicy';
+import { formatLabel, InternalColorFormat } from '../../../config/formatPolicy';
 
 export interface RenderQualityPanelProps {
   qualityMode: RenderQualityMode;
@@ -9,12 +10,14 @@ export interface RenderQualityPanelProps {
   scale: number;
   adaptive: boolean;
   targetFps: number;
+  colorFormat?: InternalColorFormat;
+  estimatedTextureMiB?: number;
 }
 
 const MODES: Array<{ id: RenderQualityMode; label: string; hint: string }> = [
-  { id: 'battery', label: '🔋 Battery', hint: '0.5× · 1 slot · 30 FPS target' },
-  { id: 'balanced', label: '⚖️ Balanced', hint: '0.75× · 2 slots · 60 FPS' },
-  { id: 'ultra', label: '✨ Ultra', hint: '1.0× · 3 slots · full res' },
+  { id: 'battery', label: '🔋 Battery', hint: '0.5× · FP16 · 1 slot · 30 FPS' },
+  { id: 'balanced', label: '⚖️ Balanced', hint: '0.75× · FP16 · 2 slots · 60 FPS' },
+  { id: 'ultra', label: '✨ Ultra', hint: '1.0× · FP32 · 3 slots · full res' },
   { id: 'auto', label: '🎯 Auto', hint: 'Adapts scale to hold 30/60 FPS' },
 ];
 
@@ -26,6 +29,8 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
   scale,
   adaptive,
   targetFps,
+  colorFormat = 'rgba32float',
+  estimatedTextureMiB,
 }) => (
   <div className="control-group glass-panel" style={{ padding: '12px' }}>
     <div className="gold-section-header" style={{ fontSize: '12px', marginTop: 0 }}>
@@ -54,6 +59,9 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
     </div>
     <div style={{ fontSize: '10px', color: '#9090a8', marginTop: '8px', lineHeight: 1.5 }}>
       Internal: {internalResolution}² ({Math.round(scale * 100)}%)
+      {' · '}
+      {formatLabel(colorFormat)}
+      {estimatedTextureMiB !== undefined && ` · ~${estimatedTextureMiB} MiB tex`}
       {' · '}
       Slots: {maxActiveSlots}
       {adaptive && ` · Auto ${targetFps} FPS`}

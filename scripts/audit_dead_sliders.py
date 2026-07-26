@@ -65,12 +65,30 @@ def _rel(p: Path) -> str:
 def extract_params(meta: dict) -> list[dict]:
     """Return [{id, name, field}] for all slider params of a definition."""
     out = []
-    if isinstance(meta.get("params"), list):
+    if isinstance(meta.get("params"), list) and meta["params"]:
         for i, p in enumerate(meta["params"][:4]):
             mapping = p.get("mapping") or f"zoom_params.{FIELDS[i]}"
             field = mapping.rsplit(".", 1)[-1]
             if field in FIELDS:
                 out.append({"id": p.get("id", f"param{i+1}"),
+                            "name": p.get("name", ""), "field": field})
+    elif isinstance(meta.get("parameters"), list) and meta["parameters"]:
+        for i, p in enumerate(meta["parameters"][:4]):
+            if "uniform" in p:
+                field = p["uniform"].rsplit(".", 1)[-1]
+            elif str(p.get("name", "")).startswith("zoom_params."):
+                field = str(p["name"]).rsplit(".", 1)[-1]
+            else:
+                field = FIELDS[i]
+            if field in FIELDS:
+                out.append({"id": p.get("id", p.get("label", f"param{i+1}")),
+                            "name": p.get("label", p.get("name", "")), "field": field})
+    elif isinstance(meta.get("uniforms"), list) and meta["uniforms"]:
+        for i, p in enumerate(meta["uniforms"][:4]):
+            mapping = p.get("mapping") or f"zoom_params.{FIELDS[i]}"
+            field = mapping.rsplit(".", 1)[-1]
+            if field in FIELDS:
+                out.append({"id": p.get("id", p.get("name", f"param{i+1}")),
                             "name": p.get("name", ""), "field": field})
     elif isinstance(meta.get("controls"), list):
         for c in meta["controls"]:

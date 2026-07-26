@@ -3,6 +3,7 @@ import { ShaderEntry } from '../renderer/types';
 import { ShaderApi } from '../services/shaderApi';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 import { determineCategory } from '../app/constants/shaderCatalogUtils';
+import { inferRequiresRgba32Float } from '../config/formatPolicy';
 
 export interface UseShaderCatalogLoadOptions {
     setAvailableModes: React.Dispatch<React.SetStateAction<ShaderEntry[]>>;
@@ -40,7 +41,12 @@ export function useShaderCatalogLoad({
                     hasErrors: shader.has_errors,
                     requiresDeepWorkgroup: shader.requiresDeepWorkgroup === true,
                     requiresHistoryRing: shader.requiresHistoryRing === true,
-                    params: (shader.params || []).map((p: { id?: string; name?: string; label?: string; default?: number; min?: number; max?: number; step?: number; labels?: string[] }, idx: number) => ({
+                    requiresRgba32Float: inferRequiresRgba32Float({
+                        requiresRgba32Float: shader.requiresRgba32Float === true,
+                        category: determineCategory(shader),
+                        tags: shader.tags || [],
+                    }),
+                    params: (shader.params || []).map((p: { id?: string; name?: string; label?: string; default?: number; min?: number; max?: number; step?: number; labels?: string[]; mapping?: string; audio?: string | { fft: number } }, idx: number) => ({
                         id: p.id || p.name || `param${idx + 1}`,
                         name: p.label || p.name || `Parameter ${idx + 1}`,
                         default: p.default ?? 0.5,
@@ -48,6 +54,8 @@ export function useShaderCatalogLoad({
                         max: p.max ?? 1,
                         step: p.step ?? 0.01,
                         labels: p.labels,
+                        mapping: p.mapping,
+                        audio: p.audio as import('../renderer/types').ShaderParam['audio'],
                     })),
                 }));
 

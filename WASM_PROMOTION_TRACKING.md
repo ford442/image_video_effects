@@ -7,15 +7,19 @@
 **Docs refresh (closed):** [#890](https://github.com/ford442/image_video_effects/issues/890)
 
 **Current tier:** **B — Experimental (opt-in)**  
-**Last evidence review:** 2026-07-19 (measurement harness polish + VM validation)
+**Last evidence review:** 2026-07-26 (Phase 1 hygiene; GPU gates still open)
 
 ---
+
+## Decision (2026-07-26) — reaffirm STAY TIER B
+
+Phase 1 hygiene landed (#1013): single `npm run build` path documented, emcc flag dedupe, dormant `-sg.wgsl` probe removed, input-source test coverage expanded. **Promotion gates 1–4 remain open** — GPU bench/parity/smoke require discrete-GPU human runs; Cloud VM cannot observe WebGPU.
+
+**Action:** Run checklist below on ≥2 GPU configs. Until then: **STAY TIER B**.
 
 ## Decision (2026-07-19) — reaffirm STAY TIER B
 
 Foundation Wave 2 (#965) closed binding-13 parity in C++ and wired TS device policy, but **promotion gates 1–4 remain open**. Measurement harness now writes enriched bench reports (`benchmarkShaderIds`, `wasmAdapterSummary`, `webgpuAdapterSummary`, `userAgent`); CI uploads `wasm-benchmark-report` artifact. **GPU-backed evidence still required** from a discrete-GPU workstation.
-
-**Action:** Collect evidence on a discrete GPU workstation per checklist below. Until then: **STAY TIER B**.
 
 ---
 
@@ -41,7 +45,8 @@ Integration epics #817–#890 are closed; remaining work is **measurement**, not
 **Next measurement actions (human + GPU hardware):**
 
 1. On **discrete GPU** machine (e.g. NVIDIA GTX 1060+):  
-   `npm run wasm:build && npm run build && WASM_GPU_TESTS=1 npm run test:wasm:bench`  
+   `npm run build && WASM_GPU_TESTS=1 npm run test:wasm:bench`  
+   (`prebuild` runs `wasm:build` once; use `SKIP_WASM_BUILD=1 npm run build` only when reusing committed artifacts.)  
    Attach `test-results/wasm-benchmark-report.json` + `lspci` / `chrome://gpu` notes.
 
 2. On **iGPU or second vendor** (Intel/AMD): repeat bench + parity.
@@ -57,7 +62,7 @@ Integration epics #817–#890 are closed; remaining work is **measurement**, not
 ### Command
 
 ```bash
-npm run wasm:build && npm run build
+npm run build
 WASM_GPU_TESTS=1 npm run test:wasm:bench
 ```
 
@@ -81,6 +86,7 @@ From [`tests/fixtures/parityMatrix.ts`](./tests/fixtures/parityMatrix.ts) → `B
 
 | Run date | Hardware | Report path | `promotionGateMet` | Notes |
 |----------|----------|-------------|-------------------|-------|
+| 2026-07-26 | Cloud VM — QEMU (no WebGPU) | [`reports/wasm-benchmark-report-stub-2026-07-26.json`](./reports/wasm-benchmark-report-stub-2026-07-26.json) | `false` | Post–Phase 1 hygiene VM validation; **not promotion evidence** |
 | 2026-07-19 | Cloud VM — `Device 1234:1111` (QEMU, no WebGPU) | [`reports/wasm-benchmark-report-stub-2026-07-19.json`](./reports/wasm-benchmark-report-stub-2026-07-19.json) | `false` | `gpuBackendObserved: false`; backends fell back — **not promotion evidence** |
 | — | Discrete GPU (NVIDIA+) | `test-results/wasm-benchmark-report.json` | — | **Awaiting human run** |
 
@@ -102,6 +108,7 @@ WASM_GPU_TESTS=1 npm run test:wasm:parity
 
 | Run date | GPU / OS / Browser | Parity result | Report / run URL |
 |----------|-------------------|---------------|------------------|
+| 2026-07-26 | Cloud VM — QEMU / Linux / Chromium 149 | **6 skipped, 1 failed** — no WebGPU adapter | Local: `WASM_GPU_TESTS=1 npm run test:wasm:parity` |
 | 2026-07-19 | Cloud VM — QEMU / Linux / Chromium 149 | **Skipped** (7/7) — no WebGPU adapter | Local run: `WASM_GPU_TESTS=1 npm run test:wasm:parity` |
 | — | Discrete GPU | — | **Awaiting human run** |
 | — | Second vendor (iGPU / AMD) | — | **Awaiting human run** |
@@ -124,7 +131,7 @@ Outside `testMode`. See [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md).
 | Recording start/stop + blob | ⬜ | | |
 | Renderer switcher wasm ↔ webgpu | ⬜ | | |
 
-**Blocked in Cloud VM** (no WebGPU, no interactive Controls). Run `npm start` on a GPU workstation without `?testMode=1`.
+**Blocked in Cloud VM** (no WebGPU, no interactive Controls). Run `npm start` on a GPU workstation without `?testMode=1`. Re-validated 2026-07-26 after Phase 1 hygiene — still blocked.
 
 ---
 
@@ -141,7 +148,7 @@ Source: `main` branch push runs — [Actions](https://github.com/ford442/image_v
 | 2026-W29 (Jul 14–20) | ✅ `wasm` green on Jul 14–18 pushes | ❌ `test` job fails → e2e **skipped** | **FAIL** |
 | 2026-W30+ | — | — | TBD |
 
-**4 consecutive weeks:** **NOT MET** (as of 2026-07-19).
+**4 consecutive weeks:** **NOT MET** (as of 2026-07-26).
 
 Recent main CI pattern (Jul 14–18): `wasm` ✅, `test` ❌, `test-wasm-e2e` skipped (needs `test` green). Example runs: `29645534494`, `29645412792`, `29645154775`.
 
@@ -175,6 +182,10 @@ Prior green main pushes (both jobs): `29148209376`, `29144412949`, `29143957549`
 | 2026-07-19 | Agent (Cloud VM) | `WASM_GPU_TESTS=1 npm run test:wasm:parity` | **7/7 skipped** — no WebGPU adapter |
 | 2026-07-19 | Agent (Cloud VM) | `lspci` | `Device 1234:1111` (QEMU VGA — not a real GPU) |
 | 2026-07-19 | Review | Promotion decision | **STAY TIER B** — gates 1–4 open; human GPU runs required |
+| 2026-07-26 | Agent (Cloud VM) | Phase 1 hygiene (#1013) | Build dedupe, `-sg` probe removed, input tests; bridge `uploadImageData` guard |
+| 2026-07-26 | Agent (Cloud VM) | `WASM_GPU_TESTS=1 npm run test:wasm:bench` | **Skipped** — `gpuBackendObserved: false`; stub → [`reports/wasm-benchmark-report-stub-2026-07-26.json`](./reports/wasm-benchmark-report-stub-2026-07-26.json) |
+| 2026-07-26 | Agent (Cloud VM) | `WASM_GPU_TESTS=1 npm run test:wasm:parity` | **6 skipped, 1 failed** — no WebGPU adapter |
+| 2026-07-26 | Review | Promotion decision | **STAY TIER B** — Phase 1 complete; gates 1–4 open; human GPU runs required |
 
 ---
 

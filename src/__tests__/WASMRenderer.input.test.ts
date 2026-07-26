@@ -6,6 +6,7 @@ jest.mock('../wasm/wasm_bridge.js', () => ({
   shutdownWasmRenderer: jest.fn(),
   setInputSource: jest.fn(),
   uploadVideoFrame: jest.fn(),
+  uploadImageData: jest.fn(),
   updateUniforms: jest.fn(),
   getFPS: jest.fn().mockReturnValue(60),
 }));
@@ -64,5 +65,38 @@ describe('WASMRenderer input sources', () => {
       renderer.updateVideoFrame();
       expect(WasmBridge.uploadVideoFrame).toHaveBeenCalledWith(fakeImageData, 640, 480);
     }
+  });
+
+  it('loadImageFromURL uploads decoded RGBA pixels via the bridge', async () => {
+    const fakeImageData = new Uint8ClampedArray(32 * 24 * 4);
+    fakeImageData[0] = 200;
+
+    const drawImage = jest.fn();
+    const getImageData = jest.fn().mockReturnValue({
+      data: fakeImageData,
+      width: 32,
+      height: 24,
+    });
+
+    jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage,
+      getImageData,
+    } as unknown as CanvasRenderingContext2D);
+
+    const decode = jest.fn().mockResolvedValue(undefined);
+    jest.spyOn(global, 'Image').mockImplementation(() => {
+      const img = document.createElement('img');
+      Object.defineProperty(img, 'naturalWidth', { value: 32 });
+      Object.defineProperty(img, 'naturalHeight', { value: 24 });
+      img.decode = decode;
+      return img;
+    });
+
+    await renderer.loadImageFromURL('https://example.com/test.png');
+
+    expect(decode).toHaveBeenCalled();
+    expect(drawImage).toHaveBeenCalled();
+    expect(getImageData).toHaveBeenCalledWith(0, 0, 32, 24);
+    expect(WasmBridge.uploadImageData).toHaveBeenCalledWith(fakeImageData, 32, 24);
   });
 });

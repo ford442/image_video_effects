@@ -37,6 +37,10 @@ export interface ShaderParam {
     max: number;
     step?: number;
     labels?: string[];
+    /** WGSL uniform field, e.g. zoom_params.x */
+    mapping?: string;
+    /** Audio band driving this param when audio-reactive mode is on */
+    audio?: 'bass' | 'mid' | 'treble' | 'overall' | { fft: number };
 }
 
 export interface ShaderEntry {
@@ -53,6 +57,8 @@ export interface ShaderEntry {
     requiresDeepWorkgroup?: boolean;
     /** When true, shader samples binding 13 (historyTexture 2d-array ring buffer). */
     requiresHistoryRing?: boolean;
+    /** When true, shader needs rgba32float storage (physics / RD sims). */
+    requiresRgba32Float?: boolean;
 }
 
 export interface SlotParams {

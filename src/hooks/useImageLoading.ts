@@ -1,6 +1,6 @@
 import { useCallback, RefObject } from 'react';
 import { RendererManager } from '../renderer/RendererManager';
-import { ImageRecord } from '../AutoDJ';
+import type { ImageRecord } from '../types/aiVj';
 import { FALLBACK_IMAGES } from '../app/constants/fallbackContent';
 
 export interface UseImageLoadingOptions {

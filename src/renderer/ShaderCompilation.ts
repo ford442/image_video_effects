@@ -7,6 +7,8 @@
 
 import { validateBindGroup } from './bindGroupValidator';
 import { reportError } from './ErrorHandling';
+import type { InternalColorFormat } from '../config/formatPolicy';
+import { pipelineCacheKey, rewriteWgslStorageFormats } from './wgslFormatRewrite';
 
 /**
  * Simple hash function for WGSL source code
@@ -169,10 +171,11 @@ export function compileShader(
   pipelines: Map<string, GPUComputePipeline>,
   pipelineHashes: Map<string, string>,
   workgroupSizes: Map<string, { x: number; y: number }>,
+  colorFormat: InternalColorFormat = 'rgba32float',
 ): boolean {
+  const cacheKey = pipelineCacheKey(wgsl, colorFormat);
   // Fast path: shader already cached AND content unchanged
-  const contentHash = hashWgsl(wgsl);
-  if (pipelines.has(id) && pipelineHashes.get(id) === contentHash) {
+  if (pipelines.has(id) && pipelineHashes.get(id) === cacheKey) {
     return true;
   }
 
@@ -186,6 +189,9 @@ export function compileShader(
     // Skip directly to fallback below
   }
 
+  const compiledWgsl = rewriteWgslStorageFormats(wgsl, colorFormat);
+  const fallbackWgsl = rewriteWgslStorageFormats(FALLBACK_WGSL, colorFormat);
+
   // Parse workgroup size from shader source (entry point `main` — the only
   // entry point the renderer dispatches)
   const wgSize = parseWorkgroupSize(wgsl, 'main');
@@ -193,7 +199,7 @@ export function compileShader(
   // Try to compile the requested shader only if validation passed
   if (validation.valid) {
     try {
-      const module = device.createShaderModule({ label: id, code: wgsl });
+      const module = device.createShaderModule({ label: id, code: compiledWgsl });
 
       // Check for compilation errors using compilationInfo
       module.getCompilationInfo().then((info) => {
@@ -210,7 +216,7 @@ export function compileShader(
       });
 
       pipelines.set(id, pipeline);
-      pipelineHashes.set(id, contentHash);
+      pipelineHashes.set(id, cacheKey);
       workgroupSizes.set(id, wgSize);
       return true;
     } catch (e) {
@@ -228,7 +234,7 @@ export function compileShader(
   try {
     const fallbackModule = device.createShaderModule({
       label: `${id}-fallback`,
-      code: FALLBACK_WGSL,
+      code: fallbackWgsl,
     });
     const fallbackPipeline = device.createComputePipeline({
       label: `${id}-fallback`,
@@ -236,6 +242,7 @@ export function compileShader(
       compute: { module: fallbackModule, entryPoint: 'main' },
     });
     pipelines.set(id, fallbackPipeline);
+    pipelineHashes.set(id, cacheKey);
     workgroupSizes.set(id, parseWorkgroupSize(FALLBACK_WGSL, 'main'));
     console.log(`[WebGPU] Using fallback shader for '${id}'`);
     return true;

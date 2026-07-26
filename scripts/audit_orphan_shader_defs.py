@@ -20,12 +20,14 @@ Outputs:
 
 Network-free; safe for CI per-PR gates.
 
-Exit code 1 when --base is set and any **changed** definition classifies as
-`likely-broken` or `parse-error`. Full-tree report is always written; only
-changed JSON under shader_definitions/ is enforced (forward-only).
+Exit code 1 when:
+  - --ci-gate: any full-tree `likely-broken` or `parse-error` not in
+    reports/orphan_baseline.json (CI default)
+  - --base: any **changed** definition classifies as likely-broken/parse-error
+    (forward-only, local pre-commit hook)
 
-Without --base, exits 0 after writing reports (use --fail-all for legacy
-full-tree enforcement).
+Without flags, exits 0 after writing reports (use --fail-all for legacy
+only_def + only_wgsl full-tree enforcement).
 
 Manifest sources for storage-only classification:
   - Primary: public/shader_coordinates.json (keys = shader ids used by the app)
@@ -53,6 +55,7 @@ SEED_SHADERS_PATH = PROJECT_ROOT / "storage_manager" / "seed_shaders.json"
 MULTIPASS_REGISTRY = PROJECT_ROOT / "src" / "renderer" / "multipassRegistry.ts"
 REPORT_JSON = PROJECT_ROOT / "reports" / "orphan_shader_defs.json"
 REPORT_MD = PROJECT_ROOT / "reports" / "orphan_shader_defs.md"
+BASELINE_JSON = PROJECT_ROOT / "reports" / "orphan_baseline.json"
 
 ALLOWLIST_IDS = frozenset({
     "gen_capabilities",
@@ -87,6 +90,38 @@ def discover_changed_definition_paths(base_ref: str) -> set[Path]:
         ):
             changed.add(p.resolve())
     return changed
+
+
+def load_baseline_ids() -> set[str]:
+    """Return shader ids grandfathered in reports/orphan_baseline.json."""
+    if not BASELINE_JSON.exists():
+        return set()
+    try:
+        data = json.loads(BASELINE_JSON.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return set()
+    return {str(i) for i in (data.get("ids") or [])}
+
+
+def evaluate_ci_gate(report: dict, base_ref: str = "") -> tuple[bool, list[str]]:
+    """
+    Full-tree CI gate: fail on likely-broken/parse-error defs not in baseline.
+
+    base_ref is accepted for test compatibility but unused (full-tree enforcement).
+    """
+    _ = base_ref
+    baseline = load_baseline_ids()
+    failures: list[str] = []
+    for row in report.get("entries", []):
+        if row.get("classification") not in ("likely-broken", "parse-error"):
+            continue
+        if row.get("id") in baseline:
+            continue
+        msg = f"{row['id']} ({row['def_path']}) -> {row.get('expected_wgsl', '')}"
+        if row.get("error"):
+            msg += f" ({row['error']})"
+        failures.append(msg)
+    return len(failures) == 0, failures
 
 
 def enforceable_failures(
@@ -394,7 +429,12 @@ def write_markdown(report: dict, path: Path) -> None:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def print_summary(report: dict, *, changed_failures: list[dict] | None = None) -> None:
+def print_summary(
+    report: dict,
+    *,
+    changed_failures: list[dict] | None = None,
+    ci_gate_failures: list[str] | None = None,
+) -> None:
     s = report["summary"]
     ws = report["wgsl_summary"]
     print("=" * 60)
@@ -413,7 +453,15 @@ def print_summary(report: dict, *, changed_failures: list[dict] | None = None) -
         marker = " [FAIL]" if key == "orphan" and count else ""
         print(f"  {key}: {count}{marker}")
     print(f"\nonly_def={report['only_def_count']}  only_wgsl={report['only_wgsl_count']}")
-    if changed_failures:
+    if ci_gate_failures:
+        print("\n[FAIL] Definitions missing valid local WGSL (CI gate):")
+        for msg in ci_gate_failures:
+            print(f"  • {msg}")
+        print(
+            "    Grandfather pre-existing orphans in reports/orphan_baseline.json; "
+            "fix new ones or add to ALLOWLIST_IDS in audit_orphan_shader_defs.py"
+        )
+    elif changed_failures:
         print("\n[FAIL] Changed definitions missing valid local WGSL:")
         for r in changed_failures:
             err = f" ({r['error']})" if r.get("error") else ""
@@ -439,6 +487,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Audit shader_definitions ↔ WGSL catalog pairing.")
     parser.add_argument("--json", action="store_true", help="Print JSON report to stdout")
     parser.add_argument(
+        "--ci-gate",
+        action="store_true",
+        help="CI: fail when any likely-broken/parse-error def is not in orphan_baseline.json",
+    )
+    parser.add_argument(
         "--base",
         default=None,
         help="Git ref for forward-only enforcement (e.g. origin/main). "
@@ -460,7 +513,11 @@ def main() -> int:
 
     changed_paths: set[Path] | None = None
     changed_failures: list[dict] = []
-    if args.base:
+    ci_gate_failures: list[str] = []
+    if args.ci_gate:
+        _ok, ci_gate_failures = evaluate_ci_gate(report)
+        report["ci_gate_failures"] = len(ci_gate_failures)
+    elif args.base:
         try:
             changed_paths = discover_changed_definition_paths(args.base)
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
@@ -477,12 +534,19 @@ def main() -> int:
     if args.json:
         print(json.dumps(report, indent=2))
     else:
-        print_summary(report, changed_failures=changed_failures or None)
+        print_summary(
+            report,
+            changed_failures=changed_failures or None,
+            ci_gate_failures=ci_gate_failures or None,
+        )
         print(f"Wrote {REPORT_JSON.relative_to(PROJECT_ROOT)}")
         print(f"Wrote {REPORT_MD.relative_to(PROJECT_ROOT)}")
 
     if args.no_fail:
         return 0
+
+    if args.ci_gate and ci_gate_failures:
+        return 1
 
     if args.base and changed_failures:
         return 1

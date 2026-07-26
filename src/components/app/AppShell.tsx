@@ -1,15 +1,16 @@
-import React, { RefObject } from 'react';
+import React, { RefObject, Suspense, lazy } from 'react';
 import WebGPUCanvas from '../WebGPUCanvas';
 import Controls from '../Controls';
-import LiveStudioTab from '../LiveStudioTab';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
 import { RendererManager, RendererType } from '../../renderer/RendererManager';
-import { AIStatus, AutoTransitionConfig } from '../../AutoDJ';
+import type { AIStatus, AutoTransitionConfig } from '../../types/aiVj';
 import { VideoRecord } from '../../syncTypes';
 import { VideoSegment } from '../../services/videoSegmentManager';
 import { SharedChain } from '../../services/layerChainShare';
 import { STORAGE_API_URL } from '../../config/appConfig';
 import { RenderQualityMode } from '../../config/performancePolicy';
+
+const LiveStudioTab = lazy(() => import(/* webpackChunkName: "live-studio" */ '../LiveStudioTab'));
 
 export interface AppShellProps {
     activeTab: 'main' | 'live-studio';
@@ -110,6 +111,12 @@ export interface AppShellProps {
     status: string;
     generativeShowcaseActive: boolean;
     generativeShowcaseLocked: boolean;
+    generativeShowcaseDelay: number;
+    onStartGenerativeShowcase: () => void;
+    onStopGenerativeShowcase: () => void;
+    onSetGenerativeShowcaseDelay: (seconds: number) => void;
+    onPreviewImportShader: (id: string, wgsl: string, name: string) => void;
+    onImportStatus: (message: string) => void;
     isRendererSwitching: boolean;
     jsFps: number;
     wasmFps: number;
@@ -122,6 +129,8 @@ export interface AppShellProps {
         targetFps: number;
         adaptive: boolean;
         maxActiveSlots: number;
+        colorFormat?: import('../../config/formatPolicy').InternalColorFormat;
+        estimatedTextureMiB?: number;
     };
 }
 
@@ -222,6 +231,12 @@ export function AppShell(props: AppShellProps) {
         status,
         generativeShowcaseActive,
         generativeShowcaseLocked,
+        generativeShowcaseDelay,
+        onStartGenerativeShowcase,
+        onStopGenerativeShowcase,
+        onSetGenerativeShowcaseDelay,
+        onPreviewImportShader,
+        onImportStatus,
         isRendererSwitching,
         jsFps,
         wasmFps,
@@ -274,7 +289,9 @@ export function AppShell(props: AppShellProps) {
                 </div>
             </header>
             {activeTab === 'live-studio' ? (
-                <LiveStudioTab />
+                <Suspense fallback={<div className="main-container" style={{ padding: '2rem', color: '#aaa' }}>Loading Live Studio…</div>}>
+                    <LiveStudioTab />
+                </Suspense>
             ) : (
             <div className="main-container">
                 <aside className={`sidebar ${!showSidebar ? 'hidden' : ''}`}>
@@ -339,6 +356,14 @@ export function AppShell(props: AppShellProps) {
                         onRenderQualityChange={onRenderQualityChange}
                         performanceHud={performanceHud}
                         maxActiveSlots={performanceHud.maxActiveSlots}
+                        generativeShowcaseActive={generativeShowcaseActive}
+                        generativeShowcaseLocked={generativeShowcaseLocked}
+                        generativeShowcaseDelay={generativeShowcaseDelay}
+                        onStartGenerativeShowcase={onStartGenerativeShowcase}
+                        onStopGenerativeShowcase={onStopGenerativeShowcase}
+                        onSetGenerativeShowcaseDelay={onSetGenerativeShowcaseDelay}
+                        onPreviewImportShader={onPreviewImportShader}
+                        onImportStatus={onImportStatus}
                     />
                 </aside>
                 <main className="canvas-container">
@@ -363,7 +388,7 @@ export function AppShell(props: AppShellProps) {
                         <span>{isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}</span>
                         {generativeShowcaseActive && (
                             <span style={{ color: '#00d4ff', marginLeft: '12px', fontWeight: 600 }}>
-                                🎨 Showcase {generativeShowcaseLocked ? '🔒 LOCKED' : '● AUTO'}
+                                🎨 Attract {generativeShowcaseLocked ? '🔒 LOCKED' : '● AUTO'}
                             </span>
                         )}
                         {audioReactiveParams && (

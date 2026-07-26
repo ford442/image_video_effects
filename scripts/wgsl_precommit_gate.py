@@ -7,13 +7,13 @@ checks on ONLY the .wgsl files that changed against a base ref (or an explicit
 file list). Skips known template files and vertex/fragment render shaders.
 
 Workgroup convention: compute shaders must use @workgroup_size with 3 explicit
-dimensions (e.g. 16, 16, 1). Two-arg forms are **blocking**; single-arg
-override/expression forms are **warnings** (valid WGSL, non-standard here).
-dimensions (e.g. 16, 16, 1). Two-arg forms fail the gate (use --fix locally).
+dimensions (e.g. 16, 16, 1). Two-arg and single-arg override forms fail the
+gate unless the file is on reports/workgroup_grace_allowlist.json.
 
 Usage:
     python scripts/wgsl_precommit_gate.py
     python scripts/wgsl_precommit_gate.py --base main
+    python scripts/wgsl_precommit_gate.py --full-tree
     python scripts/wgsl_precommit_gate.py --files foo.wgsl bar.wgsl
     python scripts/wgsl_precommit_gate.py --fix   # local only: literal (int,int)->(int,int,1)
     python scripts/wgsl_precommit_gate.py --json
@@ -32,6 +32,7 @@ from pathlib import Path
 
 _SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPTS_DIR))
+from audit_extrabuffer import load_baseline, scan_shader  # noqa: E402
 from bindgroup_checker import (  # noqa: E402
     TEMPLATE_FILES,
     check_workgroup_size_convention,
@@ -41,12 +42,14 @@ from bindgroup_checker import (  # noqa: E402
 )
 
 PROJECT_ROOT = _SCRIPTS_DIR.parent
+SHADERS_DIR = PROJECT_ROOT / "public" / "shaders"
 _naga_path = shutil.which("naga")
 if _naga_path:
     NAGA_BIN = Path(_naga_path)
 else:
     NAGA_BIN = Path.home() / ".cargo" / "bin" / "naga"
 REPORT_PATH = PROJECT_ROOT / "reports" / "wgsl_precommit_report.json"
+GRACE_ALLOWLIST_PATH = PROJECT_ROOT / "reports" / "workgroup_grace_allowlist.json"
 
 VERTEX_PATTERN = re.compile(r"@vertex", re.MULTILINE)
 FRAGMENT_PATTERN = re.compile(r"@fragment", re.MULTILINE)
@@ -55,6 +58,18 @@ COMPUTE_PATTERN = re.compile(r"@compute", re.MULTILINE)
 
 def naga_available() -> bool:
     return bool(shutil.which("naga")) or NAGA_BIN.exists()
+
+
+def load_workgroup_grace_allowlist() -> set[str]:
+    """Return repo-relative paths exempt from workgroup convention failures."""
+    if not GRACE_ALLOWLIST_PATH.exists():
+        return set()
+    try:
+        data = json.loads(GRACE_ALLOWLIST_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return set()
+    files = data.get("files") or []
+    return {str(f).replace("\\", "/") for f in files}
 
 
 def discover_changed_files(base_ref: str) -> list[Path]:
@@ -72,6 +87,13 @@ def discover_changed_files(base_ref: str) -> list[Path]:
         if p.suffix == ".wgsl" and p.exists():
             files.append(p)
     return files
+
+
+def discover_all_shader_files() -> list[Path]:
+    """Return all .wgsl files under public/shaders/."""
+    if not SHADERS_DIR.exists():
+        return []
+    return sorted(SHADERS_DIR.glob("*.wgsl"))
 
 
 def run_naga(wgsl_path: Path) -> dict:
@@ -122,8 +144,25 @@ def apply_workgroup_fixes(paths: list[Path]) -> list[dict]:
     return fixes
 
 
-def run_gate(paths: list[Path], *, skip_naga: bool = False) -> dict:
+def _new_extrabuffer_violations(scan: dict, baseline: dict[str, list[int]]) -> list[dict]:
+    """Return extraBuffer[0..132] writes not grandfathered in the triage baseline."""
+    known_idx = set(baseline.get(scan["file"], []))
+    return [v for v in scan.get("violations", []) if v.get("index") not in known_idx]
+
+
+def run_gate(
+    paths: list[Path],
+    *,
+    skip_naga: bool = False,
+    grace_allowlist: set[str] | None = None,
+    extrabuffer_baseline: dict[str, list[int]] | None = None,
+) -> dict:
     """Run naga + bindgroup + workgroup checks on the given paths."""
+    if grace_allowlist is None:
+        grace_allowlist = load_workgroup_grace_allowlist()
+    if extrabuffer_baseline is None:
+        extrabuffer_baseline = load_baseline()
+
     report = {
         "timestamp": datetime.now().isoformat(),
         "naga_bin": str(NAGA_BIN),
@@ -132,8 +171,10 @@ def run_gate(paths: list[Path], *, skip_naga: bool = False) -> dict:
         "passed": 0,
         "failed": 0,
         "skipped": 0,
-        "warnings": 0,
         "workgroup_blocking": 0,
+        "workgroup_warnings": 0,
+        "workgroup_grace_skipped": 0,
+        "extrabuffer_violations": 0,
         "results": [],
     }
 
@@ -153,6 +194,8 @@ def run_gate(paths: list[Path], *, skip_naga: bool = False) -> dict:
             "bindgroup_errors": [],
             "workgroup_errors": [],
             "workgroup_warnings": [],
+            "workgroup_grace": False,
+            "extrabuffer_violations": [],
             "ok": False,
         }
 
@@ -178,10 +221,18 @@ def run_gate(paths: list[Path], *, skip_naga: bool = False) -> dict:
         wg_blocking, wg_warnings = split_workgroup_issues(wg_issues)
         entry["workgroup_errors"] = wg_blocking
         entry["workgroup_warnings"] = wg_warnings
+
+        on_grace = display_path.replace("\\", "/") in grace_allowlist
+        entry["workgroup_grace"] = on_grace
+        if on_grace and (wg_blocking or wg_warnings):
+            report["workgroup_grace_skipped"] += 1
+            wg_blocking = []
+            wg_warnings = []
+
         if wg_blocking:
             report["workgroup_blocking"] += len(wg_blocking)
         if wg_warnings:
-            report["warnings"] += len(wg_warnings)
+            report["workgroup_warnings"] += len(wg_warnings)
 
         if skip_naga or not naga_available():
             entry["naga_skipped"] = True
@@ -201,10 +252,17 @@ def run_gate(paths: list[Path], *, skip_naga: bool = False) -> dict:
         entry["bindgroup_status"] = bg.get("status", "unknown")
         entry["bindgroup_errors"] = bg.get("errors", [])
 
-        workgroup_ok = len(wg_blocking) == 0
-        bindgroup_ok = bg.get("status") == "compatible"
+        eb_scan = scan_shader(path)
+        eb_new = _new_extrabuffer_violations(eb_scan, extrabuffer_baseline)
+        entry["extrabuffer_violations"] = eb_new
+        if eb_new:
+            report["extrabuffer_violations"] += len(eb_new)
 
-        if naga_ok and bindgroup_ok and workgroup_ok:
+        workgroup_ok = len(wg_blocking) == 0 and len(wg_warnings) == 0
+        bindgroup_ok = bg.get("status") == "compatible"
+        extrabuffer_ok = len(eb_new) == 0
+
+        if naga_ok and bindgroup_ok and workgroup_ok and extrabuffer_ok:
             entry["ok"] = True
             report["passed"] += 1
         else:
@@ -222,8 +280,10 @@ def print_report(report: dict) -> None:
     passed = report["passed"]
     failed = report["failed"]
     skipped = report["skipped"]
-    warnings = report["warnings"]
     wg_blocking = report.get("workgroup_blocking", 0)
+    wg_warnings = report.get("workgroup_warnings", 0)
+    wg_grace = report.get("workgroup_grace_skipped", 0)
+    eb_violations = report.get("extrabuffer_violations", 0)
 
     print("=" * 70)
     print("WGSL PRECOMMIT GATE")
@@ -232,7 +292,9 @@ def print_report(report: dict) -> None:
         print("[WARN] naga unavailable — skipped naga validation (bindgroup + workgroup still run)")
     print(
         f"Files checked: {total}  |  Passed: {passed}  |  Failed: {failed}  |  "
-        f"Skipped: {skipped}  |  Workgroup errors: {wg_blocking}  |  Warnings: {warnings}"
+        f"Skipped: {skipped}  |  Workgroup errors: {wg_blocking}  |  "
+        f"Workgroup warnings: {wg_warnings}  |  Grace: {wg_grace}  |  "
+        f"extraBuffer violations: {eb_violations}"
     )
 
     for entry in report["results"]:
@@ -246,30 +308,39 @@ def print_report(report: dict) -> None:
                 f"  [ERROR] {file} — @workgroup_size has {wg['arg_count']} arg(s) "
                 f"(need 3 explicit dims): {wg['match']}"
             )
+            if wg.get("arg_count") == 2:
+                print(
+                    f"         Fix: python3 scripts/wgsl_precommit_gate.py "
+                    f"--files {file} --fix"
+                )
 
         for wg in entry.get("workgroup_warnings", []):
             print(
                 f"  [ERROR] {file} — @workgroup_size has {wg['arg_count']} arg(s) "
                 f"(need 3 explicit dims): {wg['match']}"
             )
-            print(
-                f"         Fix: python3 scripts/wgsl_precommit_gate.py "
-                f"--files {file} --fix"
-            )
 
         if entry["ok"]:
             naga_note = "naga skipped" if entry.get("naga_skipped") else "naga OK"
-            print(f"  ✅ {file} — {naga_note}, bindgroup compatible")
+            grace_note = " (workgroup grace)" if entry.get("workgroup_grace") else ""
+            print(f"  ✅ {file} — {naga_note}, bindgroup compatible{grace_note}")
             continue
 
         details = []
-        if entry.get("workgroup_errors"):
+        if entry.get("workgroup_errors") or entry.get("workgroup_warnings"):
             details.append("workgroup convention")
         if entry.get("naga_ok") is False:
             details.append("naga failed")
         if entry["bindgroup_status"] != "compatible":
             details.append(f"bindgroup {entry['bindgroup_status']}")
+        if entry.get("extrabuffer_violations"):
+            details.append("extraBuffer [0..132] write")
         print(f"  ❌ {file} — {', '.join(details) or 'failed'}")
+        for v in entry.get("extrabuffer_violations", []):
+            print(
+                f"      • extraBuffer[{v.get('expr', '?')}] {v.get('op', '=')} "
+                f"→ index {v.get('index')} ({v.get('class')}) — use [133..255]"
+            )
         if entry["naga_error"]:
             for line in entry["naga_error"].splitlines()[:8]:
                 print(f"      {line}")
@@ -287,6 +358,11 @@ def main() -> int:
         "--base",
         default="origin/main",
         help="Git ref to diff against (default: origin/main)",
+    )
+    parser.add_argument(
+        "--full-tree",
+        action="store_true",
+        help="Scan all public/shaders/*.wgsl (skips naga for speed)",
     )
     parser.add_argument(
         "--files",
@@ -316,6 +392,8 @@ def main() -> int:
                 print(f"ERROR: file not found: {f}", file=sys.stderr)
                 return 2
             paths.append(p)
+    elif args.full_tree:
+        paths = discover_all_shader_files()
     else:
         try:
             paths = discover_changed_files(args.base)
@@ -333,7 +411,10 @@ def main() -> int:
             return 2
 
     if not paths:
-        print("No changed .wgsl files to check.")
+        if args.full_tree:
+            print("No .wgsl files found under public/shaders/.")
+        else:
+            print("No changed .wgsl files to check.")
         return 0
 
     if args.fix:
@@ -342,8 +423,8 @@ def main() -> int:
             if fix.get("replacements"):
                 print(f"[FIX] {fix['file']}: {fix['replacements']} literal (int,int) workgroup fix(es)")
 
-    skip_naga = not naga_available()
-    if skip_naga:
+    skip_naga = args.full_tree or not naga_available()
+    if not args.full_tree and not naga_available():
         print(
             f"[WARN] naga not found at {NAGA_BIN} — skipping naga step "
             "(install with: cargo install naga-cli)",

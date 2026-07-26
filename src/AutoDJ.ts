@@ -7,60 +7,30 @@ import { TransitionOrchestrator, TransitionSchemaSlot } from './services/transit
 import { ParamMap, snapToStep } from './utils/transitionMath';
 import { loadTransformersModule } from './services/aiModels/transformersLoader';
 import { loadWebLlmModule } from './services/aiModels/webLlmLoader';
+import type {
+  ImageRecord,
+  ShaderRecord,
+  AIStatus,
+  CaptionResult,
+  ImageCaptionPipeline,
+  LlmEngine,
+  AutoTransitionConfig,
+} from './types/aiVj';
+
+export type {
+  ImageRecord,
+  ShaderRecord,
+  AIStatus,
+  CaptionResult,
+  ImageCaptionPipeline,
+  LlmChatCompletion,
+  LlmEngine,
+  AutoTransitionConfig,
+} from './types/aiVj';
 
 // --- Configuration ---
 const CAPTIONER_ID = 'Xenova/vit-gpt2-image-captioning';
 const LLM_ID = 'gemma-2-2b-it-q4f32_1-MLC';
-
-// --- Interfaces ---
-export interface ImageRecord {
-  url: string;
-  tags: string[];
-  description?: string;
-}
-
-export interface ShaderRecord {
-  id: string;
-  name: string;
-  category: string;
-  tags: string[];
-  description?: string;
-  params?: Array<{ id: string; name: string; default: number; min: number; max: number; step?: number }>;
-}
-
-export type AIStatus = 'idle' | 'loading-models' | 'ready' | 'generating' | 'error';
-
-export interface CaptionResult {
-  generated_text: string;
-}
-
-export interface ImageCaptionPipeline {
-  (url: string, options?: { max_new_tokens?: number }): Promise<CaptionResult[]>;
-}
-
-export interface LlmChatCompletion {
-  choices: Array<{ message: { content: string | null } }>;
-}
-
-export interface LlmEngine {
-  chat: {
-    completions: {
-      create(options: {
-        messages: Array<{ role: string; content: string }>;
-        temperature?: number;
-      }): Promise<LlmChatCompletion>;
-    };
-  };
-}
-
-export interface AutoTransitionConfig {
-  source: 'timer' | 'beat';
-  intervalMs?: number;
-  durationMs: number;
-  mode?: 'randomize' | 'cyclePresets';
-  beatInput?: 'mic' | 'element';
-  mediaElement?: HTMLMediaElement;
-}
 
 interface AutoDJOptions {
   applyParamsDirect?: (params: Record<string, number>[]) => void;

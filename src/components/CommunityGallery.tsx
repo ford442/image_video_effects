@@ -15,12 +15,7 @@ import {
   recordPresetPackPlay,
   decodeChain,
 } from '../services/communityGallery';
-
-interface ThumbnailManifestEntry {
-  thumbnail_url: string;
-}
-
-type ThumbnailManifest = Record<string, ThumbnailManifestEntry>;
+import { useThumbnailManifest, type ThumbnailManifest } from '../hooks/useThumbnailManifest';
 
 function getPackThumbnailUrl(
   pack: CommunityPack,
@@ -55,9 +50,8 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
   const [publishDescription, setPublishDescription] = useState('');
   const [publishAuthor, setPublishAuthor] = useState('');
     const [publishError, setPublishError] = useState<string | null>(null);
-  const [thumbnailManifest, setThumbnailManifest] = useState<ThumbnailManifest>({});
+  const { manifest: thumbnailManifest } = useThumbnailManifest();
   const fetchStartedRef = useRef(false);
-  const manifestLoadedRef = useRef(false);
 
   const loadPacks = useCallback(async () => {
     setStatus('loading');
@@ -70,15 +64,6 @@ export const CommunityGallery: React.FC<CommunityGalleryProps> = ({
       setStatus('error');
     }
   }, []);
-
-  useEffect(() => {
-    if (!open || manifestLoadedRef.current) return;
-    manifestLoadedRef.current = true;
-    fetch('./thumbnails/manifest.json')
-      .then(r => (r.ok ? r.json() : {}))
-      .then(setThumbnailManifest)
-      .catch(() => setThumbnailManifest({}));
-  }, [open]);
 
   useEffect(() => {
     if (!open || fetchStartedRef.current) return;

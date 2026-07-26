@@ -34,3 +34,5 @@ ASYNCIFY is required for `wgpuInstanceWaitAny` + emdawn callback mode (`device.c
 
 CI and `npm run wasm:build` use **`build.sh` only**. CMake (`CMakeLists.txt`) is IDE/fallback — two-step emdawn historically broke with `-sUSE_WEBGPU=1` leakage.
 
+**2026-07-26:** Removed duplicate `-sGROWABLE_ARRAYBUFFERS=0` from the emcc line (cosmetic; no size change).
+

@@ -3,13 +3,11 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, aces-tone-map,
 //            chromatic-refraction, semantic-alpha
 //
-//  Reads the committed wave state from dataTextureC (one frame of latency per
-//  the Tier B multipass contract) and the same-frame coarse caustic-energy
-//  grid that pass 2 wrote into extraBuffer[140..239].
+//  Reads wave state from dataTextureC (host copies dataB→C) and the same-frame
+//  coarse caustic-energy grid that pass 2 wrote into extraBuffer[140..239].
 //
-//  State packing (dataTextureC): .r height, .g velocity, .b prev height,
-//  .a driver phase. This pass never writes dataTextureA — pass 1 owns the
-//  feedback channel — and never references dataTextureB.
+//  State packing: .r height, .g velocity, .b prev height, .a driver phase.
+//  Commits final sim state to dataTextureA for end-of-frame feedback copy.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -149,4 +147,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, pixel,
         vec4<f32>(clamp(depth - height * 0.06, 0.0, 1.0), 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, pixel, state);
 }

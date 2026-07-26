@@ -1,7 +1,8 @@
-// ═══ RIPPLE TANK — PASS 2/3: COARSE OPTICS GATHER ══════════════════════════
-//  Category: simulation (multipass 2 of 3: step → optics gather → render)
+// ═══ RIPPLE TANK — GRAPH NODE: COARSE OPTICS GATHER ═══════════════════════
+//  Tier C graph: step×N → inject → gather → render
 //
-//  Reduces the previous-frame wave field (dataTextureC) into a 10×10 coarse
+//  Host copies dataB→dataC before dispatch; reads wave field via dataTextureC.
+//  Reduces the post-inject wave field (dataTextureC) into a 10×10 coarse
 //  "caustic energy" grid stored in extraBuffer. Pass 3 samples the grid
 //  bilinearly the SAME frame — extraBuffer is the only same-frame channel in
 //  the 13-binding contract (dataTextureA/B are bound write-only, and the CPU

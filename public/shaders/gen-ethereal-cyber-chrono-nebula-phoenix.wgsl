@@ -122,6 +122,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let rawMouse = u.zoom_config.yz;
     let wingspan = clamp(u.zoom_params.x, 0.05, 0.5);
     let plasma = clamp(u.zoom_params.y, 0.1, 1.0);
+    let chronoMix = clamp(u.zoom_params.z, 0.0, 1.0);
+    let spinRate = clamp(u.zoom_params.w, 0.0, 1.0);
 
     // Critically-damped spring halo: thread (0,0) integrates once per
     // frame, every thread reads the eased center so the phoenix's
@@ -160,11 +162,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // treble drives the shimmer of the chrono glow.
     let trap = attractorTrap(uv * 1.5, time, bass);
     let shimmer = 0.85 + 0.3 * sin(time * 9.0 + trap * 14.0) * treble;
-    let chronoGlow = exp(-trap * 6.0) * (0.5 + 0.5 * treble) * shimmer;
+    let chronoGlow = exp(-trap * 6.0) * (0.5 + 0.5 * treble) * shimmer * (0.35 + chronoMix * 0.65);
 
     // Phoenix SDF and orbit-trap coloring.
     var p = uv;
-    p = rot(mouse.x * 2.0 + time * 0.1) * p;
+    p = rot(mouse.x * 2.0 + time * (0.05 + spinRate * 0.35)) * p;
     let d = sdPhoenix(p, wingspan);
     let edge = abs(d);
     let density = smoothstep(0.12, 0.0, d);

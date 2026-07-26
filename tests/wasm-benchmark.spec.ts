@@ -178,6 +178,55 @@ test('WASM vs WebGPU benchmark matrix', async ({ page, browser }) => {
   }
 });
 
+const FORMAT_TIER_SHADERS = BENCHMARK_MATRIX.filter((s) =>
+  ['sim-fluid-feedback-coupled', 'gen-lichen-reaction-diffusion', 'plasma'].includes(s.id),
+);
+
+test('format tier FP16 vs FP32 (WebGPU)', async ({ page }) => {
+  test.setTimeout(120000);
+  if (!isStrictGpuMode()) {
+    test.skip(true, 'Set WASM_GPU_TESTS=1 with WebGPU hardware for format tier benchmarks');
+  }
+
+  await page.goto(buildAppUrl('webgpu'), { waitUntil: 'networkidle' });
+  await waitForTestApi(page);
+
+  const tierResults: BenchResult[] = [];
+  for (const shader of FORMAT_TIER_SHADERS) {
+    await loadShaderOnSlot(page, shader);
+    if (shader.testState) await applyTestState(page, shader.testState);
+    await page.waitForTimeout(1000);
+
+    for (const qualityMode of ['ultra', 'balanced'] as const) {
+      const report = await page.evaluate(
+        async ({ frameCount, mode }) =>
+          (window as any).__pixelocity__?.runBenchmark(frameCount, { qualityMode: mode }),
+        { frameCount: 45, mode: qualityMode },
+      );
+      tierResults.push({
+        shaderId: shader.id,
+        backend: 'webgpu',
+        avgFps: report?.avgFps ?? 0,
+        avgTotalMs: report?.avgTotalMs ?? 0,
+        gpuTimingsAvailable: report?.gpuTimingsAvailable ?? false,
+        p95TotalMs: 0,
+        qualityMode,
+        colorFormat: report?.colorFormat,
+        estimatedTextureMiB: report?.estimatedTextureMiB,
+      });
+    }
+  }
+
+  expect(tierResults.length).toBeGreaterThan(0);
+  const ultra = tierResults.find((r) => r.qualityMode === 'ultra');
+  const balanced = tierResults.find((r) => r.qualityMode === 'balanced');
+  expect(ultra?.colorFormat).toBe('rgba32float');
+  expect(balanced?.colorFormat).toBe('rgba16float');
+  if (ultra && balanced) {
+    expect(balanced.estimatedTextureMiB ?? 0).toBeLessThan(ultra.estimatedTextureMiB ?? 0);
+  }
+});
+
 test('WASM getGPUTimings API surface', async ({ page }) => {
   await page.goto(buildAppUrl('wasm'), { waitUntil: 'networkidle' });
   await waitForTestApi(page);
