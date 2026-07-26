@@ -1,13 +1,149 @@
+# Swarm Brief: lava-lamp-blobs
+
+**Role:** Interactivist
+**Name:** Lava Lamp Blobs
+**Category:** generative
+**Description:** Metaball lava blobs rise and merge with chromatic warm-cool color shifts and audio-reactive heat.
+**Current lines:** 190
+**Target lines:** 240–280 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Interactivist. This metaball lamp is physically charming but touch-deaf - give it per-blob voices and honest interaction:
+- Aspect-correct the mouse (priority 1): the mouse offset uses `u.zoom_config.yz * 2.0 - 1.0` without aspect correction, so blob attraction is elliptical on wide screens - aspect-correct the x component using u.config.zw, and spring-damper the attraction point (extraBuffer[133..135]) instead of the raw 0.1 shift.
+- Per-blob FFT voices: assign each blob index its own FFT bin `plasmaBuffer[(i % 8) + 1]` so blobs pulse individually to the spectrum; add mids -> blob-count shimmer and treble -> rim sparkle on the halo term.
+- Click heat injections: loop ripples[] (guard `min(u32(u.config.y), 50u)`) spawning a temporary new blob at each click point that rises and dissolves with ripple age.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: dataTextureA is SIM STATE packed as `(blobShape, blobHalo, heat, a)` - preserve the channel order VERBATIM, never route it through the ACES/dither stack, never clamp/tonemap it. Keep the premultiplied `outRGB * a` write to writeTexture and the hue_preserve_clamp -> ACES -> IGN dither -> gamma stack intact. extraBuffer in [133..255] ONLY.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "lava-lamp-blobs",
+  "name": "Lava Lamp Blobs",
+  "url": "shaders/lava-lamp-blobs.wgsl",
+  "category": "generative",
+  "description": "Metaball lava blobs rise and merge with chromatic warm-cool color shifts and audio-reactive heat.",
+  "tags": [
+    "generative",
+    "lava",
+    "metaballs",
+    "organic",
+    "retro",
+    "audio-reactive"
+  ],
+  "features": [
+    "procedural",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba",
+    "temporal",
+    "chromatic",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "blobCount",
+      "name": "Blob Count",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "riseSpeed",
+      "name": "Rise Speed",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "melt",
+      "name": "Melt",
+      "default": 0.38,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "heat",
+      "name": "Heat",
+      "default": 0.52,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Blob Count",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Rise Speed",
+      "default": 0.35,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Melt",
+      "default": 0.38,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Heat",
+      "default": 0.52,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════════
 //  Lava Lamp Blobs
 //  Category: generative
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
 //            upgraded-rgba, depth-aware, aces-tone-map, oklab-mix,
-//            blackbody-temp, subsurface-glow, ign-dither, per-blob-fft,
-//            spring-damper-mouse, click-heat-injection
+//            blackbody-temp, subsurface-glow, ign-dither
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-07-26 (Batch 15 — Interactivist pass)
+//  Upgraded: 2026-06-07
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -94,50 +230,19 @@ fn ign(p: vec2<f32>) -> f32 {
   return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
-// Metaball field. Each blob owns an FFT voice: bin (i % 8) + 1 pulses its
-// size individually, so the lamp breathes per-blob with the spectrum.
-// shimmer = mids-driven wobble of the effective blob population.
-fn blobField(p: vec2<f32>, time: f32, count: f32, speed: f32, shimmer: f32) -> f32 {
+fn blobField(p: vec2<f32>, time: f32, count: f32, speed: f32) -> f32 {
   var field = 0.0;
-  let effCount = count * (1.0 + shimmer * 0.3 * sin(time * 2.3));
-  for (var i = 0u; i < u32(effCount); i = i + 1u) {
+  for (var i = 0u; i < u32(count); i = i + 1u) {
     let fi = f32(i);
     let seed = hash22(vec2<f32>(fi, 11.7));
-    let voice = plasmaBuffer[(i % 8u) + 1u].x;
-    let phase = fi * 6.28318 / max(effCount, 1.0);
+    let phase = fi * 6.28318 / count;
     let bx = sin(phase + time * speed * (0.3 + seed.x * 0.5)) * (0.5 + seed.x * 0.3);
-    let by = -0.8 + fract(fi / max(effCount, 1.0) + time * speed * (0.1 + seed.y * 0.2)) * 1.6;
+    let by = -0.8 + fract(fi / count + time * speed * (0.1 + seed.y * 0.2)) * 1.6;
     let d = length(p - vec2<f32>(bx, by));
-    let size = (0.12 + seed.y * 0.08) * (1.0 + voice * 0.45);
-    field = field + exp(-d * d / (size * size)) * (0.75 + voice * 0.5);
+    let size = 0.12 + seed.y * 0.08;
+    field = field + exp(-d * d / (size * size));
   }
   return field;
-}
-
-// Click heat injections: each ripple spawns a temporary blob that rises and
-// dissolves with ripple age. Returns field contribution; clickHeat (out via
-// ptr not available) folded into the field itself scaled by life.
-fn clickField(p: vec2<f32>, time: f32, aspect: f32, riseSpeed: f32, heat: f32) -> vec2<f32> {
-  var field = 0.0;
-  var hottest = 0.0;
-  let nRip = min(u32(u.config.y), 50u);
-  for (var ri = 0u; ri < nRip; ri = ri + 1u) {
-    let rp = u.ripples[ri];
-    let age = time - rp.z;
-    if (age > 0.0 && age < 4.0) {
-      let life = 1.0 - age / 4.0;
-      var cpos = rp.xy * 2.0 - 1.0;
-      cpos.x = cpos.x * aspect;
-      // The injected blob rises like fresh wax, accelerating with age.
-      cpos.y = cpos.y + age * age * 0.08 + age * (0.15 + riseSpeed * 0.4);
-      let d = length(p - cpos);
-      let sz = 0.07 + 0.06 * life;
-      let w = exp(-d * d / (sz * sz)) * life * life;
-      field = field + w;
-      hottest = max(hottest, life * exp(-d * d / 0.3));
-    }
-  }
-  return vec2<f32>(field * (0.6 + heat * 0.6), hottest);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -151,63 +256,38 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
+  let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
-  // ── Slider wiring (zoom_params.x/y/z/w) ─────────────────────────
-  let blobCount = mix(2.0, 10.0, u.zoom_params.x);   // Blob Count: population
-  let riseSpeed = mix(0.05, 0.6, u.zoom_params.y);   // Rise Speed: wax velocity
-  let melt = mix(0.0, 1.0, u.zoom_params.z);         // Melt: merge threshold
-  let heat = mix(0.3, 2.0, u.zoom_params.w);         // Heat: core temperature
+  let blobCount = mix(2.0, 10.0, u.zoom_params.x);
+  let riseSpeed = mix(0.05, 0.6, u.zoom_params.y);
+  let melt = mix(0.0, 1.0, u.zoom_params.z);
+  let heat = mix(0.3, 2.0, u.zoom_params.w);
 
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   var p = uv * 2.0 - 1.0;
   p.x = p.x * aspect;
+  p = p + mouse * 0.1;
 
-  // ── Aspect-corrected, spring-dampered mouse attraction ──────────
-  // Persistent state: extraBuffer[133]=pos.x [134]=pos.y [135]=vel.x [136]=vel.y
-  var target = u.zoom_config.yz * 2.0 - 1.0;
-  target.x = target.x * aspect; // aspect-correct so attraction stays circular
-  var sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  let dt = 0.016;                       // fixed integration step
-  let stiffness = 42.0;
-  let damping = 9.0;                    // slightly underdamped: blobs lag then catch
-  let force = (target - sPos) * stiffness - sVel * damping;
-  sVel = sVel + force * dt;
-  sPos = sPos + sVel * dt;
-  extraBuffer[133] = sPos.x;
-  extraBuffer[134] = sPos.y;
-  extraBuffer[135] = sVel.x;
-  extraBuffer[136] = sVel.y;
-  p = p + sPos * 0.18;
+  let blobs = blobField(p, time, blobCount, riseSpeed);
+  let blobShape = smoothstep(0.5, 1.2, blobs);
+  let blobHalo = smoothstep(0.2, 0.8, blobs) * (1.0 - blobShape);
+  let blobCenter = smoothstep(1.0, 1.5, blobs);
 
-  // ── Field evaluation ────────────────────────────────────────────
-  let blobs = blobField(p, time, blobCount, riseSpeed, mids);
-  let click = clickField(p, time, aspect, riseSpeed, heat);
-  let totalField = blobs + click.x;
-
-  // Melt widens the merge window: blobs fuse into goopy continents.
-  let edge0 = mix(0.5, 0.32, melt);
-  let edge1 = mix(1.2, 0.85, melt);
-  let blobShape = smoothstep(edge0, edge1, totalField);
-  let blobHalo = smoothstep(0.2, 0.8, totalField) * (1.0 - blobShape);
-  let blobCenter = smoothstep(1.0, 1.5, totalField);
-
-  // Blackbody temperature: warm core, cool halo, driven by audio + click heat
-  let coreTemp = 2000.0 + heat * 3000.0 + bass * 2000.0 + click.y * 2500.0;
-  let haloTemp = 6000.0 + mids * 4000.0 + click.y * 1500.0;
+  // Blackbody temperature: warm core, cool halo, driven by audio
+  let coreTemp = 2000.0 + heat * 3000.0 + bass * 2000.0;
+  let haloTemp = 6000.0 + mids * 4000.0;
   let coreCol = blackbodyRGB(coreTemp) * vec3<f32>(1.3, 1.0, 0.8);
   let haloCol = blackbodyRGB(haloTemp) * vec3<f32>(0.7, 0.9, 1.1);
 
   // Palette-driven variation for organic color shifts
-  let paletteCol = palette(totalField * 2.0 + time * 0.3 + bass,
+  let paletteCol = palette(blobs * 2.0 + time * 0.3 + bass,
     vec3<f32>(0.5,0.5,0.5), vec3<f32>(0.5,0.5,0.5),
     vec3<f32>(1.0,1.0,0.5), vec3<f32>(0.0,0.1,0.2));
 
   // Subsurface scattering glow: light penetrates blob edges
-  let sss = exp(-totalField * 2.0) * blobHalo * 0.6;
-  // Fresnel rim with treble-driven sparkle: glittering wax edges
-  let sparkle = step(0.985 - treble * 0.05, ign(floor(p * 90.0) + vec2<f32>(time * 7.0)));
-  let rim = pow(blobHalo, 3.0) * (1.0 + treble * 0.5 + sparkle * treble * 2.0);
+  let sss = exp(-blobs * 2.0) * blobHalo * 0.6;
+  // Fresnel rim: brighter at grazing angles (blob edges)
+  let rim = pow(blobHalo, 3.0) * (1.0 + treble * 0.5);
 
   // 3-point lighting: key (warm core) + fill (cool halo) + rim (hot edge)
   var color = vec3<f32>(0.02, 0.02, 0.05);
@@ -216,8 +296,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = color + vec3<f32>(1.0, 0.85, 0.6) * sss * 0.5;
   color = color + vec3<f32>(1.2, 0.9, 0.7) * rim * 0.8;
   color = color + vec3<f32>(1.0, 0.95, 0.9) * blobCenter * treble * 1.2;
-  // Click injections bleed extra ember light where they dissolve
-  color = color + blackbodyRGB(2800.0 + click.y * 2000.0) * click.y * click.x * 1.5;
 
   // Volumetric haze (Beer-Lambert) for depth atmosphere
   let distFromCenter = length(p);
@@ -245,6 +323,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let outRGB = pow(color, vec3<f32>(1.0/2.2));
   textureStore(writeTexture, coord, vec4<f32>(outRGB * a, a));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-  // SIM STATE packing preserved VERBATIM: (blobShape, blobHalo, heat, a)
   textureStore(dataTextureA, coord, vec4<f32>(blobShape, blobHalo, heat, a));
 }
+```

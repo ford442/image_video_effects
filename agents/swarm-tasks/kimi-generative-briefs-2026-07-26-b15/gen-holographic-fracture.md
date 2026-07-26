@@ -1,12 +1,157 @@
+# Swarm Brief: gen-holographic-fracture
+
+**Role:** Interactivist
+**Name:** Holographic Fracture
+**Category:** generative
+**Description:** Iridescent cracked planes with SDF fracture lines and thin-film holographic shards. Audio drives crack glow, and mouse interaction spawns new radial cracks.
+**Current lines:** 183
+**Target lines:** 233–273 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Interactivist. This shader has the mouse-coordinate bug class we fixed in Batches 13/14 - fix it first, then make the cracks answer to touch:
+- FIX THE MOUSE BUG (priority 1): the shader reads mouse position from `u.zoom_config.xy`, but x is TIME - the crack origin drifts with time. Engine convention is `u.zoom_config.yz` = mouse position, `.w` = mouse-down (verified in src/renderer/UniformBuffer.ts). Change ONLY the `.xy` -> `.yz` swizzle - do not restructure the crack-network loop. Also fix the stale header comment documenting the wrong convention.
+- Honest depth: the JSON claims `supportsDepth: true` but the WGSL writes flat 0.0 to writeDepthTexture - write a real depth derived from crack distance/edge field so the depth feature is earned.
+- Click crack fronts: loop ripples[] (guard `min(u32(u.config.y), 50u)`) spawning transient crack fronts that expand from each click point and fade with ripple age; spring-damper the mouse crack origin (extraBuffer[133..134]) so it eases rather than snaps. Add per-bin plasmaBuffer[1..k] phase shifts to the thin-film iridescence so each crack index shimmers to its own band.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the `hash22`/`valueNoise`/`fbm2`/`glow` chunk-library function bodies VERBATIM (shared-pattern chunks). extraBuffer persistent state in [133..255] ONLY. The hard clamp(col,0,1) may be upgraded to hue-preserve-clamp + ACES, but keep the final output in 0..1.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "gen-holographic-fracture",
+  "name": "Holographic Fracture",
+  "category": "generative",
+  "url": "shaders/gen-holographic-fracture.wgsl",
+  "description": "Iridescent cracked planes with SDF fracture lines and thin-film holographic shards. Audio drives crack glow, and mouse interaction spawns new radial cracks.",
+  "features": [
+    "generative",
+    "sdf",
+    "iridescence",
+    "fracture-lines",
+    "glow",
+    "audio-reactive",
+    "mouse-driven",
+    "depth-aware"
+  ],
+  "tags": [
+    "procedural",
+    "generative",
+    "fracture",
+    "cracks",
+    "holographic",
+    "iridescent",
+    "crystal",
+    "audio-reactive",
+    "vj"
+  ],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "params": [
+    {
+      "id": "fractureCount",
+      "name": "Fracture Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "iridescence",
+      "name": "Iridescence",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "crackWidth",
+      "name": "Crack Width",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "pulseSpeed",
+      "name": "Pulse Speed",
+      "default": 0.35,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "supportsDepth": true,
+  "supportsDof": false,
+  "updated": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Fracture Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Iridescence",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Crack Width",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Pulse Speed",
+      "default": 0.35,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ]
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══════════════════════════════════════════════════════════════════
 //  Holographic Fracture - Iridescent cracked SDF planes
 //  Category: generative
 //  Features: generative, sdf, iridescence, fracture-lines, glow,
-//            audio-reactive, mouse-crack, click-ripples, depth-aware
+//            audio-reactive, mouse-crack, depth-aware
 //  Agent 4a — Phase A shader upgrade swarm
-//  Engine uniform convention (verified src/renderer/UniformBuffer.ts):
-//    zoom_config.yz = mouse position (0..1), zoom_config.w = mouse-down
-//    zoom_config.x  = TIME (do NOT use as mouse x)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -24,8 +169,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  config: vec4<f32>,       // x=Time, y=unused, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=MouseX, y=MouseY, z=unused, w=MouseDown
   zoom_params: vec4<f32>,  // x=FractureCount, y=Iridescence, z=CrackWidth, w=PulseSpeed
   ripples: array<vec4<f32>, 50>,
 };
@@ -88,25 +233,6 @@ fn iridescence(theta: f32, shift: f32) -> vec3<f32> {
     return 0.5 + 0.5 * cos(vec3<f32>(t, t + 2.094, t + 4.189));
 }
 
-// Filmic ACES tonemap (Krzysztof Narkowicz fit)
-fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-    let a = 2.51;
-    let b = 0.03;
-    let c = 2.43;
-    let d = 0.59;
-    let e = 0.14;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
-// Hue-preserving clamp: rescale by max channel instead of clipping
-fn huePreserveClamp(c: vec3<f32>) -> vec3<f32> {
-    let m = max(c.r, max(c.g, c.b));
-    if (m > 1.0) {
-        return c / m;
-    }
-    return c;
-}
-
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
@@ -123,33 +249,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Sliders → shader-specific constants
-    // x: FractureCount  → radial crack count (3..12) + shard cell scale
-    // y: Iridescence    → thin-film amplitude + per-crack phase-shift range
-    // z: CrackWidth     → crack core line width + glow falloff radii
-    // w: PulseSpeed     → crack pulse rate, wobble rate, ripple front speed
+    // Clamp/normalize zoom_params
     let fractureCount = mix(3.0, 12.0, clamp(u.zoom_params.x, 0.0, 1.0));
     let iridescenceAmt = clamp(u.zoom_params.y, 0.0, 1.0);
     let crackWidth = mix(0.002, 0.02, clamp(u.zoom_params.z, 0.0, 1.0));
     let pulseSpeed = mix(0.2, 1.5, clamp(u.zoom_params.w, 0.0, 1.0));
 
-    // Mouse crack origin (FIX: read .yz, not .xy — x is time)
-    let rawMouse = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
+    // Mouse crack origin
+    let mouse = (u.zoom_config.xy - 0.5) * vec2<f32>(aspect, 1.0);
     let mouseDown = step(0.5, u.zoom_config.w);
-
-    // Spring-damper the mouse crack origin so it eases rather than snaps.
-    // Persistent state lives in extraBuffer[133..135] only:
-    //   [133..134] = eased mouse position, [135] = initialized flag
-    var easedMouse = rawMouse;
-    if (extraBuffer[135] > 0.5) {
-        let prev = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        // critically-damped exponential approach (frame-rate friendly)
-        easedMouse = mix(prev, rawMouse, 0.14);
-    }
-    extraBuffer[133] = easedMouse.x;
-    extraBuffer[134] = easedMouse.y;
-    extraBuffer[135] = 1.0;
-    let mouse = easedMouse;
 
     // Background substrate with subtle FBM
     let substrate = fbm2(p * 2.5 + time * 0.05, 4);
@@ -157,7 +265,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Fracture network: radial cracks from center + mouse point
     var minDist = 1000.0;
     var crackIntensity = 0.0;
-    var domPhase = 0.0; // audio-bin phase of the dominant crack at this pixel
 
     let centers = array<vec2<f32>, 2>(vec2<f32>(0.0), mouse);
     for (var c = 0; c < 2; c = c + 1) {
@@ -180,46 +287,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let d = sdSegment(p, a, b);
             let w = crackWidth * (1.0 + mids * 0.5);
             let line = 1.0 - smoothstep(0.0, w, d);
-            if (line > crackIntensity) {
-                crackIntensity = line;
-                // Per-crack iridescence phase from audio FFT bins 1..8,
-                // so each crack index shimmers to its own band.
-                domPhase = plasmaBuffer[1u + (u32(i) % 8u)].x;
-            }
+            crackIntensity = max(crackIntensity, line);
             minDist = min(minDist, d);
         }
-    }
-
-    // Click crack fronts: transient radial fractures expanding from each
-    // ripple point, fading with ripple age (guard: max 50 engine ripples)
-    let nRipples = min(u32(u.config.y), 50u);
-    var frontGlow = 0.0;
-    var frontDist = 1000.0;
-    for (var ri = 0u; ri < nRipples; ri = ri + 1u) {
-        let rp = u.ripples[ri];
-        let age = time - rp.z;
-        if (age < 0.0 || age > 4.0) { continue; }
-        let rc = (rp.xy - 0.5) * vec2<f32>(aspect, 1.0);
-        let fade = exp(-age * 1.4);
-        let radius = age * (0.2 + pulseSpeed * 0.3);
-        let dr = length(p - rc);
-        // expanding ring front where the fracture is actively propagating
-        let ring = abs(dr - radius);
-        frontGlow += glow(ring, crackWidth * 5.0, fade * 0.9);
-        frontDist = min(frontDist, ring);
-        // short radial spokes left behind the advancing front
-        let spokeAng = atan2(p.y - rc.y, p.x - rc.x);
-        let spoke = abs(sin(spokeAng * 4.0)) * dr;
-        let inside = 1.0 - smoothstep(radius - 0.02, radius, dr);
-        frontGlow += glow(spoke, crackWidth * 3.0, fade * 0.5) * inside;
-        frontDist = min(frontDist, spoke + (1.0 - inside));
     }
 
     // Holographic shard coloring based on angle and distance
     let angleToCenter = atan2(p.y, p.x);
     let distToCenter = length(p);
-    let iridShift = time * 0.1 + distToCenter * 3.0 + bass * 0.2
-                  + domPhase * 6.28318 * iridescenceAmt;
+    let iridShift = time * 0.1 + distToCenter * 3.0 + bass * 0.2;
     let shardColor = iridescence(angleToCenter + substrate, iridShift);
 
     // Shard boundaries via Voronoi-like cell edges
@@ -242,26 +318,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     col += vec3<f32>(0.7, 0.9, 1.0) * crackGlow;
     col += shardColor * edgeGlow * iridescenceAmt;
     col += vec3<f32>(1.0, 0.9, 0.7) * crackIntensity * (0.6 + treble);
-    col += mix(vec3<f32>(1.0, 0.75, 0.45), shardColor, 0.5) * frontGlow;
 
     // Vignette
     let v = 1.0 - length(uv - 0.5) * 0.4;
     col *= clamp(v, 0.0, 1.0);
 
-    // Honest depth: crack proximity raises the surface, substrate adds
-    // gentle relief, ripple fronts ridge outward. 0 = far, 1 = near.
-    let crackDepth = 1.0 - smoothstep(0.0, 0.3, minDist);
-    let frontDepth = 1.0 - smoothstep(0.0, 0.15, frontDist);
-    let depth = clamp(substrate * 0.3 + crackDepth * 0.5 + frontDepth * 0.2 + edgeGlow * 0.1,
-                      0.0, 1.0);
-
-    // Hue-preserving soft clamp, then filmic ACES, final clamp to 0..1
-    col = huePreserveClamp(col);
-    col = acesToneMap(col * 1.05);
-    let finalColor = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
-
     // Output as generative background (alpha = 1.0)
+    let finalColor = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
     textureStore(writeTexture, coord, vec4<f32>(finalColor, 1.0));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, vec4<f32>(finalColor, 1.0));
 }
+```

@@ -1,10 +1,151 @@
+# Swarm Brief: supernova-core
+
+**Role:** Optimizer
+**Name:** Supernova Core
+**Category:** generative
+**Description:** Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective. Advanced alpha composition blends luminance keying, depth layering, and physical transmittance for cleaner 3-slot compositing.
+**Current lines:** 187
+**Target lines:** 237–277 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Optimizer. This is the cleanest shader of the batch - do not fix what is not broken. Add spectral and tactile depth around the pristine core:
+- Spectrum-driven rays: modulate individual ray intensities by per-bin `plasmaBuffer[1..k]` reads (ray index i reads bin (i % 8) + 1) so the light echo decomposes into the audio spectrum; keep the per-ray hash shimmer as the floor.
+- Click Sedov rings: loop ripples[] (guard `min(u32(u.config.y), 50u)`) spawning secondary shockwave rings from each click point with Sedov-Taylor radius growth (r ~ t^0.4) and age-decayed intensity.
+- Spring-damper companion star: ease the mouse companion-star position with a critically-damped spring (extraBuffer[133..134]) so the asymmetry and rim light relax smoothly after fast mouse moves.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve the advanced alpha compositor block VERBATIM (luminanceKey -> depthAlpha -> beerLambertAlpha -> edgeAlpha blend order and the pre-multiplied `finalColor = color * alpha` output) - downstream 3-slot chain depends on premultiplied semantics. Keep the OkLab mix, blackbody functions, hue_preserve_clamp(hdr, 8.0) -> ACES -> gamma -> IGN dither stack byte-identical. extraBuffer in [133..255] ONLY.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins - persistent shader state goes in [133..255] ONLY.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "supernova-core",
+  "name": "Supernova Core",
+  "category": "generative",
+  "url": "shaders/supernova-core.wgsl",
+  "description": "Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective. Advanced alpha composition blends luminance keying, depth layering, and physical transmittance for cleaner 3-slot compositing.",
+  "features": [
+    "audio-reactive",
+    "generative",
+    "sedov-taylor",
+    "rayleigh-taylor",
+    "upgraded-rgba",
+    "chromatic-aberration",
+    "depth-aware",
+    "alpha-layered",
+    "physical-transmittance",
+    "luminance-key"
+  ],
+  "params": [
+    {
+      "id": "expansion",
+      "name": "Expansion",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "rays",
+      "name": "Ray Count",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "shockwaves",
+      "name": "Shockwave Speed",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "chromatic",
+      "name": "Chromatic Shift",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "mapping": "zoom_params.w"
+    }
+  ],
+  "tags": [
+    "generative",
+    "supernova",
+    "space",
+    "explosion",
+    "rays",
+    "shockwave",
+    "audio-reactive",
+    "chromatic",
+    "physics",
+    "sedov-taylor",
+    "alpha",
+    "transmittance"
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Expansion",
+      "default": 0.3,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Ray Count",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Shockwave Speed",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Chromatic Shift",
+      "default": 0.2,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
 // ═══ Supernova Core — Advanced Alpha Compositor Upgrade ═══
 // Category: generative
 // Features: generative, audio-reactive, sedov-taylor, rayleigh-taylor,
 //   radioactive-decay, chromatic-aberration, upgraded-rgba,
 //   blackbody-cooling, volumetric-fog, ign-dither, alpha-layered,
-//   physical-transmittance, luminance-key, depth-layered,
-//   spectrum-rays, click-sedov-rings, spring-companion
+//   physical-transmittance, luminance-key, depth-layered
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -105,148 +246,61 @@ fn beerLambertAlpha(density: f32, thickness: f32) -> f32 {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-  let pixel = vec2<i32>(global_id.xy);
-  let res = u.config.zw;
+  let pixel = vec2<i32>(global_id.xy); let res = u.config.zw;
   if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
   let uv01 = vec2<f32>(pixel) / res; let time = u.config.x;
   let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz;
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
-
-  // ── Slider wiring (saved-preset contract: zoom_params.x/y/z/w) ──
-  let expansion = u.zoom_params.x;                    // blast + ray reach scale
-  let rayCount = 6 + i32(u.zoom_params.y * 18.0);     // spectrum ray count 6..24
-  let shockwaves = u.zoom_params.z;                   // Sedov rate (main + click rings)
-  let chromatic = u.zoom_params.w;                    // prism split on rays
-
+  let expansion = u.zoom_params.x; let rayCount = 6 + i32(u.zoom_params.y * 18.0);
+  let shockwaves = u.zoom_params.z; let chromatic = u.zoom_params.w;
   let aspect = res.x / res.y;
   let p = (uv01 - 0.5) * vec2<f32>(aspect, 1.0); let dist = length(p); let angle = atan2(p.y, p.x);
-
-  // ── Spring-damper companion star (persistent state) ─────────────
-  // extraBuffer[133..134] = eased companion-star position (world space).
-  // Position-only critically damped step (zeta = 1) so fast mouse moves
-  // relax the ejecta asymmetry and rim light instead of snapping them.
-  // Only invocation (0,0) integrates; every pixel reads the eased value.
-  let mouseWorldRaw = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
-  var companion = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    if (time < 0.1) {
-      companion = mouseWorldRaw; // cold start: snap to avoid a startup swoop
-    } else {
-      let springK = 1.0 - exp(-(1.0 / 60.0) * 9.0);
-      companion = mix(companion, mouseWorldRaw, springK);
-    }
-    extraBuffer[133] = companion.x;
-    extraBuffer[134] = companion.y;
-  }
-  let mouseWorld = companion;
-  let asymmetry = 1.0 + smoothstep(0.15, 0.0, length(p - mouseWorld)) * 0.6;
-
-  // Sedov-Taylor main blast: r ~ t^0.4, driven by shockwaves + bass.
   let blastRadius = pow(time * 0.12 * (1.0 + shockwaves) * (1.0 + bass), 0.4) * 0.5 * (1.0 + expansion);
-
-  // Radioactive decay luminosity: 56Ni -> 56Co -> 56Fe.
-  let decayTime = fract(time * 0.08);
-  let nickelMass = 1.0 - decayTime * 0.7;
+  let mouseWorld = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
+  let asymmetry = 1.0 + smoothstep(0.15, 0.0, length(p - mouseWorld)) * 0.6;
+  let decayTime = fract(time * 0.08); let nickelMass = 1.0 - decayTime * 0.7;
   let cobaltLum = sin(decayTime * TAU) * 0.5 + 0.5;
   let flareTrigger = step(1.0 - treble * 0.15, hash21(vec2<f32>(floor(time * 5.0), 0.0))) * cobaltLum;
-
-  var hdr = vec3<f32>(0.0);
-  var ejectaDensity = 0.0;
-  var shockTemp = 0.0;
-
-  // ── Nickel core ─────────────────────────────────────────────────
+  var hdr = vec3<f32>(0.0); var ejectaDensity = 0.0; var shockTemp = 0.0;
   let coreTemp = 30000.0 * nickelMass * (1.0 + bass * 0.5);
   let core = smoothstep(0.025 * asymmetry, 0.0, dist) * (1.0 + flareTrigger * 2.0);
-  hdr += blackbodyRGB(coreTemp) * 2.5 * core;
-  shockTemp += core * coreTemp;
-  ejectaDensity += core;
-
-  // ── Cooling shock shells ────────────────────────────────────────
+  hdr += blackbodyRGB(coreTemp) * 2.5 * core; shockTemp += core * coreTemp; ejectaDensity += core;
   for (var wi = 0; wi < 4; wi++) {
     let wf = f32(wi);
-    let waveRadius = blastRadius * (0.25 + wf * 0.25);
-    let waveWidth = 0.006 * (1.0 + treble * 0.5) * asymmetry;
+    let waveRadius = blastRadius * (0.25 + wf * 0.25); let waveWidth = 0.006 * (1.0 + treble * 0.5) * asymmetry;
     let wave = smoothstep(waveRadius + waveWidth, waveRadius, dist) * smoothstep(waveRadius - waveWidth, waveRadius, dist);
-    let cooling = 1.0 - wf / 4.0 - dist * 0.8;
-    let tempK = mix(15000.0, 2500.0, smoothstep(0.0, 1.0, cooling));
+    let cooling = 1.0 - wf / 4.0 - dist * 0.8; let tempK = mix(15000.0, 2500.0, smoothstep(0.0, 1.0, cooling));
     let shell = mixOkLab(blackbodyRGB(tempK), blackbodyRGB(tempK * 0.6), wf / 4.0) * (1.2 + mids * 0.8);
-    hdr += shell * wave;
-    shockTemp += wave * coreTemp * (1.0 - wf * 0.2);
-    ejectaDensity += wave * 0.3;
+    hdr += shell * wave; shockTemp += wave * coreTemp * (1.0 - wf * 0.2); ejectaDensity += wave * 0.3;
   }
-
-  // ── Rayleigh-Taylor instability fingers (iron emission) ─────────
   let rtCoord = vec2<f32>(angle * 3.0, dist * 8.0 - time * 0.5);
   let rtFingers = smoothstep(0.45, 0.65, fbm(rtCoord * vec2<f32>(1.0, 2.0 + mids * 2.0), 3)) * smoothstep(blastRadius + 0.05, blastRadius - 0.05, dist);
   let ironColor = mixOkLab(vec3<f32>(0.55, 0.75, 0.85), vec3<f32>(0.25, 0.45, 0.65), mids);
-  hdr += ironColor * rtFingers * mids * 1.5;
-  ejectaDensity += rtFingers * 0.2;
-
-  // ── Neutrino-driven convection cells ────────────────────────────
+  hdr += ironColor * rtFingers * mids * 1.5; ejectaDensity += rtFingers * 0.2;
   let cellMask = smoothstep(0.08, 0.0, abs(dist - blastRadius * 0.6)) * fbm(p * 6.0 + vec2<f32>(cos(time * 0.3), sin(time * 0.25)) * 0.5, 3) * fbm(p * 13.8 + vec2<f32>(10.0, 20.0), 2);
   hdr += vec3<f32>(0.45, 0.25, 0.65) * cellMask * 0.45;
-
-  // ── Companion-star rim light (uses eased spring position) ───────
-  let toCompanion = normalize(mouseWorld - p + vec2<f32>(0.001));
-  let normal = normalize(p + vec2<f32>(0.001));
+  let toCompanion = normalize(mouseWorld - p + vec2<f32>(0.001)); let normal = normalize(p + vec2<f32>(0.001));
   let rim = pow(max(0.0, 1.0 + dot(normal, toCompanion)), 3.0) * smoothstep(blastRadius + 0.04, blastRadius - 0.04, dist) * (1.0 + treble);
   hdr += blackbodyRGB(6500.0) * rim * 0.9;
-
-  // ── Spectrum-driven rays ────────────────────────────────────────
-  // Ray i reads FFT bin (i % 8) + 1 so the light echo decomposes into
-  // the audio spectrum; the per-ray hash shimmer stays as the floor.
   for (var ri = 0; ri < rayCount; ri++) {
     let rf = f32(ri);
     let rayAngle = rf / f32(rayCount) * TAU + hash21(vec2<f32>(rf, 0.0)) * 0.35;
     let angleDiff = abs(fract((angle - rayAngle) / TAU + 0.5) - 0.5) * TAU;
     let rayWidth = 0.015 + hash21(vec2<f32>(rf, 1.0)) * 0.035;
-    let binVal = plasmaBuffer[u32(ri % 8) + 1u].x;
-    let shimmer = 0.3 + hash21(vec2<f32>(rf, time)) * 0.7;
-    let spectral = 0.45 + binVal * 1.4;
-    let ray = smoothstep(rayWidth, 0.0, angleDiff) * smoothstep(0.35 * (1.0 + expansion) * asymmetry, 0.0, dist) * shimmer * spectral;
+    let ray = smoothstep(rayWidth, 0.0, angleDiff) * smoothstep(0.35 * (1.0 + expansion) * asymmetry, 0.0, dist) * (0.3 + hash21(vec2<f32>(rf, time)) * 0.7);
     let cs = chromatic * 0.025 * dist * (1.0 + treble);
-    let rayR = smoothstep(rayWidth * 1.3, 0.0, angleDiff + cs) * ray;
-    let rayB = smoothstep(rayWidth * 1.3, 0.0, angleDiff - cs) * ray;
+    let rayR = smoothstep(rayWidth * 1.3, 0.0, angleDiff + cs) * ray; let rayB = smoothstep(rayWidth * 1.3, 0.0, angleDiff - cs) * ray;
     let h = abs(fract(vec3<f32>(fract(rf / f32(rayCount) + bass * 0.12 + decayTime * 0.2)) + vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - vec3<f32>(3.0));
     hdr += clamp(h - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0)) * vec3<f32>(rayR, ray, rayB) * (1.0 + treble * 0.5);
     ejectaDensity += ray * 0.08;
   }
-
-  // ── Click Sedov rings ───────────────────────────────────────────
-  // Each click spawns a secondary blast wave whose radius follows the
-  // Sedov-Taylor self-similar solution (r ~ t^0.4), cooling and fading
-  // with age. Shockwave Speed slider scales their expansion rate.
-  let rippleCount = min(u32(u.config.y), 50u);
-  for (var ci: u32 = 0u; ci < rippleCount; ci = ci + 1u) {
-    let click = u.ripples[ci];
-    let clickAge = time - click.z;
-    if (clickAge > 0.0 && clickAge < 6.0) {
-      let clickWorld = (click.xy - 0.5) * vec2<f32>(aspect, 1.0);
-      let clickDist = length(p - clickWorld);
-      let ringRadius = pow(clickAge * 0.30 * (1.0 + shockwaves * 0.8), 0.4) * 0.6;
-      let ringWidth = 0.008 + clickAge * 0.004;
-      let ring = smoothstep(ringRadius + ringWidth, ringRadius, clickDist) * smoothstep(ringRadius - ringWidth, ringRadius, clickDist);
-      let ringDecay = exp(-clickAge * 1.1);
-      let ringTemp = mix(12000.0, 2800.0, clamp(clickAge / 5.0, 0.0, 1.0));
-      hdr += blackbodyRGB(ringTemp) * ring * ringDecay * (1.0 + mids * 0.6);
-      shockTemp += ring * ringTemp * ringDecay;
-      ejectaDensity += ring * ringDecay * 0.35;
-    }
-  }
-
-  // ── Cobalt flare + bass shock glint ─────────────────────────────
-  hdr += blackbodyRGB(8000.0) * flareTrigger * core * 1.2;
-  shockTemp += flareTrigger * coreTemp * 0.5;
+  hdr += blackbodyRGB(8000.0) * flareTrigger * core * 1.2; shockTemp += flareTrigger * coreTemp * 0.5;
   hdr += vec3<f32>(0.5, 0.55, 0.65) * smoothstep(0.02, 0.0, abs(dist - blastRadius)) * bass * 0.8;
-
-  // ── Volumetric ejecta fog + depth light-echo tint ───────────────
-  let fogDensity = ejectaDensity * 2.5;
-  let fogAtten = exp(-fogDensity * dist * (1.0 + depth));
+  let fogDensity = ejectaDensity * 2.5; let fogAtten = exp(-fogDensity * dist * (1.0 + depth));
   let fogColor = mixOkLab(blackbodyRGB(4000.0), blackbodyRGB(12000.0), nickelMass);
   hdr = hdr * fogAtten + fogColor * (1.0 - fogAtten) * 0.4;
   hdr += vec3<f32>(0.25, 0.20, 0.35) * smoothstep(0.0, 0.5, depth) * 0.2 * (1.0 + bass * 0.2);
-
   hdr = hue_preserve_clamp(hdr, 8.0);
   let mapped = acesToneMap(hdr * 1.5); let dither = (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
   let color = pow(mapped, vec3<f32>(1.0 / 2.2)) + vec3<f32>(dither);
@@ -273,3 +327,4 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(dataTextureA, pixel, vec4<f32>(finalColor, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(ejectaDensity * 0.5 + tempNorm * 0.3, 0.0, 0.0, 0.0));
 }
+```
