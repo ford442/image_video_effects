@@ -18,10 +18,16 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
+    resolution: vec2<f32>,
+    time: f32,
+    frame: u32,
     config: vec4<f32>,
     zoom_config: vec4<f32>,
     zoom_params: vec4<f32>,
     ripples: array<vec4<f32>, 50>,
+    view_matrix: mat4x4<f32>,
+    proj_matrix: mat4x4<f32>,
+    camera_pos: vec3<f32>,
 };
 
 
