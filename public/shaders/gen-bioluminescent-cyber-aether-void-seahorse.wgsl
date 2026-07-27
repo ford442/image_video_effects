@@ -73,8 +73,8 @@ fn fbm(p: vec3<f32>) -> f32 {
 // ----------------------------------------------------------------
 fn map(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
-    let t = u.time * u.config.w; // Evolution speed
-    let bass = plasmaBuffer[0].x * u.config.y; // Audio reactivity
+    let t = u.time * u.zoom_params.w; // Evolution speed
+    let bass = plasmaBuffer[0].x * u.zoom_params.y; // Audio reactivity
 
     // Mouse Interaction
     let mouse = u.zoom_config.yz;
@@ -137,7 +137,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Base color
         let baseColor = vec3<f32>(0.1, 0.5, 0.8);
         let glowColor = vec3<f32>(0.0, 1.0, 0.5);
-        let bass = plasmaBuffer[0].x * u.config.y;
+        let bass = plasmaBuffer[0].x * u.zoom_params.y;
 
         col = mix(baseColor, glowColor, sin(u.time * 2.0) * 0.5 + 0.5 + bass);
     } else {
@@ -146,7 +146,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Final color modification (Brightness mapping)
-    col *= u.config.z;
+    col *= u.zoom_params.z;
+    col += vec3<f32>(u.zoom_params.x * 0.01);
 
     textureStore(writeTexture, global_id.xy, vec4<f32>(col, 1.0));
 }
