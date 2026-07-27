@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 // Keep in sync with src/config/performancePolicy.ts and src/config/formatPolicy.ts
 namespace pixelocity::policy {
 
