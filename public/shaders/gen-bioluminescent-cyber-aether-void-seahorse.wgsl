@@ -7,35 +7,23 @@
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
 @group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var<storage, read> touchBuffer: array<Touch>;
-@group(0) @binding(5) var<storage, read> waveformBuffer: array<f32>;
-@group(0) @binding(6) var<storage, read> freqBuffer: array<f32>;
-@group(0) @binding(7) var<storage, read> audioHistoryBuffer: array<f32>;
-@group(0) @binding(8) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-@group(0) @binding(9) var depthTexture: texture_depth_2d;
-@group(0) @binding(10) var readDepthTexture: texture_depth_2d;
-@group(0) @binding(11) var non_filtering_sampler: sampler;
-@group(0) @binding(12) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    resolution: vec2<f32>,
-    time: f32,
-    frame: u32,
     config: vec4<f32>,
     zoom_config: vec4<f32>,
-    view_matrix: mat4x4<f32>,
-    proj_matrix: mat4x4<f32>,
-    camera_pos: vec3<f32>,
-}
+    zoom_params: vec4<f32>,
+    ripples: array<vec4<f32>, 50>,
+};
 
-struct Touch {
-    pos: vec2<f32>,
-    vel: vec2<f32>,
-    force: f32,
-    radius: f32,
-    id: i32,
-    phase: i32,
-}
 
 // ----------------------------------------------------------------
 // SDF Primitives & Operations
@@ -83,10 +71,10 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     let bass = plasmaBuffer[0].x * u.config.y; // Audio reactivity
 
     // Mouse Interaction
-    let mouse = touchBuffer[0].pos;
+    let mouse = u.zoom_config.yz;
 
     // Distort space via mouse interaction
-    p -= vec3<f32>((mouse.x - 0.5) * 4.0, -(mouse.y - 0.5) * 4.0, 0.0);
+    p -= vec3<f32>(mouse.x * 2.0, mouse.y * 2.0, 0.0);
 
     // Space curving for Seahorse spine
     p.x += sin(p.y * 2.0 + t) * 0.2;

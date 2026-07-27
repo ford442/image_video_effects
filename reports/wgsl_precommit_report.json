@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-07-26T14:38:26.865595",
-  "naga_bin": "/root/.cargo/bin/naga",
+  "timestamp": "2026-07-27T08:15:42.370385",
+  "naga_bin": "/home/jules/.cargo/bin/naga",
   "naga_available": false,
   "total": 1,
   "passed": 1,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen_grid.wgsl",
+      "file": "public/shaders/gen-bioluminescent-cyber-aether-void-seahorse.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
