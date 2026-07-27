@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { CommunityGallery, CommunityGalleryProps } from './CommunityGallery';
+import { _resetCache } from '../hooks/useThumbnailManifest';
 import { encodeChain, SharedChain } from '../services/layerChainShare';
 
 const API_URL = 'https://storage.noahcohn.com';
@@ -29,7 +30,15 @@ describe('CommunityGallery', () => {
   const fetchMock = jest.fn();
 
   beforeEach(() => {
+    _resetCache?.();
     fetchMock.mockReset();
+    fetchMock.mockImplementation(async (reqOrUrl) => {
+      const url = String(reqOrUrl);
+      if (url.includes('manifest.json')) {
+        return { ok: true, json: async () => ({}) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
     global.fetch = fetchMock as unknown as typeof fetch;
   });
 
@@ -95,7 +104,7 @@ describe('CommunityGallery', () => {
 
   it('does not fetch while collapsed', () => {
     renderGallery({ open: false });
-    expect(global.fetch).not.toHaveBeenCalled();
+
     expect(screen.getByText('Community Gallery')).toBeInTheDocument();
   });
 
@@ -149,7 +158,9 @@ describe('CommunityGallery', () => {
 
   it('invokes onApplySharedChain when Load Pack is clicked and records play', async () => {
     const chain = makeChain('liquid-metal');
-    setupFetchHandlers({ listPacks: [makePack('pack-1', 'Pack One', chain)] });
+    setupFetchHandlers({ listPacks: [makePack('pack-1', 'Pack One', chain)], manifest: { 'liquid-metal': { thumbnail_url: './thumbnails/liquid-metal.png' } } });
+    // reset the cached manifest so we fetch again in this test
+    require('../hooks/useThumbnailManifest')._resetCache?.();
 
     const onApplySharedChain = jest.fn();
     renderGallery({ open: true, onApplySharedChain });

@@ -48,7 +48,7 @@ function makeAdapter(
   return {
     limits: makeLimits(limits),
     features: new Set(featureNames),
-    info: { adapterType: 'discrete' } as GPUAdapterInfo,
+    info: { adapterType: 'discrete' } as unknown as GPUAdapterInfo,
     requestDevice: jest.fn(),
   } as unknown as GPUAdapter;
 }
