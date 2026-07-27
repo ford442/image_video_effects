@@ -64,3 +64,8 @@ export function useThumbnailManifest(): UseThumbnailManifestResult {
 
   return { manifest, loading, hasThumbnail };
 }
+
+export function _resetCache() {
+  cachedManifest = null;
+  loadPromise = null;
+}
