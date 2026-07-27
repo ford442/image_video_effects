@@ -1,0 +1,55 @@
+{
+  "name": "Prismatic Cyber-Chrono Void-Tortoise",
+  "category": "generative",
+  "tags": [
+    "tortoise",
+    "cybernetic",
+    "prismatic",
+    "chrono",
+    "fractal",
+    "volumetric",
+    "audio-reactive"
+  ],
+  "description": "A colossal, biomechanical cosmic tortoise forged from shattered prismatic chrono-glass and liquid auroral plasma, drifting slowly through an abyssal quantum sea while bearing a violently glowing, fractal pocket dimension upon its massive shell.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Time",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 10.0,
+      "step": 0.1
+    },
+    {
+      "index": 1,
+      "name": "Audio Reactivity",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1
+    },
+    {
+      "index": 2,
+      "name": "Brightness",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.05
+    },
+    {
+      "index": 3,
+      "name": "Evolution Speed",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1
+    }
+  ],
+  "id": "gen-prismatic-cyber-chrono-void-tortoise",
+  "url": "shaders/gen-prismatic-cyber-chrono-void-tortoise.wgsl"
+}
