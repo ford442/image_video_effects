@@ -344,11 +344,6 @@
       "filename": "2026-07-25_prismatic-cyber-chrono-void-tortoise.md",
       "title": "Prismatic Cyber-Chrono Void-Tortoise",
       "added": "2026-07-25T15:09:45.421900"
-    },
-    {
-      "filename": "2026-07-26_bioluminescent-cyber-aether-void-seahorse.md",
-      "title": "Bioluminescent Cyber-Aether Void-Seahorse",
-      "added": "2026-07-27T06:51:10.806710"
     }
   ],
   "current": null,
@@ -546,6 +541,13 @@
       "added": "2026-07-25T15:09:45.421900",
       "status": "completed",
       "completed_at": "2026-07-26T07:49:20.352715"
+    },
+    {
+      "filename": "2026-07-26_bioluminescent-cyber-aether-void-seahorse.md",
+      "title": "Bioluminescent Cyber-Aether Void-Seahorse",
+      "added": "2026-07-27T06:51:10.806710",
+      "status": "completed",
+      "completed_at": "2026-07-27T07:48:01.754621"
     }
   ],
   "rejected": [],
