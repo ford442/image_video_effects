@@ -4001,7 +4001,7 @@
         "min": 0.1,
         "max": 5,
         "step": 0.1,
-        "mapping": "u.config.w"
+        "mapping": "zoom_params.w"
       },
       {
         "id": "param2",
@@ -4010,7 +4010,7 @@
         "min": 0,
         "max": 3,
         "step": 0.1,
-        "mapping": "u.config.y"
+        "mapping": "zoom_params.y"
       },
       {
         "id": "param3",
@@ -4019,7 +4019,7 @@
         "min": 0,
         "max": 1,
         "step": 0.05,
-        "mapping": "u.config.z"
+        "mapping": "zoom_params.z"
       },
       {
         "id": "param4",
@@ -4028,7 +4028,7 @@
         "min": -1,
         "max": 1,
         "step": 0.1,
-        "mapping": "u.config.x"
+        "mapping": "zoom_params.x"
       }
     ],
     "updatedParams": [
@@ -18769,6 +18769,69 @@
     "id": "gen-resonant-crystal-canyons",
     "url": "shaders/gen-resonant-crystal-canyons.wgsl",
     "features": []
+  },
+  {
+    "id": "gen-resonant-quantum-obsidian-astro-manta",
+    "name": "Resonant Quantum-Obsidian Astro-Manta",
+    "url": "/shaders/gen-resonant-quantum-obsidian-astro-manta.wgsl",
+    "category": "generative",
+    "description": "A colossal, biomechanical manta ray forged from fractured quantum-obsidian and liquid neon-aether, gliding effortlessly through a chaotic, fluid-dynamic acoustic dark matter sea.",
+    "features": [
+      "raymarching",
+      "fluid-dynamics",
+      "audio-reactive",
+      "organic-mechanics"
+    ],
+    "tags": [
+      "organic",
+      "biomechanical",
+      "quantum",
+      "cosmic",
+      "audio-reactive",
+      "raymarching"
+    ],
+    "params": [
+      {
+        "id": "timeScale",
+        "name": "Time Scale",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "config.x",
+        "description": "Controls the speed of the Manta's swimming animation"
+      },
+      {
+        "id": "audioReactivity",
+        "name": "Audio Reactivity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "config.y",
+        "description": "Multiplier for how intensely the bioluminescence reacts to the bass"
+      },
+      {
+        "id": "brightness",
+        "name": "Brightness",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "config.z",
+        "description": "Overall emission and bloom strength"
+      },
+      {
+        "id": "evolutionSpeed",
+        "name": "Evolution Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "config.w",
+        "description": "Speed of the dark matter fluid nebula shifting in the background"
+      }
+    ]
   },
   {
     "name": "Resonant Quantum-Obsidian Scarab-Engine",
