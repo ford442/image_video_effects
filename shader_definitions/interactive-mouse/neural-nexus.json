@@ -47,5 +47,40 @@
     "synapse",
     "electric",
     "audio-reactive"
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Density",
+      "default": 1,
+      "min": 0.1,
+      "max": 4.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Signal Speed",
+      "default": 1,
+      "min": 0.0,
+      "max": 4.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Decay",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Branches",
+      "default": 2,
+      "min": 1.0,
+      "max": 8.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

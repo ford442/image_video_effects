@@ -5,9 +5,39 @@
 
 ---
 
-## Recently Completed (150 shaders)
+## Recently Completed (182 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 18 (8 shaders) — 2026-07-30 — SMALLEST-FIRST ALL-CATEGORY EDITION 2
+
+Second wave of the all-category pool (712 remaining after Batch 17), 97–100 liners across interactive-mouse / visual-effects / post-processing / image / artistic. Brief generator `temp/make_briefs_2026_07_30_b18.py` reuses the b17 all-category scanner. Special wins: `prismatic-feedback-loop` had **ALL 4 slider labels wrong** ('Feedback' drove accumulationRate, 'Blur Radius' drove prism strength, 'Glow Intensity' drove rotation, 'Chromatic Spread' default 0.02 drove the feedback mix — rewired honest, blowout guards added, `accumulativeAlpha()` verbatim); `neon-topology` was **tagged mouse-driven but never read the mouse** (y/w also mislabeled — mouse lens wired, Height Scale made real, dead `alpha` var removed); `neural-resonance` had the **mask-as-color feedback bug** (spore-galaxy class — dataTextureA stored masks but C was read as color; display→A, masks→B, |curl|*10 garbage out of the display path); `fireworks-portrait-burst` had a **mouse coord units bug** (normalized [0,1] treated as pixels — bursts detonated off-screen; fixed `(p*res - res*0.5)/min(res)`) plus the flat-0.0 depth clobber (now luminance-derived); `holographic-sticker` had an **OOB palette read** (`plasmaBuffer[palIdx % 256u]` → bins 1–8); `temporal-slit-scan` (the history-ring shader, binding 13) gained a mouse scan pivot + click temporal tears with the engine ring-indexing contract verbatim. All 8 gate green (naga + bindgroup, 0 warnings, 0 extraBuffer violations), JSON contracts preserved, lists/dupes clean (1317 unique definitions), Jest 63 suites/422 pass. Briefs: `swarm-tasks/kimi-briefs-2026-07-30-b18/`; notes: `swarm-outputs/kimi-2026-07-30-b18/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 175 | `neural-nexus` | 18 | 97→167 (+70) | Click synapse bursts; spring-damper cursor [133..136]; per-neuron FFT voices (hash bin); hash/dendrite/sampleUV verbatim. |
+| 176 | `prismatic-feedback-loop` | 18 | 97→176 (+79) | **All 4 mislabeled sliders rewired**; blowout clamps; click prism bursts; accumulativeAlpha + A/C symmetry verbatim; stale category header fixed. |
+| 177 | `neon-topology` | 18 | 98→150 (+52) | **Mouse wired** (was tagged but unread — depth lens + rim); y/w made honest; dead `alpha` removed; click contour quakes; branchless contours verbatim. |
+| 178 | `temporal-slit-scan` | 18 | 98→160 (+62) | Mouse scan pivot (tent map, branchless fallback); click temporal tears (+3 frames); per-column FFT jitter; ring indexing + binding 13 + extraBuffer[4] verbatim. |
+| 179 | `spectral-distortion` | 18 | 99→163 (+64) | Spring-damper center [133..136]; click warp burst rings; R/B split from bins 3/7; fully branchless; stale comments fixed. |
+| 180 | `fireworks-portrait-burst` | 18 | 100→166 (+66) | **Mouse coord units bug fixed** (off-screen bursts now on-cursor); **honest depth** (was flat 0.0 clobber); click ripple bursts; spark physics/ACES verbatim. |
+| 181 | `holographic-sticker` | 18 | 100→170 (+70) | **OOB palette read guarded** (%256 → bins 1–8); spring-damper sticker [133..138]; click foil flash rings; HSV foil + depthLayeredAlpha verbatim. |
+| 182 | `neural-resonance` | 18 | 100→162 (+62) | **Mask-as-color feedback fixed** (display→A, masks→B — spore-galaxy class); spring-damper mask [133..137]; click resonance rings; curlField/synapseTint verbatim. |
+
+### Batch 17 (8 shaders) — 2026-07-30 — SMALLEST-FIRST ALL-CATEGORY EDITION
+
+First non-generative swarm after the generative pool closeout (0 remaining excl. gen_capabilities/gen_grid). New all-category pool scanner (`temp/make_briefs_2026_07_30_b17.py`): smallest WGSL first across ALL `shader_definitions/*` categories, excluding tracker-mentioned shaders, non-empty `updatedParams`, and **multipass defs** (own `multipass` key or referenced as `nextShader` — pass I/O contracts are off-limits to generic upgrade swarms; this excluded the 3 smallest in pool, `rd-on-video-pass1/2/3`). Pool: 743 shaders. All 8 picks landed in interactive-mouse (88–97 lines, 4-param `params[]` schema). Special wins: `chronos-brush` had **3 mislabeled sliders** (y 'Freeze Decay' drove hue-shift speed, z 'Time Edge Distort' drove fade, w 'Mode (Paint/Erase)' drove opacity — now honest, default 0.9 bit-identical to legacy decay) plus click-stamp blooms into the sacred C→A history feedback; `cursor-aura` had **2 mislabeled sliders** (z 'Edge Softness' was a hidden mix, w 'Color Hue' was hidden pulse-speed with hardcoded blue — now real feather + IQ hue, default 0.5 = exact legacy blue); `kaleido-portal-interactive` had an **unclamped ~7.0 HDR border glow** (soft-knee + 1.5 cap, bass still pumps); `cyber-magnifier` had additive HUD glow with no clamp (hue-preserving 1.2 clamp pre-border); `pixel-focus` read the depth buffer but ignored it (now depth-aware focus radius); all 8 gained click-ripple interactivity (guarded `min(u32(u.config.y), 50u)`) and 6 gained spring-damper mouse glide (extraBuffer [133..139] only). All 8 gate green — **naga available in the VM this time** (full validation, not just bindgroup/workgroup), 0 warnings, 0 extraBuffer violations. JSON contracts preserved (updatedParams additive-only), lists/dupes clean (1317 unique definitions), Jest 63 suites/422 pass. Briefs: `swarm-tasks/kimi-briefs-2026-07-30-b17/`; notes: `swarm-outputs/kimi-2026-07-30-b17/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 167 | `velvet-vortex` | 17 | 88→141 (+53) | Click swirl shockwaves (twist rings + sheen); spring-damper center [133..136]; per-arm FFT phase; swirl matrix/parallax verbatim; stale category header fixed. |
+| 168 | `cyber-magnifier` | 17 | 93→159 (+66) | **HDR clamp** (hue-preserving 1.2 pre-border); spring-damper lens [133..134]; click flare rings + mag pulse; 3-tap aberration verbatim. |
+| 169 | `chronos-brush` | 17 | 94→144 (+50) | **3 mislabeled sliders rewired** (decay bit-identical at default; real time-edge UV wobble; honest paint/erase); click-stamp blooms; C→A history contract + HSV math verbatim. |
+| 170 | `kimi_spotlight` | 17 | 94→163 (+69) | Spring-damper beam [133..138]; click light rings lift darkness; honest depth bump in spot; per-bin treble rim flicker; beam/hotspot verbatim. |
+| 171 | `interactive-glitch-brush` | 17 | 95→161 (+66) | Spring-damper brush [133..136]; click glitch grenades (forced displace+invert zones); per-channel split from treble bins 5/8; fully branchless (select/step only). |
+| 172 | `pixel-focus` | 17 | 95→146 (+51) | **Depth-aware focus** (radius *= mix(0.7,1.3,depth)); click clarity rings; per-bin density shimmer; branchless chromatic + alpha-luma verbatim. |
+| 173 | `kaleido-portal-interactive` | 17 | 96→166 (+70) | **~7.0 HDR border tamed** (soft-knee + 1.5 cap); spring-damper portal [133..138]; click counter-rotation bursts (integrated spin phase [139]); fold math verbatim. |
+| 174 | `cursor-aura` | 17 | 97→168 (+71) | **2 mislabeled sliders rewired** (real feather 0.01–0.20; IQ hue w/ 0.5=legacy blue); click aura rings; directional per-bin edge axes; 4-tap edge kernel verbatim. |
 
 ### Batch 16 (8 shaders) — 2026-07-26 — GENERATIVE EDITION 7
 

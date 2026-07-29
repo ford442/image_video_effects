@@ -5,6 +5,7 @@
 //  Complexity: Medium
 //  Created: 2026-05-10
 //  Upgraded: 2026-06-28
+//  Optimized: 2026-07-30 (Batch 17 — depth-aware focus, click pulses, spectral shimmer)
 //  By: Agent 1a - Alpha Channel Specialist
 // ═══════════════════════════════════════════════════════════════════
 
@@ -37,16 +38,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / max(resolution.y, 0.001);
     var mouse = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
+    let time = u.config.x;
 
+    // Global audio bands
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Params
+    // Spectral shimmer bins (per-bin energy for the mosaic "breathing")
+    let bin1 = plasmaBuffer[1].x;
+    let bin2 = plasmaBuffer[2].x;
+    let bin3 = plasmaBuffer[3].x;
+    let bin4 = plasmaBuffer[4].x;
+
+    // Params — Block Size / Focus Radius / Edge Hardness / Aberration
     let mosaicSize = clamp(u.zoom_params.x, 0.0, 1.0);
-    let focusRadius = mix(0.01, 0.5, clamp(u.zoom_params.y, 0.0, 1.0));
+    let focusRadiusBase = mix(0.01, 0.5, clamp(u.zoom_params.y, 0.0, 1.0));
     let hardness = clamp(u.zoom_params.z, 0.0, 1.0);
     let chromatic = clamp(u.zoom_params.w + treble * 0.1, 0.0, 1.0);
+
+    // ── Depth-aware focus ───────────────────────────────────────────
+    // Sample scene depth at the focus point (mouse) and at this pixel.
+    // The lens tunes its radius to the subject's depth: near content
+    // gets a tighter, more intimate focus pool; far content a wider one.
+    let mouseClamped = clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0));
+    let depthAtMouse = textureSampleLevel(readDepthTexture, non_filtering_sampler, mouseClamped, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    // Holding the mouse button gently pulls focus wider (rack-focus feel).
+    let focusRadius = focusRadiusBase * mix(0.7, 1.3, depthAtMouse) * (1.0 + mouseDown * 0.15);
 
     // Calculate distance to mouse
     let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
@@ -54,13 +74,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = distance(uvCorrected, mouseCorrected);
 
     // Mixing factor: 0.0 = Pixelated, 1.0 = Clear
-    let focus = clamp(
+    var focus = clamp(
         1.0 - smoothstep(focusRadius, focusRadius + (1.0 - hardness) * 0.2, dist),
         0.0, 1.0
     );
 
-    // Pixelation Logic
+    // ── Click focus pulses ──────────────────────────────────────────
+    // Each live ripple emits an expanding SHARP ring of clarity that
+    // snaps a band of the mosaic into full focus as it sweeps outward,
+    // decaying over ~1.5 seconds.
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let timeSinceClick = time - ripple.z;
+        if (timeSinceClick > 0.0 && timeSinceClick < 1.5) {
+            let rippleCorrected = vec2<f32>(ripple.x * aspect, ripple.y);
+            let rippleDist = distance(uvCorrected, rippleCorrected);
+            let ringRadius = timeSinceClick * 0.55;              // expansion speed
+            let ringWidth = 0.035 + timeSinceClick * 0.02;       // softens as it grows
+            let ringBand = 1.0 - smoothstep(ringWidth * 0.5, ringWidth, abs(rippleDist - ringRadius));
+            let ringDecay = 1.0 - timeSinceClick / 1.5;          // linear fade over 1.5s
+            focus = max(focus, ringBand * ringDecay);
+        }
+    }
+    focus = clamp(focus, 0.0, 1.0);
+
+    // ── Pixelation with spectral mosaic shimmer ─────────────────────
+    // Per-bin energy makes the density breathe with the music beyond
+    // the global bass/mids term; depth adds a gentle parallax coarsening.
     var density = (50.0 + (1.0 - mosaicSize) * 450.0) * (1.0 + bass * 0.1 + mids * 0.05);
+    let spectralShimmer = bin1 * 0.04 + bin2 * 0.03 + bin3 * 0.02 + bin4 * 0.02;
+    density = density * (1.0 + spectralShimmer);
+    density = density * mix(1.0, 0.85, depth * (1.0 - focus)); // far mosaic slightly coarser
     density = max(density, 1.0);
     let pixelUV = floor(uv * density) / density;
 
@@ -80,14 +125,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         mix(plainSample.b, bSample.b, useChromatic)
     );
 
-    let finalRGB = mix(colPixel, colClear, focus);
+    var finalRGB = mix(colPixel, colClear, focus);
+
+    // ── Lens rim highlight ──────────────────────────────────────────
+    // A faint bright ring hugs the focus boundary so the lens edge
+    // reads as glass; it breathes slightly with the treble.
+    let rimOuter = smoothstep(focusRadius - 0.015, focusRadius, dist);
+    let rimInner = 1.0 - smoothstep(focusRadius, focusRadius + 0.03 + treble * 0.01, dist);
+    let rim = rimOuter * rimInner * (0.05 + treble * 0.03);
+    finalRGB = finalRGB + vec3<f32>(rim);
 
     // Alpha: preserve input alpha, modulated by focus region and luma
     let luma = dot(finalRGB, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(baseColor.a * (focus * 0.6 + luma * 0.3 + 0.1), 0.0, 1.0);
     let finalColor = vec4<f32>(finalRGB, alpha);
-
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);

@@ -6,6 +6,12 @@
 //  Chunks From: neural-resonance
 //  Created: 2026-05-31
 //  By: Copilot
+//  Upgraded: 2026-07-30 (Batch 18, Algorithmist)
+//    - FIX: mask-as-color feedback bug. dataTextureA now stores the
+//      DISPLAY color (what dataTextureC reads back next frame), and
+//      the mask quad moved to dataTextureB (same fix as spore-galaxy).
+//    - Spring-dampered mouse mask via extraBuffer[133..136].
+//    - Click resonance rings from u.ripples injected into feedback.
 // ================================================================
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,8 +29,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
+  config: vec4<f32>,       // x=time, y=rippleCount, z=resW, w=resH
+  zoom_config: vec4<f32>,  // x=time, y=mouseX, z=mouseY, w=mouseDown
   zoom_params: vec4<f32>,  // x=Amplification, y=CurlStrength, z=FeedbackMix, w=ChromaticDrift
   ripples: array<vec4<f32>, 50>,
 };
@@ -66,18 +72,50 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let audio = plasmaBuffer[0].xyz;
 
+  // Slider contract (zoom_params.x/y/z/w -> updatedParams index 0..3):
+  //   x Amplification  -> curl noise frequency + audio-reactive gain
+  //   y Curl Strength  -> warp displacement amplitude
+  //   z Feedback Mix   -> temporal blend toward previous frame color
+  //   w Chromatic Drift-> RGB split distance along the curl vector
   let amplification = mix(0.15, 1.35, u.zoom_params.x) * (1.0 + audio.x * 0.45);
   let curlStrength = mix(0.005, 0.08, u.zoom_params.y);
   let feedbackMix = mix(0.25, 0.96, u.zoom_params.z);
   let chromaticDrift = mix(0.0, 0.03, u.zoom_params.w);
 
+  // --- Spring-dampered mouse center (extraBuffer[133..136] = pos, vel) ---
+  // Critically damped spring so the warp emphasis glides behind the raw
+  // cursor instead of snapping. Thread (0,0) integrates the state; every
+  // thread reads the (near-identical) persistent value.
+  var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  let lastTime = extraBuffer[137];
+  // Snap on first frames or after a big teleport (e.g. window refocus).
+  if (time < 0.1 || lastTime <= 0.0 || length(springPos - mouse) > 1.5) {
+    springPos = mouse;
+    springVel = vec2<f32>(0.0, 0.0);
+  }
+  if (gid.x == 0u && gid.y == 0u) {
+    let dt = clamp(time - lastTime, 0.0, 0.1);
+    let omega = 9.0; // spring natural frequency (rad/s)
+    let accel = omega * omega * (mouse - springPos) - 2.0 * omega * springVel;
+    let newVel = springVel + accel * dt;
+    let newPos = springPos + newVel * dt;
+    extraBuffer[133] = newPos.x;
+    extraBuffer[134] = newPos.y;
+    extraBuffer[135] = newVel.x;
+    extraBuffer[136] = newVel.y;
+    extraBuffer[137] = time;
+  }
+
   let aspectUV = uv * vec2<f32>(aspect, 1.0);
-  let mouseDelta = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let mouseDelta = (uv - springPos) * vec2<f32>(aspect, 1.0);
   let mouseMask = 1.0 - smoothstep(0.0, 0.65, length(mouseDelta));
   let curl = curlField(aspectUV * (2.0 + amplification), time * 0.15) * curlStrength;
   let warpedUV = clamp(uv + curl / vec2<f32>(aspect, 1.0) * (0.4 + mouseMask * 1.2), vec2<f32>(0.0), vec2<f32>(1.0));
 
   let source = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
+  // dataTextureC = previous frame's dataTextureA = previous DISPLAY color
+  // (after the Batch 18 plumbing fix this is real color, not masks).
   let feedback = textureSampleLevel(dataTextureC, u_sampler, warpedUV, 0.0);
   let split = curl * chromaticDrift * (0.8 + audio.z * 0.6);
   let chroma = vec3<f32>(
@@ -90,11 +128,35 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var finalColor = mix(chroma, feedback.rgb, feedbackMix * (0.4 + mouseMask * 0.6));
   finalColor = mix(finalColor, finalColor + synapseTint * (0.08 + audio.y * 0.18), 0.55);
 
-  let finalAlpha = clamp(mix(source.a, feedback.a, feedbackMix) + mouseMask * 0.12, 0.02, 0.98);
+  // --- Click resonance rings ---
+  // Each live ripple injects a decaying, expanding synapseTint band
+  // (radius = age * 0.5, ~1.5s fade) into the feedback, so clicks ring
+  // outward through the resonance field and linger via the temporal loop.
+  var ringEnergy = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age > 0.0 && age < 1.5) {
+      let ringRadius = age * 0.5;
+      let ringDist = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+      let band = 1.0 - smoothstep(0.0, 0.04 + age * 0.05, abs(ringDist - ringRadius));
+      ringEnergy = ringEnergy + band * (1.0 - age / 1.5);
+    }
+  }
+  ringEnergy = min(ringEnergy, 1.5);
+  finalColor = finalColor + synapseTint * ringEnergy * (0.35 + audio.y * 0.25);
+  finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
+
+  let finalAlpha = clamp(mix(source.a, feedback.a, feedbackMix) + mouseMask * 0.12 + ringEnergy * 0.05, 0.02, 0.98);
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, warpedUV, 0.0).r;
-  let outDepth = clamp(mix(baseDepth, 0.24 + mouseMask * 0.58, 0.22), 0.0, 1.0);
+  let outDepth = clamp(mix(baseDepth, 0.24 + mouseMask * 0.58, 0.22) - ringEnergy * 0.03, 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(mouseMask, feedbackMix, length(curl) * 10.0, finalAlpha));
+  // dataTextureA = DISPLAY color (raw, never tonemapped) -> read back as
+  // dataTextureC next frame by the feedback path.
+  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
+  // dataTextureB = mask quad (same 4 values, same order as before).
+  textureStore(dataTextureB, vec2<i32>(gid.xy), vec4<f32>(mouseMask, feedbackMix, length(curl) * 10.0, finalAlpha));
 }
