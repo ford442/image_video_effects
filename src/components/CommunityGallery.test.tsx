@@ -124,7 +124,7 @@ describe('CommunityGallery', () => {
         expect.any(Object)
       )
     );
-    await waitFor(() => expect(screen.getByText('Pack One')).toBeInTheDocument());
+    await screen.findByText('Pack One');
     expect(screen.getByText('Pack Two')).toBeInTheDocument();
     expect(screen.getByText('Description for Pack One')).toBeInTheDocument();
   });
@@ -139,7 +139,7 @@ describe('CommunityGallery', () => {
 
     renderGallery({ open: true });
 
-    await waitFor(() => expect(screen.getByText('Pack One')).toBeInTheDocument());
+    await screen.findByText('Pack One');
     const img = document.querySelector('img[src="./thumbnails/liquid-metal.png"]');
     expect(img).toBeInTheDocument();
   });
@@ -152,7 +152,7 @@ describe('CommunityGallery', () => {
 
     renderGallery({ open: true });
 
-    await waitFor(() => expect(screen.getByText('Pack One')).toBeInTheDocument());
+    await screen.findByText('Pack One');
     expect(document.querySelector('img')).toBeNull();
   });
 
@@ -165,7 +165,7 @@ describe('CommunityGallery', () => {
     const onApplySharedChain = jest.fn();
     renderGallery({ open: true, onApplySharedChain });
 
-    await waitFor(() => expect(screen.getByText('Pack One')).toBeInTheDocument());
+    await screen.findByText('Pack One');
     fireEvent.click(screen.getByText('Load Pack'));
 
     await waitFor(() => expect(onApplySharedChain).toHaveBeenCalled());
@@ -181,9 +181,7 @@ describe('CommunityGallery', () => {
 
     renderGallery({ open: true });
 
-    await waitFor(() =>
-      expect(screen.getByText(/Couldn’t load community packs/)).toBeInTheDocument()
-    );
+    await screen.findByText(/Couldn’t load community packs/);
   });
 
   it('calls onToggle when the header is clicked', () => {
@@ -197,9 +195,7 @@ describe('CommunityGallery', () => {
     setupFetchHandlers({ listPacks: [] });
     renderGallery({ open: true });
 
-    await waitFor(() =>
-      expect(screen.getByText('No community packs yet — be the first!')).toBeInTheDocument()
-    );
+    await screen.findByText('No community packs yet — be the first!');
     fireEvent.click(screen.getByText('Publish current chain'));
 
     expect(screen.getByPlaceholderText('Pack name')).toBeInTheDocument();
@@ -240,9 +236,7 @@ describe('CommunityGallery', () => {
 
     renderGallery({ open: true, getCurrentChain: () => chain });
 
-    await waitFor(() =>
-      expect(screen.getByText('No community packs yet — be the first!')).toBeInTheDocument()
-    );
+    await screen.findByText('No community packs yet — be the first!');
     fireEvent.click(screen.getByText('Publish current chain'));
 
     fireEvent.change(screen.getByPlaceholderText('Pack name'), {
@@ -257,7 +251,7 @@ describe('CommunityGallery', () => {
 
     fireEvent.click(screen.getByText('Publish'));
 
-    await waitFor(() => expect(screen.getByText('My New Pack')).toBeInTheDocument());
+    await screen.findByText('My New Pack');
 
     const publishCall = fetchMock.mock.calls.find(
       call => String(call[0]).endsWith('/api/preset-packs') && call[1]?.method === 'POST'
@@ -274,14 +268,10 @@ describe('CommunityGallery', () => {
     setupFetchHandlers({ listPacks: [] });
     renderGallery({ open: true, getCurrentChain: () => null });
 
-    await waitFor(() =>
-      expect(screen.getByText('No community packs yet — be the first!')).toBeInTheDocument()
-    );
+    await screen.findByText('No community packs yet — be the first!');
     fireEvent.click(screen.getByText('Publish current chain'));
 
-    await waitFor(() =>
-      expect(screen.getByText('No chain is currently loaded to publish.')).toBeInTheDocument()
-    );
+    await screen.findByText('No chain is currently loaded to publish.');
   });
 
   it('round-trip: publish → list → apply decodes original chain', async () => {
@@ -325,9 +315,7 @@ describe('CommunityGallery', () => {
     const onApplySharedChain = jest.fn();
     renderGallery({ open: true, getCurrentChain: () => chain, onApplySharedChain });
 
-    await waitFor(() =>
-      expect(screen.getByText('No community packs yet — be the first!')).toBeInTheDocument()
-    );
+    await screen.findByText('No community packs yet — be the first!');
 
     fireEvent.click(screen.getByText('Publish current chain'));
     fireEvent.change(screen.getByPlaceholderText('Pack name'), {
@@ -335,7 +323,7 @@ describe('CommunityGallery', () => {
     });
     fireEvent.click(screen.getByText('Publish'));
 
-    await waitFor(() => expect(screen.getByText('Round Trip Pack')).toBeInTheDocument());
+    await screen.findByText('Round Trip Pack');
 
     fireEvent.click(screen.getAllByText('Load Pack')[0]);
 
