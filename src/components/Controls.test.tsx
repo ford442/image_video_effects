@@ -1,5 +1,10 @@
 import React from 'react';
 
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import { ControlsContainer as Controls } from "./controls/ControlsContainer";
+import { ShaderEntry, SlotParams } from '../renderer/types';
+
 // Setup matchMedia mock early
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -16,11 +21,6 @@ beforeAll(() => {
     })),
   });
 });
-
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { ControlsContainer as Controls } from "./controls/ControlsContainer";
-import { ShaderEntry, SlotParams } from '../renderer/types';
 
 beforeEach(() => {
     localStorage.clear();
