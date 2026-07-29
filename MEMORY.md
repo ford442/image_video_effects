@@ -1,6 +1,19 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-07-19 (Foundation Wave 2 #965)
+**Last updated:** 2026-07-29 (progress audit + issues #1038–#1044)
+
+## 2026-07-29 — Progress audit & next foundation wave
+- **Board was empty** (July 26 closed #1007–#1031 tooling/content campaigns). Created **7 open issues** for next code foundation + product:
+  - #1038 Uniforms SoT (`config.y` = **rippleCount**, not delta_time in agent docs)
+  - #1043 finish `frame.ts` modularization (present/blit/slot dispatch)
+  - #1039 real-GPU format-tier + multipass budget evidence
+  - #1040 WASM Tier A go/no-go on discrete GPUs (stay B until then)
+  - #1044 thumbs 27% → 80% (GPU waves; tooling already done)
+  - #1041 multipass physics polish (ripple/fabric/caustics discoverability)
+  - #1042 toolchain: TS upgrade, bundle budget, optional CRA→Vite
+- **Strategic call:** foundation first (#1038, #1043) before another generative swarm; content flagship = multipass polish not more single-pass volume; WASM feature freeze until #1040.
+- **Health:** device policy sync OK; format tiers in tree; dual Storage re-exports only; package dual-deps cleaned; root junk still present (`a.out.wasm`, `upg.zip`).
+
 
 ## WGSL cross-cutting improvements (2026-07-12 audit)
 - **Engine wins (all shaders):** gate historyTex copy (only 11 use binding 13); reuse extraBuffer Float32Array; fix dataTexA/B→C double-copy in chained slots; merge queue submits; GPU image upload path.
