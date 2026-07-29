@@ -1,3 +1,7 @@
+import * as WasmBridge from '../wasm/wasm_bridge.js';
+import { WASMRenderer } from '../renderer/WASMRenderer';
+import { DEFAULT_CONFIG } from '../renderer/Renderer';
+
 jest.mock('../wasm/wasm_bridge.js', () => ({
   initWasmRenderer: jest.fn().mockResolvedValue(true),
   shutdownWasmRenderer: jest.fn(),
@@ -16,10 +20,6 @@ jest.mock('../wasm/wasm_bridge.js', () => ({
   updateUniforms: jest.fn(),
   getFPS: () => 60,
 }));
-
-import * as WasmBridge from '../wasm/wasm_bridge.js';
-import { WASMRenderer } from '../renderer/WASMRenderer';
-import { DEFAULT_CONFIG } from '../renderer/Renderer';
 
 describe('WASMRenderer Phase 3 parity methods', () => {
   let renderer: WASMRenderer;

@@ -45,7 +45,7 @@ describe('PresetPackGallery', () => {
         render(<PresetPackGallery open={true} onToggle={jest.fn()} onApplyPack={jest.fn()} />);
 
         expect(global.fetch).toHaveBeenCalledWith('/preset_packs.json');
-        await waitFor(() => expect(screen.getByText('Pack A')).toBeInTheDocument());
+        await screen.findByText('Pack A');
         expect(screen.getByText('Pack B')).toBeInTheDocument();
         expect(screen.getByText('First test pack')).toBeInTheDocument();
     });
@@ -54,7 +54,7 @@ describe('PresetPackGallery', () => {
         const onApplyPack = jest.fn();
         render(<PresetPackGallery open={true} onToggle={jest.fn()} onApplyPack={onApplyPack} />);
 
-        await waitFor(() => expect(screen.getByText('Pack A')).toBeInTheDocument());
+        await screen.findByText('Pack A');
         const loadButtons = screen.getAllByText('Load Pack');
         fireEvent.click(loadButtons[0]);
 
@@ -66,7 +66,7 @@ describe('PresetPackGallery', () => {
 
         render(<PresetPackGallery open={true} onToggle={jest.fn()} onApplyPack={jest.fn()} />);
 
-        await waitFor(() => expect(screen.getByText(/Couldn't load preset packs/)).toBeInTheDocument());
+        await screen.findByText(/Couldn't load preset packs/);
     });
 
     it('calls onToggle when the header is clicked', () => {
