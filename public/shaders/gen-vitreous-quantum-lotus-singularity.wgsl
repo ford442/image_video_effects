@@ -64,8 +64,8 @@ fn map(p_in: vec3<f32>) -> f32 {
     p -= vec3<f32>(mouse.x * 3.0, mouse.y * 3.0, 0.0);
 
     let time = u.time;
-    p.xy = rot(time * 0.1) * p.xy;
-    p.yz = rot(time * 0.05) * p.yz;
+    p = vec3<f32>(rot(time * 0.1) * p.xy, p.z);
+    p = vec3<f32>(p.x, rot(time * 0.05) * p.yz);
 
     let petalComplexity = mix(1.0, 10.0, u.zoom_params.x);
     let singularityMass = mix(0.1, 5.0, u.zoom_params.y);
@@ -104,7 +104,7 @@ fn map(p_in: vec3<f32>) -> f32 {
     for (var i = 0; i < iterations; i++) {
         fp.x = abs(fp.x) - 0.5 * scale;
         fp.y = fp.y - 0.2 * scale;
-        fp.xy = rot(0.2) * fp.xy;
+        fp = vec3<f32>(rot(0.2) * fp.xy, fp.z);
 
         // Single petal SDF
         let hw = 0.2 * scale;
