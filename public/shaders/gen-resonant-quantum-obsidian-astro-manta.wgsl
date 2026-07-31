@@ -57,7 +57,7 @@ fn map(p: vec3<f32>) -> f32 {
     let body = length(p_mod * vec3<f32>(1.0, 3.0, 0.5)) - 1.0;
 
     // Wing undulation
-    let wing_wave = sin(p_mod.x * 2.0 - u.config.x * 3.0) * 0.5 * p_mod.x;
+    let wing_wave = sin(p_mod.x * 2.0 - u.zoom_params.x * 3.0) * 0.5 * p_mod.x;
     p_mod.y += wing_wave;
 
     let wings = length(p_mod * vec3<f32>(0.2, 10.0, 1.0)) - 0.5;
@@ -114,7 +114,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let diff = max(dot(n, light), 0.0);
 
         // Audio reactivity from plasma buffer
-        let audioBass = plasmaBuffer[0].x * u.config.y;
+        let audioBass = plasmaBuffer[0].x * u.zoom_params.y;
 
         // Obsidian base + glowing veins
         let baseColor = vec3<f32>(0.1);
@@ -127,7 +127,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Volumetric fog/bloom overlay
-    col += vec3<f32>(0.1, 0.3, 0.5) * (1.0 - exp(-0.05 * t)) * u.config.z;
+    col += vec3<f32>(0.1, 0.3, 0.5) * (1.0 - exp(-0.05 * t)) * u.zoom_params.z * max(0.5, u.zoom_params.w);
 
     textureStore(writeTexture, coord, vec4<f32>(col, 1.0));
 }
