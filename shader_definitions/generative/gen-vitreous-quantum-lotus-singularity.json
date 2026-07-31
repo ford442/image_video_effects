@@ -1,0 +1,47 @@
+{
+  "id": "gen-vitreous-quantum-lotus-singularity",
+  "name": "Vitreous Quantum-Lotus Singularity",
+  "category": "generative",
+  "url": "shaders/gen-vitreous-quantum-lotus-singularity.wgsl",
+  "tags": ["organic", "quantum", "cosmic", "fractal", "flower", "refraction", "audio-reactive"],
+  "description": "A hyper-dimensional, translucent crystalline lotus flower continuously blooming and fracturing around a gravitational singularity.",
+  "complexity": "High",
+  "parameters": [
+    {
+      "name": "Petal Complexity",
+      "type": "slider",
+      "default": 5.0,
+      "min": 1.0,
+      "max": 10.0,
+      "step": 1.0,
+      "uniform": "zoom_params.x"
+    },
+    {
+      "name": "Singularity Mass",
+      "type": "slider",
+      "default": 1.5,
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1,
+      "uniform": "zoom_params.y"
+    },
+    {
+      "name": "Refraction Index",
+      "type": "slider",
+      "default": 1.33,
+      "min": 1.0,
+      "max": 2.5,
+      "step": 0.01,
+      "uniform": "zoom_params.z"
+    },
+    {
+      "name": "Audio Pulse Glow",
+      "type": "slider",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1,
+      "uniform": "zoom_params.w"
+    }
+  ]
+}

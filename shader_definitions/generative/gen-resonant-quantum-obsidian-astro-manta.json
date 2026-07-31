@@ -26,7 +26,7 @@
       "min": 0.1,
       "max": 5.0,
       "step": 0.1,
-      "mapping": "config.x",
+      "mapping": "zoom_params.x",
       "description": "Controls the speed of the Manta's swimming animation"
     },
     {
@@ -36,7 +36,7 @@
       "min": 0.0,
       "max": 3.0,
       "step": 0.1,
-      "mapping": "config.y",
+      "mapping": "zoom_params.y",
       "description": "Multiplier for how intensely the bioluminescence reacts to the bass"
     },
     {
@@ -46,7 +46,7 @@
       "min": 0.1,
       "max": 3.0,
       "step": 0.1,
-      "mapping": "config.z",
+      "mapping": "zoom_params.z",
       "description": "Overall emission and bloom strength"
     },
     {
@@ -56,7 +56,7 @@
       "min": 0.0,
       "max": 5.0,
       "step": 0.1,
-      "mapping": "config.w",
+      "mapping": "zoom_params.w",
       "description": "Speed of the dark matter fluid nebula shifting in the background"
     }
   ]
