@@ -7946,6 +7946,60 @@
     "features": []
   },
   {
+    "id": "gen-ethereal-bismuth-resonance-void-owl",
+    "name": "Ethereal Bismuth-Resonance Void-Owl",
+    "category": "generative",
+    "url": "shaders/gen-ethereal-bismuth-resonance-void-owl.wgsl",
+    "tags": [
+      "crystal",
+      "bismuth",
+      "avian",
+      "iridescent",
+      "void",
+      "quantum"
+    ],
+    "description": "A hyper-dimensional avian entity forged from iridescent bismuth lattices, suspended in a zero-gravity quantum field where sonic vibrations materialize as glowing geometric feathers.",
+    "complexity": "High",
+    "parameters": [
+      {
+        "name": "Crystal Complexity",
+        "type": "slider",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "uniform": "zoom_params.x"
+      },
+      {
+        "name": "Audio Reactivity Scale",
+        "type": "slider",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "uniform": "zoom_params.y"
+      },
+      {
+        "name": "Iridescence Shift",
+        "type": "slider",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "uniform": "zoom_params.z"
+      },
+      {
+        "name": "Orbital Debris Density",
+        "type": "slider",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "uniform": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "id": "gen-ethereal-chrono-plasma-void-manta",
     "url": "shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
     "name": "Ethereal Chrono-Plasma Void-Manta",
