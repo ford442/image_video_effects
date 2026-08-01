@@ -8,7 +8,8 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 - C++ layout: [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) (`CreateBindGroupLayout`)
 - Device limits: [`src/contracts/webgpu_limits.json`](../src/contracts/webgpu_limits.json) ↔ [`src/renderer/webgpuDevicePolicy.ts`](../src/renderer/webgpuDevicePolicy.ts) ↔ [`wasm_renderer/device.cpp`](../wasm_renderer/device.cpp)
 - WGSL authoring: [`agents/WGSL_BUILTINS_GENERATIVE.md`](../agents/WGSL_BUILTINS_GENERATIVE.md)
-- CI sync check: `npm run verify:device-policy`
+- Uniforms layout: [`src/contracts/uniforms_layout.json`](../src/contracts/uniforms_layout.json) ↔ [`src/renderer/UniformBuffer.ts`](../src/renderer/UniformBuffer.ts) ↔ [`wasm_renderer/renderer.h`](../wasm_renderer/renderer.h)
+- CI sync checks: `npm run verify:device-policy`, `npm run verify:uniforms`
 
 ## Naming
 
@@ -47,6 +48,54 @@ Do **not** reverse this order. (Audit 2026-07-21: prior A-then-B order clobbered
 | 11 | `comparisonSampler` | sampler_comparison | compare |
 | 12 | `plasmaBuffer` | storage read-only | read |
 | 13 | `historyTexture` | texture_2d_array\<f32\> | sample (**opt-in**) |
+
+## Uniforms struct (binding 3)
+
+**Authoritative.** Engine truth lives in [`src/contracts/uniforms_layout.json`](../src/contracts/uniforms_layout.json), mirrored by
+[`src/renderer/UniformBuffer.ts`](../src/renderer/UniformBuffer.ts) (`UNIFORM_OFFSETS`) + [`src/renderer/webgpu/frame.ts`](../src/renderer/webgpu/frame.ts) (`writeUniforms`)
+and [`wasm_renderer/renderer.h`](../wasm_renderer/renderer.h) + [`wasm_renderer/frame.cpp`](../wasm_renderer/frame.cpp) (`UpdateUniformBuffer`).
+Drift is a CI failure: `npm run verify:uniforms`.
+
+```wgsl
+struct Uniforms {
+  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
+  zoom_params: vec4<f32>,  // .xyzw = user params p1..p4 (mapped from UI sliders)
+  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
+};
+```
+
+Total size **848 bytes** (212 floats) — matches `UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE` and `maxUniformBufferBindingSize`.
+
+| Field | Byte offset | Meaning | Range / units |
+|-------|-------------|---------|---------------|
+| `config.x` | 0 | **time** | Seconds since renderer start; monotonic, never resets |
+| `config.y` | 4 | **rippleCount** | Number of active ripples, `0..50` as f32 |
+| `config.z` | 8 | **resolutionWidth** | Render-target width in pixels (post scaling) |
+| `config.w` | 12 | **resolutionHeight** | Render-target height in pixels (post scaling) |
+| `zoom_config.x` | 16 | **time** | Same value as `config.x` |
+| `zoom_config.y` | 20 | **mouseX** | Canvas UV `0..1`, 0 = left |
+| `zoom_config.z` | 24 | **mouseY** | Canvas UV `0..1`, **0 = top** |
+| `zoom_config.w` | 28 | **mouseDown** | `1.0` pressed / `0.0` released — test with `> 0.5` |
+| `zoom_params.x` | 32 | **p1** | User slider 1 (range per shader JSON `controls`) |
+| `zoom_params.y` | 36 | **p2** | User slider 2 |
+| `zoom_params.z` | 40 | **p3** | User slider 3 |
+| `zoom_params.w` | 44 | **p4** | User slider 4 |
+| `ripples[i].x` | 48 + 16·i | ripple UV x | `0..1` |
+| `ripples[i].y` | 52 + 16·i | ripple UV y | `0..1`, 0 = top |
+| `ripples[i].z` | 56 + 16·i | **startTime** | Seconds, same clock as `config.x` — `age = u.config.x - r.z` |
+| `ripples[i].w` | 60 + 16·i | **padding** | Always `0.0` — reserved, *not* a strength value |
+
+### Do-not-reintroduce list
+
+- **`config.y` is `rippleCount`, not delta time.** No per-frame `dt` is uploaded on either backend; drive
+  motion from absolute `config.x`. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+- **`config.y/z/w` is not audio.** Audio comes from `plasmaBuffer[0].xyz` (bass/mids/treble) and the FFT bins
+  in `extraBuffer[5..132]`. Reading audio out of `config` is the recurring dead-audio bug (batches 15–19).
+- **`config.y` is not a click count.** Legacy briefs called it `MouseClickCount` / `Generic1`; those were
+  already wrong when written. Use `zoom_config.w` for mouse-down state.
+- **Mouse Y is top-down** (fixed 2026-07-19). Do not add a `1.0 - y` flip.
+- **Ripple slots past `rippleCount` are fully zeroed** — a zero `startTime` means "empty", not "created at t=0".
 
 ## extraBuffer packing (binding 10)
 
