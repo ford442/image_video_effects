@@ -8,7 +8,11 @@
 import { validateBindGroup } from './bindGroupValidator';
 import { reportError } from './ErrorHandling';
 import type { InternalColorFormat } from '../config/formatPolicy';
-import { pipelineCacheKey, rewriteWgslStorageFormats } from './wgslFormatRewrite';
+import {
+  pipelineCacheKey,
+  rewriteWgslStorageFormats,
+  rewriteWgslStorageFormatsChecked,
+} from './wgslFormatRewrite';
 
 /**
  * Simple hash function for WGSL source code
@@ -163,6 +167,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
  * @param workgroupSizes Cache map for parsed workgroup sizes
  * @returns true if compilation succeeded, false otherwise
  */
+export interface FormatRewriteWarning {
+  shaderId: string;
+  colorFormat: InternalColorFormat;
+  missed: string[];
+}
+
+const formatRewriteWarnings = new Map<string, FormatRewriteWarning>();
+
+function recordFormatRewriteWarning(warning: FormatRewriteWarning): void {
+  formatRewriteWarnings.set(`${warning.shaderId}:${warning.colorFormat}`, warning);
+}
+
+/** Storage-format rewrite misses seen so far (diagnostics / HUD / benches). */
+export function getFormatRewriteWarnings(): FormatRewriteWarning[] {
+  return Array.from(formatRewriteWarnings.values());
+}
+
+export function clearFormatRewriteWarnings(): void {
+  formatRewriteWarnings.clear();
+}
+
 export function compileShader(
   device: GPUDevice,
   pipelineLayout: GPUPipelineLayout,
@@ -189,7 +214,23 @@ export function compileShader(
     // Skip directly to fallback below
   }
 
-  const compiledWgsl = rewriteWgslStorageFormats(wgsl, colorFormat);
+  // Fail soft: a storage declaration the rewrite could not reach would make the pipeline
+  // disagree with the host-allocated textures. Compile the partially rewritten source
+  // (strictly closer to the allocated formats than the original) and record the miss so
+  // it surfaces in diagnostics instead of as an opaque pipeline error.
+  const rewrite = rewriteWgslStorageFormatsChecked(wgsl, colorFormat);
+  if (rewrite.missed.length > 0) {
+    recordFormatRewriteWarning({
+      shaderId: id,
+      colorFormat,
+      missed: rewrite.missed,
+    });
+    console.warn(
+      `[WebGPU] Shader "${id}": ${rewrite.missed.length} storage declaration(s) not rewritten ` +
+        `to ${colorFormat} (${rewrite.missed.join(', ')}). Pipeline may mismatch allocated textures.`,
+    );
+  }
+  const compiledWgsl = rewrite.wgsl;
   const fallbackWgsl = rewriteWgslStorageFormats(FALLBACK_WGSL, colorFormat);
 
   // Parse workgroup size from shader source (entry point `main` — the only

@@ -27,7 +27,7 @@ Or use the **Renderer** switcher in Controls → WASM (shows experimental badge)
 Promote WASM to full production support only when **all** are true:
 
 1. **Performance:** WASM ≥ **1.25×** TS WebGPU (FPS or frame time) on **≥3** priority shaders (fluids, reaction-diffusion, multi-slot stacks) — measured via `npm run test:wasm:bench` with `WASM_GPU_TESTS=1`
-2. **Reliability:** Playwright parity suite green on **≥2** distinct GPU configs (document hardware in issue/PR)
+2. **Reliability:** Playwright parity suite green on **≥2** distinct GPU configs (document hardware in issue/PR). Attach the frozen-seed pixel diff (`npm run test:wasm:pixeldiff`, `test-results/wasm-pixel-diff.json` with `gpuObserved: true`) — statistical parity alone can pass on structurally different images. Adapter strings for both backends are readable in **Controls → Dev Tools → renderer diagnostics**
 3. **Integration:** No P0 gaps in normal Controls flow (shader pick, params, input sources, recording) — not just `testMode`
 4. **Ops:** CI `wasm` + `test-wasm-e2e` jobs green for **4 consecutive weeks** without emdawn/emsdk breakage
 
@@ -43,6 +43,7 @@ Demotion action: hide UI toggle, keep `wasm_renderer/` as R&D or move to separat
 ## Engineering rules while Tier B
 
 1. **TS first:** New renderer features land in `WebGPURenderer` + `RendererManager`; WASM ports are follow-ups, not blockers
+1a. **Feature freeze while gates are open (reaffirmed 2026-08-01):** no new C++ renderer features — **parity bugs only**. Specifically out of scope until a GPU session closes gates 1–3: porting `GraphRunner` to C++ (`frame.cpp`), and making WASM the default backend. Measurement/diagnostics tooling is in scope
 2. **No dual-SLA bugs:** P0 fixes target TS path; WASM gets P1 unless WASM-only regression
 3. **CI:** WASM must **build** on every PR (`wasm` job); parity/benchmark Playwright tests may skip without GPU
 4. **Docs:** Do not describe WASM as "Phase 3 complete / production ready" — see `wasm_renderer/STATUS.md`

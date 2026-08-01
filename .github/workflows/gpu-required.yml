@@ -1,0 +1,115 @@
+name: GPU_REQUIRED (manual)
+
+# Template job for benches that need a REAL WebGPU adapter.
+#
+# GitHub-hosted runners have no usable GPU: `navigator.gpu.requestAdapter()` either
+# returns null or a software adapter, so tier numbers measured there are meaningless.
+# This workflow is therefore workflow_dispatch only, and is expected to run on a
+# self-hosted runner with a GPU (label it `gpu`) or to be triggered by a human who
+# then commits the produced report.
+#
+# Usage:
+#   Actions → GPU_REQUIRED (manual) → Run workflow → pick suite + runner label
+#
+# The produced report lands in reports/format-tier-bench-<date>.md — commit it, then
+# fill in the "Hardware" and "Go / no-go" sections by hand (adapter model, driver,
+# thermal state, discrete vs integrated).
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Which GPU suite to run
+        type: choice
+        default: format-tier-bench
+        options:
+          - format-tier-bench
+          - wasm-benchmark
+          - renderer-parity
+      runner_label:
+        description: Runner label with a real GPU (self-hosted)
+        type: string
+        default: gpu
+      strict:
+        description: Fail (instead of writing a stub) when no adapter is present
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  gpu-bench:
+    # Falls back to ubuntu-latest so the workflow stays syntactically runnable;
+    # on a GPU-less runner the specs write a stub report and skip unless strict.
+    runs-on: ${{ inputs.runner_label || 'ubuntu-latest' }}
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production app
+        run: npm run build
+        env:
+          SKIP_WASM_BUILD: '1'
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: Report adapter visibility
+        run: |
+          echo "Runner: ${{ inputs.runner_label }}"
+          echo "Suite:  ${{ inputs.suite }}"
+          echo "Strict: ${{ inputs.strict }}"
+          echo "A null / software adapter means these numbers are NOT product evidence."
+
+      - name: Run format tier bench
+        if: inputs.suite == 'format-tier-bench'
+        run: npx playwright test tests/format-tier-bench.spec.ts --project=chromium
+        env:
+          CI: true
+          WASM_GPU_TESTS: ${{ inputs.strict && '1' || '0' }}
+
+      - name: Run WASM benchmark
+        if: inputs.suite == 'wasm-benchmark'
+        run: npx playwright test tests/wasm-benchmark.spec.ts --project=chromium
+        env:
+          CI: true
+          WASM_GPU_TESTS: ${{ inputs.strict && '1' || '0' }}
+
+      - name: Run renderer parity
+        if: inputs.suite == 'renderer-parity'
+        run: npx playwright test tests/renderer-parity.spec.ts --project=chromium
+        env:
+          CI: true
+          WASM_GPU_TESTS: ${{ inputs.strict && '1' || '0' }}
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpu-bench-reports
+          path: |
+            reports/format-tier-bench-*.md
+            test-results/format-tier-bench.json
+            test-results/wasm-benchmark-report.json
+            playwright-report/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## GPU bench: ${{ inputs.suite }}" >> "$GITHUB_STEP_SUMMARY"
+          for f in reports/format-tier-bench-*.md; do
+            [ -f "$f" ] && cat "$f" >> "$GITHUB_STEP_SUMMARY"
+          done

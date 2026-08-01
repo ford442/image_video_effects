@@ -392,3 +392,312 @@ export function writeBenchmarkReport(report: WasmBenchmarkReport, path = 'test-r
   writeFileSync(path, JSON.stringify(report, null, 2));
   console.log(`\nWrote benchmark report → ${path}\n`);
 }
+
+// ── Format-tier bench (#1008 follow-up) ─────────────────────────────────────
+
+export interface TierMeasurement {
+  workload: string;
+  kind: string;
+  tier: string;
+  expectsFp32Pin: boolean;
+  shadersLoaded: number;
+  shadersRequested: number;
+  avgFps: number;
+  avgTotalMs: number;
+  colorFormat: string;
+  requestedColorFormat: string;
+  fp32Pinned: boolean;
+  fp32PinnedBy: string[];
+  estimatedTextureMiB: number;
+  internalWidth: number;
+  internalHeight: number;
+  scale: number;
+  maxPassesPerFrame: number;
+  hasRealGpuTimings: boolean;
+  timingSource: string;
+  passCapWarnings: string[];
+  formatRewriteWarnings: string[];
+}
+
+export interface FormatTierReport {
+  generatedAt: string;
+  gpuObserved: boolean;
+  strictGpuMode: boolean;
+  adapterSummary?: string;
+  userAgent?: string;
+  note?: string;
+  measurements: TierMeasurement[];
+}
+
+export function buildFormatTierReport(
+  measurements: TierMeasurement[],
+  meta: { gpuObserved: boolean; adapterSummary?: string; userAgent?: string; note?: string } = {
+    gpuObserved: false,
+  }
+): FormatTierReport {
+  return {
+    generatedAt: new Date().toISOString(),
+    gpuObserved: meta.gpuObserved,
+    strictGpuMode: isStrictGpuMode(),
+    adapterSummary: meta.adapterSummary,
+    userAgent: meta.userAgent,
+    note: meta.note,
+    measurements,
+  };
+}
+
+/** FPS / MiB deltas of each tier against the same workload at ultra. */
+export function summarizeTierDeltas(report: FormatTierReport): Array<{
+  workload: string;
+  tier: string;
+  fpsRatioVsUltra: number;
+  miBRatioVsUltra: number;
+}> {
+  const ultra = new Map(
+    report.measurements.filter((m) => m.tier === 'ultra').map((m) => [m.workload, m])
+  );
+  return report.measurements
+    .filter((m) => m.tier !== 'ultra')
+    .map((m) => {
+      const base = ultra.get(m.workload);
+      return {
+        workload: m.workload,
+        tier: m.tier,
+        fpsRatioVsUltra: base && base.avgFps > 0 ? m.avgFps / base.avgFps : 0,
+        miBRatioVsUltra:
+          base && base.estimatedTextureMiB > 0
+            ? m.estimatedTextureMiB / base.estimatedTextureMiB
+            : 0,
+      };
+    });
+}
+
+export function renderFormatTierMarkdown(report: FormatTierReport): string {
+  const lines: string[] = [];
+  const day = report.generatedAt.slice(0, 10);
+  lines.push(`# Format tier bench — ${day}`, '');
+  lines.push('## Hardware', '');
+  lines.push(`- **Adapter:** ${report.adapterSummary || '_unknown_'}`);
+  lines.push(`- **User agent:** ${report.userAgent || '_unknown_'}`);
+  lines.push(`- **GPU observed:** ${report.gpuObserved ? 'yes' : '**no — stub report**'}`);
+  lines.push(`- **Generated:** ${report.generatedAt}`);
+  if (report.note) lines.push(`- **Note:** ${report.note}`);
+  lines.push('');
+
+  if (report.measurements.length === 0) {
+    lines.push('_No measurements: this environment has no WebGPU adapter._', '');
+    return lines.join('\n');
+  }
+
+  lines.push('## Measurements', '');
+  lines.push(
+    '| Workload | Tier | Format | Pinned | Internal | ~MiB | FPS | GPU ms | Real timings | Slots | Passes cap |'
+  );
+  lines.push('|---|---|---|---|---|---|---|---|---|---|---|');
+  for (const m of report.measurements) {
+    lines.push(
+      `| ${m.workload} | ${m.tier} | ${m.colorFormat} | ${m.fp32Pinned ? `yes (${m.fp32PinnedBy.join(', ')})` : 'no'} `
+        + `| ${m.internalWidth}×${m.internalHeight} | ${m.estimatedTextureMiB} | ${m.avgFps.toFixed(1)} `
+        + `| ${m.avgTotalMs.toFixed(2)} | ${m.hasRealGpuTimings ? 'yes' : `no (${m.timingSource})`} `
+        + `| ${m.shadersLoaded}/${m.shadersRequested} | ${m.maxPassesPerFrame} |`
+    );
+  }
+  lines.push('');
+
+  lines.push('## Deltas vs ultra', '');
+  lines.push('| Workload | Tier | FPS ×ultra | Texture MiB ×ultra |');
+  lines.push('|---|---|---|---|');
+  for (const d of summarizeTierDeltas(report)) {
+    lines.push(
+      `| ${d.workload} | ${d.tier} | ${d.fpsRatioVsUltra.toFixed(2)}× | ${d.miBRatioVsUltra.toFixed(2)}× |`
+    );
+  }
+  lines.push('');
+
+  const capWarnings = report.measurements.filter((m) => m.passCapWarnings.length > 0);
+  const rewriteWarnings = report.measurements.filter((m) => m.formatRewriteWarnings.length > 0);
+  lines.push('## Warnings', '');
+  if (capWarnings.length === 0 && rewriteWarnings.length === 0) {
+    lines.push('_None._', '');
+  } else {
+    for (const m of capWarnings) {
+      lines.push(`- **pass cap** ${m.workload} @ ${m.tier}: ${m.passCapWarnings.join(' / ')}`);
+    }
+    for (const m of rewriteWarnings) {
+      lines.push(`- **format rewrite miss** ${m.workload} @ ${m.tier}: ${m.formatRewriteWarnings.join(' / ')}`);
+    }
+    lines.push('');
+  }
+
+  lines.push('## Go / no-go: balanced as iGPU default', '');
+  lines.push('<!-- Fill in after reading the tables above. Required to close #1008 follow-up. -->');
+  lines.push('- **Verdict:** _TBD_');
+  lines.push('- **Rationale:** _TBD_');
+  lines.push('');
+  return lines.join('\n');
+}
+
+export function writeFormatTierReport(
+  report: FormatTierReport,
+  jsonPath = 'test-results/format-tier-bench.json',
+  markdownPath?: string
+): void {
+  const day = report.generatedAt.slice(0, 10);
+  const mdPath = markdownPath ?? `reports/format-tier-bench-${day}.md`;
+  mkdirSync(resolve(jsonPath, '..'), { recursive: true });
+  writeFileSync(jsonPath, JSON.stringify(report, null, 2));
+  mkdirSync(resolve(mdPath, '..'), { recursive: true });
+  writeFileSync(mdPath, renderFormatTierMarkdown(report));
+  console.log(`\nWrote format tier report → ${mdPath} (+ ${jsonPath})\n`);
+}
+
+// ── Pixel-diff harness (WASM Tier B evidence) ───────────────────────────────
+
+/**
+ * Frozen-seed pixel comparison between backends.
+ *
+ * The parity spec compares *statistics* (mean luminance, coverage), which passes even
+ * when two images differ structurally. For promotion evidence we need per-pixel deltas
+ * on a pinned render state, so a reviewer can see whether WASM output is actually the
+ * same picture. Runs only with a real adapter; otherwise the caller skips.
+ */
+
+export interface FrameCapture {
+  /** Base64 PNG (no data: prefix). */
+  png: string;
+  width: number;
+  height: number;
+  /** Downsampled RGBA grid used for the numeric diff (keeps payloads small). */
+  grid: number[];
+  gridSize: number;
+}
+
+export interface PixelDiffResult {
+  shaderId: string;
+  frameIndex: number;
+  /** Mean absolute RGB difference, 0–1. */
+  meanAbsDelta: number;
+  /** Largest single-channel difference, 0–1. */
+  maxAbsDelta: number;
+  /** Fraction of grid cells whose max channel delta exceeds `cellThreshold`. */
+  differingCellRatio: number;
+  cellThreshold: number;
+}
+
+export const PIXEL_DIFF_GRID = 64;
+export const PIXEL_DIFF_CELL_THRESHOLD = 0.1;
+
+/** Capture the canvas as a PNG plus a downsampled RGBA grid for numeric comparison. */
+export async function captureFrame(page: Page, gridSize = PIXEL_DIFF_GRID): Promise<FrameCapture | null> {
+  return page.evaluate((size) => {
+    const canvas = document.querySelector('canvas') as HTMLCanvasElement | null;
+    if (!canvas || canvas.width === 0 || canvas.height === 0) return null;
+
+    const tmp = document.createElement('canvas');
+    tmp.width = size;
+    tmp.height = size;
+    const ctx = tmp.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(canvas, 0, 0, size, size);
+    const { data } = ctx.getImageData(0, 0, size, size);
+
+    return {
+      png: canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, ''),
+      width: canvas.width,
+      height: canvas.height,
+      grid: Array.from(data),
+      gridSize: size,
+    };
+  }, gridSize);
+}
+
+/** Compare two captures cell-by-cell. Both must share a grid size. */
+export function diffFrames(
+  shaderId: string,
+  frameIndex: number,
+  a: FrameCapture,
+  b: FrameCapture,
+  cellThreshold = PIXEL_DIFF_CELL_THRESHOLD
+): PixelDiffResult {
+  if (a.gridSize !== b.gridSize) {
+    throw new Error(`grid size mismatch: ${a.gridSize} vs ${b.gridSize}`);
+  }
+
+  const cells = a.gridSize * a.gridSize;
+  let sum = 0;
+  let max = 0;
+  let differing = 0;
+
+  for (let i = 0; i < cells; i++) {
+    const o = i * 4;
+    let cellMax = 0;
+    for (let c = 0; c < 3; c++) {
+      const d = Math.abs(a.grid[o + c] - b.grid[o + c]) / 255;
+      sum += d;
+      if (d > cellMax) cellMax = d;
+    }
+    if (cellMax > max) max = cellMax;
+    if (cellMax > cellThreshold) differing++;
+  }
+
+  return {
+    shaderId,
+    frameIndex,
+    meanAbsDelta: sum / (cells * 3),
+    maxAbsDelta: max,
+    differingCellRatio: differing / cells,
+    cellThreshold,
+  };
+}
+
+export interface PixelDiffReport {
+  generatedAt: string;
+  gpuObserved: boolean;
+  wasmAdapterSummary?: string;
+  webgpuAdapterSummary?: string;
+  userAgent?: string;
+  note?: string;
+  frames: number;
+  diffs: PixelDiffResult[];
+}
+
+export function buildPixelDiffReport(
+  diffs: PixelDiffResult[],
+  meta: {
+    gpuObserved: boolean;
+    frames?: number;
+    wasmAdapterSummary?: string;
+    webgpuAdapterSummary?: string;
+    userAgent?: string;
+    note?: string;
+  }
+): PixelDiffReport {
+  return {
+    generatedAt: new Date().toISOString(),
+    gpuObserved: meta.gpuObserved,
+    wasmAdapterSummary: meta.wasmAdapterSummary,
+    webgpuAdapterSummary: meta.webgpuAdapterSummary,
+    userAgent: meta.userAgent,
+    note: meta.note,
+    frames: meta.frames ?? 0,
+    diffs,
+  };
+}
+
+export function writePixelDiffReport(
+  report: PixelDiffReport,
+  path = 'test-results/wasm-pixel-diff.json'
+): void {
+  mkdirSync(resolve(path, '..'), { recursive: true });
+  writeFileSync(path, JSON.stringify(report, null, 2));
+  console.log(`\nWrote pixel diff report → ${path}\n`);
+}
+
+/** Save a capture as a PNG artifact for human review. */
+export function writeFrameArtifact(
+  capture: FrameCapture,
+  path: string
+): void {
+  mkdirSync(resolve(path, '..'), { recursive: true });
+  writeFileSync(path, Buffer.from(capture.png, 'base64'));
+}

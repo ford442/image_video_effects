@@ -40,7 +40,17 @@ Shaders that need full FP32 storage (reaction-diffusion concentrations, fluid st
 "requiresRgba32Float": true
 ```
 
-When the active quality tier is not `ultra`, loading such a shader **auto-bumps render quality to ultra** (with a console warning). Category `simulation` and tags `physics` / `reaction-diffusion` / `fluid` are inferred as FP32-required when the flag is omitted.
+When such a shader is loaded, the host records it and **pins the internal storage format to
+`rgba32float`** — the user's quality tier (scale, slot cap, pass cap) is left alone. The pin is
+resolved by `resolveFp32Pin()` in [`src/config/formatPolicy.ts`](../src/config/formatPolicy.ts)
+and re-applied on every tier change, so switching to balanced/battery **after** loading a sim
+cannot silently demote it. Category `simulation` and tags `physics` / `reaction-diffusion` /
+`fluid` are inferred as FP32-required when the flag is omitted.
+
+`RendererManager.getPerformanceStatus()` reports `requestedColorFormat` (what the tier asked
+for), `colorFormat` (what is actually allocated), `fp32Pinned` and `fp32PinnedBy`. The render
+quality panel shows a **⚠ FP32 pinned** badge whenever they disagree. Call
+`releaseFp32Requirement(id)` when such a shader is unloaded so the format can drop back to FP16.
 
 Do **not** silently run physics sims at FP16.
 
@@ -56,6 +66,13 @@ Bindings rewritten (storage write only):
 | 6 | `writeDepthTexture` | `r32float` | `r32float` (unchanged) |
 
 Pipeline cache keys include `colorFormat`. Tier changes destroy textures, rebuild bind-group layout, and clear the shader cache.
+
+**Fail-soft:** `rewriteWgslStorageFormatsChecked()` reports any `rgba*` storage declaration the
+rewrite could not bring onto the tier format (unusual spelling, `read_write` access, a format we
+do not tier). Compilation continues with the partially rewritten source — strictly closer to the
+allocated textures than the original — and the miss is recorded in
+`getFormatRewriteWarnings()` and logged, instead of surfacing as an opaque pipeline-creation
+failure. A non-empty warning list is a bug: fix the shader or widen the rewrite.
 
 ## Capability probe
 
@@ -73,9 +90,49 @@ Resolved in [`src/config/formatPolicy.ts`](../src/config/formatPolicy.ts).
 
 ## Benchmarking
 
-Use `?testMode=1` and `__pixelocity__.runBenchmark(frames, { qualityMode: 'balanced' })` to record `colorFormat` and `estimatedTextureMiB`. Compare `ultra` vs `balanced` on the same hardware (document adapter in report).
+`__pixelocity__.runBenchmark(frames, { qualityMode })` (under `?testMode=1`) reports
+`colorFormat`, `requestedColorFormat`, `fp32Pinned`, `estimatedTextureMiB`, `internalWidth/Height`,
+`scale`, `maxPassesPerFrame`, `avgFps`, `avgTotalMs`, `timingSource` and `hasRealGpuTimings`.
 
-Priority shaders: `sim-fluid-feedback-coupled`, `gen-lichen-reaction-diffusion`, `plasma`.
+The sweep is automated:
+
+```bash
+npm run build
+WASM_GPU_TESTS=1 npx playwright test tests/format-tier-bench.spec.ts   # or: npm run bench:format-tiers
+```
+
+It sweeps `ultra` / `balanced` / `battery` over five workload shapes
+([`tests/fixtures/formatTierMatrix.ts`](../tests/fixtures/formatTierMatrix.ts)) — simple
+generative, feedback fluid, the `ripple-tank` Tier C graph, a 3-slot chain, and a history-ring
+temporal shader — and writes `reports/format-tier-bench-<date>.md` plus
+`test-results/format-tier-bench.json`.
+
+**Adapter reality check.** Cloud and headless CI VMs cannot observe a WebGPU adapter, so the spec
+writes a stub report (`GPU observed: no`) and skips. Numbers from such a run are not evidence.
+Real runs come from a human machine or a self-hosted GPU runner via Actions →
+**GPU_REQUIRED (manual)** ([`.github/workflows/gpu-required.yml`](../.github/workflows/gpu-required.yml)).
+
+Fill in hardware, sim spot-checks, thermal notes and the go/no-go verdict by hand using
+[`reports/format-tier-bench-TEMPLATE.md`](../reports/format-tier-bench-TEMPLATE.md).
+
+Priority shaders for ad-hoc comparison: `sim-fluid-feedback-coupled`, `gen-lichen-reaction-diffusion`, `plasma`.
+
+## `compat` (rgba8unorm) — Phase 2, design only
+
+Not implemented, and **not** to be implemented until the bench above says balanced is
+insufficient on the slowest supported iGPU. Recorded here so the design is not re-derived:
+
+- **Saving:** 4 bytes/px vs 8 (FP16) vs 16 (FP32) — another ~50% off FP16 storage.
+- **Blocker:** `rgba8unorm` clamps to `[0, 1]`. Shaders using HDR intermediates, negative values
+  (velocity/vorticity fields, signed distance in a data channel) or alpha > 1 break silently —
+  the visual result stays plausible, which is the worst failure mode.
+- **Would require:** an explicit per-shader opt-in flag (`compatSafe: true`) covering the whole
+  ping-pong chain, not a global tier — the rewrite is not a safe blanket transform here.
+- **Would also require:** encode/decode helpers for shaders that need signed data in a compat
+  target, plus a bind-group storage-format check, since `rgba8unorm` storage textures are not
+  universally supported for `write` access.
+- **Trigger to revisit:** a bench row where balanced still misses 30 FPS on an integrated adapter
+  at scale 0.5 and the bottleneck is demonstrably bandwidth (texture MiB scaling tracks FPS).
 
 ## Related
 
