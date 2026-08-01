@@ -28,6 +28,29 @@ The template contains the exact 13 bindings the renderer expects, the required
 `Uniforms` struct, and a `(16, 16, 1)` workgroup size. Do not change binding
 numbers or types unless you also update the renderer.
 
+## Uniform semantics (read this before using `u.config`)
+
+The `Uniforms` struct is documented field-by-field in
+[`docs/BINDING_CONTRACT.md`](../docs/BINDING_CONTRACT.md#uniforms-struct-binding-3), generated from
+`src/contracts/uniforms_layout.json` and verified against the engine by `npm run verify:uniforms`
+(runs in CI). The three that get authored wrong most often:
+
+- `u.config.x` — time in seconds. **There is no delta-time uniform.** Older briefs claimed
+  `config.y = delta_time`; that was never true on either backend.
+- `u.config.y` — **rippleCount** (0–50). Guard ripple loops with `min(u32(u.config.y), 50u)`.
+  Never use it for audio, click count or animation speed.
+- Audio lives in `plasmaBuffer[0].xyz` (bass/mids/treble) and `extraBuffer[5..132]` (FFT bins),
+  never in `config`.
+- `u.zoom_config.yz` — mouse UV, **y = 0 at the top** (fixed 2026-07-19; do not add a flip).
+  `u.zoom_config.w > 0.5` means pressed.
+
+To find shaders that already read `config.y` as something else, run
+`npm run audit:config-y` (report-only, writes `reports/config_y_misuse.md`).
+
+If you change the packing in `src/renderer/UniformBuffer.ts` or
+`wasm_renderer/frame.cpp`, update `src/contracts/uniforms_layout.json` in the same commit —
+CI fails otherwise.
+
 ## `new_shader.py`
 
 Usage:
@@ -209,6 +232,7 @@ The immutable bind-group contract lives in:
 
 - `scripts/bindgroup_checker.py` -> `EXPECTED_BINDINGS`
 - `public/shaders/_template_canonical_compute.wgsl`
+- `src/contracts/uniforms_layout.json` (Uniforms struct field meanings; gate: `npm run verify:uniforms`)
 
 If a new renderer feature needs a different layout, update the checker and the
 template together, then re-run the gate over the whole library.

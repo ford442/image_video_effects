@@ -1,0 +1,720 @@
+{
+  "total": 118,
+  "byCategory": {
+    "delta_time": 12,
+    "click_or_frame_count": 15,
+    "unclassified": 22,
+    "audio": 68,
+    "resolution": 1
+  },
+  "findings": [
+    {
+      "file": "public/shaders/4d-projection-dream-weavers.wgsl",
+      "line": 131,
+      "category": "delta_time",
+      "code": "let dt = clamp(u.config.y, 0.001, 0.05);"
+    },
+    {
+      "file": "public/shaders/acoustic-string-theory.wgsl",
+      "line": 92,
+      "category": "delta_time",
+      "code": "let dt = clamp(u.config.y, 0.001, 0.05);"
+    },
+    {
+      "file": "public/shaders/alpha-em-field-simulation.wgsl",
+      "line": 131,
+      "category": "click_or_frame_count",
+      "code": "let clickParity = select(-1.0, 1.0, u.config.y % 2.0 < 1.0);"
+    },
+    {
+      "file": "public/shaders/aurora-rift-pass2.wgsl",
+      "line": 153,
+      "category": "unclassified",
+      "code": "let globalIntensity = clamp(u.config.y, 0.1, 1.5);"
+    },
+    {
+      "file": "public/shaders/cellular-automata-3d.wgsl",
+      "line": 167,
+      "category": "audio",
+      "code": "let audioOverall = u.config.y;"
+    },
+    {
+      "file": "public/shaders/cellular-automata-3d.wgsl",
+      "line": 168,
+      "category": "audio",
+      "code": "let audioBass = u.config.y * 1.2;"
+    },
+    {
+      "file": "public/shaders/chronos-brush.wgsl",
+      "line": 56,
+      "category": "click_or_frame_count",
+      "code": "let clickCount = u.config.y;"
+    },
+    {
+      "file": "public/shaders/cyber-rain.wgsl",
+      "line": 87,
+      "category": "delta_time",
+      "code": "let dt = u.config.y;"
+    },
+    {
+      "file": "public/shaders/datamosh.wgsl",
+      "line": 131,
+      "category": "click_or_frame_count",
+      "code": "let frame_count = u.config.y;"
+    },
+    {
+      "file": "public/shaders/dla-crystals.wgsl",
+      "line": 93,
+      "category": "click_or_frame_count",
+      "code": "let frame = u.config.y;"
+    },
+    {
+      "file": "public/shaders/elastic-chromatic.wgsl",
+      "line": 167,
+      "category": "delta_time",
+      "code": "let dt = clamp(u.config.y, 0.001, 0.05);"
+    },
+    {
+      "file": "public/shaders/gen-abyssal-chrono-coral.wgsl",
+      "line": 164,
+      "category": "click_or_frame_count",
+      "code": "let clickCount = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-abyssal-leviathan-iridescence.wgsl",
+      "line": 145,
+      "category": "unclassified",
+      "code": "g_audio = u.config.y * 0.1;"
+    },
+    {
+      "file": "public/shaders/gen-abyssal-leviathan-scales.wgsl",
+      "line": 134,
+      "category": "audio",
+      "code": "g_audio = u.config.y * 0.1; // u.config.y accumulates clicks/beats"
+    },
+    {
+      "file": "public/shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
+      "line": 69,
+      "category": "audio",
+      "code": "let audio_react = u.zoom_params.w * u.config.y; // 1.0 default"
+    },
+    {
+      "file": "public/shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
+      "line": 183,
+      "category": "audio",
+      "code": "color += vec3<f32>(0.5, 0.0, 1.0) * marrow_intensity * (1.0 + audio_pulse * u.config.y);"
+    },
+    {
+      "file": "public/shaders/gen-astro-mechanical-quantum-furnace-engine.wgsl",
+      "line": 191,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-auroral-ferrofluid-monolith.wgsl",
+      "line": 220,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-bismuth-singularity-loom-engine.wgsl",
+      "line": 59,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-bismuth-singularity-loom-engine.wgsl",
+      "line": 167,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-celestial-quantum-glass-dragonfly.wgsl",
+      "line": 155,
+      "category": "audio",
+      "code": "let audio = u.config.y * 2.0;"
+    },
+    {
+      "file": "public/shaders/gen-celestial-quantum-glass-dragonfly.wgsl",
+      "line": 202,
+      "category": "audio",
+      "code": "let audio = u.config.y * 2.0;"
+    },
+    {
+      "file": "public/shaders/gen-cellular-automata-tapestry.wgsl",
+      "line": 89,
+      "category": "delta_time",
+      "code": "let dt = 1.0 + u.config.y * 0.5;"
+    },
+    {
+      "file": "public/shaders/gen-chromatic-singularity-loom.wgsl",
+      "line": 104,
+      "category": "audio",
+      "code": "let audio_intensity = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-chrono-kitsune-prism-weaver.wgsl",
+      "line": 109,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-chronodynamic-aether-weaver-automata.wgsl",
+      "line": 81,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-depth-refracted-liquid-stained-glass.wgsl",
+      "line": 78,
+      "category": "unclassified",
+      "code": "a += u.config.x * 0.2 + u.config.y * 0.5;"
+    },
+    {
+      "file": "public/shaders/gen-depth-refracted-liquid-stained-glass.wgsl",
+      "line": 102,
+      "category": "unclassified",
+      "code": "let depth_mod = sin(u.config.x * 2.0 + u.config.y * 3.0) * 0.5 + 0.5;"
+    },
+    {
+      "file": "public/shaders/gen-eldritch-tesseract-hive-mind.wgsl",
+      "line": 138,
+      "category": "resolution",
+      "code": "let resolution = vec2<f32>(u.config.x, u.config.y);"
+    },
+    {
+      "file": "public/shaders/gen-ethereal-anemone-bloom.wgsl",
+      "line": 338,
+      "category": "audio",
+      "code": "let audio_pulse = plasmaBuffer[0].x; // was u.config.y (MouseClickCount)"
+    },
+    {
+      "file": "public/shaders/gen-ethereal-aurora-ghost-orchid.wgsl",
+      "line": 154,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
+      "line": 131,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-ethereal-chrono-plasma-void-manta.wgsl",
+      "line": 169,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-ethereal-cyber-aurora-hummingbird-core.wgsl",
+      "line": 184,
+      "category": "audio",
+      "code": "let audio = u.config.y * 2.0 + 1.0;"
+    },
+    {
+      "file": "public/shaders/gen-ethereal-cyber-chrono-void-whale.wgsl",
+      "line": 113,
+      "category": "unclassified",
+      "code": "let core_pulse = sin(time * 2.0) * 0.1 + u.config.y * 0.5;"
+    },
+    {
+      "file": "public/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
+      "line": 196,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-fireworks-nocturne.wgsl",
+      "line": 137,
+      "category": "delta_time",
+      "code": "let dt = max(u.config.y, 0.001);"
+    },
+    {
+      "file": "public/shaders/gen-fractured-monolith.wgsl",
+      "line": 72,
+      "category": "audio",
+      "code": "let audioOverall = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-fractured-monolith.wgsl",
+      "line": 73,
+      "category": "audio",
+      "code": "let audioBass = u.config.y * 1.2;"
+    },
+    {
+      "file": "public/shaders/gen-galactic-aether-crystal-geode-core.wgsl",
+      "line": 107,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-galactic-aether-crystal-geode-core.wgsl",
+      "line": 220,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-glacial-aether-quantum-cavern.wgsl",
+      "line": 44,
+      "category": "unclassified",
+      "code": "let qxy = q.xy * rotate(u.config.x * 0.1 + u.config.y * 0.5);"
+    },
+    {
+      "file": "public/shaders/gen-glacial-aether-quantum-cavern.wgsl",
+      "line": 107,
+      "category": "unclassified",
+      "code": "let fracture = fract(length(p) * u.zoom_params.z * 5.0 + u.config.y * 2.0);"
+    },
+    {
+      "file": "public/shaders/gen-glacial-aether-quantum-cavern.wgsl",
+      "line": 110,
+      "category": "audio",
+      "code": "+ vec3<f32>(0.2, 0.8, 1.0) * step(0.95, fracture) * (u.config.y + treble) * depth_fade;"
+    },
+    {
+      "file": "public/shaders/gen-glacial-aether-quantum-cavern.wgsl",
+      "line": 113,
+      "category": "audio",
+      "code": "col += vec3<f32>(0.2, 0.5, 0.6) * (u.config.y + bass * 0.5) * 0.1;"
+    },
+    {
+      "file": "public/shaders/gen-kinetic-neo-brutalist-megastructure.wgsl",
+      "line": 94,
+      "category": "unclassified",
+      "code": "pos.x += sin(u.config.x * 0.5 + u.config.y) * 2.0;"
+    },
+    {
+      "file": "public/shaders/gen-liquid-neon-cyber-metropolis.wgsl",
+      "line": 96,
+      "category": "audio",
+      "code": "let audioAmp = u.config.y * u.zoom_params.z;"
+    },
+    {
+      "file": "public/shaders/gen-luminescent-aether-plasma-nebula-koi.wgsl",
+      "line": 175,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl",
+      "line": 141,
+      "category": "unclassified",
+      "code": "let uv = (vec2<f32>(id.xy) * 2.0 - vec2<f32>(u.config.xy)) / u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-luminescent-cyber-chrono-void-turtle.wgsl",
+      "line": 211,
+      "category": "audio",
+      "code": "audioVal = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-luminescent-quantum-glass-phoenix-egg.wgsl",
+      "line": 131,
+      "category": "unclassified",
+      "code": "let base = length(p) - 0.7 - u.config.y * 0.3;"
+    },
+    {
+      "file": "public/shaders/gen-luminescent-quantum-glass-phoenix-egg.wgsl",
+      "line": 158,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
+      "line": 79,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-luminescent-quantum-void-anglerfish.wgsl",
+      "line": 143,
+      "category": "unclassified",
+      "code": "let shockwave = clamp(sin(t * 10.0) * exp(-fract(u.config.y)), 0.0, 1.0);"
+    },
+    {
+      "file": "public/shaders/gen-luminescent-quantum-void-astral-turtle.wgsl",
+      "line": 211,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-neon-plasma-biomechanical-hive.wgsl",
+      "line": 136,
+      "category": "audio",
+      "code": "let audio = u.config.y * 2.0;"
+    },
+    {
+      "file": "public/shaders/gen-neuro-kinetic-liquid-gold-lotus.wgsl",
+      "line": 150,
+      "category": "audio",
+      "code": "let audio_val = u.config.y; // Simplified audio metric"
+    },
+    {
+      "file": "public/shaders/gen-obsidian-echo-chamber.wgsl",
+      "line": 156,
+      "category": "audio",
+      "code": "let audioIntensity = u.config.y * u.zoom_params.y;"
+    },
+    {
+      "file": "public/shaders/gen-physarum-sacred-geometry.wgsl",
+      "line": 134,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-bismuth-lattice.wgsl",
+      "line": 75,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-bismuth-lattice.wgsl",
+      "line": 212,
+      "category": "unclassified",
+      "code": "let thickness = mat + u.config.y * 0.1;"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-bismuth-lattice.wgsl",
+      "line": 235,
+      "category": "unclassified",
+      "code": "color += irid_color * vec3<f32>(edge * u.config.y * 2.0);"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-cyber-aurora-astral-dragonfly.wgsl",
+      "line": 173,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-cyber-auroral-manta-swarm.wgsl",
+      "line": 242,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
+      "line": 78,
+      "category": "audio",
+      "code": "let audio = u.config.y * u.zoom_params.w;"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-cyber-chrono-nebula-peacock.wgsl",
+      "line": 206,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-cyber-chrono-void-kitsune.wgsl",
+      "line": 176,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-cyber-chrono-void-kitsune.wgsl",
+      "line": 177,
+      "category": "click_or_frame_count",
+      "code": "let click_shockwave = fract(u.config.y * 0.1); // Assuming some click mapping"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-cyber-chrono-void-tortoise.wgsl",
+      "line": 146,
+      "category": "audio",
+      "code": "let audio_bass = plasmaBuffer[0].x * u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-fractal-dunes.wgsl",
+      "line": 149,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
+      "line": 111,
+      "category": "audio",
+      "code": "let audio = u.config.y * audioReact * 2.0;"
+    },
+    {
+      "file": "public/shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
+      "line": 194,
+      "category": "audio",
+      "code": "let audioReact = u.config.y * u.zoom_params.w;"
+    },
+    {
+      "file": "public/shaders/gen-quantum-aether-origami.wgsl",
+      "line": 207,
+      "category": "audio",
+      "code": "let audio_pulse = 1.0 + u.config.y * zparams.z;"
+    },
+    {
+      "file": "public/shaders/gen-quantum-chrome-serpent-ouroboros.wgsl",
+      "line": 218,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl",
+      "line": 146,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl",
+      "line": 149,
+      "category": "audio",
+      "code": "let click = select(0.0, 1.0, u.config.y > 0.5); // proxy for click or audio reactivity"
+    },
+    {
+      "file": "public/shaders/gen-quantum-fluorescent-nebula-anemone.wgsl",
+      "line": 140,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-quantum-foam.wgsl",
+      "line": 151,
+      "category": "delta_time",
+      "code": "let dt    = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-quantum-mycelium.wgsl",
+      "line": 130,
+      "category": "unclassified",
+      "code": "g_audio = u.config.y * 0.1;"
+    },
+    {
+      "file": "public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
+      "line": 113,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-radiant-cyber-chrono-void-stag.wgsl",
+      "line": 372,
+      "category": "audio",
+      "code": "var glow_intensity = u.config.y; // audio"
+    },
+    {
+      "file": "public/shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
+      "line": 90,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-radiant-quantum-plasma-kraken-core.wgsl",
+      "line": 196,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-sentient-aether-flora-biosphere.wgsl",
+      "line": 88,
+      "category": "audio",
+      "code": "let audio_react = u.zoom_params.w * u.config.y; // using click count as proxy if no audio data"
+    },
+    {
+      "file": "public/shaders/gen-sentient-aether-flora-biosphere.wgsl",
+      "line": 166,
+      "category": "audio",
+      "code": "let audio_react = u.zoom_params.w * u.config.y; // parameter 4"
+    },
+    {
+      "file": "public/shaders/gen-sentient-cyber-aurora-void-owl.wgsl",
+      "line": 192,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
+      "line": 110,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
+      "line": 207,
+      "category": "audio",
+      "code": "let audio = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-sentient-quantum-chrono-leviathan-moth.wgsl",
+      "line": 301,
+      "category": "click_or_frame_count",
+      "code": "let clickVal = u.config.y; // Simplified"
+    },
+    {
+      "file": "public/shaders/gen-singularity-forge-blackbody.wgsl",
+      "line": 129,
+      "category": "unclassified",
+      "code": "let spaghettification = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-singularity-forge-blackbody.wgsl",
+      "line": 132,
+      "category": "audio",
+      "code": "let audioOverall = u.config.y;"
+    },
+    {
+      "file": "public/shaders/gen-sonoluminescent-chrono-geode-matrix.wgsl",
+      "line": 146,
+      "category": "unclassified",
+      "code": "let uv = vec2<f32>(f32(id.x) / u.config.x, f32(id.y) / u.config.y);"
+    },
+    {
+      "file": "public/shaders/gen-stellar-web-loom.wgsl",
+      "line": 144,
+      "category": "unclassified",
+      "code": "g_audio = u.config.y * 0.1;"
+    },
+    {
+      "file": "public/shaders/gen_reaction_diffusion.wgsl",
+      "line": 144,
+      "category": "click_or_frame_count",
+      "code": "let clickCount = u.config.y;"
+    },
+    {
+      "file": "public/shaders/holographic-interferometry.wgsl",
+      "line": 108,
+      "category": "audio",
+      "code": "let audioOverall = u.config.y;"
+    },
+    {
+      "file": "public/shaders/holographic-interferometry.wgsl",
+      "line": 109,
+      "category": "audio",
+      "code": "let audioBass = u.config.y * 1.2;"
+    },
+    {
+      "file": "public/shaders/hybrid-chromatic-liquid.wgsl",
+      "line": 79,
+      "category": "audio",
+      "code": "let audioOverall = u.config.y;"
+    },
+    {
+      "file": "public/shaders/hybrid-magnetic-field.wgsl",
+      "line": 98,
+      "category": "audio",
+      "code": "let audioOverall = u.config.y;"
+    },
+    {
+      "file": "public/shaders/interactive-voronoi-lens.wgsl",
+      "line": 81,
+      "category": "delta_time",
+      "code": "let dt = u.config.y;"
+    },
+    {
+      "file": "public/shaders/liquid-prism.wgsl",
+      "line": 95,
+      "category": "audio",
+      "code": "let audioOverall = u.config.y;"
+    },
+    {
+      "file": "public/shaders/lorenz-attractor-flow.wgsl",
+      "line": 46,
+      "category": "click_or_frame_count",
+      "code": "let click = u.config.y;"
+    },
+    {
+      "file": "public/shaders/mouse-ink-bleed.wgsl",
+      "line": 94,
+      "category": "delta_time",
+      "code": "let dt = u.config.y;"
+    },
+    {
+      "file": "public/shaders/nano-assembler.wgsl",
+      "line": 73,
+      "category": "unclassified",
+      "code": "let time = u.config.y;"
+    },
+    {
+      "file": "public/shaders/neural-synapse-web.wgsl",
+      "line": 77,
+      "category": "delta_time",
+      "code": "let dt = clamp(u.config.y, 0.001, 0.05);"
+    },
+    {
+      "file": "public/shaders/optical-feedback.wgsl",
+      "line": 117,
+      "category": "delta_time",
+      "code": "let dt = u.config.y;"
+    },
+    {
+      "file": "public/shaders/origami-fold.wgsl",
+      "line": 69,
+      "category": "click_or_frame_count",
+      "code": "let clickCount = u.config.y;"
+    },
+    {
+      "file": "public/shaders/phase-memory-weave.wgsl",
+      "line": 88,
+      "category": "click_or_frame_count",
+      "code": "let clicks = u.config.y;"
+    },
+    {
+      "file": "public/shaders/photonic-caustics.wgsl",
+      "line": 116,
+      "category": "click_or_frame_count",
+      "code": "let frame = u.config.y;"
+    },
+    {
+      "file": "public/shaders/photonic-trace.wgsl",
+      "line": 58,
+      "category": "click_or_frame_count",
+      "code": "let frame = u.config.y;"
+    },
+    {
+      "file": "public/shaders/plasma.wgsl",
+      "line": 67,
+      "category": "audio",
+      "code": "var audioOverall = u.config.y;"
+    },
+    {
+      "file": "public/shaders/predator-prey.wgsl",
+      "line": 133,
+      "category": "click_or_frame_count",
+      "code": "let frame = u.config.y;"
+    },
+    {
+      "file": "public/shaders/quantum-foam-pass2.wgsl",
+      "line": 150,
+      "category": "unclassified",
+      "code": "let globalIntensity = u.config.y;"
+    },
+    {
+      "file": "public/shaders/quantum-foam-pass3.wgsl",
+      "line": 107,
+      "category": "unclassified",
+      "code": "let globalIntensity = u.config.y;"
+    },
+    {
+      "file": "public/shaders/spec-runge-kutta-advection.wgsl",
+      "line": 92,
+      "category": "unclassified",
+      "code": "if (isMouseDown || u.config.y > 0.5) {"
+    },
+    {
+      "file": "public/shaders/stellar-plasma-blackbody.wgsl",
+      "line": 130,
+      "category": "audio",
+      "code": "let audioLow = u.config.y;"
+    },
+    {
+      "file": "public/shaders/temporal-rgb-smear.wgsl",
+      "line": 174,
+      "category": "delta_time",
+      "code": "let dt = clamp(u.config.y, 0.0, 0.1);"
+    },
+    {
+      "file": "public/shaders/time-lag-map.wgsl",
+      "line": 102,
+      "category": "click_or_frame_count",
+      "code": "let frame = u.config.y;"
+    },
+    {
+      "file": "public/shaders/vortex-distortion.wgsl",
+      "line": 81,
+      "category": "unclassified",
+      "code": "let numV     = min(i32(u.config.y), 20);   // cap at 20 vortices for performance"
+    }
+  ]
+}

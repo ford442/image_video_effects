@@ -109,12 +109,18 @@ struct ShaderSlot {
 // Uniform structure matching the WGSL shaders
 // PERF: MEDIUM - Structure is 848 bytes (212 floats). Consider alignment hints
 // to ensure GPU layout matches exactly. Add static_assert for size validation.
+// Field-by-field meanings: src/contracts/uniforms_layout.json (verified by
+// `npm run verify:uniforms`). config[1] is rippleCount — NOT delta time, audio or click count.
 struct Uniforms {
     float config[4];       // time, rippleCount, resolutionX, resolutionY
-    float zoom_config[4];  // time, mouseX, mouseY, mouseDown
+    float zoom_config[4];  // time, mouseX, mouseY (canvas UV, 0 = top), mouseDown
     float zoom_params[4];  // param1, param2, param3, param4
-    float ripples[50][4];  // x, y, startTime, unused
+    float ripples[50][4];  // x, y, startTime, padding (always 0)
 };
+
+// Must match UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE (src/renderer/types.ts) and
+// uniforms_layout.json totalSizeBytes.
+static_assert(sizeof(Uniforms) == 848, "Uniforms must stay 848 bytes (212 floats) — see src/contracts/uniforms_layout.json");
 
 struct RipplePoint {
     float x, y;

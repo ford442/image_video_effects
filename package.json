@@ -48,6 +48,7 @@
     "thumbnails:generate": "npm run thumbs:generate",
     "thumbnails:status": "npm run thumbs:status",
     "verify:device-policy": "node scripts/verify-device-policy-sync.js",
+    "verify:uniforms": "node scripts/verify-uniforms-layout.js",
     "audit:shaders:sample": "bash scripts/wgsl-audit-swarm.sh 4 --sample",
     "deploy": "python scripts/deploy.py",
     "deploy:app": "python scripts/deploy_app_only.py",
@@ -59,6 +60,7 @@
     "audit:audio-mappings": "python3 scripts/audit_audio_mappings.py",
     "audit:extrabuffer": "python3 scripts/audit_extrabuffer.py",
     "audit:dead-sliders": "python3 scripts/audit_dead_sliders.py",
+    "audit:config-y": "python3 scripts/audit_config_y_misuse.py",
     "audit:dead-sliders:generative": "python3 scripts/audit_dead_sliders.py --category generative"
   },
   "eslintConfig": {

@@ -132,6 +132,11 @@ jobs:
     - name: Verify device policy sync (TS ↔ C++)
       run: npm run verify:device-policy
 
+    - name: Verify Uniforms layout contract (TS ↔ C++ ↔ docs)
+      run: |
+        node scripts/test_verify_uniforms_layout.js
+        npm run verify:uniforms
+
     - name: Run unit tests
       run: npm test -- --watchAll=false --ci --coverage
       env:

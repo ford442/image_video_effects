@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "description": "Authoritative field-by-field layout of the WGSL `Uniforms` struct (bind group 0, binding 3). Source of truth for docs, agent briefs and shader authoring. Keep in sync with src/renderer/UniformBuffer.ts (UNIFORM_OFFSETS), src/renderer/types.ts (UNIFORM_BUFFER_LAYOUT) and wasm_renderer/renderer.h + frame.cpp (Uniforms / UpdateUniformBuffer). Enforced by `npm run verify:uniforms`.",
+  "totalSizeBytes": 848,
+  "floatCount": 212,
+  "maxRipples": 50,
+  "writers": {
+    "typescript": ["src/renderer/UniformBuffer.ts", "src/renderer/webgpu/frame.ts"],
+    "cpp": ["wasm_renderer/renderer.h", "wasm_renderer/frame.cpp"]
+  },
+  "fields": [
+    {
+      "name": "config",
+      "type": "vec4<f32>",
+      "offset": 0,
+      "components": [
+        {
+          "swizzle": "x",
+          "offset": 0,
+          "tsOffsetKey": "config_time",
+          "meaning": "time",
+          "units": "seconds since renderer start (monotonic, never resets)",
+          "notes": "NOT delta time. Per-frame dt is not uploaded; derive motion from absolute time."
+        },
+        {
+          "swizzle": "y",
+          "offset": 4,
+          "tsOffsetKey": "config_rippleCount",
+          "meaning": "rippleCount",
+          "units": "count of active ripples, 0..50 (f32)",
+          "notes": "Guard ripple loops with min(u32(u.config.y), 50u). Never read as delta time, audio or click count."
+        },
+        {
+          "swizzle": "z",
+          "offset": 8,
+          "tsOffsetKey": "config_resW",
+          "meaning": "resolutionWidth",
+          "units": "render-target width in pixels (post scaling)"
+        },
+        {
+          "swizzle": "w",
+          "offset": 12,
+          "tsOffsetKey": "config_resH",
+          "meaning": "resolutionHeight",
+          "units": "render-target height in pixels (post scaling)"
+        }
+      ]
+    },
+    {
+      "name": "zoom_config",
+      "type": "vec4<f32>",
+      "offset": 16,
+      "components": [
+        {
+          "swizzle": "x",
+          "offset": 16,
+          "tsOffsetKey": "zoom_time",
+          "meaning": "time",
+          "units": "seconds — same value as config.x"
+        },
+        {
+          "swizzle": "y",
+          "offset": 20,
+          "tsOffsetKey": "zoom_mouseX",
+          "meaning": "mouseX",
+          "units": "canvas UV 0..1, 0 = left"
+        },
+        {
+          "swizzle": "z",
+          "offset": 24,
+          "tsOffsetKey": "zoom_mouseY",
+          "meaning": "mouseY",
+          "units": "canvas UV 0..1, 0 = TOP",
+          "notes": "Convention fixed 2026-07-19; do not re-flip. Matches WGSL texel/UV space, so no 1.0 - y correction is needed."
+        },
+        {
+          "swizzle": "w",
+          "offset": 28,
+          "tsOffsetKey": "zoom_mouseDown",
+          "meaning": "mouseDown",
+          "units": "1.0 pressed / 0.0 released; test with > 0.5"
+        }
+      ]
+    },
+    {
+      "name": "zoom_params",
+      "type": "vec4<f32>",
+      "offset": 32,
+      "components": [
+        { "swizzle": "x", "offset": 32, "tsOffsetKey": "params_x", "meaning": "p1", "units": "user slider 1 (range per shader JSON controls)" },
+        { "swizzle": "y", "offset": 36, "tsOffsetKey": "params_y", "meaning": "p2", "units": "user slider 2" },
+        { "swizzle": "z", "offset": 40, "tsOffsetKey": "params_z", "meaning": "p3", "units": "user slider 3" },
+        { "swizzle": "w", "offset": 44, "tsOffsetKey": "params_w", "meaning": "p4", "units": "user slider 4" }
+      ]
+    },
+    {
+      "name": "ripples",
+      "type": "array<vec4<f32>, 50>",
+      "offset": 48,
+      "strideBytes": 16,
+      "count": 50,
+      "tsOffsetKey": "ripples_start",
+      "components": [
+        { "swizzle": "x", "offset": 0, "meaning": "ripple UV x", "units": "canvas UV 0..1" },
+        { "swizzle": "y", "offset": 4, "meaning": "ripple UV y", "units": "canvas UV 0..1, 0 = top (same convention as zoom_config.z)" },
+        { "swizzle": "z", "offset": 8, "meaning": "startTime", "units": "seconds, same clock as config.x — age = u.config.x - r.z" },
+        { "swizzle": "w", "offset": 12, "meaning": "padding", "units": "always 0.0", "notes": "Reserved. Not a strength value on either backend; slots beyond rippleCount are fully zeroed." }
+      ]
+    }
+  ],
+  "authoringComment": {
+    "description": "Canonical comment text for the Uniforms struct in authoring templates, docs and agent briefs. verify-uniforms-layout.js checks tracked authoring surfaces against `required` / `forbidden`.",
+    "config": "// .x = time (seconds), .y = rippleCount (0-50), .zw = resolution (w, h)",
+    "zoom_config": "// .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)",
+    "zoom_params": "// .xyzw = user params p1..p4 (mapped from UI sliders)",
+    "ripples": "// .xy = ripple uv, .z = startTime (seconds), .w = padding (0)",
+    "required": {
+      "config": ["time", "rippleCount"],
+      "zoom_config": ["mouse"]
+    },
+    "forbidden": {
+      "config": ["delta_time", "deltaTime", "delta time", "ClickCount", "Click Count", "Generic1", "audio"],
+      "zoom_config": ["Generic2"]
+    },
+    "trackedFiles": [
+      "agents/WGSL_BUILTINS_GENERATIVE.md",
+      "agents/FIREWORKS_CONTRIBUTOR_KIT.md",
+      "agents/FIREWORKS_LIBRARY_GUIDE.md",
+      "agents/CLOUD_UPGRADE.md",
+      "agents/upgrade_swarm.md",
+      "agents/shader-upgrade-round-2026-05.md",
+      "agents/claude_opus_tier1_integration_prompt.md",
+      "docs/BINDING_CONTRACT.md",
+      "docs/TEXTURE_OPTIMIZATIONS.md",
+      "docs/SHADER_TEMPLATES.md",
+      "scripts/AUTHORING.md",
+      "scripts/scan-shaders-naga.py",
+      "scripts/run-upgrade-swarm.js",
+      "public/shaders/_template_canonical_compute.wgsl",
+      "public/shaders/_template_shared_memory.wgsl",
+      "public/shaders/_template_workgroup_atomics.wgsl"
+    ]
+  }
+}

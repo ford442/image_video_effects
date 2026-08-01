@@ -118,7 +118,7 @@ struct BadUniforms {
 
 // ✅ Efficient: vec4 packing
 struct GoodUniforms {
-  config: vec4<f32>,       // time, mouseX, mouseY, unused
+  frameData: vec4<f32>,    // time, mouseX, mouseY, unused
   params: vec4<f32>,       // param1, param2, param3, param4
 };
 ```
