@@ -136,6 +136,7 @@ export interface AppShellProps {
         fp32PinnedBy?: string[];
         maxPassesPerFrame?: number;
     };
+    rendererDiagnostics?: import('../controls/panels/AdvancedDebugPanel').RendererDiagnosticsSummary | null;
 }
 
 export function AppShell(props: AppShellProps) {
@@ -247,6 +248,7 @@ export function AppShell(props: AppShellProps) {
         renderQualityMode,
         onRenderQualityChange,
         performanceHud,
+        rendererDiagnostics,
     } = props;
 
     return (
@@ -359,6 +361,7 @@ export function AppShell(props: AppShellProps) {
                         renderQualityMode={renderQualityMode}
                         onRenderQualityChange={onRenderQualityChange}
                         performanceHud={performanceHud}
+                        rendererDiagnostics={rendererDiagnostics}
                         maxActiveSlots={performanceHud.maxActiveSlots}
                         generativeShowcaseActive={generativeShowcaseActive}
                         generativeShowcaseLocked={generativeShowcaseLocked}

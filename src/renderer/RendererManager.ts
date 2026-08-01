@@ -698,6 +698,8 @@ export class RendererManager {
       getDiagnostics?: () => WASMDiagnostics;
       initialized?: boolean;
       getFPS?: () => number;
+      getAdapterSummary?: () => string;
+      getAdapterAttemptLabel?: () => string | null;
     } | null;
 
     if (this.metrics.isWASM && active?.getDiagnostics) {
@@ -713,6 +715,10 @@ export class RendererManager {
         webgpu: {
           initialized: active.initialized ?? false,
           fps: active.getFPS?.() ?? 0,
+          // Adapter identity is promotion evidence (WASM_BACKEND_POLICY gate 2) — keep it
+          // visible in-app, not only in the console at init time.
+          adapterInfo: active.getAdapterSummary?.() ?? '',
+          adapterAttemptLabel: active.getAdapterAttemptLabel?.() ?? null,
         },
         ...(this.lastFailedWasmRenderer
           ? { wasm: this.lastFailedWasmRenderer.getDiagnostics() }

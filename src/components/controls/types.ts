@@ -87,6 +87,7 @@ export interface ControlsProps {
     onExitLiveStream?: () => void;
     onOpenShaderScanner?: () => void;
     activeRendererType?: 'webgpu' | 'wasm' | 'js';
+    rendererDiagnostics?: import('./panels/AdvancedDebugPanel').RendererDiagnosticsSummary | null;
     onSwitchRenderer?: (type: 'webgpu' | 'wasm' | 'js') => Promise<void>;
     onOpenStorageBrowser?: () => void;
     onCopyChainShareLink?: () => void;

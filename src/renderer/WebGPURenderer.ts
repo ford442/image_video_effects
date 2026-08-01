@@ -98,6 +98,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private supportsDeepWorkgroup = false;
   private colorFormat: InternalColorFormat = 'rgba32float';
   private hasF32Filterable = false;
+  /** Adapter identity from the init ladder — surfaced in diagnostics for Tier B evidence. */
+  private adapterSummary = '';
+  private adapterAttemptLabel: string | null = null;
   private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
 
   private frameState?: WebGPUFrameState;
@@ -123,6 +126,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.supportsDeepWorkgroup = outcome.supportsDeepWorkgroup;
     this.hasF32Filterable = outcome.hasF32Filterable;
     this.formatCapabilities = outcome.formatCapabilities;
+    this.adapterSummary = outcome.adapterSummary ?? '';
+    this.adapterAttemptLabel = outcome.adapterAttemptLabel ?? null;
 
     attachDeviceLostHandler(outcome.device, outcome.context, () => {
       this.initialized = false;
@@ -186,6 +191,16 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       videoCopyPipeline: this.pipeline.videoCopyPipeline,
       videoCopyBindGroupLayout: this.pipeline.videoCopyBindGroupLayout,
     };
+  }
+
+  /** Adapter identity string (vendor | architecture | device | description), '' before init. */
+  getAdapterSummary(): string {
+    return this.adapterSummary;
+  }
+
+  /** Which rung of ADAPTER_ATTEMPT_LADDER produced the device, if any. */
+  getAdapterAttemptLabel(): string | null {
+    return this.adapterAttemptLabel;
   }
 
   getGPUTimings(): GPUTimings {

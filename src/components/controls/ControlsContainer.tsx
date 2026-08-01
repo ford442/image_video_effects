@@ -97,6 +97,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onRenderQualityChange,
     maxActiveSlots = 3,
     performanceHud,
+    rendererDiagnostics,
     generativeShowcaseActive = false,
     generativeShowcaseLocked = false,
     generativeShowcaseDelay = 12,
@@ -385,6 +386,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                 onOpenStorageBrowser={onOpenStorageBrowser}
                 onPreviewImportShader={onPreviewImportShader}
                 onImportStatus={onImportStatus}
+                diagnostics={rendererDiagnostics}
             />
         </div>
     );

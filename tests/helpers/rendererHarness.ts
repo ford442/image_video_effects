@@ -550,3 +550,154 @@ export function writeFormatTierReport(
   writeFileSync(mdPath, renderFormatTierMarkdown(report));
   console.log(`\nWrote format tier report → ${mdPath} (+ ${jsonPath})\n`);
 }
+
+// ── Pixel-diff harness (WASM Tier B evidence) ───────────────────────────────
+
+/**
+ * Frozen-seed pixel comparison between backends.
+ *
+ * The parity spec compares *statistics* (mean luminance, coverage), which passes even
+ * when two images differ structurally. For promotion evidence we need per-pixel deltas
+ * on a pinned render state, so a reviewer can see whether WASM output is actually the
+ * same picture. Runs only with a real adapter; otherwise the caller skips.
+ */
+
+export interface FrameCapture {
+  /** Base64 PNG (no data: prefix). */
+  png: string;
+  width: number;
+  height: number;
+  /** Downsampled RGBA grid used for the numeric diff (keeps payloads small). */
+  grid: number[];
+  gridSize: number;
+}
+
+export interface PixelDiffResult {
+  shaderId: string;
+  frameIndex: number;
+  /** Mean absolute RGB difference, 0–1. */
+  meanAbsDelta: number;
+  /** Largest single-channel difference, 0–1. */
+  maxAbsDelta: number;
+  /** Fraction of grid cells whose max channel delta exceeds `cellThreshold`. */
+  differingCellRatio: number;
+  cellThreshold: number;
+}
+
+export const PIXEL_DIFF_GRID = 64;
+export const PIXEL_DIFF_CELL_THRESHOLD = 0.1;
+
+/** Capture the canvas as a PNG plus a downsampled RGBA grid for numeric comparison. */
+export async function captureFrame(page: Page, gridSize = PIXEL_DIFF_GRID): Promise<FrameCapture | null> {
+  return page.evaluate((size) => {
+    const canvas = document.querySelector('canvas') as HTMLCanvasElement | null;
+    if (!canvas || canvas.width === 0 || canvas.height === 0) return null;
+
+    const tmp = document.createElement('canvas');
+    tmp.width = size;
+    tmp.height = size;
+    const ctx = tmp.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(canvas, 0, 0, size, size);
+    const { data } = ctx.getImageData(0, 0, size, size);
+
+    return {
+      png: canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, ''),
+      width: canvas.width,
+      height: canvas.height,
+      grid: Array.from(data),
+      gridSize: size,
+    };
+  }, gridSize);
+}
+
+/** Compare two captures cell-by-cell. Both must share a grid size. */
+export function diffFrames(
+  shaderId: string,
+  frameIndex: number,
+  a: FrameCapture,
+  b: FrameCapture,
+  cellThreshold = PIXEL_DIFF_CELL_THRESHOLD
+): PixelDiffResult {
+  if (a.gridSize !== b.gridSize) {
+    throw new Error(`grid size mismatch: ${a.gridSize} vs ${b.gridSize}`);
+  }
+
+  const cells = a.gridSize * a.gridSize;
+  let sum = 0;
+  let max = 0;
+  let differing = 0;
+
+  for (let i = 0; i < cells; i++) {
+    const o = i * 4;
+    let cellMax = 0;
+    for (let c = 0; c < 3; c++) {
+      const d = Math.abs(a.grid[o + c] - b.grid[o + c]) / 255;
+      sum += d;
+      if (d > cellMax) cellMax = d;
+    }
+    if (cellMax > max) max = cellMax;
+    if (cellMax > cellThreshold) differing++;
+  }
+
+  return {
+    shaderId,
+    frameIndex,
+    meanAbsDelta: sum / (cells * 3),
+    maxAbsDelta: max,
+    differingCellRatio: differing / cells,
+    cellThreshold,
+  };
+}
+
+export interface PixelDiffReport {
+  generatedAt: string;
+  gpuObserved: boolean;
+  wasmAdapterSummary?: string;
+  webgpuAdapterSummary?: string;
+  userAgent?: string;
+  note?: string;
+  frames: number;
+  diffs: PixelDiffResult[];
+}
+
+export function buildPixelDiffReport(
+  diffs: PixelDiffResult[],
+  meta: {
+    gpuObserved: boolean;
+    frames?: number;
+    wasmAdapterSummary?: string;
+    webgpuAdapterSummary?: string;
+    userAgent?: string;
+    note?: string;
+  }
+): PixelDiffReport {
+  return {
+    generatedAt: new Date().toISOString(),
+    gpuObserved: meta.gpuObserved,
+    wasmAdapterSummary: meta.wasmAdapterSummary,
+    webgpuAdapterSummary: meta.webgpuAdapterSummary,
+    userAgent: meta.userAgent,
+    note: meta.note,
+    frames: meta.frames ?? 0,
+    diffs,
+  };
+}
+
+export function writePixelDiffReport(
+  report: PixelDiffReport,
+  path = 'test-results/wasm-pixel-diff.json'
+): void {
+  mkdirSync(resolve(path, '..'), { recursive: true });
+  writeFileSync(path, JSON.stringify(report, null, 2));
+  console.log(`\nWrote pixel diff report → ${path}\n`);
+}
+
+/** Save a capture as a PNG artifact for human review. */
+export function writeFrameArtifact(
+  capture: FrameCapture,
+  path: string
+): void {
+  mkdirSync(resolve(path, '..'), { recursive: true });
+  writeFileSync(path, Buffer.from(capture.png, 'base64'));
+}

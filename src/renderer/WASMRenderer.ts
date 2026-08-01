@@ -1,6 +1,7 @@
 import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings } from './Renderer';
 import * as WasmBridge from '../wasm/wasm_bridge.js';
 import { reportError } from './ErrorHandling';
+import { describeWasmInitFailure, summarizeWasmInitState } from './wasmInitDiagnostics';
 import { InputSource } from './types';
 
 import {
@@ -36,6 +37,8 @@ export interface WASMDiagnostics {
   loadErrorCount: number;
   lastLoadError: string | null;
   initTime: string;
+  /** One-line "ready / partial / failed at <stage> · adapter: …" summary for the debug panel. */
+  initSummary: string;
 }
 
 export class WASMRenderer implements Renderer, ShaderSlotRenderer {
@@ -80,9 +83,14 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       
       const ok = await WasmBridge.initWasmRenderer(canvas);
       if (!ok) {
-        const error = `WASM Renderer init failed (attempt ${this.initAttempts}/${this.maxInitAttempts}). ` +
-                      `Common cause on Windows + Chrome/Edge: Dawn (C++) failed to acquire a WebGPU adapter. ` +
-                      `See console for detailed C++ logs. Falling back to JS WebGPU renderer.`;
+        // Name the stage reached: "no adapter" and "surface came up but pipeline did not"
+        // are different bugs, and Tier B triage depends on telling them apart.
+        const described = describeWasmInitFailure(
+          WasmBridge.getDiagnostics?.() ?? {},
+          this.initAttempts,
+          this.maxInitAttempts,
+        );
+        const error = described.message;
         console.error(`❌ ${error}`);
         reportError({
           type: 'wasm-init',
@@ -103,7 +111,12 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       return true;
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error(`❌ WASM Renderer init error: ${errorMsg}`);
+      const described = describeWasmInitFailure(
+        WasmBridge.getDiagnostics?.() ?? {},
+        this.initAttempts,
+        this.maxInitAttempts,
+      );
+      console.error(`❌ WASM Renderer init exception: ${errorMsg} · ${described.message}`);
       reportError({
         type: 'wasm-init',
         message: `WASM initialization exception: ${errorMsg}`,
@@ -134,6 +147,15 @@ export class WASMRenderer implements Renderer, ShaderSlotRenderer {
       loadErrorCount: bridge?.loadErrorCount ?? 0,
       lastLoadError: bridge?.lastLoadError ?? null,
       initTime: bridge?.initTime ?? 'pending',
+      initSummary: summarizeWasmInitState({
+        initialized: this.initialized,
+        failedStage: bridge?.failedStage,
+        failedStageName: bridge?.failedStageName,
+        lastInitError: bridge?.lastInitError,
+        adapterInfo: bridge?.adapterInfo,
+        hasModule: bridge?.hasModule,
+        lastLoadError: bridge?.lastLoadError,
+      }),
     };
   }
 

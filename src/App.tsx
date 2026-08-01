@@ -4,6 +4,7 @@ import { AppOverlays } from './components/app/AppOverlays';
 import { DEFAULT_B3HD_SEGMENT_LENGTH, DEFAULT_B3HD_INTERVAL_SECONDS } from './config/appConfig';
 import { RenderQualityMode } from './config/performancePolicy';
 import type { InternalColorFormat } from './config/formatPolicy';
+import type { RendererDiagnosticsSummary } from './components/controls/panels/AdvancedDebugPanel';
 import type { ImageRecord } from './types/aiVj';
 import { isRenderQualityMode, loadRenderQualityMode, saveRenderQualityMode } from './services/renderQuality';
 import { RendererManager } from './renderer/RendererManager';
@@ -109,6 +110,9 @@ function MainApp() {
         fp32PinnedBy: [],
         maxPassesPerFrame: 12,
     });
+
+    const [rendererDiagnostics, setRendererDiagnostics] =
+        useState<RendererDiagnosticsSummary | null>(null);
 
     const rendererRef = useRef<RendererManager | null>(null);
     const modesRef = useRef<RenderMode[]>(modes);
@@ -521,6 +525,22 @@ function MainApp() {
                 fp32PinnedBy: perf.fp32PinnedBy,
                 maxPassesPerFrame: perf.maxPassesPerFrame,
             });
+
+            // Backend health for the debug panel — adapter identity is Tier B promotion
+            // evidence (WASM_BACKEND_POLICY.md gate 2) and should never require a console.
+            const diags = manager.getDiagnostics();
+            setRendererDiagnostics({
+                backend: diags.rendererType,
+                fps: diags.metrics?.fps,
+                adapterInfo: diags.rendererType === 'wasm'
+                    ? diags.wasm?.adapterInfo ?? ''
+                    : diags.webgpu?.adapterInfo ?? '',
+                adapterAttemptLabel: diags.webgpu?.adapterAttemptLabel ?? null,
+                wasmInitSummary: diags.wasm?.initSummary,
+                wasmAdapterInfo: diags.wasm?.adapterInfo,
+                wasmFailedStageName: diags.wasm?.failedStageName,
+                wasmLastInitError: diags.wasm?.lastInitError || undefined,
+            });
         };
         tick();
         const interval = setInterval(tick, 1000);
@@ -530,6 +550,7 @@ function MainApp() {
     return (
         <div className="App">
             <AppShell
+                rendererDiagnostics={rendererDiagnostics}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 showSidebar={showSidebar}
