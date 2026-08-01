@@ -45,7 +45,7 @@
     "thumbs:generate": "node scripts/generate-shader-thumbnails.js --engine=app --category=all-catalog --missing",
     "thumbs:generate:minimal": "node scripts/generate-shader-thumbnails.js --engine=minimal --category=all-catalog --missing",
     "thumbs:status": "node scripts/thumbnail-coverage-status.js",
-    "thumbs:test": "node --test scripts/generate-shader-thumbnails.test.js",
+    "thumbs:test": "node --test scripts/generate-shader-thumbnails.test.js && python3 scripts/test_audit_thumbnail_integrity.py",
     "thumbnails:generate": "npm run thumbs:generate",
     "thumbnails:status": "npm run thumbs:status",
     "verify:device-policy": "node scripts/verify-device-policy-sync.js",

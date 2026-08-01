@@ -43,6 +43,12 @@ describe('generate-shader-thumbnails', () => {
     assert.equal(args.limit, 10);
   });
 
+  it('parseArgs accepts an explicit retry ID list', () => {
+    const args = parseArgs(['--force', '--ids=alpha-hdr-bloom-chain, gen-barnsley-fern']);
+    assert.equal(args.force, true);
+    assert.deepEqual(args.ids, ['alpha-hdr-bloom-chain', 'gen-barnsley-fern']);
+  });
+
   it('hasExistingThumbnail requires manifest and png', () => {
     const fs = require('fs');
     const path = require('path');
@@ -73,12 +79,17 @@ describe('generate-shader-thumbnails', () => {
   it('isErrorFrame detects black and magenta frames', () => {
     assert.equal(frameAnalysis.isErrorFrame({ meanLuminance: 0, activePixelRatio: 0 }), true);
     assert.equal(
-      frameAnalysis.isErrorFrame({ meanLuminance: 0.5, activePixelRatio: 0.5, magentaPixelRatio: 0.2 }),
+      frameAnalysis.isErrorFrame({ meanLuminance: 0.5, activePixelRatio: 0.5, magentaPixelRatio: 0.9 }),
       true,
     );
     assert.equal(
       frameAnalysis.isErrorFrame({ meanLuminance: 0.5, activePixelRatio: 0.5, magentaPixelRatio: 0.01 }),
       false,
+    );
+    assert.equal(
+      frameAnalysis.isErrorFrame({ meanLuminance: 0.2, activePixelRatio: 0.4, magentaPixelRatio: 0.2 }),
+      false,
+      'intentional partial magenta palettes are not error frames',
     );
   });
 

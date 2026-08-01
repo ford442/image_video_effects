@@ -13,18 +13,31 @@ run_category() {
   npm run thumbs:generate -- --missing --category="$cat"
 }
 
+retry_integrity_failures() {
+  echo "=== auditing + retrying invalid committed thumbnails ==="
+  python3 scripts/audit_thumbnail_integrity.py || true
+  local ids
+  ids="$(node -e "const r=require('./reports/thumbnail_integrity_audit.json'); process.stdout.write((r.entries||[]).map(e=>e.id).join(','))")"
+  if [[ -n "$ids" ]]; then
+    npm run thumbs:generate -- --force --ids="$ids"
+  else
+    echo "No integrity failures to retry."
+  fi
+}
+
 wave_w1() {
   run_category generative
-  run_category visual-effects
 }
 
 wave_w2() {
   run_category simulation
-  run_category distortion
-  run_category liquid-effects
+  run_category interactive-mouse
 }
 
 wave_w3() {
+  run_category visual-effects
+  run_category distortion
+  run_category liquid-effects
   run_category image
   run_category post-processing
   run_category artistic
@@ -33,11 +46,11 @@ wave_w3() {
   run_category geometric
   run_category hybrid
   run_category advanced-hybrid
-  run_category interactive-mouse
 }
 
 echo "Building production app..."
 SKIP_WASM_BUILD=1 npm run build
+retry_integrity_failures
 
 case "$WAVE" in
   W1) wave_w1 ;;
@@ -54,6 +67,6 @@ case "$WAVE" in
     ;;
 esac
 
-npm run thumbs:status
 python3 scripts/audit_thumbnail_integrity.py || true
+npm run thumbs:status
 echo "Done. Review reports/thumbnail-failures.json and triage skip allowlist."

@@ -2,5 +2,8 @@
   "description": "Shaders excluded from coverage denominator and generation queue",
   "ids": [
     "deep-workgroup-multi-effect-blend"
-  ]
+  ],
+  "reasons": {
+    "deep-workgroup-multi-effect-blend": "Requires a 16x16x4 workgroup (1024 invocations); exclude until the capture host exposes maxComputeInvocationsPerWorkgroup >= 1024."
+  }
 }

@@ -123,11 +123,15 @@ python3 scripts/audit_thumbnail_integrity.py
 npm run thumbs:status
 ```
 
+The wave runner audits first and force-retries every currently flagged PNG before
+processing missing entries. This prevents `--missing` from treating an existing
+black/error PNG as complete. The final audit is the authoritative healthy count.
+
 | Wave | Categories | Notes |
 |------|------------|-------|
-| W1 | `generative`, `visual-effects` | Highest UX impact |
-| W2 | `simulation`, `distortion`, `liquid-effects` | Multipass / history shaders |
-| W3 | `image`, `post-processing`, remainder | Image shaders use `public/fixtures/thumbnail-sample.png` |
+| W1 | `generative` | Largest catalog surface and highest attract-mode impact |
+| W2 | `simulation`, `interactive-mouse` | Multipass flagships + user-facing interaction |
+| W3 | `visual-effects`, `distortion`, `liquid-effects`, `image`, remainder | Image shaders use `public/fixtures/thumbnail-sample.png` |
 
 Example W1:
 
@@ -138,13 +142,20 @@ npm run thumbs:status
 git add public/thumbnails/
 ```
 
+`thumbs:status` reports both nominal manifest/file coverage and integrity-adjusted
+healthy coverage when the checked-in audit fingerprint matches the current PNG set.
+
+Check one monthly snapshot into `reports/thumbnail-coverage-YYYY-MM.md`; include
+catalog/eligible/healthy counts, integrity reasons, skip justifications, and the
+GPU host or execution ceiling used for that month.
+
 Commit PNGs + `manifest.json` in category-sized PRs to keep diffs reviewable.
 
 ## CI
 
 Manual workflow: **Actions → Generate Thumbnails → Run workflow**
 
-The default GitHub runner has no GPU; the job runs a `--limit=5` smoke capture and uploads artifacts. For full batch runs, use a self-hosted runner with the `webgpu` label (see `.github/workflows/generate-thumbnails.yml`).
+The default GitHub runner has no GPU; the job runs a `--limit=5` smoke capture and uploads artifacts. For full batch runs, use a self-hosted runner with the `webgpu` label (see `.github/workflows/generate-thumbnails.yml`). Coverage remains reporting-only and must not gate PRs before the healthy baseline reaches 50%.
 
 ## Related
 

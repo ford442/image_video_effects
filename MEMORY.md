@@ -2,6 +2,14 @@
 
 **Last updated:** 2026-08-01 (toolchain foundation)
 
+## 2026-08-01 — WebGPU frame split (#1043)
+- `src/renderer/webgpu/frame.ts` is now a **194 LOC** lifecycle facade (down from 873): RAF/media refresh, uniform writes, history-ring advancement, FPS, and top-level timing.
+- New seams: `frameState.ts` for renderer-owned state adapters, `present.ts` for input scale/copy + canvas acquire/blit/submit, and `slotDispatch.ts` for parallel/chained/GraphRunner dispatch, quality caps, feedback copies, and compute timestamp phases.
+- Contract stays fixed: when feedback uses both storage buffers, copy **B→C first, A→C last** so primary simulation state wins. The older pure `slotOrchestrator` model now agrees.
+- Pure tests cover copy order, graph-vs-linear resolution, graph quality caps, blit cache invalidation, and generative present selection.
+- Green proof: 68 Jest suites / 464 pass / 1 skip, TypeScript, focused ESLint, device + uniform policy sync, production CRA build, and 254.49 KiB gzip main bundle under 320 KiB.
+- VM workaround: direct `tsx` may fail with `listen EPERM`; use `node --import tsx scripts/build-unified-manifest.ts`, then `npm run build --ignore-scripts` after lifecycle generation. Real GPU visual QA remains external.
+
 ## 2026-08-01 — Toolchain foundation (#1042)
 - Phase 0 + low-risk Phase 1 guardrails landed locally: 320 KiB gzip main-chunk CI budget, explicit lazy `auto-dj` / `transformers` / `web-llm` checks, direct/alias dependency duplicate protection, and AI-loader source boundaries.
 - Fresh baseline: main ~251.43 KiB gzip; Transformers ~175.76 KiB and WebLLM ~2,090.61 KiB remain excluded lazy chunks.
@@ -219,3 +227,11 @@
 - `spore-galaxy` feedback fix is important: color now writes dataTextureA (host copies A→C
   last), masks write dataTextureB, enabling real color trails instead of mask-as-color feedback.
 - No live visual QA in the headless VM; use real WebGPU hardware for look/slider tuning.
+
+## Thumbnail coverage — corrected August 2026 baseline
+
+- Nominal: **349/1,306 (26.7%)**; eligible: 1,305 after the justified `deep-workgroup-multi-effect-blend` hardware skip.
+- The old Python PNG audit did not reverse row filters and over-reported failures. Correct decoding identifies **77 genuinely black thumbnails**, making healthy eligible coverage **272/1,305 (20.8%)** and the honest 80% backlog **772**.
+- Always audit and force-regenerate invalid existing PNGs before `--missing` waves. Priority order: generative, simulation multipass, interactive-mouse, then remaining categories.
+- Do not allowlist renderable failures to improve the denominator. CI remains reporting-only until healthy coverage reaches at least 50%.
+- The current Cloud VM's production WebGPU probe produced a zero-energy frame, so batch generation requires a verified discrete-GPU host. See `reports/thumbnail-coverage-2026-08.md`.

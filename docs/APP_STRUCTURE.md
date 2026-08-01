@@ -1,30 +1,38 @@
-# App Structure — Foundation Wave 2 (#965)
+# App Structure — Foundation Wave 2 + frame split (#965, #1043)
 
-Module map after App.tsx strangler completion and WebGPU modularization.
+Module map after the App.tsx strangler and WebGPU frame-seam extraction.
 
-## Line counts (2026-07-19)
+## Line counts (2026-08-01)
 
 | Module | LOC | Epic target |
 |--------|-----|-------------|
-| [`src/App.tsx`](src/App.tsx) | ~560 | < 800 |
+| [`src/App.tsx`](src/App.tsx) | ~692 | < 800 |
 | [`src/components/controls/ControlsContainer.tsx`](src/components/controls/ControlsContainer.tsx) | ~400 | < 500 |
-| [`src/components/app/AppShell.tsx`](src/components/app/AppShell.tsx) | ~399 | layout shell |
-| [`src/components/app/AppOverlays.tsx`](src/components/app/AppOverlays.tsx) | ~280 | modals + overlays |
-| [`src/renderer/WebGPURenderer.ts`](src/renderer/WebGPURenderer.ts) | ~385 | thin facade (IRenderer) |
+| [`src/components/app/AppShell.tsx`](src/components/app/AppShell.tsx) | ~442 | layout shell |
+| [`src/components/app/AppOverlays.tsx`](src/components/app/AppOverlays.tsx) | ~294 | modals + overlays |
+| [`src/renderer/WebGPURenderer.ts`](src/renderer/WebGPURenderer.ts) | ~470 | thin facade (IRenderer) |
 
 **WebGPU modules** (`src/renderer/webgpu/`, see [`src/renderer/README.md`](../src/renderer/README.md)):
 
 | Module | LOC | Mirrors |
 |--------|-----|---------|
-| `device.ts` | ~192 | `device.cpp` |
-| `resources.ts` | ~317 | `resources.cpp` |
-| `pipeline.ts` | ~403 | `pipeline.cpp` |
-| `frame.ts` | ~592 | `frame.cpp` |
+| `device.ts` | ~274 | `device.cpp` |
+| `resources.ts` | ~332 | `resources.cpp` |
+| `pipeline.ts` | ~470 | `pipeline.cpp` |
+| `frame.ts` | **~194** | thin `frame.cpp` facade |
+| `frameState.ts` | ~380 | renderer-owned state adapter |
+| `present.ts` | ~167 | scale copy + present portion of `frame.cpp` |
+| `slotDispatch.ts` | ~316 | slot/graph dispatch portion of `frame.cpp` |
 | `audioDepth.ts` | ~104 | `audio_depth.cpp` |
-| `WebGPUTiming.ts` | ~60 | `timing.cpp` |
-| `WebGPUMediaInput.ts` | ~266 | (image/video in `audio_depth.cpp`) |
+| `WebGPUTiming.ts` | ~388 | `timing.cpp` |
+| `WebGPUMediaInput.ts` | ~326 | (image/video in `audio_depth.cpp`) |
 
-`GraphRunner` multipass dispatch is wired in `frame.ts` (`dispatchSlot` → `graphRunner.runGraph`).
+`frame.ts` owns RAF/media refresh, uniforms, the history-ring head, FPS, and top-level timing.
+`slotDispatch.ts` owns parallel/chained ordering, the GraphRunner gate, quality pass caps,
+compute timestamp phases, and feedback copies. The feedback contract is `dataB → dataC`
+first and `dataA → dataC` last so primary simulation state wins. `present.ts` owns source
+scale/copy, canvas texture acquisition, final pipeline selection, present timestamps, and submit.
+The C++ side keeps `frame.cpp` as its facade until its presentation/dispatch sections grow again.
 
 ---
 
@@ -83,14 +91,14 @@ Directory: `src/components/controls/panels/` — see prior doc; `ControlsContain
 
 - [`docs/MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md)
 - [`src/renderer/multipassGraph.ts`](../src/renderer/multipassGraph.ts)
-- [`src/renderer/GraphRunner.ts`](../src/renderer/GraphRunner.ts) — wired in `webgpu/frame.ts` `dispatchSlot()` for `quantum-foam-pass1` (same-frame handoff demo)
+- [`src/renderer/GraphRunner.ts`](../src/renderer/GraphRunner.ts) — invoked by `webgpu/slotDispatch.ts` for registered graph roots (same-frame handoff)
 
 ---
 
 ## Testing
 
 ```bash
-npx react-scripts test --watchAll=false --ci   # 292 tests (incl. webgpu/resources, audioDepth)
+npx react-scripts test --watchAll=false --ci
 npm run verify:device-policy
 SKIP_WASM_BUILD=1 npm run build
 ```

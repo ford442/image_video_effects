@@ -4,10 +4,12 @@ audit_thumbnail_integrity.py — flag committed thumbnail PNGs that are nearly b
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import struct
 import sys
 import zlib
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,7 +20,67 @@ REPORT_PATH = ROOT / "reports" / "thumbnail_integrity_audit.json"
 # Match scripts/lib/thumbnailFrameAnalysis.js thresholds
 MIN_ACTIVE = 0.02
 MIN_LUMINANCE = 0.01
-MIN_MAGENTA_RATIO = 0.15
+MIN_MAGENTA_RATIO = 0.75
+
+
+def thumbnail_fingerprint(paths: list[Path]) -> str:
+    digest = hashlib.sha256()
+    for path in paths:
+        digest.update(path.name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def paeth_predictor(left: int, above: int, upper_left: int) -> int:
+    estimate = left + above - upper_left
+    left_distance = abs(estimate - left)
+    above_distance = abs(estimate - above)
+    upper_left_distance = abs(estimate - upper_left)
+    if left_distance <= above_distance and left_distance <= upper_left_distance:
+        return left
+    if above_distance <= upper_left_distance:
+        return above
+    return upper_left
+
+
+def unfilter_scanlines(inflated: bytes, width: int, height: int, bytes_per_pixel: int) -> bytes:
+    stride = width * bytes_per_pixel
+    expected = height * (stride + 1)
+    if len(inflated) != expected:
+        raise ValueError(f"unexpected decompressed size: {len(inflated)} != {expected}")
+
+    rows: list[bytearray] = []
+    offset = 0
+    for row_index in range(height):
+        filter_type = inflated[offset]
+        offset += 1
+        encoded = inflated[offset:offset + stride]
+        offset += stride
+        previous = rows[row_index - 1] if row_index > 0 else bytearray(stride)
+        decoded = bytearray(stride)
+
+        for column, value in enumerate(encoded):
+            left = decoded[column - bytes_per_pixel] if column >= bytes_per_pixel else 0
+            above = previous[column]
+            upper_left = previous[column - bytes_per_pixel] if column >= bytes_per_pixel else 0
+            if filter_type == 0:
+                predictor = 0
+            elif filter_type == 1:
+                predictor = left
+            elif filter_type == 2:
+                predictor = above
+            elif filter_type == 3:
+                predictor = (left + above) // 2
+            elif filter_type == 4:
+                predictor = paeth_predictor(left, above, upper_left)
+            else:
+                raise ValueError(f"unsupported PNG filter type {filter_type}")
+            decoded[column] = (value + predictor) & 0xFF
+        rows.append(decoded)
+
+    return b"".join(rows)
 
 
 def read_png_rgba(path: Path) -> tuple[bytes, int, int]:
@@ -27,6 +89,7 @@ def read_png_rgba(path: Path) -> tuple[bytes, int, int]:
         raise ValueError("not a PNG")
     pos = 8
     width = height = 0
+    bit_depth = color_type = interlace = -1
     raw = b""
     while pos < len(data):
         length = struct.unpack(">I", data[pos:pos + 4])[0]
@@ -36,24 +99,22 @@ def read_png_rgba(path: Path) -> tuple[bytes, int, int]:
         chunk = data[pos:pos + length]
         pos += length + 4  # skip CRC
         if chunk_type == b"IHDR":
-            width, height = struct.unpack(">II", chunk[:8])
+            width, height, bit_depth, color_type, _, _, interlace = struct.unpack(
+                ">IIBBBBB", chunk[:13]
+            )
         elif chunk_type == b"IDAT":
             raw += chunk
         elif chunk_type == b"IEND":
             break
     if not raw:
         raise ValueError("no IDAT")
+    if bit_depth != 8 or color_type != 6 or interlace != 0:
+        raise ValueError(
+            f"unsupported PNG format: bit_depth={bit_depth} color_type={color_type} "
+            f"interlace={interlace}"
+        )
     inflated = zlib.decompress(raw)
-    # PNG filter byte per row — skip for simple audit (assume filter 0)
-    rows = []
-    stride = width * 4
-    i = 0
-    for _ in range(height):
-        i += 1  # filter type
-        rows.append(inflated[i:i + stride])
-        i += stride
-    flat = b"".join(rows)
-    return flat, width, height
+    return unfilter_scanlines(inflated, width, height, 4), width, height
 
 
 def analyze_rgba(data: bytes, width: int, height: int) -> dict:
@@ -105,7 +166,8 @@ def main() -> int:
     flagged: list[dict] = []
     scanned = 0
 
-    for png in sorted(THUMB_DIR.glob("*.png")):
+    pngs = sorted(THUMB_DIR.glob("*.png"))
+    for png in pngs:
         scanned += 1
         try:
             rgba, w, h = read_png_rgba(png)
@@ -127,8 +189,14 @@ def main() -> int:
             })
 
     report = {
+        "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "scanned": scanned,
+        "png_fingerprint": thumbnail_fingerprint(pngs),
         "flagged": len(flagged),
+        "summary": {
+            reason: sum(1 for entry in flagged if entry["reason"] == reason)
+            for reason in sorted({entry["reason"] for entry in flagged})
+        },
         "entries": flagged,
     }
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)

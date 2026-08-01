@@ -6,12 +6,13 @@ _Learn about the person you're helping. Update this as you go._
 - **What to call them:**
 - **Pronouns:** _(optional)_
 - **Timezone:**
-- **Notes:** Prefers phased, reviewable foundation work; preserve WebGPU device-init policy and lazy AI boundaries during toolchain migrations. Treat CRA→Vite as an optional spike, not a big-bang rewrite.
+- **Notes:** Prefers phased, reviewable foundation work before more multipass content; preserve WebGPU device-init policy, frame semantics, and lazy AI boundaries during toolchain migrations. Treat CRA→Vite as an optional spike, not a big-bang rewrite.
 
 ## Context
 
 - Pixelocity / WebGPU Shader Effects is currently stabilizing its next-year toolchain foundation: enforce main-bundle budgets without counting lazy AI chunks, keep TypeScript/dependency boundaries honest, make `public/wasm/` the deployable artifact SoT, and reduce root/swarm cognitive noise.
 - The current WebGPU adapter/device/context path is considered healthy and must not be rewritten as collateral during bundler work.
+- The WebGPU feedback order is contract-critical: copy dataB to dataC first, then dataA to dataC so primary simulation state wins.
 
 ---
 
@@ -74,4 +75,11 @@ Format specification:
 
 [LOOPBACK] 1-1
 1. edcce5a2-c1d0-449f-a3a0-f6478cb0989b 0606T0811 ] Getting ready to upgrade shader code and do other work on shaders in github.com/ford442/image_effect_shaders i think we should work on generative codes especially today. we have a large number of them. maybe we need a way to rotate through them until one catches the user's attention to take control of it with mouse,e tc. a lot of shaders react to mouse with mouse inverted. we should tie generative shaders slider params to audio eventually.||||] Getting ready to upgrade shader code and do other work on shaders in github.com/ford442/image_effect_shaders i think we should work on generative codes especially today. we have a large number of them. maybe we need a way to rotate through them until one catches the user's attention to take control of it with mouse,e tc. a lot of shaders react to mouse with mouse inverted. we should tie generative shaders slider params to audio eventually.||||] Getting ready to upgrade shader code and do other work on shaders in github.com/ford442/image_effect_shaders i think we should work on generative codes especially today. we have a large number of them. maybe we need a way to rotate through them until one catches the user's attention to take control of it with mouse,e tc. a lot of shaders react to mouse with mouse inverted. we should tie generative shaders slider params to audio eventually.||||] what are you editing?||||] Here's what was created:  agents/WGSL_BUILTINS_GENERATIVE.md — 13 sections covering everything a swarm agent needs without guessing:  The canonical 13-binding header verbatim (no hallucinated binding names) Every compute-safe built-in with ⛔ marker[TL;DR]de position protocol, and mobile fallback (CSS grid if no WebGPU) For today's generative swarm — point agents at WGSL_BUILTINS_GENERATIVE.md as a required preamble in every prompt. The anti-patterns table alone should cut naga failures significantly.||||] retry||||System (untrusted): [2026-06-06 19:11:28 GMT+8]   An async command you ran earlier has completed. The result is shown in the system messages above. Handle the result internally. Do not relay it to the user unless explicitly requested. Current time: Saturday, June 6th, 2026 - 7:33 PM (Asia/Shanghai) / 2026-06-06 11:33 UTC||||] **YES — that WGSL_BUILTINS_GENERATIVE.md sounds like pure gold.** Naga anti-patterns table + pre-baked recipes is exactly the kind of thing that turns agents from "mostly works" into "ships clean WGSL on first try." And the **ShaderGalaxyCanvas** w[TL;DR]first WGSL + JSON snippet if you want to review).  You’re in the zone — go finish that plumbing. I’ll be here ready to make the shaders *sing* with the audio. 🎵🔥  (Whenever you’re ready: “done with A” or just paste the final state and we roll into B)
+
+## Current project priorities (2026-08-01)
+
+- Pair new shader/content swarms with thumbnail generation so catalog growth does not outpace discoverability.
+- Treat integrity-adjusted healthy coverage as the production metric; do not count black/error PNGs as complete or hide renderable failures in the skip list.
+- Prioritize generative, simulation multipass, and interactive-mouse thumbnails on real discrete-GPU hardware.
+- Keep thumbnail coverage CI reporting-only until the healthy baseline reaches 50%.
 </IMPORTANT_REMINDER>
