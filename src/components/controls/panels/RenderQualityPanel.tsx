@@ -79,6 +79,12 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
       {maxPassesPerFrame !== undefined && ` · ≤${maxPassesPerFrame} passes/frame`}
       {adaptive && ` · Auto ${targetFps} FPS`}
     </div>
+    {maxPassesPerFrame !== undefined && (
+      <div style={{ fontSize: '10px', color: '#808098', marginTop: '4px', lineHeight: 1.4 }}>
+        Pass budget caps Tier C graph dispatches per frame (battery 4 / balanced 8 / ultra 16).
+        7-pass stacks like Ripple Tank need balanced+; Photonic Caustics (4) fits battery.
+      </div>
+    )}
     {fp32Pinned && (
       <div
         style={{ fontSize: '10px', color: '#ffd166', marginTop: '4px', lineHeight: 1.4 }}

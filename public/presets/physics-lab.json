@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "id": "physics-lab",
+  "name": "Physics Lab",
+  "description": "Tier C multipass flagships — living wave tanks, tearing cloth, and photonic caustic pools. Prefer balanced quality or higher (rgba32float).",
+  "packs": [
+    {
+      "id": "physics-lab-ripple",
+      "name": "Ripple Tank Solo",
+      "description": "Psychedelic wave-interference tank. Click rings, hold oscillator, audio rain. graph · 7 passes.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "ripple-tank",
+            "params": {
+              "zoomParam1": 0.6,
+              "zoomParam2": 0.65,
+              "zoomParam3": 0.6,
+              "zoomParam4": 0.7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-fabric",
+      "name": "Fabric of Reality Solo",
+      "description": "Mass-spring cloth — hold to tear, Self Heal knits seams. graph · 7 passes.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "fabric-of-reality",
+            "params": {
+              "zoomParam1": 0.55,
+              "zoomParam2": 0.55,
+              "zoomParam3": 0.35,
+              "zoomParam4": 0.4
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-photonic",
+      "name": "Photonic Caustics Solo",
+      "description": "Temporal caustic accumulator with chromatic dispersion. graph · 4 passes — battery-friendly.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "photonic-caustics-graph",
+            "params": {
+              "zoomParam1": 0.55,
+              "zoomParam2": 0.4,
+              "zoomParam3": 0.55,
+              "zoomParam4": 0.65
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-triptych",
+      "name": "Physics Lab Triptych",
+      "description": "All three flagships stacked — ripple → fabric → photonic. Needs balanced+ pass budget.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "ripple-tank",
+            "params": {
+              "zoomParam1": 0.55,
+              "zoomParam2": 0.6,
+              "zoomParam3": 0.55,
+              "zoomParam4": 0.65
+            }
+          },
+          {
+            "shaderId": "fabric-of-reality",
+            "params": {
+              "zoomParam1": 0.5,
+              "zoomParam2": 0.5,
+              "zoomParam3": 0.3,
+              "zoomParam4": 0.45
+            }
+          },
+          {
+            "shaderId": "photonic-caustics-graph",
+            "params": {
+              "zoomParam1": 0.5,
+              "zoomParam2": 0.35,
+              "zoomParam3": 0.5,
+              "zoomParam4": 0.6
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

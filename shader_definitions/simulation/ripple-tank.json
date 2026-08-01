@@ -2,7 +2,7 @@
   "id": "ripple-tank",
   "name": "Ripple Tank",
   "url": "shaders/ripple-tank-step.wgsl",
-  "description": "Psychedelic Tier C wave-interference tank — click to drop rings, hold to drive an oscillator, bass pumps the sources while caustic sparkles chase the wavefronts.",
+  "description": "Physics Lab flagship — click for rings, hold for a driven oscillator, audio rains droplets across the tank. 7 graph passes · target 60 fps at balanced.",
   "requiresRgba32Float": true,
   "multipass": {
     "graph": {

@@ -1,5 +1,7 @@
 // Fabric of Reality — Verlet integration + external forces
 // Reads dataTextureC (.rg pos, .ba prev pos), writes dataTextureA
+// zoom_params: .x stiffness (unused here), .y tear (unused), .z gravity, .w selfHeal
+// Damping is derived from a stable base (not .w) so Self Heal stays honest.
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -62,8 +64,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let dt = 0.016;
 
-  let gravity = mix(0.0, 0.02, u.zoom_params.z);
-  let damping = mix(0.95, 0.999, u.zoom_params.w);
+  // Soft gravity — high slider should drape, not explode
+  let gravity = mix(0.0, 0.012, u.zoom_params.z * u.zoom_params.z);
+  // Stable Verlet damping (independent of Self Heal on .w)
+  let stiffnessHint = u.zoom_params.x;
+  let damping = mix(0.965, 0.992, stiffnessHint);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
 
   let prevState = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
   var pos = prevState.xy;
@@ -75,13 +82,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   var vel = (pos - prevPos) * damping;
-  vel.y = vel.y + gravity * dt;
+  vel.y = vel.y + gravity * dt * (1.0 + bass * 0.35);
 
   let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+  let mouseDown = u.zoom_config.w > 0.5;
   let toMouse = pos - mouse;
   let mouseDist = length(toMouse);
-  if (mouseDist < 0.15 && mouseDist > 0.001) {
-    let force = (1.0 - mouseDist / 0.15) * 0.02;
+  let mouseRadius = select(0.12, 0.22, mouseDown);
+  if (mouseDist < mouseRadius && mouseDist > 0.001) {
+    // Hover = gentle push; hold = tear force that rips seams
+    let peak = select(0.018, 0.055, mouseDown);
+    let force = (1.0 - mouseDist / mouseRadius) * peak * (1.0 + mids * 0.4);
     vel = vel + normalize(toMouse) * force;
   }
 
@@ -92,8 +103,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       if (rippleAge > 0.0 && rippleAge < 2.0) {
         let toRipple = pos - ripple.xy;
         let dist = length(toRipple);
-        if (dist < 0.2 && dist > 0.001) {
-          let force = (1.0 - dist / 0.2) * (1.0 - rippleAge / 2.0) * 0.03;
+        if (dist < 0.22 && dist > 0.001) {
+          let force = (1.0 - dist / 0.22) * (1.0 - rippleAge / 2.0) * 0.04 * ripple.w;
           vel = vel + normalize(toRipple) * force;
         }
       }
@@ -102,7 +113,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let windX = fbm(pos * 4.0 + vec2<f32>(time * 0.5, 0.0), time) - 0.5;
   let windY = fbm(pos * 4.0 + vec2<f32>(0.0, time * 0.5), time) - 0.5;
-  vel = vel + vec2<f32>(windX, windY) * 0.001;
+  vel = vel + vec2<f32>(windX, windY) * 0.0008 * (1.0 + bass * 0.5);
+
+  // Hard velocity clamp — keeps the constraint loop from exploding
+  let speed = length(vel);
+  let maxSpeed = 0.045;
+  if (speed > maxSpeed) {
+    vel = vel * (maxSpeed / speed);
+  }
 
   let newPrevPos = pos;
   pos = pos + vel;
@@ -112,6 +130,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     newPrevPos = uv;
   }
 
-  pos = clamp(pos, vec2<f32>(0.0), vec2<f32>(1.0));
+  pos = clamp(pos, vec2<f32>(-0.05), vec2<f32>(1.05));
+  pos = mix(pos, clamp(pos, vec2<f32>(0.0), vec2<f32>(1.0)), 0.35);
   textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(pos, newPrevPos));
 }
