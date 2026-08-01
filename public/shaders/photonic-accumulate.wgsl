@@ -67,26 +67,36 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  let blendFactor = 0.15 + treble * 0.05;
-  let accumulatedCaustic = mix(prevCaustic.rgb, causticAccum, blendFactor);
+  // Higher blend so the temporal accumulator is visibly alive (not a faint wash)
+  let intensity = mix(0.5, 3.0, u.zoom_params.w);
+  let blendFactor = 0.28 + treble * 0.08;
+  var accumulatedCaustic = mix(prevCaustic.rgb, causticAccum, blendFactor);
+  // Soft decay so trails breathe instead of blooming to white
+  accumulatedCaustic = accumulatedCaustic * 0.985;
+  // Soft-knee display boost — accumulator must read as light, not haze
+  let displayCaustic = accumulatedCaustic / (1.0 + accumulatedCaustic * 0.35) * (0.85 + intensity * 0.25);
 
   let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let refractDisplace = surfaceNormal.xy * 0.02 * (1.0 + treble * 0.2);
-  let chromaOffset = dispersion * 0.01;
+  let refractDisplace = surfaceNormal.xy * 0.025 * (1.0 + treble * 0.25);
+  let chromaOffset = dispersion * 0.015;
   let colorR = textureSampleLevel(readTexture, u_sampler, uv + refractDisplace + vec2<f32>(chromaOffset, 0.0), 0.0).r;
   let colorG = textureSampleLevel(readTexture, u_sampler, uv + refractDisplace, 0.0).g;
   let colorB = textureSampleLevel(readTexture, u_sampler, uv + refractDisplace - vec2<f32>(chromaOffset, 0.0), 0.0).b;
   let refractedChromatic = vec3<f32>(colorR, colorG, colorB);
 
-  var finalColor = mix(sourceColor, refractedChromatic, 0.3);
-  finalColor = finalColor + accumulatedCaustic;
+  var finalColor = mix(sourceColor, refractedChromatic, 0.35);
+  finalColor = finalColor + displayCaustic;
 
   let viewDir = vec3<f32>(0.0, 0.0, 1.0);
   let reflectDir = reflect(-viewDir, surfaceNormal);
   let lightDir = normalize(vec3<f32>(lightPos - uv, lightHeight));
-  let specular = pow(max(dot(reflectDir, lightDir), 0.0), 64.0);
-  finalColor = finalColor + vec3<f32>(specular * 0.5);
+  let specular = pow(max(dot(reflectDir, lightDir), 0.0), 48.0);
+  finalColor = finalColor + vec3<f32>(specular * 0.65);
+
+  // Iridescent rim from dispersion — strange + beautiful
+  let rim = pow(1.0 - abs(dot(surfaceNormal, viewDir)), 3.0);
+  finalColor = finalColor + vec3<f32>(0.3, 0.7, 1.0) * rim * dispersion * 2.0;
 
   let alpha = calculateAdvancedAlpha(finalColor, uv);
   textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, alpha));

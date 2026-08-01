@@ -1,5 +1,6 @@
 // Photonic Caustics — surface normal + light seed (graph node 1)
 // dataTextureB: .rgb = surface normal, .a = light height factor
+// zoom_params: .x ior (normal steepness), .y lightSize, .z dispersion hint, .w intensity
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -51,14 +52,13 @@ fn fbm(p: vec2<f32>, time: f32) -> f32 {
   return value;
 }
 
-fn getSurfaceNormal(uv: vec2<f32>, texelSize: vec2<f32>, time: f32) -> vec3<f32> {
+fn getSurfaceNormal(uv: vec2<f32>, texelSize: vec2<f32>, time: f32, noiseAmp: f32) -> vec3<f32> {
   let h = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let hL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(-texelSize.x, 0.0), 0.0).r;
   let hR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r;
   let hU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, -texelSize.y), 0.0).r;
   let hD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).r;
   let noiseScale = 8.0;
-  let noiseAmp = 0.1;
   let treble = plasmaBuffer[0].z;
   let nL = fbm(uv * noiseScale + vec2<f32>(-texelSize.x * noiseScale, 0.0), time) * noiseAmp * (1.0 + treble * 0.3);
   let nR = fbm(uv * noiseScale + vec2<f32>(texelSize.x * noiseScale, 0.0), time) * noiseAmp * (1.0 + treble * 0.3);
@@ -66,7 +66,9 @@ fn getSurfaceNormal(uv: vec2<f32>, texelSize: vec2<f32>, time: f32) -> vec3<f32>
   let nD = fbm(uv * noiseScale + vec2<f32>(0.0, texelSize.y * noiseScale), time) * noiseAmp * (1.0 + treble * 0.3);
   let dx = ((hR + nR) - (hL + nL)) * 2.0;
   let dy = ((hD + nD) - (hU + nU)) * 2.0;
-  return normalize(vec3<f32>(-dx, -dy, 0.2));
+  // IOR slider steadies the microfacet Z — higher IOR → flatter pool, tighter caustics
+  let nz = mix(0.35, 0.12, u.zoom_params.x);
+  return normalize(vec3<f32>(-dx, -dy, nz));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -78,9 +80,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
-  let lightHeight = mix(0.5, 2.0, u.zoom_config.w);
 
-  let normal = getSurfaceNormal(uv, texelSize, time);
+  // All four params live here so the primary URL isn't a dead-slider trap
+  let lightSize = mix(0.05, 0.3, u.zoom_params.y);
+  let intensity = mix(0.5, 3.0, u.zoom_params.w);
+  let dispersionHint = u.zoom_params.z;
+  let noiseAmp = mix(0.06, 0.18, 0.5 + dispersionHint * 0.5);
+
+  let mouseDown = u.zoom_config.w;
+  let lightHeight = mix(0.5, 2.0, mouseDown) * mix(0.85, 1.25, u.zoom_params.y);
+
+  let normal = getSurfaceNormal(uv, texelSize, time, noiseAmp);
+  // Pack lightSize + intensity into unused channels via a/encoding for trace
+  // .a = light height; trace still reads zoom_params directly for ior/size/disp/intensity
   textureStore(dataTextureB, vec2<i32>(coord), vec4<f32>(normal, lightHeight));
-  textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  // Clear accumulator seed — intensity scales the zero so first trace isn't crushed
+  let seed = 0.002 * intensity * lightSize;
+  textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(seed, seed * 0.9, seed * 1.1, 0.0));
 }
