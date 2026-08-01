@@ -5,9 +5,24 @@
 
 ---
 
-## Recently Completed (198 shaders)
+## Recently Completed (206 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 21 (8 shaders) — 2026-07-31 — SMALLEST-FIRST ALL-CATEGORY EDITION 5
+
+Fifth wave of the all-category pool (687 remaining after Batch 20), 105–107 liners across interactive-mouse / image / artistic. Brief generator `temp/make_briefs_2026_07_31_b21.py` reuses the b17 all-category scanner. Special wins: `spec-histogram-equalize` had **TWO dead sliders** — 'Clip Limit' computed a `clippedCount` that was never used (no actual CLAHE clip; now real clip+redistribute CDF) and 'Tile Blend' was read but never referenced (now seam-softening blend) — plus **masks in dataTextureA** (display→A, debug quad→B); `fireworks-edge-ignite` and `fireworks-patriotic-july4` both had the **family diseases** from b18's fireworks-portrait-burst: the **mouse-coord-units bug** (normalized [0,1] treated as pixels — held-click bursts parked off-screen; 2nd/3rd sightings) and the **flat-0.0 depth clobber** behind a 'depth-aware' feature tag (3rd/4th sightings; both now luma-derived); `fireworks-patriotic-july4` also had a **dead mids read** (now drives the stripe wave); `moire-interference` had a dead `dir` var; `interactive-emboss`/`mouse-gravity` kept their dev thinking-out-loud comments verbatim (file personality) while gaining spring-damped lights/wells, click stamps/gravity pulses, and honest depth-aware relief; `kinetic-dispersion`'s spring velocity now literally drives the advertised 'mouse-velocity dispersion'. All 8 gate green (naga + bindgroup, 0 warnings, 0 extraBuffer violations), JSON contracts preserved (updatedParams additive-only), lists/dupes clean (1319 unique definitions — +1 from #1051's bismuth void-owl since b20), Jest 63 suites/422 pass. Briefs: `swarm-tasks/kimi-briefs-2026-07-31-b21/`; notes: `swarm-outputs/kimi-2026-07-31-b21/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 199 | `moire-interference` | 21 | 105→174 (+69) | Dead `dir` removed; spring emitter [133..137]; click third-emitter bursts; per-emitter FFT gains; depth write normalized. |
+| 200 | `mouse-gravity` | 21 | 105→166 (+61) | Heavy spring singularity (ω=6) [133..138]; click secondary wells; photon-ring shimmer (treble bin 7); mouseDown deepens well; dev comments verbatim. |
+| 201 | `fireworks-edge-ignite` | 21 | 106→175 (+69) | **Mouse-coord-units bug fixed** (bursts on-cursor); **honest depth** (was flat 0.0 clobber); click shell launches; spark pipeline/feedback verbatim. |
+| 202 | `spec-histogram-equalize` | 21 | 106→163 (+57) | **Two dead sliders wired** (real CLAHE clip+redistribute; tile-blend seam softening); **A-slot unpoisoned** (display→A, debug→B); barriers/atomics sacred. |
+| 203 | `speed-lines-focus` | 21 | 106→172 (+66) | Spring focus vortex [133..137]; click action bursts; angular FFT sector voices; depth write normalized; 16-tap zoom blur verbatim. |
+| 204 | `fireworks-patriotic-july4` | 21 | 107→162 (+55) | **Mouse-coord-units bug fixed**; **honest depth**; **dead mids wired** (stripe wave); click grand-finale shells (R/W/B by click index); patriotColor verbatim. |
+| 205 | `interactive-emboss` | 21 | 107→176 (+69) | Spring light [133..137]; click relief dents; **depth-aware relief** (tag earned); hue-preserving soft-knee; dev comments verbatim. |
+| 206 | `kinetic-dispersion` | 21 | 107→186 (+79) | Spring influence + **velocity→intensity** (description made literal); click shatter bursts; per-block FFT voices ±30%; curl/shockwave verbatim. |
 
 ### Batch 20 (8 shaders) — 2026-07-31 — SMALLEST-FIRST ALL-CATEGORY EDITION 4
 

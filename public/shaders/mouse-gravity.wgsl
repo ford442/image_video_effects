@@ -27,9 +27,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     var uv = vec2<f32>(global_id.xy) / resolution;
 
+    let time = u.config.x;
+
     // Mouse coords are in u.zoom_config.yz
     // The renderer maps them 0-1.
     var mousePos = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
 
     // Audio: bass deepens the well, mids widens its reach, treble splits chromatic aberration
     let bass = plasmaBuffer[0].x;
@@ -37,17 +40,67 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     // Params
-    let strength = u.zoom_params.x * 2.0 * (1.0 + bass * 0.4);    // 0.0 to 2.0
+    let strength = u.zoom_params.x * 2.0 * (1.0 + bass * 0.4) * (1.0 + mouseDown * 0.3);    // 0.0 to 2.0
     let radius = max(0.01, u.zoom_params.y * 0.5 * (1.0 + mids * 0.3)); // 0.01 to 0.5
     let aberration = u.zoom_params.z * 0.05 * (1.0 + treble * 0.8); // 0.0 to 0.05
     let darkness = u.zoom_params.w;          // 0.0 to 1.0
 
+    // --- Spring-damper the singularity -----------------------------------
+    // The raw cursor is only the TARGET. The well itself has mass, so it
+    // drags behind on a critically-damped spring - heavy and slow is GOOD.
+    // Persistent state lives in extraBuffer (engine reserves [0..4], FFT
+    // bins are [5..132], shader state is [133..255]):
+    //   [133..134] sprung singularity position
+    //   [135..136] spring velocity
+    //   [137]      init flag
+    //   [138]      last integration time
+    if (global_id.x == 0u && global_id.y == 0u) {
+        var sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[137] < 0.5) {
+            // First frame: start AT the cursor so we don't lurch in from (0,0).
+            sPos = mousePos;
+            sVel = vec2<f32>(0.0, 0.0);
+        }
+        let dt = clamp(time - extraBuffer[138], 0.0005, 0.05);
+        let omega = 6.0; // low stiffness = massive well; zeta = 1 (critical)
+        let sAcc = omega * omega * (mousePos - sPos) - 2.0 * omega * sVel;
+        sVel = sVel + sAcc * dt;
+        sPos = sPos + sVel * dt;
+        extraBuffer[133] = sPos.x;
+        extraBuffer[134] = sPos.y;
+        extraBuffer[135] = sVel.x;
+        extraBuffer[136] = sVel.y;
+        extraBuffer[137] = 1.0;
+        extraBuffer[138] = time;
+    }
+    // Every thread rides the sprung position (<=1 frame of slack IS the lag).
+    let wellPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+
     // Vector from UV to Mouse
-    let toMouse = uv - mousePos;
+    let toMouse = uv - wellPos;
     // Correct aspect ratio for distance calculation
     let aspect = resolution.x / resolution.y;
     let distVec = toMouse * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
+
+    // --- Click gravity pulses ---------------------------------------------
+    // Every live ripple is a temporary SECONDARY gravity well parked at its
+    // click point: same exp(-dist / radius) falloff as the main well, with
+    // strength exp(-age * 2.0) so the dent relaxes over ~2 seconds. Clicks
+    // punch dents into spacetime; combined multiplicatively with the main
+    // distortion below.
+    var clickWarp = 1.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age < 0.0 || age > 2.0) { continue; }
+        let rpVec = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
+        let rpDist = length(rpVec);
+        let rpStrength = 0.6 * exp(-age * 2.0);
+        clickWarp = clickWarp * (1.0 - rpStrength * exp(-rpDist / radius));
+    }
 
     // Gravity calculation
     // Force falls off with distance.
@@ -66,16 +119,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Let's use a smooth falloff.
     // Distort = 1.0 - Strength * exp(-dist / Radius)
-    let distortion = 1.0 - strength * exp(-dist / radius);
+    let distortion = (1.0 - strength * exp(-dist / radius)) * clickWarp;
 
     // Apply separate distortion for RGB for chromatic aberration
     let offsetR = toMouse * (distortion - aberration);
     let offsetG = toMouse * distortion;
     let offsetB = toMouse * (distortion + aberration);
 
-    let uvR = mousePos + offsetR;
-    let uvG = mousePos + offsetG;
-    let uvB = mousePos + offsetB;
+    let uvR = wellPos + offsetR;
+    let uvG = wellPos + offsetG;
+    let uvB = wellPos + offsetB;
 
     let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
@@ -86,6 +139,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Darkness at the singularity (center)
     let core = smoothstep(radius * 0.2, radius * 0.5, dist);
     color = mix(vec3<f32>(0.0), color, mix(1.0, core, darkness));
+
+    // Photon ring shimmer: a faint accretion glow hugging the event horizon.
+    // Tinted by the treble bins (plasmaBuffer[7].x) and gated by darkness so
+    // it only earns the black-hole look when the core is actually dark.
+    let ring = smoothstep(0.02, 0.0, abs(dist - radius * 0.35));
+    let ringEnergy = plasmaBuffer[7].x;
+    let ringGlow = ring * darkness * (1.0 - core) * (0.2 + 0.8 * ringEnergy);
+    color = color + ringGlow * vec3<f32>(0.85, 0.92, 1.0);
 
     // Handle out of bounds (optional, sampler clamps or repeats usually)
     // If we want black edges:

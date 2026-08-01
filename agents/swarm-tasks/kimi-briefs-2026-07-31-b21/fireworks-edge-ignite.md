@@ -1,0 +1,239 @@
+# Swarm Brief: fireworks-edge-ignite
+
+**Role:** Algorithmist
+**Name:** 4th of July — Edge Ignite
+**Category:** image
+**Description:** Image contours and edges become ignition lines for a fireworks show. Bright boundaries spark and launch colored shells along the detected edges of your photo. The picture's outlines trace themselves in pyrotechnic light. Bass deepens edge bursts, treble adds crackle along contours. Mouse ignites edges at the cursor.
+**Current lines:** 106
+**Target lines:** 156–196 (expand by +50 to +90)
+
+## Role Instructions
+
+You are the Algorithmist. This fireworks shader has its sibling's exact diseases (fireworks-portrait-burst, Batch 18): the depth write is a flat 0.0 clobber despite a 'depth-aware' feature tag, and the mouse math treats normalized [0,1] coords as pixels so held-click bursts detonate off-screen. Same family, same cures:
+- FIX THE MOUSE COORD BUG (priority 1): `let mUV = (u.zoom_config.yz - res*0.5)/min(res.x,res.y);` - zoom_config.yz is NORMALIZED [0,1]; subtracting res*0.5 (hundreds of pixels) puts mUV at a fixed off-screen point. Correct: `let mUV = (u.zoom_config.yz * res - res * 0.5) / min(res.x, res.y);`. Verify the held-click burst then centers on the cursor.
+- HONEST DEPTH: writeDepthTexture stores vec4(0.0), clobbering chain depth while the features claim 'depth-aware' - write real depth: luminance-derived from the tonemapped color (`clamp(dot(col, vec3(0.299,0.587,0.114)) * 0.9 + edge * 0.2, 0.0, 1.0)`) so sparks and contours sit forward.
+- Click shell launches: loop ripples[] (guard `min(u32(u.config.y), 50u)`) - each live ripple launches a one-shot shell at its click point (same sparkPos/softGlow pipeline as the probe bursts, correct coord conversion as above, age = time - ripple.z, burst at age 0.6), so individual clicks fire without holding the button.
+- Wire exactly 4 slider params via u.zoom_params.x/y/z/w using the EXISTING JSON params (same ids, names, defaults, min/max/step, and mapping order) — add them to updatedParams with index 0-3. These param ids/defaults are the saved-preset contract: do not rename or re-default them.
+- Make each slider drive meaningful shader-specific constants in the WGSL. If the current mapping is generic boilerplate (e.g. a shared intensity/speed/contrast helper), rewire it so each slider visibly controls a real constant of THIS shader's algorithm.
+- Preserve the shader's core algorithm and its soul — upgrade, don't rewrite.
+- CAUTION: preserve acesToneMap, hash1, softGlow, sampleImg (centered-UV convention!), edgeAt, sparkPos, the 8-probe ignition loop with its continue guards, the temporal feedback (mix(prev*trail, col, 0.32); A=display color, C=prev; keep the dataTextureB write) VERBATIM - the pyrotechnics are hand-tuned. All 4 sliders honestly wired - keep roles EXACTLY. extraBuffer (if used) in [133..255] ONLY.
+
+## Required Output Format
+
+- Return exactly one fenced WGSL block (` ```wgsl ` ... ` ``` `).
+- No prose before or after the fence.
+- Preserve the canonical 13-binding compute layout:
+  - @binding(0) sampler, (1) readTexture, (2) writeTexture, (3) Uniforms, (4) readDepthTexture, (5) non_filtering_sampler, (6) writeDepthTexture, (7) dataTextureA, (8) dataTextureB, (9) dataTextureC, (10) extraBuffer (read_write), (11) comparison_sampler, (12) plasmaBuffer (read).
+- Workgroup size must be `@workgroup_size(16, 16, 1)`.
+- Write to `writeTexture`, `writeDepthTexture`, and `dataTextureA` every frame.
+- Use `textureSampleLevel(..., 0.0)` for sampler reads and `textureLoad` for storage reads.
+- Do not use WGSL reserved keywords as identifiers (e.g. `target`). Do not add or renumber bindings. Binding 13 (historyTexture) is optional - only declare it if the shader already uses it.
+- extraBuffer (if ever used): [0..4] reserved, [5..132] = engine FFT bins — persistent shader state goes in [133..255] ONLY.
+- Engine uniform truth (verified src/renderer/UniformBuffer.ts): config = [time, rippleCount, resW, resH]; zoom_config = [time, mouseX, mouseY, mouseDown]. Guard ripple loops with `min(u32(u.config.y), 50u)`.
+
+## JSON Parameters / Controls
+
+```json
+{
+  "id": "fireworks-edge-ignite",
+  "name": "4th of July \u2014 Edge Ignite",
+  "url": "shaders/fireworks-edge-ignite.wgsl",
+  "description": "Image contours and edges become ignition lines for a fireworks show. Bright boundaries spark and launch colored shells along the detected edges of your photo. The picture's outlines trace themselves in pyrotechnic light. Bass deepens edge bursts, treble adds crackle along contours. Mouse ignites edges at the cursor.",
+  "tags": [
+    "fireworks",
+    "edge",
+    "contour",
+    "pyrotechnics",
+    "july-4",
+    "image-reactive",
+    "audio-reactive",
+    "4th-of-july"
+  ],
+  "features": [
+    "audio-reactive",
+    "temporal",
+    "semantic-alpha",
+    "depth-aware"
+  ],
+  "params": [
+    {
+      "id": "edge",
+      "name": "Edge Sensitivity",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "power",
+      "name": "Launch Power",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "trail",
+      "name": "Trail Glow",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "id": "boost",
+      "name": "Color Boost",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Edge Sensitivity",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Launch Power",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Trail Glow",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Color Boost",
+      "default": 0.6,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
+}
+```
+
+## Current WGSL Code
+
+```wgsl
+// Fireworks Edge Ignite — image contours launch pyrotechnics
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
+};
+const TAU: f32 = 6.28318530718;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+fn hash1(n: f32) -> f32 { return fract(sin(n*127.1)*43758.5453); }
+fn softGlow(uv: vec2<f32>, c: vec2<f32>, r: f32, i: f32) -> f32 {
+  let d = length(uv-c); return (exp(-d*d/(r*r*0.5))+0.3*exp(-d/(r*3.0)))*i;
+}
+fn sampleImg(uv: vec2<f32>) -> vec3<f32> {
+  return textureSampleLevel(readTexture, u_sampler, clamp(uv*0.5+0.5, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+}
+fn edgeAt(uv: vec2<f32>, res: vec2<f32>) -> f32 {
+  let e = 2.0/min(res.x,res.y);
+  let l0 = dot(sampleImg(uv), vec3<f32>(0.299,0.587,0.114));
+  let lx = dot(sampleImg(uv+vec2<f32>(e,0.0)), vec3<f32>(0.299,0.587,0.114));
+  let ly = dot(sampleImg(uv+vec2<f32>(0.0,e)), vec3<f32>(0.299,0.587,0.114));
+  return length(vec2<f32>(lx-l0, ly-l0));
+}
+fn sparkPos(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32) -> vec2<f32> {
+  return o + v*age - vec2<f32>(0.0, g)*age*age*0.5;
+}
+
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let pixel = vec2<i32>(gid.xy); let res = u.config.zw;
+  if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
+  let uv = (vec2<f32>(pixel)-res*0.5)/min(res.x,res.y);
+  let time = u.config.x;
+  let edgeSens = mix(0.1, 0.8, u.zoom_params.x);
+  let power = mix(0.35, 1.6, u.zoom_params.y);
+  let trail = mix(0.88, 0.96, u.zoom_params.z);
+  let boost = mix(0.5, 1.5, u.zoom_params.w);
+  let bass = plasmaBuffer[0].x; let treble = plasmaBuffer[0].z;
+  let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+  let imgCol = sampleImg(uv);
+  let edge = edgeAt(uv, res);
+  var col = imgCol * (0.45 + edge * boost * 0.3);
+
+  // Edge glow along contours
+  if (edge > edgeSens * 0.3) {
+    col += imgCol * boost * smoothstep(edgeSens*0.3, edgeSens, edge) * 0.5;
+  }
+
+  for (var s = 0; s < 8; s = s + 1) {
+    let si = f32(s); let seed = hash1(si*43.0+1.0);
+    let probe = vec2<f32>((seed-0.5)*1.5, (hash1(si*67.0)-0.5)*1.2);
+    let probeEdge = edgeAt(probe, res);
+    if (probeEdge < edgeSens * 0.4) { continue; }
+    let cycle = 2.5;
+    let birth = floor((time*0.6+seed*1.5)/cycle)*cycle-seed*1.5;
+    let age = time-birth; if (age < 0.0 || age > 5.0) { continue; }
+    let pCol = sampleImg(probe);
+    let energy = power * probeEdge * boost * (0.6+bass*0.6);
+    let bAge = max(0.0, age-0.6);
+    if (bAge > 0.0) {
+      let n = i32(12.0 + energy*20.0);
+      for (var j = 0; j < n; j = j + 1) {
+        let ang = f32(j)/f32(n)*TAU + seed;
+        let vel = vec2<f32>(cos(ang), sin(ang)) * (0.25+hash1(f32(j)*2.1)*0.35)*energy;
+        let sp = sparkPos(probe, vel, bAge, 0.8);
+        col += pCol * boost * softGlow(uv, sp, 0.006, smoothstep(4.0,0.2,bAge)*energy);
+      }
+      col += pCol * exp(-bAge*8.0) * energy * softGlow(uv, probe, 0.04, 1.0);
+    }
+  }
+  if (u.zoom_config.w > 0.5) {
+    let mUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);
+    let mEdge = edgeAt(mUV, res);
+    if (mEdge > edgeSens*0.2) {
+      let mAge = fract(time*1.2)*2.5;
+      let mCol = sampleImg(mUV);
+      for (var k = 0; k < 20; k = k + 1) {
+        let ang = f32(k)/20.0*TAU;
+        let sp = sparkPos(mUV, vec2<f32>(cos(ang),sin(ang))*0.4*power, mAge, 0.7);
+        col += mCol*boost*softGlow(uv, sp, 0.005, smoothstep(2.0,0.1,mAge)*power);
+      }
+    }
+  }
+  col = mix(prev*trail, col, 0.32);
+  col += vec3<f32>(0.65,0.8,1.0)*step(0.986-treble*0.03, hash1(dot(uv,vec2<f32>(73.0,157.0))+time*12.0))*treble*0.6;
+  col = acesToneMap(col*1.05);
+  textureStore(dataTextureB, pixel, vec4<f32>(col*0.5+prev*0.4, 1.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
+  textureStore(writeTexture, pixel, vec4<f32>(col, clamp(length(col)*1.1+0.15, 0.12, 0.96)));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+}
+```

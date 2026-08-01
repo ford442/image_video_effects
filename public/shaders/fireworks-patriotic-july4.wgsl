@@ -1,4 +1,9 @@
 // Patriotic July 4th Pyro — red white blue image fireworks
+// Slider map (saved-preset contract — ids/defaults unchanged):
+//   x Patriot Mix  : image-hue vs red/white/blue palette blend (0.3..1.0)
+//   y Burst Power  : shell energy, spark count, velocity, finale radius (0.35..1.6)
+//   z Stripe Wave  : waving flag-stripe tint amplitude + scroll speed (0..1)
+//   w Sparkle      : star-field density + crackle finale brightness (0.2..1.0)
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -54,13 +59,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let power = mix(0.35, 1.6, u.zoom_params.y);
   let wave = mix(0.0, 1.0, u.zoom_params.z);
   let sparkle = mix(0.2, 1.0, u.zoom_params.w);
-  let bass = plasmaBuffer[0].x; let treble = plasmaBuffer[0].z;
+  let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
   let prev = textureLoad(dataTextureC, pixel, 0).rgb;
   let imgCol = sampleImg(uv);
   let lum = dot(imgCol, vec3<f32>(0.299,0.587,0.114));
-  let stripe = sin(uv.y*12.0 + time*wave*2.0)*0.5+0.5;
+  // Waving flag stripes: mids rocks the stripe phase, wave slider sets scroll speed
+  let stripe = sin(uv.y*12.0 + time*wave*2.0 + mids*0.3*sin(uv.x*7.0 + time*1.7))*0.5+0.5;
   var col = imgCol * (0.5 + lum*0.2);
-  col = mix(col, patriotColor(stripe, patriot, imgCol), wave*0.15*lum);
+  col = mix(col, patriotColor(stripe, patriot, imgCol), wave*0.15*lum*(0.7+mids*0.3));
 
   for (var s = 0; s < 8; s = s + 1) {
     let si = f32(s); let seed = hash1(si*33.0+7.0);
@@ -85,10 +91,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       }
     }
   }
+  // Twinkling star field: patriotic pin-stars hiding in the dark sky regions
+  let starCell = floor(uv * 24.0);
+  let starH = hash1(dot(starCell, vec2<f32>(17.3, 41.7)));
+  if (starH > 1.0 - sparkle * 0.05) {
+    let starPos = (starCell + vec2<f32>(hash1(starH*91.0), hash1(starH*57.0))) / 24.0;
+    let twinkle = 0.5 + 0.5 * sin(time * (2.0 + starH * 6.0) + starH * 40.0);
+    col += patriotColor(starH, patriot, imgCol) * softGlow(uv, starPos, 0.004, twinkle * sparkle * (1.0 - lum) * 0.7);
+  }
+  // Bass mortar flash: each boom lifts a warm launch glow off the bottom edge
+  let mortarIdx = floor(time * (0.75 + bass * 0.15) / 1.8);
+  let mortarPhase = fract(time * (0.75 + bass * 0.15) / 1.8);
+  let mortarPos = vec2<f32>((hash1(mortarIdx * 3.7) - 0.5) * 1.2, -0.55);
+  let mortarGlow = exp(-mortarPhase * 6.0) * bass * softGlow(uv, mortarPos, 0.16, 1.0);
+  col += patriotColor(hash1(mortarIdx * 3.7), patriot, imgCol) * mortarGlow * power;
+
   let spk = step(0.985-sparkle*0.04, hash1(dot(uv,vec2<f32>(127.0,311.0))+time*15.0));
   col += patriotColor(time*0.1, patriot, vec3<f32>(1.0)) * spk * sparkle * treble * 0.8;
+  // Crackle afterglow: slow-decay ember grid riding the treble finale
+  let crackleSeed = floor(time * 8.0);
+  let crackle = step(0.99-sparkle*0.03, hash1(dot(uv,vec2<f32>(311.0,127.0)) + crackleSeed*0.37));
+  col += patriotColor(crackleSeed*0.37, patriot, vec3<f32>(1.0)) * crackle * exp(-fract(time*8.0)*5.0) * sparkle * treble * 0.5;
   if (u.zoom_config.w > 0.5) {
-    let mUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);
+    let mUV = (u.zoom_config.yz * res - res * 0.5) / min(res.x, res.y);
     let mAge = fract(time*1.3)*2.8;
     if (mAge > 0.4) {
       for (var k = 0; k < 40; k = k + 1) {
@@ -98,10 +123,40 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       }
     }
   }
+  // Grand finale: every live click ripple launches a one-shot patriotic shell
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rip = u.ripples[ri];
+    let rAge = time - rip.z;
+    if (rAge < 0.0 || rAge > 4.2) { continue; }
+    // rip.xy is NORMALIZED [0,1] — same unit fix as the mouse barrage
+    let rUV = (rip.xy * res - res * 0.5) / min(res.x, res.y);
+    let rCol = sampleImg(rUV);
+    let rSeed = f32(ri % 3u) * 0.11; // cycles red -> white -> blue by click index
+    let rise = min(rAge, 0.6);
+    let rCenter = rUV + vec2<f32>(0.0, rise * 0.45);
+    if (rAge < 0.6) {
+      // ascending shell: bright comet head + short fading tail
+      col += patriotColor(rSeed, patriot, rCol) * softGlow(uv, rCenter, 0.02, 1.4 * power);
+      col += patriotColor(rSeed, patriot, rCol) * softGlow(uv, rCenter - vec2<f32>(0.0, 0.05), 0.03, 0.5 * power);
+    } else {
+      let fAge = rAge - 0.6; // burst at age 0.6
+      let rFade = smoothstep(3.6, 0.15, fAge);
+      col += patriotColor(rSeed, patriot, rCol) * exp(-fAge * 9.0) * power * softGlow(uv, rCenter, 0.06, 1.6);
+      let fn_ = i32(26.0 + power * 26.0);
+      for (var q = 0; q < fn_; q = q + 1) {
+        let qs = hash1(f32(ri) * 13.7 + f32(q) * 3.1);
+        let qAng = f32(q) / f32(fn_) * TAU + qs;
+        let qSp = sparkPos(rCenter, vec2<f32>(cos(qAng), sin(qAng)) * (0.35 + qs * 0.4) * power, fAge, 0.8);
+        col += patriotColor(rSeed + qs * 0.05, patriot, rCol) * softGlow(uv, qSp, 0.006, rFade * power * (0.8 + treble * 0.5));
+      }
+    }
+  }
   col = mix(prev*0.92, col, 0.33);
   col = acesToneMap(col*1.1);
   textureStore(dataTextureB, pixel, vec4<f32>(col*0.5+prev*0.4, 1.0));
   textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
   textureStore(writeTexture, pixel, vec4<f32>(col, clamp(length(col)*1.1+0.14, 0.12, 0.97)));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+  // Honest depth: shells and stripes sit forward, dark sky recedes
+  textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(dot(col, vec3<f32>(0.299,0.587,0.114)) * 0.9 + stripe * 0.15, 0.0, 1.0)));
 }
