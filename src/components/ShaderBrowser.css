@@ -422,3 +422,28 @@
     flex-wrap: wrap;
   }
 }
+
+/* Multipass filter chip */
+.shader-filter-chip {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  color: #b8b8b8;
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.shader-filter-chip:hover {
+  border-color: #7ee787;
+  color: #7ee787;
+}
+
+.shader-filter-chip.active {
+  background: rgba(126, 231, 135, 0.12);
+  border-color: #7ee787;
+  color: #7ee787;
+}
