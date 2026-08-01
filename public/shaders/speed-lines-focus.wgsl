@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Speed Lines Focus
-//  Category: image
+//  Category: artistic
 //  Features: [mouse-driven, audio-reactive, upgraded-rgba]
 //  Complexity: Medium
 //  Upgraded: 2026-05-23
+//  Batch-21: spring-damped focus point, click action bursts,
+//            angular FFT voices, normalized depth write
 //  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -55,15 +57,48 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     let aspect = resolution.x / resolution.y;
-    var mouse = u.zoom_config.yz;
+    let rawMouse = u.zoom_config.yz;  // raw cursor stays the spring target
 
-    // Params
+    // ── Spring-damped focus point ────────────────────────────────────
+    // Persistent state in extraBuffer[133..137] ([0..4] reserved,
+    // [5..132] = engine FFT bins): 133/134 = sprung focus (uv space),
+    // 135/136 = spring velocity, 137 = last update time. Only thread
+    // (0,0) integrates; every other thread reads last frame's state.
+    var mouse = rawMouse;
+    let hasState = arrayLength(&extraBuffer) > 137u;
+    if (hasState) {
+        mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasState) {
+        let prevTime = extraBuffer[137];
+        let dt = clamp(time - prevTime, 0.001, 0.05);
+        var sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (prevTime <= 0.0) {
+            // First touch: seed the spring at the cursor so it never snaps.
+            sPos = rawMouse;
+            sVel = vec2<f32>(0.0, 0.0);
+        }
+        // Critically damped spring: stiffness = omega^2, damping = 2*omega.
+        let omega = 9.0;
+        let accel = (rawMouse - sPos) * (omega * omega) - sVel * (2.0 * omega);
+        sVel = sVel + accel * dt;
+        sPos = sPos + sVel * dt;
+        extraBuffer[133] = sPos.x;
+        extraBuffer[134] = sPos.y;
+        extraBuffer[135] = sVel.x;
+        extraBuffer[136] = sVel.y;
+        extraBuffer[137] = time;
+    }
+
+    // Params (zoom_params contract: same ids/defaults as the JSON params)
     let blurStrength = u.zoom_params.x * 0.1 * (1.0 + bass * 0.2);
     let lineDensity = u.zoom_params.y * 50.0 + 10.0;
     let lineSpeed = u.zoom_params.z * 10.0 + 2.0;
     let contrast = (u.zoom_params.w + 0.5) * (1.0 + treble * 0.2);
 
-    // Center on mouse
+    // Center on the SPRUNG mouse so the vortex trails the cursor with
+    // momentum; the 16-tap blur then smears naturally on fast moves.
     let uvCenter = uv - mouse;
     let uvCenterAspect = vec2<f32>(uvCenter.x * aspect, uvCenter.y);
     let dist = length(uvCenterAspect);
@@ -80,11 +115,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     blurColor = blurColor / f32(samples);
 
+    // Angular FFT voices: 8 sectors around the focus, each sector's line
+    // intensity rides its own spectrum bin so the speed lines pulse
+    // around the spectrum instead of flashing uniformly.
+    let sector = u32((angle / 6.28318 + 0.5) * 8.0);
+    let sectorVoice = plasmaBuffer[(sector % 8u) + 1u].x;
+    let voiceGain = 1.0 + clamp(sectorVoice, 0.0, 1.0) * 1.5;
+
     // 2. Speed Lines
     let n = noise1(angle * lineDensity + time * lineSpeed);
     let lines = smoothstep(0.6, 0.8, n);
     let centerMask = smoothstep(0.2, 0.5, dist);
-    let lineEffect = lines * centerMask * contrast;
+    let lineEffectBase = lines * centerMask * contrast;
+    var lineEffect = lineEffectBase * voiceGain;
+
+    // ── Click action bursts ──────────────────────────────────────────
+    // Each live ripple flashes a radial speed-line burst at its click
+    // point: an expanding ring of angular streaks emanating from the
+    // click angle with a ~1.0s fade — a manga impact frame per click.
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        if (age < 0.0 || age > 1.0) { continue; }
+        let rpCenter = uv - rp.xy;
+        let rpAspect = vec2<f32>(rpCenter.x * aspect, rpCenter.y);
+        let rpDist = length(rpAspect);
+        let rpAngle = atan2(rpAspect.y, rpAspect.x);
+        // Expanding burst ring traveling outward from the click point.
+        let burstRadius = age * 0.9;
+        let burstRing = 1.0 - smoothstep(0.0, 0.25, abs(rpDist - burstRadius));
+        // Angular streaks spinning out of the click angle.
+        let burstNoise = noise1(rpAngle * (lineDensity * 0.5) - age * 12.0);
+        let burstLines = smoothstep(0.45, 0.75, burstNoise);
+        let fade = 1.0 - age;  // ~1.0s fade
+        lineEffect = lineEffect + burstRing * burstLines * fade * contrast;
+    }
 
     // Composite
     var finalColor = blurColor + vec3<f32>(lineEffect);
@@ -101,6 +167,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalAlpha = mix(baseColor.a, 1.0, effectIntensity);
 
     textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, vec4<f32>(finalColor, finalAlpha));
 }

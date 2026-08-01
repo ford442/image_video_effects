@@ -1,6 +1,13 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-07-29 (progress audit + issues #1038–#1044)
+**Last updated:** 2026-08-01 (branch cleanup)
+
+## 2026-08-01 — Branch consolidation
+- Audited all local/remote alternate branches vs `main`. Nearly everything useful was already merged (foundation waves, relay hops, MIDI, CORS/blank-after-scale, shader plans/impls).
+- **Imported into main** (`0a74d08a`): celestial-lion + void-urchin plan files + queue pending entries (only unique orphans).
+- **Closed junk PRs:** #995 (stale midi), #1020 (moth 397-file rewrite), #1053 (urchin draft after landing).
+- **Deleted** all non-main local + remote branches and foundation worktrees. Repo is main-only.
+- Left uncommitted Batch 21 WIP alone (moire / mouse-gravity / fireworks-edge-ignite).
 
 ## 2026-07-29 — Progress audit & next foundation wave
 - **Board was empty** (July 26 closed #1007–#1031 tooling/content campaigns). Created **7 open issues** for next code foundation + product:
