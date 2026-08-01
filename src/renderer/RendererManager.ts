@@ -15,7 +15,9 @@ import {
 import {
   DEFAULT_FORMAT_CAPABILITIES,
   DeviceFormatCapabilities,
+  Fp32PinDecision,
   InternalColorFormat,
+  resolveFp32Pin,
 } from '../config/formatPolicy';
 import { AdaptivePerformanceController } from './adaptivePerformance';
 import { getGraphEntryIds, hasGraph } from './multipassRegistry';
@@ -40,6 +42,14 @@ export interface RendererPerformanceStatus {
   fps: number;
   colorFormat: InternalColorFormat;
   estimatedTextureMiB: number;
+  /** Format the quality tier asked for, before any FP32 pin. */
+  requestedColorFormat: InternalColorFormat;
+  /** True when an FP32-required shader forced rgba32float over the tier default. */
+  fp32Pinned: boolean;
+  /** Shader ids holding the FP32 pin. */
+  fp32PinnedBy: string[];
+  /** Graph dispatch cap for this tier (Tier C multipass). */
+  maxPassesPerFrame: number;
 }
 
 export interface ShaderLoadMeta {
@@ -103,6 +113,14 @@ export class RendererManager {
   private qualityMode: RenderQualityMode = 'auto';
   private resolutionScale = 1.0;
   private formatCapabilities: DeviceFormatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
+  /** Loaded shaders that must not run at FP16 (docs/FORMAT_TIERS.md precision guard). */
+  private fp32RequiredShaders = new Set<string>();
+  private requestedColorFormat: InternalColorFormat = this.performancePolicy.colorFormat;
+  private fp32Pin: Fp32PinDecision = {
+    colorFormat: this.performancePolicy.colorFormat,
+    pinned: false,
+    pinnedBy: [],
+  };
   private adaptiveController: AdaptivePerformanceController;
 
   /** Max shader slots shared by WebGPU and WASM backends. */
@@ -275,17 +293,16 @@ export class RendererManager {
       return false;
     }
 
-    if (
-      meta?.requiresRgba32Float
-      && this.performancePolicy.colorFormat !== 'rgba32float'
-    ) {
-      console.warn(
-        `[RendererManager] "${id}" requires rgba32float — bumping render quality to ultra`,
-      );
-      this.setRenderQuality('ultra', {
-        supportsDeepWorkgroup: this.getSupportsDeepWorkgroup(),
-        formatCaps: this.formatCapabilities,
-      });
+    if (meta?.requiresRgba32Float) {
+      this.fp32RequiredShaders.add(id);
+      if (this.performancePolicy.colorFormat !== 'rgba32float') {
+        console.warn(
+          `[RendererManager] "${id}" requires rgba32float — pinning storage format to FP32 ` +
+            `(quality mode stays "${this.qualityMode}")`,
+        );
+        // Re-resolve so the pin is applied to the renderer immediately.
+        this.applyQualityPolicy(this.qualityMode);
+      }
     }
 
     try {
@@ -733,14 +750,47 @@ export class RendererManager {
     mode: RenderQualityMode,
     hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities },
   ): void {
+    this.applyQualityPolicy(mode, hints);
+  }
+
+  /**
+   * Resolve + apply a quality tier. Storage format is pinned to rgba32float whenever an
+   * FP32-required shader is loaded, so switching to balanced/battery (or an auto probe
+   * landing on FP16) can never silently demote a physics sim — docs/FORMAT_TIERS.md.
+   */
+  private applyQualityPolicy(
+    mode: RenderQualityMode,
+    hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities },
+  ): void {
     this.qualityMode = mode;
     const supportsDeep = hints?.supportsDeepWorkgroup ?? this.getSupportsDeepWorkgroup();
     const formatCaps = hints?.formatCaps ?? this.formatCapabilities;
-    this.performancePolicy = resolvePerformancePolicy(mode, {
+    const resolved = resolvePerformancePolicy(mode, {
       supportsDeepWorkgroup: supportsDeep,
       formatCaps,
     });
+    this.requestedColorFormat = resolved.colorFormat;
+    const pin = resolveFp32Pin(resolved.colorFormat, this.fp32RequiredShaders);
+    this.fp32Pin = pin;
+    if (pin.pinned) {
+      console.warn(
+        `[RendererManager] Quality "${mode}" requests ${resolved.colorFormat}, but ` +
+          `${pin.pinnedBy.join(', ')} require rgba32float — storage format pinned to FP32`,
+      );
+    }
+    this.performancePolicy = { ...resolved, colorFormat: pin.colorFormat };
     this.applyPerformancePolicyToRenderer();
+  }
+
+  /**
+   * Drop an FP32 pin when a shader is no longer loaded (slot cleared / shader replaced).
+   * Re-applies the current tier so the format can return to FP16 when nothing needs FP32.
+   */
+  releaseFp32Requirement(id: string): void {
+    if (!this.fp32RequiredShaders.delete(id)) return;
+    if (this.fp32Pin.pinned) {
+      this.applyQualityPolicy(this.qualityMode);
+    }
   }
 
   getRenderQualityMode(): RenderQualityMode {
@@ -770,6 +820,10 @@ export class RendererManager {
         scaleInfo.scaled.h,
         this.performancePolicy.colorFormat,
       ),
+      requestedColorFormat: this.requestedColorFormat,
+      fp32Pinned: this.fp32Pin.pinned,
+      fp32PinnedBy: this.fp32Pin.pinnedBy,
+      maxPassesPerFrame: this.performancePolicy.maxPassesPerFrame,
     };
   }
 

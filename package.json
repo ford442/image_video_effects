@@ -49,6 +49,7 @@
     "thumbnails:status": "npm run thumbs:status",
     "verify:device-policy": "node scripts/verify-device-policy-sync.js",
     "verify:uniforms": "node scripts/verify-uniforms-layout.js",
+    "bench:format-tiers": "playwright test tests/format-tier-bench.spec.ts --project=chromium",
     "audit:shaders:sample": "bash scripts/wgsl-audit-swarm.sh 4 --sample",
     "deploy": "python scripts/deploy.py",
     "deploy:app": "python scripts/deploy_app_only.py",

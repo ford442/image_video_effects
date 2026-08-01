@@ -218,6 +218,10 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     targetFps={performanceHud.targetFps}
                     colorFormat={performanceHud.colorFormat}
                     estimatedTextureMiB={performanceHud.estimatedTextureMiB}
+                    requestedColorFormat={performanceHud.requestedColorFormat}
+                    fp32Pinned={performanceHud.fp32Pinned}
+                    fp32PinnedBy={performanceHud.fp32PinnedBy}
+                    maxPassesPerFrame={performanceHud.maxPassesPerFrame}
                 />
             )}
 

@@ -12,6 +12,12 @@ export interface RenderQualityPanelProps {
   targetFps: number;
   colorFormat?: InternalColorFormat;
   estimatedTextureMiB?: number;
+  /** Format the tier asked for, before any FP32 pin. */
+  requestedColorFormat?: InternalColorFormat;
+  /** True when an FP32-required shader is holding storage at rgba32float. */
+  fp32Pinned?: boolean;
+  fp32PinnedBy?: string[];
+  maxPassesPerFrame?: number;
 }
 
 const MODES: Array<{ id: RenderQualityMode; label: string; hint: string }> = [
@@ -31,6 +37,10 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
   targetFps,
   colorFormat = 'rgba32float',
   estimatedTextureMiB,
+  requestedColorFormat,
+  fp32Pinned = false,
+  fp32PinnedBy = [],
+  maxPassesPerFrame,
 }) => (
   <div className="control-group glass-panel" style={{ padding: '12px' }}>
     <div className="gold-section-header" style={{ fontSize: '12px', marginTop: 0 }}>
@@ -58,14 +68,30 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
       ))}
     </div>
     <div style={{ fontSize: '10px', color: '#9090a8', marginTop: '8px', lineHeight: 1.5 }}>
+      Tier: {qualityMode}
+      {' · '}
       Internal: {internalResolution}² ({Math.round(scale * 100)}%)
       {' · '}
-      {formatLabel(colorFormat)}
+      {formatLabel(colorFormat)} ({colorFormat})
       {estimatedTextureMiB !== undefined && ` · ~${estimatedTextureMiB} MiB tex`}
       {' · '}
       Slots: {maxActiveSlots}
+      {maxPassesPerFrame !== undefined && ` · ≤${maxPassesPerFrame} passes/frame`}
       {adaptive && ` · Auto ${targetFps} FPS`}
     </div>
+    {fp32Pinned && (
+      <div
+        style={{ fontSize: '10px', color: '#ffd166', marginTop: '4px', lineHeight: 1.4 }}
+        title={
+          `Tier requested ${requestedColorFormat ?? 'rgba16float'}; storage held at rgba32float by: `
+          + (fp32PinnedBy.length ? fp32PinnedBy.join(', ') : 'an FP32-required shader')
+        }
+      >
+        ⚠ FP32 pinned — precision-critical shader active
+        {requestedColorFormat && requestedColorFormat !== colorFormat
+          && ` (tier wanted ${formatLabel(requestedColorFormat)})`}
+      </div>
+    )}
   </div>
 );
 

@@ -54,8 +54,12 @@ export function useTestHarness({
         const params = new URLSearchParams(window.location.search);
         if (params.get('testMode') === '1' && rendererRef.current) {
             const manager = rendererRef.current;
-            const loadShaderTracked = async (id: string, url: string) => {
-                const ok = await manager.loadShader(id, url) ?? false;
+            const loadShaderTracked = async (
+                id: string,
+                url: string,
+                meta?: Parameters<typeof manager.loadShader>[2],
+            ) => {
+                const ok = await manager.loadShader(id, url, meta) ?? false;
                 if (params.get('shaderHotReload') === '1') {
                     import('../dev/shaderHotReload').then(({ trackShaderForHotReload }) => {
                         trackShaderForHotReload(id, url);
@@ -136,6 +140,7 @@ export function useTestHarness({
                         });
                     }
                     const totals = samples.map((s) => s.gpu.totalTime).filter((t) => t > 0);
+                    const status = manager.getPerformanceStatus();
                     const avgTotalMs = totals.length
                         ? totals.reduce((a, b) => a + b, 0) / totals.length
                         : 0;
@@ -146,8 +151,19 @@ export function useTestHarness({
                         gpuTimingsAvailable: samples.some((s) => s.gpu.available),
                         rendererType: manager.getActiveRendererType(),
                         qualityMode: options?.qualityMode ?? perf.qualityMode,
-                        colorFormat: perf.colorFormat,
-                        estimatedTextureMiB: perf.estimatedTextureMiB,
+                        colorFormat: status.colorFormat,
+                        estimatedTextureMiB: status.estimatedTextureMiB,
+                        // Format-tier bench fields (docs/FORMAT_TIERS.md — Benchmarking).
+                        requestedColorFormat: status.requestedColorFormat,
+                        fp32Pinned: status.fp32Pinned,
+                        fp32PinnedBy: status.fp32PinnedBy,
+                        maxPassesPerFrame: status.maxPassesPerFrame,
+                        internalWidth: status.internalWidth,
+                        internalHeight: status.internalHeight,
+                        scale: status.scale,
+                        // Timestamp-honesty gate: 'gpu-timestamp' only after a real readback.
+                        timingSource: samples[samples.length - 1]?.gpu.timingSource ?? 'wall-clock',
+                        hasRealGpuTimings: samples.some((s) => s.gpu.timingSource === 'gpu-timestamp'),
                         samples: samples.slice(-5),
                     };
                 },
@@ -155,6 +171,8 @@ export function useTestHarness({
                     manager.updateAudioFrequencyBins(bins);
                 },
                 getSlotState: (index: number) => manager.getSlotState(index),
+                getPerformanceStatus: () => manager.getPerformanceStatus(),
+                releaseFp32Requirement: (id: string) => manager.releaseFp32Requirement(id),
                 getGPUTimings: () => manager.getGPUTimings(),
                 getAdapterSummary: () => {
                     const diags = manager.getDiagnostics();

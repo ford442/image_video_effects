@@ -131,6 +131,10 @@ export interface AppShellProps {
         maxActiveSlots: number;
         colorFormat?: import('../../config/formatPolicy').InternalColorFormat;
         estimatedTextureMiB?: number;
+        requestedColorFormat?: import('../../config/formatPolicy').InternalColorFormat;
+        fp32Pinned?: boolean;
+        fp32PinnedBy?: string[];
+        maxPassesPerFrame?: number;
     };
 }
 

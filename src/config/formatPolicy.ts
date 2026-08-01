@@ -146,6 +146,31 @@ const FP32_INFER_TAGS = new Set([
   'simulation',
 ]);
 
+export interface Fp32PinDecision {
+  /** Format that must actually be used, after honouring FP32-required shaders. */
+  colorFormat: InternalColorFormat;
+  /** True when the tier asked for FP16 but an active shader forced FP32. */
+  pinned: boolean;
+  /** Shader ids that forced the pin (sorted, for logging). */
+  pinnedBy: string[];
+}
+
+/**
+ * Guard against the silent FP16 path: a tier switch (or auto probe) must never demote
+ * storage below rgba32float while an FP32-required shader is loaded in a slot.
+ * See docs/FORMAT_TIERS.md — "Do not silently run physics sims at FP16."
+ */
+export function resolveFp32Pin(
+  requestedFormat: InternalColorFormat,
+  fp32ShaderIds: Iterable<string>,
+): Fp32PinDecision {
+  const pinnedBy = Array.from(fp32ShaderIds).sort();
+  if (requestedFormat === ULTRA_COLOR_FORMAT || pinnedBy.length === 0) {
+    return { colorFormat: requestedFormat, pinned: false, pinnedBy: [] };
+  }
+  return { colorFormat: ULTRA_COLOR_FORMAT, pinned: true, pinnedBy };
+}
+
 /** Infer FP32 requirement from catalog metadata when explicit flag is absent. */
 export function inferRequiresRgba32Float(shader: {
   requiresRgba32Float?: boolean;

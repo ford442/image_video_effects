@@ -91,6 +91,10 @@ function MainApp() {
         maxActiveSlots: number;
         colorFormat: InternalColorFormat;
         estimatedTextureMiB: number;
+        requestedColorFormat: InternalColorFormat;
+        fp32Pinned: boolean;
+        fp32PinnedBy: string[];
+        maxPassesPerFrame: number;
     }>({
         internalWidth: 2048,
         internalHeight: 2048,
@@ -100,6 +104,10 @@ function MainApp() {
         maxActiveSlots: 3,
         colorFormat: 'rgba32float',
         estimatedTextureMiB: 0,
+        requestedColorFormat: 'rgba32float',
+        fp32Pinned: false,
+        fp32PinnedBy: [],
+        maxPassesPerFrame: 12,
     });
 
     const rendererRef = useRef<RendererManager | null>(null);
@@ -508,6 +516,10 @@ function MainApp() {
                 maxActiveSlots: perf.maxActiveSlots,
                 colorFormat: perf.colorFormat,
                 estimatedTextureMiB: perf.estimatedTextureMiB,
+                requestedColorFormat: perf.requestedColorFormat,
+                fp32Pinned: perf.fp32Pinned,
+                fp32PinnedBy: perf.fp32PinnedBy,
+                maxPassesPerFrame: perf.maxPassesPerFrame,
             });
         };
         tick();
