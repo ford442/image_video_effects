@@ -184,10 +184,22 @@ See [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) for panel/hook detail.
 | `npm start` | Dev server (prestart: shader lists + manifest) |
 | `npm run build` | Production build (`prebuild`: wasm → lists → manifest → craco) |
 | `npm run build:manifest` | Regenerate `shader-manifest-unified.json` from category lists |
+| `npm run verify:toolchain-foundation` | Enforce the main-bundle budget, lazy AI chunks, and dependency boundaries |
 | `npm test` | Jest unit tests (~250) |
 | `bash scripts/jules-setup.sh` | Agent/headless setup (`npm ci`, skip WASM compile) |
 
 Production path: `wasm:build` runs **once** in `prebuild`, not again in `build`. No emcc: `SKIP_WASM_BUILD=1 npm run build`. Details: [`WASM_BUILD_CI_GUIDE.md`](WASM_BUILD_CI_GUIDE.md).
+
+The production `main.js` budget is **320 KiB gzip**. `npm run verify:bundle-size` reads CRA's
+`build/asset-manifest.json`, measures only the main entry chunk, and separately asserts that
+`auto-dj`, `transformers`, and `web-llm` remain lazy chunks. The current baseline is about
+**252 KiB gzip**; AI chunks are deliberately excluded from that budget. Run the production
+build before this check.
+
+TypeScript **5.4.5** is the locked compiler and CI runs a full `tsc --noEmit` plus the CRA/craco
+production build. CRA 5's unmaintained peer metadata still declares TypeScript support only
+through 4.x; this repository tests the working TS 5 combination directly, but removing that
+metadata mismatch is one reason the optional Vite migration remains a separate follow-up.
 
 ### WASM (Tier B)
 
@@ -202,6 +214,12 @@ Production path: `wasm:build` runs **once** in `prebuild`, not again in `build`.
 | `npm run test:wasm:bench` | WASM benchmark (needs GPU) |
 | `npm run test:wasm` | Unit + e2e smoke |
 | `npm run test:wasm:full` | Unit + e2e + GPU parity/bench |
+
+`public/wasm/` is the **only deployable WASM artifact source of truth**. C++ sources and the
+canonical bridge fragments live under `wasm_renderer/`; `npm run wasm:build` compiles and copies
+`pixelocity_wasm.{js,wasm}` into `public/wasm/`, while `wasm_renderer/concat_bridge.sh` assembles
+`wasm_renderer/bridge/*.js` and synchronizes the generated compatibility copies. Do not hand-edit
+`build/wasm/`, `src/wasm/wasm_bridge.js`, or the concatenated bridge outputs.
 
 ### Thumbnails (GPU workstation)
 

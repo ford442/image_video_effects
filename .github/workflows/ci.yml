@@ -124,10 +124,11 @@ jobs:
     - name: Check for duplicate shader IDs
       run: node scripts/check_duplicates.js
 
-    - name: Verify TypeScript resolution
+    - name: Verify TypeScript 5 compatibility
       run: |
         node -e "require.resolve('typescript'); console.log('typescript OK:', require('typescript').version)"
         npx tsc --version
+        npx tsc --noEmit
     
     - name: Verify device policy sync (TS ↔ C++)
       run: npm run verify:device-policy
@@ -146,7 +147,10 @@ jobs:
       run: npm run build
       env:
         SKIP_WASM_BUILD: '1'
-    
+
+    - name: Enforce bundle and dependency boundaries
+      run: npm run verify:toolchain-foundation
+
     - name: Validate WASM artifacts after build
       run: npm run wasm:validate
     

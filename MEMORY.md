@@ -1,6 +1,15 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-01 (branch cleanup)
+**Last updated:** 2026-08-01 (toolchain foundation)
+
+## 2026-08-01 — Toolchain foundation (#1042)
+- Phase 0 + low-risk Phase 1 guardrails landed locally: 320 KiB gzip main-chunk CI budget, explicit lazy `auto-dj` / `transformers` / `web-llm` checks, direct/alias dependency duplicate protection, and AI-loader source boundaries.
+- Fresh baseline: main ~251.43 KiB gzip; Transformers ~175.76 KiB and WebLLM ~2,090.61 KiB remain excluded lazy chunks.
+- Package/lock were already TypeScript 5.4.5; local install was stale at 4.9.5. After `npm ci`, `npx tsc --noEmit` passes with two narrow test-fixture typing updates.
+- CRA 5's stale peer metadata still lists TypeScript only through 4.x (`npm ls` marks 5.4.5 invalid), but locked TS 5.4.5 passes both full typecheck and CRA/craco build. CI now runs the real typecheck; Vite remains the long-term peer-mismatch exit.
+- `public/wasm/` is explicitly documented as the only deployable WASM artifact SoT; bridge source remains `wasm_renderer/bridge/*.js`. Device initialization was not changed.
+- Removed tracked root junk `a.out.wasm`, `upg.zip`, `patch_wasm_final16.js`, and `fix_eslint2.py` (Git-recoverable). CRA→Vite remains a separate optional spike.
+- Green proof: production build, 64 Jest suites / 428 pass / 1 skip, TypeScript 5.4 typecheck, device-policy sync, WASM validation, bundle/dependency gate, diff check.
 
 ## 2026-08-01 — Branch consolidation
 - Audited all local/remote alternate branches vs `main`. Nearly everything useful was already merged (foundation waves, relay hops, MIDI, CORS/blank-after-scale, shader plans/impls).
@@ -19,7 +28,7 @@
   - #1041 multipass physics polish (ripple/fabric/caustics discoverability)
   - #1042 toolchain: TS upgrade, bundle budget, optional CRA→Vite
 - **Strategic call:** foundation first (#1038, #1043) before another generative swarm; content flagship = multipass polish not more single-pass volume; WASM feature freeze until #1040.
-- **Health:** device policy sync OK; format tiers in tree; dual Storage re-exports only; package dual-deps cleaned; root junk still present (`a.out.wasm`, `upg.zip`).
+- **Health at audit time:** device policy sync OK; format tiers in tree; dual Storage re-exports only; package dual-deps cleaned. Root junk noted here was removed by the 2026-08-01 toolchain pass above.
 
 
 ## WGSL cross-cutting improvements (2026-07-12 audit)

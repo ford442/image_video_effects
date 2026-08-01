@@ -5,9 +5,24 @@
 
 ---
 
-## Recently Completed (206 shaders)
+## Recently Completed (214 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 22 (8 shaders) — 2026-07-31 — SMALLEST-FIRST ALL-CATEGORY EDITION 6
+
+Sixth wave of the all-category pool (680 remaining after Batch 21), 107–110 liners across interactive-mouse / retro-glitch / artistic / image. Brief generator `temp/make_briefs_2026_07_31_b22.py` reuses the b17 all-category scanner. Special wins: `pixel-explode` had **ALL 4 sliders dead** — `u.zoom_params` was never read; grid size/radius/force/search-range all hardcoded behind generic Intensity/Speed/Scale/Detail labels (wired with bit-exact defaults: force mix(0,0.16)→0.08, grid mix(16,64)→40, range mix(2,10)→6; Speed birthed a new wobble motion); `prismatic-3d-compositor` had an **INVERTED mouse-units bug** (`zoom_config.yz / dims` — double-dividing an already-normalized mouse pinned the parallax driver to the corner; the headline parallax feature had never worked — 4th mouse-units sighting, first inverted variant) plus a **'cameraZ' that was secretly mouseDown**; `luma-refraction` had **mask-as-color feedback** (the 'temporal wave memory' mixed the wave STATE h∈[-10,10],v into the display color — spore-galaxy class, 4th sighting; mix line removed, wave-state A/C contract kept verbatim); `directional-blur-wipe` had a **dead 'Split Pos' slider** (read, never used — now offsets the wipe line, default 0.5 bit-identical) plus a dead per-loop `chroma` var (now disperses); `spectral-glitch-sort` had **elliptical mouse influence** (no aspect correction). All 8 gate green (naga + bindgroup, 0 warnings, 0 extraBuffer violations), JSON contracts preserved (updatedParams additive-only), lists/dupes clean (1319 unique definitions), Jest 63 suites/422 pass. Briefs: `swarm-tasks/kimi-briefs-2026-07-31-b22/`; notes: `swarm-outputs/kimi-2026-07-31-b22/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 207 | `quantum-cursor` | 22 | 107→177 (+70) | Spring field [133..138]; click decoherence bursts (local chaos spikes); per-block FFT jitter; shuffle/invert machinery verbatim. |
+| 208 | `spectral-glitch-sort` | 22 | 108→178 (+70) | **Aspect-corrected mouse** (was elliptical) + spring [133..136]; click sort tears; per-block FFT voices; branchless sort verbatim. |
+| 209 | `mirror-dimension` | 22 | 109→172 (+63) | Spring symmetry center [133..138]; click mirror spins (signed rotation kicks); per-segment FFT shimmer; dead treble→seam glow; fold math verbatim. |
+| 210 | `pixel-explode` | 22 | 109→161 (+52) | **ALL 4 dead sliders wired** (bit-exact defaults); dead treble→blast crackle; click detonations; z-buffer particle physics verbatim. |
+| 211 | `prismatic-3d-compositor` | 22 | 109→182 (+73) | **Inverted mouse-units fixed** (parallax works for the first time); cameraZ→mouseDown (press deepens); dead treble→glow; click prism flares; pass-2 reads verbatim. |
+| 212 | `directional-blur-wipe` | 22 | 110→191 (+81) | **Dead Split Pos wired** (bit-identical default); dead `chroma`→per-sample dispersion; spring wipe [133..137]; click wipe flashes. |
+| 213 | `ember-drift-dissolve` | 22 | 110→166 (+56) | Click ignition (fire from ripples); mouse heat plume; per-region FFT crackle; ember state contract verbatim. |
+| 214 | `luma-refraction` | 22 | 110→186 (+76) | **Mask-as-color removed** (wave state out of display path); click raindrops; bass-transient audio rain; wave-sim core verbatim. |
 
 ### Batch 21 (8 shaders) — 2026-07-31 — SMALLEST-FIRST ALL-CATEGORY EDITION 5
 

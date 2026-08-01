@@ -2,9 +2,16 @@
 //  Luma Refraction
 //  Category: image
 //  Features: wave-propagation, mouse-interactive, audio-reactive, upgraded-rgba,
-//            chromatic-refraction, temporal-wave-memory, audio-wave-amplitude
+//            chromatic-refraction, click-raindrops, audio-rain, audio-wave-amplitude
 //  Complexity: Medium
 //  Upgraded: 2026-05-31
+//  Batch 22 (2026-07-31):
+//    - FIX: removed the mask-as-color feedback. The old "temporal wave memory"
+//      mixed dataTextureC.rgb (wave STATE: h in [-10,10], v, 0) into the display
+//      color, injecting simulation garbage into the image. The wave state now
+//      never enters the display path; refraction offsets visualize it honestly.
+//    - Click raindrops: live ripples drop one-shot gaussian wave impulses.
+//    - Audio rain: strong bass transients sprinkle random rain impulses.
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -28,6 +35,15 @@ struct Uniforms {
   ripples: array<vec4<f32>, 50>,
 };
 
+// ───────────────────────────────────────────────────────────────────
+//  hash21 — deterministic 2D→1D hash for branchless rain sprinkling
+// ───────────────────────────────────────────────────────────────────
+fn hash21(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    p3 = p3 + dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -35,16 +51,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
+    let time = u.config.x;
 
+    // ── Slider params (saved-preset contract: x/y/z/w mapping is fixed) ──
     let waveSpeed = u.zoom_params.x;
     let mouseForce = u.zoom_params.y;
     let damping = u.zoom_params.z;
     let refractionAmt = u.zoom_params.w;
 
+    // ── Audio bands ──
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
+    // ═══════════════════════════════════════════════════════════════
+    //  Wave state read (engine-forced A/C contract — VERBATIM)
+    //  dataTextureC holds the previous frame's state: r = h, g = v
+    // ═══════════════════════════════════════════════════════════════
     let state = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
     var h = state.r;
     var v = state.g;
@@ -55,6 +78,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let e = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
     let w_val = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).r;
 
+    // ═══════════════════════════════════════════════════════════════
+    //  Wave-equation core (SACRED — VERBATIM)
+    //  Laplacian of the height field drives velocity; propagation speed
+    //  is luma-driven: bright regions transmit waves faster.
+    // ═══════════════════════════════════════════════════════════════
     let laplacian = (n + s + e + w_val) / 4.0 - h;
 
     let imgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -66,19 +94,61 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     v = v + laplacian * localSpeed;
     v = v * damping;
 
+    // ═══════════════════════════════════════════════════════════════
+    //  Impulse sources (all inject into v BEFORE h integration)
+    // ═══════════════════════════════════════════════════════════════
+
+    // ── Mouse stir: radius widens when Mouse Force is high ──
     var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
 
-    if (mouseDown > 0.5 && dist < 0.05) {
-        v = v + (1.0 - dist / 0.05) * mouseForce * 0.5;
+    let stirRadius = 0.05 + mouseForce * 0.05;
+    if (mouseDown > 0.5 && dist < stirRadius) {
+        v = v + (1.0 - dist / stirRadius) * mouseForce * 0.5;
     }
 
+    // ── Click raindrops: each live ripple drops a one-shot gaussian ──
+    // impulse at its click point (same form as the mouse stir, radius
+    // ~0.05), so clicks splash the pond without holding the button.
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 0.12) {
+            let rd = distance(uv * vec2<f32>(aspect, 1.0), ripple.xy * vec2<f32>(aspect, 1.0));
+            let bump = exp(-rd * rd / (0.05 * 0.05));
+            v = v + bump * 0.8;
+        }
+    }
+
+    // ── Audio rain: strong bass transients sprinkle random rain ──
+    // impulses across the whole surface (branchless step form), so
+    // beats make the pond drizzle.
+    let rainSeed = hash21(uv * 91.0 + floor(time * 3.0));
+    let rainGate = step(0.998 - bass * 0.002, rainSeed);
+    v = v + rainGate * 0.3;
+
+    // ── Ambient drizzle: a faint constant sprinkle keeps the pond ──
+    // alive even in silence.
+    let drizzleSeed = hash21(uv * 37.0 + floor(time * 7.0) + 17.17);
+    let drizzleGate = step(0.9995, drizzleSeed);
+    v = v + drizzleGate * 0.05;
+
+    // ═══════════════════════════════════════════════════════════════
+    //  Integration + state write (SACRED — VERBATIM)
+    // ═══════════════════════════════════════════════════════════════
     h = h + v;
     h = clamp(h, -10.0, 10.0);
 
     textureStore(dataTextureA, global_id.xy, vec4<f32>(h, v, 0.0, 1.0));
 
+    // ═══════════════════════════════════════════════════════════════
+    //  Chromatic refraction (structure preserved — VERBATIM taps)
+    //  The wave gradient acts as a surface normal; R/G/B refract at
+    //  slightly different offsets. The wave is visualized honestly
+    //  through refraction alone — state never enters the display path.
+    // ═══════════════════════════════════════════════════════════════
     let gradX = (e - w_val) * 0.5;
     let gradY = (s - n) * 0.5;
 
@@ -98,13 +168,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor.g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
     finalColor.b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 
-    // Temporal wave memory: previous refraction tint bleeds in
-    let prevRefraction = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
-    finalColor = mix(finalColor, prevRefraction * 0.9, 0.05 + mids * 0.02);
+    // ── Dispersion glint: derived ONLY from the refracted image taps ──
+    // (never from wave state). Where R/B channels separate, the crest
+    // catches a faint spectral sparkle; mids make it shimmer with audio.
+    let chroma = abs(finalColor.r - finalColor.b);
+    let glint = chroma * (0.08 + mids * 0.08);
+    finalColor = finalColor + vec3<f32>(glint * 0.9, glint * 0.6, glint);
+    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
+    // ── Semantic alpha: wave crests stay slightly more opaque ──
     let alpha = clamp(0.8 + abs(h) * 0.05, 0.0, 1.0);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 
+    // ── Depth passthrough ──
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -6,11 +6,12 @@ _Learn about the person you're helping. Update this as you go._
 - **What to call them:**
 - **Pronouns:** _(optional)_
 - **Timezone:**
-- **Notes:**
+- **Notes:** Prefers phased, reviewable foundation work; preserve WebGPU device-init policy and lazy AI boundaries during toolchain migrations. Treat CRA→Vite as an optional spike, not a big-bang rewrite.
 
 ## Context
 
-_(What do they care about? What projects are they working on? What annoys them? What makes them laugh? Build this over time.)_
+- Pixelocity / WebGPU Shader Effects is currently stabilizing its next-year toolchain foundation: enforce main-bundle budgets without counting lazy AI chunks, keep TypeScript/dependency boundaries honest, make `public/wasm/` the deployable artifact SoT, and reduce root/swarm cognitive noise.
+- The current WebGPU adapter/device/context path is considered healthy and must not be rewritten as collateral during bundler work.
 
 ---
 
