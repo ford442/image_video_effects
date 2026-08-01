@@ -5,9 +5,39 @@
 
 ---
 
-## Recently Completed (182 shaders)
+## Recently Completed (198 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 20 (8 shaders) — 2026-07-31 — SMALLEST-FIRST ALL-CATEGORY EDITION 4
+
+Fourth wave of the all-category pool (695 remaining after Batch 19), 103–105 liners across interactive-mouse / retro-glitch / image / visual-effects / post-processing. Brief generator `temp/make_briefs_2026_07_31_b20.py` reuses the b17 all-category scanner. Special wins: `neon-edge-reveal` had **ALL 4 slider labels generic/wrong** ('Intensity' drove reveal radius, 'Speed' drove edge boost, 'Scale' drove glow, 'Detail' only tweaked alpha — rewired honest with default 0.5 reproducing the legacy look bit-for-bit, Sobel window constants corrected in review to hit 0.05/0.30 exactly) plus an **unclamped ~19.8× HDR emission** (hue-preserving soft-knee, asymptote ~2.0 — kaleido-portal class); `long-exposure` had a **fake Glow Radius** (`gOff` computed from the slider but never used — fixed ±1-texel blur; now real ±gStep taps, dead var deleted) plus a **positional click reset** (was global mouseDown fade ignoring where you click — now an aspect-corrected eraser brush + ripple light stamps); `cyber-halftone-scanner` had the **OOB palette read** (`plasmaBuffer[palIdx % 256u]` → bins 1–8, 3rd sighting); `spectral-rain` declared mids/treble and **never used them** (now per-column FFT voices); `lenticular-holographic-shift` stored **masks in dataTextureA** (display→A, mask quad→B — latent chain poison); `sonar-pulse` was a **sonar shader that ignored the ripples uniform** (click pings fired at last). All 8 gate green (naga + bindgroup, 0 warnings, 0 extraBuffer violations), JSON contracts preserved (updatedParams additive-only), lists/dupes clean (1318 unique definitions), Jest 63 suites/422 pass. Briefs: `swarm-tasks/kimi-briefs-2026-07-31-b20/`; notes: `swarm-outputs/kimi-2026-07-31-b20/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 191 | `luma-topography` | 20 | 103→170 (+67) | Spring-damper light [133..138]; click fill-light flashes; depth-aware pixel height; lying struct/category comments fixed; Blinn-Phong verbatim. |
+| 192 | `scanline-drift` | 20 | 103→155 (+52) | 1D spring tracking band [133..134]; mouse.x edge-proximity drift; click tracking tears; dead treble read wired (per-strip flicker); depth write normalized. |
+| 193 | `sonar-pulse` | 20 | 103→169 (+66) | **Click pings** (ripples were unused — in a sonar shader!); spring origin [133..137]; per-ring FFT shimmer; beat/interference verbatim. |
+| 194 | `cyber-halftone-scanner` | 20 | 104→158 (+54) | **OOB palette guarded** (%256→bins 1–8); click scan bursts; pointer dot bloom; FFT-band sweep intensity; dead PHI const removed; CMYK angles verbatim. |
+| 195 | `neon-edge-reveal` | 20 | 104→177 (+73) | **All 4 generic labels rewired honest** (defaults bit-consistent, Sobel window 0.05/0.30 exact); **~19.8× HDR soft-knee**; click flares; spring flashlight; 9-tap Sobel verbatim. |
+| 196 | `spectral-rain` | 20 | 104→172 (+68) | **Dead mids/treble wired** (per-column FFT voices ±20% trail/brightness); sprung angle/speed [133..137]; click splash bursts; rain grid verbatim. |
+| 197 | `lenticular-holographic-shift` | 20 | 105→166 (+61) | **A-slot role fixed** (display→A, masks→B); 1D view spring [133..134]; click holo flash rings; mouse.y strip tilt; moiré/holo palette verbatim. |
+| 198 | `long-exposure` | 20 | 105→156 (+51) | **Fake glow radius fixed** (real ±gStep taps, dead gOff deleted); **positional eraser brush** + ripple light stamps; per-band decay drift; raw-HDR A/C contract verbatim. |
+
+### Batch 19 (8 shaders) — 2026-07-31 — SMALLEST-FIRST ALL-CATEGORY EDITION 3
+
+Third wave of the all-category pool (705 remaining after Batch 18), 100–103 liners across interactive-mouse / geometric / post-processing / visual-effects / image. Brief generator `temp/make_briefs_2026_07_31_b19.py` reuses the b17 all-category scanner. Special wins: `holographic-shatter` had a **triple bug** — OOB palette read (`plasmaBuffer[palIdx % 256u]` → bins 1–8, same class as b18 holographic-sticker), a **dead 'Depth Weight' slider** (`depthLayeredAlpha()` defined but never called — now wired into finalAlpha), and an **inverted impact falloff** (`smoothstep(0.0, 0.6, dM)` grew with mouse distance — mouse-down shattered everything EXCEPT the cursor zone; now near-focused with a global baseline); `signal-modulation` had **fake spectral bands** (the 8-band visualizer was driven by `fract(sin())` hash noise, not FFT — now real `plasmaBuffer[band + 1]` bins, hash survives only as ±10% anti-digitization jitter — fake-FFT-proxy class); `ascii-glyph` was **tagged mouse-driven but never read the mouse** (`zoom_config` completely unused — spring-damper lens wired, finer glyphs under the pointer, click scrambles); `temporal-phosphor-burn-motion-adaptive` (history-ring, binding 13) also **never read the mouse** despite the tag (mouse phosphor lens + click burn stamps, ring indexing + extraBuffer[4] verbatim, extraBuffer read-only). All 8 gained guarded click-ripple interactivity; 6 gained spring-damper mouse glide (extraBuffer [133..138] only). All 8 gate green (naga + bindgroup, 0 warnings, 0 extraBuffer violations), JSON contracts preserved (updatedParams additive-only), lists/dupes clean (1318 unique definitions — +1 from #1047's gen-vitreous-quantum-lotus-singularity since b18). Briefs: `swarm-tasks/kimi-briefs-2026-07-31-b19/`; notes: `swarm-outputs/kimi-2026-07-31-b19/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 183 | `reactive-glass-grid` | 19 | 100→163 (+63) | Spring-damper glass bulge [133..137]; click shockwave rings; per-tile FFT voices (hash bin); dispersion/fresnel/ior verbatim. |
+| 184 | `ascii-glyph` | 19 | 101→169 (+68) | **Mouse wired** (was tagged but unread — spring lens [133..136], finer glyphs under pointer); click glyph scrambles; stale comments fixed; SDF/beat-swap verbatim. |
+| 185 | `temporal-phosphor-burn-motion-adaptive` | 19 | 101→155 (+54) | **Mouse wired** (phosphor charge lens + faint cursor trails); click burn stamps; per-band FFT decay drift; ring indexing + binding 13 + extraBuffer[4] verbatim (read-only). |
+| 186 | `codebreaker-reveal` | 19 | 102→170 (+68) | Spring-damper reveal disc [133..136]; click reveal bursts (grow-collapse discs); per-column treble shimmer; rain math verbatim. |
+| 187 | `digital-reveal` | 19 | 102→166 (+64) | Spring-damper brush [133..136]; click splash reveals into mask feedback; depth-gated rain brightness; A=mask/C=prev-mask contract verbatim. |
+| 188 | `magnetic-ring` | 19 | 102→166 (+64) | Spring-damper ring center [133..138]; click flux shockwaves (4th ring); per-ring FFT voices (bins 1–3); 3-ring loop/spokes/chromatic taps verbatim. |
+| 189 | `signal-modulation` | 19 | 102→161 (+59) | **Fake spectral bands fixed** (hash noise → real FFT bins 1–8, ±10% jitter kept); spring-damper wave origin [133..136]; click carrier bursts; huePreserveClamp verbatim. |
+| 190 | `holographic-shatter` | 19 | 103→162 (+59) | **Triple bug fixed** (OOB palette %256→bins 1–8; dead Depth Weight slider wired via depthLayeredAlpha; inverted impact falloff → near-focused); click detonations; settling/shard math verbatim. |
 
 ### Batch 18 (8 shaders) — 2026-07-30 — SMALLEST-FIRST ALL-CATEGORY EDITION 2
 

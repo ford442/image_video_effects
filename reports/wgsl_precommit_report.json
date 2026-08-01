@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-30T00:49:19.537053",
+  "timestamp": "2026-08-01T09:26:12.712236",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 8,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/fireworks-portrait-burst.wgsl",
+      "file": "public/shaders/cyber-halftone-scanner.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-sticker.wgsl",
+      "file": "public/shaders/lenticular-holographic-shift.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/neon-topology.wgsl",
+      "file": "public/shaders/long-exposure.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/neural-nexus.wgsl",
+      "file": "public/shaders/luma-topography.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/neural-resonance.wgsl",
+      "file": "public/shaders/neon-edge-reveal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/prismatic-feedback-loop.wgsl",
+      "file": "public/shaders/scanline-drift.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spectral-distortion.wgsl",
+      "file": "public/shaders/sonar-pulse.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/temporal-slit-scan.wgsl",
+      "file": "public/shaders/spectral-rain.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
