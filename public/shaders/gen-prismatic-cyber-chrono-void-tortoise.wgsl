@@ -37,6 +37,8 @@ struct Uniforms {
     mouse: vec2<f32>,
     config: vec4<f32>, // Time, Audio Reactivity, Brightness, Evolution Speed
     zoom_config: vec4<f32>, // Zoom, MouseX, MouseY, Custom
+    zoom_params: vec4<f32>,
+    ripples: array<vec4<f32>, 50>,
 }
 
 struct Particle {
