@@ -6,6 +6,8 @@
 //  Chunks From: laser-burn, bass_env, temporal-feedback
 //  Created: 2026-05-10
 //  Upgraded: 2026-05-31
+//  Swarm Upgrade: 2026-08-02 (spring-damped beam, click brand stamps,
+//                 per-sector spark bins, honestly-wired sliders)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,9 +25,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=BeamSize, y=BurnIntensity, z=HealRate, w=HeatGlow
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -54,27 +56,86 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthMod = mix(1.0, 0.7, depth);
 
+    // ── Sliders: 4 honestly-wired shader-specific constants ─────────
+    // Beam Size       -> physical beam radius
+    // Burn Intensity  -> heat injected per frame inside the beam
+    // Heal Rate       -> char self-repair factor
+    // Heat Glow       -> strength of the live fire glow
     let beamSize = mix(0.01, 0.15, u.zoom_params.x) * (1.0 + bass * 0.2);
     let burnSpeed = u.zoom_params.y * 0.2 * (1.0 + treble * 0.3);
     let healFactor = mix(1.0, 0.9, u.zoom_params.z);
     let heatMix = u.zoom_params.w;
 
+    // ── Burn state (SACRED contract) ────────────────────────────────
+    // dataTextureC = previous frame state: (charLevel, cooledHeat, emberLevel, burnAlpha)
     let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
     var charLevel = prev.r;
     var heatLevel = prev.g;
     var emberLevel = prev.b;
 
-    let mouse = u.zoom_config.yz;
+    // ── Spring-damped beam (extraBuffer[133..136]) ──────────────────
+    // Heavy critically-damped spring: the beam lags the hand like real
+    // galvanometer hardware, so fast strokes leave long burn streaks.
+    // [133]=posX [134]=posY [135]=velX [136]=velY [137]=initialized — [0..4] reserved,
+    // [5..132] engine FFT, persistent state stays in [133..255] only.
+    let rawMouse = u.zoom_config.yz; // spring target = raw cursor
+    var beamPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var beamVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+
+    // An explicit flag makes (0,0) a valid cursor position while still
+    // preventing a cold-start streak from the origin.
+    let springInitialized = extraBuffer[137] > 0.5;
+    if (!springInitialized) {
+        beamPos = rawMouse;
+        beamVel = vec2<f32>(0.0, 0.0);
+    }
+
+    // Critically-damped spring, omega ~6: a = w^2*(target-pos) - 2w*vel
+    let springDt = 1.0 / 60.0;
+    let omega = 6.0;
+    let springAccel = omega * omega * (rawMouse - beamPos) - 2.0 * omega * beamVel;
+    beamVel += springAccel * springDt;
+    beamPos += beamVel * springDt;
+
+    // One invocation persists the shared state; all pixels still use the
+    // same locally integrated position for this frame.
+    if (global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[133] = beamPos.x;
+        extraBuffer[134] = beamPos.y;
+        extraBuffer[135] = beamVel.x;
+        extraBuffer[136] = beamVel.y;
+        extraBuffer[137] = 1.0;
+    }
+
     let mouseDown = step(0.5, u.zoom_config.w);
 
     let aspect = resolution.x / max(resolution.y, 0.001);
-    var dVec = uv - mouse;
+    var dVec = uv - beamPos;
     dVec.x *= aspect;
     let dist = length(dVec);
 
     let inBeam = step(dist, beamSize) * mouseDown;
     let intensity = smoothstep(beamSize, beamSize * 0.5, dist);
-    heatLevel += intensity * burnSpeed * inBeam;
+    // Bass deepens the char: the audio envelope feeds the heat injection
+    heatLevel += intensity * burnSpeed * inBeam * bass_env(bass, mids);
+
+    // ── Click brand stamps ──────────────────────────────────────────
+    // Each live ripple sears a one-shot brand at its click point, so a
+    // single click tattoos the surface without holding the button.
+    // These feed the SAME char/ember pipeline below.
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let rippleAge = time - ripple.z;
+        if (rippleAge >= 0.0 && rippleAge <= 4.0) {
+            var rVec = uv - ripple.xy;
+            rVec.x *= aspect; // aspect-corrected brand radius
+            let rDist = length(rVec);
+            let brandRadius = 0.08;
+            let brand = smoothstep(brandRadius, brandRadius * 0.3, rDist);
+            heatLevel += 0.6 * brand * exp(-rippleAge * 1.5); // one pulse
+        }
+    }
 
     // Ember accumulation: heat chars the surface, embers glow after
     let cooledHeat = heatLevel * 0.9;
@@ -86,9 +147,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     emberLevel = mix(emberLevel, cooledHeat, 0.1);
     emberLevel *= 0.95;
 
-    // Audio spark showers: treble creates flying sparks near the beam
+    // ── Per-sector spark showers ────────────────────────────────────
+    // Divide the beam zone into 8 angular sectors around the beam
+    // center; each sector's spark threshold rides its own FFT bin so
+    // spark showers dance around the beam instead of firing globally.
+    let beamAngle = atan2(dVec.y, dVec.x);
+    let sectorF = floor((beamAngle + 3.14159265) / 6.2831853 * 8.0);
+    let sector = u32(sectorF) % 8u;
+    let sectorBin = plasmaBuffer[(sector % 8u) + 1u].x;
     let sparkChance = hash12(uv * 100.0 + time * 10.0);
-    let spark = step(1.0 - treble * 0.3, sparkChance) * inBeam * 0.5;
+    let spark = step(1.0 - sectorBin * 0.3, sparkChance) * inBeam * 0.5;
     emberLevel += spark;
     emberLevel = clamp(emberLevel, 0.0, 1.0);
 
@@ -108,6 +176,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let burnAlpha = clamp(charLevel * 0.6 + cooledHeat * 0.3 + emberLevel * 0.2 + dot(finalColor, vec3<f32>(0.299, 0.587, 0.114)) * 0.2, 0.0, 1.0);
     let outputColor = vec4<f32>(finalColor, burnAlpha);
 
+    // State write: (charLevel, cooledHeat, emberLevel, burnAlpha)
+    // Raw state only — never tonemap or clamp beyond the clamps above.
     let stateColor = vec4<f32>(charLevel, cooledHeat, emberLevel, burnAlpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), outputColor);

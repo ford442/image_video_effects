@@ -17,7 +17,8 @@ playwright-report/
 test-results/
 
 # Emscripten accidental outputs at repo root
-/a.out.js
-/a.out.wasm
+/a.out.*
 /upg.zip
 /patch*.diff
+/patch*.js
+/fix_eslint*.py

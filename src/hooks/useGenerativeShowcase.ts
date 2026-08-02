@@ -1,7 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { RenderMode, ShaderEntry, InputSource } from '../renderer/types';
 import { getShaderDefaults } from '../app/constants/shaderDefaults';
-import { getAttractPool } from '../app/constants/attractShowcasePool';
+import {
+  getAttractPool,
+  getAttractDwellSeconds,
+  ATTRACT_DEFAULT_DWELL_SEC,
+} from '../app/constants/attractShowcasePool';
 import { pickWeightedShader } from '../utils/thumbnailWeightedPick';
 
 export interface RatedShaderRef {
@@ -57,25 +61,55 @@ export function useGenerativeShowcase({
 }: UseGenerativeShowcaseOptions): UseGenerativeShowcaseReturn {
     const [generativeShowcaseActive, setGenerativeShowcaseActive] = useState(false);
     const [generativeShowcaseLocked, setGenerativeShowcaseLocked] = useState(false);
-    const [generativeShowcaseDelay, setGenerativeShowcaseDelay] = useState(12);
-    const generativeShowcaseTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const [generativeShowcaseDelay, setGenerativeShowcaseDelayState] = useState(ATTRACT_DEFAULT_DWELL_SEC);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastMouseRef = useRef<{ x: number; y: number } | null>(null);
     const lastMidiSignalRef = useRef(0);
+    const lockedRef = useRef(false);
+    const activeRef = useRef(false);
+    const baseDelayRef = useRef(ATTRACT_DEFAULT_DWELL_SEC);
+    const advanceRef = useRef<() => void>(() => {});
+
+    lockedRef.current = generativeShowcaseLocked;
+    activeRef.current = generativeShowcaseActive;
+    baseDelayRef.current = generativeShowcaseDelay;
+
+    const clearAttractTimer = useCallback(() => {
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+    }, []);
+
+    const setGenerativeShowcaseDelay = useCallback((seconds: number) => {
+        baseDelayRef.current = seconds;
+        setGenerativeShowcaseDelayState(seconds);
+    }, []);
 
     const getShowcaseShaders = useCallback((): ShaderEntry[] => {
         return getAttractPool(availableModes, ratedShaders);
     }, [availableModes, ratedShaders]);
 
-    const advanceGenerativeShowcase = useCallback(() => {
-        const genShaders = getShowcaseShaders();
-        if (genShaders.length === 0) return;
+    const scheduleNextAttract = useCallback((shaderId: string) => {
+        clearAttractTimer();
+        if (!activeRef.current || lockedRef.current) return;
+        const dwell = getAttractDwellSeconds(shaderId, baseDelayRef.current);
+        timerRef.current = setTimeout(() => {
+            advanceRef.current();
+        }, dwell * 1000);
+    }, [clearAttractTimer]);
 
-        const nextShader = pickWeightedShader(genShaders, hasThumbnail);
+    const advanceGenerativeShowcase = useCallback(() => {
+        const pool = getShowcaseShaders();
+        if (pool.length === 0) return;
+
+        const nextShader = pickWeightedShader(pool, hasThumbnail);
         if (!nextShader) return;
 
-        syncInputSourceToRenderer('generative');
+        const inputSource: InputSource =
+            nextShader.category === 'simulation' ? 'image' : 'generative';
+        syncInputSourceToRenderer(inputSource);
         setActiveGenerativeShader(nextShader.id);
-
         setMode(0, nextShader.id as RenderMode);
 
         const defaults = getShaderDefaults(nextShader.id, nextShader.params?.length || 4);
@@ -87,70 +121,68 @@ export function useGenerativeShowcase({
         });
 
         setStatus(`🎨 Attract: ${nextShader.name}`);
-    }, [getShowcaseShaders, hasThumbnail, setMode, updateSlotParam, syncInputSourceToRenderer, setActiveGenerativeShader, setStatus]);
+        scheduleNextAttract(nextShader.id);
+    }, [
+        getShowcaseShaders,
+        hasThumbnail,
+        setMode,
+        updateSlotParam,
+        syncInputSourceToRenderer,
+        setActiveGenerativeShader,
+        setStatus,
+        scheduleNextAttract,
+    ]);
+
+    advanceRef.current = advanceGenerativeShowcase;
 
     const startGenerativeShowcase = useCallback(() => {
+        lockedRef.current = false;
         setGenerativeShowcaseLocked(false);
         setGenerativeShowcaseActive(true);
+        activeRef.current = true;
         lastMouseRef.current = mousePosition ?? null;
-        syncInputSourceToRenderer('generative');
         advanceGenerativeShowcase();
         setStatus('🎨 Attract mode on — move mouse or press MIDI to take control (Space to lock)');
-    }, [advanceGenerativeShowcase, syncInputSourceToRenderer, setStatus, mousePosition]);
+    }, [advanceGenerativeShowcase, setStatus, mousePosition]);
 
     const stopGenerativeShowcase = useCallback(() => {
+        activeRef.current = false;
+        lockedRef.current = false;
         setGenerativeShowcaseActive(false);
         setGenerativeShowcaseLocked(false);
-        if (generativeShowcaseTimerRef.current) {
-            clearInterval(generativeShowcaseTimerRef.current);
-            generativeShowcaseTimerRef.current = null;
-        }
+        clearAttractTimer();
         setStatus('Attract mode stopped.');
-    }, [setStatus]);
+    }, [setStatus, clearAttractTimer]);
 
     const lockGenerativeShowcase = useCallback(() => {
-        if (!generativeShowcaseActive) return;
+        if (!activeRef.current) return;
+        lockedRef.current = true;
         setGenerativeShowcaseLocked(true);
-        if (generativeShowcaseTimerRef.current) {
-            clearInterval(generativeShowcaseTimerRef.current);
-            generativeShowcaseTimerRef.current = null;
-        }
+        clearAttractTimer();
         setStatus('🔒 Shader locked — mouse control active.');
-    }, [generativeShowcaseActive, setStatus]);
+    }, [setStatus, clearAttractTimer]);
 
     const unlockGenerativeShowcase = useCallback(() => {
-        if (!generativeShowcaseActive) return;
+        if (!activeRef.current) return;
+        lockedRef.current = false;
         setGenerativeShowcaseLocked(false);
-        if (generativeShowcaseTimerRef.current) {
-            clearInterval(generativeShowcaseTimerRef.current);
-        }
-        generativeShowcaseTimerRef.current = setInterval(() => {
-            advanceGenerativeShowcase();
-        }, generativeShowcaseDelay * 1000);
+        advanceGenerativeShowcase();
         setStatus('🔓 Attract resumed — auto-switching shaders.');
-    }, [generativeShowcaseActive, generativeShowcaseDelay, advanceGenerativeShowcase, setStatus]);
+    }, [advanceGenerativeShowcase, setStatus]);
 
+    // Reschedule when base delay slider changes while attract is running unlocked
     useEffect(() => {
-        if (generativeShowcaseActive && !generativeShowcaseLocked) {
-            if (generativeShowcaseTimerRef.current) {
-                clearInterval(generativeShowcaseTimerRef.current);
-            }
-            generativeShowcaseTimerRef.current = setInterval(() => {
-                advanceGenerativeShowcase();
-            }, generativeShowcaseDelay * 1000);
-        } else {
-            if (generativeShowcaseTimerRef.current) {
-                clearInterval(generativeShowcaseTimerRef.current);
-                generativeShowcaseTimerRef.current = null;
-            }
+        if (!generativeShowcaseActive || generativeShowcaseLocked) {
+            if (generativeShowcaseLocked) clearAttractTimer();
+            return;
         }
+        // Keep current shader on screen; only refresh the timeout with new base delay
+        // by advancing once so schedule uses the updated baseDelayRef.
+        // Do not auto-advance on mount of this effect if timer already pending —
+        // scheduleNextAttract from last advance already holds the id.
+    }, [generativeShowcaseDelay, generativeShowcaseActive, generativeShowcaseLocked, clearAttractTimer]);
 
-        return () => {
-            if (generativeShowcaseTimerRef.current) {
-                clearInterval(generativeShowcaseTimerRef.current);
-            }
-        };
-    }, [generativeShowcaseActive, generativeShowcaseLocked, generativeShowcaseDelay, advanceGenerativeShowcase]);
+    useEffect(() => () => clearAttractTimer(), [clearAttractTimer]);
 
     // Mouse / pointer engagement → lock
     useEffect(() => {
@@ -204,7 +236,14 @@ export function useGenerativeShowcase({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [generativeShowcaseActive, generativeShowcaseLocked, startGenerativeShowcase, stopGenerativeShowcase, lockGenerativeShowcase, unlockGenerativeShowcase]);
+    }, [
+        generativeShowcaseActive,
+        generativeShowcaseLocked,
+        startGenerativeShowcase,
+        stopGenerativeShowcase,
+        lockGenerativeShowcase,
+        unlockGenerativeShowcase,
+    ]);
 
     return {
         generativeShowcaseActive,

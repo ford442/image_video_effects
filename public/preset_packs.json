@@ -98,6 +98,76 @@
           { "shaderId": "crystal-facets", "params": { "lightStrength": 1.2 } }
         ]
       }
+    },
+    {
+      "id": "physics-lab-ripple",
+      "name": "Physics Lab · Ripple Tank",
+      "description": "Tier C wave tank — click rings, hold oscillator, audio rain. graph · 7 passes.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "ripple-tank",
+            "params": {
+              "zoomParam1": 0.6,
+              "zoomParam2": 0.65,
+              "zoomParam3": 0.6,
+              "zoomParam4": 0.7
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-fabric",
+      "name": "Physics Lab · Fabric of Reality",
+      "description": "Living cloth — hold to tear, Self Heal knits. graph · 7 passes.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "fabric-of-reality",
+            "params": {
+              "zoomParam1": 0.55,
+              "zoomParam2": 0.55,
+              "zoomParam3": 0.35,
+              "zoomParam4": 0.4
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-photonic",
+      "name": "Physics Lab · Photonic Caustics",
+      "description": "Temporal caustic pool with chromatic ribbons. graph · 4 passes.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "photonic-caustics-graph",
+            "params": {
+              "zoomParam1": 0.55,
+              "zoomParam2": 0.4,
+              "zoomParam3": 0.55,
+              "zoomParam4": 0.65
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-triptych",
+      "name": "Physics Lab Triptych",
+      "description": "Ripple → fabric → photonic stacked. Use balanced+ quality for full pass budgets.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          { "shaderId": "ripple-tank", "params": { "zoomParam1": 0.55, "zoomParam2": 0.6, "zoomParam3": 0.55, "zoomParam4": 0.65 } },
+          { "shaderId": "fabric-of-reality", "params": { "zoomParam1": 0.5, "zoomParam2": 0.5, "zoomParam3": 0.3, "zoomParam4": 0.45 } },
+          { "shaderId": "photonic-caustics-graph", "params": { "zoomParam1": 0.5, "zoomParam2": 0.35, "zoomParam3": 0.5, "zoomParam4": 0.6 } }
+        ]
+      }
     }
   ]
 }

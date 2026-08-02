@@ -5,6 +5,14 @@ describe('multipassBadge', () => {
     expect(getMultipassBadgeLabel('ripple-tank')).toBe('graph · 7 passes');
   });
 
+  it('returns graph pass count for fabric-of-reality', () => {
+    expect(getMultipassBadgeLabel('fabric-of-reality')).toBe('graph · 7 passes');
+  });
+
+  it('returns graph pass count for photonic-caustics-graph', () => {
+    expect(getMultipassBadgeLabel('photonic-caustics-graph')).toBe('graph · 4 passes');
+  });
+
   it('returns graph pass count for quantum-foam graph entry', () => {
     expect(getMultipassBadgeLabel('quantum-foam-pass1')).toBe('graph · 3 passes');
   });

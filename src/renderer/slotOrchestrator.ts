@@ -179,14 +179,14 @@ export function orchestrateSlots(
 
     // Data texture feedback copies
     result.copies.push({
-      from: 'dataTexA',
-      to: 'dataTexC',
-      reason: 'feedback: dataTexA → dataTexC',
-    });
-    result.copies.push({
       from: 'dataTexB',
       to: 'dataTexC',
       reason: 'feedback: dataTexB → dataTexC',
+    });
+    result.copies.push({
+      from: 'dataTexA',
+      to: 'dataTexC',
+      reason: 'feedback: dataTexA → dataTexC (primary state wins)',
     });
   }
 

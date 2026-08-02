@@ -59,22 +59,73 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
     let audioOverall = plasmaBuffer[0].x + plasmaBuffer[0].y + plasmaBuffer[0].z;
+    let aspect = res.x / max(res.y, 1.0);
 
     // Parameters
     let decay = u.zoom_params.x * 0.9 + 0.05;
     let flowIntensity = u.zoom_params.y * 0.05 + 0.005;
-    let turbulence = u.zoom_params.z * 2.0;
     let feedbackMix = u.zoom_params.w;
+
+    // Per-band FFT turbulence: the frame is split into 8 vertical strips and
+    // each strip's melt turbulence is scaled by its own FFT bin, so different
+    // bands boil at different energies instead of the whole frame moving as one.
+    let band = min(u32(uv.y * 8.0), 7u);
+    let bandEnergy = plasmaBuffer[(band % 8u) + 1u].x * 0.5;
+    let turbulence = u.zoom_params.z * 2.0 * (1.0 + bandEnergy);
 
     // Curl-noise flow field
     var flow = curlNoise(uv * 3.0, time * 0.1) * flowIntensity;
 
-    // Mouse smudge
-    let mouse = u.zoom_config.yz;
-    let mouseDelta = uv - mouse;
+    // Sprung smudge: a critically-damped spring eases the raw cursor so the
+    // smear finger drags with weight. Persistent state lives in
+    // extraBuffer[133..136] (pos.xy, vel.xy), [137] = initialized flag,
+    // [138] = last spring time. [0..4] reserved, [5..132] engine FFT.
+    let rawMouse = u.zoom_config.yz; // spring target = raw cursor
+    var smudgePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var smudgeVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) {
+        smudgePos = rawMouse;
+        smudgeVel = vec2<f32>(0.0, 0.0);
+    }
+    let springDt = clamp(time - extraBuffer[138], 0.0005, 0.05);
+    let omega = 8.0;
+    let springAccel = omega * omega * (rawMouse - smudgePos) - 2.0 * omega * smudgeVel;
+    smudgeVel = smudgeVel + springAccel * springDt;
+    smudgePos = smudgePos + smudgeVel * springDt;
+    // One invocation persists the shared spring state for the next frame.
+    if (id.x == 0u && id.y == 0u) {
+        extraBuffer[133] = smudgePos.x;
+        extraBuffer[134] = smudgePos.y;
+        extraBuffer[135] = smudgeVel.x;
+        extraBuffer[136] = smudgeVel.y;
+        extraBuffer[137] = 1.0;
+        extraBuffer[138] = time;
+    }
+
+    // Mouse smudge (aspect-corrected so the influence stays circular)
+    let uvAspect = uv * vec2<f32>(aspect, 1.0);
+    let mouseAspect = smudgePos * vec2<f32>(aspect, 1.0);
+    let mouseDelta = uvAspect - mouseAspect;
     let mouseDist = length(mouseDelta);
     let mouseInfluence = smoothstep(0.3, 0.0, mouseDist);
-    flow = flow + normalize(mouseDelta + vec2<f32>(0.001)) * mouseInfluence * 0.02;
+    let mouseDir = mouseDelta / max(mouseDist, 0.001);
+    flow = flow + vec2<f32>(mouseDir.x / aspect, mouseDir.y) * mouseInfluence * 0.02;
+
+    // Click melt vortices: each live ripple injects a decaying rotational flow
+    // vortex at its click point, stirring the melt for ~2 seconds.
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let rippleAge = time - ripple.z;
+        if (rippleAge > 0.0 && rippleAge < 2.0) {
+            let rippleDelta = uvAspect - ripple.xy * vec2<f32>(aspect, 1.0);
+            let rippleDist = length(rippleDelta);
+            let vortexMask = smoothstep(0.2, 0.0, rippleDist);
+            let tangent = vec2<f32>(-rippleDelta.y, rippleDelta.x) / max(rippleDist, 0.001);
+            let vortex = tangent * exp(-rippleAge * 1.8) * 0.02 * vortexMask;
+            flow = flow + vec2<f32>(vortex.x / aspect, vortex.y);
+        }
+    }
 
     // Audio turbulence spikes
     if (bass > 0.6) {
@@ -90,8 +141,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let feedback = textureSampleLevel(dataTextureC, u_sampler, displacedUV, 0.0).rgb;
 
-    // Melt blend: weighted mix with decay
-    let melted = mix(current, feedback, decay);
+    // Melt blend: Feedback Mix scales the decay-derived feedback weight.
+    // Default 0.6 reproduces `decay` exactly; lower favors the live frame,
+    // higher deepens the mosh.
+    let meltW = clamp(decay * (feedbackMix / 0.6), 0.0, 0.98);
+    let melted = mix(current, feedback, meltW);
 
     // Color shift based on flow magnitude
     let flowMag = length(flow) * 20.0;

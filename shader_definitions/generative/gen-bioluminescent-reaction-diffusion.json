@@ -4,7 +4,7 @@
   "tags": [
     "generative"
   ],
-  "description": "",
+  "description": "Boundary-safe bioluminescent reaction-diffusion with raw A/B simulation feedback, state-derived cyan-violet species color, FFT-bin shimmer, depth-scaled glow, and direct intensity, speed, scale, and mouse-influence controls.",
   "workgroup_size": [
     16,
     16,
@@ -49,5 +49,11 @@
   "updated": true,
   "id": "gen-bioluminescent-reaction-diffusion",
   "url": "shaders/gen-bioluminescent-reaction-diffusion.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "simulation",
+    "depth-aware",
+    "upgraded-rgba"
+  ]
 }

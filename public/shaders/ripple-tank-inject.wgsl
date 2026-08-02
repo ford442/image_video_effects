@@ -89,19 +89,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    let dripRate = 0.7 + treble * 0.9;
-    for (var d = 0; d < 2; d++) {
-        let t = time * dripRate + f32(d) * 0.5;
+    // Audio rain — treble densifies droplets; mids punch amplitude
+    let dripRate = 0.85 + treble * 1.2;
+    for (var d = 0; d < 3; d++) {
+        let t = time * dripRate + f32(d) * 0.37;
         let cell = floor(t);
         let age  = fract(t) / dripRate;
         let pos  = hash2f(cell * 7.31 + f32(d) * 91.7) * 0.8 + vec2<f32>(0.1);
-        if (age < 0.08) {
+        if (age < 0.1) {
             let dd = (uv - pos) * aspect;
             let distSq = dot(dd, dd);
-            let radius = 0.014;
+            let radius = 0.016;
             if (distSq < radius * radius) {
-                let amp = sourceStrength * 0.25 * (0.35 + mids * 0.8);
-                height -= amp * splash(distSq, radius) * (1.0 - age / 0.08);
+                let amp = sourceStrength * 0.32 * (0.4 + mids * 0.9 + treble * 0.35);
+                height -= amp * splash(distSq, radius) * (1.0 - age / 0.1);
             }
         }
     }

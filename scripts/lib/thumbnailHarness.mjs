@@ -242,7 +242,7 @@ export function isBlackFrame(stats, { minActive = 0.02, minLuminance = 0.01 } = 
   return stats.activePixelRatio < minActive || stats.meanLuminance < minLuminance;
 }
 
-export function isMagentaFrame(stats, { minMagentaRatio = 0.15 } = {}) {
+export function isMagentaFrame(stats, { minMagentaRatio = 0.75 } = {}) {
   if (stats.magentaPixelRatio != null) {
     return stats.magentaPixelRatio >= minMagentaRatio;
   }

@@ -235,12 +235,20 @@
   top: 8px;
   right: 8px;
   z-index: 2;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.72);
   color: #7ee787;
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  border: 1px solid rgba(126, 231, 135, 0.35);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(126, 231, 135, 0.4);
+  line-height: 1.3;
+  pointer-events: none;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .shader-audio-badge {
@@ -413,4 +421,29 @@
   .shader-rate {
     flex-wrap: wrap;
   }
+}
+
+/* Multipass filter chip */
+.shader-filter-chip {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  color: #b8b8b8;
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.shader-filter-chip:hover {
+  border-color: #7ee787;
+  color: #7ee787;
+}
+
+.shader-filter-chip.active {
+  background: rgba(126, 231, 135, 0.12);
+  border-color: #7ee787;
+  color: #7ee787;
 }

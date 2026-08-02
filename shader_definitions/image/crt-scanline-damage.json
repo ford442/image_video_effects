@@ -22,7 +22,9 @@
     "temporal",
     "glitch",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "mouse-driven",
+    "click-reactive"
   ],
   "params": [
     {
@@ -57,5 +59,40 @@
       "max": 2.0,
       "step": 0.01
     }
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Scanline Intensity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 1.5,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Distortion Amount",
+      "default": 0.15,
+      "min": 0.0,
+      "max": 0.5,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Flicker Speed",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "RGB Separation",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

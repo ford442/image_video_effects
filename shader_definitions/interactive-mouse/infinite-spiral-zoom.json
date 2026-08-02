@@ -39,6 +39,7 @@
   ],
   "features": [
     "mouse-driven",
+    "click-reactive",
     "audio-reactive",
     "temporal",
     "chromatic",
@@ -56,5 +57,13 @@
     "temporal",
     "audio-reactive",
     "depth-aware"
-  ]
+  ],
+  "supportsDepth": true,
+  "updatedParams": [
+    { "index": 0, "name": "Zoom Speed", "default": 0.55, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Möbius Strength", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Symmetry Folds", "default": 0.2, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Chromatic Fringe", "default": 0.3, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "updated": true
 }

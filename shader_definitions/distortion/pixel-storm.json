@@ -35,10 +35,48 @@
   ],
   "features": [
     "mouse-driven",
-    "distortion"
+    "distortion",
+    "audio-reactive",
+    "click-reactive",
+    "temporal-persistence"
   ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Storm Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Chaos",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Trail Length",
+      "default": 0.8,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Radius",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

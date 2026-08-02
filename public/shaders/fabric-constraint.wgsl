@@ -31,8 +31,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (coord.x >= size.x || coord.y >= size.y) { return; }
 
   let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
-  let stiffness = mix(0.1, 0.99, u.zoom_params.x);
+  // Soft-cap stiffness so 4 Jacobi iters stay stable under balanced tier
+  let stiffness = mix(0.12, 0.72, u.zoom_params.x);
   let tearThreshold = mix(1.5, 4.0, u.zoom_params.y);
+  let selfHeal = u.zoom_params.w;
 
   let state = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
   var pos = state.xy;
@@ -56,35 +58,46 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (length(upPos) < 0.001) { upPos = upUV; }
   if (length(downPos) < 0.001) { downPos = downUV; }
 
+  // When self-heal is high, gently pull torn gaps back toward rest length
+  let healBoost = select(1.0, 1.15, selfHeal > 0.5);
+
   if (coord.x > 0u) {
     let delta = pos - leftPos;
     let dist = length(delta);
-    if (dist > restLen && dist < tearThreshold * restLen) {
-      let correction = (dist - restLen) / dist * 0.5 * stiffness;
+    let maxDist = tearThreshold * restLen;
+    if (dist > restLen && (dist < maxDist || selfHeal > 0.5)) {
+      let effective = select(stiffness, stiffness * healBoost * 0.35, dist >= maxDist);
+      let correction = (dist - restLen) / dist * 0.5 * effective;
       pos = pos - delta * correction;
     }
   }
   if (coord.x < size.x - 1u) {
     let delta = pos - rightPos;
     let dist = length(delta);
-    if (dist > restLen && dist < tearThreshold * restLen) {
-      let correction = (dist - restLen) / dist * 0.5 * stiffness;
+    let maxDist = tearThreshold * restLen;
+    if (dist > restLen && (dist < maxDist || selfHeal > 0.5)) {
+      let effective = select(stiffness, stiffness * healBoost * 0.35, dist >= maxDist);
+      let correction = (dist - restLen) / dist * 0.5 * effective;
       pos = pos - delta * correction;
     }
   }
   if (coord.y > 0u) {
     let delta = pos - upPos;
     let dist = length(delta);
-    if (dist > restLen && dist < tearThreshold * restLen) {
-      let correction = (dist - restLen) / dist * 0.5 * stiffness;
+    let maxDist = tearThreshold * restLen;
+    if (dist > restLen && (dist < maxDist || selfHeal > 0.5)) {
+      let effective = select(stiffness, stiffness * healBoost * 0.35, dist >= maxDist);
+      let correction = (dist - restLen) / dist * 0.5 * effective;
       pos = pos - delta * correction;
     }
   }
   if (coord.y < size.y - 1u) {
     let delta = pos - downPos;
     let dist = length(delta);
-    if (dist > restLen && dist < tearThreshold * restLen) {
-      let correction = (dist - restLen) / dist * 0.5 * stiffness;
+    let maxDist = tearThreshold * restLen;
+    if (dist > restLen && (dist < maxDist || selfHeal > 0.5)) {
+      let effective = select(stiffness, stiffness * healBoost * 0.35, dist >= maxDist);
+      let correction = (dist - restLen) / dist * 0.5 * effective;
       pos = pos - delta * correction;
     }
   }
@@ -93,6 +106,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     pos = uv;
   }
 
-  pos = clamp(pos, vec2<f32>(0.0), vec2<f32>(1.0));
+  pos = clamp(pos, vec2<f32>(-0.02), vec2<f32>(1.02));
   textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(pos, prevPos));
 }

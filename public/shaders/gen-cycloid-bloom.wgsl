@@ -5,7 +5,7 @@
 //            chromatic-layer-separation, depth-output, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
 //  Created: 2026-05-23
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-08-01 (Batch 23 — coarse/refined search, petal waves)
 // ═══════════════════════════════════════════════════════════════════
 //  Nested hypotrochoid and epicycloid curves layered to form a
 //  blooming flower/mandala. Multiple gear-ratio pairs evolve slowly,
@@ -35,7 +35,8 @@ struct Uniforms {
 
 const TAU: f32 = 6.283185307179586;
 const LAYERS: i32 = 5;
-const STEPS:  i32 = 240;
+const COARSE_STEPS: i32 = 64;
+const REFINE_STEPS: i32 = 8;
 
 fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
   let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
@@ -77,9 +78,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let glowWidth  = mix(0.02, 0.004, u.zoom_params.z);
   let feedback   = u.zoom_params.w;
 
-  // Mouse-driven distortion: mouse pulls the bloom center
+  // Mouse-driven distortion: the cursor always pulls the bloom; bass only
+  // amplifies the motion instead of acting as an accidental on/off switch.
   let mousePull = (mouse - 0.5) * 0.3;
-  let p = (uv - 0.5 + mousePull * bass) * vec2<f32>(aspect, 1.0) * 2.4;
+  let pullStrength = 0.35 + clamp(bass, 0.0, 1.5) * 0.45;
+  let p = (uv - 0.5 + mousePull * pullStrength) * vec2<f32>(aspect, 1.0) * 2.4;
+
+  // Clicks send damped radial waves through the petal geometry.
+  var rippleWave = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    if (age < 0.0 || age > 2.6) { continue; }
+    let delta = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
+    let dist = length(delta);
+    rippleWave += sin(dist * 48.0 - age * 10.0) * exp(-dist * 4.5) * exp(-age * 1.25);
+  }
+  rippleWave = clamp(rippleWave, -1.0, 1.0);
 
   var colorAcc = vec3<f32>(0.0);
   var glowAcc  = 0.0;
@@ -88,14 +104,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lf   = f32(li);
     let R    = 1.0;
     let rInner = 1.0 / (3.0 + lf * petalMult);
-    let d    = rInner * (0.55 + 0.4 * sin(time * 0.07 * spinSpeed + lf * 1.2));
-    let phaseOff = lf * 0.47 + time * spinSpeed * (0.12 + lf * 0.08) * (1.0 + bass * 0.4);
+    let d    = rInner * (0.55 + 0.4 * sin(time * 0.07 * spinSpeed + lf * 1.2))
+      * (1.0 + rippleWave * (0.08 + lf * 0.012));
+    let phaseOff = lf * 0.47 + time * spinSpeed * (0.12 + lf * 0.08) * (1.0 + bass * 0.4)
+      + rippleWave * (0.05 + lf * 0.015);
     let scale = 0.88 - lf * 0.1;
 
+    let curvePeriod = TAU * (1.0 / rInner);
+    let coarseStep = curvePeriod / f32(COARSE_STEPS);
     var minDist = 1e9;
     var bestT   = 0.0;
-    for (var si: i32 = 0; si <= STEPS; si = si + 1) {
-      let t   = f32(si) / f32(STEPS) * TAU * (1.0 / rInner);
+    // 64 global samples find the neighborhood of the closest curve point.
+    for (var si: i32 = 0; si < COARSE_STEPS; si = si + 1) {
+      let t   = f32(si) * coarseStep;
       let pt  = hypotrochoid(t + phaseOff, R, rInner, d) * scale;
       let di  = distance(p, pt);
       if (di < minDist) {
@@ -104,9 +125,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       }
     }
 
+    // Eight local samples refine one coarse interval on either side.
+    let coarseBestT = bestT;
+    for (var rsi: i32 = 0; rsi < REFINE_STEPS; rsi = rsi + 1) {
+      let local = mix(-coarseStep, coarseStep, f32(rsi) / f32(REFINE_STEPS - 1));
+      let t = coarseBestT + local;
+      let pt = hypotrochoid(t + phaseOff, R, rInner, d) * scale;
+      let di = distance(p, pt);
+      if (di < minDist) {
+        minDist = di;
+        bestT = t;
+      }
+    }
+
     let w    = glowWidth * (1.0 + bass * 0.7) * (1.3 - lf * 0.15);
-    let g    = smoothstep(w * 3.5, 0.0, minDist) + smoothstep(w * 7.0, 0.0, minDist) * 0.3;
-    let hue  = fract(lf / f32(LAYERS) + time * spinSpeed * 0.09 + bestT * 0.04 + mids * 0.2);
+    let spectralVoice = plasmaBuffer[(u32(li) % 8u) + 1u].x;
+    let shimmer = 0.78 + spectralVoice * 0.42 + treble * 0.08;
+    let g    = (smoothstep(w * 3.5, 0.0, minDist) + smoothstep(w * 7.0, 0.0, minDist) * 0.3)
+      * shimmer;
+    let hue  = fract(lf / f32(LAYERS) + time * spinSpeed * 0.09 + bestT * 0.04
+      + mids * 0.2 + spectralVoice * 0.035);
     let sat  = 0.82 + treble * 0.18;
     colorAcc = colorAcc + hsv2rgb(vec3<f32>(hue, sat, 1.0)) * g;
     glowAcc  = glowAcc + g;

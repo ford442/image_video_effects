@@ -3,10 +3,12 @@
 //  Coordinate-based shader browser with star ratings integration
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useDeferredValue, startTransition } from 'react';
 import { useShaderRatings } from '../services/ShaderRatingIntegration';
 import { ShaderStarRating } from './ShaderStarRating';
 import { buildCatalog, searchCatalog, CatalogShader } from '../services/shaderCatalog';
+import { isMultipass } from '../utils/multipass';
+import { PassBadge } from './PassBadge';
 import './ShaderBrowserWithRatings.css';
 
 interface ShaderBrowserWithRatingsProps {
@@ -24,7 +26,13 @@ export const ShaderBrowserWithRatings: React.FC<ShaderBrowserWithRatingsProps> =
   const [activeView, setActiveView] = useState<MenuView>('zone');
   const [searchQuery, setSearchQuery] = useState('');
   const [minRating, setMinRating] = useState(0);
+  const [multipassOnly, setMultipassOnly] = useState(false);
   const [catalog, setCatalog] = useState<CatalogShader[]>([]);
+
+  // Defer heavy filter state updates so the toggle stays responsive
+  const deferredSearch = useDeferredValue(searchQuery);
+  const deferredMinRating = useDeferredValue(minRating);
+  const deferredMultipassOnly = useDeferredValue(multipassOnly);
 
   // Load canonical catalog once on mount
   useEffect(() => {
@@ -33,22 +41,26 @@ export const ShaderBrowserWithRatings: React.FC<ShaderBrowserWithRatingsProps> =
     });
   }, []);
 
-  // Filter shaders by search (via canonical catalog) and minimum rating
+  // Filter shaders by search (via canonical catalog), minimum rating, and multipass flag
   const filteredShaders = useMemo(() => {
     let filtered = shaders;
 
-    if (searchQuery) {
-      const matches = searchCatalog(catalog, searchQuery);
+    if (deferredSearch) {
+      const matches = searchCatalog(catalog, deferredSearch);
       const matchIds = new Set(matches.map(s => s.id));
       filtered = filtered.filter(s => matchIds.has(s.id));
     }
 
-    if (minRating > 0) {
-      filtered = filtered.filter(s => s.stars >= minRating);
+    if (deferredMinRating > 0) {
+      filtered = filtered.filter(s => s.stars >= deferredMinRating);
+    }
+
+    if (deferredMultipassOnly) {
+      filtered = filtered.filter(s => isMultipass(s.id));
     }
 
     return filtered;
-  }, [shaders, searchQuery, minRating, catalog]);
+  }, [shaders, deferredSearch, deferredMinRating, deferredMultipassOnly, catalog]);
 
   // Get current menu groups based on view, narrowed by search + rating filters
   const menuGroups = useMemo(() => {
@@ -120,18 +132,27 @@ export const ShaderBrowserWithRatings: React.FC<ShaderBrowserWithRatingsProps> =
         ))}
       </div>
 
-      {/* Rating Filter (for zone view) */}
-      {activeView === 'zone' && (
-        <div className="rating-filter">
-          <span>Min Rating:</span>
-          <select value={minRating} onChange={e => setMinRating(Number(e.target.value))}>
-            <option value={0}>Any</option>
-            <option value={3}>⭐⭐⭐+</option>
-            <option value={4}>⭐⭐⭐⭐+</option>
-            <option value={4.5}>⭐⭐⭐⭐½+</option>
-          </select>
-        </div>
-      )}
+      {/* Rating Filter + Multipass chip */}
+      <div className="rating-filter">
+        {activeView === 'zone' && (
+          <>
+            <span>Min Rating:</span>
+            <select value={minRating} onChange={e => setMinRating(Number(e.target.value))}>
+              <option value={0}>Any</option>
+              <option value={3}>⭐⭐⭐+</option>
+              <option value={4}>⭐⭐⭐⭐+</option>
+              <option value={4.5}>⭐⭐⭐⭐½+</option>
+            </select>
+          </>
+        )}
+        <button
+          className={`multipass-chip ${multipassOnly ? 'active' : ''}`}
+          onClick={() => startTransition(() => setMultipassOnly(v => !v))}
+          title="Show only multipass shaders"
+        >
+          ◈ Multipass
+        </button>
+      </div>
 
       {/* Shader Groups */}
       <div className="shader-groups">
@@ -181,7 +202,7 @@ interface ShaderCardProps {
   onRate: (id: string, rating: number) => Promise<any>;
 }
 
-const ShaderCard: React.FC<ShaderCardProps> = ({
+const ShaderCard: React.FC<ShaderCardProps> = React.memo(({
   shader,
   isSelected,
   onSelect,
@@ -212,6 +233,9 @@ const ShaderCard: React.FC<ShaderCardProps> = ({
       
       {/* Name */}
       <div className="shader-name">{shader.name}</div>
+      
+      {/* Multipass badge */}
+      <PassBadge shaderId={shader.id} />
       
       {/* Category Tag */}
       <div className="category-tag">{shader.category}</div>
@@ -247,6 +271,6 @@ const ShaderCard: React.FC<ShaderCardProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default ShaderBrowserWithRatings;

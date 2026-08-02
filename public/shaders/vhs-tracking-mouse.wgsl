@@ -23,8 +23,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -50,7 +50,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     var uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let mousePos = vec2<f32>(u.zoom_config.y, select(0.5, u.zoom_config.z, u.zoom_config.z >= 0.0));
+    let rawMouse = u.zoom_config.yz;
+
+    // Give the tracking head some inertia instead of snapping the damaged band.
+    let hasSpringState = arrayLength(&extraBuffer) > 138u;
+    var mousePos = rawMouse;
+    if (hasSpringState && extraBuffer[138] > 0.5) {
+      mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
+      var springPos = mousePos;
+      var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+      if (extraBuffer[138] <= 0.5) {
+        springPos = rawMouse;
+        springVel = vec2<f32>(0.0);
+      } else {
+        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+        let omega = 10.0;
+        let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+        springVel += accel * dt;
+        springPos += springVel * dt;
+      }
+      extraBuffer[133] = springPos.x;
+      extraBuffer[134] = springPos.y;
+      extraBuffer[135] = springVel.x;
+      extraBuffer[136] = springVel.y;
+      extraBuffer[137] = time;
+      extraBuffer[138] = 1.0;
+    }
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -65,12 +92,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let in_bar = distY < barHeight;
     let bar_intensity = smoothstep(barHeight, 0.0, distY) * f32(in_bar);
 
+    // Each click punches a short tracking tear through the tape at its true
+    // normalized position. Horizontal localization keeps separate clicks distinct.
+    let aspect = resolution.x / max(resolution.y, 0.001);
+    var clickDamage = 0.0;
+    var clickShear = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+      let rp = u.ripples[i];
+      let age = time - rp.z;
+      let safeAge = max(age, 0.0);
+      let live = step(0.0, age) * (1.0 - step(1.35, age));
+      let yBand = 1.0 - smoothstep(0.015, 0.12, abs(uv.y - rp.y));
+      let xWindow = 1.0 - smoothstep(0.18, 0.7, abs(uv.x - rp.x) * aspect);
+      let damage = yBand * (0.35 + xWindow * 0.65) * exp(-safeAge * 2.1) * live;
+      clickDamage = max(clickDamage, damage);
+      clickShear += damage * sin(uv.y * 170.0 + rp.x * 31.0 + safeAge * 22.0);
+    }
+
     // Tracking wobble + horizontal hold instability
     let wobble = sin(uv.y * 80.0 + time * 25.0) * strength * bar_intensity;
     let holdWobble = sin(time * 3.0 + bass * 5.0) * 0.008 * bar_intensity;
     let jitter = (rand(vec2<f32>(uv.y, floor(time * 60.0))) - 0.5) * strength * 3.0 * bar_intensity;
-    let displacedUV = clamp(uv + vec2<f32>(wobble + jitter + holdWobble, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-    let sampleUV = select(uv, displacedUV, in_bar);
+    let displacedUV = clamp(uv + vec2<f32>(wobble + jitter + holdWobble + clickShear * strength * 2.0, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let inDamage = in_bar || clickDamage > 0.02;
+    let sampleUV = select(uv, displacedUV, inDamage);
 
     // Chroma bleed: R/G/B sample at different horizontal offsets
     let bleedAmount = colorShift * (1.0 + bar_intensity * 3.0);
@@ -82,17 +128,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Scanline dropouts
     let dropoutNoise = rand(vec2<f32>(uv.x * 200.0, time * 10.0));
     let dropout = step(0.96 - bar_intensity * 0.1, dropoutNoise);
-    color = mix(color, vec3<f32>(0.05), dropout * f32(in_bar));
+    color = mix(color, vec3<f32>(0.05), dropout * max(f32(in_bar), clickDamage));
 
     // Tape hiss / grain
     let n = rand(uv + vec2<f32>(time, time));
     let ign = ign_noise(coords);
-    let noiseValue = (n - 0.5) * noiseAmt * f32(in_bar) + (ign - 0.5) * noiseAmt * 0.3;
+    let rowBin = (u32(floor(uv.y * 64.0)) % 8u) + 1u;
+    let fftHiss = plasmaBuffer[rowBin].x;
+    let noiseValue = (n - 0.5) * noiseAmt * (f32(in_bar) + clickDamage) * (1.0 + fftHiss * 0.35) + (ign - 0.5) * noiseAmt * 0.3;
     color = color + noiseValue;
 
     // Tracking-loss flash on treble spikes
     let flash = step(0.75, treble) * bar_intensity * rand(vec2<f32>(time * 3.0, 0.0));
-    color = mix(color, vec3<f32>(1.0), flash);
+    color = mix(color, vec3<f32>(1.0), max(flash, clickDamage * (0.25 + treble * 0.25)));
 
     // Vignette darkening at edges
     let vig = 1.0 - dot(uv - 0.5, uv - 0.5) * 0.5;
@@ -101,9 +149,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(0.5 + bar_intensity * 0.35 + luma * 0.15 + treble * 0.05 + flash * 0.3, 0.0, 1.0);
 
-    let finalRGBA = vec4<f32>(color, alpha);
+    let finalRGBA = vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.5)), alpha);
 
-    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
     textureStore(writeTexture, coords, finalRGBA);
     textureStore(dataTextureA, global_id.xy, finalRGBA);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));

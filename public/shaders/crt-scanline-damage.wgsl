@@ -5,7 +5,7 @@
 //            temporal-phosphor, audio-rgb-separation, depth-aware-barrel
 //  Complexity: Medium
 //  Created: 2026-05-23
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-08-01 (Batch 23 — click damage/degauss, treble static)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -64,10 +64,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let r4 = r2 * r2;
     let depthDistortion = distortionAmount * (1.0 + depth * 0.5);
     let distortion = 1.0 + depthDistortion * r2 + depthDistortion * 0.5 * r4;
-    let distortedUV = centered * distortion + vec2<f32>(0.5);
+    var distortedUV = centered * distortion + vec2<f32>(0.5);
+
+    // Clicks bruise the tube locally and launch degauss rings through the
+    // sampling coordinates. Ripple positions are normalized canvas UVs.
+    let aspectVec = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
+    var rippleDamage = 0.0;
+    var degaussBand = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age < 0.0 || age > 2.4) { continue; }
+        let deltaAspect = (uv - rp.xy) * aspectVec;
+        let dist = length(deltaAspect);
+        let fade = exp(-age * 1.25);
+        let ring = exp(-abs(dist - age * 0.34) * 48.0) * fade;
+        let core = smoothstep(0.20, 0.0, dist) * fade;
+        let wave = sin(dist * 82.0 - age * 18.0) * exp(-dist * 5.5) * fade;
+        rippleDamage = max(rippleDamage, max(ring, core * 0.45));
+        degaussBand += wave;
+        let radialUV = (deltaAspect / max(dist, 1e-4)) / aspectVec;
+        distortedUV = distortedUV + radialUV * wave * 0.004 * (0.5 + distortionAmount);
+    }
 
     // Audio-driven RGB channel separation
-    let sep = rgbSeparation * 0.008 * (1.0 + bass * 0.4);
+    let sep = rgbSeparation * 0.008 * (1.0 + bass * 0.4 + rippleDamage * 0.8);
     let rUV = distortedUV + vec2<f32>(sep, 0.0);
     let gUV = distortedUV;
     let bUV = distortedUV - vec2<f32>(sep, 0.0);
@@ -95,6 +117,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rollOffset = fract(hash11(floor(time * 2.0) + 100.0) + time * 0.5);
     let inRollBand = abs(uv.y - rollOffset) < 0.02;
     col = select(col, col * 0.5 + vec3<f32>(0.05), rollTrigger && inRollBand);
+
+    // Treble now drives genuinely damaged static: sparse bright/dark snow and
+    // short horizontal scar bands, rather than being a dead aggregate read.
+    let staticSeed = hash21(vec2<f32>(global_id.xy) + vec2<f32>(floor(time * 31.0), floor(time * 17.0)));
+    let staticGate = step(0.91 - clamp(treble, 0.0, 1.5) * 0.10, staticSeed);
+    let staticSnow = (staticSeed - 0.5) * staticGate * treble * 0.28;
+    let scarRow = floor(uv.y * res.y * 0.25);
+    let scarNoise = hash11(scarRow + floor(time * 9.0) * 19.0);
+    let scar = step(0.965 - clamp(treble, 0.0, 1.5) * 0.025, scarNoise)
+      * (hash21(vec2<f32>(f32(global_id.x), scarRow)) - 0.5) * treble * 0.20;
+    col = col + vec3<f32>(staticSnow + scar);
+
+    // Degauss shifts channels in opposite directions while the local damage
+    // briefly desaturates and blooms the struck phosphor.
+    col += vec3<f32>(0.10, -0.025, 0.13) * degaussBand * (0.35 + mids * 0.25);
+    let damagedLuma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    col = mix(col, vec3<f32>(damagedLuma) + vec3<f32>(0.04, 0.015, 0.06), rippleDamage * 0.28);
 
     let edgeDarken = 1.0 - smoothstep(0.3, 0.7, r2) * 0.3;
     col = col * edgeDarken;

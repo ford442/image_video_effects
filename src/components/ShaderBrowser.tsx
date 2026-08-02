@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useDeferredValue, startTransition } from 'react';
 import {
   listShaders,
   getShader,
@@ -8,8 +8,9 @@ import {
   ShaderMetadata
 } from '../services/shaderApi';
 import './ShaderBrowser.css';
-import { getMultipassBadgeLabel } from '../utils/multipassBadge';
 import { getAudioReactiveBadgeLabel } from '../utils/audioReactiveBadge';
+import { isMultipass } from '../utils/multipass';
+import { PassBadge } from './PassBadge';
 import { useThumbnailManifest } from '../hooks/useThumbnailManifest';
 import { ShaderThumbPlaceholder } from './ShaderThumbPlaceholder';
 
@@ -86,6 +87,7 @@ export const ShaderBrowser: React.FC<{
   const [filter, setFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [category, setCategory] = useState('');
+  const [multipassOnly, setMultipassOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [previewShader, setPreviewShader] = useState<ShaderMeta | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -93,6 +95,11 @@ export const ShaderBrowser: React.FC<{
   const [editDesc, setEditDesc] = useState('');
   const [editTags, setEditTags] = useState('');
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+
+  // Defer filter state so the input stays responsive at large list sizes
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const deferredFilter = useDeferredValue(filter);
+  const deferredMultipassOnly = useDeferredValue(multipassOnly);
 
   useEffect(() => {
     loadShaders();
@@ -197,12 +204,14 @@ export const ShaderBrowser: React.FC<{
   };
 
   const filteredShaders = shaders.filter(s => {
-    const query = searchQuery || filter;
-    return (
+    const query = deferredSearchQuery || deferredFilter;
+    const matchesSearch = !query || (
       s.name.toLowerCase().includes(query.toLowerCase()) ||
       s.description.toLowerCase().includes(query.toLowerCase()) ||
       s.tags.some(t => t.toLowerCase().includes(query.toLowerCase()))
     );
+    const matchesMultipass = !deferredMultipassOnly || isMultipass(s.id);
+    return matchesSearch && matchesMultipass;
   });
 
   return (
@@ -228,6 +237,13 @@ export const ShaderBrowser: React.FC<{
             </option>
           ))}
         </select>
+        <button
+          className={`shader-filter-chip ${multipassOnly ? 'active' : ''}`}
+          onClick={() => startTransition(() => setMultipassOnly(v => !v))}
+          title="Show only multipass shaders"
+        >
+          ◈ Multipass
+        </button>
         <label className="shader-upload-btn">
           Upload .wgsl
           <input type="file" accept=".wgsl" onChange={handleUpload} hidden />
@@ -241,7 +257,6 @@ export const ShaderBrowser: React.FC<{
           <div className="shader-empty">No shaders found</div>
         ) : (
           filteredShaders.map(shader => {
-            const multipassBadge = getMultipassBadgeLabel(shader.id);
             const audioBadge = getAudioReactiveBadgeLabel(shader);
             const thumbUrl = resolveThumbUrl(shader);
             return (
@@ -250,11 +265,7 @@ export const ShaderBrowser: React.FC<{
               className={`shader-card ${selectedId === shader.id ? 'selected' : ''}`}
               onClick={() => handleSelect(shader)}
             >
-              {multipassBadge ? (
-                <span className="shader-multipass-badge" title="Multipass compute graph">
-                  {multipassBadge}
-                </span>
-              ) : null}
+              <PassBadge shaderId={shader.id} />
               {audioBadge ? (
                 <span className="shader-audio-badge" title="Audio-reactive param mappings verified">
                   {audioBadge}

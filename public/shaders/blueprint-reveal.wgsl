@@ -23,8 +23,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -65,8 +65,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     let uv = vec2<f32>(global_id.xy) / resolution;
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let mousePos = u.zoom_config.yz;
+    let time = u.config.x;
+    let rawMouse = u.zoom_config.yz;
     let aspect = resolution.x / resolution.y;
+
+    // The reveal brush glides with a critically damped spring. Its state lives
+    // only in the persistent-safe extraBuffer range [133..138].
+    let hasSpringState = arrayLength(&extraBuffer) > 138u;
+    var mousePos = rawMouse;
+    if (hasSpringState && extraBuffer[138] > 0.5) {
+      mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
+      var springPos = mousePos;
+      var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+      if (extraBuffer[138] <= 0.5) {
+        springPos = rawMouse;
+        springVel = vec2<f32>(0.0);
+      } else {
+        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+        let omega = 7.5;
+        let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+        springVel += accel * dt;
+        springPos += springVel * dt;
+      }
+      extraBuffer[133] = springPos.x;
+      extraBuffer[134] = springPos.y;
+      extraBuffer[135] = springVel.x;
+      extraBuffer[136] = springVel.y;
+      extraBuffer[137] = time;
+      extraBuffer[138] = 1.0;
+    }
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -79,14 +108,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist = length(distVec);
     let revealMask = 1.0 - smoothstep(radius, radius + softness, dist);
 
+    // Click-seeded ink blooms become durable through the existing raw mask
+    // feedback. Ripple positions are already normalized canvas UVs.
+    var clickInk = 0.0;
+    var clickRing = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+      let rp = u.ripples[i];
+      let age = time - rp.z;
+      let safeAge = max(age, 0.0);
+      let live = step(0.0, age) * (1.0 - step(2.0, age));
+      let clickDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      let bloomRadius = 0.025 + safeAge * 0.18;
+      let bloom = (1.0 - smoothstep(bloomRadius, bloomRadius + softness * 0.35 + 0.01, clickDist)) * exp(-safeAge * 0.55) * live;
+      let ring = (1.0 - smoothstep(0.008, 0.035, abs(clickDist - bloomRadius))) * exp(-safeAge * 1.2) * live;
+      clickInk = max(clickInk, bloom);
+      clickRing = max(clickRing, ring);
+    }
+
     // Temporal ink dissolve: previous reveal state bleeds outward
     let history = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
     let inkDecay = 0.92 + softness * 0.05;
     let prevReveal = history.r;
-    let temporalMask = max(revealMask, prevReveal * inkDecay);
+    let temporalMask = max(max(revealMask, clickInk), prevReveal * inkDecay);
 
     let edgeVal = clamp(sobel(uv, resolution) * edgeStrength, 0.0, 1.5);
-    var blueprint = vec3<f32>(0.04, 0.09, 0.34) + vec3<f32>(0.75, 0.88, 1.0) * edgeVal * (1.0 + treble * 0.25);
+    let tileBin = (u32(floor(uv.x * 4.0)) + u32(floor(uv.y * 4.0)) * 3u) % 8u + 1u;
+    let fftInk = plasmaBuffer[tileBin].x;
+    var blueprint = vec3<f32>(0.04, 0.09, 0.34) + vec3<f32>(0.75, 0.88, 1.0) * edgeVal * (1.0 + treble * 0.20 + fftInk * 0.16);
 
     // Depth-based hatch density: foreground hatches are finer
     let depthHatch = mix(20.0, 60.0, depth);
@@ -99,7 +148,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Audio surge: bass creates ink ripples from mouse
     let surgePhase = dist * 20.0 - bass * 3.0;
     let surge = smoothstep(0.8, 1.0, sin(surgePhase)) * bass * 0.15;
-    blueprint += vec3<f32>(0.5, 0.7, 1.0) * surge;
+    blueprint += vec3<f32>(0.5, 0.7, 1.0) * (surge + clickRing * (0.25 + fftInk * 0.15));
 
     let finalColor = mix(blueprint, baseColor.rgb, temporalMask);
     let alpha = clamp(baseColor.a * 0.45 + (1.0 - temporalMask) * 0.32 + edgeVal * 0.18 + bass * 0.05, 0.08, 1.0);

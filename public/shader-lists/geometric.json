@@ -2,7 +2,7 @@
   {
     "id": "adaptive-mosaic",
     "name": "Adaptive Mosaic",
-    "url": "shaders/adaptive-mosaic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/adaptive-mosaic.wgsl",
     "description": "Depth-adaptive tile mosaic: near objects render as fine tiles, far objects as coarse blocks. SDF bevel on every tile edge, Voronoi crackle overlay at coarse sizes, mouse-focus zone, and audio-reactive tile-size pulse.",
     "features": [
       "mouse-driven",
@@ -59,7 +59,7 @@
   {
     "id": "ascii-glyph",
     "name": "ASCII Glyphs",
-    "url": "shaders/ascii-glyph.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ascii-glyph.wgsl",
     "description": "SDF glyph morph with bass character swap and depth luminance map. Pixels are quantized into glyph cells; depth controls brightness tiering. Bass swaps glyph patterns on beats, treble adds chromatic highlights to dense characters.",
     "features": [
       "mouse-driven",
@@ -109,13 +109,48 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Glyph Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Color Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Density Boost",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "crystal-mosaic",
     "name": "Crystal Mosaic",
     "category": "geometric",
-    "url": "shaders/crystal-mosaic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/crystal-mosaic.wgsl",
     "description": "Image broken into triangular mosaic tiles that rotate based on mouse proximity. Enhanced with crystal Fresnel refraction lighting, caustics projection, rim lighting on tile edges, subsurface scattering glow, light attenuation, and chromatic aberration at tile boundaries.",
     "features": [
       "mouse-driven",
@@ -177,7 +212,7 @@
   {
     "id": "datamosh",
     "name": "Datamosh",
-    "url": "shaders/datamosh.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/datamosh.wgsl",
     "description": "True video compression datamoshing with I/P-frame simulation, motion vector prediction, and authentic macroblock smearing artifacts.",
     "features": [
       "mouse-driven",
@@ -239,7 +274,7 @@
     "id": "digital-crease",
     "name": "Digital Crease",
     "category": "geometric",
-    "url": "shaders/digital-crease.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-crease.wgsl",
     "description": "Origami crease pattern simulation with mountain/valley assignment, Kawasaki-Justin flat-foldability approximation, depth-driven layer shadows, digital paper fiber texture, chromatic folding, HDR crease specular, and ACES tone mapping. Bass drives fold speed; mouse performs local folds; depth controls layer ordering.",
     "params": [
       {
@@ -294,7 +329,7 @@
   {
     "id": "flip-matrix",
     "name": "Flip Matrix",
-    "url": "shaders/flip-matrix.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/flip-matrix.wgsl",
     "description": "Grid of tiles that flip vertically in pseudo-3D based on mouse proximity.",
     "features": [
       "mouse-driven"
@@ -341,7 +376,7 @@
   {
     "id": "hyperbolic-dreamweaver",
     "name": "Hyperbolic Dreamweaver",
-    "url": "shaders/hyperbolic-dreamweaver.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hyperbolic-dreamweaver.wgsl",
     "description": "Infinite non-Euclidean Poincaré disk tilings weaving the image through psychedelic Möbius transformations, depth-aware curvature, chromatic aberration, and glowing symmetry lines. Mouse centers the dream; ripples perturb the fabric.",
     "params": [
       {
@@ -402,7 +437,7 @@
   {
     "id": "interactive-origami",
     "name": "Interactive Origami",
-    "url": "shaders/interactive-origami.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-origami.wgsl",
     "description": "Simulates folded paper with triangle-wave crease planes radiating from the mouse. Normal-map facet shading, depth-aware fold amplitude (far objects fold more), audio-reactive bass amplitude, and ripple-triggered expanding crease rings.",
     "features": [
       "mouse-driven",
@@ -459,7 +494,7 @@
   {
     "id": "kaleido-scope-grokcf1",
     "name": "Kaleido-Scope Prism grokcf1",
-    "url": "shaders/kaleido-scope-grokcf1.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/kaleido-scope-grokcf1.wgsl",
     "description": "Kaleidoscope with spring-damper mouse follow, attack/release audio envelope, and temporal feedback trails.",
     "features": [
       "mouse-driven",
@@ -508,7 +543,7 @@
     "id": "kaleido-scope",
     "name": "Kaleido-Scope",
     "category": "geometric",
-    "url": "shaders/kaleido-scope.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/kaleido-scope.wgsl",
     "description": "Hyperbolic Poincaré-disk tessellation kaleidoscope with animated morphing between symmetry types, iridescent metallic boundaries, HDR specular vertices, and depth-driven stereoscopic chromatic aberration.",
     "features": [
       "mouse-driven",
@@ -557,7 +592,7 @@
   {
     "id": "kinetic-tiles",
     "name": "Kinetic Tiles",
-    "url": "shaders/kinetic_tiles.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/kinetic_tiles.wgsl",
     "description": "Grid of tiles that rotate and scale responsively to mouse proximity.",
     "features": [
       "mouse-driven",
@@ -607,10 +642,15 @@
   {
     "id": "neon-poly-grid",
     "name": "Neon Poly Grid",
-    "url": "shaders/neon-poly-grid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/neon-poly-grid.wgsl",
     "description": "A futuristic hexagonal grid that lights up when you touch it, leaving a fading trail.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "click-reactive",
+      "audio-reactive",
+      "temporal",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -645,12 +685,48 @@
     "tags": [
       "geometric",
       "pattern"
-    ]
+    ],
+    "supportsDepth": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Line Width",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Glow Strength",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trail Duration",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "neon-quantum-lattice",
     "name": "Neon Quantum Lattice",
-    "url": "shaders/neon-quantum-lattice.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/neon-quantum-lattice.wgsl",
     "description": "Aperiodic Penrose-like quasi-crystal tiling with neon edge glow, metallic fill gradients, HDR vertex bloom, and quantum uncertainty zones.",
     "params": [
       {
@@ -700,7 +776,7 @@
   {
     "id": "spec-hypercube-projection",
     "name": "Hypercube Projection",
-    "url": "shaders/spec-hypercube-projection.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-hypercube-projection.wgsl",
     "description": "Animated 4D tesseract projected into 2D using double rotation in XW and YZ planes. 32 edges are rendered with depth-based glow and input image texture-mapped onto faces.",
     "tags": [
       "hypercube",
@@ -755,7 +831,7 @@
   {
     "id": "time-lag-map",
     "name": "Time-Lag Map",
-    "url": "shaders/time-lag-map.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/time-lag-map.wgsl",
     "description": "Per-pixel temporal delay creating echo, smear, and time-displacement effects.",
     "params": [
       {
@@ -801,7 +877,7 @@
   {
     "id": "voronoi-zoom-turbulence",
     "name": "Voronoi Zoom Turbulence",
-    "url": "shaders/voronoi-zoom-turbulence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/voronoi-zoom-turbulence.wgsl",
     "description": "Divides the screen into Voronoi cells where each cell applies a chaotic, time-varying zoom. Mouse proximity calms or agitates the turbulence.",
     "params": [
       {

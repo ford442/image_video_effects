@@ -265,3 +265,35 @@
 .shader-groups::-webkit-scrollbar-thumb:hover {
   background: #3a3a50;
 }
+
+/* Multipass filter chip */
+.multipass-chip {
+  background: transparent;
+  border: 1px solid #333;
+  color: #888;
+  padding: 4px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.multipass-chip:hover {
+  border-color: #7ee787;
+  color: #7ee787;
+}
+
+.multipass-chip.active {
+  background: rgba(126, 231, 135, 0.12);
+  border-color: #7ee787;
+  color: #7ee787;
+}
+
+/* Pass badge inline in ratings card */
+.shader-card-rating .pass-badge {
+  display: inline-block;
+  margin-top: 2px;
+}

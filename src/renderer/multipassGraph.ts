@@ -82,6 +82,29 @@ function copiesNeededBeforeRead(
   const needsSimRead = reads.some((r) => r === 'dataC' || r === 'dataA' || r === 'dataB');
   if (!needsSimRead) return copies;
 
+  // Prefer an explicit storage role when the reader declares exactly one of
+  // dataA/dataB. Lets a later sibling write (e.g. tear → dataB) keep living in
+  // its own buffer while we still sample the earlier producer via dataC
+  // (fabric-of-reality: positions in A, strain mask in B).
+  const wantsA = reads.includes('dataA') && !reads.includes('dataB');
+  const wantsB = reads.includes('dataB') && !reads.includes('dataA');
+  if (wantsA && state.get('dataA') === 'dataA') {
+    const cStale = state.get('dataC');
+    if (cStale !== 'dataC') {
+      copies.push({ from: 'dataA', to: 'dataC', reason: 'dataA → dataC (preferred read)' });
+      state.set('dataC', 'dataC');
+    }
+    return copies;
+  }
+  if (wantsB && state.get('dataB') === 'dataB') {
+    const cStale = state.get('dataC');
+    if (cStale !== 'dataC') {
+      copies.push({ from: 'dataB', to: 'dataC', reason: 'dataB → dataC (preferred read)' });
+      state.set('dataC', 'dataC');
+    }
+    return copies;
+  }
+
   const cStale = state.get('dataC');
   if (cStale === 'dataA') {
     copies.push({ from: 'dataA', to: 'dataC', reason: 'dataA → dataC handoff' });

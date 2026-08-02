@@ -1,5 +1,6 @@
 // Fabric of Reality — strain + tear mask
 // dataTextureB: .r strain, .g tear (0/1), .b weave phase, .a debris age
+// zoom_params.y = tearThreshold, .w = selfHeal (reconnect when > ~0.35)
 
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -34,6 +35,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let time = u.config.x;
   let tearThreshold = mix(1.5, 4.0, u.zoom_params.y);
   let selfHeal = u.zoom_params.w;
+  let treble = plasmaBuffer[0].z;
 
   let state = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
   let pos = state.xy;
@@ -50,22 +52,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var isTorn = false;
   if (coord.x > 0u) {
     let d = length(pos - leftPos);
-    totalStrain = totalStrain + abs(d - restLen) / restLen;
+    totalStrain = totalStrain + abs(d - restLen) / max(restLen, 1e-5);
     if (d >= tearThreshold * restLen) { isTorn = true; }
   }
   if (coord.y > 0u) {
     let d = length(pos - upPos);
-    totalStrain = totalStrain + abs(d - restLen) / restLen;
+    totalStrain = totalStrain + abs(d - restLen) / max(restLen, 1e-5);
     if (d >= tearThreshold * restLen) { isTorn = true; }
   }
   totalStrain = clamp(totalStrain * 2.0, 0.0, 1.0);
 
+  // Prior tear mask (host copies previous frame B→C? — tear writes B fresh each frame;
+  // use strain persistence via soft heal fade when selfHeal is active)
   var tearMask = select(0.0, 1.0, isTorn);
-  if (selfHeal > 0.5) {
-    tearMask = tearMask * 0.95;
+
+  // Self heal: gradually clear tears when springs are near rest length again
+  if (selfHeal > 0.35) {
+    let healRate = mix(0.88, 0.55, clamp((selfHeal - 0.35) / 0.65, 0.0, 1.0));
+    if (totalStrain < 0.35) {
+      tearMask = tearMask * healRate;
+    } else if (selfHeal > 0.7 && totalStrain < 0.6) {
+      tearMask = tearMask * mix(1.0, healRate, 0.5);
+    }
   }
 
-  let weavePhase = fract(uv.x * 12.0 + uv.y * 8.0 + time * 0.2);
+  // Treble sparkle on fresh tears
+  let weavePhase = fract(uv.x * 12.0 + uv.y * 8.0 + time * 0.2 + treble * 0.1);
   let debrisAge = tearMask * time;
 
   textureStore(dataTextureB, vec2<i32>(coord),

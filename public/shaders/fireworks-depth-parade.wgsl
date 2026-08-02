@@ -1,4 +1,6 @@
 // Fireworks Depth Parade — depth-sorted layer launches
+// Batch 23: normalized pointer coordinates, discrete click barrages, and
+// source/shell-derived depth while preserving the display feedback packing.
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -32,6 +34,9 @@ fn sampleImg(uv: vec2<f32>) -> vec3<f32> {
 fn sampleDepth(uv: vec2<f32>) -> f32 {
   return textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv*0.5+0.5, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
 }
+fn normToCentered(p: vec2<f32>, res: vec2<f32>) -> vec2<f32> {
+  return (p * res - res * 0.5) / min(res.x, res.y);
+}
 fn sparkPos(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32) -> vec2<f32> {
   return o + v*age - vec2<f32>(0.0, g)*age*age*0.5;
 }
@@ -51,6 +56,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prev = textureLoad(dataTextureC, pixel, 0).rgb;
   let imgCol = sampleImg(uv);
   var col = imgCol * (0.5 + depth*0.15);
+  var shellDepthSignal = 0.0;
 
   // Three depth layers: foreground (0.7+), mid (0.35-0.7), background (<0.35)
   let layers = 3;
@@ -78,19 +84,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let center = probe + vec2<f32>(0.0, launchH);
       let fade = smoothstep(4.5, 0.2, layerAge);
 
-      col += pCol * exp(-layerAge*7.0) * energy * softGlow(uv, center, 0.04+lf*0.01, 1.2);
+      let launchGlow = exp(-layerAge*7.0) * energy * softGlow(uv, center, 0.04+lf*0.01, 1.2);
+      col += pCol * launchGlow;
+      shellDepthSignal = max(shellDepthSignal, launchGlow * layerDepth);
       let n = i32(14.0 + energy*22.0 + mids*8.0);
       for (var j = 0; j < n; j = j + 1) {
         let js = hash1(lf*31.0+si*11.0+f32(j)*2.5);
         let ang = f32(j)/f32(n)*TAU + js;
         let spd = (0.25+js*0.35)*energy*(0.7+pDepth*0.5);
         let sp = sparkPos(center, vec2<f32>(cos(ang),sin(ang))*spd, layerAge, 0.7+lf*0.15);
-        col += pCol * softGlow(uv, sp, 0.005+js*0.003, fade*energy*(0.8+treble*0.4));
+        let sparkGlow = softGlow(uv, sp, 0.005+js*0.003, fade*energy*(0.8+treble*0.4));
+        col += pCol * sparkGlow;
+        shellDepthSignal = max(shellDepthSignal, sparkGlow * layerDepth);
       }
     }
   }
   if (u.zoom_config.w > 0.5) {
-    let mUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);
+    let mUV = normToCentered(u.zoom_config.yz, res);
     let mDepth = sampleDepth(mUV);
     let mCol = sampleImg(mUV);
     let mAge = fract(time*1.0)*3.0;
@@ -100,7 +110,45 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       for (var k = 0; k < 30; k = k + 1) {
         let ang = f32(k)/30.0*TAU;
         let sp = sparkPos(mUV+vec2<f32>(0.0,mDepth*0.3), vec2<f32>(cos(ang),sin(ang))*0.45*energy, mb, 0.8);
-        col += mCol * softGlow(uv, sp, 0.006, smoothstep(2.5,0.1,mb)*energy);
+        let mouseGlow = softGlow(uv, sp, 0.006, smoothstep(2.5,0.1,mb)*energy);
+        col += mCol * mouseGlow;
+        shellDepthSignal = max(shellDepthSignal, mouseGlow * mDepth);
+      }
+    }
+  }
+
+  // Discrete depth parade: every click launches foreground, midground, then
+  // background shells from the ripple position. Source depth weights each
+  // layer, while the timestamp makes the barrage one-shot and sortable.
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let clickAge = time - rp.z;
+    if (clickAge < 0.0 || clickAge > 4.2) { continue; }
+    let clickOrigin = normToCentered(rp.xy, res);
+    let clickDepth = sampleDepth(clickOrigin);
+    let clickColor = sampleImg(clickOrigin);
+    for (var dl = 0; dl < 3; dl = dl + 1) {
+      let dlf = f32(dl);
+      let layerDepth = 0.85 - dlf * 0.35;
+      let barrageAge = clickAge - dlf * layerSep * 0.9;
+      if (barrageAge < 0.0 || barrageAge > 3.0) { continue; }
+      let depthMatch = clamp(1.0 - abs(clickDepth - layerDepth) / max(layerSep, 0.15), 0.2, 1.0);
+      let seed = hash1(f32(ri) * 43.0 + dlf * 17.0 + rp.x * 61.0);
+      let shellCenter = clickOrigin + vec2<f32>((seed - 0.5) * 0.18, -0.28 - layerDepth * 0.24);
+      let shellEnergy = (0.65 + clickDepth * depthBoost + bass * 0.35) * depthMatch;
+      let shellFade = smoothstep(2.8, 0.10, barrageAge);
+      let sparkCount = 18 + i32(mids * 8.0 + layerDepth * 10.0);
+      for (var bj = 0; bj < sparkCount; bj = bj + 1) {
+        let jf = f32(bj);
+        let jitter = hash1(seed * 89.0 + jf * 7.0);
+        let ang = jf / f32(sparkCount) * TAU + jitter * 0.35;
+        let velocity = vec2<f32>(cos(ang), sin(ang)) * (0.28 + jitter * 0.28) * shellEnergy;
+        let spark = sparkPos(shellCenter, velocity, barrageAge, 0.65 + dlf * 0.12);
+        let clickGlow = softGlow(uv, spark, 0.005 + jitter * 0.003,
+          shellFade * shellEnergy * (0.75 + treble * 0.35));
+        col += clickColor * clickGlow;
+        shellDepthSignal = max(shellDepthSignal, clickGlow * layerDepth);
       }
     }
   }
@@ -109,5 +157,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   textureStore(dataTextureB, pixel, vec4<f32>(col*0.5+prev*0.4, 1.0));
   textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
   textureStore(writeTexture, pixel, vec4<f32>(col, clamp(length(col)*1.1+0.14, 0.12, 0.96)));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+  let shellLuma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+  let depthOut = clamp(max(depth * 0.85, shellDepthSignal + shellLuma * 0.28), 0.0, 1.0);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }

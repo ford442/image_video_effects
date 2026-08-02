@@ -3468,5 +3468,27 @@
       0.6,
       0.7
     ]
+  },
+  "fabric-of-reality": {
+    "thumbnail_url": "thumbnails/fabric-of-reality.png",
+    "generated_at": "2026-08-01T20:05:04.969Z",
+    "params_snapshot": [
+      0.55,
+      0.55,
+      0.35,
+      0.4
+    ],
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
+  },
+  "photonic-caustics-graph": {
+    "thumbnail_url": "thumbnails/photonic-caustics-graph.png",
+    "generated_at": "2026-08-01T20:05:04.969Z",
+    "params_snapshot": [
+      0.55,
+      0.4,
+      0.55,
+      0.65
+    ],
+    "note": "physics-lab stylized placeholder (GPU regen via thumbs:generate)"
   }
 }

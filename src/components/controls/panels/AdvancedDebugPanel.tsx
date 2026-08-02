@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
 import { ShadertoyImportPanel } from './ShadertoyImportPanel';
 
+/** Backend health shown in the debug panel — see WASM_BACKEND_POLICY.md (Tier B triage). */
+export interface RendererDiagnosticsSummary {
+    backend: 'webgpu' | 'wasm' | 'js';
+    fps?: number;
+    /** Active backend adapter identity (vendor | architecture | device). */
+    adapterInfo?: string;
+    adapterAttemptLabel?: string | null;
+    /** WASM only: 'ready' / 'partial at <stage>' / 'failed at <stage>' + adapter. */
+    wasmInitSummary?: string;
+    wasmAdapterInfo?: string;
+    wasmFailedStageName?: string;
+    wasmLastInitError?: string;
+}
+
 export interface AdvancedDebugPanelProps {
     onOpenShaderScanner?: () => void;
     activeRendererType?: 'webgpu' | 'wasm' | 'js';
@@ -9,6 +23,8 @@ export interface AdvancedDebugPanelProps {
     onOpenStorageBrowser?: () => void;
     onPreviewImportShader?: (id: string, wgsl: string, name: string) => void;
     onImportStatus?: (message: string) => void;
+    /** Live backend diagnostics. Rendered whenever provided — no console required. */
+    diagnostics?: RendererDiagnosticsSummary | null;
 }
 
 export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
@@ -19,6 +35,7 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
     onOpenStorageBrowser,
     onPreviewImportShader,
     onImportStatus,
+    diagnostics,
 }) => {
     const [devToolsOpen, setDevToolsOpen] = useState(false);
 
@@ -80,6 +97,42 @@ export const AdvancedDebugPanel: React.FC<AdvancedDebugPanelProps> = ({
                                 onPreviewShader={onPreviewImportShader}
                                 onStatus={onImportStatus}
                             />
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {diagnostics && (
+                <div
+                    className="control-group"
+                    data-testid="renderer-diagnostics"
+                    style={{
+                        fontSize: '10px',
+                        color: '#a0a0b0',
+                        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                        lineHeight: 1.6,
+                        wordBreak: 'break-word',
+                    }}
+                >
+                    <div style={{ color: '#FFD700', marginBottom: '4px' }}>Renderer diagnostics</div>
+                    <div>
+                        backend: {diagnostics.backend}
+                        {diagnostics.backend === 'wasm' && ' (experimental)'}
+                        {diagnostics.fps !== undefined && ` · ${Math.round(diagnostics.fps)} FPS`}
+                    </div>
+                    <div>adapter: {diagnostics.adapterInfo?.trim() || 'unreported'}</div>
+                    {diagnostics.adapterAttemptLabel && (
+                        <div>adapter ladder: {diagnostics.adapterAttemptLabel}</div>
+                    )}
+                    {diagnostics.wasmInitSummary && (
+                        <div>wasm init: {diagnostics.wasmInitSummary}</div>
+                    )}
+                    {diagnostics.backend !== 'wasm' && diagnostics.wasmAdapterInfo && (
+                        <div>wasm adapter: {diagnostics.wasmAdapterInfo}</div>
+                    )}
+                    {diagnostics.wasmLastInitError && (
+                        <div style={{ color: '#ff9d9d' }}>
+                            wasm error: {diagnostics.wasmLastInitError}
                         </div>
                     )}
                 </div>

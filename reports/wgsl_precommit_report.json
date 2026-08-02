@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-30T00:49:19.537053",
+  "timestamp": "2026-08-01T23:51:58.813554",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 8,
@@ -12,7 +12,7 @@
   "extrabuffer_violations": 0,
   "results": [
     {
-      "file": "public/shaders/fireworks-portrait-burst.wgsl",
+      "file": "public/shaders/crt-scanline-damage.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -27,7 +27,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-sticker.wgsl",
+      "file": "public/shaders/fireworks-depth-parade.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -42,7 +42,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/neon-topology.wgsl",
+      "file": "public/shaders/fractal-noise-dissolve.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -57,7 +57,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/neural-nexus.wgsl",
+      "file": "public/shaders/gen-bioluminescent-reaction-diffusion.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -72,7 +72,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/neural-resonance.wgsl",
+      "file": "public/shaders/gen-cycloid-bloom.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -87,7 +87,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/prismatic-feedback-loop.wgsl",
+      "file": "public/shaders/gen-fireworks-roman-candle.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -102,7 +102,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/spectral-distortion.wgsl",
+      "file": "public/shaders/gen-zeta-function-landscape.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -117,7 +117,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/temporal-slit-scan.wgsl",
+      "file": "public/shaders/steampunk-gear-lens.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

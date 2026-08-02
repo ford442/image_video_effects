@@ -58,8 +58,8 @@ Copy the header **verbatim** from `public/shaders/_template_canonical_compute.wg
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = delta_time, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = zoom, .yz = mouse_uv, .w = mouse_down
+  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
   zoom_params: vec4<f32>,  // .xyzw = p1…p4 sliders
   ripples: array<vec4<f32>, 50>,
 };

@@ -76,8 +76,8 @@ Every upgraded shader MUST conform to these requirements. Non-conformance fails 
 // -----------------------------------------------
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
 };
@@ -101,7 +101,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 | Field | Usage |
 |-------|-------|
 | `u.config.x` | Time (seconds, continuous) |
-| `u.config.y` | Click count / generic seed |
+| `u.config.y` | Active ripple count (0–50) — **not** delta time / audio |
 | `u.config.zw` | Resolution (width, height) |
 | `u.zoom_config.yz` | Mouse position (0–1 normalized) |
 | `u.zoom_params.x` | Param1 — slider value 0.0–1.0 |

@@ -21,9 +21,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=GridSize, y=FlowSpeed, z=Distortion, w=Turbulence
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -76,36 +76,90 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
     let uv = vec2<f32>(global_id.xy) / resolution;
-    let mousePos = u.zoom_config.yz;
+    let time = u.config.x;
     let aspect = resolution.x / resolution.y;
+    let aspectVec = vec2<f32>(aspect, 1.0);
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
+    // Weighted grid attractor with explicit initialization: top-left is a
+    // valid normalized cursor location, not an empty-state sentinel.
+    let rawMouse = u.zoom_config.yz;
+    var gridCenter = vec2<f32>(extraBuffer[133u], extraBuffer[134u]);
+    var gridVelocity = vec2<f32>(extraBuffer[135u], extraBuffer[136u]);
+    let gridInitialized = extraBuffer[137u] >= 0.5;
+    if (!gridInitialized) {
+        gridCenter = rawMouse;
+        gridVelocity = vec2<f32>(0.0);
+    }
+    let springDt = select(0.0, clamp(time - extraBuffer[138u], 0.0005, 0.05), gridInitialized);
+    let springOmega = 9.0;
+    let gridAccel = springOmega * springOmega * (rawMouse - gridCenter)
+        - 2.0 * springOmega * gridVelocity;
+    gridVelocity += gridAccel * springDt;
+    gridCenter = clamp(gridCenter + gridVelocity * springDt, vec2<f32>(-0.2), vec2<f32>(1.2));
+    if (global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[133u] = gridCenter.x;
+        extraBuffer[134u] = gridCenter.y;
+        extraBuffer[135u] = gridVelocity.x;
+        extraBuffer[136u] = gridVelocity.y;
+        extraBuffer[137u] = 1.0;
+        extraBuffer[138u] = time;
+    }
+
+    // Rewire the old mislabeled controls while preserving their default look:
+    // Flow Speed now drives curl time (0.5 -> legacy 0.15), and Turbulence
+    // now drives curl strength (0.5 -> legacy 1.0 multiplier).
     let gridSize = 10.0 + u.zoom_params.x * 90.0 * bass_env(bass, mids);
-    let viscosity = u.zoom_params.y;
+    let flowSpeed = mix(0.05, 0.25, u.zoom_params.y);
     let repulsion = u.zoom_params.z;
-    let restitution = u.zoom_params.w;
+    let turbulence = mix(0.5, 1.5, u.zoom_params.w);
+    let legacyViscosity = 0.5;
+    let legacyRestitution = 0.5;
 
     let tileUV = floor(uv * gridSize) / gridSize;
     let tileCenter = tileUV + vec2<f32>(0.5 / gridSize, 0.5 / gridSize);
-    let distVec = tileCenter - mousePos;
-    let distVecCorrected = vec2<f32>(distVec.x * aspect, distVec.y);
+    let distVec = tileCenter - gridCenter;
+    let distVecCorrected = distVec * aspectVec;
     let dist = length(distVecCorrected);
     let offsetDir = distVecCorrected / max(dist, 0.001);
-    let push = smoothstep(0.45 + restitution * 0.1, 0.0, dist) * repulsion * (0.12 + bass * 0.04);
+    let push = smoothstep(0.45 + legacyRestitution * 0.1, 0.0, dist)
+        * repulsion * (0.12 + bass * 0.04);
 
-    let curl = curl2D(uv * 2.5, u.config.x * 0.15) * 0.03 * bass_env(bass, mids);
-    let uvOffset = vec2<f32>(offsetDir.x / aspect, offsetDir.y) * push + curl;
+    let cellCoord = vec2<u32>(floor(clamp(tileUV * gridSize, vec2<f32>(0.0), vec2<f32>(65535.0))));
+    let cellBand = (cellCoord.x + cellCoord.y) % 8u;
+    let cellVoice = plasmaBuffer[(cellBand % 8u) + 1u].x;
+    let curl = curl2D(uv * (2.2 + turbulence * 0.6), time * flowSpeed)
+        * 0.03 * turbulence * bass_env(bass, mids) * (1.0 + cellVoice * 0.25);
+    var uvOffset = vec2<f32>(offsetDir.x / aspect, offsetDir.y) * push + curl;
+
+    // Clicks inject localized, alternating eddies into the otherwise smooth
+    // grid flow. Directions are computed in aspect space and mapped to UV.
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri += 1u) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.8) {
+            let clickVec = (uv - ripple.xy) * aspectVec;
+            let clickDist = length(clickVec);
+            let tangentAspect = vec2<f32>(-clickVec.y, clickVec.x) / max(clickDist, 0.001);
+            let tangentUV = tangentAspect / aspectVec;
+            let directionSign = select(-1.0, 1.0, (ri % 2u) == 0u);
+            let eddy = exp(-age * 1.8) * smoothstep(0.28, 0.0, clickDist);
+            uvOffset += tangentUV * directionSign * eddy * 0.035 * turbulence;
+        }
+    }
     let sampleUV = clamp(uv - uvOffset, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
     let gridLine = fract(uv * gridSize);
     let cellEdge = min(min(gridLine.x, 1.0 - gridLine.x), min(gridLine.y, 1.0 - gridLine.y));
-    let lineWeight = 0.015 + (1.0 - viscosity) * 0.035;
+    let lineWeight = 0.015 + (1.0 - legacyViscosity) * 0.035;
     let lineMask = 1.0 - smoothstep(lineWeight, lineWeight + 0.01, cellEdge);
 
-    let flowColor = vec3<f32>(0.05 + treble * 0.1, 0.15 + mids * 0.1, 0.28 + bass * 0.1) * lineMask;
+    let flowColor = vec3<f32>(0.05 + treble * 0.1, 0.15 + mids * 0.1, 0.28 + bass * 0.1)
+        * lineMask * (1.0 + cellVoice * 0.2);
     let finalColor = mix(baseColor.rgb, baseColor.rgb * 0.45 + flowColor, lineMask * 0.7);
     let alpha = clamp(baseColor.a * 0.45 + push * 1.8 + lineMask * 0.12 + bass * 0.05, 0.08, 1.0);
 

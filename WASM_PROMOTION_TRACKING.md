@@ -7,9 +7,31 @@
 **Docs refresh (closed):** [#890](https://github.com/ford442/image_video_effects/issues/890)
 
 **Current tier:** **B — Experimental (opt-in)**  
-**Last evidence review:** 2026-07-26 (Phase 1 hygiene; GPU gates still open)
+**Last evidence review:** 2026-08-01 (pre-GPU tooling; GPU gates still open)
 
 ---
+
+## Decision (2026-08-01) — reaffirm STAY TIER B
+
+No GPU evidence collected: the Cloud VM has no adapter (`/dev/dri` absent) and `node_modules`
+could not be installed, so not even the usual VM stubs ran this cycle — deliberately, since
+previous stubs already record `gpuBackendObserved: false`. **Gates 1–4 carried forward OPEN.**
+
+Landed pre-GPU tooling only (no new C++ features, per the strategic call):
+
+- **Pixel-diff harness** — [`tests/wasm-pixel-diff.spec.ts`](./tests/wasm-pixel-diff.spec.ts):
+  frozen-seed per-pixel comparison TS vs WASM with PNG artifacts. Thresholds are report-only
+  until a real GPU run establishes acceptable FP drift.
+- **Stage-aware init failures** — [`src/renderer/wasmInitDiagnostics.ts`](./src/renderer/wasmInitDiagnostics.ts)
+  separates "no adapter" (not a WASM bug) from a partial bring-up (device up, failed at
+  Surface/Resources/BindGroups/Pipeline → Tier B P1 parity bug) and "module never loaded".
+- **Diagnostics in the UI** — debug panel shows backend, FPS, adapter identity for both backends,
+  adapter-ladder rung, WASM init summary and last init error; no console needed.
+
+**Action:** unchanged — run the checklist below on ≥2 GPU configs. Until then: **STAY TIER B**,
+feature work frozen to parity bugs.
+
+Evidence: [`reports/wasm-promotion-evidence-2026-08-01.md`](./reports/wasm-promotion-evidence-2026-08-01.md)
 
 ## Decision (2026-07-26) — reaffirm STAY TIER B
 
@@ -115,6 +137,22 @@ WASM_GPU_TESTS=1 npm run test:wasm:parity
 
 **Minimum:** one discrete + one integrated GPU, or two vendors (NVIDIA + AMD/Intel).
 
+### Pixel diff (frozen seeds) — added 2026-08-01
+
+```bash
+WASM_GPU_TESTS=1 npx playwright test tests/wasm-pixel-diff.spec.ts
+```
+
+Statistical parity (mean luminance + coverage) can pass on structurally different images.
+[`tests/wasm-pixel-diff.spec.ts`](./tests/wasm-pixel-diff.spec.ts) pins render state at three
+frozen times per shader and reports `meanAbsDelta` / `maxAbsDelta` / `differingCellRatio` plus
+side-by-side PNGs in `test-results/pixel-diff/`. Attach `test-results/wasm-pixel-diff.json`
+(`gpuObserved: true`) alongside the parity result.
+
+**Thresholds are report-only** until the first discrete-GPU run establishes what FP drift between
+Dawn-in-WASM and browser WebGPU actually costs. Set `REPORT_ONLY = false` and pick a
+`differingCellRatio` bound at that point.
+
 ---
 
 ## Gate 3 — Controls integration (manual)
@@ -186,6 +224,9 @@ Prior green main pushes (both jobs): `29148209376`, `29144412949`, `29143957549`
 | 2026-07-26 | Agent (Cloud VM) | `WASM_GPU_TESTS=1 npm run test:wasm:bench` | **Skipped** — `gpuBackendObserved: false`; stub → [`reports/wasm-benchmark-report-stub-2026-07-26.json`](./reports/wasm-benchmark-report-stub-2026-07-26.json) |
 | 2026-07-26 | Agent (Cloud VM) | `WASM_GPU_TESTS=1 npm run test:wasm:parity` | **6 skipped, 1 failed** — no WebGPU adapter |
 | 2026-07-26 | Review | Promotion decision | **STAY TIER B** — Phase 1 complete; gates 1–4 open; human GPU runs required |
+| 2026-08-01 | Agent (Cloud VM) | Pre-GPU tooling | Pixel-diff harness, stage-aware init diagnostics, debug-panel diagnostics block (both backends' adapter identity) |
+| 2026-08-01 | Agent (Cloud VM) | GPU bench / parity | **Not run** — no adapter (`/dev/dri` absent) and `node_modules` unavailable; no new stub produced |
+| 2026-08-01 | Review | Promotion decision | **STAY TIER B** — gates 1–4 carried forward OPEN; feature work frozen to parity bugs |
 
 ---
 
@@ -194,7 +235,9 @@ Prior green main pushes (both jobs): `29148209376`, `29144412949`, `29143957549`
 When closing promotion review, attach:
 
 - [ ] `test-results/wasm-benchmark-report.json` (`gpuBackendObserved: true`)
-- [ ] Hardware notes per run (GPU model, driver, browser, resolution)
+- [ ] `test-results/wasm-pixel-diff.json` (`gpuObserved: true`) + `test-results/pixel-diff/*.png`
+- [ ] Hardware notes per run (GPU model, driver, browser, resolution) — adapter strings for both
+      backends are readable in Controls → Dev Tools → renderer diagnostics
 - [ ] Playwright HTML report or `gh run` URL for parity on ≥2 configs
 - [ ] Signed manual smoke table (Gate 3)
 - [ ] Updated weekly CI table through gate week 4

@@ -6,7 +6,7 @@ function isBlackFrame(stats, { minActive = 0.02, minLuminance = 0.01 } = {}) {
   return stats.activePixelRatio < minActive || stats.meanLuminance < minLuminance;
 }
 
-function isMagentaFrame(stats, { minMagentaRatio = 0.15 } = {}) {
+function isMagentaFrame(stats, { minMagentaRatio = 0.75 } = {}) {
   if (stats.magentaPixelRatio != null) {
     return stats.magentaPixelRatio >= minMagentaRatio;
   }

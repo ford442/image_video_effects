@@ -87,6 +87,7 @@ export interface ControlsProps {
     onExitLiveStream?: () => void;
     onOpenShaderScanner?: () => void;
     activeRendererType?: 'webgpu' | 'wasm' | 'js';
+    rendererDiagnostics?: import('./panels/AdvancedDebugPanel').RendererDiagnosticsSummary | null;
     onSwitchRenderer?: (type: 'webgpu' | 'wasm' | 'js') => Promise<void>;
     onOpenStorageBrowser?: () => void;
     onCopyChainShareLink?: () => void;
@@ -106,6 +107,10 @@ export interface ControlsProps {
         adaptive: boolean;
         colorFormat?: import('../../config/formatPolicy').InternalColorFormat;
         estimatedTextureMiB?: number;
+        requestedColorFormat?: import('../../config/formatPolicy').InternalColorFormat;
+        fp32Pinned?: boolean;
+        fp32PinnedBy?: string[];
+        maxPassesPerFrame?: number;
     };
     generativeShowcaseActive?: boolean;
     generativeShowcaseLocked?: boolean;

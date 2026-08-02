@@ -5,9 +5,348 @@
 
 ---
 
-## Recently Completed (182 shaders)
+## Recently Completed (278 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 30 (8 shaders) — 2026-08-02 — SMALLEST-FIRST ALL-CATEGORY EDITION 13
+
+Thirteenth all-category wave: the next clean 120–122-line single-pass shaders
+across image, interactive-mouse, retro-glitch, and geometric. This cohort fixed
+Gamma Ray Burst's inverted/runaway relativistic beaming; Temporal Rift's missing
+invocation guard and unbounded history taps; Voxel Depth Sort's additive
+"shadow" that brightened voxel tops; CRT/X-Ray's legacy 8x8 workgroups; Infinite
+Spiral's accidental reuse of prior blue display color as temporal angle state;
+X-Ray's double-normalized softness and fractional-power NaN path; and Color
+Channel Weave's dead audio reads from reserved `extraBuffer[0..2]`. All eight
+now have coherent spring interaction, guarded click effects, valid regional FFT
+voices, clamped boundary/displaced samples where applicable, and bounded display
+energy. Raw/state ownership remains intact: Temporal Rift keeps clamped history
+in A, CRT/Spiral keep display history, Neon Grid keeps scalar trail state, and
+the image shaders retain their established A/B field packing. Persistent state
+is confined to `extraBuffer[133..139]`; the extra `[139]` slot holds Spiral's
+honest temporal angle. Source params are byte-equivalent to HEAD; four indexed
+additive `updatedParams` and truthful feature/depth metadata were propagated.
+Explicit eight-file gate: 8/8 green (Naga + bindgroup, zero workgroup warnings
+or extraBuffer violations); dead-slider/strict-buffer/JSON/list audits: green;
+lists and 1,306-entry manifest regenerated; duplicates: 1,319/1,319 unique;
+Jest 69 suites / 478 pass / 1 skip; `SKIP_WASM_BUILD=1 npm run build`: green.
+Physics Lab `simulation.json` generator drift and the pre-existing WGSL report
+were preserved byte-for-byte. No renderer, TypeScript, WASM, or multipass drift.
+Live GPU visual QA remains the hardware handoff. Notes:
+`swarm-outputs/codex-2026-08-02-b30/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 271 | `gamma-ray-burst` | 30 | 120→158 (+38) | Bounded relativistic beaming/field state; sprung burst center; click gamma shells; angular FFT synchro voices; ACES/depth/A packing preserved. |
+| 272 | `temporal-rift` | 30 | 120→110 (-10) | Bounds guard + clamped history taps; spring/click tears/FFT chroma; branchless history update; display-only soft ceiling; clamped history A preserved. |
+| 273 | `voxel-depth-sort` | 30 | 120→154 (+34) | Additive-light shadow fixed to multiplicative occlusion; spring isometric view; click extrusion waves; per-cell FFT rims; field/depth ownership preserved. |
+| 274 | `crt-phosphor-decay` | 30 | 121→152 (+31) | Canonical 16x16 workgroup; clamped halation; spring static; click phosphor blooms; row FFT flutter; display-history feedback preserved. |
+| 275 | `infinite-spiral-zoom` | 30 | 121→160 (+39) | Safe complex division; real temporal angle in slot 139; spring portal; click counter-rotation; regional FFT; display-history A preserved. |
+| 276 | `neon-poly-grid` | 30 | 121→161 (+40) | Spring touch focus; click trail rings; per-cell FFT neon; defined edge ramps; display-only ceiling; raw scalar trail A + honest relief depth. |
+| 277 | `x-ray-reveal` | 30 | 121→160 (+39) | Canonical 16x16 workgroup; clamped Sobel; softness/NaN fixes; spring/click X-ray pulses; FFT edges; honest relief depth. |
+| 278 | `color-channel-weave` | 30 | 122→158 (+36) | Reserved audio reads rewired to plasmaBuffer; spring warp; click plucks; per-cell FFT yarn; defined thread profiles; A/B packing preserved. |
+
+### Batch 29 (8 shaders) — 2026-08-02 — SMALLEST-FIRST ALL-CATEGORY EDITION 12
+
+Twelfth all-category wave (renumbered from kimi-b28 after a same-day collision
+with codex Batch 28 — disjoint shader sets, zero file overlap): the next clean
+single-pass 118–119 liners across distortion, retro-glitch, visual-effects,
+interactive-mouse, image, and artistic. This cohort closed two deep
+uniform-plumbing bugs: `spectrum-bleed` read its 'sliders' from
+`u.zoom_config.x/y/z` — TIME and the mouse position — so 'diffusion' ramped
+with the clock while ALL 4 real sliders were dead (plus an idempotent
+blur-passes loop that re-sampled the source into the same var), and
+`heat-haze-mirage` read bass/mid/treble from `extraBuffer[0..2]` — the
+RESERVED zone — so its audio-reactive tag was reading zeros (rewired to
+`plasmaBuffer[0].xyz`; now touches no extraBuffer outside [133..255]). Also:
+`digital-haze` had a dead 'Haze Density' slider (wired bit-exact at default),
+`ascii-lens` never wrote dataTextureA (frame contract fixed) and never sampled
+audio, and `porcelain-fracture-glow` gained click fracture impacts (8-spoke
+crack stars with ~2.5s heal — drop the plate). All eight now have spring-damper
+mouse glide (extraBuffer[133..138] only), guarded click effects, and per-region
+FFT voices. Coordinator review added Spectrum Bleed's missing invocation guard,
+made all first-frame springs top-left-safe, fixed Heat Haze's every-pixel state
+write race, redirected click shock displacement from each launch point, clamped
+border taps, and bounded 50-click/HDR accumulation without tonemapping stored
+fields. Sacred contracts held: spectrum-bleed's persist/max feedback,
+heat-haze's hazeAcc 0.85 A/C accumulation + B packing, and all three
+mask/field-packing A writes (anamorphic flare, film burn, porcelain). Explicit
+eight-file gate: 8/8 green (Naga + bindgroup, zero workgroup warnings or
+extraBuffer violations); dead-slider/reserved-zone/JSON-contract audits: green;
+lists and 1,306-entry manifest regenerated; duplicates: 1,319/1,319 unique;
+Jest 69 suites / 478 pass / 1 skip; `SKIP_WASM_BUILD=1 npm run build`: green.
+Physics Lab `simulation.json` generator drift restored byte-for-byte;
+pre-existing WGSL report kept byte-identical via snapshot. Live GPU visual QA
+remains the hardware handoff. Briefs: `swarm-tasks/kimi-briefs-2026-08-02-b29/`;
+notes: `swarm-outputs/kimi-2026-08-02-b29/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 263 | `sonic-boom` | 29 | 118→193 (+75) | Spring shock center; click mach bursts with launch-local displacement; per-ring FFT voices (bins 2/4/6); bounded PHI-ring/doppler/ACES stack. |
+| 264 | `spectrum-bleed` | 29 | 118→171 (+53) | **Catastrophic uniform bug fixed** (zoom_config-as-params → real zoom_params x–w); **idempotent blur loop → real radius param**; bounds guard, clamped taps, sprung lens, click ink, FFT hue. |
+| 265 | `anamorphic-caustic-flare` | 29 | 119→189 (+70) | Top-left-safe spring tilt/anchor; bounded aspect-correct click flares; FFT caustics; clamped aberration taps and display-only HDR ceiling; field A preserved. |
+| 266 | `ascii-lens` | 29 | 119→205 (+86) | **Frame contract fixed** (dataTextureA now written); spring lens; clamped click glyph/RGB scrambles; **dead audio wired** (per-cell FFT flicker, bass breath); glyph tiers preserved. |
+| 267 | `digital-haze` | 29 | 119→198 (+79) | **Dead Haze Density wired** (bit-exact default); initialized spring clear window; click clear pulses; per-cell FFT static; clamped haze taps; Beer-Lambert stack preserved. |
+| 268 | `heat-haze-mirage` | 29 | 119→177 (+58) | **Reserved audio reads → plasmaBuffer**; single-writer initialized thermal spring; bounded click heat; honest relief depth; FFT shimmer; raw hazeAcc/B packing preserved. |
+| 269 | `interactive-film-burn` | 29 | 119→186 (+67) | Top-left-safe spring burn center; visibly hot click cigarette brands; per-sector ember FFT; mask A, fire ramp, alpha/depth ownership preserved. |
+| 270 | `porcelain-fracture-glow` | 29 | 119→175 (+56) | **Click fracture impacts** (bounded 8-spoke stars + flash); top-left-safe spring focus; clamped edge loads; FFT veins; display-only HDR ceiling and raw field A preserved. |
+
+### Batch 28 (8 shaders) — 2026-08-02 — SMALLEST-FIRST ALL-CATEGORY EDITION 11
+
+Eleventh all-category wave: the next clean single-pass 117–118 liners across
+advanced-hybrid, interactive-mouse, artistic, distortion, retro-glitch, and
+image. This cohort wired Chromatic Shockwave's completely dead Ring Count into
+a real 1–8-layer harmonic stack; rewired Fluid Grid's mislabeled Flow Speed and
+Turbulence controls with default-preserving mappings; implemented Infinite Video
+Feedback's advertised but nonexistent mouse-centered zoom/rotation; made
+Pixelation Drift's dead mouse feature real; and activated Silk Flow's velocity
+state, which had been written to `dataTextureA` every frame but never read from
+`dataTextureC`. Coordinator repairs also added missing bounds guards to the bokeh
+and storm shaders, guarded exact-center vector math, clamped displaced samples,
+made rotations aspect-correct, and fixed Infinite Feedback's eager divide-by-zero
+alpha path. All eight now have top-left-safe spring interaction, guarded click
+effects, regional FFT voices, exact indexed `updatedParams`, and truthful additive
+features/depth capability. Feedback contracts remain intact: Bokeh keeps raw HDR
+color in A, Infinite Feedback keeps bounded raw history, Pixel Storm/Pixelation
+keep display-history feedback, and Silk keeps raw velocity state. Explicit
+eight-file gate: 8/8 green (Naga + bindgroup, zero workgroup warnings or
+extraBuffer violations); dead-slider/strict-buffer/JSON/list audits: green;
+1,319/1,319 unique IDs; 1,306-entry manifest; Jest 69 suites / 478 pass / 1 skip;
+`SKIP_WASM_BUILD=1 npm run build`: green. Unrelated Physics Lab list drift and
+the pre-existing WGSL report were restored byte-for-byte. Live GPU visual QA
+remains the hardware handoff. Notes: `swarm-outputs/codex-2026-08-02-b28/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 255 | `spec-importance-sampled-bokeh` | 28 | 117→176 (+59) | Bounds guard; sprung depth-matched focus; click focus rings; hash-jittered golden samples; regional FFT gain; bounded importance alpha; raw HDR A preserved. |
+| 256 | `chromatic-shockwave` | 28 | 118→168 (+50) | **Dead Ring Count wired** (1–8 harmonics); aspect-correct spring shells; click shockwaves; sector FFT voices; spectral alpha/premultiplied display preserved. |
+| 257 | `film-cross-process` | 28 | 118→172 (+54) | Sprung enlarger lens; click chemical rings; regional FFT grain; normalized S-curve input; aspect-correct vignette; display A preserved. |
+| 258 | `fluid-grid` | 28 | 118→172 (+54) | **Flow Speed/Turbulence rewired honest** (default-preserving); sprung attractor; click eddies; per-cell FFT curl; honest relief metadata. |
+| 259 | `infinite-video-feedback` | 28 | 118→174 (+56) | **Advertised mouse-centered rotation implemented**; Rotation slider fixed; safe alpha division; click portal kicks; bounded raw feedback A. |
+| 260 | `pixel-storm` | 28 | 118→180 (+62) | Bounds guard; sprung storm eye; aspect-safe rotations; click cells; sector FFT chaos; clamped samples; temporal A/C history preserved. |
+| 261 | `pixelation-drift` | 28 | 118→175 (+57) | **Dead mouse feature wired** (sprung fine-pixel lens); click pixel rings; regional FFT persistence; clamped RGB/bleed taps; depth sizing/history preserved. |
+| 262 | `silk-flow-advection` | 28 | 118→173 (+55) | **Write-only velocity state activated** (C.xy→smoothed A.xy); sprung aspect-safe finger; click plucks; FFT weave; bounded raw velocity/depth packing preserved. |
+
+### Batch 27 (8 shaders) — 2026-08-02 — SMALLEST-FIRST ALL-CATEGORY EDITION 10
+
+Tenth all-category wave: the next clean single-pass 116–117 liners across
+artistic, advanced-hybrid, interactive-mouse, and simulation. This cohort closed
+three mislabeled sliders in `melting-oil` (Turbulence secretly drove mouse force,
+Ripple Strength secretly drove hue shift, Color Shift secretly drove the audio
+boost — all rewired honest with bit-exact defaults) plus its legacy unguarded
+8-iteration ripple loop (converted to the standard `min(u32(u.config.y), 50u)`
+form), THREE declared-but-never-sampled audio uniforms
+(`spec-iridescence-engine` — a spectral-render shader that ignored the spectrum,
+`aero-chromatics`, `cyber-trace`), a dead 'Feedback Mix' slider in
+`gen-chrono-erosion-feedback-melting` (read, never used — wired bit-exact at
+default via `decay * (feedbackMix / 0.6)`) with an elliptical smudge fixed, and
+`chroma-kinetic`'s flick-speed strength bonus (spring velocity feeds the smear).
+All eight now have spring-damper mouse glide (extraBuffer[133..138] only),
+guarded click effects, and per-region FFT voices. Sacred contracts held:
+cyber-trace's raw clamp-2.0 history A write (audio at composite only),
+chrono-erosion's raw clamp-1.5 feedback, aero-chromatics' chromatic advection
+history taps, spectral-waves' premultiplied ACES/IGN stack, and developer commentary
+kept where it still documents live behavior. Coordinator review additionally clamped Melting Oil's Sobel
+loads, added the missing iridescence bounds guard, made zero-valued top-left
+mouse state unambiguous, corrected aspect-space directions back into UV space,
+and added a display-only hue-preserving soft knee to Cyber Trace while leaving
+its raw history untouched. Explicit eight-file gate: 8/8 green (Naga + bindgroup, zero
+workgroup warnings or extraBuffer violations); dead-slider/JSON-contract audits:
+green; lists and 1,306-entry manifest regenerated; duplicates: 1,319/1,319
+unique; Jest + `SKIP_WASM_BUILD=1 npm run build`: green. Unrelated Physics Lab
+entries in `simulation.json` restored byte-for-byte; pre-existing WGSL
+report kept byte-identical via snapshot. Live GPU visual QA remains the hardware
+handoff. Briefs: `swarm-tasks/kimi-briefs-2026-08-02-b27/`; notes:
+`swarm-outputs/kimi-2026-08-02-b27/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 247 | `melting-oil` | 27 | 116→195 (+79) | **3 mislabeled sliders rewired** (bit-exact defaults); **legacy ripple loop → guarded standard form**; clamped Sobel borders + safe directions; top-left-safe spring; per-band FFT hue shimmer. |
+| 248 | `spec-iridescence-engine` | 27 | 116→189 (+73) | **Dead audio wired** (per-wavelength spectral voices r/g/b←bins 7/4/2); sprung always-on thickness lens; click 150nm film waves; bounds guard, bounded alpha, reused depth sample, truthful audio tag. |
+| 249 | `spectral-waves` | 27 | 116→180 (+64) | Top-left-safe spring wave origin; click wave trains; per-ring FFT caustic voices; safe aspect-to-UV displacement; palette/ACES/IGN stack preserved. |
+| 250 | `aero-chromatics` | 27 | 117→179 (+62) | **Dead audio wired** (bass gusts, per-band flutter); top-left-safe spring wind source; click gust bursts with safe UV direction; dead samples removed; truthful depth/audio tags. |
+| 251 | `chroma-kinetic` | 27 | 117→184 (+67) | Spring center + **flick-speed smear bonus**; click kinetic bursts; per-sector FFT smear voices; lead/lag taps verbatim; luma range −2..2 kept. |
+| 252 | `cyber-trace` | 27 | 117→187 (+70) | Spring brush ribbons; **dead audio wired** (composite-only glow/hue — history raw); click stamp blooms; display-only hue-preserving soft knee; truthful audio/temporal tags. |
+| 253 | `gen-chrono-erosion-feedback-melting` | 27 | 117→171 (+54) | **Dead Feedback Mix wired** (bit-exact default); **elliptical smudge fixed** with safe directions; spring drag; click melt vortices; per-band FFT turbulence; raw clamp-1.5 feedback preserved. |
+| 254 | `quantum-flux` | 27 | 117→182 (+65) | Coherent current-frame spring flux center; click decoherence bursts; per-sector FFT jitter voices; hsv/jitter/scanline stack preserved. |
+
+### Batch 26 (8 shaders) — 2026-08-02 — SMALLEST-FIRST ALL-CATEGORY EDITION 9
+
+Ninth all-category wave: the next clean single-pass 114–116 liners across
+post-processing, liquid-effects, distortion, and interactive-mouse. This cohort
+closed a tagged-but-unwired mouse on a history-ring DFT shader
+(`temporal-frequency-decomposition` advertised mouse-driven and never read the
+pointer), an elliptical-lens geometry bug in the prismatic dispersion crossover
+(mouseDist never aspect-corrected — 5th mouse-units-class sighting), a corpse in
+`magnetic-luma-sort` (two `finalColor` computations nothing read — deleted, dev
+commentary kept verbatim), and two shaders with declared-but-never-sampled audio
+uniforms (`glass-wipes`, `magnetic-luma-sort`). All eight now have spring-damper
+mouse glide (extraBuffer[133..138] only), guarded normalized click effects, and
+per-region FFT voices (bins 1–8). Coordinator review additionally replaced three
+same-value storage races with single-writer state persistence, made top-left
+spring initialization explicit, and added truthful audio feature tags. Sacred
+contracts held: the DFT shader's
+binding-13 ring indexing + read-only extraBuffer[4] historyHead; glass-wipes'
+wetness state A=(wetness,0,0,wetness)/C-prev packing; laser-burn's
+char/heat/ember state A write (never tonemapped); bubble-lens' mask-data A
+packing; magnetic-luma-sort's upstream-history C→A feedback. Explicit eight-file
+gate: 8/8 green (Naga + bindgroup, zero workgroup warnings or extraBuffer
+violations); dead-slider/JSON-contract audits: green; lists and 1,306-entry
+manifest regenerated; duplicates: 1,319/1,319 unique; Jest: 69 suites / 478 pass
+/ 1 skip; `SKIP_WASM_BUILD=1 npm run build`: green. Physics Lab
+`simulation.json` generator drift restored byte-for-byte; pre-existing WGSL
+report kept byte-identical via snapshot. Live GPU visual QA remains the hardware
+handoff. Briefs: `swarm-tasks/kimi-briefs-2026-08-02-b26/`; notes:
+`swarm-outputs/kimi-2026-08-02-b26/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 239 | `temporal-frequency-decomposition` | 26 | 114→192 (+78) | **Mouse wired** (was tagged but unread — sprung analysis lens); click tuning-fork pings into the DFT accumulators; 8 per-band FFT voices; single-writer safe state; ring indexing + extraBuffer[4] verbatim. |
+| 240 | `glass-wipes` | 26 | 115→173 (+58) | Spring wiper with explicit init; click wetness splashes; **dead audio wired** (bass rain bursts, per-band droplet glint); truthful audio tag; wetness state A/C contract verbatim. |
+| 241 | `interactive-zoom-blur` | 26 | 115→172 (+57) | Spring epicenter + flick-speed smear bonus; click zoom shockwaves; per-ring FFT tap weights; stale header fixed; bayer/chromatic-loop/trail verbatim. |
+| 242 | `reality-tear` | 26 | 115→193 (+78) | Single-writer spring tear center with explicit init; click secondary rifts (branchless, same void/border pipeline); angular FFT sector voices + per-sector treble burn flicker; alpha formula verbatim. |
+| 243 | `bubble-lens` | 26 | 116→208 (+92) | Spring bubble float with top-left-safe init; click satellite bubbles + film shockwaves (coarse cull + evalBubble helper); per-octave FFT turbulence shimmer; mask-data A packing verbatim. |
+| 244 | `cross-mouse-spec-dispersion-lens` | 26 | 116→194 (+78) | **Elliptical lens fixed** (aspect-corrected distance/normal/rim); spring prism glide; **dead treble wired** (per-channel fringe shimmer); click spectrum flares; Cauchy/wavelength math verbatim. |
+| 245 | `laser-burn` | 26 | 116→186 (+70) | Heavy single-writer spring beam (ω=6, explicit init); bounded-age click brands into the char/ember pipeline; per-sector spark bins; bass_env honestly wired; state A write raw, verbatim. |
+| 246 | `magnetic-luma-sort` | 26 | 116→188 (+72) | **Dead finalColor removed** (dev comments verbatim); spring attractor; click vortex pulses; **dead audio wired** (bass-loosened threshold, per-row FFT speed); truthful audio tag; upstream C→A feedback verbatim. |
+
+### Batch 25 (8 shaders) — 2026-08-02 — SMALLEST-FIRST ALL-CATEGORY EDITION 8
+
+Eighth all-category wave: the next clean single-pass 112–114 liners across
+interactive-mouse, hybrid, and post-processing. This cohort closed unusually
+deep contract bugs: Hybrid Fractal's four UI controls were all mapped to the
+wrong WGSL behaviors; Fiber Optic and Hybrid Fractal assumed a fake 256-entry
+audio palette; Signal Tuner hid state in display pixel (0,0); the history-ring
+effect advertised mouse interaction but never read it; Paper Cutout treated a
+valid top-left pointer as uninitialized and claimed depth while only passing it
+through. All eight now have guarded normalized click interaction, meaningful
+regional FFT behavior, exact additive parameter mirrors, and persistent state
+only in `extraBuffer[133..139]`. Binding-13 history indexing and raw feedback
+ownership remain intact. Explicit eight-file gate: 8/8 green (Naga + bindgroup,
+zero workgroup warnings or buffer violations); dead-slider/JSON/list audits:
+green; lists and 1,306-entry manifest regenerated; duplicates: 1,319/1,319
+unique; Jest: 68 suites / 464 pass / 1 skip; `SKIP_WASM_BUILD=1 npm run build`:
+green. Direct `tsx` hit the known VM IPC `EPERM`; `node --import tsx` rebuilt the
+manifest. Live GPU visual QA remains the hardware handoff. Notes:
+`swarm-outputs/codex-2026-08-02-b25/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 231 | `signal-tuner` | 25 | 112→155 (+43) | True spring/envelope safe state; origin feedback fixed; click retuning; regional FFT/depth. |
+| 232 | `fiber-optic-weave` | 25 | 113→160 (+47) | Unsafe palette fixed; spring/click fiber plucks; per-fiber FFT; bounded glow/relief. |
+| 233 | `hybrid-fractal-feedback` | 25 | 113→175 (+62) | All four mappings fixed; safe palette; real RGB delay; spring/click Julia relief. |
+| 234 | `scan-slice` | 25 | 113→163 (+50) | Spring slice bank; click-stamped slices; valid FFT palette; mids/treble wired; displaced depth. |
+| 235 | `split-dimension` | 25 | 113→164 (+51) | Spring seam; click fractures; per-band FFT; bounded glitch output; dimension-following depth. |
+| 236 | `temporal-decay-multiresolution` | 25 | 113→170 (+57) | Real mouse lens; click history echoes; regional FFT decay; binding-13/history-head contract preserved. |
+| 237 | `paper-cutout` | 25 | 114→159 (+45) | Top-left/safe-normal fix; spring light; click emboss; FFT layers; honest relief depth. |
+| 238 | `rgb-delay-brush` | 25 | 114→159 (+45) | Scoped model claim; spring/click temporal brush; valid RGB FFT voices; raw A feedback preserved. |
+
+### Batch 24 (8 shaders) — 2026-08-02 — SMALLEST-FIRST ALL-CATEGORY EDITION 7
+
+Seventh wave of the all-category pool: the next eight clean, single-pass 110–112
+liners across interactive-mouse, visual-effects, and distortion. The upgrade
+adds spring-weighted interaction, normalized guarded click behavior, and
+per-region FFT voices while preserving live slider and feedback contracts.
+Special correctness wins: `night-vision-scope` now earns its depth-aware claim;
+`data-stream` no longer has an elliptical mouse wake and its dead treble signal
+now drives character emergence; `knitted-fabric` no longer stores masks in the
+host-primary A slot; `blueprint-reveal` keeps its raw temporal mask in A without
+display-color contamination. All new persistent state is confined to
+`extraBuffer[133..138]`. Explicit eight-file gate: 8/8 green (Naga + bindgroup,
+zero workgroup warnings or buffer violations); dead-slider/JSON contract audits:
+green; lists and 1,306-entry manifest regenerated; duplicates: 1,319/1,319
+unique; Jest: 68 suites / 464 pass / 1 skip; `SKIP_WASM_BUILD=1 npm run build`
+and the final no-prebuild asset rebuild: green. The VM's direct `tsx` manifest
+command hit its known IPC `EPERM`, so the documented `node --import tsx` path
+provided manifest proof. Live GPU visual QA remains the hardware handoff.
+Notes: `swarm-outputs/codex-2026-08-02-b24/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 223 | `quantum-tunnel-interactive` | 24 | 110→162 (+52) | Spring tunnel center; click mouths; sector FFT aberration; bounded HDR; relief depth. |
+| 224 | `vhs-tracking-mouse` | 24 | 110→157 (+47) | Spring tracking head; localized click tears; row FFT hiss; displaced depth sampling. |
+| 225 | `blueprint-reveal` | 24 | 111→160 (+49) | Spring brush; click ink blooms; tile FFT voices; raw A-mask feedback preserved. |
+| 226 | `cyber-grid-pulse` | 24 | 111→168 (+57) | Spring magnet; click grid shockwaves; cell FFT voices; clamped UVs and bounded HDR. |
+| 227 | `night-vision-scope` | 24 | 111→161 (+50) | Spring scope; click intensifier rings; FFT scanlines; honest lens relief depth. |
+| 228 | `data-stream` | 24 | 112→161 (+49) | Aspect-correct spring wake; click eddies; strip FFT; dead treble wired; bounded emission. |
+| 229 | `glitch-slice-mirror` | 24 | 112→163 (+51) | Spring seam; localized click fractures; nonnegative intensity; block FFT/treble breakup. |
+| 230 | `knitted-fabric` | 24 | 112→165 (+53) | Spring pull; click plucks; stitch FFT/relief; display moved to A and masks to B. |
+
+### Batch 23 (8 shaders) — 2026-08-01 — GENERATIVE + IMAGE UPGRADES
+
+Focused correctness/performance wave with a literal 4-generative/4-image split. The two remaining fireworks-family normalized-mouse bugs were fixed and their flat depth behavior replaced; the zeta landscape now uses a guarded 24–96-term Dirichlet-eta continuation instead of a divergent critical-strip series; bioluminescent reaction-diffusion now clamps its stencil and no longer treats the audio buffer as a 256-entry palette; Cycloid Bloom drops from 1,205 to 360 curve-distance tests per pixel. Image wins include real CRT click damage/treble static, visible Steampunk tooth shading with single-mask compositing, honest Depth Parade shell depth, and bounded/sprung Fractal Dissolve erosion. All ripple loops are guarded, persistent state uses only `extraBuffer[133..138]`, and feedback roles remain unchanged. Explicit 8-file gate: green (Naga + bindgroup, 0 workgroup warnings, 0 extraBuffer violations); focused dead-slider/buffer audits: green; JSON contracts: preserved; lists/manifests regenerated; duplicate check: 1,319/1,319 unique; Jest: 68 suites / 464 pass / 1 skip; `SKIP_WASM_BUILD=1` production build: green. Notes: `swarm-outputs/codex-2026-08-01-b23/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 215 | `gen-fireworks-roman-candle` | 23 | 111→151 (+40) | Normalized pointer fixed; discrete click candles; treble detail loops; luminance depth; A/B packing preserved. |
+| 216 | `gen-zeta-function-landscape` | 23 | 127→151 (+24) | Guarded Dirichlet-eta continuation (24–96 terms); ripple refraction; eight FFT color regions; height/A feedback preserved. |
+| 217 | `gen-bioluminescent-reaction-diffusion` | 23 | 131→142 (+11) | Boundary-clamped stencil; state-derived palette with FFT bins 1–8; four honest controls; raw A/B state preserved. |
+| 218 | `gen-cycloid-bloom` | 23 | 133→171 (+38) | 64+8 nearest-curve search; mouse pull without bass gate; click petal waves; per-layer FFT shimmer. |
+| 219 | `crt-scanline-damage` | 23 | 112→151 (+39) | Click damage/degauss bands; dead treble→static scars; temporal phosphor preserved; indexed updatedParams. |
+| 220 | `steampunk-gear-lens` | 23 | 112→169 (+57) | Tooth-lit rim; double mask removed; spring [133..138]; click kick/flares; relief depth; indexed updatedParams. |
+| 221 | `fireworks-depth-parade` | 23 | 113→163 (+50) | Normalized pointer fixed; ripple depth barrages; source/shell depth; supportsDepth corrected; indexed updatedParams. |
+| 222 | `fractal-noise-dissolve` | 23 | 116→177 (+61) | Category fixed; hue-preserving burn knee; spring [133..138]; click dissolve rings; one depth sample; indexed updatedParams. |
+
+### Batch 22 (8 shaders) — 2026-07-31 — SMALLEST-FIRST ALL-CATEGORY EDITION 6
+
+Sixth wave of the all-category pool (680 remaining after Batch 21), 107–110 liners across interactive-mouse / retro-glitch / artistic / image. Brief generator `temp/make_briefs_2026_07_31_b22.py` reuses the b17 all-category scanner. Special wins: `pixel-explode` had **ALL 4 sliders dead** — `u.zoom_params` was never read; grid size/radius/force/search-range all hardcoded behind generic Intensity/Speed/Scale/Detail labels (wired with bit-exact defaults: force mix(0,0.16)→0.08, grid mix(16,64)→40, range mix(2,10)→6; Speed birthed a new wobble motion); `prismatic-3d-compositor` had an **INVERTED mouse-units bug** (`zoom_config.yz / dims` — double-dividing an already-normalized mouse pinned the parallax driver to the corner; the headline parallax feature had never worked — 4th mouse-units sighting, first inverted variant) plus a **'cameraZ' that was secretly mouseDown**; `luma-refraction` had **mask-as-color feedback** (the 'temporal wave memory' mixed the wave STATE h∈[-10,10],v into the display color — spore-galaxy class, 4th sighting; mix line removed, wave-state A/C contract kept verbatim); `directional-blur-wipe` had a **dead 'Split Pos' slider** (read, never used — now offsets the wipe line, default 0.5 bit-identical) plus a dead per-loop `chroma` var (now disperses); `spectral-glitch-sort` had **elliptical mouse influence** (no aspect correction). All 8 gate green (naga + bindgroup, 0 warnings, 0 extraBuffer violations), JSON contracts preserved (updatedParams additive-only), lists/dupes clean (1319 unique definitions), Jest 63 suites/422 pass. Briefs: `swarm-tasks/kimi-briefs-2026-07-31-b22/`; notes: `swarm-outputs/kimi-2026-07-31-b22/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 207 | `quantum-cursor` | 22 | 107→177 (+70) | Spring field [133..138]; click decoherence bursts (local chaos spikes); per-block FFT jitter; shuffle/invert machinery verbatim. |
+| 208 | `spectral-glitch-sort` | 22 | 108→178 (+70) | **Aspect-corrected mouse** (was elliptical) + spring [133..136]; click sort tears; per-block FFT voices; branchless sort verbatim. |
+| 209 | `mirror-dimension` | 22 | 109→172 (+63) | Spring symmetry center [133..138]; click mirror spins (signed rotation kicks); per-segment FFT shimmer; dead treble→seam glow; fold math verbatim. |
+| 210 | `pixel-explode` | 22 | 109→161 (+52) | **ALL 4 dead sliders wired** (bit-exact defaults); dead treble→blast crackle; click detonations; z-buffer particle physics verbatim. |
+| 211 | `prismatic-3d-compositor` | 22 | 109→182 (+73) | **Inverted mouse-units fixed** (parallax works for the first time); cameraZ→mouseDown (press deepens); dead treble→glow; click prism flares; pass-2 reads verbatim. |
+| 212 | `directional-blur-wipe` | 22 | 110→191 (+81) | **Dead Split Pos wired** (bit-identical default); dead `chroma`→per-sample dispersion; spring wipe [133..137]; click wipe flashes. |
+| 213 | `ember-drift-dissolve` | 22 | 110→166 (+56) | Click ignition (fire from ripples); mouse heat plume; per-region FFT crackle; ember state contract verbatim. |
+| 214 | `luma-refraction` | 22 | 110→186 (+76) | **Mask-as-color removed** (wave state out of display path); click raindrops; bass-transient audio rain; wave-sim core verbatim. |
+
+### Batch 21 (8 shaders) — 2026-07-31 — SMALLEST-FIRST ALL-CATEGORY EDITION 5
+
+Fifth wave of the all-category pool (687 remaining after Batch 20), 105–107 liners across interactive-mouse / image / artistic. Brief generator `temp/make_briefs_2026_07_31_b21.py` reuses the b17 all-category scanner. Special wins: `spec-histogram-equalize` had **TWO dead sliders** — 'Clip Limit' computed a `clippedCount` that was never used (no actual CLAHE clip; now real clip+redistribute CDF) and 'Tile Blend' was read but never referenced (now seam-softening blend) — plus **masks in dataTextureA** (display→A, debug quad→B); `fireworks-edge-ignite` and `fireworks-patriotic-july4` both had the **family diseases** from b18's fireworks-portrait-burst: the **mouse-coord-units bug** (normalized [0,1] treated as pixels — held-click bursts parked off-screen; 2nd/3rd sightings) and the **flat-0.0 depth clobber** behind a 'depth-aware' feature tag (3rd/4th sightings; both now luma-derived); `fireworks-patriotic-july4` also had a **dead mids read** (now drives the stripe wave); `moire-interference` had a dead `dir` var; `interactive-emboss`/`mouse-gravity` kept their dev thinking-out-loud comments verbatim (file personality) while gaining spring-damped lights/wells, click stamps/gravity pulses, and honest depth-aware relief; `kinetic-dispersion`'s spring velocity now literally drives the advertised 'mouse-velocity dispersion'. All 8 gate green (naga + bindgroup, 0 warnings, 0 extraBuffer violations), JSON contracts preserved (updatedParams additive-only), lists/dupes clean (1319 unique definitions — +1 from #1051's bismuth void-owl since b20), Jest 63 suites/422 pass. Briefs: `swarm-tasks/kimi-briefs-2026-07-31-b21/`; notes: `swarm-outputs/kimi-2026-07-31-b21/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 199 | `moire-interference` | 21 | 105→174 (+69) | Dead `dir` removed; spring emitter [133..137]; click third-emitter bursts; per-emitter FFT gains; depth write normalized. |
+| 200 | `mouse-gravity` | 21 | 105→166 (+61) | Heavy spring singularity (ω=6) [133..138]; click secondary wells; photon-ring shimmer (treble bin 7); mouseDown deepens well; dev comments verbatim. |
+| 201 | `fireworks-edge-ignite` | 21 | 106→175 (+69) | **Mouse-coord-units bug fixed** (bursts on-cursor); **honest depth** (was flat 0.0 clobber); click shell launches; spark pipeline/feedback verbatim. |
+| 202 | `spec-histogram-equalize` | 21 | 106→163 (+57) | **Two dead sliders wired** (real CLAHE clip+redistribute; tile-blend seam softening); **A-slot unpoisoned** (display→A, debug→B); barriers/atomics sacred. |
+| 203 | `speed-lines-focus` | 21 | 106→172 (+66) | Spring focus vortex [133..137]; click action bursts; angular FFT sector voices; depth write normalized; 16-tap zoom blur verbatim. |
+| 204 | `fireworks-patriotic-july4` | 21 | 107→162 (+55) | **Mouse-coord-units bug fixed**; **honest depth**; **dead mids wired** (stripe wave); click grand-finale shells (R/W/B by click index); patriotColor verbatim. |
+| 205 | `interactive-emboss` | 21 | 107→176 (+69) | Spring light [133..137]; click relief dents; **depth-aware relief** (tag earned); hue-preserving soft-knee; dev comments verbatim. |
+| 206 | `kinetic-dispersion` | 21 | 107→186 (+79) | Spring influence + **velocity→intensity** (description made literal); click shatter bursts; per-block FFT voices ±30%; curl/shockwave verbatim. |
+
+### Batch 20 (8 shaders) — 2026-07-31 — SMALLEST-FIRST ALL-CATEGORY EDITION 4
+
+Fourth wave of the all-category pool (695 remaining after Batch 19), 103–105 liners across interactive-mouse / retro-glitch / image / visual-effects / post-processing. Brief generator `temp/make_briefs_2026_07_31_b20.py` reuses the b17 all-category scanner. Special wins: `neon-edge-reveal` had **ALL 4 slider labels generic/wrong** ('Intensity' drove reveal radius, 'Speed' drove edge boost, 'Scale' drove glow, 'Detail' only tweaked alpha — rewired honest with default 0.5 reproducing the legacy look bit-for-bit, Sobel window constants corrected in review to hit 0.05/0.30 exactly) plus an **unclamped ~19.8× HDR emission** (hue-preserving soft-knee, asymptote ~2.0 — kaleido-portal class); `long-exposure` had a **fake Glow Radius** (`gOff` computed from the slider but never used — fixed ±1-texel blur; now real ±gStep taps, dead var deleted) plus a **positional click reset** (was global mouseDown fade ignoring where you click — now an aspect-corrected eraser brush + ripple light stamps); `cyber-halftone-scanner` had the **OOB palette read** (`plasmaBuffer[palIdx % 256u]` → bins 1–8, 3rd sighting); `spectral-rain` declared mids/treble and **never used them** (now per-column FFT voices); `lenticular-holographic-shift` stored **masks in dataTextureA** (display→A, mask quad→B — latent chain poison); `sonar-pulse` was a **sonar shader that ignored the ripples uniform** (click pings fired at last). All 8 gate green (naga + bindgroup, 0 warnings, 0 extraBuffer violations), JSON contracts preserved (updatedParams additive-only), lists/dupes clean (1318 unique definitions), Jest 63 suites/422 pass. Briefs: `swarm-tasks/kimi-briefs-2026-07-31-b20/`; notes: `swarm-outputs/kimi-2026-07-31-b20/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 191 | `luma-topography` | 20 | 103→170 (+67) | Spring-damper light [133..138]; click fill-light flashes; depth-aware pixel height; lying struct/category comments fixed; Blinn-Phong verbatim. |
+| 192 | `scanline-drift` | 20 | 103→155 (+52) | 1D spring tracking band [133..134]; mouse.x edge-proximity drift; click tracking tears; dead treble read wired (per-strip flicker); depth write normalized. |
+| 193 | `sonar-pulse` | 20 | 103→169 (+66) | **Click pings** (ripples were unused — in a sonar shader!); spring origin [133..137]; per-ring FFT shimmer; beat/interference verbatim. |
+| 194 | `cyber-halftone-scanner` | 20 | 104→158 (+54) | **OOB palette guarded** (%256→bins 1–8); click scan bursts; pointer dot bloom; FFT-band sweep intensity; dead PHI const removed; CMYK angles verbatim. |
+| 195 | `neon-edge-reveal` | 20 | 104→177 (+73) | **All 4 generic labels rewired honest** (defaults bit-consistent, Sobel window 0.05/0.30 exact); **~19.8× HDR soft-knee**; click flares; spring flashlight; 9-tap Sobel verbatim. |
+| 196 | `spectral-rain` | 20 | 104→172 (+68) | **Dead mids/treble wired** (per-column FFT voices ±20% trail/brightness); sprung angle/speed [133..137]; click splash bursts; rain grid verbatim. |
+| 197 | `lenticular-holographic-shift` | 20 | 105→166 (+61) | **A-slot role fixed** (display→A, masks→B); 1D view spring [133..134]; click holo flash rings; mouse.y strip tilt; moiré/holo palette verbatim. |
+| 198 | `long-exposure` | 20 | 105→156 (+51) | **Fake glow radius fixed** (real ±gStep taps, dead gOff deleted); **positional eraser brush** + ripple light stamps; per-band decay drift; raw-HDR A/C contract verbatim. |
+
+### Batch 19 (8 shaders) — 2026-07-31 — SMALLEST-FIRST ALL-CATEGORY EDITION 3
+
+Third wave of the all-category pool (705 remaining after Batch 18), 100–103 liners across interactive-mouse / geometric / post-processing / visual-effects / image. Brief generator `temp/make_briefs_2026_07_31_b19.py` reuses the b17 all-category scanner. Special wins: `holographic-shatter` had a **triple bug** — OOB palette read (`plasmaBuffer[palIdx % 256u]` → bins 1–8, same class as b18 holographic-sticker), a **dead 'Depth Weight' slider** (`depthLayeredAlpha()` defined but never called — now wired into finalAlpha), and an **inverted impact falloff** (`smoothstep(0.0, 0.6, dM)` grew with mouse distance — mouse-down shattered everything EXCEPT the cursor zone; now near-focused with a global baseline); `signal-modulation` had **fake spectral bands** (the 8-band visualizer was driven by `fract(sin())` hash noise, not FFT — now real `plasmaBuffer[band + 1]` bins, hash survives only as ±10% anti-digitization jitter — fake-FFT-proxy class); `ascii-glyph` was **tagged mouse-driven but never read the mouse** (`zoom_config` completely unused — spring-damper lens wired, finer glyphs under the pointer, click scrambles); `temporal-phosphor-burn-motion-adaptive` (history-ring, binding 13) also **never read the mouse** despite the tag (mouse phosphor lens + click burn stamps, ring indexing + extraBuffer[4] verbatim, extraBuffer read-only). All 8 gained guarded click-ripple interactivity; 6 gained spring-damper mouse glide (extraBuffer [133..138] only). All 8 gate green (naga + bindgroup, 0 warnings, 0 extraBuffer violations), JSON contracts preserved (updatedParams additive-only), lists/dupes clean (1318 unique definitions — +1 from #1047's gen-vitreous-quantum-lotus-singularity since b18). Briefs: `swarm-tasks/kimi-briefs-2026-07-31-b19/`; notes: `swarm-outputs/kimi-2026-07-31-b19/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 183 | `reactive-glass-grid` | 19 | 100→163 (+63) | Spring-damper glass bulge [133..137]; click shockwave rings; per-tile FFT voices (hash bin); dispersion/fresnel/ior verbatim. |
+| 184 | `ascii-glyph` | 19 | 101→169 (+68) | **Mouse wired** (was tagged but unread — spring lens [133..136], finer glyphs under pointer); click glyph scrambles; stale comments fixed; SDF/beat-swap verbatim. |
+| 185 | `temporal-phosphor-burn-motion-adaptive` | 19 | 101→155 (+54) | **Mouse wired** (phosphor charge lens + faint cursor trails); click burn stamps; per-band FFT decay drift; ring indexing + binding 13 + extraBuffer[4] verbatim (read-only). |
+| 186 | `codebreaker-reveal` | 19 | 102→170 (+68) | Spring-damper reveal disc [133..136]; click reveal bursts (grow-collapse discs); per-column treble shimmer; rain math verbatim. |
+| 187 | `digital-reveal` | 19 | 102→166 (+64) | Spring-damper brush [133..136]; click splash reveals into mask feedback; depth-gated rain brightness; A=mask/C=prev-mask contract verbatim. |
+| 188 | `magnetic-ring` | 19 | 102→166 (+64) | Spring-damper ring center [133..138]; click flux shockwaves (4th ring); per-ring FFT voices (bins 1–3); 3-ring loop/spokes/chromatic taps verbatim. |
+| 189 | `signal-modulation` | 19 | 102→161 (+59) | **Fake spectral bands fixed** (hash noise → real FFT bins 1–8, ±10% jitter kept); spring-damper wave origin [133..136]; click carrier bursts; huePreserveClamp verbatim. |
+| 190 | `holographic-shatter` | 19 | 103→162 (+59) | **Triple bug fixed** (OOB palette %256→bins 1–8; dead Depth Weight slider wired via depthLayeredAlpha; inverted impact falloff → near-focused); click detonations; settling/shard math verbatim. |
 
 ### Batch 18 (8 shaders) — 2026-07-30 — SMALLEST-FIRST ALL-CATEGORY EDITION 2
 

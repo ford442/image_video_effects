@@ -47,14 +47,14 @@ describe('WASM bridge uniforms (setInputSource)', () => {
   it('maps string input sources to C++ ints', async () => {
     const bridge = await initBridge();
 
-    const cases: Array<[string, number]> = [
+    const cases = [
       ['none', 0],
       ['image', 1],
       ['video', 2],
       ['webcam', 3],
       ['generative', 4],
       ['live', 5],
-    ];
+    ] as const;
 
     for (const [source, expected] of cases) {
       bridge.setInputSource(source as any);

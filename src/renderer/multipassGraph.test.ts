@@ -100,6 +100,16 @@ describe('multipassGraph', () => {
     expect(countGraphPasses(photonic!)).toBe(4);
   });
 
+  it('prefers dataA→dataC copy after a sibling dataB write (fabric handoff)', () => {
+    const fabric = resolveGraphForShader('fabric-of-reality');
+    const expanded = expandGraph(fabric!);
+    // Last dispatch is render; must sample positions from A, not tear mask from B
+    const render = expanded[expanded.length - 1];
+    expect(render.entry).toBe('fabric-render');
+    expect(render.copiesBefore.some((c) => c.from === 'dataA')).toBe(true);
+    expect(render.copiesBefore.some((c) => c.from === 'dataB')).toBe(false);
+  });
+
   it('analyzes graph binding usage', () => {
     const usage = analyzeGraphBindingUsage(createWaveTankGraph());
     expect(usage.writesDataA).toBe(true);

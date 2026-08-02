@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Gamma Ray Burst v2
 //  Category: image
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: mouse-driven, click-reactive, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: gamma-ray-burst, relativistic-jet
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-08-02 (Batch 30)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -52,6 +52,11 @@ fn film_grain(uv: vec2<f32>, t: f32) -> f32 {
   return hash12(uv * 512.0 + t * 73.0) * 0.06 - 0.03;
 }
 
+fn fft_voice(angle: f32) -> f32 {
+  let sector = u32(fract(angle / 6.2831853 + 1.0) * 8.0) % 8u;
+  return clamp(plasmaBuffer[sector + 1u].x, 0.0, 1.0);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -59,7 +64,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
-  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  if (extraBuffer[137] < 0.5) {
+    mouse = rawMouse;
+    mouseVelocity = vec2<f32>(0.0);
+  }
+  let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+  let springOmega = 9.0;
+  mouseVelocity += ((rawMouse - mouse) * (springOmega * springOmega) - mouseVelocity * (2.0 * springOmega)) * springDt;
+  mouse += mouseVelocity * springDt;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[133] = mouse.x;
+    extraBuffer[134] = mouse.y;
+    extraBuffer[135] = mouseVelocity.x;
+    extraBuffer[136] = mouseVelocity.y;
+    extraBuffer[137] = 1.0;
+    extraBuffer[138] = time;
+  }
   let aspect = resolution.x / resolution.y;
   let intensity = u.zoom_params.x;
   let decay = max(u.zoom_params.y, 0.02);
@@ -79,12 +102,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let burstDecay = exp(-fract(time * 1.5) * 3.0);
   let burstTrigger = step(0.65, bass) * burstDecay;
 
-  let lorentz = 1.0 / sqrt(max(1.0 - dist * dist * 0.8, 0.001));
-  let dopplerBeaming = pow(lorentz, 3.0);
+  let beta2 = clamp(dist * dist * 0.8, 0.0, 0.98);
+  let lorentz = inverseSqrt(max(1.0 - beta2, 0.02));
+  let dopplerBeaming = min(pow(lorentz, 2.0), 12.0);
   let magneticSpiral = sin(angle * jetSpread + dist * 12.0 - time * 3.0 + burstPhase);
-  let jetCore = exp(-dist * (4.0 + decay * 16.0)) * dopplerBeaming;
+  let jetCore = exp(-dist * (4.0 + decay * 16.0)) * min(dopplerBeaming, 4.0);
   let jetWings = exp(-abs(magneticSpiral) * (1.5 + decay * 6.0) - dist * (1.2 + decay * 4.0)) * 0.6;
-  let burst = intensity * (jetCore * 0.5 + jetWings * 0.5) * (0.4 + burstTrigger * 1.6);
+  var clickBurst = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 1.6) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+      let radius = length(delta);
+      let shell = exp(-abs(radius - age * 0.22) * 70.0);
+      let corePulse = smoothstep(0.09, 0.0, radius) * exp(-age * 4.0);
+      clickBurst = max(clickBurst, (shell * 0.7 + corePulse) * exp(-age * 1.2));
+    }
+  }
+  let spectralVoice = fft_voice(angle);
+  let burst = min(intensity * (jetCore * 0.5 + jetWings * 0.5) * (0.4 + burstTrigger * 1.6 + clickBurst * 1.4), 5.0);
 
   let aberrationMag = burst * 0.025 * (1.0 + bass * 0.5) * (1.0 + dist * 0.5);
   let chromaDir = normalize(p + vec2<f32>(0.0001));
@@ -99,7 +137,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
 
   let freq = dist * 2.0 + mids * 0.3;
-  let synchro = synchrotron_spectrum(treble, freq) * burst * 4.0;
+  let synchro = synchrotron_spectrum(treble, freq) * burst * (3.2 + spectralVoice * 1.6);
   let hdrFlare = vec3<f32>(1.0, 0.78 + mids * 0.18, 0.35 + treble * 0.25) * burst * (1.2 + exposure * 1.5);
   let core = smoothstep(0.06, 0.0, dist) * vec3<f32>(1.0, 0.95, 0.85) * (0.6 + burstTrigger);
 
@@ -109,12 +147,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   hdr = hdr + film_grain(uv, time);
 
   let tonemapped = aces_tonemap(hdr);
-  let jetIntensity = burst * dopplerBeaming;
+  let jetIntensity = min(burst * dopplerBeaming, 12.0);
   let alpha = clamp((1.0 - extinction) * (0.12 + jetIntensity * 0.5 + burstTrigger * 0.2), 0.06, 0.92);
   let outDepth = clamp(depth + jetIntensity * 0.08, 0.0, 1.0);
   let finalPixel = vec4<f32>(tonemapped, alpha);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(burst, dopplerBeaming, magneticSpiral, alpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(min(burst, 5.0), dopplerBeaming, magneticSpiral, alpha));
 }

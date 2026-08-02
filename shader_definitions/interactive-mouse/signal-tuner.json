@@ -2,7 +2,7 @@
   "id": "signal-tuner",
   "name": "Signal Tuner",
   "url": "shaders/signal-tuner.wgsl",
-  "description": "TV-style signal interference with smoothed audio envelope, spring-damped mouse follow, and temporal feedback trails.",
+  "description": "TV-style signal interference with a smoothed audio envelope, spring-damped mouse follow, click retuning rings, and temporal feedback trails.",
   "params": [
     {
       "id": "frequency",
@@ -33,14 +33,52 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Frequency",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Interference",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Drift Speed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Static Noise",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "click-reactive",
+    "depth-aware"
   ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "supportsDepth": true,
+  "updated": true
 }

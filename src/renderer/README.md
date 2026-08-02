@@ -9,7 +9,9 @@ TypeScript WebGPU renderer split mirrors the C++ WASM layout (#965).
 | [`webgpu/device.ts`](webgpu/device.ts) | `wasm_renderer/device.cpp` | Adapter/device init, device-lost |
 | [`webgpu/resources.ts`](webgpu/resources.ts) | `wasm_renderer/resources.cpp` | Textures, buffers, samplers, resize |
 | [`webgpu/pipeline.ts`](webgpu/pipeline.ts) | `wasm_renderer/pipeline.cpp` | Bind groups, blit/compute pipelines, shader cache |
-| [`webgpu/frame.ts`](webgpu/frame.ts) | `wasm_renderer/frame.cpp` | RAF loop, slot dispatch, present |
+| [`webgpu/frame.ts`](webgpu/frame.ts) | `wasm_renderer/frame.cpp` | Thin RAF/uniform/history/timing facade |
+| [`webgpu/present.ts`](webgpu/present.ts) | `wasm_renderer/frame.cpp` (present section) | Scale copy, canvas acquire, final blit + submit |
+| [`webgpu/slotDispatch.ts`](webgpu/slotDispatch.ts) | `wasm_renderer/frame.cpp` (dispatch section) | Parallel/chained + GraphRunner dispatch and feedback |
 | [`webgpu/audioDepth.ts`](webgpu/audioDepth.ts) | `wasm_renderer/audio_depth.cpp` | FFT bins, depth upload, extraBuffer |
 | [`WebGPURenderer.ts`](WebGPURenderer.ts) | `wasm_renderer/renderer.cpp` | Thin `IRenderer` facade |
 
@@ -20,6 +22,7 @@ TypeScript WebGPU renderer split mirrors the C++ WASM layout (#965).
 | [`webgpu/WebGPUTiming.ts`](webgpu/WebGPUTiming.ts) | GPU timestamp queries (`timing.cpp`) |
 | [`webgpu/WebGPUMediaInput.ts`](webgpu/WebGPUMediaInput.ts) | Image/video upload |
 | [`webgpu/webgpuConstants.ts`](webgpu/webgpuConstants.ts) | Shared constants and slot types |
+| [`webgpu/frameState.ts`](webgpu/frameState.ts) | Renderer-owned state adapter for frame modules |
 | [`webgpuDevicePolicy.ts`](webgpuDevicePolicy.ts) | Adapter contract (shared with C++) |
 
 ## Pure dependencies (unchanged)
@@ -27,7 +30,7 @@ TypeScript WebGPU renderer split mirrors the C++ WASM layout (#965).
 - [`slotOrchestrator.ts`](slotOrchestrator.ts)
 - [`UniformBuffer.ts`](UniformBuffer.ts)
 - [`ShaderCompilation.ts`](ShaderCompilation.ts)
-- [`GraphRunner.ts`](GraphRunner.ts) — Tier-C multipass graphs ([`docs/MULTIPASS_GRAPH.md`](../docs/MULTIPASS_GRAPH.md), wired from `frame.ts`)
+- [`GraphRunner.ts`](GraphRunner.ts) — Tier-C multipass graphs ([`docs/MULTIPASS_GRAPH.md`](../docs/MULTIPASS_GRAPH.md), wired from `webgpu/slotDispatch.ts`)
 
 ## Tests
 

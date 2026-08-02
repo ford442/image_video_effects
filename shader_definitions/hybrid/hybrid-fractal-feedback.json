@@ -9,7 +9,12 @@
     "temporal-feedback",
     "rgb-delay",
     "fractal",
-    "randomization-safe"
+    "randomization-safe",
+    "mouse-driven",
+    "click-reactive",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -53,11 +58,47 @@
       "description": "Speed of palette color cycling"
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Zoom Level",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Feedback Strength",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "RGB Channel Delay",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Color Cycling",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
   "chunks_used": [
     "juliaIterate (julia-warp.wgsl)",
     "fbm2 flow field (gen_grid.wgsl)",
     "palette (gen-xeno-botanical-synth-flora.wgsl)"
   ],
   "created_by": "Agent 2A - Shader Surgeon",
-  "created_date": "2026-03-22"
+  "created_date": "2026-03-22",
+  "supportsDepth": true,
+  "updated": true
 }

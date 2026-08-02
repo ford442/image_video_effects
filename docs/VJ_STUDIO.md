@@ -40,20 +40,43 @@ Bindings persist in `localStorage` (`vj_control_bindings`).
 
 On phones and tablets, MIDI controls are hidden. Use touch sliders and chain URLs. Keyboard learn may still work with external keyboards on some tablets.
 
-## Tier C physics demo: Ripple Tank
+## Tier C physics demos (Physics Lab)
 
-**Shader id:** `ripple-tank` (Simulation category — look for the **graph · 7 passes** badge)
+Simulation category — look for the **graph · N passes** badge. Full guide: [`PHYSICS_LAB.md`](PHYSICS_LAB.md).
 
-A psychedelic 2D wave-interference tank using the Tier C graph runner:
+### Ripple Tank (`ripple-tank`, 7 passes)
 
-- **Click** anywhere to drop expanding ring ripples
-- **Hold** the mouse to drive a local oscillator
-- **Audio** bass boosts source strength; treble adds ambient rain droplets
-- **4 wave steps per frame** (Jacobi-style propagation) under the performance pass budget
+- **Click** to drop expanding ring ripples
+- **Hold** to drive a local oscillator
+- **Audio** bass boosts sources; treble densifies ambient rain
+- **4 wave steps/frame** under the pass budget — target **60 fps** on discrete GPU at **balanced**
 
-Works best on desktop WebGPU at **balanced** quality or higher (`requiresRgba32Float`). Target: 60 fps on a discrete GPU (e.g. RTX 3060-class) at 1080p internal resolution. If frame rate dips, switch to **battery** quality (fewer graph dispatches per frame).
+Params: Wave Speed, Damping, Source Strength, Boundary Reflect.
 
-Parameters: Wave Speed, Damping, Source Strength, Boundary Reflect — all four map to `zoom_params`.
+### Fabric of Reality (`fabric-of-reality`, 7 passes)
+
+- **Hold** near the cloth for a tear force; hover for a gentle push
+- **Self Heal** slider reconnects torn springs when elevated
+- Soft gravity + velocity clamp — drapes instead of exploding
+- Bass breathes wind; mouse spotlight rides the weave
+
+Params: Stiffness, Tear Threshold, Gravity, Self Heal.
+
+### Photonic Caustics (`photonic-caustics-graph`, 4 passes)
+
+- Move the mouse to steer the area light; hold raises light height
+- Temporal **accumulator** leaves chromatic ribbons (visible, not a faint wash)
+- `emit → trace×2 → accumulate` fits **battery** (4) and balanced alike — extra traces truncate first if over budget
+
+Params: IOR, Light Size, Dispersion, Intensity.
+
+### Pass budget in the HUD
+
+**Controls → Render Quality** shows `≤N passes/frame`. That is `performancePolicy.maxPassesPerFrame` (battery 4 / balanced 8 / ultra 16). Graphs that need more than N dispatches drop the tail of the expanded node list. Prefer **balanced+** for the 7-pass stacks.
+
+### Preset pack
+
+Open **Preset Packs** in VJ Studio for **Physics Lab · Ripple / Fabric / Photonic** (and the Triptych stack), or load [`public/presets/physics-lab.json`](../public/presets/physics-lab.json).
 
 ## Troubleshooting
 
@@ -62,8 +85,12 @@ Parameters: Wave Speed, Damping, Source Strength, Boundary Reflect — all four 
 | MIDI devices empty | Grant browser MIDI permission; use Chrome/Edge on desktop |
 | Chain link doesn't restore | Ensure shader ids exist in catalog; check URL wasn't truncated |
 | Import JSON fails | File must be `.vjset.json` from Export JSON or compatible schema v1 |
+| Ripple/fabric look “stuck” on battery | Raise quality to balanced — 7-pass graphs exceed the battery pass cap |
+| Fabric explodes | Lower Gravity / raise Stiffness; Self Heal mid-high after tearing |
 
 ## Related
 
+- [`PHYSICS_LAB.md`](PHYSICS_LAB.md) — flagship QA, attract dwell, thumbnails
+- [`MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md) — Tier C graph schema
 - [`WASM_SMOKE_TEST.md`](../WASM_SMOKE_TEST.md) — renderer smoke (separate from Studio)
 - Live Studio tab (canvas overlay) — recording / stream bridge via `LiveStudioTab`

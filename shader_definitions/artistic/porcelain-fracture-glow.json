@@ -17,9 +17,11 @@
     "audio-driven",
     "mouse-driven",
     "mouse-crack",
+    "click-reactive",
     "semantic-alpha",
     "depth-aware"
   ],
+  "supportsDepth": true,
   "params": [
     {
       "id": "crack",
@@ -53,5 +55,40 @@
       "max": 1.0,
       "step": 0.01
     }
-  ]
+  ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Crack Amount",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.4,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Glow Intensity",
+      "default": 0.85,
+      "min": 0.0,
+      "max": 1.6,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Light Temperature",
+      "default": 0.35,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Patina Age",
+      "default": 0.4,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }
