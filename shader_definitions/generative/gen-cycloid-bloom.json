@@ -12,7 +12,7 @@
     "abstract",
     "prismatic"
   ],
-  "description": "Five nested hypotrochoid (Spirograph-style) curves layered into a blooming floral mandala. Each layer uses a different gear ratio that slowly evolves, petal glowing with prismatic hues that respond to audio. Feedback accumulation burns bright arcs.",
+  "description": "Five nested hypotrochoid curves form a blooming floral mandala. A coarse-plus-refined curve search keeps the petals efficient, the mouse pulls the bloom without an audio gate, clicks send petal waves, and each layer shimmers from its own FFT voice while color feedback burns bright arcs.",
   "workgroup_size": [
     16,
     16,
@@ -57,5 +57,11 @@
   "updated": true,
   "id": "gen-cycloid-bloom",
   "url": "shaders/gen-cycloid-bloom.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "depth-output"
+  ]
 }

@@ -43,9 +43,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.zoom_config.x;
-    let mouse = u.zoom_config.yz;
+    let time = u.config.x;
+    let rawMouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
+
+    // Weighted cursor tracking for the magnetic grid center.
+    let hasSpringState = arrayLength(&extraBuffer) > 138u;
+    var mouse = rawMouse;
+    if (hasSpringState && extraBuffer[138] > 0.5) {
+        mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
+        var springPos = mouse;
+        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] <= 0.5) {
+            springPos = rawMouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 9.0;
+            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = springVel.x;
+        extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+    }
 
     // Audio reactivity
     let bass   = plasmaBuffer[0].x;
@@ -67,7 +94,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hasMouse = select(0.0, 1.0, mouse.x >= 0.0);
     let pull = smoothstep(0.4, 0.0, dist) * distortionStrength * hasMouse;
     let safeDVec = dVec + vec2<f32>(0.0001);
-    let distortedUV = uv - normalize(safeDVec) * pull * (0.5 + 0.5 * sin(time * 5.0));
+
+    // Clicks send magnetic shockwaves through the grid from normalized ripple
+    // positions; each wave contributes a bounded radial displacement.
+    var clickWarp = vec2<f32>(0.0);
+    var clickGlow = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        let safeAge = max(age, 0.0);
+        let live = step(0.0, age) * (1.0 - step(1.7, age));
+        let rv = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
+        let rd = length(rv);
+        let ring = 1.0 - smoothstep(0.015, 0.05, abs(rd - safeAge * 0.42));
+        let wave = ring * exp(-safeAge * 1.8) * live;
+        let radial = select(vec2<f32>(0.0), rv / max(rd, 0.0001), rd > 0.0001);
+        clickWarp += vec2<f32>(radial.x / aspect, radial.y) * wave * 0.035 * distortionStrength;
+        clickGlow = max(clickGlow, wave);
+    }
+
+    let distortedUV = clamp(
+        uv - normalize(safeDVec) * pull * (0.5 + 0.5 * sin(time * 5.0)) + clickWarp,
+        vec2<f32>(0.0),
+        vec2<f32>(1.0)
+    );
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
     let luma = get_luminance(baseColor.rgb);
@@ -82,7 +133,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gridMask = 1.0 - smoothstep(thickness, thickness + 0.02, min(gridLineX, gridLineY));
 
     // Pulse color — treble adds shimmer
-    let pulse = (0.5 + 0.5 * sin(time * pulseSpeed - dist * 10.0)) * (1.0 + treble * 0.2);
+    let cellBin = (u32(abs(floor(gridUV.x)) + abs(floor(gridUV.y))) % 8u) + 1u;
+    let fftCell = plasmaBuffer[cellBin].x;
+    let pulse = (0.5 + 0.5 * sin(time * pulseSpeed - dist * 10.0)) * (1.0 + treble * 0.15 + fftCell * 0.18);
     let gridColor = vec3<f32>(0.0, 1.0, 0.8) * pulse * glowIntensity;
 
     var finalColor = baseColor.rgb;
@@ -95,14 +148,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Mouse highlight — branchless
     let highlight = smoothstep(0.2, 0.0, dist) * mouseDown * hasMouse;
     finalColor += vec3<f32>(0.2, 0.4, 1.0) * highlight;
+    finalColor += vec3<f32>(0.15, 0.65, 1.0) * clickGlow * (0.35 + glowIntensity * 0.25);
 
-    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    // Hue-preserving bounded HDR avoids channel clipping on stacked grid lines.
+    finalColor = max(finalColor, vec3<f32>(0.0));
+    let peak = max(max(finalColor.r, finalColor.g), finalColor.b);
+    finalColor *= min(1.0, 1.6 / max(peak, 0.001));
 
     // Depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // Meaningful alpha: grid edge presence + audio pulse + base image alpha
-    let alpha = clamp(gridMask * 0.6 + luma * 0.2 + bass * 0.15 + baseColor.a * 0.1, 0.0, 1.0);
+    let alpha = clamp(gridMask * 0.6 + clickGlow * 0.2 + luma * 0.2 + bass * 0.15 + baseColor.a * 0.1, 0.0, 1.0);
     let fc = vec4<f32>(finalColor, alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), fc);

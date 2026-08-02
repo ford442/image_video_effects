@@ -396,7 +396,7 @@
 | `gen-quantum-aether-origami` | generative | 5.6 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `interactive-film-burn` | image | 5.6 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `engraving-stipple` | artistic | 5.6 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `rgb-delay-brush` | image | 5.6 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
+| `rgb-delay-brush` | interactive-mouse | 5.6 KB | B | complex | completed | Batch 25 | advanced | Spring/click temporal brush, valid RGB FFT voices, scoped absorption model. |
 | `glitch-ripple-drag` | image | 5.6 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `gen-fractal-clockwork` | generative | 5.6 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `vortex-warp` | image | 5.5 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
@@ -432,7 +432,7 @@
 | `magma-fissure` | image | 5.2 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `voronoi-chaos` | distortion | 5.2 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `cyber-rain-interactive` | retro-glitch | 5.2 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `knitted-fabric` | image | 5.2 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `knitted-fabric` | image | 5.2 KB | B | complex | completed | Batch 24 | basic | Spring pull/click plucks, per-stitch FFT, relief depth, display-in-A ownership. |
 | `glass-brick-distortion` | image | 5.2 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `gen-graviton-plasma-lotus` | generative | 5.2 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `voronoi-faceted-glass` | image | 5.1 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
@@ -480,7 +480,7 @@
 | `sim-fluid-feedback-field-pass3` | unknown | 4.3 KB | B | mouse_interactive | pending | — | none | Add mouse from scratch. MISSING JSON. |
 | `holographic-glitch` | image | 4.3 KB | B | mouse_interactive | pending | — | none | Add mouse interaction. Current: none. |
 | `holographic_interference` | lighting-effects | 4.2 KB | B | mouse_interactive | pending | — | none | Add mouse interaction. Current: none. |
-| `hybrid-fractal-feedback` | generative | 4.0 KB | B | mouse_interactive | pending | — | none | Add mouse interaction. Current: none. |
+| `hybrid-fractal-feedback` | hybrid | 4.0 KB | B | mouse_interactive | completed | Batch 25 | advanced | Four control mappings fixed, safe palette, spring/click Julia, real RGB delay. |
 | `prismatic-feedback-loop` | image | 4.0 KB | B | mouse_interactive | pending | — | none | Add mouse interaction. Current: none. |
 | `holographic-edge-ripple` | image | 4.0 KB | B | mouse_interactive | pending | — | none | Add mouse interaction. Current: none. |
 | `fire_smoke_volumetric` | simulation | 4.0 KB | B | mouse_interactive | pending | — | none | Add mouse interaction. Current: none. |
@@ -602,7 +602,7 @@
 | `sim-fluid-feedback-field-pass2` | unknown | 4.1 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. MISSING JSON. |
 | `luma-smear-interactive` | image | 4.1 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
 | `ascii-glyph` | image | 4.1 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
-| `night-vision-scope` | image | 4.1 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
+| `night-vision-scope` | image | 4.1 KB | B | mouse_interactive | completed | Batch 24 | basic | Spring scope, click intensifier rings, FFT scanlines, honest relief depth. |
 | `cyber-rain` | image | 4.1 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
 | `quantum-prism` | image | 4.1 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
 | `luma-topography` | image | 4.1 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
@@ -618,9 +618,9 @@
 | `refraction-tunnel` | image | 4.0 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `matrix-curtain` | image | 4.0 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `luma-force` | image | 4.0 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `cyber-grid-pulse` | visual-effects | 4.0 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
+| `cyber-grid-pulse` | visual-effects | 4.0 KB | B | mouse_interactive | completed | Batch 24 | advanced | Spring center, click shockwaves, per-cell FFT, bounded hue-preserving HDR. |
 | `cyber-scan` | visual-effects | 4.0 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `paper-cutout` | image | 4.0 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `paper-cutout` | interactive-mouse | 4.0 KB | B | mouse_interactive | completed | Batch 25 | basic | Spring light, click emboss, safe direction, FFT layers, honest relief depth. |
 | `reactive-glass-grid` | image | 4.0 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `liquid-warp-interactive` | distortion | 4.0 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `magnetic-ring` | image | 4.0 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
@@ -631,12 +631,12 @@
 | `interactive-voronoi-lens` | image | 3.9 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `complex-exponent-warp` | distortion | 3.9 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `motion-revealer` | interactive-mouse | 3.9 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `fractal-noise-dissolve` | image | 3.9 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `fractal-noise-dissolve` | image | 3.9 KB | B | mouse_interactive | completed | Batch 23 | advanced | Spring tracking, click dissolve rings, bounded burn emission, depth reuse. |
 | `codebreaker-reveal` | interactive-mouse | 3.9 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `neural-nexus` | image | 3.9 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `directional-blur-wipe` | image | 3.9 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `pixel-explode` | interactive-mouse | 3.9 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `blueprint-reveal` | image | 3.9 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `blueprint-reveal` | image | 3.9 KB | B | mouse_interactive | completed | Batch 24 | basic | Spring brush, click ink blooms, tile FFT voices, raw mask feedback preserved. |
 | `gen_capabilities` | unknown | 3.9 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. MISSING JSON. |
 | `contour-flow` | image | 3.9 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `interactive-emboss` | image | 3.9 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
@@ -648,34 +648,34 @@
 | `navier-stokes-dye` | simulation | 3.8 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `spectral-smear` | image | 3.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `data-moshing` | image | 3.8 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `split-dimension` | image | 3.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `split-dimension` | interactive-mouse | 3.8 KB | B | mouse_interactive | completed | Batch 25 | basic | Spring seam, click fractures, FFT breakup, bounded HDR, dimension depth. |
 | `temporal-distortion-field` | distortion | 3.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `chroma-vortex` | visual-effects | 3.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `moire-interference` | image | 3.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `interactive-pixel-wind` | image | 3.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `ripple-blocks` | image | 3.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `fiber-optic-weave` | image | 3.7 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
+| `fiber-optic-weave` | interactive-mouse | 3.7 KB | B | mouse_interactive | completed | Batch 25 | advanced | Safe FFT palette, spring/click plucks, bounded glow, relief depth. |
 | `scanline-drift` | retro-glitch | 3.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `speed-lines-focus` | image | 3.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `cyber-halftone-scanner` | image | 3.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `circular-pixelate` | image | 3.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `fractal-glass-distort` | distortion | 3.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `data-stream` | image | 3.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `data-stream` | image | 3.7 KB | B | mouse_interactive | completed | Batch 24 | basic | Aspect-correct spring wake, click eddies, strip FFT, treble characters. |
 | `bio-touch` | image | 3.6 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `heat-haze` | image | 3.6 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `prism-displacement` | distortion | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `steampunk-gear-lens` | image | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `steampunk-gear-lens` | image | 3.6 KB | B | mouse_interactive | completed | Batch 23 | advanced | Spring tracking, mechanical click kick/flares, tooth-lit rim, relief depth. |
 | `radial-slit-scan` | image | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `gen_wave_equation` | unknown | 3.6 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. MISSING JSON. |
 | `spectral-rain` | image | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `scan-slice` | image | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `scan-slice` | interactive-mouse | 3.6 KB | B | mouse_interactive | completed | Batch 25 | basic | Spring slice bank, click stamps, safe palette/FFT, displaced depth. |
 | `magnetic-pixels` | image | 3.6 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `cursor-aura` | image | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `stipple-render` | artistic | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `alucinate` | image | 3.6 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `luminance-wind` | image | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `interactive-zoom-blur` | image | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `quantum-tunnel-interactive` | image | 3.6 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
+| `quantum-tunnel-interactive` | image | 3.6 KB | B | mouse_interactive | completed | Batch 24 | advanced | Spring tunnel, click mouths, sector FFT aberration, bounded HDR/depth relief. |
 | `sonar-pulse` | image | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `frosty-window` | image | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `spectral-distortion` | image | 3.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
@@ -690,7 +690,7 @@
 | `ion-stream` | image | 3.5 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `chroma-kinetic` | image | 3.5 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `mouse-pixel-sort` | image | 3.5 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `vhs-tracking-mouse` | image | 3.5 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
+| `vhs-tracking-mouse` | image | 3.5 KB | B | mouse_interactive | completed | Batch 24 | advanced | Spring tracking head, localized click tears, row FFT hiss, displaced depth. |
 | `interactive-glitch-brush` | image | 3.5 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `crt-clear-zone` | image | 3.5 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `spectral-slit-scan` | image | 3.5 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
@@ -704,7 +704,7 @@
 | `melting-oil` | simulation | 3.5 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `luma-slice-interactive` | image | 3.4 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `fractal-image-surf` | image | 3.4 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `glitch-slice-mirror` | image | 3.4 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `glitch-slice-mirror` | image | 3.4 KB | B | mouse_interactive | completed | Batch 24 | basic | Spring seam, click slice fractures, block FFT/treble breakup, comments fixed. |
 | `pixel-sort-radial` | image | 3.4 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `quad-mirror` | image | 3.4 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `pixel-stretch-interactive` | image | 3.4 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
@@ -761,7 +761,7 @@
 | `hyper-chromatic-delay` | image | 3.1 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `sonic-boom` | distortion | 3.1 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
 | `mirror-drag` | interactive-mouse | 3.1 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `signal-tuner` | image | 3.1 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
+| `signal-tuner` | interactive-mouse | 3.1 KB | B | mouse_interactive | completed | Batch 25 | basic | Safe spring/envelope state, click tuning, origin feedback fix, relief depth. |
 | `waveform-glitch` | image | 3.0 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
 | `temporal-rgb-smear` | image | 3.0 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
 | `elastic-chromatic` | image | 3.0 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |

@@ -23,7 +23,7 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Speed, y=Density, z=Turbulence, w=Glow
   ripples: array<vec4<f32>, 50>,
@@ -50,10 +50,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glow = clamp(u.zoom_params.w, 0.0, 1.0); // Digital Glow
 
     let time = u.config.x;
+    let aspect = resolution.x / max(resolution.y, 0.001);
 
-    // Mouse Interaction
-    var mousePos = u.zoom_config.yz;
-    let dist = distance(uv, mousePos);
+    // Spring-following wake center in persistent-safe slots [133..138].
+    let rawMouse = u.zoom_config.yz;
+    let hasSpringState = arrayLength(&extraBuffer) > 138u;
+    var mousePos = rawMouse;
+    if (hasSpringState && extraBuffer[138] > 0.5) {
+        mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
+        var springPos = mousePos;
+        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] <= 0.5) {
+            springPos = rawMouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 8.5;
+            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = springVel.x;
+        extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+    }
+
+    // Aspect-correct interaction keeps the wake circular on wide canvases.
+    let dist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
     let interactRadius = 0.3;
     let interact = smoothstep(interactRadius, 0.0, dist) * turbulence;
 
@@ -65,11 +93,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rand = fract(sin(stripIdx * 12.9898) * 43758.5453);
 
     // Vertical Flow
-    let flowSpeed = (rand * 0.5 + 0.5) * speed * 0.5;
+    let stripBin = (u32(abs(stripIdx)) % 8u) + 1u;
+    let fftStrip = plasmaBuffer[stripBin].x;
+    let flowSpeed = (rand * 0.5 + 0.5) * speed * 0.5 * (1.0 + fftStrip * 0.28);
     // Mouse slows down or speeds up flow? Or deflects?
     // Let's make mouse create a "wake" that pushes pixels sideways
 
-    let xOffset = interact * sin(uv.y * 10.0 + time * 5.0) * 0.05;
+    var clickWake = 0.0;
+    var clickGlow = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        let safeAge = max(age, 0.0);
+        let live = step(0.0, age) * (1.0 - step(1.6, age));
+        let clickVec = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
+        let clickDist = length(clickVec);
+        let ring = 1.0 - smoothstep(0.018, 0.065, abs(clickDist - safeAge * 0.34));
+        let wave = ring * exp(-safeAge * 1.7) * live;
+        clickWake += wave * sin(uv.y * 24.0 + rp.x * 19.0 + safeAge * 8.0);
+        clickGlow = max(clickGlow, wave);
+    }
+
+    let xOffset = interact * sin(uv.y * 10.0 + time * 5.0) * 0.05 + clickWake * turbulence * 0.045;
 
     var sampleUV = uv;
     sampleUV.x = sampleUV.x + xOffset;
@@ -92,10 +138,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let digitalColor = vec3<f32>(0.0, lum * 1.5, lum * 0.2); // Green matrix style
 
     // Random "bright" characters
-    let bright = step(0.98, noise * (sin(time * 2.0 + stripIdx) * 0.5 + 0.5));
+    let brightThreshold = 0.98 - treble * 0.04 - fftStrip * 0.035;
+    let bright = step(brightThreshold, noise * (sin(time * 2.0 + stripIdx) * 0.5 + 0.5));
 
     let finalRGB = mix(color.rgb, digitalColor, glow);
-    let outputColor = finalRGB + vec3<f32>(0.0, bright * glow, 0.0);
+    var outputColor = finalRGB + vec3<f32>(0.0, bright * glow + clickGlow * glow * 0.65, clickGlow * glow * 0.12);
+    let outputPeak = max(max(outputColor.r, outputColor.g), outputColor.b);
+    outputColor *= min(1.0, 1.8 / max(outputPeak, 0.001));
 
     // Alpha: digital glow and stream brightness drive compositing weight
     let streamLuma = dot(outputColor, vec3<f32>(0.299, 0.587, 0.114));
@@ -106,7 +155,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, coord, outColor);
 
     // Passthrough depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, outColor);
 }

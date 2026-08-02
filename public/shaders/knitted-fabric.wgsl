@@ -23,7 +23,7 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=StitchSize, y=PullStrength, z=PullRadius, w=TextureDepth
   ripples: array<vec4<f32>, 50>,
@@ -43,12 +43,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
-  let mouse = u.zoom_config.yz;
   let aspect = resolution.x / resolution.y;
   let audio = plasmaBuffer[0].xyz;
+  let rawMouse = u.zoom_config.yz;
+
+  // The fabric pull point trails the pointer with a soft, critically damped
+  // spring. Persistent state uses only extraBuffer[133..138].
+  let hasSpringState = arrayLength(&extraBuffer) > 138u;
+  var mouse = rawMouse;
+  if (hasSpringState && extraBuffer[138] > 0.5) {
+    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
+    var springPos = mouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      springPos = rawMouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 6.0;
+      let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+  }
 
   let stitchScale = 24.0 + u.zoom_params.x * 124.0;
-  let pullStrength = u.zoom_params.y * 0.55;
+  let pullStrength = u.zoom_params.y * 0.55 * (1.0 + u.zoom_config.w * 0.20);
   let pullRadius = 0.04 + u.zoom_params.z * 0.70;
   let textureDepth = u.zoom_params.w;
 
@@ -56,8 +84,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pullDist = length(pullVec);
   let pullDir = select(vec2<f32>(0.0), pullVec / max(pullDist, 0.0001), pullDist > 0.0001);
   let pullMask = 1.0 - smoothstep(0.0, pullRadius, pullDist);
+  // Clicks pluck the textile as expanding waves at normalized ripple positions.
+  var clickWarp = vec2<f32>(0.0);
+  var clickRidge = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i++) {
+    let rp = u.ripples[i];
+    let age = time - rp.z;
+    let safeAge = max(age, 0.0);
+    let live = step(0.0, age) * (1.0 - step(2.0, age));
+    let rv = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
+    let rd = length(rv);
+    let ring = 1.0 - smoothstep(0.012, 0.045, abs(rd - safeAge * 0.27));
+    let wave = ring * exp(-safeAge * 1.35) * live;
+    let radial = select(vec2<f32>(0.0), rv / max(rd, 0.0001), rd > 0.0001);
+    clickWarp += vec2<f32>(radial.x / aspect, radial.y) * wave * pullStrength * 0.12;
+    clickRidge = max(clickRidge, wave);
+  }
+
   let distortedUV = clamp(
-    uv - pullDir * pullMask * pullStrength * vec2<f32>(0.18 / aspect, 0.18),
+    uv - pullDir * pullMask * pullStrength * vec2<f32>(0.18 / aspect, 0.18) + clickWarp,
     vec2<f32>(0.0),
     vec2<f32>(1.0)
   );
@@ -81,7 +127,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fiberNoise =
     sin(local.x * 24.0 + local.y * 31.0 + time * 1.5) * 0.06 +
     cos(local.y * 18.0 - time * 2.1) * 0.04;
-  let shimmer = (audio.x * 0.35 + audio.y * 0.20 + audio.z * 0.15) * smoothstep(0.55, 1.0, yarnMask);
+  let stitchBin = (u32(abs(cellId.x) + abs(cellId.y) * 3.0) % 8u) + 1u;
+  let fftStitch = plasmaBuffer[stitchBin].x;
+  let shimmer = (audio.x * 0.28 + audio.y * 0.16 + audio.z * 0.10 + fftStitch * 0.22) * smoothstep(0.55, 1.0, yarnMask);
 
   var weaveUV = (cellId + vec2<f32>(0.5, 0.5)) / stitchScale;
   if (oddRow) {
@@ -98,15 +146,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor = mix(finalColor, baseColor * 0.45, gapMask * 0.45 * textureDepth);
   finalColor = finalColor + vec3<f32>(fiberNoise) * 0.12;
   finalColor = finalColor + yarnTint * shimmer * (0.40 + 0.60 * textureDepth);
+  finalColor += vec3<f32>(0.35, 0.18, 0.08) * clickRidge * (0.15 + textureDepth * 0.25);
 
   var finalAlpha = mix(0.42, 0.90, yarnMask);
   finalAlpha = mix(finalAlpha, finalAlpha * 0.74, pullMask * pullStrength);
   finalAlpha = clamp(finalAlpha - gapMask * 0.12 + shimmer * 0.08, 0.28, 0.95);
 
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, distortedUV, 0.0).r;
-  let depthOut = clamp(mix(baseDepth, 0.35 + 0.55 * yarnMask, 0.15 + 0.35 * textureDepth), 0.0, 1.0);
+  let depthOut = clamp(mix(baseDepth, 0.35 + 0.55 * yarnMask, 0.15 + 0.35 * textureDepth) - clickRidge * 0.035, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+  let display = vec4<f32>(finalColor, finalAlpha);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), display);
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(yarnMask, pullMask, shimmer, finalAlpha));
+  // A is the host's primary feedback/output owner; keep display color there and
+  // move the diagnostic material masks to B.
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), display);
+  textureStore(dataTextureB, vec2<i32>(global_id.xy), vec4<f32>(yarnMask, max(pullMask, clickRidge), shimmer, finalAlpha));
 }

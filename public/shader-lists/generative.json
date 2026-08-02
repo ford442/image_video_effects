@@ -4074,7 +4074,7 @@
     "tags": [
       "generative"
     ],
-    "description": "",
+    "description": "Boundary-safe bioluminescent reaction-diffusion with raw A/B simulation feedback, state-derived cyan-violet species color, FFT-bin shimmer, depth-scaled glow, and direct intensity, speed, scale, and mouse-influence controls.",
     "workgroup_size": [
       16,
       16,
@@ -4119,7 +4119,13 @@
     "updated": true,
     "id": "gen-bioluminescent-reaction-diffusion",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioluminescent-reaction-diffusion.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "simulation",
+      "depth-aware",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Biomechanical Hive",
@@ -6882,7 +6888,7 @@
       "abstract",
       "prismatic"
     ],
-    "description": "Five nested hypotrochoid (Spirograph-style) curves layered into a blooming floral mandala. Each layer uses a different gear ratio that slowly evolves, petal glowing with prismatic hues that respond to audio. Feedback accumulation burns bright arcs.",
+    "description": "Five nested hypotrochoid curves form a blooming floral mandala. A coarse-plus-refined curve search keeps the petals efficient, the mouse pulls the bloom without an audio gate, clicks send petal waves, and each layer shimmers from its own FFT voice while color feedback burns bright arcs.",
     "workgroup_size": [
       16,
       16,
@@ -6927,7 +6933,13 @@
     "updated": true,
     "id": "gen-cycloid-bloom",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-cycloid-bloom.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "depth-output"
+    ]
   },
   {
     "name": "Cymatic Plasma-Mandalas",
@@ -9422,7 +9434,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Each tube shoots a sequence of colored stars straight upward with comet trails. Bass makes bigger stars, treble increases fire rate. The quintessential backyard July 4th barrage. Mouse aims a personal roman candle at the cursor.",
+    "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Bass enlarges launches, treble adds trail and burst detail, held mouse fire follows the normalized cursor, and each click launches a discrete personal candle. Bright shells produce luminance-derived depth.",
     "workgroup_size": [
       16,
       16,
@@ -9467,7 +9479,14 @@
     "updated": true,
     "id": "gen-fireworks-roman-candle",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-fireworks-roman-candle.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "semantic-alpha",
+      "depth-output"
+    ]
   },
   {
     "name": "4th of July — Smoke Bloom",
@@ -22226,7 +22245,7 @@
       "audio",
       "music"
     ],
-    "description": "Riemann zeta function visualization on the critical line. Magnitude creates landscape height, zeros form valleys. Audio reactivity modulates term count and color cycling.",
+    "description": "Critical-strip Riemann zeta landscape evaluated through a guarded Dirichlet-eta continuation. Magnitude creates height, near-zeros form valleys, click ripples refract the domain, and eight FFT regions voice the color field.",
     "workgroup_size": [
       16,
       16,
@@ -22271,7 +22290,13 @@
     "updated": true,
     "id": "gen-zeta-function-landscape",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-zeta-function-landscape.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "depth-output"
+    ]
   },
   {
     "id": "gen-capabilities",

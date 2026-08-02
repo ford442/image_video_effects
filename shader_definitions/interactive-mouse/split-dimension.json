@@ -2,12 +2,14 @@
   "id": "split-dimension",
   "name": "Split Dimension",
   "url": "shaders/split-dimension.wgsl",
-  "description": "Splits the screen into two dimensions. One side is normal, the other is a glitched negative. The split follows the mouse.",
+  "description": "Splits the screen into normal and glitched-negative dimensions with a spring-weighted mouse seam and click-triggered fractures.",
   "features": [
     "mouse-driven",
     "glitch",
     "upgraded-rgba",
-    "audio-reactive"
+    "audio-reactive",
+    "click-reactive",
+    "depth-aware"
   ],
   "params": [
     {
@@ -39,8 +41,44 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Glitch Intensity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Color Shift",
+      "default": 0.2,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Negative Str",
+      "default": 1,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Split Angle",
+      "default": 0,
+      "min": -1,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "supportsDepth": true,
+  "updated": true
 }

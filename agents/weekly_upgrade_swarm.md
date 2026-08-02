@@ -5,9 +5,86 @@
 
 ---
 
-## Recently Completed (214 shaders)
+## Recently Completed (238 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 25 (8 shaders) — 2026-08-02 — SMALLEST-FIRST ALL-CATEGORY EDITION 8
+
+Eighth all-category wave: the next clean single-pass 112–114 liners across
+interactive-mouse, hybrid, and post-processing. This cohort closed unusually
+deep contract bugs: Hybrid Fractal's four UI controls were all mapped to the
+wrong WGSL behaviors; Fiber Optic and Hybrid Fractal assumed a fake 256-entry
+audio palette; Signal Tuner hid state in display pixel (0,0); the history-ring
+effect advertised mouse interaction but never read it; Paper Cutout treated a
+valid top-left pointer as uninitialized and claimed depth while only passing it
+through. All eight now have guarded normalized click interaction, meaningful
+regional FFT behavior, exact additive parameter mirrors, and persistent state
+only in `extraBuffer[133..139]`. Binding-13 history indexing and raw feedback
+ownership remain intact. Explicit eight-file gate: 8/8 green (Naga + bindgroup,
+zero workgroup warnings or buffer violations); dead-slider/JSON/list audits:
+green; lists and 1,306-entry manifest regenerated; duplicates: 1,319/1,319
+unique; Jest: 68 suites / 464 pass / 1 skip; `SKIP_WASM_BUILD=1 npm run build`:
+green. Direct `tsx` hit the known VM IPC `EPERM`; `node --import tsx` rebuilt the
+manifest. Live GPU visual QA remains the hardware handoff. Notes:
+`swarm-outputs/codex-2026-08-02-b25/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 231 | `signal-tuner` | 25 | 112→155 (+43) | True spring/envelope safe state; origin feedback fixed; click retuning; regional FFT/depth. |
+| 232 | `fiber-optic-weave` | 25 | 113→160 (+47) | Unsafe palette fixed; spring/click fiber plucks; per-fiber FFT; bounded glow/relief. |
+| 233 | `hybrid-fractal-feedback` | 25 | 113→175 (+62) | All four mappings fixed; safe palette; real RGB delay; spring/click Julia relief. |
+| 234 | `scan-slice` | 25 | 113→163 (+50) | Spring slice bank; click-stamped slices; valid FFT palette; mids/treble wired; displaced depth. |
+| 235 | `split-dimension` | 25 | 113→164 (+51) | Spring seam; click fractures; per-band FFT; bounded glitch output; dimension-following depth. |
+| 236 | `temporal-decay-multiresolution` | 25 | 113→170 (+57) | Real mouse lens; click history echoes; regional FFT decay; binding-13/history-head contract preserved. |
+| 237 | `paper-cutout` | 25 | 114→159 (+45) | Top-left/safe-normal fix; spring light; click emboss; FFT layers; honest relief depth. |
+| 238 | `rgb-delay-brush` | 25 | 114→159 (+45) | Scoped model claim; spring/click temporal brush; valid RGB FFT voices; raw A feedback preserved. |
+
+### Batch 24 (8 shaders) — 2026-08-02 — SMALLEST-FIRST ALL-CATEGORY EDITION 7
+
+Seventh wave of the all-category pool: the next eight clean, single-pass 110–112
+liners across interactive-mouse, visual-effects, and distortion. The upgrade
+adds spring-weighted interaction, normalized guarded click behavior, and
+per-region FFT voices while preserving live slider and feedback contracts.
+Special correctness wins: `night-vision-scope` now earns its depth-aware claim;
+`data-stream` no longer has an elliptical mouse wake and its dead treble signal
+now drives character emergence; `knitted-fabric` no longer stores masks in the
+host-primary A slot; `blueprint-reveal` keeps its raw temporal mask in A without
+display-color contamination. All new persistent state is confined to
+`extraBuffer[133..138]`. Explicit eight-file gate: 8/8 green (Naga + bindgroup,
+zero workgroup warnings or buffer violations); dead-slider/JSON contract audits:
+green; lists and 1,306-entry manifest regenerated; duplicates: 1,319/1,319
+unique; Jest: 68 suites / 464 pass / 1 skip; `SKIP_WASM_BUILD=1 npm run build`
+and the final no-prebuild asset rebuild: green. The VM's direct `tsx` manifest
+command hit its known IPC `EPERM`, so the documented `node --import tsx` path
+provided manifest proof. Live GPU visual QA remains the hardware handoff.
+Notes: `swarm-outputs/codex-2026-08-02-b24/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 223 | `quantum-tunnel-interactive` | 24 | 110→162 (+52) | Spring tunnel center; click mouths; sector FFT aberration; bounded HDR; relief depth. |
+| 224 | `vhs-tracking-mouse` | 24 | 110→157 (+47) | Spring tracking head; localized click tears; row FFT hiss; displaced depth sampling. |
+| 225 | `blueprint-reveal` | 24 | 111→160 (+49) | Spring brush; click ink blooms; tile FFT voices; raw A-mask feedback preserved. |
+| 226 | `cyber-grid-pulse` | 24 | 111→168 (+57) | Spring magnet; click grid shockwaves; cell FFT voices; clamped UVs and bounded HDR. |
+| 227 | `night-vision-scope` | 24 | 111→161 (+50) | Spring scope; click intensifier rings; FFT scanlines; honest lens relief depth. |
+| 228 | `data-stream` | 24 | 112→161 (+49) | Aspect-correct spring wake; click eddies; strip FFT; dead treble wired; bounded emission. |
+| 229 | `glitch-slice-mirror` | 24 | 112→163 (+51) | Spring seam; localized click fractures; nonnegative intensity; block FFT/treble breakup. |
+| 230 | `knitted-fabric` | 24 | 112→165 (+53) | Spring pull; click plucks; stitch FFT/relief; display moved to A and masks to B. |
+
+### Batch 23 (8 shaders) — 2026-08-01 — GENERATIVE + IMAGE UPGRADES
+
+Focused correctness/performance wave with a literal 4-generative/4-image split. The two remaining fireworks-family normalized-mouse bugs were fixed and their flat depth behavior replaced; the zeta landscape now uses a guarded 24–96-term Dirichlet-eta continuation instead of a divergent critical-strip series; bioluminescent reaction-diffusion now clamps its stencil and no longer treats the audio buffer as a 256-entry palette; Cycloid Bloom drops from 1,205 to 360 curve-distance tests per pixel. Image wins include real CRT click damage/treble static, visible Steampunk tooth shading with single-mask compositing, honest Depth Parade shell depth, and bounded/sprung Fractal Dissolve erosion. All ripple loops are guarded, persistent state uses only `extraBuffer[133..138]`, and feedback roles remain unchanged. Explicit 8-file gate: green (Naga + bindgroup, 0 workgroup warnings, 0 extraBuffer violations); focused dead-slider/buffer audits: green; JSON contracts: preserved; lists/manifests regenerated; duplicate check: 1,319/1,319 unique; Jest: 68 suites / 464 pass / 1 skip; `SKIP_WASM_BUILD=1` production build: green. Notes: `swarm-outputs/codex-2026-08-01-b23/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 215 | `gen-fireworks-roman-candle` | 23 | 111→151 (+40) | Normalized pointer fixed; discrete click candles; treble detail loops; luminance depth; A/B packing preserved. |
+| 216 | `gen-zeta-function-landscape` | 23 | 127→151 (+24) | Guarded Dirichlet-eta continuation (24–96 terms); ripple refraction; eight FFT color regions; height/A feedback preserved. |
+| 217 | `gen-bioluminescent-reaction-diffusion` | 23 | 131→142 (+11) | Boundary-clamped stencil; state-derived palette with FFT bins 1–8; four honest controls; raw A/B state preserved. |
+| 218 | `gen-cycloid-bloom` | 23 | 133→171 (+38) | 64+8 nearest-curve search; mouse pull without bass gate; click petal waves; per-layer FFT shimmer. |
+| 219 | `crt-scanline-damage` | 23 | 112→151 (+39) | Click damage/degauss bands; dead treble→static scars; temporal phosphor preserved; indexed updatedParams. |
+| 220 | `steampunk-gear-lens` | 23 | 112→169 (+57) | Tooth-lit rim; double mask removed; spring [133..138]; click kick/flares; relief depth; indexed updatedParams. |
+| 221 | `fireworks-depth-parade` | 23 | 113→163 (+50) | Normalized pointer fixed; ripple depth barrages; source/shell depth; supportsDepth corrected; indexed updatedParams. |
+| 222 | `fractal-noise-dissolve` | 23 | 116→177 (+61) | Category fixed; hue-preserving burn knee; spring [133..138]; click dissolve rings; one depth sample; indexed updatedParams. |
 
 ### Batch 22 (8 shaders) — 2026-07-31 — SMALLEST-FIRST ALL-CATEGORY EDITION 6
 

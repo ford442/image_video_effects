@@ -33,12 +33,47 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Edge Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Grid Opacity",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Reveal Radius",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Edge Softness",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
     "temporal-ink",
     "depth-hatch",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "click-reactive"
   ],
   "tags": [
     "filter",
@@ -47,5 +82,7 @@
     "ink",
     "reveal",
     "schematic"
-  ]
+  ],
+  "supportsDepth": true,
+  "updated": true
 }

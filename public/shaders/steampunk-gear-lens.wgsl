@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Steampunk Gear Lens
 //  Category: image
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, mechanical-click,
+//            spring-tracking, depth-aware-relief
 //  Complexity: Medium
 //  Phase A Upgrade Swarm
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-08-01 (Batch 23)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,7 +24,7 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Size, y=Teeth, z=Speed, w=Sepia
   ripples: array<vec4<f32>, 50>,
@@ -39,7 +40,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let aspectVec = vec2<f32>(aspect, 1.0);
-    var mouse = u.zoom_config.yz;
+    let mouse = u.zoom_config.yz;
     let time = u.config.x;
 
     // Audio reactivity
@@ -52,14 +53,61 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let speed = (clamp(u.zoom_params.z, 0.0, 1.0) - 0.5) * 4.0;
     let sepia_str = clamp(u.zoom_params.w, 0.0, 1.0);
 
+    // Critically damped cursor tracking. Persistent state lives exclusively
+    // in the shader-safe range: pos [133..134], vel [135..136], time [137],
+    // initialized flag [138]. Engine audio/housekeeping slots are untouched.
+    let hasSpringState = arrayLength(&extraBuffer) > 138u;
     var center = mouse;
-    var p = (uv - center) * aspectVec;
+    if (hasSpringState && extraBuffer[138] > 0.5) {
+        center = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
+        var springPos = center;
+        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] <= 0.5) {
+            springPos = mouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 7.0;
+            let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel = springVel + accel * dt;
+            springPos = springPos + springVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = springVel.x;
+        extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+    }
+
+    let p = (uv - center) * aspectVec;
     let r = length(p);
     let a = atan2(p.y, p.x);
 
+    // Each click gives the mechanism a signed rotational kick and lights the
+    // rim while a smaller flare remains localized at the strike point.
+    var mechanicalKick = 0.0;
+    var rimKick = 0.0;
+    var localFlare = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        if (age < 0.0 || age > 1.8) { continue; }
+        let clickHash = fract(sin(dot(rp.xy, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+        let direction = select(-1.0, 1.0, clickHash >= 0.5);
+        let envelope = exp(-age * 2.8);
+        mechanicalKick += direction * envelope * 0.75;
+        rimKick += envelope;
+        let clickDist = length((uv - rp.xy) * aspectVec);
+        localFlare += smoothstep(0.12, 0.0, clickDist) * envelope;
+    }
+
     // Rotation with audio-reactive boost
     let audioBoost = 1.0 + bass * 0.5;
-    let rot = time * speed * audioBoost;
+    let rot = time * speed * audioBoost + mechanicalKick;
     let a_rot = a - rot;
 
     // Gear Shape
@@ -71,12 +119,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Rim
     let rim = smoothstep(gear_r - 0.05, gear_r - 0.04, r) * mask;
+    let toothLight = clamp(0.42 + tooth * 0.75 + treble * 0.08, 0.0, 1.25);
+    let rimFlare = rim * min(rimKick * 0.75 + localFlare * 0.55, 1.25);
 
     // Lens UVs
     let c = cos(rot);
     let s = sin(rot);
     let p_rot = vec2<f32>(p.x * c - p.y * s, p.x * s + p.y * c);
-    let uv_lens = center + p_rot / aspectVec;
+    let uv_lens = clamp(center + p_rot / aspectVec, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Sample both inside and outside
     let col_lens = textureSampleLevel(readTexture, u_sampler, uv_lens, 0.0);
@@ -89,8 +139,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = mix(col_lens, vec4<f32>(sepia_col, sepiaAlpha), sepia_str);
 
     // Add Metallic Rim
-    let metal = vec4<f32>(0.8, 0.6, 0.3, 0.9);
-    col = mix(col, metal, rim);
+    let metalRGB = vec3<f32>(0.72, 0.48, 0.20) * (0.72 + toothLight * 0.48)
+      + vec3<f32>(1.0, 0.62, 0.20) * rimFlare * (0.6 + mids * 0.25);
+    let metal = vec4<f32>(metalRGB, 0.9);
+    col = mix(col, metal, clamp(rim + rimFlare * 0.45, 0.0, 1.0));
 
     // Blend inside/outside using mask
     let color = mix(col_bg, col, mask);
@@ -99,14 +151,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(mask * 0.5 + rim * 0.3 + luma * 0.2, 0.0, 1.0);
 
-    let finalRGB = mix(col_bg.rgb, color.rgb, mask);
+    // `color` already contains the single lens-mask blend. Applying mask again
+    // here used to shrink/fade the lens unintentionally.
+    let finalRGB = color.rgb;
 
     let outColor = vec4<f32>(finalRGB, alpha);
 
-    // Depth pass-through
+    // Honest relief depth: preserve source depth while the body, teeth and rim
+    // rise toward the viewer. Click flares momentarily lift the rim further.
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let relief = mask * 0.025 + rim * (0.08 + toothLight * 0.035) + rimFlare * 0.06;
+    let depthOut = clamp(depth + relief, 0.0, 1.0);
 
     textureStore(writeTexture, coord, outColor);
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, outColor);
 }

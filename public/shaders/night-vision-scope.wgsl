@@ -1,4 +1,4 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
+// Night Vision Scope — interactive image intensifier
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -48,8 +48,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let brightness = u.zoom_params.z + bass * 0.5; // Brightness boost inside scope
     let scanline_str = u.zoom_params.w * (1.0 + treble * 0.4); // Scanline intensity
 
-    // Mouse Interaction
-    var mouse = u.zoom_config.yz;
+    let time = u.config.x;
+    let rawMouse = u.zoom_config.yz;
+
+    // Critically damped scope tracking, persisted only in safe slots [133..138].
+    let hasSpringState = arrayLength(&extraBuffer) > 138u;
+    var mouse = rawMouse;
+    if (hasSpringState && extraBuffer[138] > 0.5) {
+        mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
+        var springPos = mouse;
+        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] <= 0.5) {
+            springPos = rawMouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 6.5;
+            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = springVel.x;
+        extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+    }
 
     // Correct distance for aspect ratio
     let d_vec = uv - mouse;
@@ -61,6 +88,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let radius = 0.1 + scope_size * 0.4;
     // Smooth edge for the scope
     let scope_mask = 1.0 - smoothstep(radius - 0.05, radius + 0.05, dist);
+
+    // Clicks produce expanding intensifier flares at their recorded positions.
+    var clickFlare = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        let safeAge = max(age, 0.0);
+        let live = step(0.0, age) * (1.0 - step(1.8, age));
+        let rd = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+        let ring = 1.0 - smoothstep(0.012, 0.045, abs(rd - safeAge * 0.30));
+        clickFlare = max(clickFlare, ring * exp(-safeAge * 1.5) * live);
+    }
 
     // Image Sample
     // Maybe zoom in inside the scope?
@@ -75,10 +115,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let nv_color = vec3<f32>(0.0, 1.0, 0.0) * lum * (1.5 + brightness);
 
     // Noise/Grain
-    let noise = hash12(uv * 100.0 + vec2<f32>(u.config.x * 10.0, u.config.x * 20.0));
+    let noise = hash12(uv * 100.0 + vec2<f32>(time * 10.0, time * 20.0));
 
     // Scanlines
-    let scanline = sin(uv.y * 800.0 + u.config.x * 10.0) * 0.5 + 0.5;
+    let scanBin = (u32(floor(uv.y * 96.0)) % 8u) + 1u;
+    let fftScan = plasmaBuffer[scanBin].x;
+    let scanline = sin(uv.y * 800.0 + time * (10.0 + fftScan * 3.0)) * 0.5 + 0.5;
 
     // Outside scope styling (Darker, noisier, heavy scanlines)
     let outside_color = nv_color * 0.3 * (0.8 + 0.4 * noise) * (0.8 + 0.2 * scanline);
@@ -94,10 +136,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     final_color = final_color * clamp(vign, 0.0, 1.0);
 
     // Apply Grain intensity param
-    final_color = mix(final_color, vec3<f32>(noise), grain_amt * 0.2);
+    final_color = mix(final_color, vec3<f32>(noise), clamp(grain_amt * 0.2, 0.0, 0.35));
 
     // Scanline parameter application
     final_color = final_color * (1.0 - scanline_str * (1.0 - scanline) * 0.5);
+    final_color += vec3<f32>(0.12, 1.0, 0.25) * clickFlare * (0.35 + treble * 0.25);
+
+    // Preserve phosphor hue while bounding the intensifier's high brightness range.
+    final_color = max(final_color, vec3<f32>(0.0));
+    let peak = max(max(final_color.r, final_color.g), final_color.b);
+    final_color *= min(1.0, 1.7 / max(peak, 0.001));
 
     // Luminance-key alpha (green NV glow is additive over dark scope)
     let alpha = clamp(dot(final_color, vec3<f32>(0.299, 0.587, 0.114)) + scope_mask * 0.3, 0.0, 1.0);
@@ -105,7 +153,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalOut);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), finalOut);
 
-    // Pass depth
+    // Honest scope relief: the intensified lens and click rings sit slightly
+    // forward instead of merely copying an unchanged depth plane.
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let depthOut = clamp(depth - scope_mask * (0.02 + brightness * 0.015) - clickFlare * 0.025, 0.0, 1.0);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }

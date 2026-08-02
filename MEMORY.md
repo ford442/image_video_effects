@@ -1,6 +1,70 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-01 (toolchain foundation)
+**Last updated:** 2026-08-02 (Batch 25 shader upgrades)
+
+## 2026-08-02 — Shader upgrade Batch 25
+- Continued the smallest-first all-category queue with `signal-tuner`,
+  `fiber-optic-weave`, `hybrid-fractal-feedback`, `scan-slice`,
+  `split-dimension`, `temporal-decay-multiresolution`, `paper-cutout`, and
+  `rgb-delay-brush` (tracker #231–238; completed total 238).
+- Major correctness repairs: Hybrid Fractal's four JSON controls now map to their
+  named WGSL behaviors; unsafe 256-entry plasma palettes in Hybrid/Fiber were
+  replaced by bounded procedural palettes plus valid FFT bins 1–8; Signal Tuner
+  moved hidden origin state to safe persistent slots so A contains display RGBA
+  everywhere; Paper Cutout accepts top-left mouse and now writes real relief.
+- The history-ring effect now earns its mouse tag with a spring temporal lens and
+  click echoes while preserving binding 13, its eight-layer indices, and read-only
+  `extraBuffer[4]`. RGB Delay's scientific header is now explicitly a stylized,
+  non-calibrated absorption model; its raw temporal A/C feedback stays intact.
+- All eight gained guarded normalized click effects and meaningful regional FFT
+  behavior. Source params stayed exact; indexed additive `updatedParams` were
+  synchronized into generated lists. New state uses only [133..139].
+- Proof: focused Naga/bindgroup gate 8/8 with zero warnings/buffer violations;
+  dead-slider, extraBuffer, JSON, and generated-list audits clean; 1,319 unique
+  IDs; 1,306 manifest entries; Jest 68 suites / 464 pass / 1 skip; production
+  build green with `SKIP_WASM_BUILD=1`.
+- Direct `tsx` again hit the known VM IPC `EPERM`; `node --import tsx` succeeded.
+  The pre-existing WGSL report and unrelated simulation list were preserved
+  byte-for-byte. Live WebGPU proof remains a real-hardware handoff.
+
+## 2026-08-02 — Shader upgrade Batch 24
+- Continued the smallest-first all-category queue with eight clean single-pass
+  shaders: `quantum-tunnel-interactive`, `vhs-tracking-mouse`,
+  `blueprint-reveal`, `cyber-grid-pulse`, `night-vision-scope`, `data-stream`,
+  `glitch-slice-mirror`, and `knitted-fabric` (tracker #223–230).
+- All eight gained spring-weighted interaction, guarded normalized click effects,
+  and per-region FFT detail. Specific fixes include aspect-correct Data Stream
+  wake, live treble characters, honest Night Vision depth, bounded HDR/emission,
+  displaced depth sampling, and nonnegative click-slice intensity.
+- Feedback truth held: Blueprint keeps raw temporal reveal state in A; Knitted
+  Fabric moved display RGBA to host-primary A and diagnostic masks to B. All new
+  persistent writes are confined to `extraBuffer[133..138]`.
+- Source parameter IDs/defaults/ranges/steps stayed exact. Each definition gained
+  indexed additive `updatedParams`; truthful click/depth metadata was added.
+- Proof: focused Naga/bindgroup gate 8/8 with zero warnings/buffer violations;
+  no dead sliders; 1,319 unique IDs; 1,306 manifest entries; Jest 68 suites / 464
+  pass / 1 skip; production builds green with `SKIP_WASM_BUILD=1`. Direct `tsx`
+  hit the known VM IPC `EPERM`; `node --import tsx` rebuilt the manifest.
+- Live WebGPU visual/thumbnail QA remains external because this VM has no adapter.
+  Pre-existing Batch 23 work and WGSL report bytes were preserved; unrelated
+  Physics Lab simulation-list drift was removed byte-for-byte.
+
+## 2026-08-01 — Shader upgrade Batch 23
+- Eight upgrades shipped locally: `gen-fireworks-roman-candle`,
+  `gen-zeta-function-landscape`, `gen-bioluminescent-reaction-diffusion`,
+  `gen-cycloid-bloom`, `crt-scanline-damage`, `steampunk-gear-lens`,
+  `fireworks-depth-parade`, and `fractal-noise-dissolve` (tracker #215–222).
+- Key correctness wins: normalized pointer fixes in the fireworks family,
+  eta-based zeta continuation, boundary-safe RD stencil + valid FFT bins 1–8,
+  no Steampunk double mask, honest relief/shell/luminance depth, and bounded
+  Fractal burn emission. Cycloid search dropped 1,205→360 tests/pixel.
+- Contracts held: image source `params` and generative `updatedParams` unchanged;
+  four image `updatedParams` added; only Depth Parade gained `supportsDepth`;
+  RD keeps raw state in A; other A/B feedback roles unchanged; new state uses
+  only `extraBuffer[133..138]`.
+- Verification: 8/8 focused Naga/bindgroup gate, zero workgroup warnings and
+  buffer/dead-slider violations, 1,319 unique IDs, Jest 464 pass / 1 skip, and
+  `SKIP_WASM_BUILD=1` production build green. Real-GPU visual QA remains external.
 
 ## 2026-08-01 — WebGPU frame split (#1043)
 - `src/renderer/webgpu/frame.ts` is now a **194 LOC** lifecycle facade (down from 873): RAF/media refresh, uniform writes, history-ring advancement, FPS, and top-level timing.

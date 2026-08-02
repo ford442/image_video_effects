@@ -1,12 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Fractal Noise Dissolve
-//  Category: visual-effects
-//  Features: noise, dissolve, fractal, audio-eat, depth-layers, temporal-erosion, organic-breakup
+//  Category: image
+//  Features: noise, dissolve, fractal, audio-eat, depth-layers, temporal-erosion,
+//            organic-breakup, spring-tracking, click-rings, bounded-emission
 //  Complexity: Medium
 //  Updated: 2026-05-31
 //  By: Grok (visual flourish — richer erosion, audio-driven breakup, atmospheric layers)
 // ═══════════════════════════════════════════════════════════════════
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-08-01 (Batch 23)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -64,6 +65,14 @@ fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.4 + mids * 0.15;
 }
 
+// Compress only the brightest channel, then scale the full RGB vector by the
+// same ratio so hot burn hues survive instead of clipping toward white.
+fn softKnee(c: vec3<f32>, knee: f32) -> vec3<f32> {
+  let peak = max(c.r, max(c.g, c.b));
+  let mapped = peak / (1.0 + max(peak - knee, 0.0) * 0.5);
+  return c * (mapped / max(peak, 1e-5));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -85,6 +94,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeWidth = max(u.zoom_params.z * 0.2, 0.01);
     let burnColor = u.zoom_params.w * (1.0 + mids * 0.35);
 
+    // Spring-following erosion center. State uses only the persistent-safe
+    // range: position [133..134], velocity [135..136], time [137], flag [138].
+    let hasSpringState = arrayLength(&extraBuffer) > 138u;
+    var erosionCenter = mouse;
+    if (hasSpringState && extraBuffer[138] > 0.5) {
+      erosionCenter = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
+      var springPos = erosionCenter;
+      var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+      if (extraBuffer[138] <= 0.5) {
+        springPos = mouse;
+        springVel = vec2<f32>(0.0);
+      } else {
+        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+        let omega = 6.5;
+        let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+        springVel = springVel + accel * dt;
+        springPos = springPos + springVel * dt;
+      }
+      extraBuffer[133] = springPos.x;
+      extraBuffer[134] = springPos.y;
+      extraBuffer[135] = springVel.x;
+      extraBuffer[136] = springVel.y;
+      extraBuffer[137] = time;
+      extraBuffer[138] = 1.0;
+    }
+
     // Domain warped FBM
     let warp = vec2<f32>(
         fbm(uv * noiseScale * 0.5 + vec2<f32>(time * 0.1, 0.0), 3),
@@ -94,20 +131,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     n += fbm((uv + warp * 0.15) * noiseScale * 2.0 - vec2<f32>(time * (1.0 + treble * 0.2), time), 4) * 0.5;
     n = n * 0.5 + 0.5;
 
-    let dist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
+    let dist = distance(uv * vec2<f32>(aspect, 1.0), erosionCenter * vec2<f32>(aspect, 1.0));
     let contour = dist + (n * 0.2 - 0.1);
-    let mask = smoothstep(radius, radius + edgeWidth, contour);
+
+    // Click timestamps seed independent expanding dissolve rings. These alter
+    // only the display mask; dataTextureA remains the existing display-color
+    // feedback role and no simulation state is repacked.
+    var clickErosion = 0.0;
+    var clickEdge = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+      let rp = u.ripples[ri];
+      let age = time - rp.z;
+      if (age < 0.0 || age > 2.2) { continue; }
+      let clickDist = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+      let ringRadius = age * 0.30;
+      let fade = exp(-age * 1.15);
+      let ringDelta = abs(clickDist - ringRadius);
+      clickErosion = max(clickErosion,
+        (1.0 - smoothstep(0.0, edgeWidth * 1.8 + 0.018, ringDelta)) * fade);
+      clickEdge = max(clickEdge,
+        (1.0 - smoothstep(edgeWidth * 0.8, edgeWidth * 3.0 + 0.03, ringDelta)) * fade);
+    }
+
+    var mask = smoothstep(radius, radius + edgeWidth, contour);
+    mask = mask * (1.0 - clamp(clickErosion, 0.0, 1.0));
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let edge = 1.0 - smoothstep(radius, radius + edgeWidth * 2.0, contour);
-    let burn = vec3<f32>(1.0, 0.45 + treble * 0.2, 0.18 + mids * 0.2) * edge * burnColor * 4.0 * (1.0 - mask);
+    let edge = max(1.0 - smoothstep(radius, radius + edgeWidth * 2.0, contour), clickEdge);
+    let burnRaw = vec3<f32>(1.0, 0.45 + treble * 0.2, 0.18 + mids * 0.2)
+      * edge * burnColor * 4.0 * (1.0 - mask);
+    let burn = softKnee(burnRaw, 1.25);
 
     // Edge glow from audio
     let edgeGlow = vec3<f32>(0.5 + bass * 0.3, 0.3, 0.8) * edge * bass * 0.5;
     var finalColor = baseColor.rgb * mask + burn + edgeGlow;
     finalColor = finalColor * depthFade;
     let alpha = clamp(baseColor.a * mask + edge * 0.42 + bass * 0.05, 0.04, 1.0);
-    let depthOut = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + edge * 0.06, 0.0, 1.0);
+    let depthOut = clamp(depth + edge * 0.06, 0.0, 1.0);
     let finalPixel = vec4<f32>(finalColor, alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);

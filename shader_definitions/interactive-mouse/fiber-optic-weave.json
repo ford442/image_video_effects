@@ -2,7 +2,7 @@
   "id": "fiber-optic-weave",
   "name": "Fiber Optic Weave",
   "url": "shaders/fiber-optic-weave.wgsl",
-  "description": "Deconstructs image into glowing optical fibers that react to mouse movement.",
+  "description": "Deconstructs the image into glowing optical fibers with weighted mouse plucks, click-launched pulses, and per-fiber audio voices.",
   "params": [
     {
       "id": "density",
@@ -33,13 +33,51 @@
       "max": 1
     }
   ],
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Fiber Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Fiber Glow",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Mouse Force",
+      "default": 0.7,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Weave Fray",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "click-reactive",
+    "depth-aware"
   ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "supportsDepth": true,
+  "updated": true
 }

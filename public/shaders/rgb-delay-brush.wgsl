@@ -1,13 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
-//  RGB Delay Brush - Temporal RGB splitting with wavelength-alpha
-//  Category: artistic
+//  RGB Delay Brush - Temporal RGB splitting with stylized wavelength-alpha
+//  Category: interactive-mouse
 //  Features: brush, temporal-delay, wavelength-dependent-alpha
 //
-//  SCIENTIFIC MODEL:
-//  - Different temporal delay per channel affects alpha
-//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
-//  - Red (650nm): fastest response, highest transmission
-//  - Blue (450nm): slowest response, lowest transmission
+//  MODEL SCOPE: art-directed Beer-Lambert-inspired channel absorption. The
+//  wavelength constants organize the RGB response but are not a calibrated
+//  optical-material simulation.
 // ═══════════════════════════════════════════════════════════════
 
 struct Uniforms {
@@ -57,7 +55,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var uv = vec2<f32>(coord) / vec2<f32>(dims);
   let aspect = u.config.z / u.config.w;
 
-  var mouse = u.zoom_config.yz;
+  let time = u.config.x;
+  let rawMouse = u.zoom_config.yz;
+
+  // Weighted brush tracking in persistent-safe state slots [133..138].
+  let hasSpringState = arrayLength(&extraBuffer) > 138u;
+  var mouse = rawMouse;
+  if (hasSpringState && extraBuffer[138] > 0.5) {
+    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
+    var springPos = mouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      springPos = rawMouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 7.5;
+      let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+  }
 
   // Params
   let persistence = u.zoom_params.x;
@@ -72,15 +98,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse_corrected = vec2<f32>(mouse.x * aspect, mouse.y);
   let dist = length(uv_corrected - mouse_corrected);
 
-  let mask = smoothstep(radius, radius * 0.5, dist);
+  let safeRadius = max(radius, 0.001);
+  let mouseMask = smoothstep(safeRadius, safeRadius * 0.5, dist) * (1.0 + u.zoom_config.w * 0.15);
+
+  // Click stamps create independent, fading temporal-delay brushes.
+  var clickMask = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri++) {
+    let rp = u.ripples[ri];
+    let age = time - rp.z;
+    let safeAge = max(age, 0.0);
+    let live = step(0.0, age) * (1.0 - step(1.7, age));
+    let rd = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+    let stampRadius = safeRadius * (0.8 + safeAge * 0.35);
+    let stamp = smoothstep(stampRadius, stampRadius * 0.55, rd) * exp(-safeAge * 1.3) * live;
+    clickMask = max(clickMask, stamp);
+  }
+  let mask = clamp(max(mouseMask, clickMask), 0.0, 1.0);
 
   // Calculate reaction speeds for each channel
   let base_speed = (1.0 - persistence) * 2.0;
 
   // Apply RGB split based on mask
-  let s_r = base_speed;
-  let s_g = max(0.005, base_speed - (mask * split * 0.05));
-  let s_b = max(0.001, base_speed - (mask * split * 0.1));
+  let redVoice = plasmaBuffer[2].x;
+  let greenVoice = plasmaBuffer[4].x;
+  let blueVoice = plasmaBuffer[7].x;
+  let s_r = base_speed * (1.0 + redVoice * 0.12);
+  let s_g = max(0.005, base_speed - (mask * split * 0.05)) * (1.0 + greenVoice * 0.10);
+  let s_b = max(0.001, base_speed - (mask * split * 0.1)) * (1.0 + blueVoice * 0.08);
 
   var new_color = vec4<f32>(0.0);
   new_color.r = mix(prev.r, current.r, clamp(s_r, 0.0, 1.0));

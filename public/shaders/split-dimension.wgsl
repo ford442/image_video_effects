@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Split Dimension
-//  Category: image
+//  Category: interactive-mouse
 //  Features: mouse-driven, glitch, upgraded-rgba, audio-reactive
 //  Complexity: Medium
 //  Upgraded: 2026-05-23
@@ -22,7 +22,7 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=GlitchIntensity, y=ColorShift, z=NegativeStr, w=SplitAngle
   ripples: array<vec4<f32>, 50>,
@@ -55,7 +55,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     var uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    var mouse = get_mouse();
+    let rawMouse = get_mouse();
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -68,6 +68,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let time = u.config.x;
 
+    // The inter-dimensional seam follows with critically damped weight.
+    let hasSpringState = arrayLength(&extraBuffer) > 138u;
+    var mouse = rawMouse;
+    if (hasSpringState && extraBuffer[138] > 0.5) {
+        mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
+        var springPos = mouse;
+        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] <= 0.5) {
+            springPos = rawMouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 8.0;
+            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = springVel.x;
+        extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+    }
+
     // Base color for alpha preservation
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
@@ -76,17 +103,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let normal = vec2<f32>(cos(angle), sin(angle));
 
     let p_vec = vec2<f32>((uv.x - mouse.x) * aspect, uv.y - mouse.y);
-    let d = dot(p_vec, normal);
+    var d = dot(p_vec, normal);
+
+    // Clicks crack the split line locally at normalized ripple positions.
+    var clickDamage = 0.0;
+    var clickShift = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i++) {
+        let rp = u.ripples[i];
+        let age = time - rp.z;
+        let safeAge = max(age, 0.0);
+        let live = step(0.0, age) * (1.0 - step(1.6, age));
+        let rd = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+        let ring = 1.0 - smoothstep(0.015, 0.055, abs(rd - safeAge * 0.36));
+        let wave = ring * exp(-safeAge * 1.6) * live;
+        clickDamage = max(clickDamage, wave);
+        clickShift += wave * sin(rp.x * 37.0 + rp.y * 19.0) * 0.08;
+    }
+    d += clickShift;
 
     // Normal side
     let normalColor = baseColor;
 
     // Glitch side
-    let n = noise(vec2<f32>(uv.y * 50.0, time * 20.0));
-    let glitchActive = select(0.0, 1.0, n > 0.8 && glitch_amt > 0.0);
+    let regionBin = (u32(floor(uv.y * 72.0)) % 8u) + 1u;
+    let fftRegion = plasmaBuffer[regionBin].x;
+    let n = fract(noise(vec2<f32>(uv.y * 50.0, time * 20.0)) + fftRegion * 0.17);
+    let glitchActive = select(0.0, 1.0, (n > 0.8 || clickDamage > 0.02) && glitch_amt > 0.0);
     let glitchOffset = (n - 0.5) * glitch_amt * 0.2 * glitchActive;
     var glitch_uv = uv;
-    glitch_uv.x = glitch_uv.x + glitchOffset;
+    glitch_uv.x = glitch_uv.x + glitchOffset + clickShift * glitch_amt;
+    glitch_uv = clamp(glitch_uv, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let shift = color_shift * 0.05;
     var col = vec3<f32>(0.0);
@@ -102,12 +149,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     glitchColor = glitchColor + lineHighlight;
 
     let isNormal = select(0.0, 1.0, d < 0.0);
-    let finalColor = mix(glitchColor, normalColor, isNormal);
+    var finalColor = mix(glitchColor, normalColor, isNormal);
+    let peak = max(max(finalColor.r, finalColor.g), finalColor.b);
+    finalColor = vec4<f32>(max(finalColor.rgb, vec3<f32>(0.0)) * min(1.0, 1.8 / max(peak, 0.001)), clamp(finalColor.a, 0.0, 1.0));
 
-    // Depth pass-through
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    // Depth follows the selected dimension and gives the fracture line relief.
+    let depthNormal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthGlitch = textureSampleLevel(readDepthTexture, non_filtering_sampler, glitch_uv, 0.0).r;
+    let depth = clamp(mix(depthGlitch, depthNormal, isNormal) - clickDamage * 0.025, 0.0, 1.0);
 
     textureStore(writeTexture, coord, finalColor);
-    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0, 0, 1));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0, 0, 0));
     textureStore(dataTextureA, coord, finalColor);
 }

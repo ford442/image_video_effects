@@ -324,12 +324,47 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Edge Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Grid Opacity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Reveal Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Edge Softness",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "temporal-ink",
       "depth-hatch",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive"
     ],
     "tags": [
       "filter",
@@ -338,7 +373,9 @@
       "ink",
       "reveal",
       "schematic"
-    ]
+    ],
+    "supportsDepth": true,
+    "updated": true
   },
   {
     "id": "brush-strokes",
@@ -2160,11 +2197,46 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Turbulence",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Digital Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "glitch",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive"
     ],
     "tags": [
       "digital",
@@ -2175,7 +2247,8 @@
       "glitch",
       "interactive",
       "audio-reactive"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "digital-compression",
@@ -2905,7 +2978,7 @@
     "id": "fiber-optic-weave",
     "name": "Fiber Optic Weave",
     "url": "https://test.1ink.us/image_video_effects/shaders/fiber-optic-weave.wgsl",
-    "description": "Deconstructs image into glowing optical fibers that react to mouse movement.",
+    "description": "Deconstructs the image into glowing optical fibers with weighted mouse plucks, click-launched pulses, and per-fiber audio voices.",
     "params": [
       {
         "id": "density",
@@ -2936,15 +3009,53 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Fiber Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Fiber Glow",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Mouse Force",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Weave Fray",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "supportsDepth": true,
+    "updated": true
   },
   {
     "id": "flux-core",
@@ -5133,18 +5244,56 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Stitch Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Pull Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Pull Radius",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Texture Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "interactive",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "depth-aware"
     ],
     "tags": [
       "woven",
       "textile",
       "fabric",
       "audio-reactive"
-    ]
+    ],
+    "supportsDepth": true,
+    "updated": true
   },
   {
     "id": "laser-burn",
@@ -8071,17 +8220,54 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scope Size",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Noise Grain",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Brightness",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Scanlines",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "image",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-reactive"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "supportsDepth": true,
+    "updated": true
   },
   {
     "id": "optical-feedback",
@@ -8321,7 +8507,7 @@
     "id": "paper-cutout",
     "name": "Paper Cutout",
     "url": "https://test.1ink.us/image_video_effects/shaders/paper-cutout.wgsl",
-    "description": "Quantizes the image into paper layers with drop shadows controlled by the mouse.",
+    "description": "Quantizes the image into relief paper layers with a spring-following light, audio-shimmered strata, and click-punched emboss rings.",
     "params": [
       {
         "id": "layers",
@@ -8352,16 +8538,53 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Layers",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Shadow Dist",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Softness",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Separation",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "upgraded-rgba",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "click-reactive"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "supportsDepth": true,
+    "updated": true
   },
   {
     "id": "parallax-glow-compositor",
@@ -9807,7 +10030,9 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "depth-aware"
     ],
     "params": [
       {
@@ -9839,6 +10064,42 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Tunnel Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Aberration",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Pulse Speed",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Twist",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "updated": true,
     "url": "https://test.1ink.us/image_video_effects/shaders/quantum-tunnel-interactive.wgsl",
     "description": "Interactive radial distortion with chromatic aberration, pulsing effects, and audio-reactive glow.",
     "tags": [
@@ -10323,7 +10584,7 @@
     "id": "rgb-delay-brush",
     "name": "RGB Delay Brush",
     "url": "https://test.1ink.us/image_video_effects/shaders/rgb-delay-brush.wgsl",
-    "description": "Reveals past frames in RGB channels. Painting with the mouse creates colorful time-delayed trails.",
+    "description": "Paints colorful time-delayed RGB trails with spring-weighted mouse motion, click stamps, spectrum-separated response, and stylized wavelength absorption.",
     "params": [
       {
         "id": "decay",
@@ -10366,13 +10627,53 @@
         "description": "Scale of wavelength-dependent alpha absorption"
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Trail Persistence",
+        "default": 0.9,
+        "min": 0.5,
+        "max": 0.99,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Time Split",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Brush Size",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Alpha Absorption Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "click-reactive",
+      "audio-reactive",
+      "temporal",
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "rgb-fluid",
@@ -10621,7 +10922,7 @@
     "id": "scan-slice",
     "name": "Scan Slice",
     "url": "https://test.1ink.us/image_video_effects/shaders/scan-slice.wgsl",
-    "description": "Mouse X selects a vertical slice; Mouse Y offsets it with chromatic aberration. Audio-reactive edge glow pulses to bass.",
+    "description": "A spring-weighted mouse selects a bank of vertical slices; click stamps add temporary slices while independent audio bins color their chromatic edges.",
     "params": [
       {
         "id": "width",
@@ -10652,10 +10953,46 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Slice Width",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Offset Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Aberration",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Bg Dimming",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -10663,7 +11000,9 @@
       "slice",
       "chromatic",
       "audio-reactive"
-    ]
+    ],
+    "supportsDepth": true,
+    "updated": true
   },
   {
     "id": "scanline-sorting",
@@ -10941,7 +11280,7 @@
     "id": "signal-tuner",
     "name": "Signal Tuner",
     "url": "https://test.1ink.us/image_video_effects/shaders/signal-tuner.wgsl",
-    "description": "TV-style signal interference with smoothed audio envelope, spring-damped mouse follow, and temporal feedback trails.",
+    "description": "TV-style signal interference with a smoothed audio envelope, spring-damped mouse follow, click retuning rings, and temporal feedback trails.",
     "params": [
       {
         "id": "frequency",
@@ -10972,16 +11311,54 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Interference",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Drift Speed",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Static Noise",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "supportsDepth": true,
+    "updated": true
   },
   {
     "id": "sketch-reveal",
@@ -11660,12 +12037,14 @@
     "id": "split-dimension",
     "name": "Split Dimension",
     "url": "https://test.1ink.us/image_video_effects/shaders/split-dimension.wgsl",
-    "description": "Splits the screen into two dimensions. One side is normal, the other is a glitched negative. The split follows the mouse.",
+    "description": "Splits the screen into normal and glitched-negative dimensions with a spring-weighted mouse seam and click-triggered fractures.",
     "features": [
       "mouse-driven",
       "glitch",
       "upgraded-rgba",
-      "audio-reactive"
+      "audio-reactive",
+      "click-reactive",
+      "depth-aware"
     ],
     "params": [
       {
@@ -11697,10 +12076,46 @@
         "max": 1
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Glitch Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Color Shift",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Negative Str",
+        "default": 1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Split Angle",
+        "default": 0,
+        "min": -1,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "supportsDepth": true,
+    "updated": true
   },
   {
     "id": "stereoscopic-3d",
@@ -12510,10 +12925,45 @@
         "step": 0.01
       }
     ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bar Height",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Distortion Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Static Noise",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Color Split",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive"
     ],
     "tags": [
       "filter",
@@ -12521,7 +12971,8 @@
       "vhs",
       "glitch",
       "retro"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "virtual-lens",

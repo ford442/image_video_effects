@@ -22,9 +22,9 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Width, y=OffsetScale, z=Aberration, w=BgDimming
   ripples: array<vec4<f32>, 50>,
 };
 
@@ -49,8 +49,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aberration     = u.zoom_params.z * 0.03;
     let dimming        = clamp(u.zoom_params.w, 0.0, 1.0);
 
-    let mouse = u.zoom_config.yz;
+    let rawMouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
+
+    // Weighted scanner head motion in persistent-safe state slots.
+    let hasSpringState = arrayLength(&extraBuffer) > 138u;
+    var mouse = rawMouse;
+    if (hasSpringState && extraBuffer[138] > 0.5) {
+        mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
+        var springPos = mouse;
+        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] <= 0.5) {
+            springPos = rawMouse;
+            springVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 9.0;
+            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+            springVel += accel * dt;
+            springPos += springVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = springVel.x;
+        extraBuffer[136] = springVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+    }
 
     let sliceCount = i32(clamp(2.0 + bass * 5.0 + mouseDown * 3.0, 1.0, 7.0));
     var maxBand = 0.0;
@@ -78,6 +105,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         bestIndex = mix(bestIndex, sliceIndex, isBetter);
     }
 
+    // Clicks stamp short-lived independent scan slices at normalized ripple
+    // positions. The strongest click band competes with the sprung slice bank.
+    let aspect = resolution.x / max(resolution.y, 0.001);
+    var clickGlow = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri++) {
+        let rp = u.ripples[ri];
+        let age = time - rp.z;
+        let safeAge = max(age, 0.0);
+        let live = step(0.0, age) * (1.0 - step(1.5, age));
+        let clickWidth = sliceWidthBase * (0.8 + safeAge * 0.5);
+        let clickBand = smoothstep(0.0, 1.0, max(0.0, 1.0 - abs(uv.x - rp.x) * aspect / max(clickWidth, 0.001))) * exp(-safeAge * 1.8) * live;
+        let clickIsBetter = step(maxBand, clickBand);
+        let clickOffset = (rp.y - 0.5) * (offsetParam * 2.0) + sin(safeAge * 16.0 + rp.x * 11.0) * 0.04;
+        maxBand = mix(maxBand, clickBand, clickIsBetter);
+        bestOffset = mix(bestOffset, clickOffset, clickIsBetter);
+        bestIndex = mix(bestIndex, f32(ri % 7u) - 3.0, clickIsBetter);
+        clickGlow = max(clickGlow, clickBand);
+    }
+
     let sampleUV = clamp(uv + vec2<f32>(0.0, bestOffset), vec2<f32>(0.0), vec2<f32>(1.0));
     let abAmt = aberration * (0.4 + maxBand * 0.6);
     let rUV = clamp(sampleUV + vec2<f32>(abAmt, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
@@ -86,13 +133,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 
-    let palIdx = u32(clamp((bestIndex * 0.15 + 0.5 + time * 0.05) * 255.0, 0.0, 255.0));
-    let bufLen = arrayLength(&plasmaBuffer);
-    let palette = plasmaBuffer[palIdx % max(1u, bufLen)].rgb;
+    let sliceBin = (u32(abs(bestIndex)) % 8u) + 1u;
+    let sliceVoice = plasmaBuffer[sliceBin].x;
+    let palettePhase = fract(bestIndex * 0.15 + 0.5 + time * 0.05);
+    let palette = 0.55 + 0.45 * cos(2.0 * PI * (palettePhase + vec3<f32>(0.0, 0.33, 0.67)));
     var sliceCol = vec3<f32>(r, g, b);
-    sliceCol = mix(sliceCol, sliceCol * (0.6 + palette * 0.7), maxBand * 0.3);
+    sliceCol = mix(sliceCol, sliceCol * (0.6 + palette * (0.7 + sliceVoice * 0.2)), maxBand * 0.3);
     let edge = pow(maxBand, 8.0);
-    sliceCol = sliceCol + vec3<f32>(0.4, 0.7, 1.0) * edge * 0.6;
+    sliceCol = sliceCol + vec3<f32>(0.4, 0.7, 1.0) * edge * (0.6 + mids * 0.12 + treble * 0.18 + clickGlow * 0.2);
 
     let bgCol = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let gray = dot(bgCol, vec3<f32>(0.299, 0.587, 0.114));
@@ -100,7 +148,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bgFinal = desat * (1.0 - dimming * 0.6);
 
     let isSlice = step(0.001, maxBand);
-    let finalColor = mix(bgFinal, sliceCol, isSlice);
+    var finalColor = mix(bgFinal, sliceCol, isSlice);
+    let peak = max(max(finalColor.r, finalColor.g), finalColor.b);
+    finalColor = max(finalColor, vec3<f32>(0.0)) * min(1.0, 1.8 / max(peak, 0.001));
 
     let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(0.5 + maxBand * 0.4 + luma * 0.2, 0.0, 1.0);
@@ -108,6 +158,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, alpha));
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

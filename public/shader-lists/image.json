@@ -1584,7 +1584,9 @@
       "temporal",
       "glitch",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "mouse-driven",
+      "click-reactive"
     ],
     "params": [
       {
@@ -1619,7 +1621,42 @@
         "max": 2,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Scanline Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 1.5,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Distortion Amount",
+        "default": 0.15,
+        "min": 0,
+        "max": 0.5,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Flicker Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "RGB Separation",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "crumpled-paper",
@@ -2062,7 +2099,9 @@
       "audio-reactive",
       "temporal",
       "semantic-alpha",
-      "depth-aware"
+      "depth-aware",
+      "mouse-driven",
+      "click-reactive"
     ],
     "params": [
       {
@@ -2097,7 +2136,43 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Layer Separation",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Launch Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Depth Boost",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Trail Length",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "supportsDepth": true,
+    "updated": true
   },
   {
     "id": "fireworks-edge-ignite",
@@ -2408,12 +2483,51 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "spring-tracking",
+      "depth-aware"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Noise Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Hole Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Edge Softness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Burn Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "frost-reveal",
@@ -4621,7 +4735,10 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "click-reactive",
+      "spring-tracking",
+      "depth-aware"
     ],
     "tags": [
       "filter",
@@ -4630,7 +4747,42 @@
       "gear",
       "mechanical",
       "sepia"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Gear Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Teeth Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Rotation Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Sepia Strength",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "tensor-flow-sculpting",

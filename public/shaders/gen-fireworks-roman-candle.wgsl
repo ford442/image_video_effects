@@ -1,4 +1,6 @@
 // Roman Candle — vertical star barrage from launch tubes
+// Batch 23: normalized mouse launches, discrete click candles, treble detail,
+// and luminance-derived depth without changing the display feedback packing.
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -32,6 +34,11 @@ fn starCol(i: f32) -> vec3<f32> {
     vec3<f32>(0.3,1.0,0.5), vec3<f32>(1.0,0.5,0.9));
   return cols[i32(i*4.99) % 5];
 }
+// Mouse and ripple positions arrive as normalized canvas UVs. Convert them to
+// this shader's centered, min-resolution coordinate space before launching.
+fn normToCentered(p: vec2<f32>, res: vec2<f32>) -> vec2<f32> {
+  return (p * res - res * 0.5) / min(res.x, res.y);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -39,12 +46,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
   let uv = (vec2<f32>(pixel)-res*0.5)/min(res.x,res.y);
   let time = u.config.x;
-  let mouseUV = (u.zoom_config.yz-res*0.5)/min(res.x,res.y);
+  let mouseUV = normToCentered(u.zoom_config.yz, res);
   let fireRate = mix(0.3, 1.2, u.zoom_params.x);
   let starSize = mix(0.004, 0.014, u.zoom_params.y);
   let tubeSpread = mix(0.3, 1.0, u.zoom_params.z);
   let trailLen = mix(0.88, 0.96, u.zoom_params.w);
   let bass = plasmaBuffer[0].x; let treble = plasmaBuffer[0].z;
+  let trebleDetail = clamp(treble, 0.0, 1.5);
   let prev = textureLoad(dataTextureC, pixel, 0).rgb;
   var col = vec3<f32>(0.01, 0.008, 0.022);
 
@@ -69,7 +77,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let sz = starSize*(1.0+bass*0.2);
       col += starCol(seed+sf*0.1)*softGlow(uv, starPos, sz, fade*energy*2.0);
       // Comet trail
-      for (var tr = 1; tr < 5; tr = tr + 1) {
+      let trailSamples = 4 + i32(trebleDetail * 3.0);
+      for (var tr = 1; tr <= trailSamples; tr = tr + 1) {
         let trf = f32(tr)*0.08;
         let trailPos = vec2<f32>(starPos.x, starY - trf*0.15);
         col += starCol(seed)*softGlow(uv, trailPos, sz*0.6, fade*energy*(1.0-trf*0.8)*0.7);
@@ -79,8 +88,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let bAge = age-1.2;
         let burstY = tubeY + 1.2*energy;
         let burstC = vec2<f32>(tubeX, burstY);
-        for (var sp = 0; sp < 10; sp = sp + 1) {
-          let ang = f32(sp)/10.0*TAU;
+        let burstSparks = 10 + i32(trebleDetail * 8.0);
+        for (var sp = 0; sp < burstSparks; sp = sp + 1) {
+          let ang = f32(sp)/f32(burstSparks)*TAU;
           let bp = burstC + vec2<f32>(cos(ang), sin(ang))*bAge*0.25*energy;
           col += starCol(seed)*softGlow(uv, bp, sz*0.8, fade*exp(-bAge*2.0)*energy*0.8);
         }
@@ -100,6 +110,35 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       col += starCol(f32(s)*0.2)*softGlow(uv, sp, starSize*1.5, (1.0-localAge*2.5)*(0.8+bass));
     }
   }
+
+  // Every click is a discrete personal Roman candle. Ripple timestamps make
+  // the launch one-shot, unlike the held-fire cadence above.
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
+    let rp = u.ripples[ri];
+    let clickAge = time - rp.z;
+    if (clickAge < 0.0 || clickAge > 2.8) { continue; }
+    let origin = normToCentered(rp.xy, res);
+    let clickSeed = hash1(f32(ri) * 23.0 + rp.x * 71.0 + rp.y * 37.0);
+    let clickShots = 4 + i32(fireRate * 3.0 + trebleDetail * 2.0);
+    for (var cs = 0; cs < clickShots; cs = cs + 1) {
+      let localAge = clickAge - f32(cs) * 0.10;
+      if (localAge < 0.0 || localAge > 1.7) { continue; }
+      let jitter = hash1(clickSeed * 91.0 + f32(cs) * 17.0) - 0.5;
+      let energy = 0.85 + bass * 0.45 + trebleDetail * 0.12;
+      let launch = origin + vec2<f32>(jitter * 0.08, localAge * 0.75 * energy);
+      let clickFade = smoothstep(1.7, 0.05, localAge);
+      let clickColor = starCol(clickSeed + f32(cs) * 0.17);
+      col += clickColor * softGlow(uv, launch, starSize * 1.2, clickFade * energy * 1.4);
+      let glitterCount = 3 + i32(trebleDetail * 4.0);
+      for (var gs = 0; gs < glitterCount; gs = gs + 1) {
+        let ga = hash1(f32(gs) * 31.0 + clickSeed) * TAU;
+        let gp = launch + vec2<f32>(cos(ga), sin(ga)) * localAge * 0.035;
+        col += clickColor * softGlow(uv, gp, starSize * 0.45,
+          clickFade * (0.2 + trebleDetail * 0.25));
+      }
+    }
+  }
   col = mix(prev*trailLen, col, 0.35);
   let dust = step(0.987-treble*0.03, hash1(dot(uv, vec2<f32>(127.1,311.7))+time*8.0));
   col += vec3<f32>(0.7,0.85,1.0)*dust*treble*0.5;
@@ -107,5 +146,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   textureStore(dataTextureB, pixel, vec4<f32>(col*0.5+prev*0.4, 1.0));
   textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
   textureStore(writeTexture, pixel, vec4<f32>(col, clamp(length(col)*1.1+0.14, 0.14, 0.96)));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+  let depthOut = clamp(dot(col, vec3<f32>(0.299, 0.587, 0.114)) * 0.95, 0.0, 1.0);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }
