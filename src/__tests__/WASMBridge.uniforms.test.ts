@@ -57,12 +57,12 @@ describe('WASM bridge uniforms (setInputSource)', () => {
     ];
 
     for (const [source, expected] of cases) {
-      bridge.setInputSource(source);
+      bridge.setInputSource(source as any);
       expect(ccall).toHaveBeenCalledWith('setInputSource', null, ['number'], [expected]);
       ccall.mockClear();
     }
 
-    bridge.setInputSource('unknown-source');
+    bridge.setInputSource('unknown-source' as any);
     expect(ccall).toHaveBeenCalledWith('setInputSource', null, ['number'], [0]);
 
     bridge.shutdownWasmRenderer();

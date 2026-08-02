@@ -81,7 +81,7 @@ describe('WASMRenderer input sources', () => {
     jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage,
       getImageData,
-    } as unknown as CanvasRenderingContext2D);
+    } as unknown as GPUCanvasContext);
 
     const decode = jest.fn().mockResolvedValue(undefined);
     jest.spyOn(global, 'Image').mockImplementation(() => {
