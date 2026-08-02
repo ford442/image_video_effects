@@ -123,7 +123,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     vel = vel * (maxSpeed / speed);
   }
 
-  let newPrevPos = pos;
+  var newPrevPos = pos;
   pos = pos + vel;
 
   if (coord.y == 0u) {
