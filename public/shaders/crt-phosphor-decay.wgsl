@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  CRT Phosphor Decay — Phase A Upgrade
 //  Category: retro-glitch
-//  Features: audio-reactive, depth-aware, temporal
+//  Features: mouse-driven, click-reactive, audio-reactive, depth-aware, temporal
 //  Complexity: Medium
 //  Created: 2026-05-23
-//  By: Claude (Sonnet 4.6)
+//  Upgraded: 2026-08-02 (Batch 30)
 // ═══════════════════════════════════════════════════════════════════
 //
 //  Param1: decay_rate        — phosphor persistence (longer trails)
@@ -42,27 +42,47 @@ fn hash12(p: vec2<f32>) -> f32 {
 // 5-tap horizontal blur for halation glow
 fn halation(uv: vec2<f32>, spread: f32) -> vec3<f32> {
     let e = vec2<f32>(spread / u.config.z, 0.0);
-    var c = textureSampleLevel(readTexture, u_sampler, uv - e * 2.0, 0.0).rgb * 0.08;
-    c    += textureSampleLevel(readTexture, u_sampler, uv - e,        0.0).rgb * 0.17;
+    var c = textureSampleLevel(readTexture, u_sampler, clamp(uv - e * 2.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.08;
+    c    += textureSampleLevel(readTexture, u_sampler, clamp(uv - e, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.17;
     c    += textureSampleLevel(readTexture, u_sampler, uv,            0.0).rgb * 0.50;
-    c    += textureSampleLevel(readTexture, u_sampler, uv + e,        0.0).rgb * 0.17;
-    c    += textureSampleLevel(readTexture, u_sampler, uv + e * 2.0,  0.0).rgb * 0.08;
+    c    += textureSampleLevel(readTexture, u_sampler, clamp(uv + e, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.17;
+    c    += textureSampleLevel(readTexture, u_sampler, clamp(uv + e * 2.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.08;
     return c;
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let resolution = u.config.zw;
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
     let uv   = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
 
-    // Audio
-    let hasAudio = arrayLength(&plasmaBuffer) > 0u;
     let audioSens   = u.zoom_params.w;
-    let bass   = select(0.0, plasmaBuffer[0].x, hasAudio) * audioSens;
-    let mids   = select(0.0, plasmaBuffer[0].y, hasAudio) * audioSens;
-    let treble = select(0.0, plasmaBuffer[0].z, hasAudio) * audioSens;
+    let bass   = clamp(plasmaBuffer[0].x, 0.0, 1.0) * audioSens;
+    let mids   = clamp(plasmaBuffer[0].y, 0.0, 1.0) * audioSens;
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0) * audioSens;
+    let rowBin = (gid.y % 8u) + 1u;
+    let rowVoice = clamp(plasmaBuffer[rowBin].x, 0.0, 1.0) * audioSens;
+
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) {
+        mouse = rawMouse;
+        mouseVelocity = vec2<f32>(0.0);
+    }
+    let dt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let omega = 11.0;
+    mouseVelocity += ((rawMouse - mouse) * (omega * omega) - mouseVelocity * (2.0 * omega)) * dt;
+    mouse += mouseVelocity * dt;
+    if (gid.x == 0u && gid.y == 0u) {
+        extraBuffer[133] = mouse.x;
+        extraBuffer[134] = mouse.y;
+        extraBuffer[135] = mouseVelocity.x;
+        extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0;
+        extraBuffer[138] = time;
+    }
 
     // Params (mids deepens scanlines)
     let decayBase   = 0.82 + u.zoom_params.x * 0.17;
@@ -91,7 +111,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var outCol = max(boosted, decayed);
 
     // Scanlines — sine wave with treble flutter on spacing
-    let scanFreq = resolution.y * 0.5 * (1.0 + treble * 0.08);
+    let scanFreq = resolution.y * 0.5 * (1.0 + treble * 0.08 + rowVoice * 0.025);
     let scanline = sin(uv.y * scanFreq) * 0.5 + 0.5;
     outCol *= mix(1.0, scanline, scanlineStr * 0.7);
 
@@ -103,15 +123,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let subMask = vec3<f32>(subR, subG, subB) * 0.4 + 0.6;
     outCol *= mix(vec3<f32>(1.0), subMask, scanlineStr * 0.5);
 
-    // Mouse static — touch activates phosphors near cursor
-    let mouse  = u.zoom_config.yz;
+    // Mouse static and click blooms activate localized phosphors.
     let aspect = resolution.x / resolution.y;
     let mDist  = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
-    if (mDist < 0.12) {
-        let falloff   = smoothstep(0.12, 0.0, mDist);
-        let staticVal = hash12(uv * time) * falloff * 0.5;
-        outCol += staticVal;
+    let mouseFalloff = 1.0 - smoothstep(0.0, 0.12, mDist);
+    outCol += hash12(uv * time) * mouseFalloff * (0.25 + treble * 0.25);
+
+    var clickBloom = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.2) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let radius = length(delta);
+            let core = (1.0 - smoothstep(0.0, 0.10, radius)) * exp(-age * 2.8);
+            let ring = exp(-abs(radius - age * 0.12) * 65.0) * exp(-age * 1.2);
+            clickBloom = max(clickBloom, core + ring * 0.7);
+        }
     }
+    outCol += vec3<f32>(1.0, 0.55 + rowVoice * 0.25, 0.3 + treble * 0.3) * clickBloom * 0.65;
 
     outCol = clamp(outCol, vec3<f32>(0.0), vec3<f32>(1.0));
 

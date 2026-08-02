@@ -372,9 +372,11 @@
       "audio-driven",
       "mouse-driven",
       "mouse-tilt",
+      "click-reactive",
       "semantic-alpha",
       "depth-aware"
     ],
+    "supportsDepth": true,
     "params": [
       {
         "id": "flare",
@@ -408,7 +410,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Anamorphic Flare",
+        "default": 0.7,
+        "min": 0,
+        "max": 1.6,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Caustic Intensity",
+        "default": 0.85,
+        "min": 0,
+        "max": 1.8,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Refraction Amount",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Caustic Stretch",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "ascii-shockwave",

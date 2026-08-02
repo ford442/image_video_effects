@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Film Cross-Process
 //  Category: artistic
-//  Features: audio-reactive, upgraded-rgba
+//  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Low
 //  Description: Simulates E6 slide film developed in C41 negative chemistry.
 //    Each channel is passed through a different S-curve (lifted shadows,
@@ -63,11 +63,59 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let aspect = res.x / max(res.y, 1.0);
+    let aspectVec = vec2<f32>(aspect, 1.0);
+
+    // A weighted enlarger lens follows the normalized cursor, letting the
+    // local chemical grade glide rather than teleport between pixels.
+    let rawMouse = u.zoom_config.yz;
+    var developerPos = vec2<f32>(extraBuffer[133u], extraBuffer[134u]);
+    var developerVel = vec2<f32>(extraBuffer[135u], extraBuffer[136u]);
+    let developerInitialized = extraBuffer[137u] >= 0.5;
+    if (!developerInitialized) {
+        developerPos = rawMouse;
+        developerVel = vec2<f32>(0.0);
+    }
+    let springDt = select(0.0, clamp(time - extraBuffer[138u], 0.0005, 0.05), developerInitialized);
+    let springOmega = 8.0;
+    let developerAccel = springOmega * springOmega * (rawMouse - developerPos)
+        - 2.0 * springOmega * developerVel;
+    developerVel += developerAccel * springDt;
+    developerPos = clamp(developerPos + developerVel * springDt, vec2<f32>(-0.2), vec2<f32>(1.2));
+    if (gid.x == 0u && gid.y == 0u) {
+        extraBuffer[133u] = developerPos.x;
+        extraBuffer[134u] = developerPos.y;
+        extraBuffer[135u] = developerVel.x;
+        extraBuffer[136u] = developerVel.y;
+        extraBuffer[137u] = 1.0;
+        extraBuffer[138u] = time;
+    }
+
+    let developerDistance = length((uv - developerPos) * aspectVec);
+    let developerLens = exp(-developerDistance * developerDistance * 20.0);
+    let heldDevelopment = select(0.08, 0.18, u.zoom_config.w > 0.5);
+
+    // Click-seeded chemical rings briefly lift and warm the processed stock.
+    var chemicalRing = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rippleCount; ri += 1u) {
+        let ripple = u.ripples[ri];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.8) {
+            let clickDistance = length((uv - ripple.xy) * aspectVec);
+            chemicalRing += exp(-abs(clickDistance - age * 0.32) * 28.0) * exp(-age * 1.5);
+        }
+    }
+
+    let region = min(u32(clamp(uv.y, 0.0, 0.9999) * 8.0), 7u);
+    let regionVoice = plasmaBuffer[(region % 8u) + 1u].x;
 
     let src  = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    var r    = src.r;
-    var g    = src.g;
-    var b    = src.b;
+    // Film response is defined on normalized dye density; clamp HDR input
+    // before the cubic S-curves so out-of-range media cannot explode them.
+    var r    = clamp(src.r, 0.0, 1.0);
+    var g    = clamp(src.g, 0.0, 1.0);
+    var b    = clamp(src.b, 0.0, 1.0);
 
     // Contrast strength driven by param + bass
     let contrast = 0.3 + u.zoom_params.x * 0.7 + bass * 0.2;
@@ -94,7 +142,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     b = mix(b, luma, shadowMix);
 
     // Film grain (denser with treble)
-    let grainAmt  = u.zoom_params.z * 0.08 + treble * 0.04;
+    let grainAmt  = (u.zoom_params.z * 0.08 + treble * 0.04) * (1.0 + regionVoice * 0.3);
     let grainSeed = uv * 3791.3 + vec2<f32>(fract(time * 0.1), fract(time * 0.17 + 0.3));
     let grain     = (hash21(grainSeed) - 0.5) * grainAmt;
     r = clamp(r + grain, 0.0, 1.0);
@@ -103,9 +151,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Vignette
     let vigStrength = u.zoom_params.w * 1.2;
-    let vigDist     = length((uv - 0.5) * vec2<f32>(1.0, res.y / res.x));
+    let vigDist     = length((uv - 0.5) * aspectVec);
     let vig         = 1.0 - smoothstep(0.4, 0.9, vigDist) * vigStrength;
-    let finalRGB    = clamp(vec3<f32>(r, g, b) * vig, vec3<f32>(0.0), vec3<f32>(1.0));
+    var finalRGB    = clamp(vec3<f32>(r, g, b) * vig, vec3<f32>(0.0), vec3<f32>(1.0));
+
+    // Local enlarger exposure: hover gives a subtle warm lift, holding the
+    // mouse develops harder, and click rings leave short chemical flashes.
+    let localExposure = clamp(developerLens * heldDevelopment + chemicalRing * 0.22, 0.0, 0.4);
+    let localTint = vec3<f32>(0.08, 0.025, -0.035) * localExposure;
+    finalRGB = clamp(finalRGB * (1.0 + localExposure * 0.2) + localTint, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Alpha: preserve source, boost at high-contrast cross-processed regions
     let crossLuma = dot(finalRGB, vec3<f32>(0.299, 0.587, 0.114));

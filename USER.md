@@ -13,8 +13,8 @@ _Learn about the person you're helping. Update this as you go._
 - Pixelocity / WebGPU Shader Effects is currently stabilizing its next-year toolchain foundation: enforce main-bundle budgets without counting lazy AI chunks, keep TypeScript/dependency boundaries honest, make `public/wasm/` the deployable artifact SoT, and reduce root/swarm cognitive noise.
 - The current WebGPU adapter/device/context path is considered healthy and must not be rewritten as collateral during bundler work.
 - The WebGPU feedback order is contract-critical: copy dataB to dataC first, then dataA to dataC so primary simulation state wins.
-- The user is actively rolling through consecutive clean upgrade cohorts; Batch 25
-  continued immediately after Batch 24 without reopening the selection loop.
+- The user is actively rolling through consecutive clean upgrade cohorts; Batch 30
+  continued immediately after Batch 29 without reopening the selection loop.
 
 ---
 
@@ -80,6 +80,9 @@ Format specification:
 
 ## Current project priorities (2026-08-01)
 
+- Continue reviewable eight-shader upgrade batches from the clean single-pass
+  queue, preserving saved presets and feedback ownership while requiring focused
+  Naga/audit proof, generated catalogs, full Jest, and a production build.
 - Pair new shader/content swarms with thumbnail generation so catalog growth does not outpace discoverability.
 - Treat integrity-adjusted healthy coverage as the production metric; do not count black/error PNGs as complete or hide renderable failures in the skip list.
 - Prioritize generative, simulation multipass, and interactive-mouse thumbnails on real discrete-GPU hardware.

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Interactive Zoom Blur
-//  Category: image
+//  Category: distortion
 //  Features: mouse-centered, chromatic-aberration, dithered-sampling, audio-reactive,
-//            temporal-blur-trail, chromatic-radial-streaks, depth-blur-attenuation
+//            temporal-blur-trail, chromatic-radial-streaks, depth-blur-attenuation,
+//            spring-damper-epicenter, click-zoom-shockwaves, per-ring-fft-voices
 //  Complexity: Medium
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-08-02
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -55,8 +56,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let center = u.zoom_config.yz;
-    let strength = u.zoom_params.x * (1.0 + bass * 0.25);
+    // ── Spring-damper epicenter (extraBuffer[133..138]) ─────────────
+    // [133..134] spring position, [135..136] spring velocity,
+    // [137] last integration time, [138] initialized flag.
+    // The raw mouse stays the spring target; thread (0,0) integrates a
+    // critically-damped spring so the tunnel glides instead of snapping.
+    let targetCenter = u.zoom_config.yz;
+    let hasState = arrayLength(&extraBuffer) > 138u;
+    var center = targetCenter;
+    var springVel = vec2<f32>(0.0);
+    if (hasState && extraBuffer[138] > 0.5) {
+        center = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasState) {
+        var springPos = center;
+        var nextVel = springVel;
+        if (extraBuffer[138] <= 0.5) {
+            springPos = targetCenter;
+            nextVel = vec2<f32>(0.0);
+        } else {
+            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+            let omega = 10.0;
+            let accel = (targetCenter - springPos) * (omega * omega) - nextVel * (2.0 * omega);
+            nextVel += accel * dt;
+            springPos += nextVel * dt;
+        }
+        extraBuffer[133] = springPos.x;
+        extraBuffer[134] = springPos.y;
+        extraBuffer[135] = nextVel.x;
+        extraBuffer[136] = nextVel.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+    }
+
+    // Spring LAG feeds a motion bonus: fast flicks smear harder.
+    let springSpeed = length(springVel);
+    var strength = u.zoom_params.x * (1.0 + bass * 0.25);
+    strength *= 1.0 + min(springSpeed * 4.0, 0.5);
     let chromatic = u.zoom_params.y;
     let sampleCount = u.zoom_params.z;
     let depthAttenuation = u.zoom_params.w;
@@ -68,7 +105,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dirNorm = normalize(dir + vec2<f32>(1e-4));
 
     // Depth-scaled blur attenuation: deeper pixels blur less
-    let attenuatedStrength = strength * (1.0 - depth * depthAttenuation);
+    var attenuatedStrength = strength * (1.0 - depth * depthAttenuation);
+
+    // ── Click zoom shockwaves ───────────────────────────────────────
+    // Each live ripple detonates a secondary decaying radial blur pulse
+    // centered at its click point (aspect-corrected ~0.3 radius, ~1.2s fade).
+    let aspect = resolution.x / max(resolution.y, 1.0);
+    let rippleTotal = min(u32(u.config.y), 50u);
+    for (var r: u32 = 0u; r < rippleTotal; r = r + 1u) {
+        let ripple = u.ripples[r];
+        let rippleAge = time - ripple.z;
+        if (rippleAge >= 0.0 && rippleAge <= 1.2) {
+            let toRipple = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let rippleDist = length(toRipple);
+            let pulse = exp(-rippleAge * 2.0) * smoothstep(0.3, 0.0, rippleDist);
+            attenuatedStrength += pulse * 0.6;
+        }
+    }
 
     let samples = i32(sampleCount * 30.0 + 5.0);
     let dither = bayer(i32(global_id.x), i32(global_id.y)) / f32(samples);
@@ -84,12 +137,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     for (var i: i32 = 0; i < samples; i = i + 1) {
         let t = (f32(i) + dither) / f32(samples);
+        // Per-ring FFT voice: each tap's weight shimmers with a spectrum
+        // bin selected from the fractional radius along the blur ray.
+        let fftVoice = plasmaBuffer[(u32(t * 8.0) % 8u) + 1u].x * 0.15;
+        let tapWeight = 1.0 + fftVoice;
         let rT = t + rSpread * t;
         let gT = t;
         let bT = t - bSpread * t;
-        rAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + rT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-        gAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + gT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-        bAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + bT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        rAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + rT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * tapWeight;
+        gAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + gT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * tapWeight;
+        bAcc += textureSampleLevel(readTexture, u_sampler, clamp(center + dir * (1.0 + bT * attenuatedStrength), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * tapWeight;
     }
     let invSamples = 1.0 / f32(samples);
     rAcc *= invSamples;

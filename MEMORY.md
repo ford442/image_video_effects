@@ -1,6 +1,109 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-02 (Batch 25 shader upgrades)
+**Last updated:** 2026-08-02 (Batch 30 shader upgrades)
+
+## 2026-08-02 — Shader upgrade Batch 30
+
+- Upgraded the next eight clean 120–122-line shaders: Gamma Ray Burst,
+  Temporal Rift, Voxel Depth Sort, CRT Phosphor Decay, Infinite Spiral Zoom,
+  Neon Poly Grid, X-Ray Reveal, and Color Channel Weave (tracker #271–278).
+- Repaired runaway gamma math, missing bounds/border clamps, additive voxel
+  shadows, two legacy 8x8 workgroups, Spiral's blue-channel angle alias, X-Ray
+  softness/NaN issues, and Weave's reserved-zone audio bug.
+- Standardized spring/click/FFT interaction with persistent state only in
+  `[133..139]`; preserved source params and every raw/display feedback role.
+- Focused gate/audits, generated catalogs, 1,319-ID duplicate scan, full Jest,
+  and `SKIP_WASM_BUILD=1` production build all passed. VM GPU limitation leaves
+  visual smoke to real hardware; unrelated generated/report state was preserved.
+
+## 2026-08-02 — Shader upgrade Batch 29
+- Continued the smallest-first clean single-pass queue with `sonic-boom`,
+  `spectrum-bleed`, `anamorphic-caustic-flare`, `ascii-lens`, `digital-haze`,
+  `heat-haze-mirage`, `interactive-film-burn`, and
+  `porcelain-fracture-glow` (tracker #263–270; completed total 270).
+- Fixed Spectrum Bleed's four controls reading time/mouse instead of
+  `zoom_params`, its idempotent blur loop, Heat Haze's reserved-zone audio
+  reads, ASCII Lens's missing A write/dead audio, and Digital Haze's dead
+  density control. Added click launches, spring interaction, and FFT voices.
+- Coordinator review repaired a missing bounds guard, an every-pixel persistent
+  state race, ambiguous initialization, wrong click-shock direction, border
+  samples, and unbounded event/HDR stacking. New state remains in
+  `extraBuffer[133..138]`; raw temporal and mask/field feedback roles stay intact.
+- Source params stayed exact; four indexed additive `updatedParams` and truthful
+  feature/depth metadata match generated lists. Proof: focused gate 8/8 with
+  zero warnings/buffer violations; dead-slider, strict-buffer, JSON/list audits
+  clean; 1,319 unique IDs; 1,306 manifest entries; Jest 69 suites / 478 pass /
+  1 skip; `SKIP_WASM_BUILD=1` production build green. Unrelated Physics Lab
+  list drift and the existing WGSL report were restored byte-for-byte. Live
+  WebGPU visual proof remains a real-hardware handoff.
+
+## 2026-08-02 — Shader upgrade Batch 28
+- Continued the smallest-first clean single-pass queue with
+  `spec-importance-sampled-bokeh`, `chromatic-shockwave`, `film-cross-process`,
+  `fluid-grid`, `infinite-video-feedback`, `pixel-storm`, `pixelation-drift`, and
+  `silk-flow-advection` (tracker #255–262; completed total 262).
+- Wired Chromatic Shockwave's dead Ring Count, corrected Fluid Grid's mislabeled
+  controls, implemented Infinite Feedback's advertised mouse transform, made
+  Pixelation Drift's mouse feature real, and activated Silk Flow's formerly
+  write-only velocity history. Fixed missing bounds guards, displaced-sample
+  safety, aspect-space transforms, exact-center math, and eager alpha division.
+- All eight gained top-left-safe spring interaction, guarded click behavior, and
+  regional FFT voices. Source params stayed exact; four indexed additive
+  `updatedParams` and truthful feature/depth metadata propagated to generated
+  lists. New persistent state remains in `extraBuffer[133..138]`; raw HDR,
+  temporal display-history, and velocity feedback roles remain unchanged.
+- Proof: focused Naga/bindgroup gate 8/8 with zero warnings/buffer violations;
+  dead-slider, strict-buffer, JSON, and generated-list audits clean; 1,319 unique
+  IDs; 1,306 manifest entries; Jest 69 suites / 478 pass / 1 skip;
+  `SKIP_WASM_BUILD=1` production build green. Unrelated Physics Lab list drift
+  and the pre-existing WGSL report were preserved byte-for-byte. Live WebGPU
+  visual proof remains a real-hardware handoff.
+
+## 2026-08-02 — Shader upgrade Batch 27
+- Continued the smallest-first clean single-pass queue with `melting-oil`,
+  `spec-iridescence-engine`, `spectral-waves`, `aero-chromatics`,
+  `chroma-kinetic`, `cyber-trace`, `gen-chrono-erosion-feedback-melting`, and
+  `quantum-flux` (tracker #247–254; completed total 254).
+- Rewired three mislabeled Melting Oil sliders, three shaders that declared but
+  never sampled audio, and Chrono Erosion's dead Feedback Mix. Added guarded
+  click behavior, spring interaction, and regional FFT voices throughout.
+- Coordinator review clamped Sobel border loads, fixed top-left initialization
+  ambiguity, added the missing iridescence bounds guard, corrected aspect-space
+  directions back into UV space, and bounded Cyber Trace's display emission with
+  a hue-preserving soft knee while keeping raw clamp-2.0 history untouched.
+- Source params stayed exact and each definition gained an indexed additive
+  `updatedParams`; additive feature tags now match live audio/depth/temporal use.
+  New persistent state remains in `extraBuffer[133..138]` and all feedback roles
+  remain unchanged.
+- Proof: focused Naga/bindgroup gate 8/8 with zero warnings/buffer violations;
+  dead-slider, strict extraBuffer, JSON, and generated-list audits clean; 1,319
+  unique IDs; 1,306 manifest entries; Jest 69 suites / 478 pass / 1 skip;
+  `SKIP_WASM_BUILD=1` production build green. Unrelated Physics Lab list drift
+  was removed and the pre-existing WGSL report preserved byte-for-byte. Live
+  WebGPU visual proof remains a real-hardware handoff.
+
+## 2026-08-02 — Shader upgrade Batch 26
+- Continued the smallest-first clean single-pass queue with
+  `temporal-frequency-decomposition`, `glass-wipes`, `interactive-zoom-blur`,
+  `reality-tear`, `bubble-lens`, `cross-mouse-spec-dispersion-lens`,
+  `laser-burn`, and `magnetic-luma-sort` (tracker #239–246; total 246).
+- Core wins: wired Temporal Frequency Decomposition's previously dead mouse tag;
+  corrected the prismatic crossover's elliptical lens; removed Magnetic Luma
+  Sort's dead final-color experiment; wired formerly dead audio in Glass Wipes
+  and Magnetic Luma Sort; added guarded click behavior and FFT voices throughout.
+- Coordinator review replaced non-atomic every-pixel state stores in Temporal,
+  Reality Tear, and Laser Burn with single-writer persistence, made top-left
+  initialization explicit where position-zero sentinels were unsafe, and added
+  a coarse cull before Bubble Lens satellite evaluations. New state remains in
+  `extraBuffer[133..138]`; history binding 13 and all A/C state roles are intact.
+- Source `params` stayed byte-equivalent; four indexed additive `updatedParams`
+  were generated for each shader. Glass Wipes and Magnetic Luma Sort now carry
+  truthful additive `audio-reactive` features.
+- Proof: focused Naga/bindgroup gate 8/8 with zero warnings/buffer violations;
+  dead-slider and JSON/list audits clean; 1,319 unique IDs; 1,306 manifest entries;
+  Jest 69 suites / 478 pass / 1 skip; `SKIP_WASM_BUILD=1` production build green.
+  Unrelated Physics Lab list drift and the pre-existing WGSL report were restored
+  byte-for-byte. Live WebGPU visual proof remains a real-hardware handoff.
 
 ## 2026-08-02 — Shader upgrade Batch 25
 - Continued the smallest-first all-category queue with `signal-tuner`,

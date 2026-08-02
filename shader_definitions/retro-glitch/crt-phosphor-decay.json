@@ -5,6 +5,7 @@
   "description": "Simulates CRT phosphor persistence with per-channel RGB decay rates, scanline masking, sub-pixel triad rendering, and halation bloom. Audio-reactive brightness flash and scanline flutter. Touch cursor adds static.",
   "features": [
     "mouse-driven",
+    "click-reactive",
     "audio-reactive",
     "depth-aware",
     "temporal",
@@ -54,5 +55,13 @@
     "television",
     "temporal",
     "audio"
-  ]
+  ],
+  "supportsDepth": true,
+  "updatedParams": [
+    { "index": 0, "name": "Decay Rate", "default": 0.6, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 1, "name": "Scanline Intensity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 2, "name": "Halation Spread", "default": 0.4, "min": 0, "max": 1, "step": 0.01 },
+    { "index": 3, "name": "Audio Sensitivity", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+  ],
+  "updated": true
 }

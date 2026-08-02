@@ -43,6 +43,7 @@
     "organic-motion",
     "mouse-driven",
     "audio-reactive",
+    "click-reactive",
     "chromatic",
     "upgraded-rgba"
   ],
@@ -55,5 +56,41 @@
     "temporal",
     "chromatic",
     "depth-aware"
-  ]
+  ],
+  "supportsDepth": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Pixel Size",
+      "default": 0.15,
+      "min": 0.01,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Drift Speed",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Color Bleed",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Depth Influence",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

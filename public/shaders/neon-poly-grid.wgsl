@@ -2,6 +2,7 @@
 //  Neon Poly Grid
 //  A glowing hexagonal grid that lights up on mouse interaction
 //  and leaves a fading trail.
+//  Upgraded: 2026-08-02 (Batch 30)
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -54,13 +55,20 @@ fn modulo(x: vec2<f32>, y: vec2<f32>) -> vec2<f32> {
     return x - y * floor(x / y);
 }
 
+fn soft_ceiling(color: vec3<f32>) -> vec3<f32> {
+    let positive = max(color, vec3<f32>(0.0));
+    let peak = max(positive.x, max(positive.y, positive.z));
+    return positive / (1.0 + max(peak - 1.0, 0.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
+    let time = u.config.x;
 
     // Correct aspect ratio for grid
     let aspect = resolution.x / resolution.y;
@@ -76,21 +84,49 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hex = hexGrid(uv_grid, scale);
     let distToEdge = hex.y;
 
-    // Mouse Interaction
-    var mouse = u.zoom_config.yz;
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) {
+        mouse = rawMouse;
+        mouseVelocity = vec2<f32>(0.0);
+    }
+    let dt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let omega = 12.0;
+    mouseVelocity += ((rawMouse - mouse) * (omega * omega) - mouseVelocity * (2.0 * omega)) * dt;
+    mouse += mouseVelocity * dt;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[133] = mouse.x;
+        extraBuffer[134] = mouse.y;
+        extraBuffer[135] = mouseVelocity.x;
+        extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0;
+        extraBuffer[138] = time;
+    }
     let mouse_grid = vec2<f32>(mouse.x * aspect, mouse.y);
     let distToMouse = distance(uv_grid, mouse_grid);
 
     // Activation based on mouse distance
     let mouseRadius = 0.2;
-    let activation = smoothstep(mouseRadius, 0.0, distToMouse);
+    let activation = 1.0 - smoothstep(0.0, mouseRadius, distToMouse);
 
-    // Add activation from clicks/ripples?
-    // (Optional)
+    var clickTrail = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.5) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let radius = length(delta);
+            let ring = exp(-abs(radius - age * 0.14) * 70.0);
+            let fill = 1.0 - smoothstep(0.0, 0.12, radius);
+            clickTrail = max(clickTrail, max(ring, fill * exp(-age * 3.0)) * exp(-age * 0.8));
+        }
+    }
 
     // Persistence Logic (Trail)
     let historyColor = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let newTrail = max(historyColor.r * decay, activation);
+    let newTrail = clamp(max(historyColor.r * decay, max(activation, clickTrail)), 0.0, 1.0);
 
     // Store new trail state
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newTrail, 0.0, 0.0, newTrail));
@@ -99,7 +135,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     // Grid Lines
-    let lineGlow = smoothstep(lineWidth, 0.0, distToEdge);
+    let lineGlow = 1.0 - smoothstep(0.0, lineWidth, distToEdge);
 
     // Combine trail with grid
     // Grid lights up where trail is active
@@ -108,14 +144,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Base grid (dim)
     let baseGrid = lineGlow * 0.1;
 
-    let gridColor = vec3<f32>(0.0, 1.0, 1.0) * activeGrid + vec3<f32>(0.2, 0.0, 0.5) * baseGrid;
+    let cellCode = u32(abs(hex.z * 17.0 + hex.w * 31.0));
+    let fftVoice = clamp(plasmaBuffer[(cellCode % 8u) + 1u].x, 0.0, 1.0);
+    let cyanVoice = vec3<f32>(0.0, 0.75 + fftVoice * 0.25, 1.0);
+    let gridColor = cyanVoice * activeGrid * (0.85 + fftVoice * 0.35) + vec3<f32>(0.2, 0.0, 0.5) * baseGrid;
 
     // Composite
     // Add grid on top of source, or multiply?
     // Let's add it.
-    let finalColor = sourceColor.rgb + gridColor;
+    let finalColor = soft_ceiling(sourceColor.rgb + gridColor);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, sourceColor.a));
     let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
+    let reliefDepth = clamp(depth_in + lineGlow * newTrail * 0.16, 0.0, 1.0);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(reliefDepth, 0.0, 0.0, 0.0));
 }

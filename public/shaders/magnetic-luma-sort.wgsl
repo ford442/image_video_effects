@@ -25,6 +25,14 @@ fn get_luma(color: vec3<f32>) -> f32 {
     return dot(color, vec3(0.299, 0.587, 0.114));
 }
 
+// Persistent spring state lives in extraBuffer[133..137] (shader-owned region
+// is [133..255]; [0..4] reserved, [5..132] = engine FFT bins):
+//   [133] = smoothed magnet x, [134] = smoothed magnet y
+//   [135] = spring velocity x, [136] = spring velocity y
+//   [137] = last frame timestamp (for a stable dt)
+// Every invocation integrates the SAME previous state, so all threads agree on
+// the result; only thread (0,0) writes the advanced state back.
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -32,13 +40,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var uv = vec2<f32>(global_id.xy) / resolution;
 
+    // --- Audio wiring (plasmaBuffer was declared but never sampled) ---
+    // plasmaBuffer[1..8].x are the engine's 8 FFT bands; bands 1-2 are the bass.
+    let bass = clamp((plasmaBuffer[1].x + plasmaBuffer[2].x) * 0.5, 0.0, 1.0);
+
     // Params
     let pullStrength = u.zoom_params.x * 0.05; // Scaling for reasonable speed
-    let threshold = u.zoom_params.y;
+    // Bass loosens the sort: beats lower the effective luma threshold.
+    let threshold = u.zoom_params.y * (1.0 - bass * 0.3);
     let decay = u.zoom_params.z;
     let repel = step(0.5, u.zoom_params.w); // 0 or 1
 
-    var mousePos = u.zoom_config.yz;
+    // --- Critically-damped spring attractor ---
+    // The raw mouse stays the spring TARGET; the magnet itself glides.
+    let time = u.config.x;
+    let rawMouse = u.zoom_config.yz;
+    let prevTime = extraBuffer[137];
+    let dt = clamp(time - prevTime, 0.001, 0.05);
+
+    var magnetPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var magnetVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (prevTime <= 0.0) {
+        // First frame after init: snap to the cursor so we don't glide in from origin.
+        magnetPos = rawMouse;
+        magnetVel = vec2<f32>(0.0, 0.0);
+    }
+
+    // Critical damping: accel = omega^2 * (target - pos) - 2 * omega * vel.
+    let omega = 14.0;
+    let springAccel = omega * omega * (rawMouse - magnetPos) - 2.0 * omega * magnetVel;
+    magnetVel = magnetVel + springAccel * dt;
+    magnetPos = magnetPos + magnetVel * dt;
+
+    if (global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[133] = magnetPos.x;
+        extraBuffer[134] = magnetPos.y;
+        extraBuffer[135] = magnetVel.x;
+        extraBuffer[136] = magnetVel.y;
+        extraBuffer[137] = time;
+    }
+
+    var mousePos = magnetPos;
     let aspect = resolution.x / resolution.y;
 
     // Vector to mouse
@@ -67,11 +109,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         speed = pullStrength * (luma - threshold) / (1.0 - threshold + 0.001);
     }
 
+    // Per-row FFT drift: 8 horizontal bands, each scales its speed by its own
+    // band energy, so the smear dances across the spectrum.
+    let band = min(u32(uv.y * 8.0), 7u);
+    speed = speed * (1.0 + plasmaBuffer[(band % 8u) + 1u].x * 0.4);
+
     // Dampen speed by distance? Maybe infinite reach is better.
     // Let's dampen slightly so the edge of screen doesn't pull too hard if mouse is center.
     // speed *= smoothstep(0.0, 0.1, dist);
 
-    let offset = -dir * speed;
+    // Main pull vector (before the offset is applied).
+    var pull = dir * speed;
+
+    // Click vortex pulses: each live ripple adds a decaying second attractor at
+    // its click point, stirring the flow. Composed with the main pull here.
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let rippleAge = time - ripple.z;
+        if (rippleAge < 0.0 || rippleAge > 3.0) { continue; }
+
+        var dirToRipple = ripple.xy - uv;
+        dirToRipple.x *= aspect;
+        let rippleDist = length(dirToRipple);
+
+        var rippleDir = vec2<f32>(0.0, 0.0);
+        if (rippleDist > 0.001) { rippleDir = normalize(dirToRipple); }
+        if (repel > 0.5) { rippleDir = -rippleDir; }
+
+        // Smoothstep falloff over a ~0.25 radius, decaying with exp(-age * 2).
+        let falloff = smoothstep(0.25, 0.0, rippleDist);
+        let pulse = exp(-rippleAge * 2.0);
+        pull = pull + rippleDir * (speed * falloff * pulse);
+    }
+
+    let offset = -pull;
 
     // Sample history at the upstream position
     let historyUV = uv + offset;
@@ -87,11 +159,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // If we only use history, the video won't update.
     // So we mix current frame into history.
 
-    var finalColor = mix(historyColor, srcColor, 0.1); // Continually add 10% new image
+    // (Dead finalColor experiment removed: the mix/max candidates above were
+    // computed and then thrown away - `mixed` below was always what won.)
 
     // To make it look like "sorting" or "smearing", we heavily favor the displaced history
     // but we clamp it so it doesn't blow out.
-    finalColor = max(srcColor * 0.2, historyColor * decay);
 
     // Alternative: If the pixel is bright enough to move, it "leaves" its spot and "arrives" at the next.
     // This is hard in a gather-based shader.

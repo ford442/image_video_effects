@@ -92,7 +92,42 @@
         "min": 0,
         "max": 1
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bubble Size",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Magnification",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Film Thickness",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "IOR",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "chromatic-swirl",
@@ -645,12 +680,53 @@
     "features": [
       "animated",
       "grid",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "depth-aware",
+      "curl-noise",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "supportsDepth": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Grid Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Flow Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "fractal-glass-distort",
@@ -1489,7 +1565,42 @@
       "temporal",
       "audio-reactive",
       "depth-aware"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Blur Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Chromatic Amount",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Quality",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Depth Attenuation",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "julia-warp",
@@ -2187,12 +2298,50 @@
     ],
     "features": [
       "mouse-driven",
-      "distortion"
+      "distortion",
+      "audio-reactive",
+      "click-reactive",
+      "temporal-persistence"
     ],
     "tags": [
       "filter",
       "image-processing"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Storm Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Chaos",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Trail Length",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Radius",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "pixelate-blast",
@@ -2656,8 +2805,11 @@
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
+      "temporal",
+      "click-reactive",
       "upgraded-rgba"
     ],
+    "supportsDepth": true,
     "params": [
       {
         "id": "radius",
@@ -2694,7 +2846,42 @@
       "shock-wave",
       "mach-cone",
       "supersonic"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Ring Radius",
+        "default": 0.2,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Ring Width",
+        "default": 0.05,
+        "min": 0.01,
+        "max": 0.2,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Distortion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chrom. Split",
+        "default": 0.02,
+        "min": 0,
+        "max": 0.1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "spec-bicubic-crystal",

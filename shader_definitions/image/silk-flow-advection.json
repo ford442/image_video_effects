@@ -17,6 +17,7 @@
     "audio-driven",
     "mouse-driven",
     "mouse-finger",
+    "click-reactive",
     "temporal",
     "semantic-alpha",
     "depth-aware"
@@ -54,5 +55,41 @@
       "max": 1.6,
       "step": 0.01
     }
-  ]
+  ],
+  "supportsDepth": true,
+  "updatedParams": [
+    {
+      "index": 0,
+      "name": "Flow Amount",
+      "default": 0.65,
+      "min": 0.0,
+      "max": 1.4,
+      "step": 0.01
+    },
+    {
+      "index": 1,
+      "name": "Silk Softness",
+      "default": 0.75,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 2,
+      "name": "Breathing Motion",
+      "default": 0.55,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01
+    },
+    {
+      "index": 3,
+      "name": "Mouse Disturb",
+      "default": 0.85,
+      "min": 0.0,
+      "max": 1.6,
+      "step": 0.01
+    }
+  ],
+  "updated": true
 }

@@ -8938,6 +8938,9 @@
       "importance-sampling",
       "bokeh",
       "mouse-driven",
+      "depth-aware",
+      "audio-reactive",
+      "click-reactive",
       "HDR"
     ],
     "params": [
@@ -8974,7 +8977,43 @@
         "step": 0.01
       }
     ],
-    "target_rating": 4.7
+    "target_rating": 4.7,
+    "supportsDepth": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Bokeh Radius",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Highlight Shape",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Brightness Boost",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chromatic Aberration",
+        "default": 0.1,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "spec-iridescence-engine",
@@ -8994,6 +9033,7 @@
       "depth-aware",
       "spectral-render",
       "mouse-driven",
+      "audio-reactive",
       "HDR"
     ],
     "params": [
@@ -9030,7 +9070,42 @@
         "step": 0.01
       }
     ],
-    "target_rating": 4.8
+    "target_rating": 4.8,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Film Thickness",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Film IOR",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Turbulence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "spec-prismatic-dispersion",

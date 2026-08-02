@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Möbius–Droste Infinite Spiral
-//  Category: distortion
-//  Features: mouse-driven, audio-reactive, temporal, chromatic, depth-aware
+//  Category: interactive-mouse
+//  Features: mouse-driven, click-reactive, audio-reactive, temporal, chromatic, depth-aware
 //  Complexity: Very High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-08-02 (Batch 30)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0)  var u_sampler: sampler;
@@ -32,8 +32,14 @@ fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
 }
 
 fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
-    let d = dot(b, b);
+    let d = max(dot(b, b), 0.000001);
     return vec2<f32>((a.x*b.x + a.y*b.y)/d, (a.y*b.x - a.x*b.y)/d);
+}
+
+fn soft_ceiling(color: vec3<f32>) -> vec3<f32> {
+    let positive = max(color, vec3<f32>(0.0));
+    let peak = max(positive.x, max(positive.y, positive.z));
+    return positive / (1.0 + max(peak - 1.0, 0.0));
 }
 
 fn mobius(z: vec2<f32>, a: vec2<f32>, b: vec2<f32>, c: vec2<f32>, d: vec2<f32>) -> vec2<f32> {
@@ -62,18 +68,49 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
     let depth  = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let stateReady = extraBuffer[137] > 0.5;
+    var mouse = select(rawMouse, vec2<f32>(extraBuffer[133], extraBuffer[134]), stateReady);
+    var mouseVelocity = select(vec2<f32>(0.0), vec2<f32>(extraBuffer[135], extraBuffer[136]), stateReady);
+    let dt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), stateReady);
+    let omega = 9.0;
+    mouseVelocity += ((rawMouse - mouse) * (omega * omega) - mouseVelocity * (2.0 * omega)) * dt;
+    mouse += mouseVelocity * dt;
+
+    let thetaTarget = time * 0.4 + bass * 0.8;
+    let previousTheta = select(thetaTarget, extraBuffer[139], stateReady);
+    let thetaState = mix(previousTheta, thetaTarget, clamp(dt * (2.5 + mids), 0.0, 1.0));
+    if (global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[133] = mouse.x;
+        extraBuffer[134] = mouse.y;
+        extraBuffer[135] = mouseVelocity.x;
+        extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0;
+        extraBuffer[138] = time;
+        extraBuffer[139] = thetaState;
+    }
+
     let zoomSpeed  = (u.zoom_params.x - 0.5) * 4.0 * (1.0 + bass * 0.2);
     let mobStrength= mix(0.0, 0.8, u.zoom_params.y) * (1.0 + mids * 0.15);
     let branches   = floor(u.zoom_params.z * 5.0) + 1.0;
     let chromatic  = u.zoom_params.w * 0.08 + treble * 0.03;
 
-    let mouse = u.zoom_config.yz;
     var p = (uv - mouse) * vec2<f32>(aspect, 1.0);
 
-    // Temporal Möbius drift: previous parameters blend for smoother orbit
+    var clickTwist = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let radius = length(delta);
+            clickTwist += sin(radius * 45.0 - age * 12.0) * exp(-radius * 6.0 - age * 1.5) * 0.45;
+        }
+    }
+
     let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let prevTheta = prev.z;
-    let theta = mix(time * 0.4 + bass * 0.8, prevTheta, 0.03 + mids * 0.01);
+    let theta = thetaState + clamp(clickTwist, -0.8, 0.8);
 
     let bVec  = mobStrength * vec2<f32>(cos(theta), sin(theta));
     let cVec  = mobStrength * vec2<f32>(cos(-theta), sin(-theta));
@@ -81,6 +118,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let twist  = (mids - 0.5) * 1.5 + 0.3;
     let uvBase = logPolarUV(p, zoomSpeed, twist, time, branches);
+    let fftBin = (u32(fract(uvBase.y) * 8.0) % 8u) + 1u;
+    let fftVoice = clamp(plasmaBuffer[fftBin].x, 0.0, 1.0);
 
     // Depth-scaled chromatic aberration
     let depthChroma = chromatic * (1.0 + depth * 0.5);
@@ -109,8 +148,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Tile-seam edge glow
     let fx = fract(uvBase.x * 8.0);
     let fy = fract(uvBase.y * 8.0);
-    let edgeGlow = smoothstep(0.48, 0.5, fx) * smoothstep(0.48, 0.5, fy) * 0.3 * treble;
-    let finalColor = color + vec3<f32>(0.6, 0.3, 1.0) * edgeGlow;
+    let edgeGlow = smoothstep(0.48, 0.5, fx) * smoothstep(0.48, 0.5, fy) * 0.3 * (treble + fftVoice * 0.5);
+    let finalColor = soft_ceiling(color + vec3<f32>(0.6, 0.3, 1.0) * edgeGlow);
 
     let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(luma * 0.8 + edgeGlow + bass * 0.05, 0.0, 1.0);

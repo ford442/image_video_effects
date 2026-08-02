@@ -4,6 +4,8 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Upgraded: 2026-05-23
+//  Swarm upgrade: 2026-08-02 (sprung flux center, click decoherence
+//  bursts, per-sector FFT jitter voices)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -60,20 +62,83 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Params with audio modulation
-    let jitterAmount = u.zoom_params.x * (1.0 + treble * 0.6);
+    // Slider params (roles kept EXACTLY): x = Flux Jitter, y = Wave Freq,
+    // z = Color Drift, w = Flux Radius — each rides its own audio band.
+    let jitterBase = u.zoom_params.x * (1.0 + treble * 0.6);
     let freq = u.zoom_params.y * (1.0 + mids * 0.4);
     let driftSpeed = u.zoom_params.z * (1.0 + mids * 0.5);
     let radiusParam = u.zoom_params.w * (1.0 + bass * 0.3);
 
+    // ─── Sprung flux center (critically-damped spring, zeta = 1) ───
+    // The raw cursor is only the spring TARGET; the influence zone trails
+    // it like a probability cloud that cannot collapse instantly.
+    // Persistent state in extraBuffer (engine reserves [0..4], FFT bins
+    // live in [5..132], shader state stays in [133..255]):
+    //   [133..134] sprung center, [135..136] spring velocity,
+    //   [137] init flag, [138] last integration time.
     let mouse = u.zoom_config.yz;
+    var fPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var fVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    let springInitialized = extraBuffer[137] >= 0.5;
+    if (!springInitialized) {
+        fPos = mouse;
+        fVel = vec2<f32>(0.0, 0.0);
+    }
+    let dt = select(0.0, clamp(time - extraBuffer[138], 0.0005, 0.05), springInitialized);
+    let omega = 9.0;
+    let fAcc = omega * omega * (mouse - fPos) - 2.0 * omega * fVel;
+    fVel = fVel + fAcc * dt;
+    fPos = fPos + fVel * dt;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[133] = fPos.x;
+        extraBuffer[134] = fPos.y;
+        extraBuffer[135] = fVel.x;
+        extraBuffer[136] = fVel.y;
+        extraBuffer[137] = 1.0;
+        extraBuffer[138] = time;
+    }
+    // All pixels use the same locally integrated center for this frame.
+    let fluxCenter = fPos;
+
     let aspect = resolution.x / resolution.y;
     let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
-    let mouseCorrected = vec2<f32>(mouse.x * aspect, mouse.y);
+    let mouseCorrected = vec2<f32>(fluxCenter.x * aspect, fluxCenter.y);
     let dist = distance(uvCorrected, mouseCorrected);
 
     let influenceRadius = radiusParam * 0.8 + 0.1;
     let influence = smoothstep(influenceRadius, 0.0, dist);
+
+    // ─── Per-sector FFT voices ───
+    // The influence zone is sliced into 8 angular sectors around the sprung
+    // center; each wedge's jitter magnitude rides its own FFT bin, so
+    // different directions vibrate to different frequencies.
+    let delta = uvCorrected - mouseCorrected;
+    let angle = atan2(delta.y, delta.x);
+    let sectorF = floor((angle + 3.14159265) / 6.2831853 * 8.0);
+    let sector = u32(sectorF) % 8u;
+    let sectorVoice = plasmaBuffer[(sector % 8u) + 1u].x * 0.3;
+
+    // ─── Click decoherence bursts ───
+    // Each live ripple (a click) spikes the jitter locally at its click
+    // point: a decaying bump in an aspect-corrected ~0.25 radius falloff,
+    // exp(-rippleAge * 2.0), effective lifetime ~1.2s. Reality flickers
+    // where you clicked without holding the cursor still.
+    var clickBurst = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let rippleAge = time - ripple.z;
+        if (rippleAge > 0.0 && rippleAge < 1.2) {
+            let ripplePos = vec2<f32>(ripple.x * aspect, ripple.y);
+            let rippleDist = distance(uvCorrected, ripplePos);
+            clickBurst = clickBurst + jitterBase * 0.6
+                * smoothstep(0.25, 0.0, rippleDist) * exp(-rippleAge * 2.0);
+        }
+    }
+
+    // Local jitter magnitude: slider base, voiced by this wedge's FFT bin,
+    // spiked by click decoherence bursts.
+    let jitterAmount = jitterBase * (1.0 + sectorVoice) + clickBurst;
 
     let seed = uv + vec2<f32>(time * 0.1, time * 0.1);
     let noiseX = (rand(seed) - 0.5) * 2.0;

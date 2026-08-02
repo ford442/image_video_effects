@@ -4,7 +4,7 @@
 //  Features: audio-reactive, depth-aware, isometric-voxel, ao-shadows,
 //            chromatic-subsurface, aces-tone-map
 //  Complexity: High
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-08-02 (Batch 30)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -52,7 +52,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let uv = vec2<f32>(global_id.xy) / resolution;
   let pixelCoord = vec2<f32>(global_id.xy);
-  let mouse = u.zoom_config.yz;
+  let time = u.config.x;
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  if (extraBuffer[137] < 0.5) {
+    mouse = rawMouse;
+    mouseVelocity = vec2<f32>(0.0);
+  }
+  let dt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+  let omega = 8.0;
+  mouseVelocity += ((rawMouse - mouse) * (omega * omega) - mouseVelocity * (2.0 * omega)) * dt;
+  mouse += mouseVelocity * dt;
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[133] = mouse.x;
+    extraBuffer[134] = mouse.y;
+    extraBuffer[135] = mouseVelocity.x;
+    extraBuffer[136] = mouseVelocity.y;
+    extraBuffer[137] = 1.0;
+    extraBuffer[138] = time;
+  }
   let aspect = resolution.x / resolution.y;
   let audio = plasmaBuffer[0].xyz;
   let bass = audio.x;
@@ -70,11 +89,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let blockCenter = (cell + 0.5) * blockPixels;
   let blockUV = clamp(blockCenter / resolution, vec2<f32>(0.0), vec2<f32>(1.0));
 
+  var clickLift = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 1.8) {
+      let radius = length((blockUV - ripple.xy) * vec2<f32>(aspect, 1.0));
+      let wave = exp(-abs(radius - age * 0.18) * 55.0) * exp(-age * 1.4);
+      clickLift = max(clickLift, wave);
+    }
+  }
+  let cellHash = hash11(cell.x * 17.0 + cell.y * 113.0);
+  let fftBin = (u32(cellHash * 8.0) % 8u) + 1u;
+  let fftVoice = clamp(plasmaBuffer[fftBin].x, 0.0, 1.0);
+
   let sourceDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, blockUV, 0.0).r;
-  let shiftedUV = clamp(blockUV + vec2<f32>(0.0, -(sourceDepth + bass * 0.15) * extrusion * 0.14), vec2<f32>(0.0), vec2<f32>(1.0));
+  let shiftedUV = clamp(blockUV + vec2<f32>(0.0, -(sourceDepth + bass * 0.15 + clickLift * 0.35) * extrusion * 0.14), vec2<f32>(0.0), vec2<f32>(1.0));
   let blockColor = textureSampleLevel(readTexture, u_sampler, shiftedUV, 0.0).rgb;
   let luma = luminance(blockColor);
-  let column = clamp(max(luma, sourceDepth), 0.0, 1.0);
+  let column = clamp(max(luma, sourceDepth) + clickLift * extrusion * 0.45, 0.0, 1.0);
 
   let rotLocal = vec2<f32>(
     local.x * cos(isoRot) - local.y * sin(isoRot),
@@ -103,16 +137,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   backgroundColor = backgroundColor * (1.0 - shadowMask);
 
   var topColor = blockColor * (0.65 + 0.60 * column) * ao;
-  topColor = topColor + spectral * rim * (0.14 + audio.y * 0.24 + bass * 0.18);
+  topColor = topColor + spectral * rim * (0.14 + audio.y * 0.24 + bass * 0.18 + fftVoice * 0.18);
   topColor = topColor + vec3<f32>(0.08, 0.10, 0.14) * extrusion * (1.0 + bass * 0.2);
-  topColor = topColor + sss + softShadow;
+  topColor = (topColor + sss) * (1.0 - softShadow);
   topColor = aces_tonemap(topColor);
 
   let finalColor = mix(backgroundColor, topColor, topMask);
   let depthConf = clamp(sourceDepth + column * 0.3, 0.0, 1.0);
   let occlusion = shadowMask * 0.5 + (1.0 - ao) * 0.3;
   let finalAlpha = clamp(depthConf * (1.0 - occlusion) * (0.5 + topMask * 0.45), 0.25, 0.98);
-  let depthOut = clamp(mix(sourceDepth * (1.0 - bgDarken * 0.50), min(1.0, column + extrusion * 0.60 + bass * 0.12), topMask), 0.0, 1.0);
+  let depthOut = clamp(mix(sourceDepth * (1.0 - bgDarken * 0.50), min(1.0, column + extrusion * 0.60 + bass * 0.12 + clickLift * 0.18), topMask), 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));

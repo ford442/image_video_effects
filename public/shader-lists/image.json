@@ -447,7 +447,9 @@
     ],
     "features": [
       "mouse-driven",
+      "click-reactive",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba",
       "semantic-alpha"
     ],
@@ -484,7 +486,43 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "supportsDepth": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Thread Spacing",
+        "default": 0.25,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Weave Angle",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Shadow Depth",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chroma Offset",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "concentric-spin",
@@ -2627,10 +2665,12 @@
     "url": "https://test.1ink.us/image_video_effects/shaders/gamma-ray-burst.wgsl",
     "features": [
       "mouse-driven",
+      "click-reactive",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
-    "description": "Physically-motivated relativistic jet simulation with Lorenz-boosted Doppler beaming, synchrotron emission spectrum, magnetic field line spirals, extreme HDR bloom, chromatic aberration, and ACES tone mapping.",
+    "description": "Stylized relativistic-jet visualization with bounded Doppler beaming, synchrotron-inspired emission, magnetic spirals, localized click bursts, chromatic aberration, and ACES tone mapping.",
     "params": [
       {
         "id": "param1",
@@ -2668,7 +2708,43 @@
       "jet",
       "hdr",
       "audio-reactive"
-    ]
+    ],
+    "supportsDepth": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Decay",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Jet Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Exposure",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "glitch-reveal",
@@ -2821,9 +2897,12 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "click-reactive",
+      "depth-aware",
       "temporal",
       "upgraded-rgba"
     ],
+    "supportsDepth": true,
     "params": [
       {
         "id": "heat_intensity",
@@ -2857,7 +2936,42 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Heat Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Rise Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Wave Scale",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Chroma Shift",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "hex-lens",
@@ -4406,6 +4520,7 @@
       "audio-driven",
       "mouse-driven",
       "mouse-finger",
+      "click-reactive",
       "temporal",
       "semantic-alpha",
       "depth-aware"
@@ -4443,7 +4558,43 @@
         "max": 1.6,
         "step": 0.01
       }
-    ]
+    ],
+    "supportsDepth": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Flow Amount",
+        "default": 0.65,
+        "min": 0,
+        "max": 1.4,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Silk Softness",
+        "default": 0.75,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Breathing Motion",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Mouse Disturb",
+        "default": 0.85,
+        "min": 0,
+        "max": 1.6,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "slime-drip",
@@ -5262,6 +5413,7 @@
     ],
     "features": [
       "mouse-driven",
+      "click-reactive",
       "3d-effect",
       "audio-reactive",
       "depth-aware",
@@ -5274,7 +5426,43 @@
       "audio-reactive",
       "isometric",
       "ambient-occlusion"
-    ]
+    ],
+    "supportsDepth": true,
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Block Size",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Extrusion",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "BG Darken",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Block Gap",
+        "default": 0.2,
+        "min": 0,
+        "max": 0.8,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "watercolor-bloom",
