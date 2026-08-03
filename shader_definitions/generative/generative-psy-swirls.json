@@ -3,6 +3,11 @@
   "name": "Psychedelic Swirls",
   "url": "shaders/generative-psy-swirls.wgsl",
   "description": "Multi-layer polar swirl vortex with chromatic hue separation per layer, temporal swirl accumulation, audio-driven twist modulation, HSV rainbow cycles, and ripple glow trails.",
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "features": [
     "mouse-driven",
     "generative",
@@ -11,7 +16,10 @@
     "upgraded-rgba",
     "temporal",
     "chromatic",
-    "audio-reactive"
+    "audio-reactive",
+    "sprung-mouse-vortex",
+    "guarded-click-swirls",
+    "depth-output"
   ],
   "tags": [
     "procedural",
@@ -96,5 +104,7 @@
       "step": 0.01
     }
   ],
+  "supportsDepth": true,
+  "supportsDof": false,
   "updated": true
 }

@@ -5,7 +5,7 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: High
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-//  Upgraded: 2026-06-14
+//  Upgraded: 2026-08-03 (Batch 34)
 //  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════════
 
@@ -24,8 +24,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
     zoom_params: vec4<f32>,  // x=Ring Density, y=Collision Rate, z=Anomaly Pull, w=Tunnel Warp
     ripples: array<vec4<f32>, 50>,
 };
@@ -58,7 +58,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, ring_density: f32, warp: f32) -> 
     p.y += cos(p.z * 0.15 * warp - time * 0.5) * 1.5 * warp;
 
     // Magnetic containment tunnel
-    let tunnel_radius = 3.0;
+    let tunnel_radius = 3.0 + audio * 0.12;
     let base_tunnel = length(p.xy) - tunnel_radius;
 
     // Domain repetition for obsidian magnetic rings
@@ -96,12 +96,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Mouse interaction (Magnetic Anomaly)
-    let mouse = u.zoom_config.yz;
-    if (mouse.x > 0.0 || mouse.y > 0.0) {
-        let mouse_ndc = (mouse - 0.5 * res) / res.y;
-        let pull_dir = normalize(vec3<f32>(mouse_ndc, 1.0) - rd);
-        rd = normalize(rd + pull_dir * anomaly_pull * 0.5);
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let springOmega = 8.0;
+    mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+    mouse += mouseVelocity * springDt;
+    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
+        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0; extraBuffer[138] = time;
     }
+    let mouseNdc = (mouse - vec2<f32>(0.5)) * vec2<f32>(res.x / res.y, 1.0);
+    let anomalyTarget = normalize(vec3<f32>(mouseNdc * 0.75, 1.0));
+    rd = normalize(mix(rd, anomalyTarget, clamp(anomaly_pull * 0.08, 0.0, 0.4)));
 
     var t = 0.0;
     var d = 0.0;
@@ -113,7 +123,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         p = ro + rd * t;
         d = map(p, time, audio, ring_density, tunnel_warp);
         if (abs(d) < 0.001) { hit = true; break; }
-        t += d * 0.8;
+        t += max(abs(d) * 0.7, 0.002);
         if (t > 100.0) { break; }
     }
 
@@ -156,10 +166,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     col += plasma;
 
+    let uv01 = (vec2<f32>(global_id.xy) + vec2<f32>(0.5)) / res;
+    var collisionFlash = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.5) {
+            let delta = (uv01 - ripple.xy) * vec2<f32>(res.x / res.y, 1.0);
+            let radius = length(delta);
+            let shell = exp(-abs(radius - age * 0.3) * 78.0) * exp(-age * 2.0);
+            collisionFlash = max(collisionFlash, shell);
+        }
+    }
+    col += vec3<f32>(1.2, 0.25, 0.9) * collisionFlash * (0.75 + plasmaBuffer[0].z * 0.35);
+
     // ═══ CHUNK: temporal-feedback (dataTextureC → dataTextureA) ═══
     let coord = vec2<i32>(global_id.xy);
     let prev = textureLoad(dataTextureC, coord, 0);
-    col = mix(col, prev.rgb * 0.92, 0.05 + audio * 0.01);
+    col = mix(col, prev.rgb * 0.92, clamp(0.04 + audio * 0.01, 0.0, 0.07));
 
     // ═══ CHUNK: chromatic-aberration ═══
     let plasmaGlow = dot(plasma, vec3<f32>(0.333));
@@ -169,10 +194,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = acesToneMap(col * 1.2);
 
     let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    let _alpha = clamp(_luma * 0.75 + collisionFlash * 0.3, 0.0, 0.96);
     textureStore(writeTexture, global_id.xy, vec4<f32>(col, _alpha));
-    let _depth_uv = clamp(vec2<f32>(global_id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(_depth, 0, 0, 1));
+    let _depth = select(0.0, clamp(1.0 - t / 100.0, 0.0, 1.0), hit);
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, vec4<f32>(col, _alpha));
 }

@@ -12,7 +12,7 @@
     "audio",
     "music"
   ],
-  "description": "A pulsating, dark metallic liquid with sharp spikes that respond to an oscillating magnetic field.",
+  "description": "A raymarched metallic ferrofluid mass with density-driven volume and spikes, sprung orbit control, audio-excited iridescence, click magnetic shells, temporal polish, and real hit depth.",
   "workgroup_size": [
     16,
     16,
@@ -57,5 +57,12 @@
   "updated": true,
   "id": "gen-magnetic-ferrofluid",
   "url": "shaders/gen-magnetic-ferrofluid.wgsl",
-  "features": []
+  "features": [
+    "raymarched-ferrofluid",
+    "density-driven-spikes",
+    "sprung-orbit-camera",
+    "click-magnetic-shells",
+    "temporal-feedback",
+    "depth-output"
+  ]
 }

@@ -54,5 +54,12 @@
   "updated": true,
   "id": "gen-neuro-kinetic-bloom",
   "url": "shaders/gen-neuro-kinetic-bloom.wgsl",
-  "features": []
+  "features": [
+    "raymarched-branching-flora",
+    "sprung-mouse-repulsion",
+    "click-bloom-rings",
+    "multi-band-vein-lighting",
+    "semantic-alpha",
+    "depth-output"
+  ]
 }

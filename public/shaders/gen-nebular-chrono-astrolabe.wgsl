@@ -5,7 +5,7 @@
 //            depth-aware, upgraded-rgba, FBM, domain-warping,
 //            curl-noise, Beer-Lambert, Fresnel-Schlick
 //  Complexity: Very High
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-08-03 (Batch 33)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -32,7 +32,7 @@ struct Uniforms {
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
 const PHI: f32 = 1.618033988749895;
-const MAX_STEPS: i32 = 120;
+const MAX_STEPS: i32 = 80;
 const MAX_DIST: f32 = 80.0;
 const SURF_DIST: f32 = 0.001;
 
@@ -82,13 +82,20 @@ fn rot2D(a: f32) -> mat2x2<f32> { let s = sin(a); let c = cos(a); return mat2x2<
 fn fresnel(cosTheta: f32, f0: vec3<f32>) -> vec3<f32> { return f0 + (vec3<f32>(1.0)-f0)*pow(1.0-cosTheta,5.0); }
 fn beer(d: f32, density: f32) -> f32 { return exp(-density*d); }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn map(p: vec3<f32>) -> vec2<f32> {
     let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let t = u.config.x * u.zoom_params.x;
     var d = MAX_DIST; var mat_id = 0.0;
     var p1 = p;
-    let mouse_pos = vec3<f32>((u.zoom_config.y-0.5)*5.0, (0.5-u.zoom_config.z)*5.0, 0.0);
+    let raw_mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let sprung_mouse = select(raw_mouse, vec2<f32>(extraBuffer[133], extraBuffer[134]), extraBuffer[137] > 0.5);
+    let mouse_pos = vec3<f32>((sprung_mouse.x-0.5)*5.0, (sprung_mouse.y-0.5)*5.0, 0.0);
     let dtm = length(p1-mouse_pos);
-    p1 += normalize(mouse_pos-p1)*(1.0/(dtm*dtm+0.5))*u.zoom_params.w*(1.0+bass*2.0);
+    p1 += (mouse_pos-p1)/max(dtm,0.001)*(1.0/(dtm*dtm+0.5))*u.zoom_params.w*(1.0+bass*2.0);
     p1 += curl(p1*0.3, t*0.1)*(0.2+mids*0.3);
     let core = sdSphere(p1, 0.5+bass*0.15);
     d = core; mat_id = 1.0;
@@ -110,18 +117,29 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
     let bass = plasmaBuffer[0].x; let treble = plasmaBuffer[0].z;
-    var dO = 0.0; var mat = 0.0; var glow = 0.0; var neb = vec3<f32>(0.0);
+    var dO = 0.0; var mat = 0.0; var glow = 0.0;
     let nd = 0.15+u.zoom_params.z*0.1;
     for (var i = 0; i < MAX_STEPS; i++) {
         let p = ro + rd * dO; let dS = map(p);
-        dO += dS.x * 0.8; mat = dS.y;
+        dO += max(dS.x * 0.8, 0.002); mat = dS.y;
         glow += max(0.0, 0.05-dS.x)*u.zoom_params.z*(1.0+bass*0.5);
-        let wp = domainWarp(p*0.2+vec3<f32>(0.0,0.0,u.config.x*0.05), u.config.x*0.1);
-        let cloud = fbm(wp,4)*exp(-length(p)*0.05);
-        neb += (vec3<f32>(0.1,0.3,0.7)+vec3<f32>(0.3,0.1,0.5)*sin(p.y*0.5+u.config.x*0.1))*cloud*0.02*nd*(1.0+treble*0.5);
         if (dO > MAX_DIST || abs(dS.x) < SURF_DIST) { break; }
     }
     return vec4<f32>(dO, mat, glow, beer(dO, nd));
+}
+
+fn sampleNebula(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
+    let treble = plasmaBuffer[0].z;
+    var nebula = vec3<f32>(0.0);
+    for (var i = 0; i < 8; i = i + 1) {
+        let fi = f32(i);
+        let p = ro + rd * (1.0 + fi * 1.4);
+        let warped = domainWarp(p * 0.18, u.config.x * 0.04);
+        let cloud = fbm(warped, 3) * exp(-fi * 0.18);
+        let tint = vec3<f32>(0.05, 0.16, 0.38) + vec3<f32>(0.22, 0.04, 0.3) * (0.5 + 0.5 * sin(p.y + u.config.x * 0.1));
+        nebula += tint * cloud * (0.08 + treble * 0.025);
+    }
+    return nebula;
 }
 
 fn getNormal(p: vec3<f32>) -> vec3<f32> {
@@ -136,6 +154,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (f32(id.x) >= res.x || f32(id.y) >= res.y) { return; }
     let bass = plasmaBuffer[0].x; let mids = plasmaBuffer[0].y; let treble = plasmaBuffer[0].z;
     let uv01 = vec2<f32>(id.xy)/res;
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(u.config.x - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let springOmega = 7.0;
+    mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+    mouse += mouseVelocity * springDt;
+    if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
+        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0; extraBuffer[138] = u.config.x;
+    }
     let ro = vec3<f32>(0.0, 0.0, -10.0); let rd = normalize(vec3<f32>(uv, 1.0));
     let rm = raymarch(ro, rd); let d = rm.x; let mat = rm.y; let glow = rm.z; let trans = rm.w;
     var col = vec3<f32>(0.0); var alpha = 0.3;
@@ -148,16 +179,29 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         else if (mat == 5.0) { col = vec3<f32>(0.9,0.95,1.0)*diff+fres*0.8; }
         alpha = 0.85;
     } else { col = vec3<f32>(0.01, 0.02, 0.05); }
+    col += sampleNebula(ro, rd);
     col += vec3<f32>(0.1,0.4,0.8)*glow*0.5;
     col *= trans; col += vec3<f32>(0.05,0.15,0.35)*glow*(1.0+treble);
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0);
+    var clickGravity = 0.0;
+    let aspect = res.x / res.y;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age >= 0.0 && age < 2.2) {
+            let radius = length((uv01 - ripple.xy) * vec2<f32>(aspect, 1.0));
+            clickGravity = max(clickGravity, exp(-abs(radius - age * 0.22) * 60.0) * exp(-age * 1.5));
+        }
+    }
+    col += vec3<f32>(0.25, 0.65, 1.2) * clickGravity * (0.45 + mids * 0.25);
+    let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
     col = mix(col, prev.rgb*0.92, 0.04+bass*0.02);
+    col = acesToneMap(max(col, vec3<f32>(0.0)));
     let lum = dot(col, vec3<f32>(0.299,0.587,0.114));
     alpha = clamp(lum*0.7+alpha*0.3, 0.0, 1.0);
     let out = vec4<f32>(col, alpha);
     textureStore(writeTexture, vec2<i32>(id.xy), out);
-    let d_uv = clamp(vec2<f32>(id.xy)/vec2<f32>(u.config.z,u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, d_uv, 0.0).r;
+    let depth = select(0.0, clamp(1.0-d/MAX_DIST,0.0,1.0), d < MAX_DIST);
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, vec2<i32>(id.xy), out);
 }

@@ -2,7 +2,14 @@
   "name": "Silica Tsunami",
   "category": "generative",
   "tags": [
-    "generative"
+    "generative",
+    "raymarching",
+    "glass",
+    "refraction",
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "depth-aware"
   ],
   "description": "A slow-motion wave of refractive glass-like particles that crests and shatters, dynamically reshaping around the mouse and reacting to audio amplitude.",
   "workgroup_size": [
@@ -49,5 +56,12 @@
   "updated": true,
   "id": "gen-silica-tsunami",
   "url": "shaders/gen-silica-tsunami.wgsl",
-  "features": []
+  "features": [
+    "refractive-particle-wave",
+    "density-correct-repetition",
+    "sprung-mouse-crest",
+    "click-shard-rings",
+    "multi-band-glass-lighting",
+    "depth-output"
+  ]
 }

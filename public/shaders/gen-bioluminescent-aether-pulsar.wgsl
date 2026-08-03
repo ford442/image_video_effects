@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: raymarched, mouse-driven, audio-reactive
 //  Complexity: High
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-08-03 (Batch 34)
 //  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,21 +22,11 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
     zoom_params: vec4<f32>,  // x=Pulsar Spin Rate, y=Beam Intensity, z=Accretion Density, w=Color Shift
     ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(controlled, color.a);
-}
-
 
 // --- UTILS ---
 fn rotate2D(angle: f32) -> mat2x2<f32> {
@@ -58,6 +48,10 @@ fn rotate3DY(angle: f32) -> mat3x3<f32> {
 fn smin(a: f32, b: f32, k: f32) -> f32 {
     let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // 3D noise for fluid core and debris
@@ -86,19 +80,21 @@ fn noise3(p: vec3<f32>) -> f32 {
 fn map(p: vec3<f32>) -> vec2<f32> {
     let t = u.config.x * u.zoom_params.x;
     let audio = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
 
     // Core (Sphere twisted by Y)
     var q_core = p;
     q_core = rotate3DY(t + q_core.y * 0.5) * q_core;
-    let core_noise = noise3(q_core * 2.0 + t) * (0.2 + audio * 0.5);
+    let core_noise = noise3(q_core * 2.0 + t) * (0.18 + audio * 0.35 + mids * 0.12);
     let d_core = length(q_core) - 1.0 - core_noise;
 
     // Accretion disk (Torus with noise/folds)
     var q_disk = p;
     q_disk.y += noise3(q_disk * 1.5 - t * 0.5) * 0.3 * audio;
     let d2 = vec2<f32>(length(q_disk.xz) - 2.5, q_disk.y);
-    let d_disk_base = length(d2) - 0.5;
-    let d_disk = d_disk_base + noise3(q_disk * 4.0) * (0.5 - u.zoom_params.z * 0.4);
+    let diskThickness = mix(0.22, 0.68, u.zoom_params.z);
+    let d_disk_base = length(d2) - diskThickness;
+    let d_disk = d_disk_base + noise3(q_disk * 4.0) * mix(0.32, 0.08, u.zoom_params.z);
 
     // Smoothmin between core and disk where they might interact
     let d = smin(d_core, d_disk, 0.5);
@@ -109,6 +105,16 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     }
 
     return vec2<f32>(d, mat_id);
+}
+
+fn calcNormal(p: vec3<f32>) -> vec3<f32> {
+    let e = vec2<f32>(0.001, 0.0);
+    let d = map(p).x;
+    return normalize(vec3<f32>(
+        map(p + e.xyy).x - d,
+        map(p + e.yxy).x - d,
+        map(p + e.yyx).x - d
+    ));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -122,8 +128,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var uv = (fragCoord - 0.5 * resolution) / resolution.y;
 
+    let time = u.config.x;
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let springOmega = 8.0;
+    mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+    mouseUv += mouseVelocity * springDt;
+    if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
+        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0; extraBuffer[138] = time;
+    }
+
     // Camera
-    let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 6.28;
+    let mouse = (mouseUv - vec2<f32>(0.5)) * vec2<f32>(6.28, 2.4);
     var ro = vec3<f32>(0.0, 2.0, -6.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
@@ -152,44 +173,66 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var d: vec2<f32>;
     var p = ro;
     var glow = 0.0;
+    var hit = false;
 
-    for(var i=0; i<100; i++) {
+    for(var i=0; i<80; i++) {
         p = ro + rd * t;
         d = map(p);
 
         // Volumetric beams
-        let beam_dist = length(p.xz) - 0.2 * (1.0 + p.y*0.1);
-        glow += exp(-beam_dist * 4.0) * 0.05 * u.zoom_params.y;
+        let beam_dist = length(p.xz) - 0.2 * (1.0 + p.y * 0.1);
+        glow += exp(-abs(beam_dist) * 7.0) * 0.025 * u.zoom_params.y * (1.0 + plasmaBuffer[0].z * 0.5);
 
-        if(d.x < 0.001 || t > 20.0) { break; }
-        t += d.x * 0.5;
+        if(d.x < 0.001) { hit = true; break; }
+        if(t > 20.0) { break; }
+        t += max(abs(d.x) * 0.55, 0.002);
     }
 
     var col = vec3<f32>(0.0);
     let audio = plasmaBuffer[0].x;
 
-    if (t < 20.0) {
+    if (hit) {
+        let palette = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(0.0, 2.1, 4.2) + u.zoom_params.w * 6.28318);
         // Base color
         if d.y < 0.5 { // Core
-            col = vec3<f32>(0.1, 0.3, 0.8) + vec3<f32>(0.5, 0.1, 0.8) * abs(p.y) * 0.5;
+            col = mix(vec3<f32>(0.08, 0.25, 0.75), palette, 0.45) + palette * abs(p.y) * 0.35;
         } else { // Disk
-            col = vec3<f32>(0.2, 0.6, 0.7) * (1.0 + audio);
+            col = mix(vec3<f32>(0.15, 0.65, 0.8), palette, 0.35) * (1.0 + audio * 0.5);
         }
 
         // Lighting
-        let n = normalize(p); // simplified normal
+        let n = calcNormal(p);
         let light = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let diff = max(dot(n, light), 0.0);
-        col *= diff + 0.2;
+        let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 4.0);
+        col *= diff + 0.18;
+        col += palette * fresnel * 0.55;
     }
 
     // Add volumetric glow
     col += vec3<f32>(0.1, 0.8, 1.0) * glow;
 
-        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(id.xy), applyGenerativePrimaryControls(vec4<f32>(col, _alpha)));
-    let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0, 0, 1));
+    let uv01 = (fragCoord + vec2<f32>(0.5)) / resolution;
+    var pulsarShock = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.6) {
+            let delta = (uv01 - ripple.xy) * vec2<f32>(resolution.x / resolution.y, 1.0);
+            let shell = exp(-abs(length(delta) - age * 0.3) * 76.0) * exp(-age * 1.9);
+            pulsarShock = max(pulsarShock, shell);
+        }
+    }
+    col += vec3<f32>(0.4, 0.9, 1.4) * pulsarShock * (0.7 + plasmaBuffer[0].z * 0.35);
+    let coord = vec2<i32>(id.xy);
+    let prev = textureLoad(dataTextureC, coord, 0);
+    col = mix(max(col, vec3<f32>(0.0)), prev.rgb * 0.9, clamp(0.025 + plasmaBuffer[0].y * 0.008, 0.0, 0.05));
+    col = acesToneMap(col * 1.08);
+    let _alpha = clamp(select(0.05, 0.76, hit) + glow * 0.12 + pulsarShock * 0.2, 0.0, 0.96);
+    let outColor = vec4<f32>(col, _alpha);
+    let _depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
+    textureStore(writeTexture, coord, outColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(_depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outColor);
 }

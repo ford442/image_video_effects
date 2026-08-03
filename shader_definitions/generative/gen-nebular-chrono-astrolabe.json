@@ -60,5 +60,12 @@
   "updated": true,
   "id": "gen-nebular-chrono-astrolabe",
   "url": "shaders/gen-nebular-chrono-astrolabe.wgsl",
-  "features": []
+  "features": [
+    "raymarched-astrolabe",
+    "bounded-volumetric-nebula",
+    "sprung-gravity-well",
+    "click-gravity-rings",
+    "temporal-feedback",
+    "depth-output"
+  ]
 }

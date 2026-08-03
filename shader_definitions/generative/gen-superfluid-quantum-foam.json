@@ -7,7 +7,11 @@
     "fluid",
     "audio-reactive",
     "raymarching",
-    "volumetric"
+    "volumetric",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "depth-aware"
   ],
   "description": "A mesmerizing, hyper-turbulent ocean of boiling quantum probability foam, where iridescent hyper-bubbles merge and burst in sync with audio frequencies, releasing flashes of raw cosmic energy.",
   "workgroup_size": [
@@ -54,5 +58,12 @@
   "updated": true,
   "id": "gen-superfluid-quantum-foam",
   "url": "shaders/gen-superfluid-quantum-foam.wgsl",
-  "features": []
+  "features": [
+    "raymarched-quantum-foam",
+    "bounded-current-advection",
+    "sprung-mouse-camera",
+    "click-cavitation-shells",
+    "temporal-feedback",
+    "depth-output"
+  ]
 }

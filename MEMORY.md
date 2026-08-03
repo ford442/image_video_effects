@@ -1,6 +1,41 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-03 (Batches 31–32 shader upgrades)
+**Last updated:** 2026-08-03 (Batch 34 shader upgrades)
+
+## 2026-08-03 — Shader upgrade Batch 34
+
+- The user immediately rolled into Batch 34, reinforcing the preference to
+  continue directly through the clean pending generative queue. Completed
+  Celestial Glass Tornado, String Theory, Voronoi Crystal, Chromodynamic Plasma
+  Collider, Magnetic Ferrofluid, Psy Swirls, Audio Spirograph, and
+  Bioluminescent Aether Pulsar; tracker is now #315.
+- Fixed normalized-pointer-as-pixel mistakes, backward signed marching, missing
+  A/depth writes, unguarded ripple ages/counts, filter-dependent C reads,
+  inverted string energy glow, stub-only spirograph geometry, and Pulsar's
+  generic control remapping.
+- All eight now use bounded spring/click interaction, A as display history,
+  generated relief/hit depth, exact saved control arrays, canonical bindings,
+  and 16x16x1 workgroups. Persistent state stays in `extraBuffer[133..138]`.
+- Focused gate 8/8, strict uniform/buffer/liveness/catalog audits, duplicate
+  scan 1,320/1,320, Jest 478 pass / 1 skip, and production build all pass.
+  Unrelated generated drift was restored; real-GPU visual QA remains external.
+
+## 2026-08-03 — Shader upgrade Batch 33
+
+- Completed a balanced hardening batch for Superfluid Quantum Foam, Cymatic
+  Plasma Mandalas, Fractal Clockwork, Neuro-Kinetic Bloom, Nebular Chrono
+  Astrolabe, Lenia 2, Graviton Plasma Lotus, and Silica Tsunami. Tracker is now
+  #307.
+- Added consistent spring/click interaction with persistent state restricted to
+  `extraBuffer[133..138]`; corrected mouse/config semantics, unsafe math,
+  workgroup drift, feedback reads, bounded raymarching, HDR output, and depth.
+- Intentionally repaired Lenia's state ownership so C supplies prior species
+  state, A receives the next state, and writeTexture stays presentation-only.
+  Silica's refraction control now drives real IOR transmission.
+- Exact saved updatedParams stayed intact. The focused gate is 8/8,
+  strict uniform/buffer/liveness/catalog audits pass, duplicate scan is
+  1,320/1,320, Jest is 478 pass / 1 skip, and the production build is green.
+  Unrelated generated drift was restored; live visual QA remains external.
 
 ## 2026-08-03 — Shader upgrade Batches 31 and 32
 

@@ -5,9 +5,70 @@
 
 ---
 
-## Recently Completed (299 shaders)
+## Recently Completed (315 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 34 (8 shaders) — 2026-08-03 — GENERATIVE INTERACTION AND FEEDBACK HARDENING
+
+The next eight smallest pending single-pass generative shaders received a
+coordinated interaction, feedback, and depth pass. Three normalized-pointer-as-
+pixel bugs were repaired; spring state is single-writer and confined to
+`extraBuffer[133..138]`; ripple counts/ages, ray steps, hit flags, display
+history, and HDR output are bounded. Magnetic Ferrofluid and Aether Pulsar now
+write A and real depth instead of omitting A and copying source depth. Collider
+no longer marches backward from inside its tunnel, String Theory no longer
+lights empty space with an inverted energy term, Psy Swirls uses exact C loads,
+and Audio Spirograph now renders sampled musical-ratio trails rather than eight
+moving stubs. Pulsar's generic control remapping was removed so its four saved
+controls drive their advertised roles. All source `params` and `updatedParams`
+arrays remain exact. Focused gate: 8/8 green with zero workgroup/extraBuffer
+issues; uniform, liveness, JSON, catalog, and duplicate checks green; 418
+generative entries, 1,307 manifest entries, and 1,320/1,320 unique IDs; Jest 69
+suites / 478 pass / 1 skip; `SKIP_WASM_BUILD=1` production build green.
+Unrelated simulation/report drift was restored. Real-GPU visual QA remains
+external. Notes: `swarm-outputs/codex-2026-08-03-b34/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 308 | `gen-celestial-glass-tornado` | 34 | 174→209 (+35) | Spring orbit/attractor, click glass shards, bounded signed march, exact feedback and real depth. |
+| 309 | `gen-string-theory` | 34 | 175→214 (+39) | Sprung plucking, click resonance, corrected energy glow, string-derived alpha/depth and preserved history. |
+| 310 | `gen-voronoi-crystal` | 34 | 175→219 (+44) | Spring seed refraction, audio iridescence, click facets, exact feedback, ACES and relief depth. |
+| 311 | `gen-chromodynamic-plasma-collider` | 34 | 178→202 (+24) | Correct pointer mapping, sprung anomaly, forward tunnel march, collision shells and real depth. |
+| 312 | `gen-magnetic-ferrofluid` | 34 | 186→219 (+33) | Correct orbit input, live density semantics, click shells, explicit hit/A history and real depth. |
+| 313 | `generative-psy-swirls` | 34 | 189→207 (+18) | Sprung vortex, guarded ripples, exact feedback loads, explicit workgroup metadata and relief depth. |
+| 314 | `gen-audio-spirograph` | 34 | 192→244 (+52) | Sampled musical-ratio trails, safe segments, spring lens, click chimes, bounded history and curve depth. |
+| 315 | `gen-bioluminescent-aether-pulsar` | 34 | 195→238 (+43) | Direct control roles, centered spring orbit, bounded beams, click shocks, A history and hit depth. |
+
+### Batch 33 (8 shaders) — 2026-08-03 — BALANCED GENERATIVE HARDENING
+
+Eight compact generative effects received a balanced interaction, numerical,
+material, and feedback pass. Spring-following mouse state and guarded click
+events now live only in `extraBuffer[133..138]`; double-normalized or inverted
+mouse mappings, unsafe normalization, non-positive ray steps, filtering reads
+of rgba32float feedback, and ambiguous depth were corrected. The most important
+ownership fix is Lenia: C now supplies prior four-species state, A stores the
+next state, and writeTexture remains presentation color, replacing its former
+display-as-state loop. Silica Tsunami's advertised refraction now controls real
+IOR-driven transmission, while Astrolabe replaces dead per-step nebula work with
+a visible bounded layer. All saved `updatedParams` arrays remain exact. Focused
+gate: 8/8 green with zero workgroup/extraBuffer issues;
+uniform, liveness, JSON, catalog, and duplicate checks green; 418 generative
+entries, 1,307 manifest entries, and 1,320/1,320 unique IDs; Jest 69 suites /
+478 pass / 1 skip; `SKIP_WASM_BUILD=1` production build green. Unrelated
+simulation/report drift was restored. Real-GPU visual QA remains external.
+Notes: `swarm-outputs/codex-2026-08-03-b33/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 300 | `gen-superfluid-quantum-foam` | 33 | 150→191 (+41) | Stable camera, bounded field speed, spring repulsion, cavitation clicks, safe feedback, ACES and real depth. |
+| 301 | `gen-cymatic-plasma-mandalas` | 33 | 150→178 (+28) | 16x16 workgroup, corrected mouse mapping, stable symmetry, click nodes, safe density and relief depth. |
+| 302 | `gen-fractal-clockwork` | 33 | 153→186 (+33) | Correct gear parity, bounded march, spring orbit, torque clicks, multiband material and near depth. |
+| 303 | `gen-neuro-kinetic-bloom` | 33 | 157→190 (+33) | Spring bloom, side tendrils, click rings, safe raymarch and expanded material bands. |
+| 304 | `gen-nebular-chrono-astrolabe` | 33 | 163→207 (+44) | Corrected mouse orientation, spring gravity, visible bounded nebula, safe feedback and real depth. |
+| 305 | `gen-lenia-2` | 33 | 168→209 (+41) | Repaired four-species A/C state loop, normalized kernels, sparse seeding, press feeding and click inoculation. |
+| 306 | `gen-graviton-plasma-lotus` | 33 | 173→211 (+38) | Corrected mouse-to-world mapping, gravity pulses, bounded glow, temporal polish and hit depth. |
+| 307 | `gen-silica-tsunami` | 33 | 174→208 (+34) | Correct input semantics/density, spring fractures, live IOR refraction, bounded output and real depth. |
 
 ### Batch 32 (8 shaders) — 2026-08-03 — GENERATIVE GEOMETRY CONTINUATION
 
