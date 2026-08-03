@@ -5,7 +5,7 @@
 //            temporal-symmetry-memory, audio-cymatic-frequency, depth-edge-glow
 //  Complexity: High
 //  Created: 2026-05-10
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-08-03 (Batch 33)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -32,7 +32,7 @@ struct Uniforms {
 fn fold(uv: vec2<f32>, symmetryOrder: f32) -> vec2<f32> {
     let radius = length(uv);
     let angle = atan2(uv.y, uv.x);
-    let sector = 6.2831853 / symmetryOrder;
+    let sector = 6.2831853 / max(symmetryOrder, 1.0);
     let foldedAngle = angle - sector * floor((angle + sector * 0.5) / sector);
     return vec2<f32>(cos(foldedAngle), sin(foldedAngle)) * radius;
 }
@@ -57,9 +57,10 @@ fn getPalette(t: f32) -> vec3<f32> {
 }
 
 fn applyChromaticAberration(distR: f32, distG: f32, distB: f32, density: f32) -> vec3<f32> {
-    let plasmaR = exp(-abs(distR) * (20.0 / density));
-    let plasmaG = exp(-abs(distG) * (20.0 / density));
-    let plasmaB = exp(-abs(distB) * (20.0 / density));
+    let safeDensity = max(density, 0.1);
+    let plasmaR = exp(-abs(distR) * (20.0 / safeDensity));
+    let plasmaG = exp(-abs(distG) * (20.0 / safeDensity));
+    let plasmaB = exp(-abs(distB) * (20.0 / safeDensity));
     return vec3<f32>(plasmaR, plasmaG, plasmaB);
 }
 
@@ -72,7 +73,7 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-@compute @workgroup_size(8, 8, 1)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
@@ -84,8 +85,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Audio-driven cymatic frequency modulation
-    let symmetryOrder = u.zoom_params.x * (1.0 + bass * 0.3);
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(u.config.x - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let springOmega = 10.0;
+    mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+    mouseUv += mouseVelocity * springDt;
+    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
+        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0; extraBuffer[138] = u.config.x;
+    }
+
+    // Preserve integer kaleidoscope sectors; audio animates the nodes, not topology.
+    let symmetryOrder = clamp(round(u.zoom_params.x), 1.0, 12.0);
     let plasmaDensity = u.zoom_params.y;
     let cymaticFreq = u.zoom_params.z * (1.0 + mids * 0.5);
     let swirlChaos = u.zoom_params.w;
@@ -93,8 +108,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let t = u.config.x * 0.5;
     let audio = bass * 0.05;
 
-    let mX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mY = u.zoom_config.z * 2.0 - 1.0;
+    let mX = mouseUv.x * 2.0 - 1.0;
+    let mY = mouseUv.y * 2.0 - 1.0;
     let mouse = vec2<f32>(mX, mY);
 
     let mDist = length(uv - mouse);
@@ -111,7 +126,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sector = 6.2831853 / symmetryOrder;
     let foldedAngle = angle - sector * floor((angle + sector * 0.5) / sector);
 
-    let wave = sin(radius * cymaticFreq - t * 2.0 + audio * 5.0 + mids * 0.5) * cos(foldedAngle * symmetryOrder + t);
+    var clickNode = 0.0;
+    let uv01 = fragCoord / dims;
+    let aspect = dims.x / dims.y;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let delta = (uv01 - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let r = length(delta);
+            clickNode += sin((r - age * 0.28) * 90.0) * exp(-r * 3.0 - age * 1.7);
+        }
+    }
+    clickNode = clamp(clickNode, -1.0, 1.0);
+    let wave = sin(radius * cymaticFreq - t * 2.0 + audio * 5.0 + mids * 0.5 + clickNode) * cos(foldedAngle * symmetryOrder + t);
     var d = sdPolygon(foldedUv, 6.0) - 0.4 - wave * 0.1;
     d = min(d, sdCircle(foldedUv - vec2<f32>(0.5, 0.0), 0.2 - wave * 0.05));
     d = d + sin(d * 10.0 - t * 3.0 + audio * 10.0 + treble * 2.0) * 0.02;
@@ -128,13 +157,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = col + vec3<f32>(1.0, 0.8, 0.9) * exp(-length(uv) * 5.0) * (0.5 + audio * 0.5 + treble * 0.2);
 
     // Temporal symmetry memory: previous frame burns into current
-    let prev = textureSampleLevel(dataTextureC, u_sampler, (fragCoord / dims), 0.0).rgb;
+    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
     let symMemory = mix(col, prev * 0.9, 0.06 + bass * 0.02);
     col = mix(col, symMemory, 0.5);
 
     // Depth-aware edge glow: read depth and modulate edge intensity
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, fragCoord / dims, 0.0).r;
-    let edgeGlow = smoothstep(0.05, 0.0, abs(d)) * (0.5 + depth * 0.5);
+    let inputDepth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
+    let relief = clamp(1.0 - abs(d) * 7.0, 0.0, 1.0);
+    let edgeGlow = smoothstep(0.05, 0.0, abs(d)) * (0.65 + inputDepth * 0.25 + relief * 0.35);
     col += vec3<f32>(0.4, 0.7, 0.9) * edgeGlow * treble;
 
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
@@ -144,7 +174,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);
 
-    let depth_uv = clamp(vec2<f32>(global_id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(relief, 0.0, 0.0, 0.0));
 }

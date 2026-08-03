@@ -143,11 +143,11 @@
 | `liquid-rgb` | image | 7.2 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
 | `lidar` | image | 7.0 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
 | `gen-velocity-bloom` | lighting-effects | 6.9 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
-| `gen-string-theory` | generative | 6.9 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
+| `gen-string-theory` | generative | 6.9 KB | B | complex | completed | Batch 34 | none | Sprung plucking/click resonance, corrected glow, history and string-derived depth. |
 | `hybrid-cyber-organic` | generative | 6.8 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
 | `liquid-fast` | image | 6.7 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
 | `gen-bifurcation-diagram` | generative | 6.7 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
-| `gen-audio-spirograph` | generative | 6.6 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
+| `gen-audio-spirograph` | generative | 6.6 KB | B | complex | completed | Batch 34 | none | Sampled musical-ratio trails, spring lens, click chimes, bounded history and depth. |
 | `holographic-interferometry` | generative | 6.6 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
 | `radiating-displacement` | image | 6.6 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
 | `hyperbolic-dreamweaver` | image | 6.6 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
@@ -157,7 +157,7 @@
 | `green-tracer` | image | 6.4 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
 | `aurora-rift-2` | image | 6.3 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
 | `julia-warp` | distortion | 6.3 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
-| `gen-voronoi-crystal` | generative | 6.2 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
+| `gen-voronoi-crystal` | generative | 6.2 KB | B | complex | completed | Batch 34 | none | Spring seed refraction, audio facets, click fractures, feedback and relief depth. |
 | `liquid-glitch` | image | 6.2 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
 | `hybrid-noise-kaleidoscope` | generative | 6.1 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
 | `gen-neural-fractal` | generative | 6.0 KB | B | complex | pending | — | none | Add/enhance mouse response. Current: none. |
@@ -379,13 +379,13 @@
 | `rgb-iso-lines` | image | 5.9 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `cross-stitch` | image | 5.8 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `kintsugi-repair` | image | 5.8 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `gen-bioluminescent-aether-pulsar` | generative | 5.8 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-bioluminescent-aether-pulsar` | generative | 5.8 KB | B | complex | completed | Batch 34 | basic | Direct control roles, spring orbit, bounded beams, click shocks, A and hit depth. |
 | `crystal-refraction` | image | 5.8 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `ink-marbling` | image | 5.8 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `rgb-distance-split` | visual-effects | 5.8 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `flip-matrix` | image | 5.7 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `infinite-zoom-lens` | image | 5.7 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `gen-magnetic-ferrofluid` | generative | 5.7 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-magnetic-ferrofluid` | generative | 5.7 KB | B | complex | completed | Batch 34 | basic | Correct normalized orbit, live density, click shells, A feedback and real depth. |
 | `rgb-ripple-distortion` | image | 5.7 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `glitch-cathedral` | image | 5.7 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `interactive-pcb-traces` | image | 5.6 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
@@ -398,13 +398,13 @@
 | `engraving-stipple` | artistic | 5.6 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `rgb-delay-brush` | interactive-mouse | 5.6 KB | B | complex | completed | Batch 25 | advanced | Spring/click temporal brush, valid RGB FFT voices, scoped absorption model. |
 | `glitch-ripple-drag` | image | 5.6 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `gen-fractal-clockwork` | generative | 5.6 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-fractal-clockwork` | generative | 5.6 KB | B | complex | completed | Batch 33 | basic | Correct gear parity, spring orbit/click torque, bounded march, feedback and real depth. |
 | `vortex-warp` | image | 5.5 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `viscous-drag` | liquid-effects | 5.5 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `dynamic-lens-flares` | image | 5.5 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `cyber-slit-scan` | interactive-mouse | 5.5 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `strip-scan-glitch` | image | 5.5 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `generative-psy-swirls` | generative | 5.5 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `generative-psy-swirls` | generative | 5.5 KB | B | complex | completed | Batch 34 | basic | Sprung vortex, guarded ripples, exact C loads, metadata and generated depth. |
 | `gen_hyper_warp` | unknown | 5.4 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. MISSING JSON. |
 | `datamosh-brush` | image | 5.4 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `stipple-engraving` | image | 5.4 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
@@ -412,7 +412,7 @@
 | `interactive-halftone-spin` | image | 5.4 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `digital-haze` | image | 5.4 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `sliding-tile-glitch` | image | 5.4 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
-| `gen-chromodynamic-plasma-collider` | generative | 5.4 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-chromodynamic-plasma-collider` | generative | 5.4 KB | B | complex | completed | Batch 34 | basic | Correct pointer space, spring anomaly, forward march, collision shells and depth. |
 | `rain-ripples` | image | 5.4 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `retro-gameboy` | image | 5.3 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `kimi_fractal_dreams` | unknown | 5.3 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. MISSING JSON. |
@@ -434,7 +434,7 @@
 | `cyber-rain-interactive` | retro-glitch | 5.2 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `knitted-fabric` | image | 5.2 KB | B | complex | completed | Batch 24 | basic | Spring pull/click plucks, per-stitch FFT, relief depth, display-in-A ownership. |
 | `glass-brick-distortion` | image | 5.2 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `gen-graviton-plasma-lotus` | generative | 5.2 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-graviton-plasma-lotus` | generative | 5.2 KB | B | complex | completed | Batch 33 | basic | Correct mouse-to-world mapping, spring gravity/click pulses, bounded glow and hit depth. |
 | `voronoi-faceted-glass` | image | 5.1 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `kaleido-portal-interactive` | interactive-mouse | 5.1 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `kimi_quantum_field` | unknown | 5.1 KB | B | complex | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. MISSING JSON. |
@@ -445,7 +445,7 @@
 | `block-distort-interactive` | interactive-mouse | 5.1 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `cyber-magnifier` | interactive-mouse | 5.1 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `glass-wall` | image | 5.1 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `gen-nebular-chrono-astrolabe` | generative | 5.0 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-nebular-chrono-astrolabe` | generative | 5.0 KB | B | complex | completed | Batch 33 | basic | Spring gravity, visible bounded nebula, safe feedback, ACES and real depth. |
 | `cyber-lens` | image | 5.0 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `glass-wipes` | image | 5.0 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `circuit-breaker` | interactive-mouse | 5.0 KB | B | complex | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
@@ -509,20 +509,20 @@
 | `cosmic-web` | generative | 5.0 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `refractive-bubbles` | image | 5.0 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
 | `foil-impression` | image | 5.0 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
-| `gen-cymatic-plasma-mandalas` | generative | 4.9 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-cymatic-plasma-mandalas` | generative | 4.9 KB | B | mouse_interactive | completed | Batch 33 | basic | 16x16 workgroup, corrected mouse mapping, stable symmetry, click nodes and relief depth. |
 | `lichtenberg-fractal` | generative | 4.9 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `spectral-mesh` | image | 4.9 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `neon-contour-interactive` | artistic | 4.9 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `molten-glass` | image | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
 | `glass-brick-wall` | distortion | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `quantum-superposition` | image | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
-| `gen-superfluid-quantum-foam` | generative | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-superfluid-quantum-foam` | generative | 4.8 KB | B | mouse_interactive | completed | Batch 33 | basic | Stable camera, bounded field speed, spring cavitation, safe feedback and real depth. |
 | `ascii-lens` | image | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
-| `gen-celestial-glass-tornado` | generative | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-celestial-glass-tornado` | generative | 4.8 KB | B | mouse_interactive | completed | Batch 34 | basic | Spring glass vortex, click shards, bounded march, feedback and real depth. |
 | `x-ray-reveal` | image | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
 | `spectral-vortex` | image | 4.8 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `divine-light` | image | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
-| `gen-silica-tsunami` | generative | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-silica-tsunami` | generative | 4.8 KB | B | mouse_interactive | completed | Batch 33 | basic | Correct input/density semantics, spring fractures, live IOR refraction and depth. |
 | `interactive-voronoi-web` | image | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
 | `refraction-shards` | image | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
 | `solarize-warp` | image | 4.8 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
@@ -536,7 +536,7 @@
 | `predator-camouflage` | distortion | 4.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `temporal-rift` | image | 4.7 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `quantum-flux` | interactive-mouse | 4.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `gen-neuro-kinetic-bloom` | generative | 4.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-neuro-kinetic-bloom` | generative | 4.7 KB | B | mouse_interactive | completed | Batch 33 | basic | Spring bloom, side tendrils, click rings, safe march and expanded materials. |
 | `interactive-glitch-cubes` | image | 4.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
 | `phosphor-magnifier` | image | 4.7 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
 | `voronoi-light` | image | 4.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
@@ -550,7 +550,7 @@
 | `voronoi-glass` | image | 4.6 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `bayer-dither-interactive` | retro-glitch | 4.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
 | `adaptive-mosaic` | geometric | 4.6 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
-| `gen-lenia-2` | generative | 4.5 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click states, physics, spring following. |
+| `gen-lenia-2` | generative | 4.5 KB | B | mouse_interactive | completed | Batch 33 | basic | Repaired C-prior/A-next four-species state, normalized kernels, feeding and inoculation. |
 | `ambient-liquid` | image | 4.5 KB | B | mouse_interactive | pending | — | basic | Enhance mouse: add click-triggered effects. |
 | `voronoi-shatter` | image | 4.5 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
 | `neon-light` | image | 4.5 KB | B | mouse_interactive | pending | — | advanced | Optimize: performance, alpha modes, randomization safety, JSON cleanup. |
@@ -766,6 +766,32 @@
 | `temporal-rgb-smear` | image | 3.0 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
 | `elastic-chromatic` | image | 3.0 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
 | `bitonic-sort` | image | 3.0 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
+
+### 2026-08-03 Generative Geometry Batches
+
+| Shader ID | Category | Size | Phase | Bucket | Status | Score | Mouse | Notes |
+|-----------|----------|------|-------|--------|--------|-------|-------|-------|
+| `gen-bioluminescent-chrono-plasma-astro-owl` | generative | 12.4 KB | B | generative_geometry | completed | Batch 31 | advanced | Orbit/ripple/FFT feather geometry and chrono lattice; audio/output contract repaired. |
+| `gen-ethereal-bismuth-resonance-void-owl` | generative | 15.3 KB | B | generative_geometry | completed | Batch 31 | Canonical uniforms; thin-film bismuth facets, light rig, ear tufts and inlay. |
+| `gen-ethereal-cyber-plasma-void-dragon` | generative | 14.4 KB | B | generative_geometry | completed | Batch 31 | Crystal/rib spine, halo and Voronoi nebula; ripple-count audio bug fixed. |
+| `gen-luminescent-aether-plasma-astro-axolotl` | generative | 10.9 KB | B | generative_geometry | completed | Batch 31 | Orbit/ripples, FFT gills, current twist and caustics; swizzle bug fixed. |
+| `gen-luminescent-quantum-flora-symphony` | generative | 8.1 KB | B | generative_geometry | completed | Batch 31 | Adaptive KIFS flower scene, spore tessellation, live controls and real depth. |
+| `gen-prismatic-cyber-aether-void-kitsune` | generative | 15.3 KB | B | generative_geometry | completed | Batch 31 | Crystal swarm, tail rings, rune grid and kaleido storm with defined tail fade. |
+| `gen-prismatic-cyber-chrono-void-tortoise` | generative | 11.9 KB | B | generative_geometry | completed | Batch 31 | Uniform/slider repair, full anatomy, KIFS shell, scutes and adaptive budget. |
+| `gen-quantum-acoustic-bioluminescent-void-urchin` | generative | 14.6 KB | B | generative_geometry | completed | Batch 31 | Canonical uniforms, torus/cage/crystal geometry and safe mouse direction. |
+| `gen-radiant-cyber-bismuth-nebula-colossus` | generative | 8.0 KB | B | generative_geometry | completed | Batch 31 | Dead sliders wired; hopper crystals, volumetric nebula and thin-film light. |
+| `gen-radiant-cyber-plasma-astro-griffin` | generative | 11.1 KB | B | generative_geometry | completed | Batch 31 | Head/beak and facet materials with triangular seams; canonical audio/depth. |
+| `gen-resonant-quantum-obsidian-astro-manta` | generative | 8.6 KB | B | generative_geometry | completed | Batch 31 | Orbit/ripples, helical fins, FFT veins and shard sea; saved params retained. |
+| `gen-sentient-cyber-chrono-void-serpent` | generative | 13.5 KB | B | generative_geometry | completed | Batch 31 | Octa scales, chrono rings/shards, hex armor and Julia backdrop. |
+| `gen-vitreous-quantum-lotus-singularity` | generative | 11.3 KB | B | generative_geometry | completed | Batch 31 | Raw slider fix; thin-film petal materials, vein inlay and real depth. |
+| `gen-de-jong-attractor` | generative | 10.3 KB | B | generative_geometry | completed | Batch 32 | Preserved density field plus budgeted 3D orbit tube and trap shading. |
+| `gen-glacial-aether-quantum-cavern` | generative | 9.8 KB | B | generative_geometry | completed | Batch 32 | Raymarched crystal cavern, normal lighting, Fresnel and temporal ice. |
+| `gen-lorenz-attractor-flow` | generative | 10.1 KB | B | generative_geometry | completed | Batch 32 | Lorenz tube, orbit camera, trap, FFT and bounded click ripples. |
+| `gen-lorenz-attractor` | generative | 10.3 KB | B | generative_geometry | completed | Batch 32 | Preserved Lorenz density plus budgeted 3D orbit tube and real depth. |
+| `gen-navier-stokes-ink` | generative | 11.0 KB | B | generative_geometry | completed | Batch 32 | Fluid-inspired field with vortex tubes, corona, orbit and safe feedback. |
+| `gen-chaos-game-ifs` | generative | 9.2 KB | B | generative_geometry | completed | Batch 32 | Chaos-game field plus analytic SDF orbit sculpture and corrected rings. |
+| `gen-aperiodic-monotile` | generative | 9.6 KB | B | generative_geometry | completed | Batch 32 | Truthful monotile-inspired motif plus raymarched analytic relief. |
+| `gen-depth-refracted-liquid-stained-glass` | generative | 9.0 KB | B | generative_geometry | completed | Batch 32 | Live facets, heightfield normals, lit thin-film material and safe audio/depth. |
 
 ---
 

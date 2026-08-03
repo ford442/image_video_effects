@@ -5,8 +5,8 @@
 //            upgraded-rgba, aces-tone-map, chromatic-hue-separation, audio-twist,
 //            domain-warped-swirl, mids-hue-fan, feedback-clamp
 //  Complexity: High
-//  Upgraded: 2026-07-22 (Visualist swarm pass: fbm domain warp, mids-driven hue
-//            separation, temporal feedback clamp, slider rewiring)
+//  Upgraded: 2026-08-03 (Batch 34: sprung interaction, guarded ripples,
+//            non-filtering feedback loads, generated relief depth)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -101,6 +101,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
+    let coord = vec2<i32>(global_id.xy);
 
     // ── Sliders (saved-preset contract: ids/defaults unchanged) ──
     // twist          -> vortex twist strength (bass adds a kick)
@@ -112,10 +113,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let freq = u.zoom_params.z * 2.0 + 0.5;
     let depthReduction = u.zoom_params.w;
 
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
     let adjustedTwist = twist * (1.0 - depth * depthReduction);
 
-    let mouse = u.zoom_config.yz;
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let springOmega = 8.0;
+    mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+    mouse += mouseVelocity * springDt;
+    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
+        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0; extraBuffer[138] = time;
+    }
     var p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
     let m = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
 
@@ -158,32 +171,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = vec3<f32>(rLayer.r, gLayer.g, bLayer.b);
 
-    let rippleCount = u32(u.config.y);
+    var clickSwirl = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rp = (ripple.xy - 0.5) * vec2<f32>(aspect, 1.0);
         let rd = length(p - rp);
         let rt = time - ripple.z;
-        let ring = sin(rd * 20.0 - rt * 5.0) * exp(-rd * 3.0 - rt * 0.5);
-        color += vec3<f32>(0.5, 0.3, 0.8) * ring * 0.3;
+        if (rt >= 0.0 && rt < 1.7) {
+            let ring = exp(-abs(rd - rt * 0.26) * 72.0) * exp(-rt * 1.7);
+            clickSwirl = max(clickSwirl, ring);
+        }
     }
+    color += vec3<f32>(0.5, 0.3, 0.9) * clickSwirl * (0.35 + treble * 0.18);
 
     // ── Temporal swirl layer accumulation: previous color fades ───
     // in for trails. FEEDBACK CLAMP: the memory write is clamped
     // pre-tint at 1.2 (luma-echo-warp lesson) so accumulated color
     // can never blow up across frames.
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
     let trail = mix(color, prev * 0.92, 0.04 + mids * 0.02);
     let trailClamped = clamp(trail, vec3<f32>(0.0), vec3<f32>(1.2));
     let trailTinted = trailClamped * vec3<f32>(0.98, 0.99, 1.02);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy),
+    textureStore(dataTextureA, coord,
                  vec4<f32>(min(trailTinted, vec3<f32>(1.2)), 1.0));
 
     color = mix(color, prev * 0.92, 0.04 + mids * 0.02);
 
-    let alpha = clamp(length(color) * 0.8 + bass * 0.05, 0.0, 1.0);
+    let reliefDepth = clamp(length(color) * 0.42 + clickSwirl * 0.16, 0.0, 1.0);
+    let alpha = clamp(length(color) * 0.72 + bass * 0.05 + clickSwirl * 0.12, 0.0, 0.96);
 
     color = acesToneMap(color * 1.1);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(reliefDepth, 0.0, 0.0, 0.0));
 }

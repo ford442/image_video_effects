@@ -4,7 +4,7 @@
 //  Features: procedural, wave equation, interference patterns,
 //    chromatic-aberration, audio-reactive, temporal-feedback, depth-aware, upgraded-rgba
 //  Created: 2026-03-22
-//  Updated: 2026-06-01
+//  Updated: 2026-08-03 (Batch 34)
 //  By: Agent 4A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -39,7 +39,7 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 // Evaluate all strings at a given position, returning color + total intensity in alpha
-fn evalStrings(p: vec2<f32>, t: f32, fundamental: f32, harmonicRichness: i32, damping: f32, excitement: f32, bass: f32, aspect: f32, depth: f32) -> vec4<f32> {
+fn evalStrings(p: vec2<f32>, t: f32, fundamental: f32, harmonicRichness: i32, damping: f32, excitement: f32, bass: f32, aspect: f32, depth: f32, mouse: vec2<f32>, pressed: f32) -> vec4<f32> {
   var col = vec3<f32>(0.0);
   var totalIntensity = 0.0;
   for (var s: i32 = 0; s < 5; s++) {
@@ -50,6 +50,9 @@ fn evalStrings(p: vec2<f32>, t: f32, fundamental: f32, harmonicRichness: i32, da
     let local = p - sc;
     let sX = local.x * cA + local.y * sA;
     let sY = -local.x * sA + local.y * cA;
+    let mouseOffset = mouse - sc;
+    let mouseX = mouseOffset.x * cA + mouseOffset.y * sA;
+    let mouseY = -mouseOffset.x * sA + mouseOffset.y * cA;
     let inStr = step(abs(sX), 1.5);
     let x = (sX + 1.5) / 3.0;
     var y = 0.0;
@@ -74,6 +77,8 @@ fn evalStrings(p: vec2<f32>, t: f32, fundamental: f32, harmonicRichness: i32, da
     }
     let travelAmp = 0.05 * excitement * (1.0 + bass * 2.0);
     y += travelAmp * sin(x * fundamental * 12.56636 - t * fundamental * 12.56636);
+    let pluckProfile = exp(-abs(sX - mouseX) * 8.0);
+    y += pluckProfile * clamp(mouseY, -0.3, 0.3) * excitement * mix(0.2, 0.75, pressed);
     let dist = abs(sY - y);
     let thick = (0.003 + 0.002 * excitement) * (0.6 + 0.4 * depth);
     let intensity = smoothstep(thick * 3.0, 0.0, dist);
@@ -89,41 +94,60 @@ fn evalStrings(p: vec2<f32>, t: f32, fundamental: f32, harmonicRichness: i32, da
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+  let dims = textureDimensions(writeTexture);
+  if (global_id.x >= dims.x || global_id.y >= dims.y) { return; }
   let pixel = vec2<i32>(global_id.xy);
-  let resolution = u.config.zw;
-  let uv = vec2<f32>(pixel) / resolution;
+  let resolution = vec2<f32>(dims);
+  let uv = (vec2<f32>(pixel) + vec2<f32>(0.5)) / resolution;
   let t = u.config.x;
   let fundamental = mix(0.5, 3.0, u.zoom_params.x);
   let harmonicRichness = i32(mix(1.0, 10.0, u.zoom_params.y));
   let damping = mix(0.8, 0.99, u.zoom_params.z);
   let excitement = u.zoom_params.w;
   let bass = plasmaBuffer[0].x;
-  let depth = textureLoad(readDepthTexture, pixel, 0).r;
+  let sourceDepth = textureLoad(readDepthTexture, pixel, 0).r;
   let prev = textureLoad(dataTextureC, pixel, 0).rgb;
   let aspect = resolution.x / resolution.y;
 
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+  let springDt = select(0.016, clamp(t - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+  let springOmega = 8.0;
+  mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+  mouseUv += mouseVelocity * springDt;
+  if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+    extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
+    extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+    extraBuffer[137] = 1.0; extraBuffer[138] = t;
+  }
+  let mouse = vec2<f32>(mouseUv.x * aspect, mouseUv.y);
+  let pressed = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  let reliefContext = 0.6 + 0.4 * clamp(sourceDepth, 0.0, 1.0);
+
   // Chromatic aberration offset scaled by aspect
   let caStrength = 0.003 * (1.0 + bass) / aspect;
-  let rResult = evalStrings(vec2<f32>((uv.x + caStrength) * aspect, uv.y), t, fundamental, harmonicRichness, damping, excitement, bass, aspect, depth);
-  let gResult = evalStrings(vec2<f32>(uv.x * aspect, uv.y), t, fundamental, harmonicRichness, damping, excitement, bass, aspect, depth);
-  let bResult = evalStrings(vec2<f32>((uv.x - caStrength) * aspect, uv.y), t, fundamental, harmonicRichness, damping, excitement, bass, aspect, depth);
+  let rResult = evalStrings(vec2<f32>((uv.x + caStrength) * aspect, uv.y), t, fundamental, harmonicRichness, damping, excitement, bass, aspect, reliefContext, mouse, pressed);
+  let gResult = evalStrings(vec2<f32>(uv.x * aspect, uv.y), t, fundamental, harmonicRichness, damping, excitement, bass, aspect, reliefContext, mouse, pressed);
+  let bResult = evalStrings(vec2<f32>((uv.x - caStrength) * aspect, uv.y), t, fundamental, harmonicRichness, damping, excitement, bass, aspect, reliefContext, mouse, pressed);
   var col = vec3<f32>(rResult.r, gResult.g, bResult.b);
 
   // Background acoustic resonance field
   let p = vec2<f32>(uv.x * aspect, uv.y);
   let resField = sin(p.x * 15.0 + t * 1.5) * sin(p.y * 12.0 - t) * 0.02 * (1.0 + bass);
-  col += vec3<f32>(0.2, 0.15, 0.3) * abs(resField) * depth;
+  col += vec3<f32>(0.2, 0.15, 0.3) * abs(resField) * reliefContext;
 
   // Sympathetic resonance: all strings respond to bass
   let resonance = sin(p.x * 8.0 + t * 6.0) * bass * 0.05 * exp(-abs(p.y - 0.5) * 2.0);
-  col += vec3<f32>(0.7, 0.6, 0.9) * abs(resonance) * depth;
+  col += vec3<f32>(0.7, 0.6, 0.9) * abs(resonance) * reliefContext;
 
   // Interference between strings
   let interference = sin(p.x * 20.0 + t) * sin(p.y * 20.0 + t * 1.3);
   col += vec3<f32>(0.5, 0.3, 0.7) * interference * 0.05 * (1.0 + bass * excitement);
 
   // Energy glow
-  let energyGlow = exp(-gResult.w * 2.0) * (1.0 + bass * excitement);
+  let energyGlow = (1.0 - exp(-gResult.w * 1.5)) * (1.0 + bass * excitement);
   col += vec3<f32>(0.8, 0.6, 0.3) * energyGlow * 0.3;
 
   // Spectral bass bloom
@@ -132,7 +156,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Harmonic overtones traveling wave (audio-excited)
   let overtoneWave = 0.03 * bass * sin(p.x * 40.0 - t * 8.0) * exp(-abs(p.y - 0.5));
-  col += vec3<f32>(0.6, 0.8, 1.0) * abs(overtoneWave) * depth;
+  col += vec3<f32>(0.6, 0.8, 1.0) * abs(overtoneWave) * reliefContext;
 
   // Vignette
   let vignette = 1.0 - length(uv - 0.5) * 0.6;
@@ -140,15 +164,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // String cross-talk: nearby strings influence each other
   let crossTalk = sin(p.x * 12.0 + t * 3.0) * cos(p.y * 8.0 - t * 2.0) * 0.02 * bass;
-  col += vec3<f32>(0.4, 0.5, 0.7) * abs(crossTalk) * depth;
+  col += vec3<f32>(0.4, 0.5, 0.7) * abs(crossTalk) * reliefContext;
 
   // Higher-mode resonance visualization
   let modeResonance = sin(p.x * 30.0 - t * 5.0) * exp(-abs(p.y - 0.5) * 3.0) * 0.03 * bass;
-  col += vec3<f32>(0.5, 0.8, 0.9) * abs(modeResonance) * depth;
+  col += vec3<f32>(0.5, 0.8, 0.9) * abs(modeResonance) * reliefContext;
 
   // Harmonic decay trail visualization
   let decayTrail = exp(-gResult.w * 4.0) * 0.15 * (1.0 + bass * 0.5);
-  col += vec3<f32>(0.9, 0.7, 0.4) * decayTrail * depth;
+  col += vec3<f32>(0.9, 0.7, 0.4) * decayTrail * reliefContext;
+
+  var clickResonance = 0.0;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = t - ripple.z;
+    if (age >= 0.0 && age < 1.6) {
+      let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+      let ring = exp(-abs(length(delta) - age * 0.28) * 70.0) * exp(-age * 1.8);
+      clickResonance = max(clickResonance, ring);
+    }
+  }
+  col += vec3<f32>(0.35, 0.75, 1.2) * clickResonance * (0.7 + plasmaBuffer[0].z * 0.3);
 
   // Phase-locked amplitude modulation
   let phaseMod = sin(t * 0.7) * 0.5 + 0.5;
@@ -164,12 +201,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = max(col, temporal * 0.4);
 
   // Depth falloff and tone mapping
-  col *= 0.5 + 0.5 * depth;
+  col *= reliefContext;
   col = acesToneMap(col * 1.2);
 
-  let alpha = clamp(gResult.w * length(gResult.rgb) * depth, 0.0, 1.0);
+  let stringCoverage = 1.0 - exp(-gResult.w * 1.4);
+  let alpha = clamp(stringCoverage + clickResonance * 0.25, 0.0, 0.96);
+  let outDepth = clamp(stringCoverage * 0.92 + clickResonance * 0.08, 0.0, 1.0);
   let outColor = vec4<f32>(col, alpha);
   textureStore(writeTexture, pixel, outColor);
-  textureStore(writeDepthTexture, pixel, vec4<f32>(gResult.w, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, pixel, outColor);
 }

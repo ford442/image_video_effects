@@ -61,5 +61,12 @@
   "updated": true,
   "id": "gen-lenia-2",
   "url": "shaders/gen-lenia-2.wgsl",
-  "features": []
+  "features": [
+    "four-species-state-feedback",
+    "integer-neighborhood-kernels",
+    "deterministic-state-seeding",
+    "click-species-inoculation",
+    "audio-reactive-evolution",
+    "depth-output"
+  ]
 }

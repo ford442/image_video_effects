@@ -2,9 +2,16 @@
   "name": "Celestial Glass Tornado",
   "category": "generative",
   "tags": [
-    "generative"
+    "generative",
+    "raymarching",
+    "glass",
+    "tornado",
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "depth-aware"
   ],
-  "description": "",
+  "description": "A raymarched celestial glass tornado with sprung orbit and attraction, crystalline KIFS debris, audio-driven turbulence, click-shattered rings, temporal polish, and real hit depth.",
   "workgroup_size": [
     16,
     16,
@@ -49,5 +56,12 @@
   "updated": true,
   "id": "gen-celestial-glass-tornado",
   "url": "shaders/gen-celestial-glass-tornado.wgsl",
-  "features": []
+  "features": [
+    "raymarched-glass-vortex",
+    "kifs-crystal-debris",
+    "sprung-mouse-attractor",
+    "click-glass-rings",
+    "temporal-feedback",
+    "depth-output"
+  ]
 }

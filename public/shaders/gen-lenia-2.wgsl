@@ -7,7 +7,7 @@
 //  Tags: lenia, multi-species, dna, organic, creature, advanced
 //  Author: ford442
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-08-03 (Batch 33)
 // ═══════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -48,14 +48,22 @@ fn kernel_mexican_hat(x: f32, sigma: f32) -> f32 {
   return (1.0 - a * a) * exp(-0.5 * a * a);
 }
 
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+
+fn load_state(pixel: vec2<i32>, size: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
+}
+
 // 8-sample radial kernel at 45 degree intervals
-fn kernel_sample_8(uv: vec2<f32>, radius: f32, kernel_type: i32) -> vec4<f32> {
+fn kernel_sample_8(pixel: vec2<i32>, size: vec2<i32>, radius: f32, kernel_type: i32) -> vec4<f32> {
   var acc = vec4<f32>(0.0);
+  var weightSum = 0.0;
   for (var i: i32 = 0; i < 8; i = i + 1) {
     let angle = f32(i) * 0.785398;
-    let off = vec2<f32>(cos(angle), sin(angle)) * radius * 0.008;
-    let p = clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0));
-    let s = textureSampleLevel(readTexture, u_sampler, p, 0.0);
+    let off = vec2<i32>(round(vec2<f32>(cos(angle), sin(angle)) * radius));
+    let s = load_state(pixel + off, size);
     let dist = f32(i) / 7.0;
     var w: f32;
     if (kernel_type == 0) { w = kernel_gaussian(dist, 0.4); }
@@ -63,8 +71,9 @@ fn kernel_sample_8(uv: vec2<f32>, radius: f32, kernel_type: i32) -> vec4<f32> {
     else if (kernel_type == 2) { w = 1.0 - dist * 0.6; }
     else { w = 1.0 - abs(cos(angle)) * 0.5; }
     acc = acc + s * w;
+    weightSum = weightSum + abs(w);
   }
-  return acc / 8.0;
+  return acc / max(weightSum, 0.001);
 }
 
 // 4x4 predator-prey interaction matrix
@@ -96,8 +105,22 @@ fn species_to_color(dna: vec4<f32>) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let res = u.config.zw;
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
-  var uv = vec2<f32>(id.xy) / res;
-  let state = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let coord = vec2<i32>(id.xy);
+  let size = vec2<i32>(i32(res.x), i32(res.y));
+  let uv = (vec2<f32>(id.xy) + vec2<f32>(0.5)) / res;
+  var state = load_state(coord, size);
+  let stateEnergy = dot(state, vec4<f32>(1.0));
+  if (stateEnergy < 0.00001) {
+    let cell = floor(vec2<f32>(id.xy) / 7.0);
+    let seed = hash21(cell);
+    let seedMask = step(0.975, seed);
+    state = vec4<f32>(
+      seedMask * fract(seed * 7.31),
+      seedMask * fract(seed * 13.17),
+      seedMask * fract(seed * 19.73),
+      seedMask * fract(seed * 29.41)
+    ) * 0.65;
+  }
   let time = u.config.x;
   let audioBass = plasmaBuffer[0].x;
   let audioMid = plasmaBuffer[0].y;
@@ -105,13 +128,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let audioReactivity = 1.0 + audioBass * 0.5;
   var mouse = u.zoom_config.yz;
   let globalGrowth = u.zoom_params.x;
-  let kernelRadius = u.zoom_params.y * 3.6 + 0.4;
+  let kernelRadius = 2.0 + u.zoom_params.y * 24.0;
   let speed = u.zoom_params.z * 3.0;
   let crossMix = u.zoom_params.w;
   // 4 kernels x 8-sample radial convolution
   var conv = vec4<f32>(0.0);
   for (var i: i32 = 0; i < 4; i = i + 1) {
-    let ksample = kernel_sample_8(uv, kernelRadius * (0.8 + f32(i) * 0.15), i);
+    let ksample = kernel_sample_8(coord, size, kernelRadius * (0.8 + f32(i) * 0.15), i);
     let modulate = 0.8 + sin(time + f32(i)) * 0.2 * audioReactivity;
     conv = conv + ksample * modulate;
   }
@@ -133,14 +156,31 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   // Update with speed + cross-species DNA mixing
   var newState = state * 0.94 + growth * speed * 0.035;
   newState = mix(newState, newState.gbra, crossMix * 0.12);
-  // Mouse food injection
+  // Pressed mouse food injection; hover alone does not continuously overwrite state.
   let md = length(uv - mouse);
-  if (md < 0.22) {
+  if (u.zoom_config.w > 0.5 && md < 0.22) {
     let strength = (1.0 - md * 4.5) * 0.5;
     newState.r = newState.r + strength * 0.3;
     newState.g = newState.g + strength * 0.25;
     newState.b = newState.b + strength * 0.35;
     newState.a = newState.a + strength * 0.2;
+  }
+  let aspect = res.x / res.y;
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = time - ripple.z;
+    if (age >= 0.0 && age < 1.6) {
+      let radius = length((uv - ripple.xy) * vec2<f32>(aspect, 1.0));
+      let inoculation = smoothstep(0.12, 0.0, radius) * exp(-age * 3.0);
+      let species = i % 4u;
+      let seedSpecies = select(
+        select(vec4<f32>(0.0, 0.0, 1.0, 0.0), vec4<f32>(0.0, 0.0, 0.0, 1.0), species == 3u),
+        select(vec4<f32>(1.0, 0.0, 0.0, 0.0), vec4<f32>(0.0, 1.0, 0.0, 0.0), species == 1u),
+        species < 2u
+      );
+      newState = newState + seedSpecies * inoculation * 0.22;
+    }
   }
   // Audio-reactive global pulse
   let pulse = sin(time * 12.0 * audioReactivity) * 0.3 + sin(time * 28.0 * audioReactivity) * 0.15;
@@ -150,19 +190,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let dnaColor = species_to_color(newState);
   var finalColor = mix(newState.rgb, dnaColor, 0.35);
 
-  // ─── Chromatic dispersion ───
+  // Chromatic dispersion samples neighboring simulation state, not source media.
   let chrStrength = 0.004 + audioBass * 0.008;
-  let chrR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(chrStrength * (1.0 + audioMid * 0.5), 0.0), 0.0).r;
-  let chrG = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, chrStrength * (1.0 + audioHigh * 0.3)), 0.0).g;
-  let chrB = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-chrStrength * 0.7 * (1.0 + audioBass * 0.4), chrStrength * 0.3), 0.0).b;
+  let chrPx = max(1, i32(chrStrength * res.y));
+  let chrR = load_state(coord + vec2<i32>(chrPx, 0), size).r;
+  let chrG = load_state(coord + vec2<i32>(0, chrPx), size).g;
+  let chrB = load_state(coord + vec2<i32>(-chrPx, chrPx / 2), size).b;
   let chrColor = vec3<f32>(chrR, chrG, chrB);
   finalColor = mix(finalColor, chrColor, 0.2 + audioBass * 0.15);
 
-  // ─── Temporal feedback ───
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  finalColor = mix(finalColor, prev.rgb * 0.9, 0.03 + audioBass * 0.01);
-
-  textureStore(writeTexture, id.xy, vec4<f32>(finalColor, newState.a));
-  textureStore(writeDepthTexture, id.xy, vec4<f32>(newState.r * 0.25 + newState.g * 0.25 + newState.b * 0.25 + newState.a * 0.25, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, id.xy, vec4<f32>(growth.rg, interactions.rg));
+  let density = dot(newState, vec4<f32>(0.25));
+  let alpha = clamp(density * 1.35, 0.0, 0.96);
+  let depth = clamp(density, 0.0, 1.0);
+  textureStore(writeTexture, id.xy, vec4<f32>(finalColor, alpha));
+  textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // Primary A payload is deliberately the raw four-species state; host copies A -> C last.
+  textureStore(dataTextureA, id.xy, newState);
 }

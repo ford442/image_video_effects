@@ -2,9 +2,16 @@
   "name": "Bioluminescent Aether-Pulsar",
   "category": "generative",
   "tags": [
-    "generative"
+    "generative",
+    "raymarching",
+    "pulsar",
+    "accretion-disk",
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "depth-aware"
   ],
-  "description": "",
+  "description": "A raymarched bioluminescent pulsar with a density-controlled accretion disk, sprung orbit, bounded audio beams, click shock shells, temporal polish, and real hit depth.",
   "workgroup_size": [
     16,
     16,
@@ -49,5 +56,12 @@
   "updated": true,
   "id": "gen-bioluminescent-aether-pulsar",
   "url": "shaders/gen-bioluminescent-aether-pulsar.wgsl",
-  "features": []
+  "features": [
+    "raymarched-aether-pulsar",
+    "density-controlled-accretion",
+    "sprung-orbit-camera",
+    "bounded-volumetric-beams",
+    "click-pulsar-shells",
+    "depth-output"
+  ]
 }

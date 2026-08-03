@@ -5,9 +5,133 @@
 
 ---
 
-## Recently Completed (278 shaders)
+## Recently Completed (315 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 34 (8 shaders) — 2026-08-03 — GENERATIVE INTERACTION AND FEEDBACK HARDENING
+
+The next eight smallest pending single-pass generative shaders received a
+coordinated interaction, feedback, and depth pass. Three normalized-pointer-as-
+pixel bugs were repaired; spring state is single-writer and confined to
+`extraBuffer[133..138]`; ripple counts/ages, ray steps, hit flags, display
+history, and HDR output are bounded. Magnetic Ferrofluid and Aether Pulsar now
+write A and real depth instead of omitting A and copying source depth. Collider
+no longer marches backward from inside its tunnel, String Theory no longer
+lights empty space with an inverted energy term, Psy Swirls uses exact C loads,
+and Audio Spirograph now renders sampled musical-ratio trails rather than eight
+moving stubs. Pulsar's generic control remapping was removed so its four saved
+controls drive their advertised roles. All source `params` and `updatedParams`
+arrays remain exact. Focused gate: 8/8 green with zero workgroup/extraBuffer
+issues; uniform, liveness, JSON, catalog, and duplicate checks green; 418
+generative entries, 1,307 manifest entries, and 1,320/1,320 unique IDs; Jest 69
+suites / 478 pass / 1 skip; `SKIP_WASM_BUILD=1` production build green.
+Unrelated simulation/report drift was restored. Real-GPU visual QA remains
+external. Notes: `swarm-outputs/codex-2026-08-03-b34/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 308 | `gen-celestial-glass-tornado` | 34 | 174→209 (+35) | Spring orbit/attractor, click glass shards, bounded signed march, exact feedback and real depth. |
+| 309 | `gen-string-theory` | 34 | 175→214 (+39) | Sprung plucking, click resonance, corrected energy glow, string-derived alpha/depth and preserved history. |
+| 310 | `gen-voronoi-crystal` | 34 | 175→219 (+44) | Spring seed refraction, audio iridescence, click facets, exact feedback, ACES and relief depth. |
+| 311 | `gen-chromodynamic-plasma-collider` | 34 | 178→202 (+24) | Correct pointer mapping, sprung anomaly, forward tunnel march, collision shells and real depth. |
+| 312 | `gen-magnetic-ferrofluid` | 34 | 186→219 (+33) | Correct orbit input, live density semantics, click shells, explicit hit/A history and real depth. |
+| 313 | `generative-psy-swirls` | 34 | 189→207 (+18) | Sprung vortex, guarded ripples, exact feedback loads, explicit workgroup metadata and relief depth. |
+| 314 | `gen-audio-spirograph` | 34 | 192→244 (+52) | Sampled musical-ratio trails, safe segments, spring lens, click chimes, bounded history and curve depth. |
+| 315 | `gen-bioluminescent-aether-pulsar` | 34 | 195→238 (+43) | Direct control roles, centered spring orbit, bounded beams, click shocks, A history and hit depth. |
+
+### Batch 33 (8 shaders) — 2026-08-03 — BALANCED GENERATIVE HARDENING
+
+Eight compact generative effects received a balanced interaction, numerical,
+material, and feedback pass. Spring-following mouse state and guarded click
+events now live only in `extraBuffer[133..138]`; double-normalized or inverted
+mouse mappings, unsafe normalization, non-positive ray steps, filtering reads
+of rgba32float feedback, and ambiguous depth were corrected. The most important
+ownership fix is Lenia: C now supplies prior four-species state, A stores the
+next state, and writeTexture remains presentation color, replacing its former
+display-as-state loop. Silica Tsunami's advertised refraction now controls real
+IOR-driven transmission, while Astrolabe replaces dead per-step nebula work with
+a visible bounded layer. All saved `updatedParams` arrays remain exact. Focused
+gate: 8/8 green with zero workgroup/extraBuffer issues;
+uniform, liveness, JSON, catalog, and duplicate checks green; 418 generative
+entries, 1,307 manifest entries, and 1,320/1,320 unique IDs; Jest 69 suites /
+478 pass / 1 skip; `SKIP_WASM_BUILD=1` production build green. Unrelated
+simulation/report drift was restored. Real-GPU visual QA remains external.
+Notes: `swarm-outputs/codex-2026-08-03-b33/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 300 | `gen-superfluid-quantum-foam` | 33 | 150→191 (+41) | Stable camera, bounded field speed, spring repulsion, cavitation clicks, safe feedback, ACES and real depth. |
+| 301 | `gen-cymatic-plasma-mandalas` | 33 | 150→178 (+28) | 16x16 workgroup, corrected mouse mapping, stable symmetry, click nodes, safe density and relief depth. |
+| 302 | `gen-fractal-clockwork` | 33 | 153→186 (+33) | Correct gear parity, bounded march, spring orbit, torque clicks, multiband material and near depth. |
+| 303 | `gen-neuro-kinetic-bloom` | 33 | 157→190 (+33) | Spring bloom, side tendrils, click rings, safe raymarch and expanded material bands. |
+| 304 | `gen-nebular-chrono-astrolabe` | 33 | 163→207 (+44) | Corrected mouse orientation, spring gravity, visible bounded nebula, safe feedback and real depth. |
+| 305 | `gen-lenia-2` | 33 | 168→209 (+41) | Repaired four-species A/C state loop, normalized kernels, sparse seeding, press feeding and click inoculation. |
+| 306 | `gen-graviton-plasma-lotus` | 33 | 173→211 (+38) | Corrected mouse-to-world mapping, gravity pulses, bounded glow, temporal polish and hit depth. |
+| 307 | `gen-silica-tsunami` | 33 | 174→208 (+34) | Correct input semantics/density, spring fractures, live IOR refraction, bounded output and real depth. |
+
+### Batch 32 (8 shaders) — 2026-08-03 — GENERATIVE GEOMETRY CONTINUATION
+
+Second geometry-focused generative wave, completing Kimi's five partial drafts
+and three missing targets. The attractors retain their density/ODE identities
+while adding budgeted 3D orbit tubes; Chaos Game and the stylized
+monotile-inspired pattern gain compact analytic SDF libraries and raymarched
+sculptures; Glacial Cavern and stained glass gain normal-driven material
+lighting; Lorenz Flow and Navier Ink gain bounded interactive geometry. The
+coordinator pass restored config.y to ripple-count-only use, moved mouse-down to
+zoom_config.w, eliminated illegal plasmaBuffer[1..3] reads, made rgba32float
+feedback safe on non-filterable hardware, fixed inverted falloffs and dead
+facet mapping, bounded ripple deformation, and standardized near-is-one depth.
+All source control arrays remain byte-equivalent to HEAD outside additive text
+metadata. Explicit 21-file Batch 31+32 gate: 21/21 green (Naga + bindgroup,
+zero workgroup warnings or extraBuffer violations); custom four-control
+liveness and JSON/output synchronization audits: green; generative list and
+1,307-entry manifest regenerated; duplicates: 1,320/1,320 unique; Jest 69
+suites / 478 pass / 1 skip; SKIP_WASM_BUILD=1 production build: green. Physics
+Lab list drift and generated reports were restored after validation. Live GPU
+visual QA remains the hardware handoff. Briefs:
+`swarm-tasks/kimi-generative-briefs-2026-08-03-b32/`; notes:
+`swarm-outputs/kimi-2026-08-03-b32/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 292 | `gen-de-jong-attractor` | 32 | 135→238 (+103) | Preserved temporal density; sampled 3D orbit tube, symmetry fold, orbit-trap material, feedback and near-is-one depth. |
+| 293 | `gen-glacial-aether-quantum-cavern` | 32 | 133→235 (+102) | Raymarched crystalline cavern; analytic normals, 3-point light/Fresnel/facets; config/falloff/feedback/depth fixes. |
+| 294 | `gen-lorenz-attractor-flow` | 32 | 137→245 (+108) | Swept Lorenz tube, orbit camera, kaleidoscopic trap, FFT and guarded ripples; mouseDown/config and feedback fixes. |
+| 295 | `gen-lorenz-attractor` | 32 | 140→242 (+102) | Preserved Lorenz density; budgeted 3D orbit tube, symmetry/orbit-trap material, temporal feedback and real depth. |
+| 296 | `gen-navier-stokes-ink` | 32 | 133→259 (+126) | Fluid-inspired state plus four vortex tubes/corona, orbit camera, FFT/ripples; non-filtering feedback and bounded radii. |
+| 297 | `gen-chaos-game-ifs` | 32 | 134→218 (+84) | Preserved chaos-game field; compact SDF library, raymarched orbit sculpture, corrected rings, safe feedback and depth. |
+| 298 | `gen-aperiodic-monotile` | 32 | 138→224 (+86) | Truthful stylized monotile motif; raymarched relief, analytic materials, corrected edge ramps and safe feedback. |
+| 299 | `gen-depth-refracted-liquid-stained-glass` | 32 | 135→197 (+62) | Live 3–16 facet control; heightfield normals, 3-point/Fresnel/thin-film materials, rosette inlays, legal audio/depth sampling. |
+
+### Batch 31 (13 shaders) — 2026-08-03 — GENERATIVE GEOMETRY EXPANSION
+
+Thirteen large generative shaders received role-specific geometry upgrades:
+algorithmic SDF libraries and patterned backdrops, material-first lighting and
+thin-film palettes, interactive orbit/ripple/FFT response, or adaptive budgets.
+The handoff also exposed three non-canonical uniform layouts, slider reads from
+resolution/ripple fields, non-canonical audio indices, missing A/depth writes,
+unsafe exact-zero normalization, unguarded FFT-tail access, inverted falloffs,
+and mixed depth conventions. Coordinator review fixed those issues, retained
+every pre-existing parameters/params/updatedParams object exactly, and kept
+the public and swarm deliverables synchronized. Notes:
+`swarm-outputs/kimi-2026-08-03-b31/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 279 | `gen-bioluminescent-chrono-plasma-astro-owl` | 31 | 260→350 (+90) | Canonical audio/output contract; orbit/ripples; FFT feather helix and chrono lattice; semantic alpha/depth. |
+| 280 | `gen-ethereal-bismuth-resonance-void-owl` | 31 | 315→397 (+82) | Fixed misaligned uniforms/guarded FFT; thin film, facet materials, 3-point light/AO, ear tufts, inlay and near depth. |
+| 281 | `gen-ethereal-cyber-plasma-void-dragon` | 31 | 294→370 (+76) | Ripple-count-as-audio fix; ribbed/crystal spine, torus halo/star sigils, Voronoi veins and kaleidoscopic nebula. |
+| 282 | `gen-luminescent-aether-plasma-astro-axolotl` | 31 | 207→296 (+89) | Fixed illegal swizzle/mouse mapping; orbit/ripples; FFT gill folds, aether twist and ring-caustic tessellation. |
+| 283 | `gen-luminescent-quantum-flora-symphony` | 31 | 103→192 (+89) | Adaptive capsule/core/KIFS flower scene, hex spore lattice, live four controls, ACES/semantic alpha/real depth. |
+| 284 | `gen-prismatic-cyber-aether-void-kitsune` | 31 | 309→393 (+84) | Crystal swarm/tail rings/shoulders, hex rune and kaleido storm; corrected mouse mapping and defined tail fade. |
+| 285 | `gen-prismatic-cyber-chrono-void-tortoise` | 31 | 173→254 (+81) | Repaired uniform/slider misalignment; full anatomy, KIFS shell, hex scutes, ripples, FFT pocket color and adaptive budget. |
+| 286 | `gen-quantum-acoustic-bioluminescent-void-urchin` | 31 | 273→367 (+94) | Repaired uniforms; torus rings/quantum cage/crystal spines, safe mouse direction and hex/kaleido layers. |
+| 287 | `gen-radiant-cyber-bismuth-nebula-colossus` | 31 | 109→177 (+68) | Wired two dead sliders; hopper crystals, volumetric nebula/stars, thin-film palette, shadow and real depth. |
+| 288 | `gen-radiant-cyber-plasma-astro-griffin` | 31 | 228→304 (+76) | Canonical audio; eagle head/beak, facet material IDs, triangular seams, 3-point lighting and near depth. |
+| 289 | `gen-resonant-quantum-obsidian-astro-manta` | 31 | 133→223 (+90) | Orbit/ripples; helical fins/tail, FFT veins and shard sea; legacy params retained with additive indexed metadata. |
+| 290 | `gen-sentient-cyber-chrono-void-serpent` | 31 | 233→325 (+92) | Octahedral scales, chrono rings/shards, hex armor and Julia backdrop; bounded depth and preset defaults preserved. |
+| 291 | `gen-vitreous-quantum-lotus-singularity` | 31 | 226→296 (+70) | Fixed raw-range slider math/uniforms; material IDs, thin-film petals, per-cell variation, vein inlay and near depth. |
 
 ### Batch 30 (8 shaders) — 2026-08-02 — SMALLEST-FIRST ALL-CATEGORY EDITION 13
 
