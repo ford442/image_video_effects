@@ -1,6 +1,25 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-02 (Batch 30 shader upgrades)
+**Last updated:** 2026-08-03 (Batches 31–32 shader upgrades)
+
+## 2026-08-03 — Shader upgrade Batches 31 and 32
+
+- Resumed Kimi's interrupted generative-geometry swarm: coordinator-reviewed
+  all 13 Batch 31 drafts and completed the five partial plus three missing Batch
+  32 targets. Tracker is now #299.
+- Cross-cutting fixes: canonical uniform meanings, plasmaBuffer[0]-only audio,
+  guarded FFT access, non-filtering rgba32float feedback, defined falloffs,
+  bounded ripple geometry, safe normalization, live controls, and consistent
+  near-is-one depth. Existing saved-preset arrays stayed byte-equivalent; text
+  metadata is additive and scientifically/descriptively honest.
+- Batch 32 added budgeted attractor tubes, analytic IFS/monotile sculptures,
+  raymarched cavern materials, interactive fluid geometry, and heightfield
+  stained glass. Complete briefs and WGSL/JSON/MD output packages remain under
+  the dated Kimi swarm directories.
+- Final proof: explicit 21-file gate 21/21, strict extraBuffer and custom
+  slider/JSON/list audits clean, 1,320 unique IDs, 1,307 manifest entries, Jest
+  478 pass / 1 skip, and production build green. Unrelated generator/report
+  drift was restored; visual QA remains external because the VM has no GPU.
 
 ## 2026-08-02 — Shader upgrade Batch 30
 

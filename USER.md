@@ -13,8 +13,10 @@ _Learn about the person you're helping. Update this as you go._
 - Pixelocity / WebGPU Shader Effects is currently stabilizing its next-year toolchain foundation: enforce main-bundle budgets without counting lazy AI chunks, keep TypeScript/dependency boundaries honest, make `public/wasm/` the deployable artifact SoT, and reduce root/swarm cognitive noise.
 - The current WebGPU adapter/device/context path is considered healthy and must not be rewritten as collateral during bundler work.
 - The WebGPU feedback order is contract-critical: copy dataB to dataC first, then dataA to dataC so primary simulation state wins.
-- The user is actively rolling through consecutive clean upgrade cohorts; Batch 30
-  continued immediately after Batch 29 without reopening the selection loop.
+- The user is actively rolling through consecutive clean upgrade cohorts. When
+  another agent leaves a partial swarm, reconstruct the dated briefs/outputs,
+  preserve its useful work, finish missing deliverables, and apply a full
+  coordinator contract review. Batches 31–32 are complete through tracker #299.
 
 ---
 

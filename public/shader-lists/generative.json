@@ -2802,9 +2802,12 @@
       "hat",
       "geometric",
       "audio",
-      "music"
+      "music",
+      "sdf",
+      "raymarch",
+      "depth"
     ],
-    "description": "Aperiodic hat tiling (monotile) with animated edge glow and audio-reactive color cycling. Rotates and scales with parameters.",
+    "description": "A stylized monotile-inspired 2D pattern with animated edge glow, paired with a raymarched geometric relief sculpture. It is an artistic motif rather than a proof-accurate hat tiling; scale, rotation, edge width, saturation, mouse, and audio remain live.",
     "workgroup_size": [
       16,
       16,
@@ -2849,7 +2852,13 @@
     "updated": true,
     "id": "gen-aperiodic-monotile",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-aperiodic-monotile.wgsl",
-    "features": []
+    "features": [
+      "sdf-relief-sculpture",
+      "raymarch",
+      "audio-reactive",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Apollonian Gasket",
@@ -3924,7 +3933,7 @@
     "id": "gen-bioluminescent-chrono-plasma-astro-owl",
     "name": "Bioluminescent Chrono-Plasma Astro-Owl",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioluminescent-chrono-plasma-astro-owl.wgsl",
-    "description": "A hyper-dimensional, cyber-organic celestial owl forged from liquid chrono-plasma and shattered quantum-glass.",
+    "description": "A hyper-dimensional, cyber-organic celestial owl forged from liquid chrono-plasma and shattered quantum-glass — raymarched SDF plumage folded by live FFT bands, deformed by click ripples, orbited by the mouse, and backed by a kaleidoscopic chrono-tessellation nebula.",
     "category": "generative",
     "tags": [
       "organic",
@@ -3932,13 +3941,20 @@
       "cosmic",
       "volumetric",
       "fractal",
-      "avian"
+      "avian",
+      "sdf",
+      "raymarched",
+      "tessellation",
+      "audio-reactive",
+      "interactive"
     ],
     "workgroup_size": [
       16,
       16,
       1
     ],
+    "updated": true,
+    "supportsDepth": true,
     "updatedParams": [
       {
         "index": 0,
@@ -5021,9 +5037,12 @@
       "fractal",
       "attractor",
       "audio",
-      "music"
+      "music",
+      "sdf",
+      "raymarch",
+      "depth"
     ],
-    "description": "Iterated function system chaos game generating fractal attractors. Audio drives iteration depth and attractor scale. Rotating attractor points.",
+    "description": "A rotating 2D chaos-game IFS field anchored by a raymarched analytic orbit sculpture built from crystal, torus, and capsule forms. The four saved controls retain iteration, glow, ring, and saturation roles while audio drives the shared motion and material response.",
     "workgroup_size": [
       16,
       16,
@@ -5068,7 +5087,13 @@
     "updated": true,
     "id": "gen-chaos-game-ifs",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-chaos-game-ifs.wgsl",
-    "features": []
+    "features": [
+      "sdf-orbit-sculpture",
+      "raymarch",
+      "audio-reactive",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Chromatic Acid Drip",
@@ -7073,9 +7098,12 @@
       "de-jong",
       "temporal",
       "fractal",
-      "audio-reactive"
+      "audio-reactive",
+      "raymarch",
+      "sdf-tube",
+      "depth"
     ],
-    "description": "Strange attractor density accumulation for the 2D Peter de Jong map: x' = sin(a·y)−cos(b·x), y' = sin(c·x)−cos(d·y). Parameters slowly morph through time, continuously transforming the attractor topology through butterflies, snowflakes, spirographs, and alien lace-work. Temporal Monte Carlo builds density; bass warps the geometry; mouse pans and click-zooms.",
+    "description": "Temporal density accumulation for the 2D Peter de Jong map, paired with a budgeted raymarched tube that lifts a sampled orbit into 3D. Morph controls drive the map, glow controls the density and tube radius, trail decay preserves feedback, and audio and mouse input animate the view.",
     "workgroup_size": [
       16,
       16,
@@ -7120,7 +7148,13 @@
     "updated": true,
     "id": "gen-de-jong-attractor",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-de-jong-attractor.wgsl",
-    "features": []
+    "features": [
+      "sdf-tube-orbit",
+      "kaleidoscope-fold",
+      "orbit-trap-shading",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Depth-Refracted Liquid Stained Glass",
@@ -7133,9 +7167,12 @@
       "chromatic",
       "temporal",
       "depth-aware",
-      "caustic"
+      "caustic",
+      "heightfield",
+      "fresnel",
+      "material-lighting"
     ],
-    "description": "Polar facet refraction with chromatic edge dispersion per depth edge, temporal caustic flicker, audio-driven refraction strength, and depth-aware bevel normals. Fixed float-modulus bug.",
+    "description": "Depth-derived heightfield normals drive a polar stained-glass refraction with three-point lighting, Fresnel highlights, tessellated material colors, temporal feedback, and audio-reactive chromatic dispersion. Facet count now maps across 3 to 16 segments.",
     "workgroup_size": [
       16,
       16,
@@ -7180,7 +7217,15 @@
     "updated": true,
     "id": "gen-depth-refracted-liquid-stained-glass",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-depth-refracted-liquid-stained-glass.wgsl",
-    "features": []
+    "features": [
+      "depth-heightfield-normals",
+      "three-point-lighting",
+      "fresnel",
+      "material-palette",
+      "tessellated-facets",
+      "chromatic-refraction",
+      "temporal-feedback"
+    ]
   },
   {
     "name": "DLA Copper Deposition",
@@ -7968,10 +8013,22 @@
       "avian",
       "iridescent",
       "void",
-      "quantum"
+      "quantum",
+      "sdf",
+      "raymarched",
+      "thin-film",
+      "tessellation",
+      "audio-reactive"
     ],
-    "description": "A hyper-dimensional avian entity forged from iridescent bismuth lattices, suspended in a zero-gravity quantum field where sonic vibrations materialize as glowing geometric feathers.",
+    "description": "A hyper-dimensional avian entity forged from iridescent bismuth lattices, suspended in a zero-gravity quantum field. Upgraded with thin-film interference on the stepped bismuth shell, per-facet crystal color variation, 3-point lighting with soft shadows and AO, horn-like stepped ear tufts, a tessellated hopper-crystal inlay glowing in the void ether, ACES filmic tonemapping and real depth output.",
     "complexity": "High",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
+    "supportsDepth": true,
     "parameters": [
       {
         "name": "Crystal Complexity",
@@ -8008,6 +8065,40 @@
         "max": 1,
         "step": 0.01,
         "uniform": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Crystal Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Audio Reactivity Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Iridescence Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Orbital Debris Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
     ]
   },
@@ -8332,10 +8423,23 @@
       "quantum",
       "audio-reactive",
       "cybernetic",
-      "void"
+      "void",
+      "sdf",
+      "raymarched",
+      "voronoi",
+      "kaleidoscopic",
+      "geometry"
     ],
-    "description": "A majestic, hyper-dimensional cyber-dragon forged from flowing quantum plasma and crystalline temporal scales, soaring through a massive, slowly collapsing dark-matter nebula while radiating bioluminescent shockwaves synced to heavy acoustic bass drops.",
+    "description": "A majestic hyper-dimensional cyber-dragon of flowing quantum plasma with octahedral crystal scale-shards, box-ribbed spine segments and a bass-pulsed torus halo engraved with rotating star sigils, soaring through a kaleidoscopically folded dark-matter nebula veined with Voronoi energy circuits.",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-ethereal-cyber-plasma-void-dragon.wgsl",
+    "updated": true,
+    "supportsDepth": true,
+    "supportsDof": false,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -8369,13 +8473,6 @@
         "max": 2,
         "step": 0.05
       }
-    ],
-    "supportsDepth": true,
-    "supportsDof": false,
-    "workgroup_size": [
-      16,
-      16,
-      1
     ]
   },
   {
@@ -10173,9 +10270,13 @@
       "quantum",
       "reactive",
       "volumetric",
-      "cavern"
+      "cavern",
+      "raymarch",
+      "sdf",
+      "fresnel",
+      "depth"
     ],
-    "description": "An infinitely deep, freezing subterranean cavern of quantum ice that glows with auroral aether-plasma, physically cracking and echoing with kaleidoscopic light refractions upon heavy bass impulses.",
+    "description": "A procedural raymarched ice cavern with analytic normals, three-point lighting, Fresnel highlights, crystalline material facets, temporal feedback, and audio-reactive glow and fracture accents.",
     "workgroup_size": [
       16,
       16,
@@ -10220,7 +10321,14 @@
     "updated": true,
     "id": "gen-glacial-aether-quantum-cavern",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-glacial-aether-quantum-cavern.wgsl",
-    "features": []
+    "features": [
+      "raymarched-sdf",
+      "normal-lighting",
+      "fresnel",
+      "material-palette",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "id": "gen-glass-mosaic-liquid-refraction",
@@ -12681,13 +12789,20 @@
     "id": "gen-lorenz-attractor-flow",
     "name": "Lorenz Attractor Flow",
     "url": "https://test.1ink.us/image_video_effects/shaders/lorenz-attractor-flow.wgsl",
-    "description": "Real-time visualization of the Lorenz strange attractor using GPU-accelerated ODE integration. Features chaotic butterfly-wing patterns, mouse perturbation, temporal feedback, chromatic dispersion, and temporal color evolution.",
+    "description": "Real-time Lorenz-system integration combining a 2D butterfly-flow field with a swept 3D orbit tube, kaleidoscopic orbit-trap shading, mouse orbit controls, bounded click ripples, temporal feedback, and audio/FFT response.",
     "features": [
       "generative",
       "mouse-driven",
       "temporal",
       "chromatic",
-      "depth-aware"
+      "depth-aware",
+      "sdf-tube",
+      "kaleidoscope",
+      "orbit-trap",
+      "orbit-camera",
+      "ripple-deformation",
+      "audio-reactive",
+      "fft-reactive"
     ],
     "tags": [
       "chaotic",
@@ -12696,7 +12811,10 @@
       "generative",
       "scientific",
       "flow",
-      "butterfly"
+      "butterfly",
+      "raymarch",
+      "interactive",
+      "audio"
     ],
     "params": [
       {
@@ -12781,9 +12899,12 @@
       "lorenz",
       "temporal",
       "physics",
-      "audio-reactive"
+      "audio-reactive",
+      "raymarch",
+      "sdf-tube",
+      "depth"
     ],
-    "description": "Strange attractor density accumulation. Each pixel seeds a short Lorenz trajectory near an equilibrium lobe; Gaussian kernel splatting onto the x-z projection builds the iconic butterfly over many frames of temporal Monte Carlo integration. Bass widens the rho parameter for more chaotic spread; mouse pans the view.",
+    "description": "Temporal density accumulation for short Lorenz trajectories, paired with a budgeted raymarched tube sampled from the same system. Sigma and rho shape the flow, glow controls density and tube radius, trail decay preserves feedback, and audio and mouse input animate the view.",
     "workgroup_size": [
       16,
       16,
@@ -12828,13 +12949,19 @@
     "updated": true,
     "id": "gen-lorenz-attractor",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-lorenz-attractor.wgsl",
-    "features": []
+    "features": [
+      "sdf-tube-orbit",
+      "symmetry-fold",
+      "orbit-trap-shading",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "id": "gen-luminescent-aether-plasma-astro-axolotl",
     "name": "Luminescent Aether-Plasma Astro-Axolotl",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-aether-plasma-astro-axolotl.wgsl",
-    "description": "A hyper-dimensional, cyber-organic celestial axolotl drifting gracefully through a fluid-dynamic quantum nebula.",
+    "description": "A hyper-dimensional, cyber-organic celestial axolotl drifting gracefully through a fluid-dynamic quantum nebula — raymarched SDF with FFT-folded fractal gills, click-ripple tissue deformation, a mouse-orbit camera, and a kaleidoscopic aether-caustic tessellation sea.",
     "category": "generative",
     "tags": [
       "axolotl",
@@ -12844,13 +12971,19 @@
       "volumetric",
       "fractal",
       "aquatic",
-      "audio-reactive"
+      "audio-reactive",
+      "sdf",
+      "raymarched",
+      "tessellation",
+      "interactive"
     ],
     "workgroup_size": [
       16,
       16,
       1
     ],
+    "updated": true,
+    "supportsDepth": true,
     "updatedParams": [
       {
         "index": 0,
@@ -13152,6 +13285,26 @@
     "name": "Luminescent Quantum-Flora Symphony",
     "category": "generative",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-luminescent-quantum-flora-symphony.wgsl",
+    "updated": true,
+    "supportsDepth": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "tags": [
+      "flora",
+      "kifs",
+      "sdf",
+      "raymarched",
+      "smooth-union",
+      "tessellation",
+      "hex-grid",
+      "audio-reactive",
+      "mouse-interactive",
+      "depth-aware"
+    ],
+    "description": "A luminescent quantum-flora bloom raymarched from smooth-union SDF primitives: a capsule stem, an audio-pulsing emissive core bulb, and a KIFS petal lattice whose fold count adapts to the Petal Complexity slider. A mouse-driven Gravity Twist swirls the growth field, Spore Density seeds a hex-tessellation spore lattice fed by real FFT bins, and Core Intensity drives the bloom's glow. Adaptive raymarch step counts, fold LOD, early exits, real depth and semantic alpha.",
     "updatedParams": [
       {
         "index": 0,
@@ -14410,9 +14563,13 @@
       "ink",
       "turbulence",
       "audio-reactive",
-      "vj"
+      "vj",
+      "sdf",
+      "raymarch",
+      "interactive",
+      "depth"
     ],
-    "description": "2D Navier-Stokes fluid simulation with semi-Lagrangian advection, pressure projection, and ink injection. Bass drives injection rate, mouse injects ink and vortices, depth controls viscosity.",
+    "description": "A single-pass fluid-inspired ink field with semi-Lagrangian advection and local pressure approximation, extended by raymarched vortex tubes and a tessellated emitter corona. Mouse input, bounded click ripples, audio, and FFT energy shape the motion and geometry.",
     "workgroup_size": [
       16,
       16,
@@ -14457,7 +14614,15 @@
     "updated": true,
     "id": "gen-navier-stokes-ink",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-navier-stokes-ink.wgsl",
-    "features": []
+    "features": [
+      "fluid-inspired",
+      "sdf-vortex-tubes",
+      "tessellated-corona",
+      "orbit-camera",
+      "ripple-deformation",
+      "fft-reactive",
+      "temporal-feedback"
+    ]
   },
   {
     "name": "Nebula Light-Trail Swarm",
@@ -16524,10 +16689,23 @@
       "aether",
       "volumetric",
       "fractal",
-      "audio-reactive"
+      "audio-reactive",
+      "sdf",
+      "raymarched",
+      "tessellation",
+      "kaleidoscopic",
+      "geometry"
     ],
-    "description": "A hyper-majestic, cybernetic celestial kitsune forged from shattered prismatic glass and liquid quantum-aether, bounding violently through a multi-dimensional volumetric particle-storm while its nine radiant tails carve temporal auroral rifts into the void.",
+    "description": "A hyper-majestic cybernetic celestial kitsune of shattered prismatic glass and liquid quantum-aether, hex-rune-etched armor and octahedral shoulder crystals, orbited by a prismatic shard swarm and stacked auroral torus rings, its nine radiant tails carving rifts into a kaleidoscopically folded volumetric particle-storm.",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-prismatic-cyber-aether-void-kitsune.wgsl",
+    "updated": true,
+    "supportsDepth": true,
+    "supportsDof": false,
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "updatedParams": [
       {
         "index": 0,
@@ -16561,9 +16739,7 @@
         "max": 3,
         "step": 0.1
       }
-    ],
-    "supportsDepth": true,
-    "supportsDof": false
+    ]
   },
   {
     "id": "gen-prismatic-cyber-aurora-astral-dragonfly",
@@ -16847,14 +17023,23 @@
       "chrono",
       "fractal",
       "volumetric",
-      "audio-reactive"
+      "audio-reactive",
+      "sdf",
+      "raymarched",
+      "smooth-union",
+      "kifs",
+      "tessellation",
+      "hex-grid",
+      "depth-aware"
     ],
-    "description": "A colossal, biomechanical cosmic tortoise forged from shattered prismatic chrono-glass and liquid auroral plasma, drifting slowly through an abyssal quantum sea while bearing a violently glowing, fractal pocket dimension upon its massive shell.",
+    "description": "A colossal biomechanical cosmic tortoise raymarched from smooth-union SDF anatomy — ellipsoid body, six capsule limbs with a swimming gait, head and tail — fused to a chrono-glass shell intersected with a distance-LOD KIFS pocket dimension. The shell carries a hex-scute tessellation whose seams burn with FFT-fed prismatic emissive, while the abyssal quantum sea below drifts with mote fields and engine ripple rings. Time slider sets the chrono phase, Evolution Speed scales the march budget and time, Audio Reactivity drives breath/gait/emissive from live plasma bands, Brightness is the ACES exposure. Real depth, soft shadows, semantic alpha.",
     "workgroup_size": [
       16,
       16,
       1
     ],
+    "updated": true,
+    "supportsDepth": true,
     "updatedParams": [
       {
         "index": 0,
@@ -17433,14 +17618,21 @@
       "void",
       "quantum",
       "oceanic",
-      "audio-reactive"
+      "audio-reactive",
+      "sdf",
+      "raymarched",
+      "tessellation",
+      "kaleidoscopic",
+      "geometry"
     ],
-    "description": "A colossal, undulating deep-space entity composed of hyper-reactive quantum spines and plasma membranes that breathes and dances to sonic vibrations within a zero-g fractal ocean.",
+    "description": "A colossal, undulating deep-space entity of hyper-reactive quantum spines tipped with octahedral crystals, gyroscopic plasma torus rings and an orbiting quantum-shard cage, breathing to sonic vibrations over a kaleidoscopic hex-tessellated void ocean.",
     "workgroup_size": [
       16,
       16,
       1
     ],
+    "updated": true,
+    "supportsDepth": true,
     "updatedParams": [
       {
         "index": 0,
@@ -18356,14 +18548,23 @@
       "bioluminescence",
       "audio-reactive",
       "quantum",
-      "colossus"
+      "colossus",
+      "sdf",
+      "raymarched",
+      "smooth-union",
+      "ifs",
+      "kaleidoscope",
+      "symmetry-fold",
+      "depth-aware"
     ],
-    "description": "A colossal, hyper-dimensional biomechanical titan woven from shattered cyber-bismuth lattices and liquid auroral plasma, drifting endlessly through a violently decaying quantum-particle storm.",
+    "description": "A colossal biomechanical titan raymarched from an IFS-folded cyber-bismuth lattice smooth-unioned with nested hopper-crystal octahedra, drifting through a kaleidoscopic symmetry-folded quantum-particle storm. Nebula Density drives a real volumetric accumulation along the march plus a hex-star field, Audio Reactivity wobbles the folds and fires auroral emissive from live bass/mids/treble and engine FFT bins, and Iridiscent Shift phases a thin-film palette with Fresnel hue flip. Adaptive fold/step LOD, soft shadows, mouse-orbit camera with click-dolly, real depth and semantic alpha.",
     "workgroup_size": [
       16,
       16,
       1
     ],
+    "updated": true,
+    "supportsDepth": true,
     "updatedParams": [
       {
         "index": 0,
@@ -18458,7 +18659,7 @@
     "id": "gen-radiant-cyber-plasma-astro-griffin",
     "name": "Radiant Cyber-Plasma Astro-Griffin",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
-    "description": "A hyper-majestic, biomechanical celestial griffin woven from shattered chrono-prisms and glowing liquid-plasma.",
+    "description": "A hyper-majestic, biomechanical celestial griffin woven from shattered chrono-prisms and glowing liquid-plasma. Upgraded with a golden eagle head and beak, material-ID driven palettes (plasma wings / prism body / golden head), per-feather and per-facet color variation, triangular chrono-prism tessellation seams, faceted normals with 3-point lighting, Blinn-Phong specular, Fresnel plasma rim, ACES filmic tonemapping and real depth output.",
     "category": "generative",
     "tags": [
       "griffin",
@@ -18467,13 +18668,19 @@
       "volumetric",
       "fractal",
       "animal",
-      "audio-reactive"
+      "audio-reactive",
+      "sdf",
+      "raymarched",
+      "tessellation",
+      "fresnel"
     ],
     "workgroup_size": [
       16,
       16,
       1
     ],
+    "updated": true,
+    "supportsDepth": true,
     "updatedParams": [
       {
         "index": 0,
@@ -18997,7 +19204,7 @@
     "name": "Resonant Quantum-Obsidian Astro-Manta",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-resonant-quantum-obsidian-astro-manta.wgsl",
     "category": "generative",
-    "description": "A colossal, biomechanical manta ray forged from fractured quantum-obsidian and liquid neon-aether, gliding effortlessly through a chaotic, fluid-dynamic acoustic dark matter sea.",
+    "description": "A colossal, biomechanical manta ray forged from fractured quantum-obsidian and liquid neon-aether — raymarched SDF with FFT-twisted fin-helix wings, click-ripple plate buckling, a mouse-orbit camera, glowing vein lattices, and a kaleidoscopic obsidian-shard tessellation sea.",
     "features": [
       "raymarching",
       "fluid-dynamics",
@@ -19010,8 +19217,19 @@
       "quantum",
       "cosmic",
       "audio-reactive",
-      "raymarching"
+      "raymarching",
+      "sdf",
+      "raymarched",
+      "tessellation",
+      "interactive"
     ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
+    "supportsDepth": true,
     "params": [
       {
         "id": "timeScale",
@@ -19052,6 +19270,40 @@
         "step": 0.1,
         "mapping": "zoom_params.w",
         "description": "Speed of the dark matter fluid nebula shifting in the background"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Time Scale",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Audio Reactivity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Brightness",
+        "default": 1,
+        "min": 0.1,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "index": 3,
+        "name": "Evolution Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
       }
     ]
   },
@@ -19403,14 +19655,27 @@
   {
     "id": "gen-sentient-cyber-chrono-void-serpent",
     "name": "Sentient Cyber-Chrono Void-Serpent",
-    "description": "A hyper-dimensional, endlessly twisting biomechanical serpent forged from shattered chrono-glass and liquid auroral plasma, slithering aggressively through a violently decaying temporal cosmic-rift. This shader blends razor-sharp synthetic scales and recursive geometric fracturing with fluid, audio-reactive bioluminescent shockwaves.",
+    "category": "generative",
+    "description": "A hyper-dimensional biomechanical serpent of shattered chrono-glass and liquid auroral plasma, octahedral scale-shards and torus chrono-rings clamped around its undulating spine, slithering through a Julia-orbit-trap temporal rift over a decaying void floor, pulsing with hex-etched bioluminescent armor.",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-sentient-cyber-chrono-void-serpent.wgsl",
     "tags": [
       "organic",
       "cybernetic",
       "fractal",
       "volumetric",
-      "audio-reactive"
+      "audio-reactive",
+      "sdf",
+      "raymarched",
+      "orbit-trap",
+      "tessellation",
+      "geometry"
+    ],
+    "updated": true,
+    "supportsDepth": true,
+    "workgroup_size": [
+      16,
+      16,
+      1
     ],
     "updatedParams": [
       {
@@ -21745,10 +22010,21 @@
       "fractal",
       "flower",
       "refraction",
-      "audio-reactive"
+      "audio-reactive",
+      "sdf",
+      "raymarched",
+      "thin-film",
+      "iridescent"
     ],
-    "description": "A hyper-dimensional, translucent crystalline lotus flower continuously blooming and fracturing around a gravitational singularity.",
+    "description": "A hyper-dimensional, translucent crystalline lotus flower continuously blooming and fracturing around a gravitational singularity. Upgraded with thin-film iridescence on the vitreous petals, per-petal cell color variation, symmetry-folded radial vein inlays pulsing with the music, an event-horizon core with photon ring, 3-point lighting with ambient occlusion, chromatic dispersion, ACES filmic tonemapping and real depth output.",
     "complexity": "High",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updated": true,
+    "supportsDepth": true,
     "parameters": [
       {
         "name": "Petal Complexity",
@@ -21785,6 +22061,40 @@
         "max": 3,
         "step": 0.1,
         "uniform": "zoom_params.w"
+      }
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Petal Complexity",
+        "default": 5,
+        "min": 1,
+        "max": 10,
+        "step": 1
+      },
+      {
+        "index": 1,
+        "name": "Singularity Mass",
+        "default": 1.5,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 2,
+        "name": "Refraction Index",
+        "default": 1.33,
+        "min": 1,
+        "max": 2.5,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Audio Pulse Glow",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
       }
     ]
   },

@@ -767,6 +767,32 @@
 | `elastic-chromatic` | image | 3.0 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
 | `bitonic-sort` | image | 3.0 KB | B | mouse_interactive | pending | — | basic | Add mouse interaction. Current: basic. |
 
+### 2026-08-03 Generative Geometry Batches
+
+| Shader ID | Category | Size | Phase | Bucket | Status | Score | Mouse | Notes |
+|-----------|----------|------|-------|--------|--------|-------|-------|-------|
+| `gen-bioluminescent-chrono-plasma-astro-owl` | generative | 12.4 KB | B | generative_geometry | completed | Batch 31 | advanced | Orbit/ripple/FFT feather geometry and chrono lattice; audio/output contract repaired. |
+| `gen-ethereal-bismuth-resonance-void-owl` | generative | 15.3 KB | B | generative_geometry | completed | Batch 31 | Canonical uniforms; thin-film bismuth facets, light rig, ear tufts and inlay. |
+| `gen-ethereal-cyber-plasma-void-dragon` | generative | 14.4 KB | B | generative_geometry | completed | Batch 31 | Crystal/rib spine, halo and Voronoi nebula; ripple-count audio bug fixed. |
+| `gen-luminescent-aether-plasma-astro-axolotl` | generative | 10.9 KB | B | generative_geometry | completed | Batch 31 | Orbit/ripples, FFT gills, current twist and caustics; swizzle bug fixed. |
+| `gen-luminescent-quantum-flora-symphony` | generative | 8.1 KB | B | generative_geometry | completed | Batch 31 | Adaptive KIFS flower scene, spore tessellation, live controls and real depth. |
+| `gen-prismatic-cyber-aether-void-kitsune` | generative | 15.3 KB | B | generative_geometry | completed | Batch 31 | Crystal swarm, tail rings, rune grid and kaleido storm with defined tail fade. |
+| `gen-prismatic-cyber-chrono-void-tortoise` | generative | 11.9 KB | B | generative_geometry | completed | Batch 31 | Uniform/slider repair, full anatomy, KIFS shell, scutes and adaptive budget. |
+| `gen-quantum-acoustic-bioluminescent-void-urchin` | generative | 14.6 KB | B | generative_geometry | completed | Batch 31 | Canonical uniforms, torus/cage/crystal geometry and safe mouse direction. |
+| `gen-radiant-cyber-bismuth-nebula-colossus` | generative | 8.0 KB | B | generative_geometry | completed | Batch 31 | Dead sliders wired; hopper crystals, volumetric nebula and thin-film light. |
+| `gen-radiant-cyber-plasma-astro-griffin` | generative | 11.1 KB | B | generative_geometry | completed | Batch 31 | Head/beak and facet materials with triangular seams; canonical audio/depth. |
+| `gen-resonant-quantum-obsidian-astro-manta` | generative | 8.6 KB | B | generative_geometry | completed | Batch 31 | Orbit/ripples, helical fins, FFT veins and shard sea; saved params retained. |
+| `gen-sentient-cyber-chrono-void-serpent` | generative | 13.5 KB | B | generative_geometry | completed | Batch 31 | Octa scales, chrono rings/shards, hex armor and Julia backdrop. |
+| `gen-vitreous-quantum-lotus-singularity` | generative | 11.3 KB | B | generative_geometry | completed | Batch 31 | Raw slider fix; thin-film petal materials, vein inlay and real depth. |
+| `gen-de-jong-attractor` | generative | 10.3 KB | B | generative_geometry | completed | Batch 32 | Preserved density field plus budgeted 3D orbit tube and trap shading. |
+| `gen-glacial-aether-quantum-cavern` | generative | 9.8 KB | B | generative_geometry | completed | Batch 32 | Raymarched crystal cavern, normal lighting, Fresnel and temporal ice. |
+| `gen-lorenz-attractor-flow` | generative | 10.1 KB | B | generative_geometry | completed | Batch 32 | Lorenz tube, orbit camera, trap, FFT and bounded click ripples. |
+| `gen-lorenz-attractor` | generative | 10.3 KB | B | generative_geometry | completed | Batch 32 | Preserved Lorenz density plus budgeted 3D orbit tube and real depth. |
+| `gen-navier-stokes-ink` | generative | 11.0 KB | B | generative_geometry | completed | Batch 32 | Fluid-inspired field with vortex tubes, corona, orbit and safe feedback. |
+| `gen-chaos-game-ifs` | generative | 9.2 KB | B | generative_geometry | completed | Batch 32 | Chaos-game field plus analytic SDF orbit sculpture and corrected rings. |
+| `gen-aperiodic-monotile` | generative | 9.6 KB | B | generative_geometry | completed | Batch 32 | Truthful monotile-inspired motif plus raymarched analytic relief. |
+| `gen-depth-refracted-liquid-stained-glass` | generative | 9.0 KB | B | generative_geometry | completed | Batch 32 | Live facets, heightfield normals, lit thin-film material and safe audio/depth. |
+
 ---
 
 ## Maintenance Instructions

@@ -5,9 +5,72 @@
 
 ---
 
-## Recently Completed (278 shaders)
+## Recently Completed (299 shaders)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 32 (8 shaders) — 2026-08-03 — GENERATIVE GEOMETRY CONTINUATION
+
+Second geometry-focused generative wave, completing Kimi's five partial drafts
+and three missing targets. The attractors retain their density/ODE identities
+while adding budgeted 3D orbit tubes; Chaos Game and the stylized
+monotile-inspired pattern gain compact analytic SDF libraries and raymarched
+sculptures; Glacial Cavern and stained glass gain normal-driven material
+lighting; Lorenz Flow and Navier Ink gain bounded interactive geometry. The
+coordinator pass restored config.y to ripple-count-only use, moved mouse-down to
+zoom_config.w, eliminated illegal plasmaBuffer[1..3] reads, made rgba32float
+feedback safe on non-filterable hardware, fixed inverted falloffs and dead
+facet mapping, bounded ripple deformation, and standardized near-is-one depth.
+All source control arrays remain byte-equivalent to HEAD outside additive text
+metadata. Explicit 21-file Batch 31+32 gate: 21/21 green (Naga + bindgroup,
+zero workgroup warnings or extraBuffer violations); custom four-control
+liveness and JSON/output synchronization audits: green; generative list and
+1,307-entry manifest regenerated; duplicates: 1,320/1,320 unique; Jest 69
+suites / 478 pass / 1 skip; SKIP_WASM_BUILD=1 production build: green. Physics
+Lab list drift and generated reports were restored after validation. Live GPU
+visual QA remains the hardware handoff. Briefs:
+`swarm-tasks/kimi-generative-briefs-2026-08-03-b32/`; notes:
+`swarm-outputs/kimi-2026-08-03-b32/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 292 | `gen-de-jong-attractor` | 32 | 135→238 (+103) | Preserved temporal density; sampled 3D orbit tube, symmetry fold, orbit-trap material, feedback and near-is-one depth. |
+| 293 | `gen-glacial-aether-quantum-cavern` | 32 | 133→235 (+102) | Raymarched crystalline cavern; analytic normals, 3-point light/Fresnel/facets; config/falloff/feedback/depth fixes. |
+| 294 | `gen-lorenz-attractor-flow` | 32 | 137→245 (+108) | Swept Lorenz tube, orbit camera, kaleidoscopic trap, FFT and guarded ripples; mouseDown/config and feedback fixes. |
+| 295 | `gen-lorenz-attractor` | 32 | 140→242 (+102) | Preserved Lorenz density; budgeted 3D orbit tube, symmetry/orbit-trap material, temporal feedback and real depth. |
+| 296 | `gen-navier-stokes-ink` | 32 | 133→259 (+126) | Fluid-inspired state plus four vortex tubes/corona, orbit camera, FFT/ripples; non-filtering feedback and bounded radii. |
+| 297 | `gen-chaos-game-ifs` | 32 | 134→218 (+84) | Preserved chaos-game field; compact SDF library, raymarched orbit sculpture, corrected rings, safe feedback and depth. |
+| 298 | `gen-aperiodic-monotile` | 32 | 138→224 (+86) | Truthful stylized monotile motif; raymarched relief, analytic materials, corrected edge ramps and safe feedback. |
+| 299 | `gen-depth-refracted-liquid-stained-glass` | 32 | 135→197 (+62) | Live 3–16 facet control; heightfield normals, 3-point/Fresnel/thin-film materials, rosette inlays, legal audio/depth sampling. |
+
+### Batch 31 (13 shaders) — 2026-08-03 — GENERATIVE GEOMETRY EXPANSION
+
+Thirteen large generative shaders received role-specific geometry upgrades:
+algorithmic SDF libraries and patterned backdrops, material-first lighting and
+thin-film palettes, interactive orbit/ripple/FFT response, or adaptive budgets.
+The handoff also exposed three non-canonical uniform layouts, slider reads from
+resolution/ripple fields, non-canonical audio indices, missing A/depth writes,
+unsafe exact-zero normalization, unguarded FFT-tail access, inverted falloffs,
+and mixed depth conventions. Coordinator review fixed those issues, retained
+every pre-existing parameters/params/updatedParams object exactly, and kept
+the public and swarm deliverables synchronized. Notes:
+`swarm-outputs/kimi-2026-08-03-b31/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 279 | `gen-bioluminescent-chrono-plasma-astro-owl` | 31 | 260→350 (+90) | Canonical audio/output contract; orbit/ripples; FFT feather helix and chrono lattice; semantic alpha/depth. |
+| 280 | `gen-ethereal-bismuth-resonance-void-owl` | 31 | 315→397 (+82) | Fixed misaligned uniforms/guarded FFT; thin film, facet materials, 3-point light/AO, ear tufts, inlay and near depth. |
+| 281 | `gen-ethereal-cyber-plasma-void-dragon` | 31 | 294→370 (+76) | Ripple-count-as-audio fix; ribbed/crystal spine, torus halo/star sigils, Voronoi veins and kaleidoscopic nebula. |
+| 282 | `gen-luminescent-aether-plasma-astro-axolotl` | 31 | 207→296 (+89) | Fixed illegal swizzle/mouse mapping; orbit/ripples; FFT gill folds, aether twist and ring-caustic tessellation. |
+| 283 | `gen-luminescent-quantum-flora-symphony` | 31 | 103→192 (+89) | Adaptive capsule/core/KIFS flower scene, hex spore lattice, live four controls, ACES/semantic alpha/real depth. |
+| 284 | `gen-prismatic-cyber-aether-void-kitsune` | 31 | 309→393 (+84) | Crystal swarm/tail rings/shoulders, hex rune and kaleido storm; corrected mouse mapping and defined tail fade. |
+| 285 | `gen-prismatic-cyber-chrono-void-tortoise` | 31 | 173→254 (+81) | Repaired uniform/slider misalignment; full anatomy, KIFS shell, hex scutes, ripples, FFT pocket color and adaptive budget. |
+| 286 | `gen-quantum-acoustic-bioluminescent-void-urchin` | 31 | 273→367 (+94) | Repaired uniforms; torus rings/quantum cage/crystal spines, safe mouse direction and hex/kaleido layers. |
+| 287 | `gen-radiant-cyber-bismuth-nebula-colossus` | 31 | 109→177 (+68) | Wired two dead sliders; hopper crystals, volumetric nebula/stars, thin-film palette, shadow and real depth. |
+| 288 | `gen-radiant-cyber-plasma-astro-griffin` | 31 | 228→304 (+76) | Canonical audio; eagle head/beak, facet material IDs, triangular seams, 3-point lighting and near depth. |
+| 289 | `gen-resonant-quantum-obsidian-astro-manta` | 31 | 133→223 (+90) | Orbit/ripples; helical fins/tail, FFT veins and shard sea; legacy params retained with additive indexed metadata. |
+| 290 | `gen-sentient-cyber-chrono-void-serpent` | 31 | 233→325 (+92) | Octahedral scales, chrono rings/shards, hex armor and Julia backdrop; bounded depth and preset defaults preserved. |
+| 291 | `gen-vitreous-quantum-lotus-singularity` | 31 | 226→296 (+70) | Fixed raw-range slider math/uniforms; material IDs, thin-film petals, per-cell variation, vein inlay and near depth. |
 
 ### Batch 30 (8 shaders) — 2026-08-02 — SMALLEST-FIRST ALL-CATEGORY EDITION 13
 
