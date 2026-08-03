@@ -57,13 +57,12 @@ describe('WASM bridge uniforms (setInputSource)', () => {
     ] as const;
 
     for (const [source, expected] of cases) {
-      bridge.setInputSource(source);
+      bridge.setInputSource(source as any);
       expect(ccall).toHaveBeenCalledWith('setInputSource', null, ['number'], [expected]);
       ccall.mockClear();
     }
 
-    // Exercise the runtime fallback for untyped callers despite the public TS contract.
-    bridge.setInputSource('unknown-source' as never);
+    bridge.setInputSource('unknown-source' as any);
     expect(ccall).toHaveBeenCalledWith('setInputSource', null, ['number'], [0]);
 
     bridge.shutdownWasmRenderer();

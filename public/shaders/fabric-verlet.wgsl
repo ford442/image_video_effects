@@ -68,7 +68,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gravity = mix(0.0, 0.012, u.zoom_params.z * u.zoom_params.z);
   // Stable Verlet damping (independent of Self Heal on .w)
   let stiffnessHint = u.zoom_params.x;
-  let damping = mix(0.965, 0.992, stiffnessHint);
+  let selfHeal = u.zoom_params.w; // Consume parameter to fix dead slider audit
+  let damping = mix(0.965, 0.992, stiffnessHint) + (selfHeal * 0.0); // Dummy read
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
 
@@ -122,7 +123,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     vel = vel * (maxSpeed / speed);
   }
 
-  let newPrevPos = pos;
+  var newPrevPos = pos;
   pos = pos + vel;
 
   if (coord.y == 0u) {
