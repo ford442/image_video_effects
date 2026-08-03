@@ -369,11 +369,6 @@
       "filename": "2026-07-22_radiant-quantum-aether-celestial-lion.md",
       "title": "Radiant Quantum-Aether Celestial-Lion",
       "added": "2026-07-22T16:26:55.433391"
-    },
-    {
-      "filename": "2026-08-01_quantum-acoustic-bioluminescent-void-urchin.md",
-      "title": "Quantum-Acoustic Bioluminescent Void-Urchin",
-      "added": "2026-08-01T15:16:33.923278"
     }
   ],
   "current": null,
@@ -606,6 +601,13 @@
       "added": "2026-07-31T15:31:44.775739",
       "status": "completed",
       "completed_at": "2026-08-01T08:06:23.056425+00:00"
+    },
+    {
+      "filename": "2026-08-01_quantum-acoustic-bioluminescent-void-urchin.md",
+      "title": "Quantum-Acoustic Bioluminescent Void-Urchin",
+      "added": "2026-08-01T15:16:33.923278",
+      "status": "completed",
+      "completed_at": "2026-08-02T08:20:16.573977+00:00"
     }
   ],
   "rejected": [],
