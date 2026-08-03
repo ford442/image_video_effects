@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-08-03 (Batch 34)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,8 +22,8 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
     zoom_params: vec4<f32>,  // UI Sliders mapped here
     ripples: array<vec4<f32>, 50>,
 };
@@ -38,8 +38,10 @@ fn map(p: vec3<f32>) -> f32 {
     let t = u.config.x * 0.5;
 
     // Mouse anomaly
-    let mx = (u.zoom_config.y - 0.5) * 5.0;
-    let my = (u.zoom_config.z - 0.5) * 5.0;
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let mouse = select(rawMouse, vec2<f32>(extraBuffer[133], extraBuffer[134]), extraBuffer[137] > 0.5);
+    let mx = (mouse.x - 0.5) * 5.0;
+    let my = (mouse.y - 0.5) * 5.0;
     let warp_dist = length(q.xy - vec2<f32>(mx, my));
     let pull = exp(-warp_dist * 1.5) * 2.0;
 
@@ -94,23 +96,37 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-    let texSize = vec2<f32>(u.config.z, u.config.w);
-    let uv = vec2<f32>(id.xy) / texSize;
-    if (uv.x > 1.0 || uv.y > 1.0) { return; }
-
-    let res = vec2<f32>(u.config.z, u.config.w);
+    let dims = textureDimensions(writeTexture);
+    if (id.x >= dims.x || id.y >= dims.y) { return; }
+    let res = vec2<f32>(dims);
+    let uv = (vec2<f32>(id.xy) + vec2<f32>(0.5)) / res;
     let nuv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
+    let time = u.config.x;
 
     // Audio reactivity: mids feed glow accumulation, treble adds star twinkle
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let springOmega = 8.0;
+    mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+    mouse += mouseVelocity * springDt;
+    if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
+        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0; extraBuffer[138] = time;
+    }
+
     var ro = vec3<f32>(0.0, 0.0, -8.0);
     var rd = normalize(vec3<f32>(nuv, 1.0));
 
     // Mouse camera sweep
-    let mx = (u.zoom_config.y - 0.5) * 3.14 * 0.5;
-    let my = (u.zoom_config.z - 0.5) * 3.14 * 0.5;
+    let mx = (mouse.x - 0.5) * 3.14 * 0.5;
+    let my = (mouse.y - 0.5) * 3.14 * 0.5;
     let rd_yz = rot(-my) * rd.yz;
     rd.y = rd_yz.x;
     rd.z = rd_yz.y;
@@ -127,18 +143,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var t = 0.0;
     var d = 0.0;
     var glow = 0.0;
+    var hit = false;
 
     for (var i = 0; i < 80; i++) {
         let p = ro + rd * t;
         d = map(p);
-        if (d < 0.001 || t > 40.0) { break; }
-        t += d * 0.6; // Slightly slower march for detail
+        if (d < 0.001) { hit = true; break; }
+        if (t > 40.0) { break; }
+        t += max(abs(d) * 0.6, 0.002); // Never march backward inside glass folds.
         glow += 0.005 / (0.01 + abs(d)) * (1.0 + mids * u.zoom_params.w);
     }
 
     var col = vec3<f32>(0.0);
     var alpha = 0.0;
-    let hit = t < 40.0;
     if (hit) {
         let p = ro + rd * t;
         // Simulating chromatic split
@@ -164,10 +181,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         alpha = clamp(star + glow * 0.1, 0.0, 1.0);
     }
 
-    let out = vec4<f32>(acesToneMap(col * 1.1), alpha);
+    var clickGlass = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.8) {
+            let delta = (uv - ripple.xy) * vec2<f32>(res.x / res.y, 1.0);
+            let radius = length(delta);
+            let ring = exp(-abs(radius - age * 0.24) * 72.0) * exp(-age * 1.5);
+            let shards = pow(max(cos(atan2(delta.y, delta.x) * 10.0 + age * 4.0), 0.0), 14.0);
+            clickGlass = max(clickGlass, ring * (0.65 + shards * 0.55));
+        }
+    }
+    col += vec3<f32>(0.35, 0.8, 1.4) * clickGlass * (0.7 + treble * 0.3);
+    alpha = max(alpha, clickGlass * 0.42);
+
+    let coord = vec2<i32>(id.xy);
+    let prev = textureLoad(dataTextureC, coord, 0);
+    col = mix(col, prev.rgb * 0.9, clamp(0.025 + mids * 0.01, 0.0, 0.06));
+    let out = vec4<f32>(acesToneMap(max(col, vec3<f32>(0.0)) * 1.1), clamp(alpha, 0.0, 0.96));
     // Depth: tornado hit distance; background sits at far plane
     let depth = select(0.0, clamp(1.0 - t / 40.0, 0.0, 1.0), hit);
-    let coord = vec2<i32>(id.xy);
     textureStore(writeTexture, coord, out);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, out);

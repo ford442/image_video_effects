@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: audio-reactive, procedural, epitrochoid curves
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-08-03 (Batch 34)
 //  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 
@@ -35,6 +35,15 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
+fn rot(a: f32) -> mat2x2<f32> {
+    let c = cos(a); let s = sin(a);
+    return mat2x2<f32>(c, -s, s, c);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // Epitrochoid calculation (spirograph curve)
 fn epitrochoid(t: f32, R: f32, r: f32, d: f32) -> vec2<f32> {
     let k = R / r;
@@ -55,7 +64,7 @@ fn hypotrochoid(t: f32, R: f32, r: f32, d: f32) -> vec2<f32> {
 fn distToSegment(uv: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
     let pa = uv - a;
     let ba = b - a;
-    let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 0.000001), 0.0, 1.0);
     return length(pa - ba * h);
 }
 
@@ -81,8 +90,10 @@ fn hsl2rgb(h: f32, s: f32, l: f32) -> vec3<f32> {
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    let uv = (vec2<f32>(global_id.xy) - resolution * 0.5) / min(resolution.x, resolution.y);
+    let dims = textureDimensions(writeTexture);
+    if (global_id.x >= dims.x || global_id.y >= dims.y) { return; }
+    let resolution = vec2<f32>(dims);
+    var uv = (vec2<f32>(global_id.xy) + vec2<f32>(0.5) - resolution * 0.5) / min(resolution.x, resolution.y);
     let t = u.config.x;
     
     // Parameters - safe randomization
@@ -91,9 +102,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let trailLength = mix(0.3, 0.95, u.zoom_params.z);
     let lineThickness = mix(0.001, 0.01, u.zoom_params.w);
     
-    // Audio input (from zoom_config.x)
     let audio = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let audioMod = 1.0 + audio * audioReactivity * 2.0;
+
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(t - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let springOmega = 8.0;
+    mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+    mouseUv += mouseVelocity * springDt;
+    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
+        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0; extraBuffer[138] = t;
+    }
+    let mouse = (mouseUv - vec2<f32>(0.5)) * vec2<f32>(resolution.x / resolution.y, 1.0);
+    let mouseDelta = uv - mouse;
+    let mouseLens = exp(-dot(mouseDelta, mouseDelta) * 18.0) * mix(0.04, 0.18, select(0.0, 1.0, u.zoom_config.w > 0.5));
+    uv -= mouseDelta * mouseLens;
     
     // Background accumulation for trails
     let prevCol = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
@@ -119,15 +149,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Animation speed varies by harmonic
         let speed = 0.5 + f32(i) * 0.1;
         let time = t * speed;
-        
-        // Calculate current point on curve
-        let pos = epitrochoid(time, R, r, d);
-        
-        // Calculate previous point for line segment
-        let prevPos = epitrochoid(time - 0.05, R, r, d);
-        
-        // Distance to this curve segment
-        let dist = distToSegment(uv, pos, prevPos);
+        let sweep = 6.28318 * mix(0.2, 1.0, trailLength);
+        var prevPos = rot(t * 0.08 + f32(i) * 0.16) * epitrochoid(time, R, r, d);
+        var dist = 1000.0;
+        var segmentFade = 1.0;
+        for (var j: i32 = 1; j <= 12; j = j + 1) {
+            let jf = f32(j) / 12.0;
+            let pos = rot(t * 0.08 + f32(i) * 0.16) * epitrochoid(time - sweep * jf, R, r, d);
+            let segDist = distToSegment(uv, prevPos, pos);
+            if (segDist < dist) { dist = segDist; segmentFade = 1.0 - jf * 0.65; }
+            prevPos = pos;
+        }
         
         // Color based on harmonic
         let hue = fract(f32(i) * 0.2 + t * 0.05);
@@ -139,8 +171,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let intensity = 1.0 / (1.0 + f32(i) * 0.5);
         if (dist < minDist) {
             minDist = dist;
-            curveColor = col * intensity;
-            totalIntensity = intensity;
+            curveColor = col * intensity * segmentFade;
+            totalIntensity = intensity * segmentFade;
         }
     }
     
@@ -152,17 +184,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let d = r * 0.6;
         
         let time = -t * (0.3 + f32(i) * 0.1);
-        let pos = hypotrochoid(time, R, r, d);
-        let prevPos = hypotrochoid(time - 0.03, R, r, d);
-        
-        let dist = distToSegment(uv, pos, prevPos);
+        let sweep = 6.28318 * mix(0.2, 0.9, trailLength);
+        var prevPos = rot(-t * 0.06) * hypotrochoid(time, R, r, d);
+        var dist = 1000.0;
+        var segmentFade = 1.0;
+        for (var j: i32 = 1; j <= 10; j = j + 1) {
+            let jf = f32(j) / 10.0;
+            let pos = rot(-t * 0.06) * hypotrochoid(time - sweep * jf, R, r, d);
+            let segDist = distToSegment(uv, prevPos, pos);
+            if (segDist < dist) { dist = segDist; segmentFade = 1.0 - jf * 0.6; }
+            prevPos = pos;
+        }
         let hue = fract(0.5 + f32(i) * 0.15 - t * 0.03);
         let col = hsl2rgb(hue, 0.8, 0.6);
         
         if (dist < minDist) {
             minDist = dist;
-            curveColor = col * 0.7;
-            totalIntensity = 0.7;
+            curveColor = col * 0.7 * segmentFade;
+            totalIntensity = 0.7 * segmentFade;
         }
     }
     
@@ -171,22 +210,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let core = smoothstep(lineThickness * 2.0, 0.0, minDist);
     
     // Final color
-    var col = curveColor * glow + vec3<f32>(1.0) * core * 0.5;
+    var col = curveColor * glow * (1.0 + mids * 0.35) + vec3<f32>(1.0) * core * (0.45 + treble * 0.35);
+
+    let uv01 = (vec2<f32>(global_id.xy) + vec2<f32>(0.5)) / resolution;
+    var clickChime = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = t - ripple.z;
+        if (age >= 0.0 && age < 1.7) {
+            let delta = (uv01 - ripple.xy) * vec2<f32>(resolution.x / resolution.y, 1.0);
+            let shell = exp(-abs(length(delta) - age * 0.27) * 74.0) * exp(-age * 1.8);
+            clickChime = max(clickChime, shell);
+        }
+    }
+    col += vec3<f32>(0.35, 0.75, 1.2) * clickChime * (0.65 + treble * 0.3);
     
     // Add trail accumulation
-    col = col + prevCol * trailLength * 0.9;
+    col = col + clamp(prevCol, vec3<f32>(0.0), vec3<f32>(1.2)) * trailLength * 0.78;
     
     // Vignette
-    let vignette = 1.0 - length(uv) * 0.8;
+    let vignette = clamp(1.0 - length(uv) * 0.8, 0.0, 1.0);
     col = col * vignette;
     
-    // Store for feedback
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(col * 0.95, 0.95));
-    let _luma_as = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha_as = clamp(_luma_as * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, _alpha_as));
-
-    let texUV = vec2<f32>(global_id.xy) / resolution;
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, texUV, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 1.0));
+    let coord = vec2<i32>(global_id.xy);
+    let history = clamp(max(col, vec3<f32>(0.0)) * 0.94, vec3<f32>(0.0), vec3<f32>(1.25));
+    let coverage = clamp(glow * totalIntensity + core * 0.55 + clickChime * 0.2, 0.0, 1.0);
+    textureStore(dataTextureA, coord, vec4<f32>(history, coverage));
+    let display = acesToneMap(history * 1.08);
+    let alpha = clamp(coverage, 0.0, 0.96);
+    textureStore(writeTexture, coord, vec4<f32>(display, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(coverage, 0.0, 0.0, 0.0));
 }

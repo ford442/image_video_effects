@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-08-03 (Batch 33)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -33,6 +33,11 @@ fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     let c = cos(a);
     return mat2x2<f32>(c, -s, s, c);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // KIFS Fold
@@ -85,12 +90,12 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
     var dO = 0.0;
     var mat = 0.0;
-    for(var i = 0; i < 100; i++) {
+    for(var i = 0; i < 80; i++) {
         let p = ro + rd * dO;
         let dS = map(p);
-        dO += dS.x;
+        dO += max(dS.x * 0.85, 0.002);
         mat = dS.y;
-        if(dO > 50.0 || abs(dS.x) < 0.001) { break; }
+        if(dO > 30.0 || abs(dS.x) < 0.001) { break; }
     }
     return vec2<f32>(dO, mat);
 }
@@ -115,12 +120,39 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     if (f32(id.x) >= res.x || f32(id.y) >= res.y) { return; }
 
-    // Mouse Interaction (Gravity Well Distortion)
-    let mouse = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - res) / res.y;
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(u.config.x - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let springOmega = 8.0;
+    mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+    mouseUv += mouseVelocity * springDt;
+    if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
+        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0; extraBuffer[138] = u.config.x;
+    }
+
+    // Mouse Interaction (Gravity Well Distortion), normalized and aspect-correct.
+    let mouse = (mouseUv - vec2<f32>(0.5)) * vec2<f32>(2.0 * res.x / res.y, 2.0);
     var rd_uv = uv;
     let dist_to_mouse = length(uv - mouse);
     let gravity_strength = u.zoom_params.w;
-    rd_uv += normalize(mouse - uv) * (gravity_strength / (dist_to_mouse * 10.0 + 1.0));
+    rd_uv += (mouse - uv) / max(dist_to_mouse, 0.001) * (gravity_strength / (dist_to_mouse * 10.0 + 1.0));
+
+    let uv01 = (vec2<f32>(id.xy) + vec2<f32>(0.5)) / res;
+    var clickGravity = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let radius = length((uv01 - ripple.xy) * vec2<f32>(res.x / res.y, 1.0));
+            clickGravity = max(clickGravity, exp(-abs(radius - age * 0.2) * 65.0) * exp(-age * 1.5));
+        }
+    }
+    rd_uv += normalize(uv + vec2<f32>(0.0001)) * clickGravity * 0.08;
 
     let ro = vec3<f32>(0.0, 0.0, -5.0);
     let rd = normalize(vec3<f32>(rd_uv, 1.0));
@@ -131,7 +163,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var col = vec3<f32>(0.0);
 
-    if (d < 50.0) {
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    if (d < 30.0) {
         let p = ro + rd * d;
         let n = getNormal(p);
 
@@ -147,27 +183,29 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         if (mat == 1.0) {
             // Core: Audio reactive glow
-            let audio = plasmaBuffer[0].x;
-            col = vec3<f32>(1.0, 0.3, 0.8) * (1.0 + audio * 2.0) * diff + vec3<f32>(0.8, 0.1, 0.4) * rim;
+            col = vec3<f32>(1.0, 0.3, 0.8) * (1.0 + bass * 1.5) * diff + vec3<f32>(0.8, 0.1, 0.4) * rim;
         } else if (mat == 2.0) {
             // Petals: Iridescent subsurface
-            col = baseColor * diff + vec3<f32>(0.2, 0.6, 1.0) * smoothstep(0.6, 1.0, rim);
+            col = baseColor * diff * (1.0 + mids * 0.3) + vec3<f32>(0.2, 0.6, 1.0) * smoothstep(0.6, 1.0, rim) * (1.0 + treble * 0.4);
         }
 
         // Apply Bloom
-        col += vec3<f32>(1.0, 0.5, 0.8) * (0.1 / (d * d)) * u.zoom_params.z;
+        col += vec3<f32>(1.0, 0.5, 0.8) * (0.12 + rim * 0.35) * u.zoom_params.z;
 
     } else {
         col = vec3<f32>(0.01, 0.01, 0.03); // Deep space background
     }
 
-    // Output
-        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
+    col += vec3<f32>(0.4, 0.7, 1.3) * clickGravity * (0.45 + treble * 0.25);
+    let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
+    col = mix(col, prev.rgb * 0.9, clamp(0.025 + bass * 0.01, 0.0, 0.07));
+    col = acesToneMap(max(col, vec3<f32>(0.0)));
+    let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    let hit = d < 30.0;
+    let _alpha = clamp(select(0.0, 0.35, hit) + _luma * 0.55 + clickGravity * 0.25, 0.0, 0.97);
     let outColor = vec4<f32>(col, _alpha);
     textureStore(writeTexture, vec2<i32>(id.xy), outColor);
-    let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
+    let _depth = select(0.0, clamp(1.0-d/30.0, 0.0, 1.0), hit);
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, vec2<i32>(id.xy), outColor);
 }

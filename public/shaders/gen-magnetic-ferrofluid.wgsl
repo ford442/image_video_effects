@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: raymarched, mouse-driven, audio-reactive
 //  Complexity: High
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-08-03 (Batch 34)
 //  upgraded-rgba
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
@@ -22,8 +22,8 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
     zoom_params: vec4<f32>,  // x=SpikeHeight, y=Density, z=Speed, w=ColorShift
     ripples: array<vec4<f32>, 50>,
 };
@@ -50,33 +50,36 @@ fn sdSphere(p: vec3<f32>, r: f32) -> f32 {
     return length(p) - r;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // --- Map Function ---
 
 fn map(p: vec3<f32>) -> vec2<f32> {
     var pos = p;
     let time = u.config.x * u.zoom_params.z; // Speed control
+    let bass = plasmaBuffer[0].x;
 
     // Base fluid mass
-    var d = sdSphere(pos, 1.5);
+    let fluidRadius = 1.15 + u.zoom_params.y * 0.65;
+    var d = sdSphere(pos, fluidRadius);
 
     // Magnetic spikes displacement
-    let spikeDensity = u.zoom_params.y * 5.0 + 1.0;
-    let spikeHeight = u.zoom_params.x * 0.5 + 0.1;
+    let spikeDensity = u.zoom_params.y * 5.0 + 3.0;
+    let spikeHeight = u.zoom_params.x * (0.38 + bass * 0.18) + 0.04;
 
     // Use noise to generate spiky perturbations based on direction
-    var dir = normalize(pos);
-    // (A more complex noise function or mathematical formula for spikes will go here)
-    // E.g., combining multiple sine waves or using 3D noise mapped to the sphere surface
     let spikeDisplacement = sin(spikeDensity * pos.x) * sin(spikeDensity * pos.y) * sin(spikeDensity * pos.z) * spikeHeight;
 
     // Add time-based oscillation to the spikes
-    let oscillation = sin(time + length(pos) * 4.0) * 0.5 + 0.5;
+    let oscillation = sin(time + length(pos) * 4.0 + bass * 3.0) * 0.5 + 0.5;
 
     d += spikeDisplacement * oscillation;
 
     // Optional: Add smaller orbiting fluid droplets that merge smoothly
     let dropletPos = vec3<f32>(sin(time)*2.0, cos(time*1.3)*1.5, sin(time*0.8)*2.0);
-    let d2 = sdSphere(pos - dropletPos, 0.4);
+    let d2 = sdSphere(pos - dropletPos, 0.24 + u.zoom_params.y * 0.28);
 
     d = smin(d, d2, 0.5); // Smoothly blend droplets into the main mass
 
@@ -108,9 +111,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, 5.0);
-    // Mouse interaction for camera orbit
-    let mouseX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mouseY = (u.zoom_config.z / dims.y) * 2.0 - 1.0;
+    // Normalized top-down pointer drives a sprung camera orbit.
+    let time = u.config.x;
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let springOmega = 8.0;
+    mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+    mouse += mouseVelocity * springDt;
+    if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
+        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0; extraBuffer[138] = time;
+    }
+    let mouseX = mouse.x * 2.0 - 1.0;
+    let mouseY = mouse.y * 2.0 - 1.0;
 
     let temp_ro_yz = rot(mouseY * 1.5) * ro.yz;
     ro.y = temp_ro_yz.x;
@@ -131,18 +148,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var t = 0.0;
     var d = 0.0;
     var m = -1.0;
+    var hit = false;
     for (var i = 0; i < 100; i++) {
         var p = ro + rd * t;
         let res = map(p);
         d = res.x;
         m = res.y;
-        if (d < 0.001 || t > 20.0) { break; }
-        t += d;
+        if (d < 0.001) { hit = true; break; }
+        if (t > 20.0) { break; }
+        t += max(abs(d) * 0.75, 0.002);
     }
 
     var col = vec3<f32>(0.05, 0.05, 0.08); // Background color
 
-    if (t < 20.0) {
+    if (hit) {
         var p = ro + rd * t;
         let n = calcNormal(p);
 
@@ -163,7 +182,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         matCol = mix(matCol, iriCol, vec3<f32>(fre * 0.5));
 
-        col = matCol * dif * 2.0 + vec3<f32>(1.0) * spec * 2.0 + matCol * fre * 1.0;
+        col = matCol * dif * (1.5 + bass * 0.4) + vec3<f32>(1.0) * spec * (1.5 + plasmaBuffer[0].z) + matCol * fre;
 
         // Add fake environment reflection (simple gradient mapping)
         let refl = reflect(rd, n);
@@ -171,16 +190,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += envCol * matCol * 0.8;
     }
 
+    let uv01 = (fragCoord + vec2<f32>(0.5)) / dims;
+    var magneticPulse = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.7) {
+            let delta = (uv01 - ripple.xy) * vec2<f32>(dims.x / dims.y, 1.0);
+            let shell = exp(-abs(length(delta) - age * 0.25) * 74.0) * exp(-age * 1.8);
+            magneticPulse = max(magneticPulse, shell);
+        }
+    }
+    col += vec3<f32>(0.25, 0.8, 1.25) * magneticPulse * (0.7 + plasmaBuffer[0].y * 0.35);
+
     // Subtle vignette
     col = col * (1.0 - 0.2 * length(uv));
-
-    // Gamma correction
-    col = pow(col, vec3<f32>(0.4545));
-
-        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, vec2<u32>(id.xy), vec4<f32>(col, _alpha));
-    let _depth_uv = clamp(vec2<f32>(id.xy) / vec2<f32>(u.config.z, u.config.w), vec2<f32>(0.0), vec2<f32>(1.0));
-    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(_depth, 0.0, 0.0, 1.0));
+    let coord = vec2<i32>(id.xy);
+    let prev = textureLoad(dataTextureC, coord, 0);
+    col = mix(max(col, vec3<f32>(0.0)), prev.rgb * 0.9, clamp(0.025 + plasmaBuffer[0].y * 0.008, 0.0, 0.05));
+    col = acesToneMap(col * 1.1);
+    let _alpha = clamp(select(0.08, 0.78, hit) + magneticPulse * 0.18, 0.0, 0.96);
+    let outColor = vec4<f32>(col, _alpha);
+    let _depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
+    textureStore(writeTexture, coord, outColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(_depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outColor);
 }

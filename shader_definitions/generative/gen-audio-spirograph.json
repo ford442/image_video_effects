@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "Audio-reactive spirograph with harmonic resonance using epitrochoid and hypotrochoid curves with musical frequency ratios",
+  "description": "Audio-reactive sampled epitrochoid and hypotrochoid trails with musical ratios, sprung mouse lensing, click chimes, bounded temporal persistence, and generated curve depth.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,12 @@
   "updated": true,
   "id": "gen-audio-spirograph",
   "url": "shaders/gen-audio-spirograph.wgsl",
-  "features": []
+  "features": [
+    "sampled-spirograph-trails",
+    "musical-ratio-harmonics",
+    "sprung-mouse-lens",
+    "click-chime-shells",
+    "bounded-temporal-feedback",
+    "depth-output"
+  ]
 }

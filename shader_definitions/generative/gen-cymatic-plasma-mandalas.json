@@ -15,8 +15,8 @@
   ],
   "description": "A hyper-intricate, unfolding kaleidoscope of glowing liquid geometry that dances and weaves complex, sacred-geometry-inspired mandalas in direct response to audio frequencies.",
   "workgroup_size": [
-    8,
-    8,
+    16,
+    16,
     1
   ],
   "updatedParams": [
@@ -58,5 +58,12 @@
   "updated": true,
   "id": "gen-cymatic-plasma-mandalas",
   "url": "shaders/gen-cymatic-plasma-mandalas.wgsl",
-  "features": []
+  "features": [
+    "cymatic-nodal-field",
+    "discrete-kaleidoscope-symmetry",
+    "sprung-mouse-swirl",
+    "click-nodal-rings",
+    "temporal-feedback",
+    "depth-output"
+  ]
 }

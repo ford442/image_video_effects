@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "Animated crystal growth using Voronoi diagrams with time-evolving seeds, featuring icy facets and rainbow iridescence",
+  "description": "Animated Voronoi crystal growth with sprung seed refraction, audio-driven iridescence, click-fractured facets, temporal polish, and generated relief depth.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,12 @@
   "updated": true,
   "id": "gen-voronoi-crystal",
   "url": "shaders/gen-voronoi-crystal.wgsl",
-  "features": []
+  "features": [
+    "animated-voronoi-cells",
+    "sprung-seed-refraction",
+    "audio-iridescent-facets",
+    "click-crystal-fractures",
+    "temporal-feedback",
+    "depth-output"
+  ]
 }

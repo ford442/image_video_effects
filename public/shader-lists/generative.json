@@ -3168,7 +3168,7 @@
       "music",
       "reactive"
     ],
-    "description": "Audio-reactive spirograph with harmonic resonance using epitrochoid and hypotrochoid curves with musical frequency ratios",
+    "description": "Audio-reactive sampled epitrochoid and hypotrochoid trails with musical ratios, sprung mouse lensing, click chimes, bounded temporal persistence, and generated curve depth.",
     "workgroup_size": [
       16,
       16,
@@ -3213,7 +3213,14 @@
     "updated": true,
     "id": "gen-audio-spirograph",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-audio-spirograph.wgsl",
-    "features": []
+    "features": [
+      "sampled-spirograph-trails",
+      "musical-ratio-harmonics",
+      "sprung-mouse-lens",
+      "click-chime-shells",
+      "bounded-temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Audiovisual Mandelbulb",
@@ -3880,9 +3887,16 @@
     "name": "Bioluminescent Aether-Pulsar",
     "category": "generative",
     "tags": [
-      "generative"
+      "generative",
+      "raymarching",
+      "pulsar",
+      "accretion-disk",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "depth-aware"
     ],
-    "description": "",
+    "description": "A raymarched bioluminescent pulsar with a density-controlled accretion disk, sprung orbit, bounded audio beams, click shock shells, temporal polish, and real hit depth.",
     "workgroup_size": [
       16,
       16,
@@ -3927,7 +3941,14 @@
     "updated": true,
     "id": "gen-bioluminescent-aether-pulsar",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-bioluminescent-aether-pulsar.wgsl",
-    "features": []
+    "features": [
+      "raymarched-aether-pulsar",
+      "density-controlled-accretion",
+      "sprung-orbit-camera",
+      "bounded-volumetric-beams",
+      "click-pulsar-shells",
+      "depth-output"
+    ]
   },
   {
     "id": "gen-bioluminescent-chrono-plasma-astro-owl",
@@ -4567,6 +4588,56 @@
     "features": []
   },
   {
+    "id": "gen-celestial-clockwork-plasma-loom",
+    "name": "Celestial Clockwork Plasma-Loom",
+    "author": "Jules",
+    "description": "A gargantuan interstellar loom of turning astrolabes and celestial gears forged from liquid plasma and starlight, weaving threads of radiant energy across an endless, deep-void chronosphere.",
+    "type": "generative",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-celestial-clockwork-plasma-loom.wgsl",
+    "tags": [
+      "mechanical",
+      "cosmic",
+      "plasma",
+      "clockwork",
+      "fractal",
+      "audio-reactive"
+    ],
+    "controls": {
+      "zoom_params.x": {
+        "type": "slider",
+        "label": "Gear Complexity and Count",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01
+      },
+      "zoom_params.y": {
+        "type": "slider",
+        "label": "Audio Plasma Reactivity",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01
+      },
+      "zoom_params.z": {
+        "type": "slider",
+        "label": "Loom Rotation Speed",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01
+      },
+      "zoom_params.w": {
+        "type": "slider",
+        "label": "Time Dilation Intensity",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.01
+      }
+    }
+  },
+  {
     "name": "Celestial Forge",
     "category": "generative",
     "tags": [
@@ -4632,9 +4703,16 @@
     "name": "Celestial Glass Tornado",
     "category": "generative",
     "tags": [
-      "generative"
+      "generative",
+      "raymarching",
+      "glass",
+      "tornado",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "depth-aware"
     ],
-    "description": "",
+    "description": "A raymarched celestial glass tornado with sprung orbit and attraction, crystalline KIFS debris, audio-driven turbulence, click-shattered rings, temporal polish, and real hit depth.",
     "workgroup_size": [
       16,
       16,
@@ -4679,7 +4757,14 @@
     "updated": true,
     "id": "gen-celestial-glass-tornado",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-celestial-glass-tornado.wgsl",
-    "features": []
+    "features": [
+      "raymarched-glass-vortex",
+      "kifs-crystal-debris",
+      "sprung-mouse-attractor",
+      "click-glass-rings",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Celestial Nanite-Swarm Nebula",
@@ -5460,7 +5545,14 @@
     "updated": true,
     "id": "gen-chromodynamic-plasma-collider",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-chromodynamic-plasma-collider.wgsl",
-    "features": []
+    "features": [
+      "raymarched-containment-tunnel",
+      "sprung-magnetic-anomaly",
+      "bounded-collision-plasma",
+      "click-collision-shells",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "id": "gen-chrono-kitsune-prism-weaver",
@@ -6983,8 +7075,8 @@
     ],
     "description": "A hyper-intricate, unfolding kaleidoscope of glowing liquid geometry that dances and weaves complex, sacred-geometry-inspired mandalas in direct response to audio frequencies.",
     "workgroup_size": [
-      8,
-      8,
+      16,
+      16,
       1
     ],
     "updatedParams": [
@@ -7026,7 +7118,14 @@
     "updated": true,
     "id": "gen-cymatic-plasma-mandalas",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-cymatic-plasma-mandalas.wgsl",
-    "features": []
+    "features": [
+      "cymatic-nodal-field",
+      "discrete-kaleidoscope-symmetry",
+      "sprung-mouse-swirl",
+      "click-nodal-rings",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Cymatic Quantum-Silk Loom",
@@ -10019,7 +10118,14 @@
     "updated": true,
     "id": "gen-fractal-clockwork",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-fractal-clockwork.wgsl",
-    "features": []
+    "features": [
+      "raymarched-gears",
+      "sprung-orbit-camera",
+      "click-torque-waves",
+      "multi-band-material-lighting",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Fractal Ember Lattice",
@@ -10527,9 +10633,16 @@
     "name": "Graviton Plasma Lotus",
     "category": "generative",
     "tags": [
-      "generative"
+      "generative",
+      "lotus",
+      "raymarching",
+      "kifs",
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "depth-aware"
     ],
-    "description": "",
+    "description": "A raymarched KIFS plasma lotus with sprung gravitational lensing, bounded click pulses, multi-band iridescent lighting, temporal petal echoes, and real hit depth.",
     "workgroup_size": [
       16,
       16,
@@ -10574,7 +10687,14 @@
     "updated": true,
     "id": "gen-graviton-plasma-lotus",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-graviton-plasma-lotus.wgsl",
-    "features": []
+    "features": [
+      "kifs-lotus-sdf",
+      "sprung-gravity-lens",
+      "click-gravity-pulses",
+      "multi-band-iridescence",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Holographic Bismuth-Core Reactor",
@@ -12418,7 +12538,14 @@
     "updated": true,
     "id": "gen-lenia-2",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-lenia-2.wgsl",
-    "features": []
+    "features": [
+      "four-species-state-feedback",
+      "integer-neighborhood-kernels",
+      "deterministic-state-seeding",
+      "click-species-inoculation",
+      "audio-reactive-evolution",
+      "depth-output"
+    ]
   },
   {
     "name": "Lichen Reaction-Diffusion",
@@ -13762,7 +13889,7 @@
       "audio",
       "music"
     ],
-    "description": "A pulsating, dark metallic liquid with sharp spikes that respond to an oscillating magnetic field.",
+    "description": "A raymarched metallic ferrofluid mass with density-driven volume and spikes, sprung orbit control, audio-excited iridescence, click magnetic shells, temporal polish, and real hit depth.",
     "workgroup_size": [
       16,
       16,
@@ -13807,7 +13934,14 @@
     "updated": true,
     "id": "gen-magnetic-ferrofluid",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-magnetic-ferrofluid.wgsl",
-    "features": []
+    "features": [
+      "raymarched-ferrofluid",
+      "density-driven-spikes",
+      "sprung-orbit-camera",
+      "click-magnetic-shells",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Magnetic Field Lines",
@@ -14745,7 +14879,14 @@
     "updated": true,
     "id": "gen-nebular-chrono-astrolabe",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-nebular-chrono-astrolabe.wgsl",
-    "features": []
+    "features": [
+      "raymarched-astrolabe",
+      "bounded-volumetric-nebula",
+      "sprung-gravity-well",
+      "click-gravity-rings",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Neon Acid Geometry",
@@ -15700,7 +15841,14 @@
     "updated": true,
     "id": "gen-neuro-kinetic-bloom",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-neuro-kinetic-bloom.wgsl",
-    "features": []
+    "features": [
+      "raymarched-branching-flora",
+      "sprung-mouse-repulsion",
+      "click-bloom-rings",
+      "multi-band-vein-lighting",
+      "semantic-alpha",
+      "depth-output"
+    ]
   },
   {
     "name": "Neuro-Kinetic Liquid-Gold Lotus",
@@ -20266,7 +20414,14 @@
     "name": "Silica Tsunami",
     "category": "generative",
     "tags": [
-      "generative"
+      "generative",
+      "raymarching",
+      "glass",
+      "refraction",
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "depth-aware"
     ],
     "description": "A slow-motion wave of refractive glass-like particles that crests and shatters, dynamically reshaping around the mouse and reacting to audio amplitude.",
     "workgroup_size": [
@@ -20313,7 +20468,14 @@
     "updated": true,
     "id": "gen-silica-tsunami",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-silica-tsunami.wgsl",
-    "features": []
+    "features": [
+      "refractive-particle-wave",
+      "density-correct-repetition",
+      "sprung-mouse-crest",
+      "click-shard-rings",
+      "multi-band-glass-lighting",
+      "depth-output"
+    ]
   },
   {
     "name": "Singularity Forge",
@@ -20926,7 +21088,7 @@
       "music",
       "reactive"
     ],
-    "description": "Vibrating string visualizations with interference patterns and harmonics based on the 1D wave equation",
+    "description": "A stylized standing-wave string ensemble with harmonic modes, sprung mouse plucking, click resonance shells, audio excitation, temporal trails, and generated relief depth.",
     "workgroup_size": [
       16,
       16,
@@ -20971,7 +21133,14 @@
     "updated": true,
     "id": "gen-string-theory",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-string-theory.wgsl",
-    "features": []
+    "features": [
+      "standing-wave-ensemble",
+      "harmonic-mode-synthesis",
+      "sprung-mouse-plucking",
+      "click-resonance-shells",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Superfluid Quantum-Foam",
@@ -20982,7 +21151,11 @@
       "fluid",
       "audio-reactive",
       "raymarching",
-      "volumetric"
+      "volumetric",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "depth-aware"
     ],
     "description": "A mesmerizing, hyper-turbulent ocean of boiling quantum probability foam, where iridescent hyper-bubbles merge and burst in sync with audio frequencies, releasing flashes of raw cosmic energy.",
     "workgroup_size": [
@@ -21029,7 +21202,14 @@
     "updated": true,
     "id": "gen-superfluid-quantum-foam",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-superfluid-quantum-foam.wgsl",
-    "features": []
+    "features": [
+      "raymarched-quantum-foam",
+      "bounded-current-advection",
+      "sprung-mouse-camera",
+      "click-cavitation-shells",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Supernova Remnant",
@@ -22243,7 +22423,7 @@
       "music",
       "reactive"
     ],
-    "description": "Animated crystal growth using Voronoi diagrams with time-evolving seeds, featuring icy facets and rainbow iridescence",
+    "description": "Animated Voronoi crystal growth with sprung seed refraction, audio-driven iridescence, click-fractured facets, temporal polish, and generated relief depth.",
     "workgroup_size": [
       16,
       16,
@@ -22288,7 +22468,14 @@
     "updated": true,
     "id": "gen-voronoi-crystal",
     "url": "https://test.1ink.us/image_video_effects/shaders/gen-voronoi-crystal.wgsl",
-    "features": []
+    "features": [
+      "animated-voronoi-cells",
+      "sprung-seed-refraction",
+      "audio-iridescent-facets",
+      "click-crystal-fractures",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Vortex Cathedral",
@@ -24760,6 +24947,11 @@
     "name": "Psychedelic Swirls",
     "url": "https://test.1ink.us/image_video_effects/shaders/generative-psy-swirls.wgsl",
     "description": "Multi-layer polar swirl vortex with chromatic hue separation per layer, temporal swirl accumulation, audio-driven twist modulation, HSV rainbow cycles, and ripple glow trails.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
     "features": [
       "mouse-driven",
       "generative",
@@ -24768,7 +24960,10 @@
       "upgraded-rgba",
       "temporal",
       "chromatic",
-      "audio-reactive"
+      "audio-reactive",
+      "sprung-mouse-vortex",
+      "guarded-click-swirls",
+      "depth-output"
     ],
     "tags": [
       "procedural",
@@ -24853,6 +25048,8 @@
         "step": 0.01
       }
     ],
+    "supportsDepth": true,
+    "supportsDof": false,
     "updated": true
   },
   {

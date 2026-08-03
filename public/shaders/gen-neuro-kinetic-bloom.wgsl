@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-08-03 (Batch 33)
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -45,7 +45,9 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     var pos = p;
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
-    let mouse_rot = (u.zoom_config.yz * 2.0 - 1.0) * 3.14;
+    let raw_mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let sprung_mouse = select(raw_mouse, vec2<f32>(extraBuffer[133], extraBuffer[134]), extraBuffer[137] > 0.5);
+    let mouse_rot = (sprung_mouse * 2.0 - 1.0) * 3.14;
 
     let rot_xz = pos.xz * rot(u.config.x * 0.1 + mouse_rot.x);
     pos.x = rot_xz.x;
@@ -67,19 +69,22 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     pos.y = twisted_xy.y;
 
     // Mouse Repulsion
-    let mouse_pos = vec3<f32>((u.zoom_config.yz * 2.0 - 1.0) * 10.0, 0.0);
+    let mouse_pos = vec3<f32>((sprung_mouse * 2.0 - 1.0) * 10.0, 0.0);
     let dist_to_mouse = length(p - mouse_pos);
     if (dist_to_mouse < u.zoom_params.y) {
-        let push = normalize(p - mouse_pos) * (u.zoom_params.y - dist_to_mouse) * 0.5;
+        let push = (p - mouse_pos) / max(dist_to_mouse, 0.001) * (u.zoom_params.y - dist_to_mouse) * 0.5;
         pos = pos + push;
     }
 
     let branch_length = 3.0 + sin(u.config.x * 0.7 + mids * 4.0) * u.zoom_params.x * (1.0 + mids * 0.4);
     let d_branch = sdCapsule(pos, vec3<f32>(0.0, 0.0, -branch_length), vec3<f32>(0.0, 0.0, branch_length), 0.3);
+    let sideA = sdCapsule(pos, vec3<f32>(0.0), vec3<f32>(branch_length * 0.65, branch_length * 0.25, 0.0), 0.18);
+    let sideB = sdCapsule(pos, vec3<f32>(0.0), vec3<f32>(-branch_length * 0.65, -branch_length * 0.2, 0.0), 0.18);
+    let bloomBranch = min(d_branch, min(sideA, sideB));
 
     // Vein displacement
     let vein = sin(pos.z * 10.0 - u.config.x * 5.0) * sin(atan2(pos.y, pos.x) * 6.0);
-    let final_d = d_branch - vein * 0.05 * u.zoom_params.z;
+    let final_d = bloomBranch - vein * 0.05 * u.zoom_params.z;
 
     return vec2<f32>(final_d * 0.5, vein); // Distance and MatID (vein intensity)
 }
@@ -112,20 +117,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(u.config.x - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let springOmega = 8.0;
+    mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+    mouse += mouseVelocity * springDt;
+    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
+        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0; extraBuffer[138] = u.config.x;
+    }
+
+    let uv01 = (vec2<f32>(coords) + vec2<f32>(0.5)) / vec2<f32>(dims);
     let uv = (vec2<f32>(coords) - 0.5 * vec2<f32>(dims)) / f32(dims.y);
     let ro = vec3<f32>(0.0, 0.0, -12.0 + u.zoom_params.w);
     let rd = normalize(vec3<f32>(uv, 1.0));
 
     var t = 0.0;
     var mat_id = 0.0;
-    for(var i = 0; i < 100; i++) {
+    for(var i = 0; i < 80; i++) {
         let p = ro + rd * t;
         let res = map(p);
         if(res.x < 0.001 || t > 50.0) {
             mat_id = res.y;
             break;
         }
-        t += res.x;
+        t += max(res.x, 0.002);
     }
 
     var col = vec3<f32>(0.02, 0.05, 0.1); // Deep sea void
@@ -145,8 +165,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         glowMass = clamp(max(0.0, mat_id) * u.zoom_params.z + dif * 0.3, 0.0, 1.0);
     }
 
+    var clickBloom = 0.0;
+    let aspect = f32(dims.x) / f32(dims.y);
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let radius = length((uv01 - ripple.xy) * vec2<f32>(aspect, 1.0));
+            clickBloom = max(clickBloom, exp(-abs(radius - age * 0.18) * 65.0) * exp(-age * 1.5));
+        }
+    }
+    col += vec3<f32>(0.08, 1.1, 0.55) * clickBloom * (0.5 + mids * 0.35);
+
     // Alpha encodes bloom presence: lit vein mass over the void, never flat 1.0
-    let alpha = clamp(select(0.0, 0.25, hit) + glowMass + treble * 0.1, 0.0, 1.0);
+    let alpha = clamp(select(0.0, 0.25, hit) + glowMass + treble * 0.1 + clickBloom * 0.35, 0.0, 0.97);
     let out = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     // Depth: ray-march hit distance mapped to [0,1] (near = closer to camera)

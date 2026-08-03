@@ -56,5 +56,12 @@
   "updated": true,
   "id": "gen-chromodynamic-plasma-collider",
   "url": "shaders/gen-chromodynamic-plasma-collider.wgsl",
-  "features": []
+  "features": [
+    "raymarched-containment-tunnel",
+    "sprung-magnetic-anomaly",
+    "bounded-collision-plasma",
+    "click-collision-shells",
+    "temporal-feedback",
+    "depth-output"
+  ]
 }

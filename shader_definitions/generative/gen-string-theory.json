@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "Vibrating string visualizations with interference patterns and harmonics based on the 1D wave equation",
+  "description": "A stylized standing-wave string ensemble with harmonic modes, sprung mouse plucking, click resonance shells, audio excitation, temporal trails, and generated relief depth.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,12 @@
   "updated": true,
   "id": "gen-string-theory",
   "url": "shaders/gen-string-theory.wgsl",
-  "features": []
+  "features": [
+    "standing-wave-ensemble",
+    "harmonic-mode-synthesis",
+    "sprung-mouse-plucking",
+    "click-resonance-shells",
+    "temporal-feedback",
+    "depth-output"
+  ]
 }

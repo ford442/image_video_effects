@@ -3,7 +3,7 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, raymarched, temporal, chromatic, depth-aware
 //  Complexity: High
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-08-03 (Batch 33)
 // ═══════════════════════════════════════════════════════════════════
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
@@ -20,7 +20,7 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
   zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
   ripples: array<vec4<f32>, 50>,
@@ -38,6 +38,11 @@ fn hash33(p3: vec3<f32>) -> vec3<f32> {
   return fract((p.xxy + p.yxx) * p.zyx);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn curlNoise(p: vec3<f32>) -> vec3<f32> {
   let e = vec3<f32>(0.01, 0.0, 0.0);
   let n1 = hash33(p + e);
@@ -50,16 +55,17 @@ fn curlNoise(p: vec3<f32>) -> vec3<f32> {
 }
 
 fn map(p: vec3<f32>) -> vec2<f32> {
-  let t = u.config.x;
+  let t = u.config.x * (0.15 + u.zoom_params.w * 0.35);
   let bass = plasmaBuffer[0].x;
   let env = 1.0 + bass * 2.0;
   var pos = p + curlNoise(p * 0.5 + t * 0.1) * 0.3 * env;
   
-  let m = vec3<f32>((u.zoom_config.y * 2.0 - 1.0) * 10.0, (u.zoom_config.z * 2.0 - 1.0) * 5.0, 0.0);
+  let mouse = select(clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0)), vec2<f32>(extraBuffer[133], extraBuffer[134]), extraBuffer[137] > 0.5);
+  let m = vec3<f32>((mouse.x * 2.0 - 1.0) * 10.0, (mouse.y * 2.0 - 1.0) * 5.0, 0.0);
   let dm = length(p - m);
   let vr = u.zoom_params.y;
   if (dm < vr) {
-    pos += normalize(m - p) * (vr - dm) * 0.5;
+    pos += (m - p) / max(dm, 0.001) * (vr - dm) * 0.5;
     let s = sin(dm);
     let c = cos(dm);
     let xz = pos.xz * mat2x2<f32>(c, -s, s, c);
@@ -93,17 +99,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let env = 1.0 + bass * 2.0;
   
-  let ro = vec3<f32>(0.0, 0.0, -8.0 + t * u.zoom_params.w);
-  let rd = normalize(vec3<f32>(uv, 1.0));
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+  let springDt = select(0.016, clamp(t - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+  let springOmega = 8.0;
+  mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+  mouse += mouseVelocity * springDt;
+  if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+    extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
+    extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+    extraBuffer[137] = 1.0; extraBuffer[138] = t;
+  }
+
+  let cameraDrift = (mouse - vec2<f32>(0.5)) * vec2<f32>(0.35, 0.2);
+  let ro = vec3<f32>(0.0, 0.0, -8.0);
+  let rd = normalize(vec3<f32>(uv + cameraDrift, 1.0));
   var dist = 0.0;
   var glow = 0.0;
   
-  for (var i = 0; i < 80; i++) {
+  for (var i = 0; i < 72; i++) {
     let p = ro + rd * dist;
     let res = map(p);
     if (res.x < 0.5) { glow += (0.5 - res.x) * 0.08 * u.zoom_params.z; }
     if (res.x < 0.001 || dist > 30.0) { break; }
-    dist += res.x * 0.5;
+    dist += max(res.x * 0.55, 0.002);
   }
   
   var col = vec3<f32>(0.02, 0.0, 0.05);
@@ -132,19 +153,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     alpha = clamp(1.0 - exp(-0.05 * dist), 0.0, 1.0) * (0.4 + 0.6 * dif);
   }
   
+  var clickCavitation = 0.0;
+  let aspect = f32(dims.x) / f32(dims.y);
+  let uv01 = (vec2<f32>(coords) + vec2<f32>(0.5)) / vec2<f32>(dims);
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
+    let ripple = u.ripples[i];
+    let age = t - ripple.z;
+    if (age >= 0.0 && age < 1.8) {
+      let delta = (uv01 - ripple.xy) * vec2<f32>(aspect, 1.0);
+      let radius = length(delta);
+      let shell = exp(-abs(radius - age * 0.24) * 70.0) * exp(-age * 1.4);
+      clickCavitation = max(clickCavitation, shell);
+    }
+  }
+
   let flash = vec3<f32>(0.8, 0.1, 1.0) * glow * env;
   col += flash;
-  alpha = max(alpha, glow * 0.5);
+  col += vec3<f32>(0.25, 0.75, 1.4) * clickCavitation * (0.7 + treble * 0.4);
+  alpha = max(alpha, glow * 0.5 + clickCavitation * 0.45);
   
   let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-  col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+  col = max(col, vec3<f32>(0.0));
   col = max(col, lum * vec3<f32>(0.3, 0.2, 0.4));
 
   // ═══ Temporal feedback ═══
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  col = mix(col, prev.rgb * 0.9, 0.03 + bass * 0.01);
+  let prev = textureLoad(dataTextureC, coords, 0);
+  col = mix(col, prev.rgb * 0.9, clamp(0.03 + bass * 0.01, 0.0, 0.08));
+  col = acesToneMap(col * (1.0 + mids * 0.12));
+  alpha = clamp(alpha, 0.0, 0.96);
+  let hit = dist < 30.0;
+  let depth = select(0.0, clamp(1.0 - dist / 30.0, 0.0, 1.0), hit);
   
   textureStore(writeTexture, coords, vec4<f32>(col * alpha, alpha));
-  textureStore(writeDepthTexture, coords, vec4<f32>(min(dist / 30.0, 1.0), 0.0, 0.0, 1.0));
+  textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, coords, vec4<f32>(col * alpha, alpha));
 }

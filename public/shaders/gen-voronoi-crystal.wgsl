@@ -3,6 +3,7 @@
 //  Category: generative
 //  Features: procedural, animated, crystal growth simulation, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Created: 2026-03-22
+//  Updated: 2026-08-03 (Batch 34)
 //  By: Agent 4A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -45,6 +46,10 @@ fn rot2(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     let c = cos(a);
     return mat2x2<f32>(c, -s, s, c);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Smooth Voronoi with animated seeds
@@ -96,10 +101,14 @@ fn voronoiCrystal(uv: vec2<f32>, t: f32, crystalCount: f32, irregularity: f32) -
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    let dims = textureDimensions(writeTexture);
+    if (global_id.x >= dims.x || global_id.y >= dims.y) { return; }
+    let resolution = vec2<f32>(dims);
+    let uv = (vec2<f32>(global_id.xy) + vec2<f32>(0.5)) / resolution;
     let t = u.config.x;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     
     // Parameters - safe randomization
     let growthSpeed = mix(0.2, 1.5, u.zoom_params.x);
@@ -110,12 +119,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Aspect correction
     let aspect = resolution.x / resolution.y;
     var p = uv * vec2<f32>(aspect, 1.0);
+
+    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
+    let springDt = select(0.016, clamp(t - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+    let springOmega = 8.0;
+    mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
+    mouseUv += mouseVelocity * springDt;
+    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
+        extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
+        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
+        extraBuffer[137] = 1.0; extraBuffer[138] = t;
+    }
+    let mouse = mouseUv * vec2<f32>(aspect, 1.0);
+    let mouseDelta = p - mouse;
+    p += mouseDelta * exp(-dot(mouseDelta, mouseDelta) * 7.0) * 0.16;
     
     // Slow pan
     p = p + vec2<f32>(sin(t * 0.05) * 0.1, cos(t * 0.03) * 0.1);
     
     // Get Voronoi data
-    let voro = voronoiCrystal(p, t * growthSpeed, crystalCount, irregularity);
+    let voro = voronoiCrystal(p, t * growthSpeed * (1.0 + bass * 0.18), crystalCount, irregularity);
     let f1 = voro.x;
     let f2 = voro.y;
     let cellHash = voro.w;
@@ -130,7 +156,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Color palette - icy blues and whites with rainbow iridescence
     let baseHue = cellHash * 0.1 + 0.55; // Blue range
-    let iridescence = sin(cellHash * 20.0 + t * 0.5) * 0.1;
+    let iridescence = sin(cellHash * 20.0 + t * 0.5) * (0.1 + mids * 0.06);
     
     var col = vec3<f32>(0.0);
     
@@ -160,16 +186,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Specular highlight at seed center
     let specular = exp(-f1 * 10.0) * (0.5 + 0.5 * sin(t + cellHash * 10.0));
-    col = col + vec3<f32>(1.0) * specular * 0.5;
+    col = col + vec3<f32>(1.0) * specular * (0.5 + treble * 0.3);
     
     // Frost effect at cell boundaries
     let frost = smoothstep(0.1, 0.0, edge) * smoothstep(0.0, 0.05, f1);
     col = mix(col, vec3<f32>(0.95, 0.98, 1.0), frost * 0.4);
     
-    let _luma_q = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha_q = clamp(_luma_q * 0.7 + 0.2, 0.0, 1.0);
-    let outColor = vec4<f32>(col, _alpha_q);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth * 0.5, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
+    var clickCrack = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = t - ripple.z;
+        if (age >= 0.0 && age < 1.7) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let radius = length(delta);
+            let ring = exp(-abs(radius - age * 0.24) * 76.0) * exp(-age * 1.7);
+            let facets = pow(max(cos(atan2(delta.y, delta.x) * 8.0), 0.0), 12.0);
+            clickCrack = max(clickCrack, ring * (0.7 + facets * 0.5));
+        }
+    }
+    col += vec3<f32>(0.55, 0.9, 1.3) * clickCrack * (0.65 + treble * 0.3);
+    let coord = vec2<i32>(global_id.xy);
+    let prev = textureLoad(dataTextureC, coord, 0);
+    col = mix(col, prev.rgb * 0.9, clamp(0.02 + mids * 0.008, 0.0, 0.05));
+    col = acesToneMap(max(col, vec3<f32>(0.0)) * 1.08);
+    let reliefDepth = clamp(0.18 + edgeMask * 0.58 + specular * 0.18 + clickCrack * 0.06, 0.0, 1.0);
+    let alpha = clamp(0.22 + edgeMask * 0.58 + specular * 0.15 + clickCrack * 0.15, 0.0, 0.96);
+    let outColor = vec4<f32>(col, alpha);
+    textureStore(writeTexture, coord, outColor);
+    textureStore(writeDepthTexture, coord, vec4<f32>(reliefDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outColor);
 }

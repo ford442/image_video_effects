@@ -4,7 +4,9 @@
     "name": "Aero Chromatics",
     "url": "https://test.1ink.us/image_video_effects/shaders/aero-chromatics.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "depth-aware",
+      "audio-reactive"
     ],
     "description": "Wind tunnel simulation where image brightness determines aerodynamic drag, creating chromatic smoke trails.",
     "params": [
@@ -44,7 +46,42 @@
     "tags": [
       "simulation",
       "physics"
-    ]
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Wind Force",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 1,
+        "name": "Smoke Decay",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 2,
+        "name": "Chromatic Split",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Source Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
+    ],
+    "updated": true
   },
   {
     "id": "alpha-crystal-growth-phase",

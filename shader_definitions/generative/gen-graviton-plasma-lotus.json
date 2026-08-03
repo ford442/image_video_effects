@@ -2,9 +2,16 @@
   "name": "Graviton Plasma Lotus",
   "category": "generative",
   "tags": [
-    "generative"
+    "generative",
+    "lotus",
+    "raymarching",
+    "kifs",
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "depth-aware"
   ],
-  "description": "",
+  "description": "A raymarched KIFS plasma lotus with sprung gravitational lensing, bounded click pulses, multi-band iridescent lighting, temporal petal echoes, and real hit depth.",
   "workgroup_size": [
     16,
     16,
@@ -49,5 +56,12 @@
   "updated": true,
   "id": "gen-graviton-plasma-lotus",
   "url": "shaders/gen-graviton-plasma-lotus.wgsl",
-  "features": []
+  "features": [
+    "kifs-lotus-sdf",
+    "sprung-gravity-lens",
+    "click-gravity-pulses",
+    "multi-band-iridescence",
+    "temporal-feedback",
+    "depth-output"
+  ]
 }
