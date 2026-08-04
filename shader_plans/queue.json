@@ -379,11 +379,6 @@
       "filename": "2026-08-02_celestial-clockwork-plasma-loom.md",
       "title": "Celestial Clockwork Plasma-Loom",
       "added": "2026-08-02T15:19:34.429971"
-    },
-    {
-      "filename": "2026-08-03_fractal-chrono-dendrite-forge.md",
-      "title": "Fractal Chrono-Dendrite Forge",
-      "added": "2026-08-03T15:18:54.308046"
     }
   ],
   "current": null,
@@ -630,6 +625,13 @@
       "added": "2026-08-02T15:19:34.429971",
       "status": "completed",
       "completed_at": "2026-08-03T08:12:40.486329+00:00"
+    },
+    {
+      "filename": "2026-08-03_fractal-chrono-dendrite-forge.md",
+      "title": "Fractal Chrono-Dendrite Forge",
+      "added": "2026-08-03T15:18:54.308046",
+      "status": "completed",
+      "completed_at": "2026-08-04T07:53:45.377540+00:00"
     }
   ],
   "rejected": [],
