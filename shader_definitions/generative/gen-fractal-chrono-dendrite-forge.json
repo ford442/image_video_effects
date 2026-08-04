@@ -1,0 +1,50 @@
+{
+  "id": "gen-fractal-chrono-dendrite-forge",
+  "name": "Fractal Chrono-Dendrite Forge",
+  "author": "Jules",
+  "description": "A hyper-intricate procedural branching structure simulating crystalline growth and decay through a spacetime distortion field, rendered with a bismuth-iridescent glass aesthetic.",
+  "type": "generative",
+  "url": "shaders/gen-fractal-chrono-dendrite-forge.wgsl",
+  "tags": [
+    "fractal",
+    "dendrite",
+    "time-manipulation",
+    "bismuth",
+    "glass",
+    "audio-reactive"
+  ],
+  "controls": {
+    "zoom_params.x": {
+      "type": "slider",
+      "label": "Dendrite Complexity",
+      "min": 0.0,
+      "max": 5.0,
+      "default": 1.0,
+      "step": 0.1
+    },
+    "zoom_params.y": {
+      "type": "slider",
+      "label": "Entropy Pulse Rate",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 0.5,
+      "step": 0.05
+    },
+    "zoom_params.z": {
+      "type": "slider",
+      "label": "Spectral Dispersion",
+      "min": 0.1,
+      "max": 3.0,
+      "default": 1.2,
+      "step": 0.1
+    },
+    "zoom_params.w": {
+      "type": "slider",
+      "label": "Gravity Well Strength",
+      "min": 0.0,
+      "max": 2.0,
+      "default": 0.8,
+      "step": 0.1
+    }
+  }
+}
