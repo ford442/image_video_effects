@@ -21380,6 +21380,63 @@
     "features": []
   },
   {
+    "id": "gen-symbiotic-cyber-fungal-core-reactor",
+    "name": "Symbiotic Cyber-Fungal Core-Reactor",
+    "author": "Jules",
+    "description": "A biomechanical network of luminescent mycelium feeding off the chaotic energy of a fractured quantum singularity.",
+    "type": "generative",
+    "url": "shaders/gen-symbiotic-cyber-fungal-core-reactor.wgsl",
+    "tags": [
+      "biomechanical",
+      "mycelium",
+      "quantum",
+      "volumetric",
+      "reaction-diffusion"
+    ],
+    "controls": {
+      "zoom_params.x": {
+        "type": "slider",
+        "label": "Core Density",
+        "min": 0.1,
+        "max": 5,
+        "default": 1,
+        "step": 0.1
+      },
+      "zoom_params.y": {
+        "type": "slider",
+        "label": "Mycelium Spread",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.05
+      },
+      "zoom_params.z": {
+        "type": "slider",
+        "label": "Quantum Noise",
+        "min": 0,
+        "max": 1,
+        "default": 0.3,
+        "step": 0.01
+      },
+      "zoom_config.w": {
+        "type": "slider",
+        "label": "Mutation Rate",
+        "min": 0,
+        "max": 0.5,
+        "default": 0.1,
+        "step": 0.01
+      },
+      "zoom_params.w": {
+        "type": "slider",
+        "label": "Temporal Shift",
+        "min": 0,
+        "max": 2,
+        "default": 1,
+        "step": 0.1
+      }
+    }
+  },
+  {
     "name": "Symbiotic Light Networks",
     "category": "generative",
     "tags": [
