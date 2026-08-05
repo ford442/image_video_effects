@@ -87,6 +87,21 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     return v * mix(vec3<f32>(1.0), clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0)), s);
 }
 
+// ── Visualist toolkit: thin-film iridescence + split-tone grading ──────
+// Cos-palette thin-film: hue cycles with optical-path phase (fold order +
+// distance falloff), giving the neon line an oil-slick / dragon-scale sheen.
+fn thinFilm(phase: f32) -> vec3<f32> {
+    return 0.5 + 0.5 * cos(TAU * (phase + vec3<f32>(0.0, 0.33, 0.67)));
+}
+
+// Split-tone: cool indigo shadows, warm gold highlights, smoothly keyed on
+// luma. Applied in HDR before the ACES rolloff.
+fn splitTone(col: vec3<f32>, shadowTint: vec3<f32>, highTint: vec3<f32>, amt: f32) -> vec3<f32> {
+    let luma = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let t = smoothstep(0.05, 0.8, luma);
+    return mix(col, col * mix(shadowTint, highTint, t), amt);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -96,8 +111,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = (vec2<f32>(gid.xy) + 0.5) / vec2<f32>(dims);
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
     let mouse = u.zoom_config.yz;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
+    // Guarded engine FFT bins 1–8 → slow spectral shimmer for the halo
+    var fftPulse = 0.0;
+    if (arrayLength(&extraBuffer) > 13u) {
+        for (var k = 1u; k <= 8u; k = k + 1u) {
+            fftPulse += extraBuffer[5u + k];
+        }
+        fftPulse = clamp(fftPulse * 0.125, 0.0, 1.5);
+    }
 
     let zoom = mix(0.8, 4.0, u.zoom_params.x);
     let glowWidth = mix(0.015, 0.004, u.zoom_params.y);
@@ -152,20 +178,54 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sat = 0.85 + bass * 0.15;
     var neon = hsv2rgb(hue, sat, 1.0);
 
+    // Thin-film iridescence fused into the neon: phase = fold order along
+    // the curve + normalized distance falloff + slow temporal drift.
+    let filmPhase = f32(closestIdx) / f32(maxSeg) * 0.5
+                  + minDist / (glowWidth * 4.0)
+                  + time * 0.03;
+    neon = mix(neon, neon * thinFilm(filmPhase) * 1.6, 0.45);
+
     // HDR glow modulated by domain-warped background field
     let bgField = warpedFBM(p * 0.1 + vec2<f32>(time*0.03, 0.0), time) * 0.5 + 0.5;
-    let glow = exp(-minDist / glowWidth) * turnIntensity * (1.0 + bgField * 0.3);
-    var color = neon * glow * 2.5;
+
+    // ── 2-temperature lighting rig ─────────────────────────────────────
+    // KEY: tight warm filament hugging the line (hot core, HDR > 1.0).
+    // FILL: broad cool halo — a volumetric glow approximation 6x wider,
+    // shimmered by the real FFT spectrum.
+    // Dynamic temperature: treble cools the rig, bass warms it.
+    let tempShift = clamp(treble - bass, -1.0, 1.0) * 0.15;
+    let warmKey = vec3<f32>(1.28 - tempShift, 0.96, 0.70 + tempShift);
+    let coolFill = vec3<f32>(0.58 + tempShift, 0.76, 1.32 - tempShift);
+
+    let coreGlow = exp(-minDist / glowWidth) * turnIntensity * (1.0 + bgField * 0.3);
+    let halo = exp(-minDist / (glowWidth * 6.0)) * (0.55 + fftPulse * 0.4);
+    var color = neon * coreGlow * warmKey * 2.8
+              + neon * halo * coolFill * 0.85;
 
     // Chromatic aberration on tight folds
-    let fold = select(0.0, 1.0, t1 != t2) * smoothstep(0.0, glowWidth * 3.0, glow);
+    let fold = select(0.0, 1.0, t1 != t2) * smoothstep(0.0, glowWidth * 3.0, coreGlow);
     color = vec3<f32>(color.r * (1.0 + fold * caAmt), color.g,
                         color.b * (1.0 - fold * caAmt * 0.5));
 
+    // Split-tone grade (cool indigo shadows / warm gold highlights) in HDR
+    color = splitTone(color, vec3<f32>(0.72, 0.80, 1.22), vec3<f32>(1.22, 1.02, 0.78), 0.5);
+
+    // Atmospheric depth haze: far fragments sink into a cool fog, kept
+    // bounded so the fractal stays legible; suppressed on the hot core.
+    let hazeColor = vec3<f32>(0.05, 0.07, 0.16);
+    let hazeAmt = clamp((1.0 - depth) * 0.30 + bgField * 0.10, 0.0, 0.45)
+                * (1.0 - saturate(coreGlow));
+    color = mix(color, hazeColor * (1.0 + halo * 0.6), hazeAmt);
+
     color = acesToneMap(color);
 
-    // Temporal persistence
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    // Vibrance: mids lift saturation of mid-tones without clipping skin of
+    // the highlights (post-ACES, bounded).
+    let lumaPost = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+    color = clamp(mix(vec3<f32>(lumaPost), color, 1.0 + mids * 0.22), vec3<f32>(0.0), vec3<f32>(1.0));
+
+    // Temporal persistence (non-filtering load of rgba32float history)
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
     color = mix(color, prev * 0.95, 0.04 + feedback * 0.06 + bass * 0.02);
 
     // Depth controls line thickness perspective

@@ -1,6 +1,39 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-03 (Batch 34 shader upgrades)
+**Last updated:** 2026-08-05 (Batch 36 shader upgrades)
+
+## 2026-08-05 — Shader upgrade Batch 36 (4-agent swarm)
+
+- Same 4-agent pattern on the next 8 smallest pending generative shaders:
+  Cybernetic Ferro Coral, Thermal Rainbow Topography, Hyper Labyrinth,
+  Topology Flow, Lichtenberg Storm, Phase-Transition Memory Weave, Luminescent
+  Chrono-Fluid Astrolabe, Prismatic Void-Weaver Ouroboros; tracker is now #331.
+- Repaired Astrolabe's completely scrambled uniform truth (time←config.z,
+  audio←mouseDown), Ouroboros's fake rippleCount-audio + dead Twist Density,
+  Topology Flow's unbounded ~15× feedback blowup, Thermal's top-left-pinned
+  mouse, and cohort-wide missing A writes / far-is-one depth / hardcoded alpha.
+- 8/8 updatedParams byte-exact; state only extraBuffer[133..138] single-writer.
+- Proof: gate 8/8, audits PASS, generative list synced, manifest 1,309/1,309,
+  Jest 478/1, SKIP_WASM_BUILD=1 build green, drift restored. Visual QA
+  external. ~79 pending generative remain.
+
+## 2026-08-05 — Shader upgrade Batch 35 (4-agent swarm)
+
+- Full Algorithmist/Visualist/Interactivist/Optimizer swarm, 2 shaders each:
+  Bioluminescent Cyber-Aether Void Seahorse, Velocity Bloom, Dragon Curve,
+  Fractal Chrono-Dendrite Forge, Raptor Mini, Bismuth Singularity Loom Engine,
+  3D Sierpinski Chaos, and Astro-Kinetic Chrono Orrery; tracker is now #323.
+- Repaired Seahorse's non-canonical Uniforms struct, Bismuth's
+  rippleCount-as-audio miswire, Orrery's 3 dead sliders + per-step Kepler
+  hoisting, Sierpinski's filtering history read/flat depth, and gave
+  Dendrite-forge 4 indexed updatedParams + 16x16x1 (stale unconsumed `controls`
+  schema removed; effective defaults preserved). 7/7 pre-existing
+  updatedParams byte-exact; state only extraBuffer[133..138] single-writer.
+- Proof: focused gate 8/8, strict audits PASS, generative list synced
+  (regenerate WITHOUT --base-url; build prebuild re-adds URL drift so re-sync
+  after), manifest 1,309/1,309, Jest 478 pass / 1 skip, SKIP_WASM_BUILD=1
+  build green, unrelated drift restored. Visual QA is a real-GPU handoff.
+- Pending-pool recipe recorded in memory/2026-08-05.md (~87 generative remain).
 
 ## 2026-08-03 — Shader upgrade Batch 34
 

@@ -2270,7 +2270,17 @@
     "updated": true,
     "id": "gen-3d-sierpinski-chaos",
     "url": "shaders/gen-3d-sierpinski-chaos.wgsl",
-    "features": []
+    "features": [
+      "chaos-game",
+      "3d-fractal",
+      "audio-reactive",
+      "mouse-control",
+      "click-ripples",
+      "temporal-feedback",
+      "semantic-alpha",
+      "depth-output",
+      "hdr-ready"
+    ]
   },
   {
     "name": "4D Projection Dream Weavers",
@@ -3096,7 +3106,17 @@
     "updated": true,
     "id": "gen-astro-kinetic-chrono-orrery",
     "url": "shaders/gen-astro-kinetic-chrono-orrery.wgsl",
-    "features": []
+    "features": [
+      "ray-marching",
+      "keplerian-orbits",
+      "blackbody-shading",
+      "audio-reactive",
+      "mouse-orbit",
+      "temporal-feedback",
+      "semantic-alpha",
+      "depth-output",
+      "hdr-ready"
+    ]
   },
   {
     "name": "Astro-Mechanical Quantum-Furnace Engine",
@@ -4015,7 +4035,7 @@
     "id": "gen-bioluminescent-cyber-aether-void-seahorse",
     "name": "Bioluminescent Cyber-Aether Void-Seahorse",
     "url": "/shaders/gen-bioluminescent-cyber-aether-void-seahorse.wgsl",
-    "description": "A hyper-majestic, biomechanical void-seahorse woven from shattered liquid-aether and pulsing cybernetic bioluminescence, drifting gracefully through a chaotic, fluid-dynamic quantum reef.",
+    "description": "A hyper-majestic, biomechanical void-seahorse woven from shattered liquid-aether and pulsing cybernetic bioluminescence, drifting gracefully through a chaotic, fluid-dynamic quantum reef. Upgraded 2026-08-05: capsule-chain spine anatomy with smooth-union SDF composition, dorsal-fin membrane, tail orbit-trap filaments, domain-warped FBM bioluminescence and void nebula, tetrahedral SDF normals, temporal history feedback and generated relief depth.",
     "tags": [
       "organic",
       "quantum",
@@ -4028,7 +4048,14 @@
       "audio-reactive",
       "mouse-control",
       "volumetric",
-      "raymarching"
+      "raymarching",
+      "sdf-smooth-union-anatomy",
+      "orbit-trap-glow",
+      "domain-warped-fbm",
+      "sdf-normals",
+      "temporal-history",
+      "ripple-interactive",
+      "generated-depth"
     ],
     "params": [
       {
@@ -4404,7 +4431,15 @@
         "step": 0.05
       }
     ],
-    "features": []
+    "features": [
+      "raymarched-bismuth-lattice",
+      "gravitational-lensing",
+      "sprung-pointer-twist",
+      "click-spacetime-shockwaves",
+      "gravitational-memory-feedback",
+      "fft-band-flux-veins",
+      "hit-depth-output"
+    ]
   },
   {
     "name": "Brutalist Monument",
@@ -6830,7 +6865,7 @@
       "magnetic",
       "audio-reactive"
     ],
-    "description": "A biomechanical reef of magnetic, liquid-metal coral that dynamically shapes itself in response to acoustic vibrations, revealing a glowing quantum-plasma core beneath a dark metallic exterior.",
+    "description": "A biomechanical reef of magnetic, liquid-metal coral that dynamically shapes itself in response to acoustic vibrations, revealing a glowing quantum-plasma core beneath a dark metallic exterior. Upgraded (Batch 36): domain-warped FBM branching spikes, ridged micro-creases, Gray-Scott Turing banding carved into the shell, guarded FFT-bin iridescence shimmer, click-ripple spike bursts, and dataTextureA temporal history.",
     "workgroup_size": [
       16,
       16,
@@ -6875,7 +6910,21 @@
     "updated": true,
     "id": "gen-cybernetic-ferro-coral",
     "url": "shaders/gen-cybernetic-ferro-coral.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "iridescence",
+      "audio-reactive",
+      "mouse-interactive",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "chromatic-aberration",
+      "temporal-feedback",
+      "depth-aware",
+      "domain-warped-fbm",
+      "turing-banding",
+      "multi-scale-detail",
+      "ripple-reactive"
+    ]
   },
   {
     "name": "Cybernetic Liquid-Chrome Engine",
@@ -7462,7 +7511,7 @@
       "abstract",
       "colorful"
     ],
-    "description": "Heighway dragon curve — a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon line with iteration-depth coloring from red to violet. Audio drives fold depth, mouse zooms into detail, and depth controls line thickness perspective.",
+    "description": "Heighway dragon curve — a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon filament with iteration-depth coloring from red to violet, upgraded with thin-film iridescence, a warm-key / cool-fill two-temperature glow rig, split-tone grading, atmospheric depth haze, and ACES tone mapping. Audio drives fold depth and FFT-shimmered halo, mouse zooms into detail, and depth controls line thickness perspective.",
     "workgroup_size": [
       16,
       16,
@@ -7507,7 +7556,14 @@
     "updated": true,
     "id": "gen-dragon-curve",
     "url": "shaders/gen-dragon-curve.wgsl",
-    "features": []
+    "features": [
+      "thin-film-iridescence",
+      "two-temperature-lighting",
+      "split-tone-grading",
+      "depth-haze",
+      "aces-tonemap",
+      "fft-reactive-halo"
+    ]
   },
   {
     "name": "Dynamic Tessellation (Ornate Fractal Tiles)",
@@ -10059,8 +10115,9 @@
     "id": "gen-fractal-chrono-dendrite-forge",
     "name": "Fractal Chrono-Dendrite Forge",
     "author": "Jules",
-    "description": "A hyper-intricate procedural branching structure simulating crystalline growth and decay through a spacetime distortion field, rendered with a bismuth-iridescent glass aesthetic.",
+    "description": "A hyper-intricate procedural branching structure simulating crystalline growth and decay through a spacetime distortion field, rendered with a bismuth-iridescent glass aesthetic. Upgraded with a three-point warm/cool/rim lighting rig, HDR bloom-ready speculars, volumetric near-miss glow, chrono-violet depth fog, ACES tone mapping, and FFT-shimmered thin-film interference.",
     "type": "generative",
+    "category": "generative",
     "url": "shaders/gen-fractal-chrono-dendrite-forge.wgsl",
     "tags": [
       "fractal",
@@ -10070,40 +10127,49 @@
       "glass",
       "audio-reactive"
     ],
-    "controls": {
-      "zoom_params.x": {
-        "type": "slider",
-        "label": "Dendrite Complexity",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Dendrite Complexity",
+        "default": 0.6,
         "min": 0,
-        "max": 5,
-        "default": 1,
-        "step": 0.1
+        "max": 1,
+        "step": 0.01
       },
-      "zoom_params.y": {
-        "type": "slider",
-        "label": "Entropy Pulse Rate",
+      {
+        "index": 1,
+        "name": "Entropy Pulse Rate",
+        "default": 0.25,
         "min": 0,
-        "max": 2,
-        "default": 0.5,
-        "step": 0.05
+        "max": 1,
+        "step": 0.01
       },
-      "zoom_params.z": {
-        "type": "slider",
-        "label": "Spectral Dispersion",
-        "min": 0.1,
-        "max": 3,
-        "default": 1.2,
-        "step": 0.1
-      },
-      "zoom_params.w": {
-        "type": "slider",
-        "label": "Gravity Well Strength",
+      {
+        "index": 2,
+        "name": "Spectral Dispersion",
+        "default": 0.38,
         "min": 0,
-        "max": 2,
-        "default": 0.8,
-        "step": 0.1
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Gravity Well Strength",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
       }
-    }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": []
   },
   {
     "name": "Fractal Clockwork",
@@ -11503,7 +11569,16 @@
     "updated": true,
     "id": "gen-hyper-labyrinth",
     "url": "shaders/gen-hyper-labyrinth.wgsl",
-    "features": []
+    "features": [
+      "hdr",
+      "aces-tonemap",
+      "3-point-lighting",
+      "volumetric-glow",
+      "fresnel-rim",
+      "audio-reactive",
+      "temporal-feedback",
+      "depth-output"
+    ]
   },
   {
     "name": "Hyper Rainbow Vortex",
@@ -12671,7 +12746,10 @@
       "branching",
       "phosphorescent",
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "interactive",
+      "feedback",
+      "temporal"
     ],
     "description": "Dielectric breakdown fractal patterns with phosphorescent afterglow and storm pulses. Branching discharge trees grow from multiple seed points with HDR bloom, halation glow, and electric palette.",
     "workgroup_size": [
@@ -13338,7 +13416,16 @@
     "updated": true,
     "id": "gen-luminescent-chrono-fluid-astrolabe",
     "url": "shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl",
-    "features": []
+    "features": [
+      "raymarched-chrono-fluid-astrolabe",
+      "coarse-refined-sdf-culling",
+      "bounding-sphere-early-out",
+      "sprung-pointer-gravity-well",
+      "click-shockwave-ripples",
+      "fft-core-glow",
+      "temporal-history-smoothing",
+      "depth-output"
+    ]
   },
   {
     "name": "Luminescent Chrono-Prism Astro-Stag",
@@ -16216,7 +16303,10 @@
       "temporal",
       "audio-reactive",
       "abstract",
-      "music"
+      "music",
+      "mouse-driven",
+      "hysteresis",
+      "feedback"
     ],
     "description": "A viscous history-dependent field undergoing phase transitions between fluid, crystalline, and chaotic states with strong visual memory of past configurations. Audio controls phase transition thresholds. Mouse locally forces phase changes. Beautiful hysteresis and pattern retention.",
     "workgroup_size": [
@@ -17572,7 +17662,16 @@
     "updated": true,
     "id": "gen-prismatic-void-weaver-ouroboros",
     "url": "shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
-    "features": []
+    "features": [
+      "raymarched-twisted-ouroboros",
+      "coarse-refined-fbm-culling",
+      "bounding-sphere-early-out",
+      "sprung-pointer-void-gravity",
+      "click-gravity-surge",
+      "fft-plasma-shimmer",
+      "temporal-history-smoothing",
+      "depth-output"
+    ]
   },
   {
     "name": "Protocell Division",
@@ -19211,7 +19310,14 @@
     "updated": true,
     "id": "gen-raptor-mini",
     "url": "shaders/gen-raptor-mini.wgsl",
-    "features": []
+    "features": [
+      "sprung-mouse-pack-leader",
+      "velocity-aware-pursuit",
+      "click-strike-shockwaves",
+      "audio-rage-bands-fft",
+      "scent-memory-feedback-trails",
+      "generated-relief-depth"
+    ]
   },
   {
     "name": "Recursive Ancestral Terrains",
@@ -21687,7 +21793,7 @@
       "contour",
       "heatmap"
     ],
-    "description": "Topographic terrain visualization with thermal imaging color grading. Contour lines with neon glow trace evolving mountainous terrain rendered in a bright rainbow thermal palette from black through blue, cyan, green, yellow, red to white. Mouse creates glowing hot spots on the landscape.",
+    "description": "Topographic terrain visualization with thermal imaging color grading. Contour lines with neon glow trace evolving mountainous terrain rendered in a bright rainbow thermal palette from black through blue, cyan, green, yellow, red to white. Mouse creates glowing hot spots on the landscape. Upgraded (Batch 36): domain-warped FBM geological strata, curl-noise advected thermal currents, Worley micro thermal cells, feedback-based thermal diffusion of the height field, guarded FFT-bin shimmer, and click-ripple heat rings.",
     "workgroup_size": [
       16,
       16,
@@ -21732,7 +21838,23 @@
     "updated": true,
     "id": "gen-thermal-rainbow-topography",
     "url": "shaders/gen-thermal-rainbow-topography.wgsl",
-    "features": []
+    "features": [
+      "thermal",
+      "topography",
+      "rainbow",
+      "audio-reactive",
+      "mouse-interactive",
+      "semantic-alpha",
+      "aces-tone-mapping",
+      "chromatic-aberration",
+      "temporal-feedback",
+      "depth-aware",
+      "domain-warped-fbm",
+      "curl-noise-flow",
+      "worley-cells",
+      "thermal-diffusion",
+      "ripple-reactive"
+    ]
   },
   {
     "name": "Topological Acoustic Knots",
@@ -21916,7 +22038,17 @@
     "updated": true,
     "id": "gen-topology-flow",
     "url": "shaders/gen-topology-flow.wgsl",
-    "features": []
+    "features": [
+      "hdr",
+      "aces-tonemap",
+      "split-tone",
+      "relief-lighting",
+      "valley-haze",
+      "audio-reactive",
+      "temporal-feedback",
+      "mouse-interaction",
+      "depth-output"
+    ]
   },
   {
     "id": "gen-torus-knot-rainbow",
@@ -22118,7 +22250,7 @@
       "audio",
       "music"
     ],
-    "description": "Velocity-sensitive bloom effect that intensifies on motion, creating multi-octave glow with white core and colored aura based on velocity",
+    "description": "Velocity-sensitive bloom effect that intensifies on motion, creating multi-octave glow with white core and colored aura based on velocity. Upgraded 2026-08-05: Lucas-Kanade-style flow estimation with motion-aligned anamorphic streaks, curl-noise advected feedback trails, Gray-Scott-hint diffusion accumulation, audio pump with guarded FFT shimmer, click-pulse spring and generated relief depth",
     "workgroup_size": [
       16,
       16,
@@ -22163,7 +22295,15 @@
     "updated": true,
     "id": "gen-velocity-bloom",
     "url": "shaders/gen-velocity-bloom.wgsl",
-    "features": []
+    "features": [
+      "temporal",
+      "audio-reactive",
+      "mouse-control",
+      "optical-flow",
+      "curl-noise-advection",
+      "diffusion-feedback",
+      "generated-depth"
+    ]
   },
   {
     "name": "Verlet Cloth Wind",

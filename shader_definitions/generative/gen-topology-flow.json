@@ -55,5 +55,15 @@
   "updated": true,
   "id": "gen-topology-flow",
   "url": "shaders/gen-topology-flow.wgsl",
-  "features": []
+  "features": [
+    "hdr",
+    "aces-tonemap",
+    "split-tone",
+    "relief-lighting",
+    "valley-haze",
+    "audio-reactive",
+    "temporal-feedback",
+    "mouse-interaction",
+    "depth-output"
+  ]
 }

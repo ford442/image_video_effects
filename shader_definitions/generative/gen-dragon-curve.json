@@ -11,7 +11,7 @@
     "abstract",
     "colorful"
   ],
-  "description": "Heighway dragon curve \u2014 a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon line with iteration-depth coloring from red to violet. Audio drives fold depth, mouse zooms into detail, and depth controls line thickness perspective.",
+  "description": "Heighway dragon curve \u2014 a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon filament with iteration-depth coloring from red to violet, upgraded with thin-film iridescence, a warm-key / cool-fill two-temperature glow rig, split-tone grading, atmospheric depth haze, and ACES tone mapping. Audio drives fold depth and FFT-shimmered halo, mouse zooms into detail, and depth controls line thickness perspective.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,12 @@
   "updated": true,
   "id": "gen-dragon-curve",
   "url": "shaders/gen-dragon-curve.wgsl",
-  "features": []
+  "features": [
+    "thin-film-iridescence",
+    "two-temperature-lighting",
+    "split-tone-grading",
+    "depth-haze",
+    "aces-tonemap",
+    "fft-reactive-halo"
+  ]
 }

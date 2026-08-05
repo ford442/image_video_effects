@@ -55,5 +55,12 @@
   "updated": true,
   "id": "gen-raptor-mini",
   "url": "shaders/gen-raptor-mini.wgsl",
-  "features": []
+  "features": [
+    "sprung-mouse-pack-leader",
+    "velocity-aware-pursuit",
+    "click-strike-shockwaves",
+    "audio-rage-bands-fft",
+    "scent-memory-feedback-trails",
+    "generated-relief-depth"
+  ]
 }

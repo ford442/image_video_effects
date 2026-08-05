@@ -10,7 +10,7 @@
     "contour",
     "heatmap"
   ],
-  "description": "Topographic terrain visualization with thermal imaging color grading. Contour lines with neon glow trace evolving mountainous terrain rendered in a bright rainbow thermal palette from black through blue, cyan, green, yellow, red to white. Mouse creates glowing hot spots on the landscape.",
+  "description": "Topographic terrain visualization with thermal imaging color grading. Contour lines with neon glow trace evolving mountainous terrain rendered in a bright rainbow thermal palette from black through blue, cyan, green, yellow, red to white. Mouse creates glowing hot spots on the landscape. Upgraded (Batch 36): domain-warped FBM geological strata, curl-noise advected thermal currents, Worley micro thermal cells, feedback-based thermal diffusion of the height field, guarded FFT-bin shimmer, and click-ripple heat rings.",
   "workgroup_size": [
     16,
     16,
@@ -55,5 +55,21 @@
   "updated": true,
   "id": "gen-thermal-rainbow-topography",
   "url": "shaders/gen-thermal-rainbow-topography.wgsl",
-  "features": []
+  "features": [
+    "thermal",
+    "topography",
+    "rainbow",
+    "audio-reactive",
+    "mouse-interactive",
+    "semantic-alpha",
+    "aces-tone-mapping",
+    "chromatic-aberration",
+    "temporal-feedback",
+    "depth-aware",
+    "domain-warped-fbm",
+    "curl-noise-flow",
+    "worley-cells",
+    "thermal-diffusion",
+    "ripple-reactive"
+  ]
 }

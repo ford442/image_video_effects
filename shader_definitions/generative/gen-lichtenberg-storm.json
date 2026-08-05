@@ -12,7 +12,10 @@
     "branching",
     "phosphorescent",
     "audio-reactive",
-    "mouse-driven"
+    "mouse-driven",
+    "interactive",
+    "feedback",
+    "temporal"
   ],
   "description": "Dielectric breakdown fractal patterns with phosphorescent afterglow and storm pulses. Branching discharge trees grow from multiple seed points with HDR bloom, halation glow, and electric palette.",
   "workgroup_size": [

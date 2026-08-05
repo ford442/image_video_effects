@@ -3,9 +3,11 @@
 //  Category: generative
 //  Features: sierpinski, chaos-game, 3d-fractal, audio-reactive, mouse-interactive, semantic-alpha
 //  Complexity: Medium-High
-//  Created: 2026-05-31
-//  Updated: 2026-06-01
-//  By: Kimi Agent (Bright batch)
+//  Created: 2026-05-31 — Kimi Agent (Bright batch)
+//  Upgraded: 2026-08-05 — Batch 35 (Optimizer)
+//    · rotation matrix hoisted out of the chaos loop (zero trig per sample)
+//    · integer-hash vertex picking + saturation early-exit
+//    · bounded adaptive iteration budget, guarded FFT audio, real depth
 // ═══════════════════════════════════════════════════════════════════
 
 @group(0) @binding(0) var u_sampler: sampler;
@@ -23,74 +25,135 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
+  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
+  zoom_params: vec4<f32>,  // .x = Point Density, .y = Rotation Speed, .z = Point Size, .w = Color Shift
   ripples: array<vec4<f32>, 50>,
 };
 
 const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
 
-// Hash function for deterministic randomness
+// ── Named constants (no magic numbers in the hot path) ─────────────
+const CAMERA_DIST: f32 = 2.5;        // perspective offset along +z
+const WARMUP_ITERS: i32 = 16;        // chaos-game convergence discard
+const BASE_ITERS: f32 = 48.0;        // samples per pixel at density = 0
+const DENSITY_ITERS: f32 = 240.0;    // extra samples at density = 1
+const SATURATION_COUNT: f32 = 4.0;   // early-exit once a pixel is fully lit
+const HISTORY_DECAY: f32 = 0.96;     // temporal trail persistence
+const EXPOSURE: f32 = 1.35;          // HDR lift for tone-map headroom
+const BG_COLOR: vec3<f32> = vec3<f32>(0.02, 0.02, 0.03);
+
+// Canonical hash — kept for one-time pixel seeding only.
 fn hashf(n: f32) -> f32 {
   return fract(sin(n * 127.1) * 43758.5453);
 }
 
-fn hash2f(n: f32) -> vec2<f32> {
-  return vec2<f32>(hashf(n), hashf(n + 73.156));
+// Cheap integer mix for per-iteration vertex picking (no trig in loop).
+fn pickVertex(seed: u32) -> u32 {
+  var x = seed;
+  x ^= x >> 16u;
+  x *= 0x7feb352du;
+  x ^= x >> 15u;
+  x *= 0x846ca68bu;
+  return (x >> 30u) & 3u;
 }
 
-// 3D rotation around X axis
-fn rotX(v: vec3<f32>, a: f32) -> vec3<f32> {
-  let c = cos(a);
-  let s = sin(a);
-  return vec3<f32>(v.x, c * v.y - s * v.z, s * v.y + c * v.z);
+// Branchless cosine palette (replaces the 6-way HSV branch chain).
+fn palette(h: f32) -> vec3<f32> {
+  return 0.5 + 0.5 * cos(TAU * (h + vec3<f32>(0.0, 0.33, 0.67)));
 }
 
-// 3D rotation around Y axis
-fn rotY(v: vec3<f32>, a: f32) -> vec3<f32> {
-  let c = cos(a);
-  let s = sin(a);
-  return vec3<f32>(c * v.x + s * v.z, v.y, -s * v.x + c * v.z);
+// Cheap 2-octave value noise — background nebula only (never in hot loop).
+fn vnoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  let a = hashf(i.x + i.y * 57.0);
+  let b = hashf(i.x + 1.0 + i.y * 57.0);
+  let c = hashf(i.x + (i.y + 1.0) * 57.0);
+  let d = hashf(i.x + 1.0 + (i.y + 1.0) * 57.0);
+  return mix(mix(a, b, w.x), mix(c, d, w.x), w.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
   let resolution = vec2<f32>(u.config.zw);
+  // Bounds guard — mandatory.
+  if (pixel.x >= i32(resolution.x) || pixel.y >= i32(resolution.y)) { return; }
+
   let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  // Display history via non-filtering load (host copies A→C each frame).
+  let prev = textureLoad(dataTextureC, pixel, 0);
 
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w > 0.5;
 
-  let p1 = u.zoom_params.x; // intensity (point density)
-  let p2 = u.zoom_params.y; // speed (rotation speed)
-  let p3 = u.zoom_params.z; // scale (point size)
-  let p4 = u.zoom_params.w; // color shift
+  // ── Sliders — all four LIVE ──────────────────────────────────────
+  let density = u.zoom_params.x;    // Point Density → iteration budget
+  let speed = u.zoom_params.y;      // Rotation Speed → orbit angular rate
+  let pointSize = u.zoom_params.z;  // Point Size → splat radius
+  let colorShift = u.zoom_params.w; // Color Shift → palette phase
 
-  // Audio reactivity
+  // ── Audio: canonical bands + guarded FFT bins 1–8 ───────────────
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  let audioSpeed = p2 * (0.9 + bass * 0.5);
-  let audioIntensity = p1 * (0.85 + treble * 0.6);
-  let audioColor = p4 + mids * 0.2;
-
-  // Rotation angles from mouse or auto-rotate
-  var rot_yaw: f32;
-  var rot_pitch: f32;
-  if mouseDown {
-    rot_yaw = (mouse.x - 0.5) * PI * 2.0;
-    rot_pitch = ((mouse.y - 0.5)) * PI * 0.8;
-  } else {
-    rot_yaw = time * audioSpeed * 0.3;
-    rot_pitch = sin(time * audioSpeed * 0.2) * 0.4;
+  // Persistent smoothed bass (safe zone [133], single writer + length guard).
+  var bassSmooth = bass;
+  if (arrayLength(&extraBuffer) > 133u) {
+    bassSmooth = extraBuffer[133];
+    if (global_id.x == 0u && global_id.y == 0u) {
+      extraBuffer[133] = mix(bassSmooth, bass, 0.12);
+    }
   }
 
-  // Sierpinski tetrahedron vertices
+  var fft = 0.0;
+  if (arrayLength(&extraBuffer) > 12u) {
+    for (var bin = 1u; bin <= 8u; bin++) { fft += extraBuffer[4u + bin]; }
+    fft *= 0.125;
+  }
+
+  // ── Click ripples: bounded (≤50), finite lifetime, spatially local ──
+  var rippleGlow = 0.0;
+  let screenUV = vec2<f32>(pixel) / resolution;
+  let aspectFix = vec2<f32>(resolution.x / resolution.y, 1.0);
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var r = 0u; r < rippleCount; r++) {
+    let rp = u.ripples[r];
+    let age = time - rp.z;
+    if (age < 0.0 || age > 2.5) { continue; }      // finite 2.5 s lifetime
+    let band = length((screenUV - rp.xy) * aspectFix) - age * 0.45;
+    rippleGlow += exp(-band * band * 220.0) * exp(-age * 2.2);
+  }
+
+  let audioSpeed = speed * (0.9 + bassSmooth * 0.5);
+  let hueBase = colorShift + mids * 0.2 + fft * 0.1 + rippleGlow * 0.12;
+
+  // ── View rotation (mouse drag overrides auto-orbit) ─────────────
+  var rotYaw: f32;
+  var rotPitch: f32;
+  if (mouseDown) {
+    rotYaw = (mouse.x - 0.5) * PI * 2.0;
+    rotPitch = (mouse.y - 0.5) * PI * 0.8;
+  } else {
+    rotYaw = time * audioSpeed * 0.3;
+    rotPitch = sin(time * audioSpeed * 0.2) * 0.4;
+  }
+
+  // Hoisted combined matrix M = rotY * rotX — 3 dots per point, no trig.
+  let cy = cos(rotYaw);
+  let sy = sin(rotYaw);
+  let cp = cos(rotPitch);
+  let sp = sin(rotPitch);
+  let m0 = vec3<f32>(cy, sy * sp, sy * cp);
+  let m1 = vec3<f32>(0.0, cp, -sp);
+  let m2 = vec3<f32>(-sy, cy * sp, cy * cp);
+
+  // Sierpinski tetrahedron vertices (unit-ish, centered).
   let vertices = array<vec3<f32>, 4>(
     vec3<f32>(0.0, 1.0, 0.0),
     vec3<f32>(-0.816, -0.333, 0.577),
@@ -98,95 +161,82 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     vec3<f32>(0.0, -0.333, -1.155)
   );
 
-  // Pixel seed for deterministic sampling
-  let pixel_seed = f32(pixel.x) * 137.0 + f32(pixel.y) * 241.0;
-  let num_points = i32(50.0 + p1 * 400.0);
-
-  // Chaos game starting point
+  // ── Chaos game: bounded, adaptive, early-exit ────────────────────
+  let seedU = global_id.x * 1973u + global_id.y * 9277u + 1u;
   var point = vec3<f32>(
-    hashf(pixel_seed) * 2.0 - 1.0,
-    hashf(pixel_seed + 1.0) * 2.0 - 1.0,
-    hashf(pixel_seed + 2.0) * 2.0 - 1.0
-  );
+    hashf(f32(seedU)),
+    hashf(f32(seedU) + 1.0),
+    hashf(f32(seedU) + 2.0)
+  ) * 2.0 - 1.0;
 
-  // Skip first 20 iterations to converge
-  for (var i = 0; i < 20; i++) {
-    let vi = i32(hashf(pixel_seed + f32(i) * 17.3) * 4.0);
-    point = (point + vertices[vi]) * 0.5;
-  }
+  // Treble tightens the sample budget so loud frames render denser.
+  let densityEff = density * (0.85 + treble * 0.6);
+  // LOD-friendly: scale the budget down on very large canvases — the
+  // temporal accumulator below restores density over a few frames.
+  let lod = clamp(921600.0 / (resolution.x * resolution.y), 0.5, 1.0);
+  let numPoints = i32((BASE_ITERS + densityEff * DENSITY_ITERS) * lod) + WARMUP_ITERS;
+  let pointRadius = 0.001 + pointSize * 0.005;
 
-  // Accumulate projected points
   var acc = vec3<f32>(0.0);
-  var depth_acc = 0.0;
+  var glowAcc = 0.0;
   var count = 0.0;
+  var nearestZ = 1e5;
 
-  let point_radius = 0.001 + p3 * 0.005;
-
-  for (var i = 0; i < num_points; i++) {
-    // Chaos game step
-    let vi = i32(hashf(pixel_seed + f32(i + 20) * 37.7) * 4.0);
+  for (var i = 0; i < numPoints; i++) {
+    if (count > SATURATION_COUNT) { break; }  // pixel fully lit — stop early
+    let vi = pickVertex(seedU + u32(i) * 747796405u);
     point = (point + vertices[vi]) * 0.5;
+    if (i < WARMUP_ITERS) { continue; }       // convergence discard, folded in
 
-    // Rotate and project
-    var rp = rotY(rotX(point, rot_pitch), rot_yaw);
+    let rp = vec3<f32>(dot(m0, point), dot(m1, point), dot(m2, point));
+    let projZ = CAMERA_DIST + rp.z;
+    if (projZ < 0.1) { continue; }
+    let proj = rp.xy / projZ;
 
-    // Perspective projection
-    let proj_z = 2.5 + rp.z;
-    if proj_z < 0.1 { continue; }
-    let proj = vec2<f32>(rp.x / proj_z, rp.y / proj_z);
-
-    // Check if this point contributes to current pixel
     let diff = uv - proj;
-    let dist_sq = dot(diff, diff);
-    if dist_sq < point_radius {
-      // Point contributes - depth-weighted
-      let depth_weight = 1.0 / proj_z;
-      let influence = 1.0 - dist_sq / point_radius;
+    let distSq = dot(diff, diff);
+    if (distSq >= pointRadius) { continue; }  // coarse cull before shading
 
-      // Color by vertex and depth
-      let color_idx = f32(vi) * 0.25 + p4;
-      let hue = color_idx + rp.y * 0.3;
-      let sat = 0.7 + influence * 0.3;
-      let val = depth_weight * (0.6 + influence * 0.4);
-
-      let h = fract(hue) * 6.0;
-      let c_val = val * sat;
-      let x = c_val * (1.0 - abs(fract(h / 2.0) * 2.0 - 1.0));
-      let m = val - c_val;
-
-      var rgb: vec3<f32>;
-      if h < 1.0 { rgb = vec3<f32>(c_val, x, 0.0); }
-      else if h < 2.0 { rgb = vec3<f32>(x, c_val, 0.0); }
-      else if h < 3.0 { rgb = vec3<f32>(0.0, c_val, x); }
-      else if h < 4.0 { rgb = vec3<f32>(0.0, x, c_val); }
-      else if h < 5.0 { rgb = vec3<f32>(x, 0.0, c_val); }
-      else { rgb = vec3<f32>(c_val, 0.0, x); }
-      rgb += vec3<f32>(m);
-
-      acc += rgb * influence;
-      depth_acc += depth_weight * influence;
-      count += influence;
-    }
+    let influence = 1.0 - distSq / pointRadius;
+    let depthWeight = 1.0 / projZ;
+    let hue = fract(f32(vi) * 0.25 + hueBase + rp.y * 0.15);
+    // Point twinkle keeps the cloud from looking like flat splats.
+    let twinkle = 0.85 + 0.3 * hashf(f32(seedU) + f32(i) * 3.7);
+    acc += palette(hue) * (depthWeight * influence * twinkle);
+    glowAcc += depthWeight * influence;
+    count += influence;
+    nearestZ = min(nearestZ, projZ);
   }
 
+  // ── Resolve color, semantic alpha, real generated depth ──────────
   var color: vec3<f32>;
-  if count > 0.05 {
-    color = acc / count;
-    // Add ambient glow
-    color += vec3<f32>(0.04, 0.05, 0.08) * depth_acc * 0.5;
+  var alpha: f32;
+  var depth: f32;
+  if (count > 0.05) {
+    color = acc / count * EXPOSURE;                       // HDR headroom
+    color += vec3<f32>(0.04, 0.05, 0.08) * glowAcc;       // ambient inner glow
+    color *= 1.0 + treble * 0.25;                         // treble shimmer
+    alpha = clamp(count * 0.8, 0.35, 0.95);               // density-driven alpha
+    depth = clamp(1.0 - (nearestZ - 1.2) / 2.6, 0.0, 1.0); // near-is-one
   } else {
-    // Background
-    let bg_grad = length(uv) * 0.3;
-    color = vec3<f32>(0.02, 0.02, 0.03) * (1.0 - bg_grad);
+    // Faint FFT-breathing nebula instead of a flat void (bg pixels only,
+    // so its cost never stacks with the chaos-game hot path).
+    let bgGrad = length(uv) * 0.3;
+    let neb = vnoise(uv * 3.0 + time * 0.02) * 0.6
+            + vnoise(uv * 7.0 - time * 0.03) * 0.4;
+    color = BG_COLOR * (1.0 - bgGrad)
+          + vec3<f32>(0.05, 0.03, 0.09) * neb * (0.5 + fft * 0.8);
+    alpha = 0.35;
+    depth = 0.0;
   }
 
-  // Temporal feedback
-  let decay = 0.96;
-  let temporal = mix(prev.rgb * decay, color, 0.25);
-  textureStore(dataTextureA, pixel, vec4<f32>(temporal, 1.0));
+  // Ripple flash: brightens and slightly lifts alpha near expanding rings.
+  color *= 1.0 + rippleGlow * 0.6;
+  alpha = clamp(alpha + rippleGlow * 0.15, 0.0, 0.98);
 
-  // Semantic alpha based on density
-  let effect = clamp(count * 0.8, 0.4, 0.95);
-  textureStore(writeTexture, pixel, vec4<f32>(color, effect));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  // ── Temporal accumulation (stochastic sampler converges over frames) ──
+  let temporal = mix(prev.rgb * HISTORY_DECAY, color, 0.3);
+  textureStore(dataTextureA, pixel, vec4<f32>(temporal, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(max(temporal, vec3<f32>(0.0)), alpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

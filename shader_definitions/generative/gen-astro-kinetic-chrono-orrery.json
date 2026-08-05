@@ -56,5 +56,15 @@
   "updated": true,
   "id": "gen-astro-kinetic-chrono-orrery",
   "url": "shaders/gen-astro-kinetic-chrono-orrery.wgsl",
-  "features": []
+  "features": [
+    "ray-marching",
+    "keplerian-orbits",
+    "blackbody-shading",
+    "audio-reactive",
+    "mouse-orbit",
+    "temporal-feedback",
+    "semantic-alpha",
+    "depth-output",
+    "hdr-ready"
+  ]
 }

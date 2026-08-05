@@ -2,6 +2,10 @@
 // Hyper Labyrinth - 4D Maze Visualization
 // Category: generative
 // Features: 4D geometry, raymarching, neon aesthetics
+// Upgrade (Batch 36 / Visualist): 3-point lighting with dynamic
+// key temperature, volumetric proximity glow, HDR neon veins +
+// ACES grade, emissive persistence in dataTextureA, audio-
+// reactive veins / rim / shimmer, near-is-one depth.
 // ═══════════════════════════════════════════════════════════════
 
 // --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
@@ -21,11 +25,25 @@
 
 // ---------------------------------------------------
 struct Uniforms {
-    config: vec4<f32>, // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>, // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>, // x=ZoomTime, y=MouseX, z=MouseY (0-1, y=0 top), w=MouseDown
     zoom_params: vec4<f32>, // x=Param1 (scale), y=Param2 (morph speed), z=Param3 (glow), w=Param4 (thickness)
     ripples: array<vec4<f32>, 50>,
 };
+
+// ── Color science helpers ───────────────────────────────────────
+// ACES filmic approximation (HDR in, display-ready out)
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Dynamic key-light temperature: ember amber <-> hot arc-white,
+// drifting slowly and pushed warm by bass energy.
+fn keyTemperature(t: f32, bass: f32) -> vec3<f32> {
+    let k = 0.5 + 0.5 * sin(t * 0.23 + bass * 1.7);
+    return mix(vec3<f32>(1.30, 0.82, 0.55), vec3<f32>(1.05, 1.08, 1.15), k);
+}
 
 // 4D Rotation in XW plane
 fn rotate4D(p: vec4<f32>, angle: f32) -> vec4<f32> {
@@ -45,22 +63,22 @@ fn map(pos3: vec3<f32>) -> vec2<f32> {
     var p4 = vec4<f32>(pos3, 1.0);
 
     // 4D rotation driven by time/params
-    var speed = mix(0.1, 2.0, u.zoom_params.y); // morph speed
-    var time = u.config.x * speed;
+    let speed = mix(0.1, 2.0, u.zoom_params.y); // morph speed
+    let time = u.config.x * speed;
     p4 = rotate4D(p4, time);
 
     // Extra YZ rotation for nice 3D orbiting feel (from main)
-    var rotYZ = u.config.x * 0.1;
-    var cy = cos(rotYZ);
-    var sy = sin(rotYZ);
-    var tempY = p4.y * cy - p4.z * sy;
-    var tempZ = p4.y * sy + p4.z * cy;
+    let rotYZ = u.config.x * 0.1;
+    let cy = cos(rotYZ);
+    let sy = sin(rotYZ);
+    let tempY = p4.y * cy - p4.z * sy;
+    let tempZ = p4.y * sy + p4.z * cy;
     p4.y = tempY;
     p4.z = tempZ;
 
     // Gyroid-based 4D maze
-    var scale = mix(1.0, 5.0, u.zoom_params.x);
-    var q = p4 * scale;
+    let scale = mix(1.0, 5.0, u.zoom_params.x);
+    let q = p4 * scale;
     let val = sin(q.x) * cos(q.y) + sin(q.y) * cos(q.z) + sin(q.z) * cos(q.w) + sin(q.w) * cos(q.x);
 
     // Wall thickness
@@ -73,7 +91,7 @@ fn map(pos3: vec3<f32>) -> vec2<f32> {
 // Normal calculation
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     let e = 0.001;
-    var d = map(p).x;
+    let d = map(p).x;
     return normalize(vec3<f32>(
         map(p + vec3<f32>(e, 0.0, 0.0)).x - d,
         map(p + vec3<f32>(0.0, e, 0.0)).x - d,
@@ -81,21 +99,26 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
-// Raymarch with material support (kept from feature for future extensibility)
-fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec2<f32> {
+// Raymarch with material support + bounded volumetric proximity glow.
+// Returns (t, material, glowAccum). Glow accumulates near walls along the
+// whole ray, approximating volumetric neon haze / god-ray bleed.
+fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
     var t = 0.0;
     var m = 0.0; // 0 = miss
+    var glow = 0.0;
     for (var i = 0; i < 100; i++) {
-        var p = ro + rd * t;
-        var res = map(p);
-        var d = res.x;
+        let p = ro + rd * t;
+        let res = map(p);
+        let d = res.x;
+        // Proximity inscatter, bounded: exp(-|d|*k) <= 1, 100 steps -> <= 2.0
+        glow += exp(-abs(d) * 9.0) * 0.02;
         if (d < 0.001 || t > 50.0) {
             if (d < 0.001) { m = res.y; }
             break;
         }
         t += d;
     }
-    return vec2<f32>(t, m);
+    return vec3<f32>(t, m, glow);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -104,13 +127,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
+    let px = vec2<i32>(global_id.xy);
 
-    var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+
+    // === AUDIO (plasma bands + guarded engine FFT bins 1-8) ===
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    var fftShimmer = 0.0;
+    if (arrayLength(&extraBuffer) > 13u) {
+        for (var k = 1u; k <= 8u; k = k + 1u) {
+            fftShimmer += extraBuffer[5u + k];
+        }
+        fftShimmer = clamp(fftShimmer * 0.125, 0.0, 1.5);
+    }
 
     // === CAMERA (best of both: main's clean spherical + feature's organic drift) ===
-    var mouse = u.zoom_config.yz;
+    let mouse = u.zoom_config.yz;
     let angleX = (mouse.x - 0.5) * 6.2832;
-    let angleY = (mouse.y - 0.5) * 3.1416;  // Flip Y: mouse up = look up
+    let angleY = (mouse.y - 0.5) * 3.1416;  // y=0 top -> mouse up = look up
     let camDist = 8.0;
 
     var ro = vec3<f32>(
@@ -120,7 +156,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
 
     // Gentle camera drift for more life
-    var time = u.config.x;
+    let time = u.config.x;
     let drift = vec3<f32>(sin(time * 0.1), cos(time * 0.15), sin(time * 0.07)) * 0.6;
     ro += drift;
 
@@ -130,48 +166,61 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let up = cross(fwd, right);
     let rd = normalize(fwd + right * uv.x + up * uv.y);
 
-    // Raymarch
-    var res = raymarch(ro, rd);
-    var t = res.x;
+    // Raymarch (+ volumetric proximity glow)
+    let res = raymarch(ro, rd);
+    let t = res.x;
     let mat = res.y;
+    let volGlow = res.z;
 
     var color = vec3<f32>(0.0);
+    var neon = vec3<f32>(0.0); // HDR emissive, persisted across frames
+    var alpha = clamp(0.08 + volGlow * 0.55, 0.0, 0.85); // void: semi-transparent haze
 
     if (mat > 0.0) {
-        var p = ro + rd * t;
+        let p = ro + rd * t;
         let n = calcNormal(p);
 
-        // Lighting
-        let lightDir = normalize(vec3<f32>(0.5, 0.8, -0.5));
-        let diff = max(dot(n, lightDir), 0.0);
-        let amb = 0.12;
+        // === 3-POINT LIGHTING (two different temperatures + rim) ===
+        let keyDir = normalize(vec3<f32>(0.5, 0.8, -0.5));
+        let keyCol = keyTemperature(time, bass);           // dynamic warm<->white
+        let keyDiff = max(dot(n, keyDir), 0.0);
+        let fillDir = normalize(vec3<f32>(-0.65, -0.25, 0.55));
+        let fillCol = vec3<f32>(0.22, 0.42, 0.85);         // cool cyan-blue fill
+        let fillDiff = max(dot(n, fillDir), 0.0);
+        let amb = vec3<f32>(0.10, 0.09, 0.14);             // violet ambient
 
-        // Dark metallic base
-        var surfCol = vec3<f32>(0.06, 0.05, 0.09);
+        // Blinn-style key specular (HDR sparkle on metallic walls)
+        let halfV = normalize(keyDir - rd);
+        let spec = pow(max(dot(n, halfV), 0.0), 32.0) * keyCol * 0.7;
+
+        // Dark metallic base lit by the rig
+        let baseCol = vec3<f32>(0.06, 0.05, 0.09);
+        var surfCol = baseCol * (keyCol * keyDiff * 1.15 + fillCol * fillDiff * 0.55 + amb) + spec * keyDiff;
 
         // === NEON GLOW / VEINS (feature's beautiful pattern + main's consistency) ===
         let glowIntensity = mix(0.6, 3.5, u.zoom_params.z);
 
-        var speed = mix(0.1, 2.0, u.zoom_params.y);
+        let speed = mix(0.1, 2.0, u.zoom_params.y);
         let time4d = u.config.x * speed;
 
         var p4 = vec4<f32>(p, 1.0);
         p4 = rotate4D(p4, time4d);
 
         // Match the map's extra rotation
-        var rotYZ = u.config.x * 0.1;
-        var cy = cos(rotYZ);
-        var sy = sin(rotYZ);
-        var tempY = p4.y * cy - p4.z * sy;
-        var tempZ = p4.y * sy + p4.z * cy;
+        let rotYZ = u.config.x * 0.1;
+        let cy = cos(rotYZ);
+        let sy = sin(rotYZ);
+        let tempY = p4.y * cy - p4.z * sy;
+        let tempZ = p4.y * sy + p4.z * cy;
         p4.y = tempY;
         p4.z = tempZ;
 
-        var scale = mix(1.0, 5.0, u.zoom_params.x);
-        var q = p4 * scale * 2.0;
+        let scale = mix(1.0, 5.0, u.zoom_params.x);
+        let q = p4 * scale * 2.0;
         let pattern = sin(q.x) * sin(q.y) * sin(q.z) * sin(q.w);
 
-        let pulse = 0.5 + 0.5 * sin(time * 2.2 + p.x * 1.3 + p.z * 0.7);
+        // Bass-driven pulse: veins breathe with the low end
+        let pulse = (0.5 + 0.5 * sin(time * 2.2 + p.x * 1.3 + p.z * 0.7)) * (0.75 + bass * 0.6);
 
         var glowCol = vec3<f32>(0.0, 0.85, 1.0); // cyan
         if (pattern > 0.0) {
@@ -179,23 +228,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
 
         let patternFactor = smoothstep(0.35, 0.55, abs(pattern));
-        surfCol += glowCol * patternFactor * glowIntensity * pulse;
+        // HDR veins (>1.0 at high glow), FFT bins add spectral shimmer
+        neon = glowCol * patternFactor * glowIntensity * pulse * (1.0 + fftShimmer * 0.8);
 
-        // Cyber rim lighting
+        // Cyber Fresnel rim, treble-reactive, cool electric tint
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
-        surfCol += vec3<f32>(0.3, 0.5, 1.2) * fresnel * 2.8;
+        let rim = vec3<f32>(0.35, 0.60, 1.30) * fresnel * (2.2 + treble * 1.5);
 
-        color = surfCol * (diff * 0.85 + amb);
-
-        // Fog
-        let fogAmount = 1.0 - exp(-t * 0.065);
-        let fogColor = vec3<f32>(0.008, 0.008, 0.022);
-        color = mix(color, fogColor, fogAmount);
+        color = surfCol + rim;
+        alpha = 1.0; // walls are opaque by design
     } else {
-        // Deep void background
-        color = vec3<f32>(0.0, 0.0, 0.045);
+        // Deep void background, tinted by nearby neon haze
+        color = vec3<f32>(0.0, 0.0, 0.045) + volGlow * vec3<f32>(0.04, 0.10, 0.20);
     }
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 50.0, 0.0, 0.0, 0.0));
+    // === EMISSIVE PERSISTENCE (dataTextureA = neon history) ===
+    // Previous frame's veins decay 10%/frame and are re-excited by the
+    // current frame -> afterglow smear while orbiting the labyrinth.
+    let prevNeon = textureLoad(dataTextureC, px, 0).rgb;
+    let persistedNeon = max(neon, prevNeon * 0.90);
+    color += persistedNeon;
+
+    // === ATMOSPHERE: depth fog + neon inscatter (volumetric haze) ===
+    let fogAmount = 1.0 - exp(-t * 0.065);
+    let scatterCol = vec3<f32>(0.010, 0.014, 0.035)
+                   + persistedNeon * 0.05
+                   + volGlow * vec3<f32>(0.05, 0.12, 0.22);
+    color = mix(color, scatterCol, fogAmount);
+
+    // === GRADE: ACES tone map, mids-driven exposure ===
+    color = acesToneMap(color * (0.85 + mids * 0.25));
+
+    // Near-is-one hit depth (miss ray t=50 -> ~0.0025, effectively far plane)
+    let depth = exp(-t * 0.12);
+
+    textureStore(dataTextureA, px, vec4<f32>(persistedNeon, alpha));
+    textureStore(writeTexture, px, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, px, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

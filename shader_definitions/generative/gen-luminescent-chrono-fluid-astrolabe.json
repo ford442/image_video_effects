@@ -53,5 +53,14 @@
   "updated": true,
   "id": "gen-luminescent-chrono-fluid-astrolabe",
   "url": "shaders/gen-luminescent-chrono-fluid-astrolabe.wgsl",
-  "features": []
+  "features": [
+    "raymarched-chrono-fluid-astrolabe",
+    "coarse-refined-sdf-culling",
+    "bounding-sphere-early-out",
+    "sprung-pointer-gravity-well",
+    "click-shockwave-ripples",
+    "fft-core-glow",
+    "temporal-history-smoothing",
+    "depth-output"
+  ]
 }

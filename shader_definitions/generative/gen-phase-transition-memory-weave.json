@@ -9,7 +9,10 @@
     "temporal",
     "audio-reactive",
     "abstract",
-    "music"
+    "music",
+    "mouse-driven",
+    "hysteresis",
+    "feedback"
   ],
   "description": "A viscous history-dependent field undergoing phase transitions between fluid, crystalline, and chaotic states with strong visual memory of past configurations. Audio controls phase transition thresholds. Mouse locally forces phase changes. Beautiful hysteresis and pattern retention.",
   "workgroup_size": [

@@ -58,5 +58,14 @@
   "updated": true,
   "id": "gen-hyper-labyrinth",
   "url": "shaders/gen-hyper-labyrinth.wgsl",
-  "features": []
+  "features": [
+    "hdr",
+    "aces-tonemap",
+    "3-point-lighting",
+    "volumetric-glow",
+    "fresnel-rim",
+    "audio-reactive",
+    "temporal-feedback",
+    "depth-output"
+  ]
 }

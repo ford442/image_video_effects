@@ -10,7 +10,7 @@
     "audio",
     "music"
   ],
-  "description": "Velocity-sensitive bloom effect that intensifies on motion, creating multi-octave glow with white core and colored aura based on velocity",
+  "description": "Velocity-sensitive bloom effect that intensifies on motion, creating multi-octave glow with white core and colored aura based on velocity. Upgraded 2026-08-05: Lucas-Kanade-style flow estimation with motion-aligned anamorphic streaks, curl-noise advected feedback trails, Gray-Scott-hint diffusion accumulation, audio pump with guarded FFT shimmer, click-pulse spring and generated relief depth",
   "workgroup_size": [
     16,
     16,
@@ -55,5 +55,13 @@
   "updated": true,
   "id": "gen-velocity-bloom",
   "url": "shaders/gen-velocity-bloom.wgsl",
-  "features": []
+  "features": [
+    "temporal",
+    "audio-reactive",
+    "mouse-control",
+    "optical-flow",
+    "curl-noise-advection",
+    "diffusion-feedback",
+    "generated-depth"
+  ]
 }

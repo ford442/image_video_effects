@@ -2,7 +2,7 @@
   "id": "gen-bioluminescent-cyber-aether-void-seahorse",
   "name": "Bioluminescent Cyber-Aether Void-Seahorse",
   "url": "/shaders/gen-bioluminescent-cyber-aether-void-seahorse.wgsl",
-  "description": "A hyper-majestic, biomechanical void-seahorse woven from shattered liquid-aether and pulsing cybernetic bioluminescence, drifting gracefully through a chaotic, fluid-dynamic quantum reef.",
+  "description": "A hyper-majestic, biomechanical void-seahorse woven from shattered liquid-aether and pulsing cybernetic bioluminescence, drifting gracefully through a chaotic, fluid-dynamic quantum reef. Upgraded 2026-08-05: capsule-chain spine anatomy with smooth-union SDF composition, dorsal-fin membrane, tail orbit-trap filaments, domain-warped FBM bioluminescence and void nebula, tetrahedral SDF normals, temporal history feedback and generated relief depth.",
   "tags": [
     "organic",
     "quantum",
@@ -15,7 +15,14 @@
     "audio-reactive",
     "mouse-control",
     "volumetric",
-    "raymarching"
+    "raymarching",
+    "sdf-smooth-union-anatomy",
+    "orbit-trap-glow",
+    "domain-warped-fbm",
+    "sdf-normals",
+    "temporal-history",
+    "ripple-interactive",
+    "generated-depth"
   ],
   "params": [
     {

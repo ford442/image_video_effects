@@ -55,5 +55,13 @@
       "step": 0.05
     }
   ],
-  "features": []
+  "features": [
+    "raymarched-bismuth-lattice",
+    "gravitational-lensing",
+    "sprung-pointer-twist",
+    "click-spacetime-shockwaves",
+    "gravitational-memory-feedback",
+    "fft-band-flux-veins",
+    "hit-depth-output"
+  ]
 }

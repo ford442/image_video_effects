@@ -8,7 +8,7 @@
     "magnetic",
     "audio-reactive"
   ],
-  "description": "A biomechanical reef of magnetic, liquid-metal coral that dynamically shapes itself in response to acoustic vibrations, revealing a glowing quantum-plasma core beneath a dark metallic exterior.",
+  "description": "A biomechanical reef of magnetic, liquid-metal coral that dynamically shapes itself in response to acoustic vibrations, revealing a glowing quantum-plasma core beneath a dark metallic exterior. Upgraded (Batch 36): domain-warped FBM branching spikes, ridged micro-creases, Gray-Scott Turing banding carved into the shell, guarded FFT-bin iridescence shimmer, click-ripple spike bursts, and dataTextureA temporal history.",
   "workgroup_size": [
     16,
     16,
@@ -53,5 +53,19 @@
   "updated": true,
   "id": "gen-cybernetic-ferro-coral",
   "url": "shaders/gen-cybernetic-ferro-coral.wgsl",
-  "features": []
+  "features": [
+    "raymarched",
+    "iridescence",
+    "audio-reactive",
+    "mouse-interactive",
+    "semantic-alpha",
+    "aces-tone-mapping",
+    "chromatic-aberration",
+    "temporal-feedback",
+    "depth-aware",
+    "domain-warped-fbm",
+    "turing-banding",
+    "multi-scale-detail",
+    "ripple-reactive"
+  ]
 }
