@@ -384,11 +384,6 @@
       "filename": "2026-08-03_fractal-chrono-dendrite-forge.md",
       "title": "Fractal Chrono-Dendrite Forge",
       "added": "2026-08-03T15:18:54.308046"
-    },
-    {
-      "filename": "2026-08-04_symbiotic-cyber-fungal-core-reactor.md",
-      "title": "Symbiotic Cyber-Fungal Core-Reactor",
-      "added": "2026-08-04T15:34:58.494398"
     }
   ],
   "current": null,
@@ -642,6 +637,13 @@
       "added": "2026-08-03T15:18:54.308046",
       "status": "completed",
       "completed_at": "2026-08-04T07:53:45.377540+00:00"
+    },
+    {
+      "filename": "2026-08-04_symbiotic-cyber-fungal-core-reactor.md",
+      "title": "Symbiotic Cyber-Fungal Core-Reactor",
+      "added": "2026-08-04T15:34:58.494398",
+      "status": "completed",
+      "completed_at": "2026-08-05T07:42:53.882625+00:00"
     }
   ],
   "rejected": [],
