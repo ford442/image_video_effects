@@ -3648,7 +3648,7 @@
       "music",
       "reactive"
     ],
-    "description": "Logistic map bifurcation diagram visualizing the transition from order to chaos with density-based coloring and Lyapunov exponent highlighting",
+    "description": "A logistic-map bifurcation visualization with density and Lyapunov highlighting plus clearly stylized audio-reactive scanner fronts, mouse exploration, click waves, and derivative-aligned trails.",
     "workgroup_size": [
       16,
       16,
@@ -3693,7 +3693,14 @@
     "updated": true,
     "id": "gen-bifurcation-diagram",
     "url": "shaders/gen-bifurcation-diagram.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Bio-Luminescent Jelly",
@@ -5736,7 +5743,7 @@
       "music",
       "reactive"
     ],
-    "description": "Multi-temporal Voronoi fungal growth system where different generations of mycelium exist as layered temporal states, creating organic networks that evolve across time. Mouse introduces nutrients affecting multiple time layers. Audio controls growth vs decay rates.",
+    "description": "Multi-temporal Voronoi fungal growth with fast nutrient wavefronts, smoothly advected spores, and bounded luminous history trails. Mouse and clicks seed growth while audio drives layered colony motion.",
     "workgroup_size": [
       16,
       16,
@@ -5781,7 +5788,14 @@
     "updated": true,
     "id": "gen-chrono-voronoi-mycelium",
     "url": "shaders/gen-chrono-voronoi-mycelium.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Chronodynamic Aether-Weaver Automata",
@@ -6952,7 +6966,7 @@
       "raymarching",
       "fractal"
     ],
-    "description": "A colossal, endlessly shifting mechanical engine constructed of hyper-reflective liquid chrome, pumping iridescent plasma through infinitely complex fractal pistons that react to the heavy bass of audio frequencies.",
+    "description": "A liquid-chrome engine racing on a wrapped conveyor camera, with audio-driven piston surges, spectral reflection streaks, mouse orbit, and bounded metallic smears.",
     "workgroup_size": [
       16,
       16,
@@ -6997,7 +7011,13 @@
     "updated": true,
     "id": "gen-cybernetic-liquid-chrome-engine",
     "url": "shaders/gen-cybernetic-liquid-chrome-engine.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Cybernetic-Mycelium Neural-Web",
@@ -14179,7 +14199,7 @@
       "music",
       "reactive"
     ],
-    "description": "Magnetic dipole field visualization with field lines and charged particles following the field, featuring North (blue) and South (red) poles",
+    "description": "A stylized 2D dipole-field visualization with analytic field-line families, rapidly advected charged-particle streaks, a mouse-positioned auxiliary source, and audio-reactive auroral trails.",
     "workgroup_size": [
       16,
       16,
@@ -14224,7 +14244,14 @@
     "updated": true,
     "id": "gen-magnetic-field-lines",
     "url": "shaders/gen-magnetic-field-lines.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Magnetic Field Warp",
@@ -16239,7 +16266,7 @@
       "reflection",
       "dark"
     ],
-    "description": "An infinite, abyssal expanse of highly polished, brutalist obsidian monoliths that react to audio by emitting and reflecting brilliant, luminescent echolocation ripples across their glassy surfaces.",
+    "description": "A wrapped high-speed flight through polished obsidian monoliths, with audio-driven sonar bands, click echoes, spectral reflections, and bounded corridor trails.",
     "workgroup_size": [
       16,
       16,
@@ -16284,7 +16311,14 @@
     "updated": true,
     "id": "gen-obsidian-echo-chamber",
     "url": "shaders/gen-obsidian-echo-chamber.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Opal Circuit",
@@ -16912,7 +16946,7 @@
       "iridescent",
       "audio-reactive"
     ],
-    "description": "A hyper-dimensional weaving machine where threads of liquid light are spun into iridescent fabrics of space-time, dynamically reacting to audio frequencies and cosmic winds.",
+    "description": "A warp-flight weaving machine of iridescent light, velocity-aligned spectral threads, click-launched shuttle waves, and bounded radial braid trails.",
     "workgroup_size": [
       16,
       16,
@@ -16957,7 +16991,14 @@
     "updated": true,
     "id": "gen-prismatic-aether-loom",
     "url": "shaders/gen-prismatic-aether-loom.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Prismatic Bismuth Lattice",
@@ -19260,7 +19301,7 @@
       "rainbow",
       "organic"
     ],
-    "description": "Hundreds of glowing firefly-like particles dancing in organic swirling patterns. Each firefly has a unique rainbow color that cycles over time. Bright neon glow halos around each particle. Mouse attracts the swarm. Fireflies leave brief phosphorescent trails.",
+    "description": "A fast rainbow firefly swarm with analytic orbital motion, velocity-stretched comet tails, mouse attraction, click-launched mini-swarms, and bounded phosphorescent trails.",
     "workgroup_size": [
       16,
       16,
@@ -19305,7 +19346,14 @@
     "updated": true,
     "id": "gen-rainbow-firefly-dance",
     "url": "shaders/gen-rainbow-firefly-dance.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Rainbow Icosahedron Cascade",
@@ -20782,7 +20830,7 @@
       "music",
       "reactive"
     ],
-    "description": "A hyper-dense, gravity-warped crucible of collapsing stars and chaotic plasma rings, endlessly generating and consuming geometric artifacts.",
+    "description": "A gravity-warped stellar forge with relativistic accretion shear, ballistic jet knots, mouse lensing, and bounded angular light trails driven by live audio.",
     "workgroup_size": [
       16,
       16,
@@ -20827,7 +20875,13 @@
     "updated": true,
     "id": "gen-singularity-forge",
     "url": "shaders/gen-singularity-forge.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "temporal",
+      "fast-motion",
+      "depth-aware"
+    ]
   },
   {
     "name": "Solar Wind Ribbons",

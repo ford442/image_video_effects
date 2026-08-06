@@ -1,6 +1,24 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-06 (Batches 37+38 shader upgrades)
+**Last updated:** 2026-08-06 (Batch 39 shader upgrade)
+
+## 2026-08-06 — Shader upgrade Batch 39 — FAST MOTION ENCORE
+
+- Continued the smallest clean single-pass generative queue with Chrono Voronoi
+  Mycelium, Singularity Forge, Obsidian Echo Chamber, Prismatic Aether Loom,
+  Rainbow Firefly Dance, Cybernetic Liquid Chrome Engine, Magnetic Field Lines,
+  and Bifurcation Diagram; tracker is now #355.
+- Added shader-specific fast motion through smooth traveling particles,
+  warp/conveyor cameras, velocity-stretched streaks, click events, and bounded
+  field/derivative/history advection. Removed redundant raymarch and field-line
+  loops while repairing control/audio/mouse truth and generated depth/A writes.
+- 8/8 existing `updatedParams` exact; canonical bindings and 16x16x1 retained;
+  no `extraBuffer` writes and `dataTextureB` stays unused.
+- Proof: gate 8/8, focused extraBuffer and custom liveness checks clean, 421
+  generative / 1,310 manifest entries, 1,323 unique IDs, Jest 478/1, and
+  `SKIP_WASM_BUILD=1` build green. Report drift restored. The legacy dead-slider
+  audit scans zero `updatedParams`-only controls, so custom x/y/z/w liveness is
+  the cohort proof. Visual QA remains external.
 
 ## 2026-08-06 — Shader upgrade Batch 38 (4-agent swarm) — FAST MOTION batch
 

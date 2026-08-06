@@ -22,8 +22,8 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=Audio, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
   zoom_params: vec4<f32>,  // x=GrowthRate, y=Generations, z=Decay, w=Glow
   ripples: array<vec4<f32>, 50>,
 };
@@ -47,6 +47,15 @@ fn hash31(p: vec3<f32>) -> f32 {
     var p3 = fract(p * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // FBM noise for organic texture
@@ -152,6 +161,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouseDist = length(uvAspect - mousePos);
     let nutrient = exp(-mouseDist * mouseDist * 8.0);
 
+    // Clicks launch fast nutrient fronts through the layered colony.
+    var clickSurge = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = t - ripple.z;
+        if (age >= 0.0 && age < 2.0) {
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let radius = length(delta);
+            let front = exp(-abs(radius - age * (0.34 + bass * 0.12)) * 55.0);
+            clickSurge = max(clickSurge, front * exp(-age * 1.35));
+        }
+    }
+
     // Accumulate multiple temporal generations
     var totalMycelium = 0.0;
     var totalGlow = 0.0;
@@ -168,7 +191,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let tips = glowingTips(uvAspect, layerTime, gf, treble);
 
         // Nutrient boosts this generation's intensity
-        let genStrength = pow(decay, gf) * (1.0 + nutrient * 0.5);
+        let genStrength = pow(decay, gf) * (1.0 + nutrient * 0.5 + clickSurge * 0.9);
         totalMycelium += branches * genStrength;
         totalGlow += tips * genStrength * glowAmt;
 
@@ -201,16 +224,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tipColor = vec3<f32>(0.8 + treble * 0.2, 0.95, 0.6 + mids * 0.3);
     color += tipColor * tipIntensity * 1.5;
 
-    // Spore-like particles: scattered bright dots driven by treble
-    let sporeNoise = hash31(vec3<f32>(uvAspect * 30.0, floor(t * 2.0)));
-    if (sporeNoise > 0.97 + (1.0 - treble) * 0.02) {
-        color += vec3<f32>(1.0, 0.9, 0.5) * treble * 0.8;
-    }
+    // Smooth traveling spores replace the old frame-hash sparkle. The long
+    // vertical footprint reads as speed without temporal strobing.
+    let sporeCell = floor(uvAspect * vec2<f32>(34.0, 22.0));
+    let sporeSeed = hash21(sporeCell);
+    let sporeUv = fract(uvAspect * vec2<f32>(34.0, 22.0) +
+                        vec2<f32>(sporeSeed, t * (0.45 + treble * 0.55) + sporeSeed)) - 0.5;
+    let spore = exp(-sporeUv.x * sporeUv.x * 220.0 - sporeUv.y * sporeUv.y * 34.0) *
+                smoothstep(0.82, 1.0, sporeSeed) * (0.25 + treble * 0.9);
+    color += vec3<f32>(1.1, 0.82, 0.38) * spore;
 
     // Vignette
     let vignette = 1.0 - dot(uv - 0.5, uv - 0.5) * 1.5;
     color *= max(vignette, 0.0);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0));
+    // Velocity-advected, HDR-bounded history turns the advancing network into
+    // coherent fungal light trails instead of a static overlay.
+    let flowVelocity = vec2<f32>(
+        cos(t * 0.71 + uvAspect.y * 5.0),
+        sin(t * 0.63 - uvAspect.x * 4.0)
+    ) * (1.2 + growthRate * 0.8 + bass * 1.8);
+    let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    let historyCoord = clamp(vec2<i32>(global_id.xy) - vec2<i32>(flowVelocity), vec2<i32>(0), maxCoord);
+    let history = textureLoad(dataTextureC, historyCoord, 0).rgb;
+    let historyDecay = clamp(0.76 + decay * 0.12, 0.76, 0.88);
+    let trailMask = clamp(networkIntensity * 0.45 + tipIntensity * 0.7 + clickSurge, 0.0, 1.0);
+    let hdrColor = clamp(color + history * historyDecay * (0.24 + trailMask * 0.36), vec3<f32>(0.0), vec3<f32>(5.0));
+    let alpha = clamp(networkIntensity * 0.62 + tipIntensity * 0.8 + spore * 0.45 + clickSurge * 0.4, 0.04, 0.96);
+    let depth = clamp(networkIntensity * 0.48 + tipIntensity * 0.38 + clickSurge * 0.24, 0.0, 1.0);
+    let coords = vec2<i32>(global_id.xy);
+    textureStore(dataTextureA, coords, vec4<f32>(hdrColor, alpha));
+    textureStore(writeTexture, coords, vec4<f32>(acesToneMap(hdrColor * 1.15), alpha));
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

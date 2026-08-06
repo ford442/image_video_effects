@@ -97,6 +97,15 @@ fn colorFire(t: f32) -> vec3<f32> {
     return mix(vec3<f32>(0.2, 0.0, 0.0), vec3<f32>(1.0, 0.8, 0.2), pow(t, 0.5));
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // Lyapunov exponent approximation
 fn lyapunov(r: f32) -> f32 {
     var x = 0.5;
@@ -117,6 +126,7 @@ fn lyapunov(r: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let t = u.config.x;
     
@@ -132,36 +142,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rMin = max(2.8, rCenter - rRange * 0.5);
     let rMax = min(4.0, rCenter + rRange * 0.5);
     
-    // Map x to r parameter
-    let r = mix(rMin, rMax, uv.x);
-    
-    // Map y to x value (0-1)
-    let targetX = uv.y;
-    
-    // Calculate attractor points
-    let skip = 100;
-    let points = getAttractorPoints(r, iterationCount, skip);
-    
-    // Check if any point matches our y coordinate
+    // Mouse exploration locally bends the r/x window around the visible cursor
+    // without replacing the saved R Position or Zoom controls.
+    let mouseUv = u.zoom_config.yz;
+    let mouseDelta = (uv - mouseUv) * vec2<f32>(resolution.x / resolution.y, 1.0);
+    let mouseLens = exp(-dot(mouseDelta, mouseDelta) * 18.0) * (0.18 + u.zoom_config.w * 0.52);
+    let baseR = mix(rMin, rMax, uv.x);
+    let r = mix(baseR, mix(rMin, rMax, mouseUv.x), mouseLens * 0.42);
+    let targetX = mix(uv.y, mouseUv.y, mouseLens * 0.24);
+
+    // One bounded logistic loop now computes density and Lyapunov behavior;
+    // the former unused attractor call plus separate 100-step Lyapunov pass
+    // duplicated a large fraction of the per-pixel work.
+    let skip = 80;
     var density = 0.0;
     let binSize = 0.5 / resolution.y;
-    
-    // Run more iterations for density
     var x = 0.5;
-    for (var i: i32 = 0; i < skip; i++) {
+    var lyapSum = 0.0;
+    let totalIterations = skip + iterationCount;
+    for (var i: i32 = 0; i < 280; i++) {
+        if (i >= totalIterations) { break; }
         x = r * x * (1.0 - x);
-    }
-    
-    for (var i: i32 = 0; i < iterationCount; i++) {
-        x = r * x * (1.0 - x);
-        let dist = abs(x - targetX);
-        if (dist < binSize) {
-            density += 1.0 - dist / binSize;
+        if (i >= skip) {
+            let dist = abs(x - targetX);
+            if (dist < binSize) {
+                density += 1.0 - dist / binSize;
+            }
+            let derivative = abs(r * (1.0 - 2.0 * x));
+            if (derivative > 0.0001) {
+                lyapSum += log(derivative);
+            }
         }
     }
-    
-    // Normalize density
     density = min(density / 10.0, 1.0);
+    let lyap = lyapSum / max(f32(iterationCount), 1.0);
     
     // === Visual Flourish: Richer, audio-reactive coloring ===
     let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
@@ -194,7 +208,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     // Highlight periodic windows
-    let lyap = lyapunov(r);
     if (lyap < 0.0) {
         // Periodic region - subtle glow
         let periodGlow = smoothstep(0.0, -0.5, lyap) * 0.1;
@@ -204,6 +217,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let chaosTint = smoothstep(0.0, 0.5, lyap) * 0.1;
         col = col + vec3<f32>(0.5, 0.2, 0.1) * chaosTint;
     }
+
+    // A fast chaos scanner races through the parameter axis, illuminating
+    // derivative-rich branches without changing the logistic-map geometry.
+    let scanPhase = fract(uv.x * 1.8 - t * (0.45 + bass * 1.2));
+    let scanFront = exp(-abs(scanPhase - 0.5) * 34.0) *
+                    smoothstep(-0.35, 0.55, lyap) * (0.25 + mids * 0.5);
+    col += mix(vec3<f32>(0.2, 0.65, 1.3), vec3<f32>(1.2, 0.25, 0.65), treble) * scanFront;
+
+    // Click wavefronts sweep across the diagram as stylized analysis overlays.
+    var clickWave = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = t - ripple.z;
+        if (age >= 0.0 && age < 1.5) {
+            let delta = (uv - ripple.xy) * vec2<f32>(resolution.x / resolution.y, 1.0);
+            clickWave = max(clickWave, exp(-abs(length(delta) - age * 0.72) * 64.0) * exp(-age * 1.8));
+        }
+    }
+    col += vec3<f32>(0.75, 0.4, 1.25) * clickWave * (0.55 + treble * 0.7);
     
     // Grid lines for reference
     let gridX = fract(uv.x * 10.0);
@@ -216,6 +249,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = 1.0 - length(uv - 0.5) * 0.3;
     col *= vignette;
     
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(density, 0.0, 0.0, 0.0));
+    // Derivative-aligned history produces branch trails rather than a static
+    // afterimage. Energy is bounded before storage.
+    let derivativeFlow = clamp(r * (1.0 - 2.0 * x), -4.0, 4.0);
+    let historyVelocity = vec2<f32>(2.0 + bass * 3.0, derivativeFlow * (0.8 + u.zoom_params.y * 1.8));
+    let coord = vec2<i32>(global_id.xy);
+    let maxCoord = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
+    let historyCoord = clamp(coord - vec2<i32>(historyVelocity), vec2<i32>(0), maxCoord);
+    let history = textureLoad(dataTextureC, historyCoord, 0).rgb;
+    let hdrColor = clamp(col + history * (0.2 + density * 0.18), vec3<f32>(0.0), vec3<f32>(4.0));
+    let alpha = clamp(density * 0.78 + scanFront * 0.3 + clickWave * 0.28 + 0.025, 0.025, 0.96);
+    let depth = clamp(density * 0.68 + smoothstep(-0.4, 0.6, lyap) * 0.18 + scanFront * 0.12, 0.0, 1.0);
+    textureStore(dataTextureA, coord, vec4<f32>(hdrColor, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(hdrColor * 1.25), alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -5,9 +5,38 @@
 
 ---
 
-## Recently Completed (315 shaders)
+## Recently Completed (355 tracker entries)
 
 These shaders have been edited, their JSONs updated where needed, and `generate_shader_lists.js` validated the changes.
+
+### Batch 39 (8 shaders) — 2026-08-06 — FAST MOTION ENCORE
+
+The next eight smallest clean single-pass generative shaders continue the fast-
+motion direction with shader-specific warp/conveyor movement, smooth traveling
+particles, velocity-stretched streaks, click waves, and bounded temporal trails.
+The coordinator pass removed redundant triple raymarching and nested iterative
+field tracing, repaired mouse/audio/control semantics in Obsidian, Firefly, and
+Chrome, fixed Prismatic Loom's hit-erasing occupancy term, and combined
+Bifurcation's density/Lyapunov work. All eight now write A plus generated depth,
+use canonical bindings and 16x16x1 workgroups, keep `dataTextureB` unused, and
+avoid persistent `extraBuffer` writes. Existing `updatedParams` arrays remain
+exact. Focused gate: 8/8; extraBuffer and custom four-control liveness checks:
+clean; 421 generative entries, 1,310 manifest entries, and 1,323/1,323 unique
+IDs; Jest 69 suites / 478 pass / 1 skip; `SKIP_WASM_BUILD=1` production build:
+green. Validation reports were restored after proof. Real-GPU animation and
+performance QA remains external. Notes:
+`swarm-outputs/codex-2026-08-06-b39/`.
+
+| # | Shader | Batch | Lines (HEAD→final) | Changes Made |
+|---|--------|-------|-------------------|--------------|
+| 348 | `gen-chrono-voronoi-mycelium` | 39 | 216→259 (+43) | Smooth spores, nutrient fronts, advected growth and bounded HDR history. |
+| 349 | `gen-singularity-forge` | 39 | 216→214 (-2) | Single bounded march, disk shear, jet knots, lensing, Doppler material and angular trails. |
+| 350 | `gen-obsidian-echo-chamber` | 39 | 217→242 (+25) | Repaired controls/audio/mouse, wrapped corridor, racing reflections and click echoes. |
+| 351 | `gen-prismatic-aether-loom` | 39 | 217→261 (+44) | Repaired hit occupancy, warp-flight braids, speed threads and shuttle waves. |
+| 352 | `gen-rainbow-firefly-dance` | 39 | 218→239 (+21) | One adaptive swarm, velocity tails, click mini-swarms and correct pointer space. |
+| 353 | `gen-cybernetic-liquid-chrome-engine` | 39 | 221→241 (+20) | Correct control roles, conveyor camera, piston surges, streaks and chrome smear. |
+| 354 | `gen-magnetic-field-lines` | 39 | 220→257 (+37) | Analytic dipole shells, direct particles, cursor/CME response and field trails. |
+| 355 | `gen-bifurcation-diagram` | 39 | 221→266 (+45) | Combined orbit analysis, chaos scanner, click waves and derivative-aligned trails. |
 
 ### Batch 34 (8 shaders) — 2026-08-03 — GENERATIVE INTERACTION AND FEEDBACK HARDENING
 
