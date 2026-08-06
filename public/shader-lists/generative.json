@@ -5594,7 +5594,7 @@
     "name": "Chrono-Kitsune Prism Weaver",
     "url": "shaders/gen-chrono-kitsune-prism-weaver.wgsl",
     "category": "generative",
-    "description": "A living prismatic kitsune spirit weaving through a chrono-void lattice with deep temporal feedback and audio reactivity.",
+    "description": "A living prismatic kitsune spirit weaving through a chrono-void lattice with deep temporal feedback and audio reactivity. Optimized: bounding-sphere early-out, tetrahedral normals, HDR feedback chain, generated depth.",
     "workgroup_size": [
       16,
       16,
@@ -5642,7 +5642,11 @@
       "audio-reactive",
       "interactive-mouse",
       "raymarching",
-      "volumetric"
+      "volumetric",
+      "temporal-feedback",
+      "hdr-output",
+      "semantic-alpha",
+      "depth-output"
     ]
   },
   {
@@ -8877,7 +8881,7 @@
       "procedural",
       "music"
     ],
-    "description": "Multi-state cellular automata where the rules themselves slowly evolve based on local conditions and global audio input. Audio drives genetic pressure on the automata. Mouse introduces invasive species or protected zones. Organic coral-like emergent structures that change fundamental behavior over time.",
+    "description": "Multi-state cellular automata where the rules themselves slowly evolve based on local conditions and global audio input. Audio drives genetic pressure on the automata. Mouse introduces invasive species or protected zones. Organic coral-like emergent structures that change fundamental behavior over time. Upgraded with a spring-smoothed mouse nutrient attractor (gravity well, not 1:1), click-spawned colony-burst shockwaves with bounded energy, guarded FFT-band genetic pressure, engine-ripple spore seeding, temporal feedback memory giving colonies persistent age and bioluminescent trails, generated structural-relief depth, and semantic alpha.",
     "workgroup_size": [
       16,
       16,
@@ -8922,7 +8926,16 @@
     "updated": true,
     "id": "gen-evolutionary-cellular-gardens",
     "url": "shaders/gen-evolutionary-cellular-gardens.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "depth-aware",
+      "depth-output",
+      "semantic-alpha",
+      "procedural"
+    ]
   },
   {
     "name": "Feedback Echo Chamber",
@@ -9424,7 +9437,17 @@
     "updated": true,
     "id": "gen-fireworks-fan-shell",
     "url": "shaders/gen-fireworks-fan-shell.wgsl",
-    "features": []
+    "features": [
+      "ballistic-drag-physics",
+      "temporal-coherent-wind",
+      "fbm-spark-flutter",
+      "twinkling-starfield",
+      "audio-reactive",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ]
   },
   {
     "name": "4th of July — Horse Tail Brocade",
@@ -9485,7 +9508,17 @@
     "updated": true,
     "id": "gen-fireworks-horse-tail",
     "url": "shaders/gen-fireworks-horse-tail.wgsl",
-    "features": []
+    "features": [
+      "ballistic-drag-physics",
+      "terminal-velocity-fall",
+      "temporal-coherent-sway",
+      "twinkling-starfield",
+      "audio-reactive",
+      "temporal-feedback",
+      "generated-depth",
+      "semantic-alpha",
+      "aces-tone-map"
+    ]
   },
   {
     "name": "4th of July — Kamuro Gold",
@@ -9501,7 +9534,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor.",
+    "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor. Upgraded with HDR white-gold burst cores, audio-reactive color temperature (bass deepens amber, treble shifts silver), golden atmospheric haze with depth fog, split-tone grading (cool shadows, warm highlights), and real generated depth from glitter heat.",
     "workgroup_size": [
       16,
       16,
@@ -9546,7 +9579,17 @@
     "updated": true,
     "id": "gen-fireworks-kamuro-gold",
     "url": "shaders/gen-fireworks-kamuro-gold.wgsl",
-    "features": []
+    "features": [
+      "hdr-burst-cores",
+      "audio-reactive-color-temperature",
+      "golden-atmospheric-haze",
+      "depth-fog",
+      "split-tone-grading",
+      "generated-depth",
+      "temporal-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
+    ]
   },
   {
     "name": "4th of July — Fireworks Nocturne",
@@ -9626,7 +9669,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor.",
+    "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor. Upgraded with HDR overbright burst cores, audio-reactive color temperature (bass warms, treble cools), atmospheric burst haze with depth fog, and real generated depth from spark heat.",
     "workgroup_size": [
       16,
       16,
@@ -9671,7 +9714,16 @@
     "updated": true,
     "id": "gen-fireworks-ring-shell",
     "url": "shaders/gen-fireworks-ring-shell.wgsl",
-    "features": []
+    "features": [
+      "hdr-burst-cores",
+      "audio-reactive-color-temperature",
+      "atmospheric-haze",
+      "depth-fog",
+      "generated-depth",
+      "temporal-feedback",
+      "aces-tone-map",
+      "semantic-alpha"
+    ]
   },
   {
     "name": "4th of July — Roman Candle",
@@ -18159,7 +18211,7 @@
       "audio-reactive",
       "interactive"
     ],
-    "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies.",
+    "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies. Optimized: 4-tap scalar-potential curl flow, HDR feedback chain, generated depth.",
     "workgroup_size": [
       16,
       16,
@@ -18204,7 +18256,16 @@
     "updated": true,
     "id": "gen-quantum-fluorescent-aether-moth-swarm",
     "url": "shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl",
-    "features": []
+    "features": [
+      "swarm",
+      "curl-flow",
+      "audio-reactive",
+      "interactive-mouse",
+      "temporal-feedback",
+      "hdr-output",
+      "semantic-alpha",
+      "depth-output"
+    ]
   },
   {
     "name": "Quantum-Fluorescent Nebula-Anemone",
@@ -21489,7 +21550,7 @@
     "id": "gen-symbiotic-cyber-fungal-core-reactor",
     "name": "Symbiotic Cyber-Fungal Core-Reactor",
     "author": "Jules",
-    "description": "A biomechanical network of luminescent mycelium feeding off the chaotic energy of a fractured quantum singularity.",
+    "description": "A biomechanical network of luminescent mycelium feeding off the chaotic energy of a fractured quantum singularity. Upgraded with a spring-smoothed mouse gravity-well attractor that steers fungal growth, click-spawned spore-burst shockwaves with bounded energy, hold-to-mutate surges, real audio reactivity (bass/mids/treble plus guarded FFT bins), engine-ripple nutrient rings, temporal feedback memory so growth self-organizes along its own history, generated raymarch depth, and semantic alpha.",
     "type": "generative",
     "url": "shaders/gen-symbiotic-cyber-fungal-core-reactor.wgsl",
     "tags": [
@@ -21540,7 +21601,61 @@
         "default": 1,
         "step": 0.1
       }
-    }
+    },
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "updatedParams": [
+      {
+        "index": 0,
+        "name": "Core Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "index": 1,
+        "name": "Mycelium Spread",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "index": 2,
+        "name": "Quantum Noise",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "index": 3,
+        "name": "Temporal Shift",
+        "default": 1,
+        "min": 0,
+        "max": 2,
+        "step": 0.1
+      }
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "depth-aware",
+      "depth-output",
+      "semantic-alpha",
+      "aces-tone-map",
+      "raymarched",
+      "volumetric"
+    ]
   },
   {
     "name": "Symbiotic Light Networks",

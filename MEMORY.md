@@ -1,6 +1,24 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-05 (Batch 36 shader upgrades)
+**Last updated:** 2026-08-06 (Batch 37 shader upgrades)
+
+## 2026-08-06 — Shader upgrade Batch 37 (4-agent swarm)
+
+- Same 4-agent pattern on the next 8 smallest pending generative shaders:
+  Fireworks Fan Shell / Horse Tail / Ring Shell / Kamuro Gold, Symbiotic
+  Cyber-Fungal Core-Reactor, Evolutionary Cellular Gardens, Chrono Kitsune
+  Prism Weaver, Quantum Fluorescent Aether Moth Swarm; tracker is now #339.
+- Fireworks-family normalized-pointer bug confirmed cohort-wide (yz-as-pixels);
+  fixed config.y-as-audio in fungal/kitsune/moth, fungal's engine-owned
+  zoom_config.w mutation slider, gardens' fake hash CA, moth's dead scatter +
+  18-tap curl (→4-tap potential curl). Fungal gained 4 NEW indexed
+  updatedParams (controls-dict schema; engine-owned control excluded).
+- Coordinator caught a moth mouse y-flip (vertical mirror) post-swarm; fixed
+  and re-gated. 7/7 pre-existing updatedParams byte-exact; state only
+  extraBuffer[133..138] single-writer.
+- Proof: gate 8/8, audits PASS, generative list synced, manifest 1,310/1,310
+  (+1 = fungal qualifies), Jest 478/1, SKIP_WASM_BUILD=1 build green, drift
+  restored. Visual QA external. ~111 pending generative remain.
 
 ## 2026-08-05 — Shader upgrade Batch 36 (4-agent swarm)
 

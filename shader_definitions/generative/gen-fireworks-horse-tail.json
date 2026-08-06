@@ -57,5 +57,15 @@
   "updated": true,
   "id": "gen-fireworks-horse-tail",
   "url": "shaders/gen-fireworks-horse-tail.wgsl",
-  "features": []
+  "features": [
+    "ballistic-drag-physics",
+    "terminal-velocity-fall",
+    "temporal-coherent-sway",
+    "twinkling-starfield",
+    "audio-reactive",
+    "temporal-feedback",
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map"
+  ]
 }

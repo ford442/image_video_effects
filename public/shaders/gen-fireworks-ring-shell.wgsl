@@ -1,4 +1,8 @@
 // Ring Shell — circular halo/donut burst fireworks
+// Upgraded (Batch 37, Visualist): HDR overbright burst cores with two-layer
+// glow falloff, audio-reactive color temperature (bass warms, treble cools),
+// atmospheric burst haze with depth fog, fixed mouse uv space (zoom_config.yz
+// is 0-1 canvas uv, not pixels), real generated depth from spark heat.
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -64,10 +68,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = (vec2<f32>(pixel) - res*0.5) / min(res.x, res.y);
   let sampleUV = (vec2<f32>(pixel) + 0.5) / res;
   let time = u.config.x;
-  let mouseUV = (u.zoom_config.yz - res*0.5) / min(res.x, res.y);
+  // zoom_config.yz is 0-1 canvas uv (y=0 top) — map into centered aspect space
+  let mouseUV = (u.zoom_config.yz - vec2<f32>(0.5)) * res / min(res.x, res.y);
 
   // ---- parameters & audio ----
   let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let ringR = mix(0.2, 0.55, u.zoom_params.x);
   let thick = mix(0.02, 0.12, u.zoom_params.y);
@@ -83,6 +89,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col += starField(uv);
   col += camera * 0.04;
   col += vec3<f32>(0.8)*step(0.993, hash2(floor(uv*130.0)))*0.5;
+
+  var heat: f32 = 0.0;  // accumulated spark energy -> generated depth
 
   // ---- ring shell bursts ----
   for (var s: i32 = 0; s < 7; s = s + 1) {
@@ -104,6 +112,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (age < bDelay) {
       let y = mix(by, by + 1.2, (age / bDelay) * (age / bDelay));
       col += vec3<f32>(1.0, 0.9, 0.6) * softGlow(uv, vec2<f32>(bx, y), 0.009, energy * 2.0);
+      heat += softGlow(uv, vec2<f32>(bx, y), 0.03, energy) * 0.4;
     }
 
     // ring burst
@@ -112,8 +121,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let fade = smoothstep(5.0, 0.3, bAge);
       let expand = ringR * energy * (0.5 + bAge * 0.5);
 
-      // core flash
-      col += vec3<f32>(1.0) * exp(-bAge * 12.0) * energy * hexBokeh(uv, center, 0.06, 1.5);
+      // HDR core flash: white-hot overbright center (values >1.0 pre-tonemap)
+      let flash = exp(-bAge * 12.0) * energy * hexBokeh(uv, center, 0.06, 2.2 + bass);
+      col += vec3<f32>(1.0, 0.97, 0.9) * flash;
+      heat += flash * 0.8;
+
+      // atmospheric burst haze: ambient halo tinted by this shell's hue
+      let hazeHue = palette(colorC + si*0.13 + time*0.01);
+      let haze = exp(-length(uv - center) * 2.6) * fade * energy;
+      col += hazeHue * haze * (0.12 + mids*0.08);
+      heat += haze * 0.12;
 
       let n = i32(40.0 + count * 50.0);
       for (var j: i32 = 0; j < n; j = j + 1) {
@@ -125,9 +142,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let vel = radial*(0.15 + js*0.1) + vec2<f32>(0.0, -0.05);
         let sp = sparkPos(ringPos, vel, bAge*0.3, 0.7 + bAge*0.2);
 
-        // main ring spark
-        let onRing = softGlow(uv, sp, 0.005 + js*0.003, fade*energy*1.4);
+        // main ring spark (Thickness also widens the glow kernel)
+        let onRing = softGlow(uv, sp, (0.005 + js*0.003) * (0.75 + thick*3.0), fade*energy*1.4);
         col += palette(js + colorC + time*0.02) * onRing;
+        // white-hot HDR spark core: quadratic falloff pushes brights >1.0
+        col += vec3<f32>(1.0, 0.96, 0.88) * onRing * onRing * (1.1 + treble*0.5);
+        heat += onRing * 0.35;
 
         // inner jewel sparkle on treble
         let inner = softGlow(uv, center + radial*expand*0.7, 0.003, treble*fade*0.6);
@@ -136,6 +156,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // faint secondary halo
         let halo = softGlow(uv, center + radial*expand*1.25, 0.008, fade*energy*0.25);
         col += palette(js + colorC + 0.66) * halo;
+        heat += halo * 0.15;
       }
     }
   }
@@ -152,19 +173,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let r = ringR * (0.4 + mb * 0.6);
         let rp = mouseUV + vec2<f32>(cos(ang), sin(ang))*r;
         let sp = sparkPos(rp, vec2<f32>(0.0, -0.1), mb, 0.5);
-        col += palette(hash1(f32(k)) + colorC) * softGlow(uv, sp, 0.006, mFade);
+        let mGlow = softGlow(uv, sp, 0.006, mFade);
+        col += palette(hash1(f32(k)) + colorC) * mGlow;
+        heat += mGlow * 0.3;
       }
     }
   }
 
-  // ---- temporal blend & tone map ----
+  // ---- temporal blend, atmosphere, color temperature & tone map ----
   col = mix(prev * 0.92, col, 0.32);
-  col = acesToneMap(col * 1.08);
+
+  // generated depth: bright burst cores are near, empty sky is far
+  let depth = clamp(1.0 - exp(-heat * 1.5), 0.0, 1.0) * 0.85;
+  // depth fog: cool atmospheric haze settles where no burst heat reaches
+  col += vec3<f32>(0.010, 0.013, 0.030) * (1.0 - depth);
+  // audio-reactive color temperature: bass warms, treble cools
+  let warmth = clamp(bass*0.5 - treble*0.35, -1.0, 1.0);
+  col *= vec3<f32>(1.0 + 0.09*warmth, 1.0 + 0.015*warmth, 1.0 - 0.09*warmth);
+  col = acesToneMap(col * 1.12);
 
   let alpha = clamp(length(col) * 1.2 + 0.1, 0.12, 0.96);
   let persistent = col * 0.55 + prev * 0.35;
   textureStore(dataTextureB, pixel, vec4<f32>(persistent, alpha));
   textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

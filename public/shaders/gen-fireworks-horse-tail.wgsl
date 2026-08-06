@@ -1,4 +1,7 @@
 // Horse Tail Brocade — long straight golden streamers
+// Upgraded (Batch 37, Algorithmist): drag-integrated ballistic streamers with
+// terminal-velocity fall, temporal-coherent curl-style sway (replaces fake linear
+// drift), twinkling star field, real generated depth from accumulated heat.
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -30,26 +33,54 @@ fn hash2(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx)*0.1031); p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y)*p3.z);
 }
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p); let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), w.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
+}
 fn softGlow(uv: vec2<f32>, c: vec2<f32>, r: f32, i: f32) -> f32 {
   let d = length(uv - c);
   return (exp(-d*d/(r*r*0.5)) + 0.35*exp(-d/(r*4.0)))*i;
 }
-fn sparkPos(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32) -> vec2<f32> {
-  return o + v*age - vec2<f32>(0.0, g)*age*age*0.5;
+// Ballistic arc with linear drag: a = -k*v + g_down. k -> 0 recovers ideal arc;
+// finite k gives a terminal fall velocity, which is how real streamers behave.
+fn sparkPos(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32, k: f32) -> vec2<f32> {
+  let kk = max(k, 0.001);
+  let ek = (1.0 - exp(-kk * age)) / kk;
+  let gy = g * (age - ek) / kk;
+  return o + v * ek - vec2<f32>(0.0, gy);
 }
-fn tailPos(o: vec2<f32>, dir: vec2<f32>, age: f32, fall: f32, spread: f32, seed: f32) -> vec2<f32> {
-  let drift = vec2<f32>((seed - 0.5)*spread*0.08 + age*0.015, 0.0);
-  return o + dir*age*0.15 + drift + vec2<f32>(0.0, -fall*age*age*0.45);
+// Temporal-coherent sway: smooth lateral wobble per spark (curl-style perturbation).
+fn sway(seed: f32, age: f32) -> f32 {
+  return valueNoise(vec2<f32>(seed * 41.3, age * 0.85)) - 0.5;
+}
+// Per-shell gust: slowly evolving shared wind so whole brocades lean together.
+fn shellWind(center: vec2<f32>, time: f32, seed: f32) -> f32 {
+  return valueNoise(center * 2.3 + vec2<f32>(seed * 11.7, time * 0.19)) - 0.5;
+}
+fn tailPos(o: vec2<f32>, dir: vec2<f32>, age: f32, fall: f32, spread: f32, seed: f32, gust: f32) -> vec2<f32> {
+  // drag-integrated motion: initial drift velocity + terminal-velocity gravity
+  let dragK = 0.10 + seed * 0.22;
+  var p = sparkPos(o, dir * 0.15, age, fall * 0.9, dragK);
+  // coherent lateral sway grows with age; stream Width slider widens it
+  p.x += sway(seed, age) * (0.02 + spread * 0.35) * min(age, 2.5);
+  p.x += gust * 0.05 * age * age * 0.3;
+  return p;
 }
 fn goldPalette(gold: f32, seed: f32) -> vec3<f32> {
   let warm = vec3<f32>(1.0, 0.82, 0.3);
   let cool = vec3<f32>(0.9, 0.92, 1.0);
   return mix(mix(warm, cool, seed), vec3<f32>(1.0, 0.75, 0.2), (1.0 - gold)*0.35);
 }
-fn starField(uv: vec2<f32>) -> vec3<f32> {
+fn starField(uv: vec2<f32>, time: f32) -> vec3<f32> {
   let id = floor(uv*160.0);
   let h = hash2(id);
-  return vec3<f32>(0.8, 0.9, 1.0)*step(0.992, h)*0.35;
+  let twinkle = 0.55 + 0.45 * sin(time * (1.5 + h * 2.5) + h * TAU * 7.0);
+  return vec3<f32>(0.8, 0.9, 1.0)*step(0.992, h)*0.35*twinkle;
 }
 fn hexBokeh(uv: vec2<f32>, c: vec2<f32>, r: f32, i: f32) -> f32 {
   let d = uv - c;
@@ -66,7 +97,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = (vec2<f32>(pixel) - res*0.5) / min(res.x, res.y);
   let sampleUV = (vec2<f32>(pixel) + 0.5) / res;
   let time = u.config.x;
-  let mouseUV = (u.zoom_config.yz - res*0.5) / min(res.x, res.y);
+  // zoom_config.yz is 0-1 canvas uv (y=0 top) — map into centered aspect space
+  let mouseUV = (u.zoom_config.yz - vec2<f32>(0.5)) * res / min(res.x, res.y);
 
   // ---- parameters & audio ----
   let bass = plasmaBuffer[0].x;
@@ -82,8 +114,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // ---- night sky base ----
   var col = vec3<f32>(0.008, 0.006, 0.02);
-  col += starField(uv);
+  col += starField(uv, time);
   col += camera * 0.04;
+
+  var heat: f32 = 0.0;  // accumulated streamer energy -> generated depth
 
   // ---- horse-tail brocade bursts ----
   for (var s: i32 = 0; s < 6; s = s + 1) {
@@ -104,16 +138,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ascending rocket trail
     if (age < bDelay) {
       let y = mix(by, by + 1.25, (age / bDelay) * (age / bDelay));
-      col += vec3<f32>(1.0, 0.85, 0.4) * softGlow(uv, vec2<f32>(bx, y), 0.009, energy * 2.0);
+      let rocketGlow = softGlow(uv, vec2<f32>(bx, y), 0.009, energy * 2.0);
+      col += vec3<f32>(1.0, 0.85, 0.4) * rocketGlow;
+      heat += rocketGlow * 0.4;
     }
 
     // brocade burst and streamers
     if (bAge > 0.0 && bAge < 7.5) {
       let center = vec2<f32>(bx, by + 1.28);
       let fade = smoothstep(7.0, 0.5, bAge);
+      let gust = shellWind(center, time, seed);
 
       // core flash
-      col += vec3<f32>(1.0, 0.9, 0.5) * exp(-bAge * 6.0) * energy * hexBokeh(uv, center, 0.07, 1.5);
+      let flash = exp(-bAge * 6.0) * energy * hexBokeh(uv, center, 0.07, 1.5);
+      col += vec3<f32>(1.0, 0.9, 0.5) * flash;
+      heat += flash * 0.8;
 
       let n = i32(35.0 + energy * 45.0);
       for (var j: i32 = 0; j < n; j = j + 1) {
@@ -126,16 +165,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         for (var t: i32 = 0; t < streamLen; t = t + 1) {
           let tf = f32(t) / f32(streamLen);
           let tAge = max(0.0, bAge - tf * 1.2);
-          let sp = tailPos(center, dir, tAge, fall, spread, js);
+          let sp = tailPos(center, dir, tAge, fall, spread, js, gust);
           let tFade = fade * (1.0 - tf * 0.6) * (0.5 + js2 * 0.5);
           let gc = goldPalette(gold, js);
-          col += gc * softGlow(uv, sp, 0.004 + js * 0.002, tFade * energy * 1.3);
+          let glow = softGlow(uv, sp, 0.004 + js * 0.002, tFade * energy * 1.3);
+          col += gc * glow;
+          heat += glow * 0.3;
         }
 
         // silver micro-dust on treble
         if (treble > 0.3) {
-          let sp = tailPos(center, dir, bAge, fall, spread, js);
-          col += vec3<f32>(0.85, 0.9, 1.0) * softGlow(uv, sp, 0.002, treble * fade * 0.5);
+          let sp = tailPos(center, dir, bAge, fall, spread, js, gust);
+          let dust = softGlow(uv, sp, 0.002, treble * fade * 0.5);
+          col += vec3<f32>(0.85, 0.9, 1.0) * dust;
+          heat += dust * 0.2;
         }
       }
     }
@@ -147,11 +190,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (mAge > 0.8) {
       let mb = mAge - 0.8;
       let mFade = smoothstep(3.5, 0.3, mb);
+      let mGust = shellWind(mouseUV, time, 0.53);
       for (var k: i32 = 0; k < 30; k = k + 1) {
         let ks = hash1(f32(k)*2.1);
         let dir = vec2<f32>((ks - 0.5)*spread*2.0, 0.7);
-        let sp = tailPos(mouseUV, dir, mb, fall, spread, ks);
-        col += goldPalette(gold, ks) * softGlow(uv, sp, 0.005, mFade);
+        let sp = tailPos(mouseUV, dir, mb, fall, spread, ks, mGust);
+        let mGlow = softGlow(uv, sp, 0.005, mFade);
+        col += goldPalette(gold, ks) * mGlow;
+        heat += mGlow * 0.3;
       }
     }
   }
@@ -162,9 +208,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = acesToneMap(col * 1.1);
 
   let alpha = clamp(length(col) * 1.2 + 0.1, 0.12, 0.96);
+  // generated depth: bright streamer cores are near, empty sky is far
+  let depth = clamp(1.0 - exp(-heat * 1.5), 0.0, 1.0) * 0.85;
   let persistent = col * 0.65 + prev * 0.28;
   textureStore(dataTextureB, pixel, vec4<f32>(persistent, alpha));
   textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

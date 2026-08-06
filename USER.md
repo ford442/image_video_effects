@@ -16,7 +16,7 @@ _Learn about the person you're helping. Update this as you go._
 - The user is actively rolling through consecutive clean upgrade cohorts. When
   another agent leaves a partial swarm, reconstruct the dated briefs/outputs,
   preserve its useful work, finish missing deliverables, and apply a full
-  coordinator contract review. Batches 31–34 are complete through tracker #315.
+  coordinator contract review. Batches 31–37 are complete through tracker #339.
 
 ---
 

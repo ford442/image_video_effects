@@ -11,7 +11,7 @@
     "procedural",
     "music"
   ],
-  "description": "Multi-state cellular automata where the rules themselves slowly evolve based on local conditions and global audio input. Audio drives genetic pressure on the automata. Mouse introduces invasive species or protected zones. Organic coral-like emergent structures that change fundamental behavior over time.",
+  "description": "Multi-state cellular automata where the rules themselves slowly evolve based on local conditions and global audio input. Audio drives genetic pressure on the automata. Mouse introduces invasive species or protected zones. Organic coral-like emergent structures that change fundamental behavior over time. Upgraded with a spring-smoothed mouse nutrient attractor (gravity well, not 1:1), click-spawned colony-burst shockwaves with bounded energy, guarded FFT-band genetic pressure, engine-ripple spore seeding, temporal feedback memory giving colonies persistent age and bioluminescent trails, generated structural-relief depth, and semantic alpha.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,14 @@
   "updated": true,
   "id": "gen-evolutionary-cellular-gardens",
   "url": "shaders/gen-evolutionary-cellular-gardens.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal-feedback",
+    "depth-aware",
+    "depth-output",
+    "semantic-alpha",
+    "procedural"
+  ]
 }

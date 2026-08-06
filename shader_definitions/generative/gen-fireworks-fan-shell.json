@@ -57,5 +57,15 @@
   "updated": true,
   "id": "gen-fireworks-fan-shell",
   "url": "shaders/gen-fireworks-fan-shell.wgsl",
-  "features": []
+  "features": [
+    "ballistic-drag-physics",
+    "temporal-coherent-wind",
+    "fbm-spark-flutter",
+    "twinkling-starfield",
+    "audio-reactive",
+    "temporal-feedback",
+    "generated-depth",
+    "semantic-alpha",
+    "aces-tone-map"
+  ]
 }

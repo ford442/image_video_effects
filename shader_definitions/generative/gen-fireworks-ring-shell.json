@@ -12,7 +12,7 @@
     "generative",
     "4th-of-july"
   ],
-  "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor.",
+  "description": "Perfect ring and halo shells that bloom as luminous donuts in the night sky. Sparks launch outward along a crisp circular front then cascade downward with gravity. Classic Saturn-ring pyrotechnics with jewel-tone cycling. Bass widens the ring, treble adds inner sparkle. Mouse launches a personal halo at the cursor. Upgraded with HDR overbright burst cores, audio-reactive color temperature (bass warms, treble cools), atmospheric burst haze with depth fog, and real generated depth from spark heat.",
   "workgroup_size": [
     16,
     16,
@@ -57,5 +57,14 @@
   "updated": true,
   "id": "gen-fireworks-ring-shell",
   "url": "shaders/gen-fireworks-ring-shell.wgsl",
-  "features": []
+  "features": [
+    "hdr-burst-cores",
+    "audio-reactive-color-temperature",
+    "atmospheric-haze",
+    "depth-fog",
+    "generated-depth",
+    "temporal-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
+  ]
 }
