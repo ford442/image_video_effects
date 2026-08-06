@@ -2465,7 +2465,7 @@
     "tags": [
       "generative"
     ],
-    "description": "",
+    "description": "A colossal undulating leviathan skeleton prowling the abyss, its quantum marrow glowing through the bones. Fast-motion upgrade: whip-amplified traveling-wave spine kinematics, ballistic lunge surges with bass-transient kicks, high-speed anisotropically-stretched aether-current speed streaks, and velocity-advected motion-blur trails.",
     "workgroup_size": [
       16,
       16,
@@ -2510,7 +2510,19 @@
     "updated": true,
     "id": "gen-abyssal-quantum-leviathan-skeleton",
     "url": "shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
-    "features": []
+    "features": [
+      "fast-motion",
+      "spine-kinematics",
+      "ballistic-lunge",
+      "speed-streaks",
+      "motion-blur-trails",
+      "bass-transient-kick",
+      "audio-reactive",
+      "temporal-feedback",
+      "aces-tone-map",
+      "semantic-alpha",
+      "generated-depth"
+    ]
   },
   {
     "id": "gen-acid-lissajous",
@@ -7744,7 +7756,7 @@
     "tags": [
       "generative"
     ],
-    "description": "An impossible, non-Euclidean hypercube hive populated by swarms of luminescent algorithmic sentinels, constantly unfolding and fracturing into new geometric dimensions driven by quantum noise and acoustic energy.",
+    "description": "An impossible, non-Euclidean hypercube hive populated by swarms of luminescent algorithmic sentinels, constantly unfolding and fracturing into new geometric dimensions driven by quantum noise and acoustic energy. Upgraded for fast motion: dual-plane 4D tumble, velocity-stretched sentinel speed-streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth.",
     "workgroup_size": [
       16,
       16,
@@ -7789,7 +7801,17 @@
     "updated": true,
     "id": "gen-eldritch-tesseract-hive-mind",
     "url": "shaders/gen-eldritch-tesseract-hive-mind.wgsl",
-    "features": []
+    "features": [
+      "fast-motion",
+      "hdr-feedback-trails",
+      "speed-streaks",
+      "audio-transient-burst",
+      "audio-color-temperature",
+      "aces-tone-map",
+      "volumetric-depth-atmosphere",
+      "generated-depth",
+      "semantic-alpha"
+    ]
   },
   {
     "name": "Electric Kaleidoscope Storm",
@@ -13957,7 +13979,7 @@
       "glow",
       "scientific"
     ],
-    "description": "Procedurally rendered magnetic dipole field lines with charged particle trajectories. Simulates iron filings aligning to field lines with glowing ionized particles tracing the magnetic topology. Mouse moves the dipole position and controls field strength.",
+    "description": "Procedurally rendered magnetic dipole field lines with charged particle trajectories. Simulates iron filings aligning to field lines with glowing ionized particles tracing the magnetic topology. Mouse moves the dipole position and controls field strength. Batch 38 FAST MOTION upgrade: charged particles now ride analytic dipole field-line trajectories (r = L sin^2 theta, closed-form, frame-rate independent), velocity-aligned motion-blur trails streak along the local B-field via HDR-clamped (<=6.0) textureLoad feedback, hash-jitter storm shimmer replaced with smooth temporal-coherent value noise, and the 4x redundant field evaluations were hoisted to a single full pass plus a particle-free ghost pass with analytic chromatic split.",
     "workgroup_size": [
       16,
       16,
@@ -14002,7 +14024,19 @@
     "updated": true,
     "id": "gen-magnetic-dipole-field",
     "url": "shaders/gen-magnetic-dipole-field.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "depth-aware",
+      "temporal-feedback",
+      "fast-motion",
+      "analytic-fieldline-advection",
+      "velocity-aligned-motion-blur",
+      "hdr-clamped",
+      "aces-tone-map",
+      "chromatic-aberration",
+      "semantic-alpha"
+    ]
   },
   {
     "name": "Magnetic Ferrofluid-Sculpture",
@@ -14827,7 +14861,7 @@
       "music",
       "reactive"
     ],
-    "description": "Growing network patterns resembling fungal mycelium with diffusion-limited aggregation branching and bioluminescent tips",
+    "description": "Growing network patterns resembling fungal mycelium with diffusion-limited aggregation branching and bioluminescent tips Batch 38 FAST MOTION upgrade: bioluminescent signal pulses race along the hyphae (closed-form traveling wave), the growth front uses fast-in/smooth-out time-warp easing, bass transients fire expanding spore-burst shockwaves via a frame-rate-independent rising-edge detector (persistent state in extraBuffer[133..135]), and the branch traversal is coarse-culled with bounding-box pruning before every segment SDF evaluation. Feedback accumulation is HDR-clamped (<=4.0) so growth can never saturate the screen.",
     "workgroup_size": [
       16,
       16,
@@ -14872,7 +14906,19 @@
     "updated": true,
     "id": "gen-mycelium-network",
     "url": "shaders/gen-mycelium-network.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-interactive",
+      "depth-aware",
+      "temporal-feedback",
+      "fast-motion",
+      "traveling-pulses",
+      "burst-shockwave",
+      "time-warp-growth",
+      "hdr-clamped",
+      "aces-tone-map",
+      "semantic-alpha"
+    ]
   },
   {
     "name": "Navier-Stokes Ink",
@@ -15333,7 +15379,7 @@
       "audio-reactive",
       "cyberpunk"
     ],
-    "description": "A hyper-organic, biomechanical labyrinth of pulsing neon circuitry and breathing metallic tissue that spawns luminescent plasma-spores reacting to ambient cosmic frequencies.",
+    "description": "A hyper-organic, biomechanical labyrinth of pulsing neon circuitry and breathing metallic tissue that spawns luminescent plasma-spores reacting to ambient cosmic frequencies. Upgraded (fast-motion batch): the spores now swarm at speed with spring-damped cursor pursuit and velocity lead, bass kicks and clicks fire bounded shockwaves that whip the hive, and velocity-advected HDR feedback trails streak the fast flythrough.",
     "workgroup_size": [
       16,
       16,
@@ -15378,7 +15424,21 @@
     "updated": true,
     "id": "gen-neon-plasma-biomechanical-hive",
     "url": "shaders/gen-neon-plasma-biomechanical-hive.wgsl",
-    "features": []
+    "features": [
+      "fast-motion",
+      "spore-swarm",
+      "cursor-pursuit",
+      "gravity-well",
+      "bass-kick-shockwave",
+      "click-shockwaves",
+      "velocity-advected-trails",
+      "temporal-feedback",
+      "audio-reactive",
+      "raymarched",
+      "hdr-output",
+      "semantic-alpha",
+      "depth-output"
+    ]
   },
   {
     "name": "Neon Snowfall",
@@ -19860,7 +19920,7 @@
       "fractal",
       "audio-reactive"
     ],
-    "description": "A hyper-organic, bioluminescent extraterrestrial terrarium where fractal aether-spores drift and blossom into complex, sentient crystalline flora that pulse with cosmic energy in sync with ambient audio.",
+    "description": "A hyper-organic, bioluminescent extraterrestrial terrarium where fractal aether-spores drift and blossom into complex, sentient crystalline flora that pulse with cosmic energy in sync with ambient audio. Upgraded (fast-motion batch): spores now fly as a fast swarm with spring-damped cursor chase, bass kicks trigger bloom-burst shockwaves with bounded decay, and growth fronts propagate rapidly along the flora's own feedback history while velocity-advected HDR trails streak the flythrough.",
     "workgroup_size": [
       16,
       16,
@@ -19905,7 +19965,22 @@
     "updated": true,
     "id": "gen-sentient-aether-flora-biosphere",
     "url": "shaders/gen-sentient-aether-flora-biosphere.wgsl",
-    "features": []
+    "features": [
+      "fast-motion",
+      "spore-swarm",
+      "cursor-pursuit",
+      "growth-front",
+      "self-organizing",
+      "bass-kick-shockwave",
+      "click-shockwaves",
+      "velocity-advected-trails",
+      "temporal-feedback",
+      "audio-reactive",
+      "raymarched",
+      "hdr-output",
+      "semantic-alpha",
+      "depth-output"
+    ]
   },
   {
     "name": "Sentient Aether-Plasma Nebula-Moth",
@@ -20891,7 +20966,7 @@
       "temporal",
       "audio-reactive"
     ],
-    "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core.",
+    "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core. Fast-motion upgrade: closed-form orbital camera with eased time-warp spin, sonoluminescent flash-burst physics (bubble-collapse cycles with ballistic shockwave shells), bass-transient kick bursts, and swirl-advected motion-blur trails.",
     "workgroup_size": [
       16,
       16,
@@ -20936,7 +21011,19 @@
     "updated": true,
     "id": "gen-sonoluminescent-chrono-geode-matrix",
     "url": "shaders/gen-sonoluminescent-chrono-geode-matrix.wgsl",
-    "features": []
+    "features": [
+      "fast-motion",
+      "flash-burst-physics",
+      "time-warp-easing",
+      "orbital-camera",
+      "motion-blur-trails",
+      "bass-transient-kick",
+      "audio-reactive",
+      "temporal-feedback",
+      "aces-tone-map",
+      "semantic-alpha",
+      "generated-depth"
+    ]
   },
   {
     "name": "Spectral Ferrofluid",
@@ -21183,7 +21270,7 @@
       "music",
       "reactive"
     ],
-    "description": "A hyper-dimensional cosmic loom weaving infinite tendrils of starlight and plasma silk across a dark void, blending organic neuro-network vibes with vast, mechanical astrophysics.",
+    "description": "A hyper-dimensional cosmic loom weaving infinite tendrils of starlight and plasma silk across a dark void, blending organic neuro-network vibes with vast, mechanical astrophysics. Upgraded for fast motion: warp-flight camera driven by Weave Speed, radial speed-line streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth.",
     "workgroup_size": [
       16,
       16,
@@ -21228,7 +21315,17 @@
     "updated": true,
     "id": "gen-stellar-web-loom",
     "url": "shaders/gen-stellar-web-loom.wgsl",
-    "features": []
+    "features": [
+      "fast-motion",
+      "warp-flight",
+      "hdr-feedback-trails",
+      "speed-streaks",
+      "audio-transient-burst",
+      "audio-color-temperature",
+      "aces-tone-map",
+      "generated-depth",
+      "semantic-alpha"
+    ]
   },
   {
     "name": "Strange Field Flow",

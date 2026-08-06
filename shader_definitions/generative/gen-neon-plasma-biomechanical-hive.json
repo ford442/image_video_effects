@@ -9,7 +9,7 @@
     "audio-reactive",
     "cyberpunk"
   ],
-  "description": "A hyper-organic, biomechanical labyrinth of pulsing neon circuitry and breathing metallic tissue that spawns luminescent plasma-spores reacting to ambient cosmic frequencies.",
+  "description": "A hyper-organic, biomechanical labyrinth of pulsing neon circuitry and breathing metallic tissue that spawns luminescent plasma-spores reacting to ambient cosmic frequencies. Upgraded (fast-motion batch): the spores now swarm at speed with spring-damped cursor pursuit and velocity lead, bass kicks and clicks fire bounded shockwaves that whip the hive, and velocity-advected HDR feedback trails streak the fast flythrough.",
   "workgroup_size": [
     16,
     16,
@@ -54,5 +54,19 @@
   "updated": true,
   "id": "gen-neon-plasma-biomechanical-hive",
   "url": "shaders/gen-neon-plasma-biomechanical-hive.wgsl",
-  "features": []
+  "features": [
+    "fast-motion",
+    "spore-swarm",
+    "cursor-pursuit",
+    "gravity-well",
+    "bass-kick-shockwave",
+    "click-shockwaves",
+    "velocity-advected-trails",
+    "temporal-feedback",
+    "audio-reactive",
+    "raymarched",
+    "hdr-output",
+    "semantic-alpha",
+    "depth-output"
+  ]
 }

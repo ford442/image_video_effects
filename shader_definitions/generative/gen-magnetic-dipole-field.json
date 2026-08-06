@@ -10,7 +10,7 @@
     "glow",
     "scientific"
   ],
-  "description": "Procedurally rendered magnetic dipole field lines with charged particle trajectories. Simulates iron filings aligning to field lines with glowing ionized particles tracing the magnetic topology. Mouse moves the dipole position and controls field strength.",
+  "description": "Procedurally rendered magnetic dipole field lines with charged particle trajectories. Simulates iron filings aligning to field lines with glowing ionized particles tracing the magnetic topology. Mouse moves the dipole position and controls field strength. Batch 38 FAST MOTION upgrade: charged particles now ride analytic dipole field-line trajectories (r = L sin^2 theta, closed-form, frame-rate independent), velocity-aligned motion-blur trails streak along the local B-field via HDR-clamped (<=6.0) textureLoad feedback, hash-jitter storm shimmer replaced with smooth temporal-coherent value noise, and the 4x redundant field evaluations were hoisted to a single full pass plus a particle-free ghost pass with analytic chromatic split.",
   "workgroup_size": [
     16,
     16,
@@ -55,5 +55,17 @@
   "updated": true,
   "id": "gen-magnetic-dipole-field",
   "url": "shaders/gen-magnetic-dipole-field.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-interactive",
+    "depth-aware",
+    "temporal-feedback",
+    "fast-motion",
+    "analytic-fieldline-advection",
+    "velocity-aligned-motion-blur",
+    "hdr-clamped",
+    "aces-tone-map",
+    "chromatic-aberration",
+    "semantic-alpha"
+  ]
 }

@@ -1,6 +1,28 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-06 (Batch 37 shader upgrades)
+**Last updated:** 2026-08-06 (Batches 37+38 shader upgrades)
+
+## 2026-08-06 — Shader upgrade Batch 38 (4-agent swarm) — FAST MOTION batch
+
+- User directive: add fast motion. Next 8 smallest: Sonoluminescent Chrono
+  Geode Matrix, Abyssal Quantum Leviathan Skeleton, Eldritch Tesseract
+  Hive-Mind, Stellar Web-Loom, Neon Plasma Biomechanical Hive, Sentient
+  Aether-Flora Biosphere, Magnetic Dipole Field, Mycelium Network; tracker is
+  now #347.
+- Every shader gained ≥2 fast-motion techniques (closed-form orbitals/whip
+  kinematics, warp-flight cameras, velocity-advected HDR-clamped trails,
+  bass-transient kicks, speed streaks, time-warp easing, analytic dipole-line
+  advection) under stability rules (clamped velocities, bounded feedback, no
+  strobing, dt-based integration).
+- Massive uniform-truth finds: geode's config scrambled as [resX,resY,time,
+  aspect]; neon-plasma hive read all 4 sliders from zoom_config; flora's p1/p2
+  never read; config.y-as-audio in 4 shaders. Coordinator caught vertically
+  mirrored mouse gravity wells in geode + leviathan (camera-convention y
+  mismatch; same class as b37 moth flip — now a standing review item).
+- 8/8 updatedParams byte-exact; state only extraBuffer[133..138] single-writer.
+- Proof: gate 8/8, audits PASS, generative list synced, manifest 1,310/1,310,
+  Jest 478/1, SKIP_WASM_BUILD=1 build green, drift restored. Visual QA
+  external. ~103 pending generative remain.
 
 ## 2026-08-06 — Shader upgrade Batch 37 (4-agent swarm)
 

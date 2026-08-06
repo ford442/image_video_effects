@@ -4,7 +4,7 @@
   "tags": [
     "generative"
   ],
-  "description": "",
+  "description": "A colossal undulating leviathan skeleton prowling the abyss, its quantum marrow glowing through the bones. Fast-motion upgrade: whip-amplified traveling-wave spine kinematics, ballistic lunge surges with bass-transient kicks, high-speed anisotropically-stretched aether-current speed streaks, and velocity-advected motion-blur trails.",
   "workgroup_size": [
     16,
     16,
@@ -49,5 +49,17 @@
   "updated": true,
   "id": "gen-abyssal-quantum-leviathan-skeleton",
   "url": "shaders/gen-abyssal-quantum-leviathan-skeleton.wgsl",
-  "features": []
+  "features": [
+    "fast-motion",
+    "spine-kinematics",
+    "ballistic-lunge",
+    "speed-streaks",
+    "motion-blur-trails",
+    "bass-transient-kick",
+    "audio-reactive",
+    "temporal-feedback",
+    "aces-tone-map",
+    "semantic-alpha",
+    "generated-depth"
+  ]
 }
