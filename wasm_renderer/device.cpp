@@ -77,17 +77,40 @@ EM_JS(int, JS_GetPreferredCanvasFormat, (), {
 bool WebGPURenderer::CreateDevice() {
     // Adapter ladder, limit validation, and requiredLimits must stay in sync with
     // src/renderer/webgpuDevicePolicy.ts (TypeScript WebGPU path).
-    // Create instance
-    WGPUInstanceDescriptor instanceDesc = {};
-    instanceDesc.nextInChain = nullptr;
+    //
+    // TimedWaitAny MUST be enabled on the instance. wgpuInstanceWaitAny with
+    // timeoutNS > 0 returns WGPUWaitStatus_Error immediately if it is not
+    // (emdawnwebgpu EventManager). Our adapter/device requests use
+    // WGPUCallbackMode_WaitAnyOnly + UINT64_MAX timeout + ASYNCIFY — without
+    // this feature the callbacks never run, every attempt "fails", Shutdown()
+    // drops the instance, and late JS completions log
+    // "A valid external Instance reference no longer exists" (status=2).
+    // That is exactly the Windows Chrome failure mode when TS WebGPU works
+    // but C++ WASM never obtains an adapter.
+    WGPUInstanceFeatureName instanceFeatures[] = {
+        WGPUInstanceFeatureName_TimedWaitAny,
+    };
+    WGPUInstanceLimits instanceLimits = WGPU_INSTANCE_LIMITS_INIT;
+    // 0 → emdawn raises to kTimedWaitAnyMaxCountDefault (64). Keep an explicit
+    // small floor so future emdawn changes cannot silently disable waits.
+    instanceLimits.timedWaitAnyMaxCount = 64;
+
+    WGPUInstanceDescriptor instanceDesc = WGPU_INSTANCE_DESCRIPTOR_INIT;
+    instanceDesc.requiredFeatureCount = 1;
+    instanceDesc.requiredFeatures = instanceFeatures;
+    instanceDesc.requiredLimits = &instanceLimits;
     instance_.reset(wgpuCreateInstance(&instanceDesc));
 
     if (!instance_) {
         printf("❌ Failed to create WebGPU instance\n");
+        printf("   (TimedWaitAny + ASYNCIFY required for adapter/device WaitAny)\n");
         failedStage_ = InitStage::Instance;
-        lastError_ = "Failed to create WebGPU instance (wgpuCreateInstance returned null)";
+        lastError_ = "Failed to create WebGPU instance (wgpuCreateInstance returned null; "
+                     "TimedWaitAny may be unavailable without ASYNCIFY)";
         return false;
     }
+    printf("[WASM] WebGPU instance created with TimedWaitAny (maxCount=%zu)\n",
+           instanceLimits.timedWaitAnyMaxCount);
 
     // Request adapter using callback-based API.
     // On Windows + Chrome/Edge, crbug.com/369219127 reports powerPreference is ignored
@@ -97,6 +120,12 @@ bool WebGPURenderer::CreateDevice() {
     //   2) Undefined       (browser default)
     //   3) LowPower        (alternate hardware path)
     //   4) Undefined + forceFallbackAdapter=true (software adapter last resort)
+    //
+    // IMPORTANT: RendererManager must destroy the TypeScript WebGPU device and
+    // unconfigure the canvas *before* this path runs. Holding two exclusive
+    // browser WebGPU devices on the same page commonly yields status=Unavailable
+    // plus "A valid external Instance reference no longer exists" / "No available
+    // adapters" on Windows even when the JS path just succeeded.
     struct AdapterAttempt {
         WGPUPowerPreference powerPreference;
         bool forceFallbackAdapter;
@@ -162,14 +191,20 @@ bool WebGPURenderer::CreateDevice() {
 
         WGPUFutureWaitInfo adapterWait = {};
         adapterWait.future = adapterFuture;
-        wgpuInstanceWaitAny(instance_.get(), 1, &adapterWait, UINT64_MAX);
+        WGPUWaitStatus waitStatus =
+            wgpuInstanceWaitAny(instance_.get(), 1, &adapterWait, UINT64_MAX);
+        if (waitStatus != WGPUWaitStatus_Success) {
+            printf("[WASM] Adapter WaitAny status=%d (1=Success,2=TimedOut,3=Error)\n",
+                   (int)waitStatus);
+        }
 
         if (adapterFromCallback) {
             rawAdapter = adapterFromCallback;
             printf("[WASM] Successfully obtained adapter on attempt %zu (powerPref=%s, fallbackAdapter=%s)\n",
                    attempt + 1, prefName, useFallbackAdapter ? "true" : "false");
         } else {
-            printf("[WASM] Adapter attempt %zu failed.\n", attempt + 1);
+            printf("[WASM] Adapter attempt %zu failed (completed=%d).\n",
+                   attempt + 1, (int)adapterWait.completed);
         }
     }
 
@@ -408,7 +443,14 @@ bool WebGPURenderer::CreateDevice() {
 
     WGPUFutureWaitInfo deviceWait = {};
     deviceWait.future = deviceFuture;
-    wgpuInstanceWaitAny(instance_.get(), 1, &deviceWait, UINT64_MAX);
+    {
+        WGPUWaitStatus waitStatus =
+            wgpuInstanceWaitAny(instance_.get(), 1, &deviceWait, UINT64_MAX);
+        if (waitStatus != WGPUWaitStatus_Success) {
+            printf("[WASM] Device WaitAny status=%d (need TimedWaitAny on instance)\n",
+                   (int)waitStatus);
+        }
+    }
 
     device_.reset(rawDevice);
 

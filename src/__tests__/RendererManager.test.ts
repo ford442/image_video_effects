@@ -493,4 +493,85 @@ describe('RendererManager shader forwarding', () => {
 
     expect(manager.getActiveRendererType()).toBe('wasm');
   });
+
+  it('releases WebGPU before WASM init (exclusive adapter ownership)', async () => {
+    const order: string[] = [];
+    const webgpu = makeMockWebGPU();
+    webgpu.destroy = jest.fn(() => {
+      order.push('webgpu.destroy');
+    });
+    const wasm = makeMockWASM();
+    wasm.init = jest.fn(async () => {
+      order.push('wasm.init');
+      return true;
+    });
+
+    (WebGPURenderer as jest.Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    expect(manager.getActiveRendererType()).toBe('webgpu');
+
+    const switched = await manager.switchRenderer('wasm');
+    expect(switched).toBe(true);
+    expect(order.indexOf('webgpu.destroy')).toBeGreaterThanOrEqual(0);
+    expect(order.indexOf('wasm.init')).toBeGreaterThan(order.indexOf('webgpu.destroy'));
+    expect(manager.getActiveRendererType()).toBe('wasm');
+  });
+
+  it('restores WebGPU when WASM init fails after exclusive release', async () => {
+    let webgpuInitCount = 0;
+    const webgpuInstances: Array<{ init: jest.Mock; destroy: jest.Mock }> = [];
+
+    (WebGPURenderer as jest.Mock).mockImplementation(() => {
+      const instance = {
+        init: jest.fn(async () => {
+          webgpuInitCount += 1;
+          return true;
+        }),
+        destroy: jest.fn(),
+        loadShader: jest.fn().mockResolvedValue(true),
+        setActiveShader: jest.fn(),
+        setSlotShader: jest.fn(),
+        setSlotParams: jest.fn(),
+        updateSlotParams: jest.fn(),
+        setSlotMode: jest.fn(),
+        addRipple: jest.fn(),
+        clearRipples: jest.fn(),
+        setInputSource: jest.fn(),
+        getInputSource: jest.fn().mockReturnValue('image'),
+        updateVideoFrame: jest.fn(),
+        updateAudioData: jest.fn(),
+        updateAudioFrequencyBins: jest.fn(),
+        takeScreenshot: jest.fn().mockResolvedValue(undefined),
+        refreshFrameImage: jest.fn().mockResolvedValue(''),
+        getFrameImage: jest.fn().mockReturnValue(''),
+        getFPS: jest.fn().mockReturnValue(60),
+        loadImage: jest.fn().mockResolvedValue('https://example.com/webgpu.png'),
+        reloadShaderFromURL: jest.fn().mockResolvedValue(true),
+        getDiagnostics: jest.fn().mockReturnValue({ initialized: true }),
+      };
+      webgpuInstances.push(instance);
+      return instance;
+    });
+
+    const wasm = makeMockWASM();
+    wasm.init = jest.fn().mockResolvedValue(false);
+    (WASMRenderer as jest.Mock).mockImplementation(() => wasm);
+    (JSRenderer as jest.Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    expect(webgpuInitCount).toBe(1);
+    expect(manager.getActiveRendererType()).toBe('webgpu');
+
+    const switched = await manager.switchRenderer('wasm');
+    expect(switched).toBe(false);
+    // First WebGPU destroyed for exclusive release; second created to restore.
+    expect(webgpuInstances[0].destroy).toHaveBeenCalled();
+    expect(webgpuInitCount).toBe(2);
+    expect(manager.getActiveRendererType()).toBe('webgpu');
+  });
 });

@@ -95,6 +95,19 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onCanvasRef]);
 
+    // JSRenderer may replace the <canvas> after WebGPU permanently claims its
+    // context type. Keep React's ref + parent onCanvasRef in sync.
+    useEffect(() => {
+        const onReplaced = (ev: Event) => {
+            const next = (ev as CustomEvent<HTMLCanvasElement>).detail;
+            if (!next || !(next instanceof HTMLCanvasElement)) return;
+            canvasRef.current = next;
+            onCanvasRef?.(next);
+        };
+        window.addEventListener('pixelocity-canvas-replaced', onReplaced);
+        return () => window.removeEventListener('pixelocity-canvas-replaced', onReplaced);
+    }, [onCanvasRef]);
+
     // Ensure canvas has valid dimensions before WebGPU initialization
     const ensureCanvasSize = (canvas: HTMLCanvasElement) => {
         // Only check the on-screen CSS box here; the backing buffer is fixed separately.

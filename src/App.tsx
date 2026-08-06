@@ -450,6 +450,9 @@ function MainApp() {
         loadDepthModel,
         setSelectedVideo,
         setIsMuted,
+        handleRandomizeSlot,
+        triggerRandomizeAllSlots,
+        triggerRoulette,
     });
 
     useTestHarness({ rendererRef, rendererReady });
@@ -511,7 +514,7 @@ function MainApp() {
             const manager = rendererRef.current;
             if (!manager) return;
             const perf = manager.getPerformanceStatus();
-            setPerformanceHud({
+            const nextHud = {
                 internalWidth: perf.internalWidth,
                 internalHeight: perf.internalHeight,
                 scale: perf.scale,
@@ -524,12 +527,34 @@ function MainApp() {
                 fp32Pinned: perf.fp32Pinned,
                 fp32PinnedBy: perf.fp32PinnedBy,
                 maxPassesPerFrame: perf.maxPassesPerFrame,
+            };
+            // Avoid re-rendering the full App shell every second when nothing changed.
+            setPerformanceHud((prev) => {
+                if (
+                    prev &&
+                    prev.internalWidth === nextHud.internalWidth &&
+                    prev.internalHeight === nextHud.internalHeight &&
+                    prev.scale === nextHud.scale &&
+                    prev.targetFps === nextHud.targetFps &&
+                    prev.adaptive === nextHud.adaptive &&
+                    prev.maxActiveSlots === nextHud.maxActiveSlots &&
+                    prev.colorFormat === nextHud.colorFormat &&
+                    prev.estimatedTextureMiB === nextHud.estimatedTextureMiB &&
+                    prev.requestedColorFormat === nextHud.requestedColorFormat &&
+                    prev.fp32Pinned === nextHud.fp32Pinned &&
+                    prev.maxPassesPerFrame === nextHud.maxPassesPerFrame &&
+                    prev.fp32PinnedBy.length === nextHud.fp32PinnedBy.length &&
+                    prev.fp32PinnedBy.every((id, i) => id === nextHud.fp32PinnedBy[i])
+                ) {
+                    return prev;
+                }
+                return nextHud;
             });
 
             // Backend health for the debug panel — adapter identity is Tier B promotion
             // evidence (WASM_BACKEND_POLICY.md gate 2) and should never require a console.
             const diags = manager.getDiagnostics();
-            setRendererDiagnostics({
+            const nextDiags = {
                 backend: diags.rendererType,
                 fps: diags.metrics?.fps,
                 adapterInfo: diags.rendererType === 'wasm'
@@ -540,6 +565,22 @@ function MainApp() {
                 wasmAdapterInfo: diags.wasm?.adapterInfo,
                 wasmFailedStageName: diags.wasm?.failedStageName,
                 wasmLastInitError: diags.wasm?.lastInitError || undefined,
+            };
+            setRendererDiagnostics((prev) => {
+                if (
+                    prev &&
+                    prev.backend === nextDiags.backend &&
+                    prev.fps === nextDiags.fps &&
+                    prev.adapterInfo === nextDiags.adapterInfo &&
+                    prev.adapterAttemptLabel === nextDiags.adapterAttemptLabel &&
+                    prev.wasmInitSummary === nextDiags.wasmInitSummary &&
+                    prev.wasmAdapterInfo === nextDiags.wasmAdapterInfo &&
+                    prev.wasmFailedStageName === nextDiags.wasmFailedStageName &&
+                    prev.wasmLastInitError === nextDiags.wasmLastInitError
+                ) {
+                    return prev;
+                }
+                return nextDiags;
             });
         };
         tick();

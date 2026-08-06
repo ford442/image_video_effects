@@ -20,7 +20,13 @@ export type SyncMessageType =
     | 'CMD_LOAD_MODEL'
     | 'CMD_UPLOAD_FILE' // Payload: { name: string, type: 'image' | 'video', data: ArrayBuffer }
     | 'CMD_SELECT_VIDEO'
-    | 'CMD_SET_MUTED';
+    | 'CMD_SET_MUTED'
+    /** Randomize one slot (shader + params). Payload: slot index 0–2. */
+    | 'CMD_RANDOMIZE_SLOT'
+    /** Randomize all non-empty/empty slots like main Roulette "Randomize All". */
+    | 'CMD_RANDOMIZE_ALL_SLOTS'
+    /** Roulette on the main app's active slot (same as R / Randomize Slot N button). */
+    | 'CMD_ROULETTE'
 
 export interface SyncMessage {
     type: SyncMessageType;
