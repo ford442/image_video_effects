@@ -35,15 +35,52 @@ export class JSRenderer implements Renderer {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
 
+    // Once a canvas has been used with WebGPU, the browser permanently binds
+    // that context type — getContext('2d') returns null forever on the same
+    // element. Replace the node so Canvas2D fallback still works after a
+    // webgpu/wasm session (parent keeps layout via class/style/size copy).
+    if (!this.ctx && canvas.parentElement) {
+      const replacement = document.createElement('canvas');
+      replacement.id = canvas.id;
+      replacement.className = canvas.className;
+      replacement.width = canvas.width;
+      replacement.height = canvas.height;
+      replacement.style.cssText = canvas.style.cssText;
+      for (const attr of Array.from(canvas.attributes)) {
+        if (attr.name === 'id' || attr.name === 'class' || attr.name === 'style' || attr.name === 'width' || attr.name === 'height') {
+          continue;
+        }
+        replacement.setAttribute(attr.name, attr.value);
+      }
+      canvas.parentElement.replaceChild(replacement, canvas);
+      this.canvas = replacement;
+      this.ctx = replacement.getContext('2d');
+      console.warn(
+        '[JSRenderer] Replaced canvas element to recover a 2D context after WebGPU use',
+      );
+      try {
+        window.dispatchEvent(
+          new CustomEvent('pixelocity-canvas-replaced', { detail: replacement }),
+        );
+      } catch {
+        /* non-browser / tests */
+      }
+    }
+
     if (!this.ctx) {
       console.error('❌ Could not get 2D context');
       return false;
     }
 
     // Canvas size already set by WebGPUCanvas, don't override it
-    console.log(`✅ JS Renderer initialized with canvas size: ${canvas.width}x${canvas.height}`);
+    console.log(`✅ JS Renderer initialized with canvas size: ${this.canvas.width}x${this.canvas.height}`);
     this.startRenderLoop();
     return true;
+  }
+
+  /** Active canvas (may differ from the element passed to init after WebGPU recovery). */
+  getCanvas(): HTMLCanvasElement | null {
+    return this.canvas;
   }
 
   setVideo(video: HTMLVideoElement): void {

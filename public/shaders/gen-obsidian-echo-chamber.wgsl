@@ -19,19 +19,19 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Monolith Spacing, y=Ripple Intensity, z=Specular Gloss, w=Forward Speed
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
+    zoom_params: vec4<f32>,  // x=Intensity, y=Speed, z=Scale, w=Mouse Influence
     ripples: array<vec4<f32>, 50>,
 };
-fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
-  let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
-  let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
-  let detailContrast = mix(0.75, 1.6, clamp(u.zoom_params.z, 0.0, 1.0));
-  let mouseDistance = length(u.zoom_config.yz - vec2<f32>(0.5));
-  let mouseInfluence = mix(0.95, 1.15, clamp(u.zoom_params.w * mouseDistance * 2.0, 0.0, 1.0));
-  let controlled = pow(max(color.rgb * primaryIntensity * speedPulse * mouseInfluence, vec3<f32>(0.0)), vec3<f32>(1.0 / detailContrast));
-  return vec4<f32>(controlled, color.a);
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 
@@ -51,9 +51,11 @@ fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
 }
 
 fn map(p: vec3<f32>) -> f32 {
-    var pos = p;
+    let objectScale = mix(0.72, 1.45, clamp(u.zoom_params.z, 0.0, 1.0));
+    let motionTime = u.config.x * mix(0.45, 2.4, clamp(u.zoom_params.y, 0.0, 1.0));
+    var pos = p / objectScale;
     // Domain repetition
-    let spacing = u.zoom_params.x * 5.0 + 5.0; // Slider mapped spacing
+    let spacing = 7.5;
 
     // Calculate cell ID for dynamic gravity shifts
     let id_x = floor((pos.x + spacing * 0.5) / spacing);
@@ -64,7 +66,7 @@ fn map(p: vec3<f32>) -> f32 {
 
     // Vertical shift based on position
     let hash = fract(sin(id_x * 12.9898 + id_z * 78.233) * 43758.5453);
-    pos.y += sin(p.x * 0.1 + u.config.x + hash * 6.28) * 2.0;
+    pos.y += sin(p.x * 0.1 + motionTime + hash * 6.28) * 2.0;
 
     // Monolith SDF
     let box = sdBox(pos, vec3<f32>(1.0, 10.0, 1.0));
@@ -74,7 +76,7 @@ fn map(p: vec3<f32>) -> f32 {
     q.y = (q.y + 1.0) % 2.0 - 1.0;
     let cuts = sdBox(q, vec3<f32>(1.2, 0.1, 1.2));
 
-    return max(box, -cuts);
+    return max(box, -cuts) * objectScale;
 }
 
 fn getNormal(p: vec3<f32>) -> vec3<f32> {
@@ -92,7 +94,7 @@ fn rayMarch(ro: vec3<f32>, rd: vec3<f32>) -> f32 {
     for(var i = 0; i < MAX_STEPS; i++) {
         let p = ro + rd * dO;
         let dS = map(p);
-        dO += dS;
+        dO += max(abs(dS), 0.002);
         if(dO > MAX_DIST || abs(dS) < SURF_DIST) { break; }
     }
     return dO;
@@ -105,13 +107,23 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
     var uv = (fragCoord - 0.5 * res) / res.y;
 
-    // Camera setup with mouse interaction
-    var ro = vec3<f32>(0.0, 2.0, -u.config.x * u.zoom_params.w * 5.0); // Moving forward
+    let intensity = clamp(u.zoom_params.x, 0.0, 1.0);
+    let speed = clamp(u.zoom_params.y, 0.0, 1.0);
+    let mouseInfluence = clamp(u.zoom_params.w, 0.0, 1.0);
+    let motionTime = u.config.x * mix(0.45, 2.4, speed);
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+
+    // Wrapped fly-through keeps the corridor moving quickly without precision
+    // loss at long run times.
+    let cameraTravel = motionTime * (3.5 + speed * 5.5 + bass * 2.0);
+    var ro = vec3<f32>(0.0, 2.0, -6.0 + (cameraTravel - 7.5 * floor(cameraTravel / 7.5)));
     var rd = normalize(vec3<f32>(uv.x, uv.y, 1.0));
 
-    // Mouse rotation
-    let mouseX = (u.zoom_config.y / res.x) * 6.2831 - 3.1415;
-    let mouseY = (u.zoom_config.z / res.y) * 3.1415 - 1.5707;
+    // Mouse is already normalized canvas UV; do not divide it by resolution.
+    let mouseX = (u.zoom_config.y - 0.5) * 1.8 * mouseInfluence;
+    let mouseY = (u.zoom_config.z - 0.5) * 1.15 * mouseInfluence;
 
     let rotY = rot2D(-mouseX);
     let rotX = rot2D(mouseY);
@@ -145,15 +157,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Base obsidian material
         let albedo = vec3<f32>(0.005, 0.005, 0.01);
 
-        // Audio reactive sonar ripples
+        // Fast sonar wavefronts race down the chamber on real audio bands.
         let distFromCam = length(p - ro);
 
         // The ripple maps to fractional part of distance minus time
-        let ripplePhase = fract(distFromCam * 0.1 - u.config.x * 3.0);
+        let ripplePhase = fract(distFromCam * 0.12 - motionTime * (1.8 + speed * 2.2));
 
-        // Intensity driven by u.config.y (Audio/ClickCount)
         let baseIntensity = smoothstep(0.9, 1.0, ripplePhase);
-        let audioIntensity = u.config.y * u.zoom_params.y;
+        let audioIntensity = (0.22 + bass * 0.9 + mids * 0.35) * (0.55 + intensity * 1.25);
 
         // Vibrant neon gradient (cyan to magenta)
         let rippleColor = mix(vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), sin(distFromCam * 0.2) * 0.5 + 0.5);
@@ -184,17 +195,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         let caSpec = vec3<f32>(rSpec, specPower, bSpec) * (0.5 + u.zoom_params.z * 0.5);
 
-        // Secondary raymarching for real reflection (simplified)
-        let refDist = rayMarch(p + n * 0.01, refDir);
-        var refEnv = bgCol;
-        if (refDist < MAX_DIST) {
-            let pRef = p + n * 0.01 + refDir * refDist;
-            let refDistCam = length(pRef - ro);
-            let refRipplePhase = fract(refDistCam * 0.1 - u.config.x * 3.0);
-            let refBaseInt = smoothstep(0.9, 1.0, refRipplePhase);
-            let refRippleCol = mix(vec3<f32>(0.0, 1.0, 1.0), vec3<f32>(1.0, 0.0, 1.0), sin(refDistCam * 0.2) * 0.5 + 0.5);
-            refEnv = refRippleCol * refBaseInt * audioIntensity * 5.0;
-        }
+        // Analytic reflected corridor replaces a second 120-step raymarch.
+        let reflectedBand = pow(max(0.0, 1.0 - abs(fract(refDir.z * 3.0 - motionTime * 2.0) - 0.5) * 2.0), 14.0);
+        let refEnv = mix(vec3<f32>(0.015, 0.025, 0.055), vec3<f32>(0.15, 0.9, 1.5), reflectedBand) *
+                     (0.45 + fresnel + treble * 0.35);
 
         // Combine material
         col = albedo * diff + caSpec + fresnelColor * refEnv * u.zoom_params.z + rippleEmission;
@@ -208,10 +212,31 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = bgCol;
     }
 
-    // Gamma correction
-    col = pow(col, vec3<f32>(0.4545));
+    // Click echoes add fast radial reflection shocks without persistent state.
+    var clickEcho = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    let screenUv = fragCoord / res;
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = u.config.x - ripple.z;
+        if (age >= 0.0 && age < 1.6) {
+            let delta = (screenUv - ripple.xy) * vec2<f32>(res.x / res.y, 1.0);
+            clickEcho = max(clickEcho, exp(-abs(length(delta) - age * 0.52) * 64.0) * exp(-age * 1.6));
+        }
+    }
+    col += vec3<f32>(0.18, 0.8, 1.4) * clickEcho * (0.65 + treble * 0.7);
 
-    let finalColor = vec4<f32>(col, 1.0);
-    textureStore(writeTexture, vec2<i32>(id.xy), applyGenerativePrimaryControls(finalColor));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    // Forward-advected, bounded reflection history forms corridor speed trails.
+    let historyVelocity = vec2<f32>(mouseX * 2.0, -(2.0 + speed * 5.0 + bass * 2.0));
+    let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    let historyCoord = clamp(vec2<i32>(id.xy) - vec2<i32>(historyVelocity), vec2<i32>(0), maxCoord);
+    let history = textureLoad(dataTextureC, historyCoord, 0).rgb;
+    let hdrColor = clamp(col * (0.72 + intensity * 0.75) + history * (0.24 + speed * 0.16), vec3<f32>(0.0), vec3<f32>(5.0));
+    let hit = d < MAX_DIST;
+    let alpha = clamp(select(0.025, 0.28 + length(hdrColor) * 0.22, hit) + clickEcho * 0.22, 0.02, 0.96);
+    let depth = select(0.0, clamp(1.0 - d / MAX_DIST, 0.0, 1.0), hit);
+    let coord = vec2<i32>(id.xy);
+    textureStore(dataTextureA, coord, vec4<f32>(hdrColor, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(hdrColor), alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

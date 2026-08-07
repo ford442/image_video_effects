@@ -104,13 +104,17 @@ fn fireflyField(
 
         // Base orbit parameters
         let orbitRadius = 0.15 + seed * 0.5;
-        let orbitSpeed = (0.2 + seed2 * 0.8) * speed;
+        let orbitSpeed = (0.35 + seed2 * 1.15) * speed;
         let orbitPhase = seed * TAU + fi * 0.3;
 
         // Organic swirling motion
         let t = time * orbitSpeed + orbitPhase;
         let swirlX = cos(t * 0.7 + seed * 3.0) * orbitRadius;
         let swirlY = sin(t * 0.9 + seed2 * 2.0) * orbitRadius;
+        let velocity = vec2<f32>(
+            -sin(t * 0.7 + seed * 3.0) * orbitRadius * 0.7 * orbitSpeed,
+             cos(t * 0.9 + seed2 * 2.0) * orbitRadius * 0.9 * orbitSpeed
+        );
 
         // Additional turbulence
         let turb = vec2<f32>(
@@ -128,7 +132,7 @@ fn fireflyField(
         fPos += normalize(toMouse + vec2<f32>(0.001)) * attractStrength / (mouseDist + 0.3);
 
         // Scale firefly size with bass pulse
-        let fSize = (0.008 + 0.012 * sin(time * 2.0 * speed * bassPulse + fi) * intensity) * scale;
+        let fSize = max(0.0035, (0.008 + 0.008 * sin(time * 2.0 * speed * bassPulse + fi) * intensity) * scale);
 
         // Rainbow color
         let hue = fract(fi / f32(numFireflies) + time * 0.15 * speed + colorShift + seed * 0.3);
@@ -137,9 +141,18 @@ fn fireflyField(
         // Brightness pulsing
         let pulse = 0.7 + 0.3 * sin(time * 3.0 * speed + fi * 1.7);
 
-        // Glow
+        // Velocity-stretched comet tail: one swarm evaluation replaces the
+        // former three complete chromatic field passes.
+        let rel = uv - fPos;
+        let velocityDir = velocity / max(length(velocity), 0.001);
+        let behind = max(dot(rel, -velocityDir), 0.0);
+        let crossTrail = abs(rel.x * velocityDir.y - rel.y * velocityDir.x);
+        let tail = exp(-crossTrail * crossTrail / max(fSize * fSize * 0.35, 0.000002)) *
+                   exp(-behind / max(fSize * (8.0 + speed * 10.0), 0.001)) *
+                   step(0.0, dot(rel, -velocityDir));
         let glow = fireflyGlow(uv, fPos, fSize, intensity);
-        col += fColor * glow * pulse * intensity * 2.5;
+        let spectralTail = hue2rgb(hue + behind * 4.0 + bass * 0.08);
+        col += (fColor * glow + spectralTail * tail * 0.32) * pulse * intensity * 2.5;
     }
     return col;
 }
@@ -148,14 +161,16 @@ fn fireflyField(
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let resolution = vec2<f32>(u.config.z, u.config.w);
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = (vec2<f32>(pixel) - resolution * 0.5) / min(resolution.x, resolution.y);
     let time = u.config.x;
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let mouseDown = u.zoom_config.w;
-    let mouseNorm = (mouse - resolution * 0.5) / min(resolution.x, resolution.y);
+    // Mouse arrives as normalized canvas UV, not pixels.
+    let mouseNorm = (mouse - 0.5) * resolution / min(resolution.x, resolution.y);
 
     let intensity = u.zoom_params.x;
-    let speed = u.zoom_params.y;
+    let speed = 0.35 + u.zoom_params.y * 2.2;
     let scale = u.zoom_params.z;
     let colorShift = u.zoom_params.w;
 
@@ -163,10 +178,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-
-    // ═══ DEPTH AWARENESS ═══
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(pixel) / resolution, 0.0).r;
-    let depthFactor = 0.5 + depth * 0.5;
 
     var col = vec3<f32>(0.0);
 
@@ -181,38 +192,48 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flow = flow1 * flow2;
     col += hue2rgb(fract(flow + time * 0.03 * speed + colorShift + treble * 0.1)) * flow * 0.15 * intensity * (1.0 + mids * 0.2);
 
-    // ═══ TEMPORAL FEEDBACK ═══
-    let prevFrame = textureLoad(dataTextureC, pixel, 0);
-    let trailDecay = 0.92;
-    var trailColor = prevFrame.rgb * trailDecay;
+    let numFireflies = i32(56.0 + bass * 18.0);
+    let fireflyCol = fireflyField(uv, time, speed, scale, colorShift, intensity, bass,
+                                 numFireflies, mouseNorm, mouseDown);
 
-    // ═══ CHROMATIC ABERRATION ON FIREFLY GLOW ═══
-    let caStrength = 0.003 * intensity * (1.0 + bass);
-    let numFireflies = i32(80.0 * (1.0 + bass * 0.3));
-    let effIntensity = intensity * depthFactor;
+    // Clicks release fast radial mini-swarms with segmented firefly heads.
+    var clickSwarm = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    let screenUv = vec2<f32>(pixel) / resolution;
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.4) {
+            let delta = (screenUv - ripple.xy) * resolution / min(resolution.x, resolution.y);
+            let radius = length(delta);
+            let ring = exp(-abs(radius - age * (0.52 + bass * 0.18)) * 72.0) * exp(-age * 1.7);
+            let heads = pow(max(cos(atan2(delta.y, delta.x) * 18.0 - age * 15.0), 0.0), 16.0);
+            clickSwarm = max(clickSwarm, ring * (0.45 + heads));
+        }
+    }
 
-    let rField = fireflyField(uv + vec2<f32>(caStrength, 0.0), time, speed, scale, colorShift, effIntensity, bass, numFireflies, mouseNorm, mouseDown);
-    let gField = fireflyField(uv, time, speed, scale, colorShift, effIntensity, bass, numFireflies, mouseNorm, mouseDown);
-    let bField = fireflyField(uv - vec2<f32>(caStrength, 0.0), time, speed, scale, colorShift, effIntensity, bass, numFireflies, mouseNorm, mouseDown);
-    var fireflyCol = vec3<f32>(rField.r, gField.g, bField.b);
-
-    // Additive blend with phosphorescent trail
-    col = max(col, trailColor * 0.5);
-    col += trailColor * 0.3;
     col += fireflyCol;
+    col += hue2rgb(colorShift + time * 0.12) * clickSwarm * (0.8 + treble * 0.7);
 
     // Vignette for depth
     let vig = 1.0 - dot(uv * 0.8, uv * 0.8);
     col *= clamp(vig, 0.0, 1.0) * 1.2;
 
-    // ═══ ACES TONE MAPPING ═══
-    col = acesToneMap(col * 2.0);
-    col = pow(col, vec3<f32>(0.9));
-
-    // ═══ SEMANTIC ALPHA ═══
-    let totalGlow = length(fireflyCol) + length(trailColor);
-    let alpha = clamp(totalGlow * depthFactor * (1.0 + bass) * 0.5, 0.0, 1.0);
-
-    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
-    textureStore(writeDepthTexture, pixel, vec4<f32>(depthFactor * 0.5 + totalGlow * 0.1, 0.0, 0.0, 0.0));
+    // Swirl-advected, HDR-bounded history turns each orbit into a coherent
+    // light ribbon while avoiding the old self-amplifying max feedback.
+    let globalVelocity = vec2<f32>(
+        cos(time * 0.7 + uv.y * 3.0),
+        sin(time * 0.63 - uv.x * 3.0)
+    ) * (2.0 + speed * 1.7 + bass * 2.0);
+    let maxCoord = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
+    let historyCoord = clamp(pixel - vec2<i32>(globalVelocity), vec2<i32>(0), maxCoord);
+    let history = textureLoad(dataTextureC, historyCoord, 0).rgb;
+    let hdrColor = clamp(col + history * (0.28 + u.zoom_params.y * 0.16), vec3<f32>(0.0), vec3<f32>(5.0));
+    let totalGlow = length(fireflyCol) + clickSwarm;
+    let alpha = clamp(totalGlow * (0.34 + intensity * 0.35), 0.02, 0.97);
+    let depth = clamp(length(fireflyCol) * 0.16 + clickSwarm * 0.32, 0.0, 1.0);
+    textureStore(dataTextureA, pixel, vec4<f32>(hdrColor, alpha));
+    let display = pow(acesToneMap(hdrColor * 1.8), vec3<f32>(0.9));
+    textureStore(writeTexture, pixel, vec4<f32>(display, alpha));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

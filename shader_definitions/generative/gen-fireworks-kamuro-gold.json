@@ -12,7 +12,7 @@
     "generative",
     "4th-of-july"
   ],
-  "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor.",
+  "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor. Upgraded with HDR white-gold burst cores, audio-reactive color temperature (bass deepens amber, treble shifts silver), golden atmospheric haze with depth fog, split-tone grading (cool shadows, warm highlights), and real generated depth from glitter heat.",
   "workgroup_size": [
     16,
     16,
@@ -57,5 +57,15 @@
   "updated": true,
   "id": "gen-fireworks-kamuro-gold",
   "url": "shaders/gen-fireworks-kamuro-gold.wgsl",
-  "features": []
+  "features": [
+    "hdr-burst-cores",
+    "audio-reactive-color-temperature",
+    "golden-atmospheric-haze",
+    "depth-fog",
+    "split-tone-grading",
+    "generated-depth",
+    "temporal-feedback",
+    "aces-tone-map",
+    "semantic-alpha"
+  ]
 }

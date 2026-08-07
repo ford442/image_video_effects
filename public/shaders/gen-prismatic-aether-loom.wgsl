@@ -19,8 +19,8 @@
 // ---------------------------------------------------
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
+    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
     zoom_params: vec4<f32>,  // x=Thread Density, y=Braid Complexity, z=Cosmic Wind, w=Chromatic Shift
     ripples: array<vec4<f32>, 50>,
 };
@@ -72,6 +72,15 @@ fn fbm(p: vec3<f32>) -> f32 {
 // Color Palette for Thin-Film Interference
 fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
     return a + b * cos(6.28318 * (c * t + d));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // KIFS Fold
@@ -151,7 +160,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mouseY = u.zoom_config.z * 2.0 - 1.0;
     let mousePos = vec2<f32>(mouseX, mouseY);
 
-    var ro = vec3<f32>(0.0, 0.0, -3.0 + time);
+    let windSpeed = 0.7 + u.zoom_params.z * 1.8 + audio * 1.1;
+    let travel = time * windSpeed;
+    var ro = vec3<f32>(sin(travel * 0.17) * 0.25, cos(travel * 0.13) * 0.18, -3.5);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Mouse Gravity Sheer
@@ -168,17 +179,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Raymarching
     var t = 0.0;
     var d = 0.0;
+    var hit = false;
     for(var i = 0; i < 100; i++) {
-        let p = ro + rd * t;
+        let p = ro + rd * t + vec3<f32>(0.0, 0.0, travel);
         d = map(p);
-        if (d < 0.001 || t > 20.0) { break; }
+        if (d < 0.001) { hit = true; break; }
+        if (t > 20.0) { break; }
         t += d * 0.5;
     }
 
     var col = vec3<f32>(0.0);
 
-    if (t < 20.0) {
-        let p = ro + rd * t;
+    if (hit) {
+        let p = ro + rd * t + vec3<f32>(0.0, 0.0, travel);
         let n = calcNormal(p);
 
         // Lighting
@@ -195,8 +208,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                                    vec3<f32>(0.5), vec3<f32>(0.5),
                                    vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
 
-        // Ambient Occlusion (fake)
-        let ao = clamp(d / 0.1, 0.0, 1.0);
+        // Stable lighting occupancy; the previous d/0.1 term approached zero
+        // exactly at a hit and accidentally erased the material.
+        let ao = 0.68 + 0.32 * diff;
 
         col = (interference * diff + vec3<f32>(spec)) * ao;
 
@@ -205,13 +219,43 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += bloom;
     }
 
+    // Velocity-aligned spectral threads rush toward the viewer between the
+    // physical braids, reinforcing warp speed with smooth analytic motion.
+    let radial = length(uv);
+    let streakAngle = atan2(uv.y, uv.x);
+    let streakPhase = streakAngle * (18.0 + u.zoom_params.x * 0.22) + travel * 9.0;
+    let speedLines = pow(max(sin(streakPhase), 0.0), 18.0) * smoothstep(0.08, 0.75, radial) *
+                     (0.16 + audio * 0.32);
+    col += palette(streakAngle / 6.28318 + time * 0.08, vec3<f32>(0.5), vec3<f32>(0.5),
+                   vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67)) * speedLines;
+
+    // Clicks send prismatic shuttle waves across the loom.
+    var clickThread = 0.0;
+    let rippleCount = min(u32(u.config.y), 50u);
+    let screenUv = vec2<f32>(coords) / res;
+    for (var i = 0u; i < rippleCount; i = i + 1u) {
+        let ripple = u.ripples[i];
+        let age = time - ripple.z;
+        if (age >= 0.0 && age < 1.5) {
+            let delta = (screenUv - ripple.xy) * vec2<f32>(res.x / res.y, 1.0);
+            clickThread = max(clickThread, exp(-abs(length(delta) - age * 0.62) * 70.0) * exp(-age * 1.9));
+        }
+    }
+    col += vec3<f32>(0.45, 0.9, 1.6) * clickThread * (0.6 + audio * 0.8);
+
     // Fog
     col = mix(col, vec3<f32>(0.0, 0.0, 0.1), 1.0 - exp(-0.05 * t * t));
 
-        let _luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let _alpha = clamp(_luma * 0.7 + 0.2, 0.0, 1.0);
-    textureStore(writeTexture, coords, vec4<f32>(col, _alpha));
-    let _depth_uv = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
-    let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
-    textureStore(writeDepthTexture, coords, vec4<f32>(_depth, 0.0, 0.0, 0.0));
+    // Radially advected, bounded braid history creates coherent warp trails.
+    let radialDir = uv / max(length(uv), 0.001);
+    let trailVelocity = radialDir * (2.0 + windSpeed * 3.0);
+    let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    let historyCoord = clamp(coords - vec2<i32>(trailVelocity), vec2<i32>(0), maxCoord);
+    let history = textureLoad(dataTextureC, historyCoord, 0).rgb;
+    let hdrColor = clamp(col + history * clamp(0.24 + u.zoom_params.z * 0.12, 0.24, 0.46), vec3<f32>(0.0), vec3<f32>(5.0));
+    let alpha = clamp(length(col) * 0.42 + speedLines * 0.35 + clickThread * 0.3, 0.02, 0.96);
+    let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
+    textureStore(dataTextureA, coords, vec4<f32>(hdrColor, alpha));
+    textureStore(writeTexture, coords, vec4<f32>(acesToneMap(hdrColor * 1.2), alpha));
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

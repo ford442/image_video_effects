@@ -9,7 +9,7 @@
     "audio-reactive",
     "interactive"
   ],
-  "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies.",
+  "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies. Optimized: 4-tap scalar-potential curl flow, HDR feedback chain, generated depth.",
   "workgroup_size": [
     16,
     16,
@@ -54,5 +54,14 @@
   "updated": true,
   "id": "gen-quantum-fluorescent-aether-moth-swarm",
   "url": "shaders/gen-quantum-fluorescent-aether-moth-swarm.wgsl",
-  "features": []
+  "features": [
+    "swarm",
+    "curl-flow",
+    "audio-reactive",
+    "interactive-mouse",
+    "temporal-feedback",
+    "hdr-output",
+    "semantic-alpha",
+    "depth-output"
+  ]
 }

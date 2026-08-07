@@ -2,7 +2,7 @@
   {
     "id": "aero-chromatics-prismatic",
     "name": "Aero Chromatics Prismatic",
-    "url": "shaders/aero-chromatics-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/aero-chromatics-prismatic.wgsl",
     "description": "Wind-driven chromatic smoke trails enhanced with physical prismatic dispersion via Cauchy's equation. Each wavelength refracts at a different angle through a virtual lens, creating rainbow edge effects on advected smoke.",
     "tags": [
       "prismatic",
@@ -58,7 +58,7 @@
   {
     "id": "aerogel-smoke-hdr",
     "name": "Aerogel Smoke HDR",
-    "url": "shaders/aerogel-smoke-hdr.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/aerogel-smoke-hdr.wgsl",
     "description": "Ethereal aerogel volumetric smoke with HDR bloom enhancement. Silica nanoparticle scattering combines with an HDR bloom kernel that amplifies overbright regions, creating luminous glow around dense scattering zones.",
     "tags": [
       "volumetric",
@@ -114,7 +114,7 @@
   {
     "id": "alucinate-hdr",
     "name": "Alucinate HDR",
-    "url": "shaders/alucinate-hdr.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/alucinate-hdr.wgsl",
     "category": "advanced-hybrid",
     "description": "When Alucinate (AI VJ) mode is active, this serves as a visual 'conductor's baton' — elegant, minimal music-reactive glyphs and a living spectrogram that represent the current vibe stack. The psychedelic warp + HDR bloom provides a rich atmospheric underlayer. Mouse acts as the conductor's hand.",
     "features": [
@@ -181,7 +181,7 @@
   {
     "id": "ambient-liquid-coupled",
     "name": "Ambient Liquid Coupled",
-    "url": "shaders/ambient-liquid-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ambient-liquid-coupled.wgsl",
     "category": "advanced-hybrid",
     "description": "Two viscous liquid layers coupled through a living membrane. Mouse presses like a finger into the surface, creating tears that slowly heal. Bass increases surface tension, making deformations more dramatic and persistent.",
     "features": [
@@ -245,7 +245,7 @@
   {
     "id": "anamorphic-flare-iridescence",
     "name": "Anamorphic Flare Iridescence",
-    "url": "shaders/anamorphic-flare-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/anamorphic-flare-iridescence.wgsl",
     "description": "Anamorphic Flare Iridescence",
     "tags": [
       "lens-flare",
@@ -304,7 +304,7 @@
   {
     "id": "anisotropic-kuwahara-nlm",
     "name": "Anisotropic Kuwahara + NLM",
-    "url": "shaders/anisotropic-kuwahara-nlm.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/anisotropic-kuwahara-nlm.wgsl",
     "description": "Painterly anisotropic Kuwahara filter enhanced with Non-Local Means patch-similarity denoising. Structure tensor guides brush stroke direction while NLM preserves edges and creates an importance map.",
     "tags": [
       "painterly",
@@ -361,7 +361,7 @@
   {
     "id": "ascii-flow-structure",
     "name": "ASCII Flow + Structure Tensor",
-    "url": "shaders/ascii-flow-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ascii-flow-structure.wgsl",
     "description": "ASCII glyph rendering driven by structure tensor flow field. Glyphs align with image edges and orientations instead of random noise. Line Integral Convolution modulates brightness.",
     "tags": [
       "ascii",
@@ -417,7 +417,7 @@
   {
     "id": "astral-kaleidoscope-julia",
     "name": "Astral Kaleidoscope Julia",
-    "url": "shaders/astral-kaleidoscope-julia.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/astral-kaleidoscope-julia.wgsl",
     "description": "Astral Kaleidoscope Julia",
     "tags": [
       "kaleidoscope",
@@ -474,7 +474,7 @@
   {
     "id": "astral-kaleidoscope-morph",
     "name": "Astral Kaleidoscope + Morphological",
-    "url": "shaders/astral-kaleidoscope-morph.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/astral-kaleidoscope-morph.wgsl",
     "description": "Psychedelic kaleidoscope with chromatic separation enhanced by morphological erosion/dilation operations. Morphological gradient creates glowing halos around segments, top-hat transform isolates bright sparkles.",
     "tags": [
       "kaleidoscope",
@@ -532,7 +532,7 @@
   {
     "id": "atmos-fog-volumetric",
     "name": "Atmospheric Fog Volumetric",
-    "url": "shaders/atmos-fog-volumetric.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/atmos-fog-volumetric.wgsl",
     "description": "Enhanced volumetric fog combining physical transmittance with interactive depth-layered alpha. Mouse clears fog locally, ripples create swirling disturbances, and height-based density mixes with Beer's Law for atmospheric realism.",
     "tags": [
       "volumetric",
@@ -589,7 +589,7 @@
   {
     "id": "audio-voronoi-displacement",
     "name": "Audio Voronoi Displacement",
-    "url": "shaders/audio-voronoi-displacement.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/audio-voronoi-displacement.wgsl",
     "description": "Audio-reactive Voronoi cells that displace the image. Image fractured into cells that pulse with music.",
     "features": [
       "mouse-driven",
@@ -663,7 +663,7 @@
   {
     "id": "audio-voronoi-gabor",
     "name": "Audio Voronoi Gabor",
-    "url": "shaders/audio-voronoi-gabor.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/audio-voronoi-gabor.wgsl",
     "description": "Audio-reactive Voronoi displacement modulated by Gabor texture analysis. Gabor filter banks detect local texture orientation and strength, rotating and scaling cell displacement. Edges and textured regions displace differently than smooth areas.",
     "features": [
       "audio-reactive",
@@ -739,7 +739,7 @@
   {
     "id": "aurora-borealis-iridescence",
     "name": "Aurora Borealis Iridescence",
-    "url": "shaders/aurora-borealis-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/aurora-borealis-iridescence.wgsl",
     "description": "Northern lights with flowing ribbon curves enhanced by thin-film iridescence. Each aurora ribbon shimmers with soap-bubble and oil-slick interference colors driven by ribbon intensity and animated turbulence.",
     "tags": [
       "aurora",
@@ -796,7 +796,7 @@
   {
     "id": "aurora-rift-2-iridescence",
     "name": "Aurora Rift 2 Iridescence",
-    "url": "shaders/aurora-rift-2-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/aurora-rift-2-iridescence.wgsl",
     "description": "Iridescent aurora curtains combining volumetric aurora simulation with thin-film interference. Each aurora layer gets soap-bubble/oil-slick coloring from optical path difference. Optical depth modulates film thickness; viewing angle drives color shift. Beer's Law transmittance composites physically.",
     "features": [
       "thin-film-interference",
@@ -871,7 +871,7 @@
   {
     "id": "aurora-rift-iridescence",
     "name": "Aurora Rift Iridescence",
-    "url": "shaders/aurora-rift-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/aurora-rift-iridescence.wgsl",
     "description": "Atmospheric curl-flow aurora blended with thin-film interference. Pattern density drives soap-bubble and oil-slick film thickness, producing flowing iridescence that rides the aurora's organic motion.",
     "tags": [
       "iridescence",
@@ -929,7 +929,7 @@
   {
     "id": "bio-lenia-rgba",
     "name": "Bio Lenia RGBA",
-    "url": "shaders/bio-lenia-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/bio-lenia-rgba.wgsl",
     "description": "Four-species continuous cellular automata with Lenia-style smooth growth functions applied to each RGBA channel. Combines reaction-diffusion chemistry with biological emergence patterns. Cross-inhibition between species pairs creates complex multi-color morphologies.",
     "tags": [
       "lenia",
@@ -986,7 +986,7 @@
   {
     "id": "bio-touch-em",
     "name": "Bio Touch EM",
-    "url": "shaders/bio-touch-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/bio-touch-em.wgsl",
     "description": "Bio-luminescent cellular structures distorted by electromagnetic field lines. Magnetic field rotates cell glow colors. Click ripples spawn orbiting secondary charges.",
     "features": [
       "mouse-driven",
@@ -1035,7 +1035,7 @@
   {
     "id": "bioluminescent-blackbody",
     "name": "Bioluminescent Blackbody",
-    "url": "shaders/bioluminescent-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/bioluminescent-blackbody.wgsl",
     "description": "Living organic growth patterns with physically-correct thermal coloring. Growth energy maps to blackbody temperature — cooler regions glow deep red, active growth burns orange-yellow, and intense hotspots reach white-hot temperatures.",
     "tags": [
       "bioluminescent",
@@ -1092,7 +1092,7 @@
   {
     "id": "bismuth-crystal-growth",
     "name": "Bismuth Crystal Growth",
-    "url": "shaders/bismuth-crystal-growth.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/bismuth-crystal-growth.wgsl",
     "description": "Bismuth Crystal Growth",
     "tags": [
       "phase-field-crystal",
@@ -1147,7 +1147,7 @@
   {
     "id": "black-hole-iridescence",
     "name": "Black Hole Iridescence",
-    "url": "shaders/black-hole-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/black-hole-iridescence.wgsl",
     "description": "Gravitational lensing black hole with iridescent accretion disk. The warped background and glowing disk receive thin-film interference coloring based on viewing angle, producing soap-bubble chromatic effects around the event horizon.",
     "tags": [
       "black-hole",
@@ -1203,7 +1203,7 @@
   {
     "id": "block-distort-em",
     "name": "Block Distort EM",
-    "url": "shaders/block-distort-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/block-distort-em.wgsl",
     "description": "Grid blocks pushed by mouse proximity, distorted by electromagnetic field lines. Electric field displaces UVs, magnetic field rotates hue. Click ripples spawn orbiting secondary charges.",
     "features": [
       "mouse-driven",
@@ -1252,7 +1252,7 @@
   {
     "id": "blueprint-reveal-guided",
     "name": "Blueprint Reveal + Guided Filter",
-    "url": "shaders/blueprint-reveal-guided.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/blueprint-reveal-guided.wgsl",
     "description": "Blueprint effect with depth-guided edge-aware filtering. The guided filter smooths the image using depth as guide before Sobel edge detection, creating blueprint lines that respect true object boundaries.",
     "tags": [
       "blueprint",
@@ -1307,7 +1307,7 @@
   {
     "id": "boids-rgba-ecosystem",
     "name": "Boids RGBA Ecosystem",
-    "url": "shaders/boids-rgba-ecosystem.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/boids-rgba-ecosystem.wgsl",
     "description": "Boids-inspired flow-field flocking combined with continuous multi-species ecosystem simulation. RGBA channels store species densities that advect, flock, and compete. Species 1 (flockers) and Species 2 (predators) consume resources, produce toxins, and exhibit emergent flocking behavior through neighborhood vector fields.",
     "tags": [
       "boids",
@@ -1364,7 +1364,7 @@
   {
     "id": "breathing-kaleidoscope-morph",
     "name": "Breathing Kaleidoscope Morph",
-    "url": "shaders/breathing-kaleidoscope-morph.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/breathing-kaleidoscope-morph.wgsl",
     "description": "Breathing Kaleidoscope Morph",
     "tags": [
       "kaleidoscope",
@@ -1423,7 +1423,7 @@
   {
     "id": "bubble-lens-coupled",
     "name": "Bubble Lens Coupled",
-    "url": "shaders/bubble-lens-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/bubble-lens-coupled.wgsl",
     "description": "Magnifying bubble lens warped by fluid dynamics. Mouse movement drags viscous fluid that distorts the lens boundary and creates vortices inside. Click ripples create fluid bursts.",
     "features": [
       "mouse-driven",
@@ -1472,7 +1472,7 @@
   {
     "id": "byte-mosh-explosion",
     "name": "Byte Mosh Explosion",
-    "url": "shaders/byte-mosh-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/byte-mosh-explosion.wgsl",
     "description": "Bitwise pixel corruption meets chromatic prism explosion. XOR, AND, shift and rotate operations are applied to spectrally displaced channels radiating from mouse and ripple shockwaves.",
     "features": [
       "advanced-hybrid",
@@ -1543,7 +1543,7 @@
   {
     "id": "cellular-automata-3d",
     "name": "Cellular Automata 3D",
-    "url": "shaders/cellular-automata-3d.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cellular-automata-3d.wgsl",
     "description": "3D Game of Life rendered with volume raymarching. Glowing 3D structures that evolve frame-by-frame.",
     "features": [
       "advanced-hybrid",
@@ -1615,7 +1615,7 @@
   {
     "id": "charcoal-rub-diffusion",
     "name": "Charcoal Rub + Anisotropic Diffusion",
-    "url": "shaders/charcoal-rub-diffusion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/charcoal-rub-diffusion.wgsl",
     "description": "Physical charcoal media simulation with Perona-Malik anisotropic diffusion preprocessing. Diffusion creates smooth tonal regions before charcoal conversion, with diffusion coefficient modulating charcoal density.",
     "tags": [
       "charcoal",
@@ -1671,7 +1671,7 @@
   {
     "id": "chroma-depth-tunnel-prismatic",
     "name": "Chroma Depth Tunnel Prismatic",
-    "url": "shaders/chroma-depth-tunnel-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chroma-depth-tunnel-prismatic.wgsl",
     "description": "Chroma Depth Tunnel Prismatic",
     "tags": [
       "chroma-depth-tunnel",
@@ -1729,7 +1729,7 @@
   {
     "id": "chroma-kinetic-blackbody",
     "name": "Chroma Kinetic Blackbody",
-    "url": "shaders/chroma-kinetic-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chroma-kinetic-blackbody.wgsl",
     "description": "Chroma Kinetic Blackbody",
     "tags": [
       "chroma-kinetic",
@@ -1784,7 +1784,7 @@
   {
     "id": "chroma-lens-iridescence",
     "name": "Chroma Lens Iridescence",
-    "url": "shaders/chroma-lens-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chroma-lens-iridescence.wgsl",
     "description": "Chroma Lens Iridescence",
     "tags": [
       "chroma-lens",
@@ -1841,7 +1841,7 @@
   {
     "id": "chroma-threads-gabor",
     "name": "Chroma Threads Gabor",
-    "url": "shaders/chroma-threads-gabor.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chroma-threads-gabor.wgsl",
     "description": "Catalog entry for Chroma Threads Gabor.",
     "tags": [
       "chroma-threads",
@@ -1896,7 +1896,7 @@
   {
     "id": "chroma-vortex-coupled",
     "name": "Chroma Vortex Coupled",
-    "url": "shaders/chroma-vortex-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chroma-vortex-coupled.wgsl",
     "description": "Chroma Vortex Coupled",
     "tags": [
       "chroma-vortex",
@@ -1953,7 +1953,7 @@
   {
     "id": "chromatic-crawler-structure",
     "name": "Chromatic Crawler Structure",
-    "url": "shaders/chromatic-crawler-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-crawler-structure.wgsl",
     "description": "Chromatic Crawler Structure",
     "tags": [
       "chromatic-crawler",
@@ -2008,7 +2008,7 @@
   {
     "id": "chromatic-focus-coupled",
     "name": "Chromatic Focus Coupled",
-    "url": "shaders/chromatic-focus-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-focus-coupled.wgsl",
     "description": "Chromatic aberration DOF with fluid-coupled distortion. Mouse movement stirs a viscous fluid that twists and blurs chromatic channels. Click ripples inject fluid bursts.",
     "features": [
       "mouse-driven",
@@ -2057,7 +2057,7 @@
   {
     "id": "chromatic-focus-guided",
     "name": "Chromatic Focus Guided",
-    "url": "shaders/chromatic-focus-guided.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-focus-guided.wgsl",
     "description": "Chromatic Focus Guided",
     "tags": [
       "chromatic-focus",
@@ -2112,7 +2112,7 @@
   {
     "id": "chromatic-folds-bilateral",
     "name": "Chromatic Folds Bilateral",
-    "url": "shaders/chromatic-folds-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-folds-bilateral.wgsl",
     "description": "Chromatic Folds Bilateral",
     "tags": [
       "chromatic-folds",
@@ -2167,7 +2167,7 @@
   {
     "id": "chromatic-reaction-diffusion",
     "name": "Chromatic Reaction-Diffusion",
-    "url": "shaders/chromatic-reaction-diffusion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chromatic-reaction-diffusion.wgsl",
     "description": "Multi-channel Gray-Scott reaction-diffusion with chromatic separation. Each RGB channel has separate feed/kill rates.",
     "features": [
       "advanced-hybrid",
@@ -2237,7 +2237,7 @@
   {
     "id": "chronos-brush-explosion",
     "name": "Chronos Brush Explosion",
-    "url": "shaders/chronos-brush-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/chronos-brush-explosion.wgsl",
     "description": "Chronos Brush Explosion",
     "tags": [
       "time-freeze",
@@ -2294,7 +2294,7 @@
   {
     "id": "circuit-breaker-explosion",
     "name": "Circuit Breaker Explosion",
-    "url": "shaders/circuit-breaker-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/circuit-breaker-explosion.wgsl",
     "description": "Circuit board edges chromatically separated near the mouse prism. Overload flashes become spectral rainbows. Click ripples launch chromatic shockwaves through the circuit pattern.",
     "features": [
       "mouse-driven",
@@ -2343,7 +2343,7 @@
   {
     "id": "cmyk-halftone-explosion",
     "name": "CMYK Halftone Explosion",
-    "url": "shaders/cmyk-halftone-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cmyk-halftone-explosion.wgsl",
     "description": "CMYK halftone dots spectrally separated near the mouse via prism displacement. Click ripples launch chromatic shockwaves through the halftone pattern.",
     "features": [
       "mouse-driven",
@@ -2392,7 +2392,7 @@
   {
     "id": "cosmic-jellyfish-coupled",
     "name": "Cosmic Jellyfish Coupled",
-    "url": "shaders/cosmic-jellyfish-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cosmic-jellyfish-coupled.wgsl",
     "description": "Cosmic Jellyfish Coupled",
     "tags": [
       "raymarching",
@@ -2449,7 +2449,7 @@
   {
     "id": "cosmic-web-structure",
     "name": "Cosmic Web Structure",
-    "url": "shaders/cosmic-web-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cosmic-web-structure.wgsl",
     "description": "Catalog entry for Cosmic Web Structure.",
     "tags": [
       "voronoi-filaments",
@@ -2504,7 +2504,7 @@
   {
     "id": "crt-tv-stipple",
     "name": "CRT TV Stipple",
-    "url": "shaders/crt-tv-stipple.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/crt-tv-stipple.wgsl",
     "description": "Authentic CRT TV simulation with blue-noise stippled phosphor dots. Combines barrel distortion, chromatic aberration, scanlines, and phosphor decay with perceptually optimal blue-noise dot placement for each RGB subpixel triad.",
     "features": [
       "advanced-hybrid",
@@ -2578,7 +2578,7 @@
   {
     "id": "crystal-illuminator-iridescence",
     "name": "Crystal Illuminator Iridescence",
-    "url": "shaders/crystal-illuminator-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/crystal-illuminator-iridescence.wgsl",
     "description": "Crystal Illuminator Iridescence",
     "tags": [
       "voronoi-facets",
@@ -2633,7 +2633,7 @@
   {
     "id": "cursor-aura-explosion",
     "name": "Cursor Aura Explosion",
-    "url": "shaders/cursor-aura-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cursor-aura-explosion.wgsl",
     "description": "Cursor Aura Explosion",
     "tags": [
       "mouse-driven",
@@ -2690,7 +2690,7 @@
   {
     "id": "cyber-lattice-bilateral",
     "name": "Cyber Lattice Bilateral",
-    "url": "shaders/cyber-lattice-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-lattice-bilateral.wgsl",
     "description": "Cyber Lattice Bilateral",
     "tags": [
       "mouse-driven",
@@ -2747,7 +2747,7 @@
   {
     "id": "cyber-organic-ecosystem",
     "name": "Cyber Organic Ecosystem",
-    "url": "shaders/cyber-organic-ecosystem.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-organic-ecosystem.wgsl",
     "description": "Cyber Organic Ecosystem",
     "tags": [
       "mouse-driven",
@@ -2804,7 +2804,7 @@
   {
     "id": "cyber-rain-em",
     "name": "Cyber Rain Em",
-    "url": "shaders/cyber-rain-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-rain-em.wgsl",
     "description": "Catalog entry for Cyber Rain Em.",
     "tags": [
       "mouse-driven",
@@ -2861,7 +2861,7 @@
   {
     "id": "cyber-ripples-coupled",
     "name": "Cyber Ripples Coupled",
-    "url": "shaders/cyber-ripples-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-ripples-coupled.wgsl",
     "description": "Cyber Ripples Coupled",
     "tags": [
       "mouse-driven",
@@ -2918,7 +2918,7 @@
   {
     "id": "cyber-scan-gabor",
     "name": "Cyber Scan Gabor",
-    "url": "shaders/cyber-scan-gabor.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-scan-gabor.wgsl",
     "description": "Catalog entry for Cyber Scan Gabor.",
     "tags": [
       "cyber-scan",
@@ -2975,7 +2975,7 @@
   {
     "id": "cyber-trace-structure",
     "name": "Cyber Trace Structure",
-    "url": "shaders/cyber-trace-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/cyber-trace-structure.wgsl",
     "description": "Cyber Trace Structure",
     "tags": [
       "mouse-driven",
@@ -3032,7 +3032,7 @@
   {
     "id": "data-scanner-gabor",
     "name": "Data Scanner Gabor",
-    "url": "shaders/data-scanner-gabor.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/data-scanner-gabor.wgsl",
     "description": "Catalog entry for Data Scanner Gabor.",
     "tags": [
       "mouse-driven",
@@ -3087,7 +3087,7 @@
   {
     "id": "data-stream-corruption-hdr",
     "name": "Data Stream Corruption Hdr",
-    "url": "shaders/data-stream-corruption-hdr.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/data-stream-corruption-hdr.wgsl",
     "description": "Data Stream Corruption Hdr",
     "tags": [
       "mouse-driven",
@@ -3144,7 +3144,7 @@
   {
     "id": "data-stream-spectral",
     "name": "Data Stream Spectral",
-    "url": "shaders/data-stream-spectral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/data-stream-spectral.wgsl",
     "description": "Catalog entry for Data Stream Spectral.",
     "tags": [
       "mouse-driven",
@@ -3199,7 +3199,7 @@
   {
     "id": "data-stream-structure",
     "name": "Data Stream Structure",
-    "url": "shaders/data-stream-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/data-stream-structure.wgsl",
     "description": "Data Stream Structure",
     "tags": [
       "mouse-driven",
@@ -3256,7 +3256,7 @@
   {
     "id": "datamosh-brush-diffusion",
     "name": "Datamosh Brush Diffusion",
-    "url": "shaders/datamosh-brush-diffusion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/datamosh-brush-diffusion.wgsl",
     "description": "Interactive datamoshing brush with anisotropic diffusion. Paint to freeze or corrupt pixels while Perona-Malik diffusion smooths along edges, creating oil-painted MPEG artifact trails with temporal persistence.",
     "features": [
       "advanced-hybrid",
@@ -3327,7 +3327,7 @@
   {
     "id": "deep-workgroup-multi-effect-blend",
     "name": "Deep-Workgroup Multi-Effect Blend",
-    "url": "shaders/deep-workgroup-multi-effect-blend.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/deep-workgroup-multi-effect-blend.wgsl",
     "description": "Uses a 16×16×4 workgroup (1024 invocations) to run four effects simultaneously in Z-lanes — edge detection, bloom, hue-shift, and phosphor glow — then blends them via workgroup shared memory. Requires a GPU with maxComputeInvocationsPerWorkgroup ≥ 1024 (Apple M1+, NVIDIA RTX, AMD RDNA2+).",
     "tags": [
       "deep-workgroup",
@@ -3381,7 +3381,7 @@
   {
     "id": "digital-decay-rgba",
     "name": "Digital Decay RGBA",
-    "url": "shaders/digital-decay-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-decay-rgba.wgsl",
     "description": "Digital block corruption feeds into a 4-species reaction-diffusion system. Corrupted pixels become chemical seeds that evolve into organic decay patterns, merging glitch aesthetics with emergent biological forms.",
     "features": [
       "advanced-hybrid",
@@ -3452,7 +3452,7 @@
   {
     "id": "digital-glitch-explosion",
     "name": "Digital Glitch Explosion",
-    "url": "shaders/digital-glitch-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-glitch-explosion.wgsl",
     "description": "Digital Glitch Explosion",
     "tags": [
       "mouse-driven",
@@ -3509,7 +3509,7 @@
   {
     "id": "digital-lens-prismatic",
     "name": "Digital Lens Prismatic",
-    "url": "shaders/digital-lens-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-lens-prismatic.wgsl",
     "description": "Digital Lens Prismatic",
     "tags": [
       "mouse-driven",
@@ -3566,7 +3566,7 @@
   {
     "id": "digital-moss-rgba",
     "name": "Digital Moss Rgba",
-    "url": "shaders/digital-moss-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-moss-rgba.wgsl",
     "description": "Catalog entry for Digital Moss Rgba.",
     "tags": [
       "mouse-driven",
@@ -3623,7 +3623,7 @@
   {
     "id": "digital-reveal-guided",
     "name": "Digital Reveal Guided",
-    "url": "shaders/digital-reveal-guided.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/digital-reveal-guided.wgsl",
     "description": "Digital Reveal Guided",
     "tags": [
       "mouse-driven",
@@ -3680,7 +3680,7 @@
   {
     "id": "dimension-slicer-guided",
     "name": "Dimension Slicer Guided",
-    "url": "shaders/dimension-slicer-guided.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/dimension-slicer-guided.wgsl",
     "description": "Dimension Slicer Guided",
     "tags": [
       "dimensional-slice",
@@ -3739,7 +3739,7 @@
   {
     "id": "distortion-gravitational-prismatic",
     "name": "Distortion Gravitational Prismatic",
-    "url": "shaders/distortion-gravitational-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/distortion-gravitational-prismatic.wgsl",
     "description": "Distortion Gravitational Prismatic",
     "tags": [
       "gravitational-lensing",
@@ -3794,7 +3794,7 @@
   {
     "id": "divine-light-iridescence",
     "name": "Divine Light Iridescence",
-    "url": "shaders/divine-light-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/divine-light-iridescence.wgsl",
     "description": "Divine Light Iridescence",
     "tags": [
       "god-rays",
@@ -3851,7 +3851,7 @@
   {
     "id": "double-exposure-hdr",
     "name": "Double Exposure HDR",
-    "url": "shaders/double-exposure-hdr.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/double-exposure-hdr.wgsl",
     "description": "Ghostly double exposure blending combined with HDR bloom chain. The image overlays a zoomed/rotated version of itself, then luminous halos form around bright overlap regions with ACES tone mapping. Mouse sets the pivot point.",
     "features": [
       "mouse-driven",
@@ -3902,7 +3902,7 @@
   {
     "id": "dynamic-lens-flares-prismatic",
     "name": "Dynamic Lens Flares Prismatic",
-    "url": "shaders/dynamic-lens-flares-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/dynamic-lens-flares-prismatic.wgsl",
     "description": "Dynamic Lens Flares Prismatic",
     "tags": [
       "lens-flares",
@@ -3959,7 +3959,7 @@
   {
     "id": "edge-glow-mouse-em",
     "name": "Edge Glow Mouse Em",
-    "url": "shaders/edge-glow-mouse-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/edge-glow-mouse-em.wgsl",
     "description": "Catalog entry for Edge Glow Mouse Em.",
     "tags": [
       "edge-detection",
@@ -4016,7 +4016,7 @@
   {
     "id": "elastic-chromatic-explosion",
     "name": "Elastic Chromatic Explosion",
-    "url": "shaders/elastic-chromatic-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/elastic-chromatic-explosion.wgsl",
     "description": "Elastic Chromatic Explosion",
     "tags": [
       "chromatic-lag",
@@ -4073,7 +4073,7 @@
   {
     "id": "encaustic-wax-blackbody",
     "name": "Encaustic Wax Blackbody",
-    "url": "shaders/encaustic-wax-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/encaustic-wax-blackbody.wgsl",
     "description": "Physical encaustic wax simulation combined with blackbody thermal radiation coloring. Thick wax pools glow like cooling magma with physically-correct color temperature, while thin glaze remains translucent amber. Mouse melts wax creating localized thermal hotspots.",
     "features": [
       "mouse-driven",
@@ -4125,7 +4125,7 @@
   {
     "id": "energy-shield-blackbody",
     "name": "Energy Shield Blackbody",
-    "url": "shaders/energy-shield-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/energy-shield-blackbody.wgsl",
     "description": "Energy Shield Blackbody",
     "tags": [
       "hex-grid",
@@ -4182,7 +4182,7 @@
   {
     "id": "engraving-stipple-blue-noise",
     "name": "Engraving Stipple Blue Noise",
-    "url": "shaders/engraving-stipple-blue-noise.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/engraving-stipple-blue-noise.wgsl",
     "description": "Traditional copper-plate engraving stipple fused with blue-noise dithered pointillism. Golden-ratio low-discrepancy sequences create perceptually optimal dot distributions. Mouse acts as raking light revealing engraved depth.",
     "features": [
       "mouse-driven",
@@ -4233,7 +4233,7 @@
   {
     "id": "ethereal-swirl-coupled",
     "name": "Ethereal Swirl Coupled",
-    "url": "shaders/ethereal-swirl-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ethereal-swirl-coupled.wgsl",
     "description": "Ethereal Swirl Coupled",
     "tags": [
       "fluid-coupling",
@@ -4292,7 +4292,7 @@
   {
     "id": "fabric-step-gabor",
     "name": "Fabric Step Gabor",
-    "url": "shaders/fabric-step-gabor.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fabric-step-gabor.wgsl",
     "description": "Mass-spring cloth simulation deforms the image into flowing folds, then Gabor filter banks detect oriented texture patterns across the fabric. Strain creates visual texture mapped to psychedelic orientation colors. Mouse pulls and tears the textile.",
     "features": [
       "mouse-driven",
@@ -4345,7 +4345,7 @@
   {
     "id": "ferrofluid-em",
     "name": "Ferrofluid Em",
-    "url": "shaders/ferrofluid-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ferrofluid-em.wgsl",
     "description": "Catalog entry for Ferrofluid Em.",
     "tags": [
       "ferrofluid-distortion",
@@ -4400,7 +4400,7 @@
   {
     "id": "fire-smoke-volumetric-fog",
     "name": "Fire Smoke Volumetric Fog",
-    "url": "shaders/fire-smoke-volumetric-fog.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fire-smoke-volumetric-fog.wgsl",
     "description": "Fire Smoke Volumetric Fog",
     "tags": [
       "fire",
@@ -4461,7 +4461,7 @@
   {
     "id": "fluid-grid-rgba-fluid",
     "name": "Fluid Grid Rgba Fluid",
-    "url": "shaders/fluid-grid-rgba-fluid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fluid-grid-rgba-fluid.wgsl",
     "description": "Fluid Grid Rgba Fluid",
     "tags": [
       "fluid-simulation",
@@ -4518,7 +4518,7 @@
   {
     "id": "fractal-boids-field-coupled",
     "name": "Fractal Boids Field + Fluid Coupling",
-    "url": "shaders/fractal-boids-field-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fractal-boids-field-coupled.wgsl",
     "description": "Flocking behavior on a fractal vector field with viscous mouse fluid coupling. Mouse wakes push boids; click ripples spawn shockwaves through the flock.",
     "features": [
       "advanced-hybrid",
@@ -4598,7 +4598,7 @@
   {
     "id": "fractal-boids-field",
     "name": "Fractal Boids Field",
-    "url": "shaders/fractal-boids-field.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fractal-boids-field.wgsl",
     "description": "Flocking behavior on a fractal vector field. Swarms of particles flowing through organic fractal currents.",
     "features": [
       "advanced-hybrid",
@@ -4669,7 +4669,7 @@
   {
     "id": "fractal-glass-distort-bilateral",
     "name": "Fractal Glass Distort Bilateral",
-    "url": "shaders/fractal-glass-distort-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fractal-glass-distort-bilateral.wgsl",
     "description": "Fractal Glass Distort Bilateral",
     "tags": [
       "fractal-glass-distortion",
@@ -4724,7 +4724,7 @@
   {
     "id": "fractal-noise-dissolve-nlm",
     "name": "Fractal Noise Dissolve Nlm",
-    "url": "shaders/fractal-noise-dissolve-nlm.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/fractal-noise-dissolve-nlm.wgsl",
     "description": "Fractal Noise Dissolve Nlm",
     "tags": [
       "fractal-dissolve",
@@ -4779,7 +4779,7 @@
   {
     "id": "frost-reveal-crystal",
     "name": "Frost Reveal Crystal",
-    "url": "shaders/frost-reveal-crystal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/frost-reveal-crystal.wgsl",
     "description": "Catalog entry for Frost Reveal Crystal.",
     "tags": [
       "frost-reveal",
@@ -4836,7 +4836,7 @@
   {
     "id": "frosted-glass-lens-iridescence",
     "name": "Frosted Glass Lens Iridescence",
-    "url": "shaders/frosted-glass-lens-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/frosted-glass-lens-iridescence.wgsl",
     "description": "Frosted Glass Lens Iridescence",
     "tags": [
       "frosted-glass",
@@ -4893,7 +4893,7 @@
   {
     "id": "gamma-ray-burst-blackbody",
     "name": "Gamma Ray Burst Blackbody",
-    "url": "shaders/gamma-ray-burst-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gamma-ray-burst-blackbody.wgsl",
     "description": "Gamma Ray Burst Blackbody",
     "tags": [
       "radial-blur",
@@ -4952,7 +4952,7 @@
   {
     "id": "gemstone-fractures-crystal",
     "name": "Gemstone Fractures Crystal",
-    "url": "shaders/gemstone-fractures-crystal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gemstone-fractures-crystal.wgsl",
     "description": "Gemstone Fractures Crystal",
     "tags": [
       "voronoi-shards",
@@ -5009,7 +5009,7 @@
   {
     "id": "gen-abyssal-leviathan-iridescence",
     "name": "Gen Abyssal Leviathan Iridescence",
-    "url": "shaders/gen-abyssal-leviathan-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-abyssal-leviathan-iridescence.wgsl",
     "description": "Gen Abyssal Leviathan Iridescence",
     "tags": [
       "raymarching",
@@ -5066,7 +5066,7 @@
   {
     "id": "gen-art-deco-sky-prismatic",
     "name": "Gen Art Deco Sky Prismatic",
-    "url": "shaders/gen-art-deco-sky-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-art-deco-sky-prismatic.wgsl",
     "description": "Gen Art Deco Sky Prismatic",
     "tags": [
       "raymarching",
@@ -5123,7 +5123,7 @@
   {
     "id": "gen-astro-orrery-blackbody",
     "name": "Astro Orrery Blackbody",
-    "url": "shaders/gen-astro-orrery-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-astro-orrery-blackbody.wgsl",
     "description": "A kinetic astronomical orrery where each ring's thermal energy determines its blackbody color. Rotating rings glow with physically accurate star temperatures from cool red dwarfs to blazing blue giants.",
     "tags": [
       "astronomical",
@@ -5178,7 +5178,7 @@
   {
     "id": "gen-audio-spirograph-julia",
     "name": "Audio Spirograph Julia",
-    "url": "shaders/gen-audio-spirograph-julia.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-audio-spirograph-julia.wgsl",
     "description": "Audio-reactive spirograph curves that unfold into mouse-driven Julia set fractals. Each harmonic ring breathes with audio while the Julia constant morphs via mouse position.",
     "tags": [
       "audio-reactive",
@@ -5232,7 +5232,7 @@
   {
     "id": "gen-biomechanical-hive-julia",
     "name": "Biomechanical Hive Julia",
-    "url": "shaders/gen-biomechanical-hive-julia.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-biomechanical-hive-julia.wgsl",
     "description": "A biomechanical hive where each cell contains a living quaternion Julia fractal core. The chitinous exoskeleton surrounds morphing 4D fractal organisms that pulse with bioluminescence.",
     "tags": [
       "biomechanical",
@@ -5286,7 +5286,7 @@
   {
     "id": "gen-bismuth-citadel-crystal",
     "name": "Gen Bismuth Citadel Crystal",
-    "url": "shaders/gen-bismuth-citadel-crystal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-bismuth-citadel-crystal.wgsl",
     "description": "Gen Bismuth Citadel Crystal",
     "tags": [
       "raymarching",
@@ -5345,7 +5345,7 @@
   {
     "id": "gen-neural-fractal-hdr",
     "name": "Gen Neural Fractal Hdr",
-    "url": "shaders/gen-neural-fractal-hdr.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-neural-fractal-hdr.wgsl",
     "description": "Gen Neural Fractal Hdr",
     "tags": [
       "generative",
@@ -5402,7 +5402,7 @@
   {
     "id": "gen-quasicrystal-iridescence",
     "name": "Gen Quasicrystal Iridescence",
-    "url": "shaders/gen-quasicrystal-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-quasicrystal-iridescence.wgsl",
     "description": "Gen Quasicrystal Iridescence",
     "tags": [
       "generative",
@@ -5459,7 +5459,7 @@
   {
     "id": "gen-raptor-mini-flow",
     "name": "Raptor Mini Flow",
-    "url": "shaders/gen-raptor-mini-flow.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-raptor-mini-flow.wgsl",
     "description": "Predatory raptor agents navigate structure-tensor flow fields, hunting along image edges and orientations. Their trails follow dominant eigenvectors while audio rage pulses through the swarm.",
     "tags": [
       "predator",
@@ -5513,7 +5513,7 @@
   {
     "id": "gen-singularity-forge-blackbody",
     "name": "Gen Singularity Forge Blackbody",
-    "url": "shaders/gen-singularity-forge-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-singularity-forge-blackbody.wgsl",
     "description": "Gen Singularity Forge Blackbody",
     "tags": [
       "generative",
@@ -5570,7 +5570,7 @@
   {
     "id": "gen-string-theory-structure",
     "name": "Gen String Theory Structure",
-    "url": "shaders/gen-string-theory-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-string-theory-structure.wgsl",
     "description": "Gen String Theory Structure",
     "tags": [
       "generative",
@@ -5627,7 +5627,7 @@
   {
     "id": "gen-xeno-botanical-ecosystem",
     "name": "Xeno Botanical Ecosystem",
-    "url": "shaders/gen-xeno-botanical-ecosystem.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gen-xeno-botanical-ecosystem.wgsl",
     "description": "Botanical flora patterns host a living RGBA ecosystem simulation. Species colonize branch structures, competing for photosynthetic resources while toxins accumulate in dense growth regions.",
     "tags": [
       "botanical",
@@ -5682,7 +5682,7 @@
   {
     "id": "glass-bead-curtain-iridescence",
     "name": "Glass Bead Curtain Iridescence",
-    "url": "shaders/glass-bead-curtain-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/glass-bead-curtain-iridescence.wgsl",
     "description": "A curtain of refractive glass beads where each bead surface exhibits thin-film iridescence (soap-bubble colors). Combines physical Beer-Lambert transmission with spectral interference.",
     "tags": [
       "glass",
@@ -5738,7 +5738,7 @@
   {
     "id": "glass-refraction-prismatic",
     "name": "Glass Refraction Prismatic",
-    "url": "shaders/glass-refraction-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/glass-refraction-prismatic.wgsl",
     "description": "Raymarched glass blobs with 4-band spectral dispersion using Cauchy's equation and CIE color matching. Each wavelength refracts at a different angle through animated SDF glass surfaces.",
     "features": [
       "advanced-hybrid",
@@ -5811,7 +5811,7 @@
   {
     "id": "glass-shatter-morph",
     "name": "Glass Shatter Morph",
-    "url": "shaders/glass-shatter-morph.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/glass-shatter-morph.wgsl",
     "description": "Interactive shattered glass where Voronoi shards are sculpted by morphological erosion/dilation on edges. Combines physical glass transmission with mathematical morphology for cracked-edge detail.",
     "tags": [
       "glass",
@@ -5869,7 +5869,7 @@
   {
     "id": "glass-wall-prismatic",
     "name": "Glass Wall Prismatic",
-    "url": "shaders/glass-wall-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/glass-wall-prismatic.wgsl",
     "description": "A grid of glass tiles where each tile acts as a prismatic lens with 4-band spectral dispersion via Cauchy's equation. Mouse interaction tilts tiles, refracting light into rainbow spectra.",
     "tags": [
       "glass",
@@ -5925,7 +5925,7 @@
   {
     "id": "glass-wipes-coupled",
     "name": "Glass Wipes Coupled",
-    "url": "shaders/glass-wipes-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/glass-wipes-coupled.wgsl",
     "description": "Rain on glass combined with viscous fluid coupling physics. Rain drops feed a fluid simulation that creates realistic water streaks, while the mouse wiper clears fluid with vortex dynamics.",
     "tags": [
       "glass",
@@ -5980,7 +5980,7 @@
   {
     "id": "gravitational-lensing-nlm",
     "name": "Gravitational Lensing NLM",
-    "url": "shaders/gravitational-lensing-nlm.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gravitational-lensing-nlm.wgsl",
     "description": "Black hole gravitational lensing with non-local means artistic overdrive. Patch-similarity filtering smooths background starfields while preserving unique features like the event horizon and Einstein ring.",
     "features": [
       "advanced-hybrid",
@@ -6094,7 +6094,7 @@
   {
     "id": "gravitational-lensing",
     "name": "Gravitational Lensing",
-    "url": "shaders/gravitational-lensing.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gravitational-lensing.wgsl",
     "description": "General relativistic light bending around black hole. Einstein ring with glowing accretion disk.",
     "features": [
       "mouse-driven",
@@ -6167,7 +6167,7 @@
   {
     "id": "gravity-well-em",
     "name": "Gravity Well Em",
-    "url": "shaders/gravity-well-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/gravity-well-em.wgsl",
     "description": "Catalog entry for Gravity Well Em.",
     "tags": [
       "gravitational-lensing",
@@ -6222,7 +6222,7 @@
   {
     "id": "heat-haze-volumetric",
     "name": "Heat Haze Volumetric",
-    "url": "shaders/heat-haze-volumetric.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/heat-haze-volumetric.wgsl",
     "description": "Catalog entry for Heat Haze Volumetric.",
     "tags": [
       "heat-diffusion",
@@ -6279,7 +6279,7 @@
   {
     "id": "holographic-failure-iridescence",
     "name": "Holographic Failure Iridescence",
-    "url": "shaders/holographic-failure-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/holographic-failure-iridescence.wgsl",
     "description": "Simulated hologram projection failure merged with thin-film interference iridescence. Flickering artifacts and block noise overlay soap-bubble spectral colors driven by depth, viewing angle, and time.",
     "features": [
       "advanced-hybrid",
@@ -6351,7 +6351,7 @@
   {
     "id": "holographic-interferometry-bilateral",
     "name": "Holographic Interferometry Bilateral",
-    "url": "shaders/holographic-interferometry-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/holographic-interferometry-bilateral.wgsl",
     "description": "Simulated hologram with interference fringes and edge-preserving bilateral smoothing. Speckle noise is softly reduced while sharp interference fringe edges remain crisp.",
     "features": [
       "advanced-hybrid",
@@ -6456,7 +6456,7 @@
   {
     "id": "holographic-interferometry",
     "name": "Holographic Interferometry",
-    "url": "shaders/holographic-interferometry.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/holographic-interferometry.wgsl",
     "description": "Simulated hologram with interference fringe patterns. Rainbow interference fringes with speckled laser light.",
     "features": [
       "advanced-hybrid",
@@ -6526,7 +6526,7 @@
   {
     "id": "honey-melt-blackbody",
     "name": "Honey Melt Blackbody",
-    "url": "shaders/honey-melt-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/honey-melt-blackbody.wgsl",
     "description": "Catalog entry for Honey Melt Blackbody.",
     "tags": [
       "hex-grid",
@@ -6583,7 +6583,7 @@
   {
     "id": "hybrid-spectral-decomposed",
     "name": "Hybrid Spectral Decomposed",
-    "url": "shaders/hybrid-spectral-decomposed.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hybrid-spectral-decomposed.wgsl",
     "description": "4-band spectral decomposition combined with audio-reactive pixel sorting. Image decomposed into low/mid-low/mid-high/high frequencies. Each band sorted independently with unique spectral color tints, then recomposed with per-band gains.",
     "features": [
       "advanced-hybrid",
@@ -6657,7 +6657,7 @@
   {
     "id": "hyper-space-jump-blackbody",
     "name": "Hyper Space Jump Blackbody",
-    "url": "shaders/hyper-space-jump-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hyper-space-jump-blackbody.wgsl",
     "description": "Hyper Space Jump Blackbody",
     "tags": [
       "radial-streaks",
@@ -6714,7 +6714,7 @@
   {
     "id": "hyper-tensor-fluid-coupled",
     "name": "Hyper Tensor Fluid + Mouse Coupling",
-    "url": "shaders/hyper-tensor-fluid-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hyper-tensor-fluid-coupled.wgsl",
     "description": "Tensor-field fluid dynamics with viscous mouse stirring. Mouse injects velocity and vorticity; click ripples spawn radial fluid bursts.",
     "features": [
       "advanced-hybrid",
@@ -6793,7 +6793,7 @@
   {
     "id": "hyper-tensor-fluid",
     "name": "Hyper Tensor Fluid",
-    "url": "shaders/hyper-tensor-fluid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hyper-tensor-fluid.wgsl",
     "description": "Fluid flows according to image structure via tensor eigendecomposition. Combines tensor fields with Navier-Stokes dynamics.",
     "features": [
       "advanced-hybrid",
@@ -6865,7 +6865,7 @@
   {
     "id": "hyperbolic-dreamweaver-julia",
     "name": "Hyperbolic Dreamweaver Julia",
-    "url": "shaders/hyperbolic-dreamweaver-julia.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/hyperbolic-dreamweaver-julia.wgsl",
     "description": "Hyperbolic Dreamweaver Julia",
     "tags": [
       "hyperbolic-geometry",
@@ -6922,7 +6922,7 @@
   {
     "id": "impasto-swirl-bilateral",
     "name": "Impasto Swirl Bilateral",
-    "url": "shaders/impasto-swirl-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/impasto-swirl-bilateral.wgsl",
     "description": "Impasto Swirl Bilateral",
     "tags": [
       "bilateral-filter",
@@ -6979,7 +6979,7 @@
   {
     "id": "infinite-fractal-feedback-hdr",
     "name": "Infinite Fractal Feedback Hdr",
-    "url": "shaders/infinite-fractal-feedback-hdr.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/infinite-fractal-feedback-hdr.wgsl",
     "description": "Infinite Fractal Feedback Hdr",
     "tags": [
       "fractal-feedback",
@@ -7036,7 +7036,7 @@
   {
     "id": "ink-bleed-fluid",
     "name": "Ink Bleed Fluid",
-    "url": "shaders/ink-bleed-fluid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ink-bleed-fluid.wgsl",
     "description": "Catalog entry for Ink Bleed Fluid.",
     "tags": [
       "fluid-simulation",
@@ -7093,7 +7093,7 @@
   {
     "id": "ink-dispersion-guided",
     "name": "Ink Dispersion Guided",
-    "url": "shaders/ink-dispersion-guided.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/ink-dispersion-guided.wgsl",
     "description": "Depth-guided edge-preserving filter combined with ink-style halftone rendering. The guided filter smooths based on depth boundaries, then the result is rendered as ink dots with paper texture.",
     "features": [
       "advanced-hybrid",
@@ -7166,7 +7166,7 @@
   {
     "id": "interactive-magnetic-ripple-em",
     "name": "Interactive Magnetic Ripple Em",
-    "url": "shaders/interactive-magnetic-ripple-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-magnetic-ripple-em.wgsl",
     "description": "Interactive Magnetic Ripple Em",
     "tags": [
       "mouse-driven",
@@ -7223,7 +7223,7 @@
   {
     "id": "interactive-origami-coupled",
     "name": "Interactive Origami Coupled",
-    "url": "shaders/interactive-origami-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-origami-coupled.wgsl",
     "description": "Interactive Origami Coupled",
     "tags": [
       "mouse-driven",
@@ -7278,7 +7278,7 @@
   {
     "id": "interactive-pixel-wind-structure",
     "name": "Interactive Pixel Wind Structure",
-    "url": "shaders/interactive-pixel-wind-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-pixel-wind-structure.wgsl",
     "description": "Interactive Pixel Wind Structure",
     "tags": [
       "mouse-driven",
@@ -7335,7 +7335,7 @@
   {
     "id": "interactive-rgb-split-explosion",
     "name": "Interactive Rgb Split Explosion",
-    "url": "shaders/interactive-rgb-split-explosion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/interactive-rgb-split-explosion.wgsl",
     "description": "Interactive Rgb Split Explosion",
     "tags": [
       "mouse-driven",
@@ -7394,7 +7394,7 @@
   {
     "id": "kimi-flock-symphony-em",
     "name": "Kimi Flock Symphony Em",
-    "url": "shaders/kimi-flock-symphony-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/kimi-flock-symphony-em.wgsl",
     "description": "Kimi Flock Symphony Em",
     "tags": [
       "flocking-particles",
@@ -7447,7 +7447,7 @@
   {
     "id": "liquid-jelly-fluid",
     "name": "Liquid Jelly Fluid",
-    "url": "shaders/liquid-jelly-fluid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-jelly-fluid.wgsl",
     "description": "Catalog entry for Liquid Jelly Fluid.",
     "tags": [
       "liquid-jelly",
@@ -7504,7 +7504,7 @@
   {
     "id": "liquid-magnetic-ferro-em",
     "name": "Liquid Magnetic Ferro EM",
-    "url": "shaders/liquid-magnetic-ferro-em.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-magnetic-ferro-em.wgsl",
     "description": "Ferrofluid simulation coupled with electromagnetic wave propagation. Rosensweig instability spikes are driven by both static magnetic dipoles and time-varying EM waves, with metallic iridescence colored by field direction.",
     "features": [
       "advanced-hybrid",
@@ -7577,7 +7577,7 @@
   {
     "id": "liquid-metal-prismatic",
     "name": "Liquid Metal Prismatic",
-    "url": "shaders/liquid-metal-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-metal-prismatic.wgsl",
     "description": "Liquid metal ripple distortion combined with 4-band spectral prismatic dispersion. Curved metal surface acts as a dynamic liquid prism — ripples create varying curvature that refracts light into separated wavelength bands via Cauchy's equation.",
     "tags": [
       "prismatic",
@@ -7634,7 +7634,7 @@
   {
     "id": "liquid-oil-iridescence",
     "name": "Liquid Oil Iridescence",
-    "url": "shaders/liquid-oil-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-oil-iridescence.wgsl",
     "description": "Liquid Oil Iridescence",
     "tags": [
       "liquid-oil",
@@ -7691,7 +7691,7 @@
   {
     "id": "liquid-smear-structure",
     "name": "Liquid Smear Structure",
-    "url": "shaders/liquid-smear-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/liquid-smear-structure.wgsl",
     "description": "Liquid Smear Structure",
     "tags": [
       "liquid-smear",
@@ -7750,7 +7750,7 @@
   {
     "id": "melting-oil-blackbody",
     "name": "Melting Oil Blackbody",
-    "url": "shaders/melting-oil-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/melting-oil-blackbody.wgsl",
     "description": "Melting Oil Blackbody",
     "tags": [
       "melting-oil",
@@ -7807,7 +7807,7 @@
   {
     "id": "multi-fractal-compositor-lens",
     "name": "Multi-Fractal Compositor + Gravitational Lens",
-    "url": "shaders/multi-fractal-compositor-lens.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/multi-fractal-compositor-lens.wgsl",
     "description": "Multi-layer fractal compositor with mouse-controlled gravitational lensing. Mouse mass bends UV coordinates; ripples create temporary mass concentrations with Einstein ring glow.",
     "features": [
       "advanced-hybrid",
@@ -7887,7 +7887,7 @@
   {
     "id": "multi-fractal-compositor",
     "name": "Multi-Fractal Compositor",
-    "url": "shaders/multi-fractal-compositor.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/multi-fractal-compositor.wgsl",
     "description": "Smoothly blend between multiple fractal types. Mandelbrot, Julia, Burning Ship, and Newton fractals.",
     "features": [
       "advanced-hybrid",
@@ -7961,7 +7961,7 @@
   {
     "id": "nano-assembler-crystal",
     "name": "Nano Assembler Crystal",
-    "url": "shaders/nano-assembler-crystal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/nano-assembler-crystal.wgsl",
     "description": "Grid-based nanobots assemble into crystalline structures using phase-field dynamics. RGBA stores assembly phase, temperature, crystal orientation, and impurity. Mouse disrupts assembly causing scatter; ripples trigger nucleation. Displays nanobot glow when disassembled and orientation-dependent crystal color when assembled.",
     "tags": [
       "nano-assembler",
@@ -8018,7 +8018,7 @@
   {
     "id": "neural-raymarcher-gabor",
     "name": "Neural Raymarcher Gabor",
-    "url": "shaders/neural-raymarcher-gabor.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/neural-raymarcher-gabor.wgsl",
     "description": "Raymarched neural network visualization with Gabor oriented texture detection. Gabor responses highlight connection directions and layer boundaries with psychedelic color mapping.",
     "features": [
       "advanced-hybrid",
@@ -8125,7 +8125,7 @@
   {
     "id": "neural-raymarcher",
     "name": "Neural Raymarcher",
-    "url": "shaders/neural-raymarcher.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/neural-raymarcher.wgsl",
     "description": "Raymarched neural network with activation visualization. Glowing 3D structure with weights as connection thickness.",
     "features": [
       "advanced-hybrid",
@@ -8196,7 +8196,7 @@
   {
     "id": "painterly-oil-bilateral",
     "name": "Painterly Oil + Bilateral Dream",
-    "url": "shaders/painterly-oil-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/painterly-oil-bilateral.wgsl",
     "description": "Oil painting simulation with anisotropic Kuwahara, color quantization, and impasto texture, post-processed with edge-preserving bilateral filter for a dreamy smoothness. Mouse focus aperture controls sharpness.",
     "tags": [
       "oil",
@@ -8253,7 +8253,7 @@
   {
     "id": "particle-dreams-hdr",
     "name": "Particle Dreams HDR",
-    "url": "shaders/particle-dreams-hdr.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/particle-dreams-hdr.wgsl",
     "description": "Multi-layer depth particle accumulation with HDR bloom chain. 5 depth layers with flow noise and vortex distortion, combined with exposure-based radial bloom and ACES tone mapping.",
     "features": [
       "advanced-hybrid",
@@ -8326,7 +8326,7 @@
   {
     "id": "phantom-lag-history",
     "name": "Phantom Lag History",
-    "url": "shaders/phantom-lag-history.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/phantom-lag-history.wgsl",
     "description": "Catalog entry for Phantom Lag History.",
     "tags": [
       "temporal-echo",
@@ -8383,7 +8383,7 @@
   {
     "id": "photonic-caustics-iridescence",
     "name": "Photonic Caustics Iridescence",
-    "url": "shaders/photonic-caustics-iridescence.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/photonic-caustics-iridescence.wgsl",
     "description": "Backward photon-traced caustics combined with thin-film interference iridescence. Caustic intensity modulates film thickness, creating soap-bubble colors on light concentrations. Features chromatic dispersion, Fresnel reflections, and temporal accumulation.",
     "tags": [
       "caustics",
@@ -8441,7 +8441,7 @@
   {
     "id": "predator-prey-rgba",
     "name": "Predator-Prey RGBA",
-    "url": "shaders/predator-prey-rgba.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/predator-prey-rgba.wgsl",
     "description": "Continuous-density predator-prey ecosystem simulation packed into RGBA32FLOAT. Plants photosynthesize using source image luminance, herbivores graze, carnivores hunt, and toxins accumulate from overpopulation. Species diffuse across the grid creating emergent spatial waves.",
     "tags": [
       "predator-prey",
@@ -8497,7 +8497,7 @@
   {
     "id": "quantum-foam-bilateral",
     "name": "Quantum Foam Bilateral",
-    "url": "shaders/quantum-foam-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/quantum-foam-bilateral.wgsl",
     "description": "Quantum foam chromatic parallax diffusion with edge-preserving bilateral smoothing. Cell boundaries and emissive edges remain crisp while foam interiors are dreamily smoothed.",
     "features": [
       "advanced-hybrid",
@@ -8602,7 +8602,7 @@
   {
     "id": "retro-phosphor-hdr",
     "name": "Retro Phosphor HDR",
-    "url": "shaders/retro-phosphor-hdr.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/retro-phosphor-hdr.wgsl",
     "description": "Authentic CRT phosphor simulation enhanced with HDR bloom chain. RGB triads, barrel distortion, scanlines, and temporal persistence combine with exposure-based bloom and ACES tone mapping for dramatic glowing phosphors.",
     "features": [
       "advanced-hybrid",
@@ -8673,7 +8673,7 @@
   {
     "id": "retro-phosphor-stipple",
     "name": "Retro Phosphor Stipple",
-    "url": "shaders/retro-phosphor-stipple.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/retro-phosphor-stipple.wgsl",
     "description": "CRT phosphor simulation with blue-noise stippled dot triads. Authentic barrel distortion, scanlines, and temporal persistence combined with perceptually optimal blue-noise dot placement for each RGB channel.",
     "features": [
       "advanced-hybrid",
@@ -8745,7 +8745,7 @@
   {
     "id": "sim-heat-haze-blackbody",
     "name": "Heat Haze Blackbody",
-    "url": "shaders/sim-heat-haze-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-heat-haze-blackbody.wgsl",
     "description": "Temperature field convection simulation with physically-correct blackbody thermal glow. Hot ground and rising convection plumes radiate with Planck's law colors — cool air stays neutral while intense heat sources glow from red ember to blue-white.",
     "tags": [
       "blackbody",
@@ -8803,7 +8803,7 @@
   {
     "id": "sim-smoke-trails-thermal",
     "name": "Smoke Trails Thermal",
-    "url": "shaders/sim-smoke-trails-thermal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/sim-smoke-trails-thermal.wgsl",
     "description": "Volumetric smoke fluid simulation with physically-correct blackbody thermal coloring. Smoke temperature maps to Kelvin via Planck's law — cool wisps glow ember-red, hot cores burn blue-white with Stefan-Boltzmann radiance scaling.",
     "tags": [
       "blackbody",
@@ -8861,7 +8861,7 @@
   {
     "id": "spec-blackbody-thermal",
     "name": "Blackbody Thermal",
-    "url": "shaders/spec-blackbody-thermal.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-blackbody-thermal.wgsl",
     "description": "Maps image luminance to physically-correct blackbody radiation colors with audio-driven temperature modulation, chromatic temperature gradient, temporal ember persistence via dataTextureC, and HDR glow.",
     "tags": [
       "blackbody",
@@ -8924,7 +8924,7 @@
   {
     "id": "spec-importance-sampled-bokeh",
     "name": "Importance Sampled Bokeh",
-    "url": "shaders/spec-importance-sampled-bokeh.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-importance-sampled-bokeh.wgsl",
     "description": "Bokeh blur guided by image brightness using importance sampling. Bright pixels act as point light sources creating crisp bokeh highlights with smooth backgrounds via golden angle spiral distribution.",
     "tags": [
       "bokeh",
@@ -9018,7 +9018,7 @@
   {
     "id": "spec-iridescence-engine",
     "name": "Iridescence Engine",
-    "url": "shaders/spec-iridescence-engine.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-iridescence-engine.wgsl",
     "description": "Thin-film interference simulation creating soap-bubble and oil-slick iridescence. Uses depth texture for film thickness and physically-correct optical path difference.",
     "tags": [
       "iridescence",
@@ -9110,7 +9110,7 @@
   {
     "id": "spec-prismatic-dispersion",
     "name": "Prismatic Dispersion",
-    "url": "shaders/spec-prismatic-dispersion.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-prismatic-dispersion.wgsl",
     "description": "4-band spectral dispersion through glass using Cauchy's equation. Treats RGBA as physical wavelengths with refractive index variation, reconstructing color via CIE color matching.",
     "tags": [
       "spectral",
@@ -9165,7 +9165,7 @@
   {
     "id": "spec-spherical-harmonics-light",
     "name": "Spherical Harmonics Light",
-    "url": "shaders/spec-spherical-harmonics-light.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-spherical-harmonics-light.wgsl",
     "description": "Spherical harmonics lighting derived from image content. Computes SH coefficients from local image samples and applies them to depth-derived normals for realistic ambient lighting.",
     "tags": [
       "spherical-harmonics",
@@ -9219,7 +9219,7 @@
   {
     "id": "spec-temporal-path-tracer",
     "name": "Temporal Path Tracer",
-    "url": "shaders/spec-temporal-path-tracer.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spec-temporal-path-tracer.wgsl",
     "description": "2D path tracer with temporal accumulation. Casts light rays that bounce off image edges, accumulating Monte Carlo samples over time for soft global illumination and color bleeding.",
     "tags": [
       "path-tracing",
@@ -9275,7 +9275,7 @@
   {
     "id": "spectral-bleed-confine",
     "name": "Spectral Bleed Confine",
-    "url": "shaders/spectral-bleed-confine.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spectral-bleed-confine.wgsl",
     "description": "Spectral Bleed Confine",
     "tags": [
       "advanced hybrid"
@@ -9326,7 +9326,7 @@
   {
     "id": "spectral-flow-sorting",
     "name": "Spectral Flow Sorting",
-    "url": "shaders/spectral-flow-sorting.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spectral-flow-sorting.wgsl",
     "description": "Optical flow-based pixel sorting with spectral analysis. Pixels flow and sort along motion vectors.",
     "features": [
       "mouse-driven",
@@ -9399,7 +9399,7 @@
   {
     "id": "spectral-flow-structure",
     "name": "Spectral Flow Structure",
-    "url": "shaders/spectral-flow-structure.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/spectral-flow-structure.wgsl",
     "description": "Structure-tensor-guided pixel sorting with Line Integral Convolution. Eigenvectors from the structure tensor drive sort direction; coherency modulates blend strength. LIC adds flow-line texture. Audio-reactive with mouse vortices.",
     "features": [
       "advanced-hybrid",
@@ -9473,7 +9473,7 @@
   {
     "id": "steamy-glass-volumetric",
     "name": "Steamy Glass Volumetric",
-    "url": "shaders/steamy-glass-volumetric.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/steamy-glass-volumetric.wgsl",
     "description": "Steamy Glass Volumetric",
     "tags": [
       "steamy-glass",
@@ -9530,7 +9530,7 @@
   {
     "id": "stellar-plasma-blackbody",
     "name": "Stellar Plasma Blackbody",
-    "url": "shaders/stellar-plasma-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/stellar-plasma-blackbody.wgsl",
     "description": "Cosmic nebula domain-warped FBM blended with Planck's law blackbody thermal coloring. Energy intensity drives temperature mapping — cool voids glow ember-red, hot plasma cores burn blue-white with physically-correct radiance scaling.",
     "tags": [
       "blackbody",
@@ -9589,7 +9589,7 @@
   {
     "id": "tensor-flow-morphological",
     "name": "Tensor Flow Morphological",
-    "url": "shaders/tensor-flow-morphological.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/tensor-flow-morphological.wgsl",
     "description": "Depth-aware tensor eigenwarp with morphological post-processing. Erosion darkens compressed tensor regions, dilation brightens tensile regions. Gradient highlights edges created by tensor warping.",
     "features": [
       "advanced-hybrid",
@@ -9706,7 +9706,7 @@
   {
     "id": "thermal-touch-blackbody",
     "name": "Thermal Touch Blackbody",
-    "url": "shaders/thermal-touch-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/thermal-touch-blackbody.wgsl",
     "description": "Mouse-driven thermal camera with blackbody radiation coloring. The cursor acts as a localized heat source and image brightness maps to physically-correct temperature via Planck's law.",
     "tags": [
       "thermal",
@@ -9761,7 +9761,7 @@
   {
     "id": "thermal-vision-blackbody",
     "name": "Thermal Vision Blackbody",
-    "url": "shaders/thermal-vision-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/thermal-vision-blackbody.wgsl",
     "description": "Physically-correct thermal vision camera using blackbody radiation via Planck's law. Image luminance maps to real temperature colors, with mouse acting as a localized heat source and configurable sensor contrast.",
     "tags": [
       "thermal",
@@ -9817,7 +9817,7 @@
   {
     "id": "vaporwave-horizon-prismatic",
     "name": "Vaporwave Horizon Prismatic",
-    "url": "shaders/vaporwave-horizon-prismatic.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/vaporwave-horizon-prismatic.wgsl",
     "description": "Vaporwave Horizon Prismatic",
     "tags": [
       "vaporwave-horizon",
@@ -9874,7 +9874,7 @@
   {
     "id": "vhs-tracking-bilateral",
     "name": "VHS Tracking Bilateral",
-    "url": "shaders/vhs-tracking-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/vhs-tracking-bilateral.wgsl",
     "description": "Full VHS signal chain physics with edge-preserving bilateral smoothing. Timebase jitter, chroma noise, and control track dropouts are filtered through a bilateral dream, creating a soft analog degradation while preserving edges.",
     "features": [
       "advanced-hybrid",
@@ -9945,7 +9945,7 @@
   {
     "id": "viscous-drag-bilateral",
     "name": "Viscous Drag Bilateral",
-    "url": "shaders/viscous-drag-bilateral.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/viscous-drag-bilateral.wgsl",
     "description": "Viscous Drag Bilateral",
     "tags": [
       "viscous-drag",
@@ -10002,7 +10002,7 @@
   {
     "id": "vortex-warp-coupled",
     "name": "Vortex Warp Coupled",
-    "url": "shaders/vortex-warp-coupled.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/vortex-warp-coupled.wgsl",
     "description": "Catalog entry for Vortex Warp Coupled.",
     "tags": [
       "vortex-warp",
@@ -10059,7 +10059,7 @@
   {
     "id": "warp-drive-blackbody",
     "name": "Warp Drive Blackbody",
-    "url": "shaders/warp-drive-blackbody.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/warp-drive-blackbody.wgsl",
     "description": "Catalog entry for Warp Drive Blackbody.",
     "tags": [
       "radial-blur",
@@ -10118,7 +10118,7 @@
   {
     "id": "wave-equation-rgba-fluid",
     "name": "Wave Equation RGBA Fluid",
-    "url": "shaders/wave-equation-rgba-fluid.wgsl",
+    "url": "https://test.1ink.us/image_video_effects/shaders/wave-equation-rgba-fluid.wgsl",
     "description": "Coupled wave equation and incompressible fluid simulation packed into RGBA32FLOAT. Wave height and velocity drive fluid motion while fluid pressure dampens waves. Dye advection visualizes the combined flow field with rainbow phase coloring.",
     "tags": [
       "wave",

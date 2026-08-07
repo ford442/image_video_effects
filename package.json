@@ -16,6 +16,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "prestart": "node scripts/buildMultipassRegistry.js && node scripts/generate_shader_lists.js --base-url=https://test.1ink.us/image_video_effects/ && npm run build:manifest",
     "start": "craco start",
     "prebuild": "npm run wasm:build && node scripts/buildMultipassRegistry.js && node scripts/generate_shader_lists.js --base-url=https://test.1ink.us/image_video_effects/ && npm run build:manifest",
@@ -109,5 +110,15 @@
     "webpack-cli": "^7.1.0",
     "xml2js": "^0.6.2",
     "yaml": "^2.8.2"
+  },
+  "overrides": {
+    "@typescript-eslint/eslint-plugin": "7.18.0",
+    "@typescript-eslint/parser": "7.18.0",
+    "@typescript-eslint/typescript-estree": "7.18.0",
+    "@typescript-eslint/utils": "7.18.0",
+    "@typescript-eslint/type-utils": "7.18.0",
+    "@typescript-eslint/scope-manager": "7.18.0",
+    "@typescript-eslint/types": "7.18.0",
+    "@typescript-eslint/visitor-keys": "7.18.0"
   }
 }

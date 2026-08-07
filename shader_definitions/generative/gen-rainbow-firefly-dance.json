@@ -10,7 +10,7 @@
     "rainbow",
     "organic"
   ],
-  "description": "Hundreds of glowing firefly-like particles dancing in organic swirling patterns. Each firefly has a unique rainbow color that cycles over time. Bright neon glow halos around each particle. Mouse attracts the swarm. Fireflies leave brief phosphorescent trails.",
+  "description": "A fast rainbow firefly swarm with analytic orbital motion, velocity-stretched comet tails, mouse attraction, click-launched mini-swarms, and bounded phosphorescent trails.",
   "workgroup_size": [
     16,
     16,
@@ -55,5 +55,12 @@
   "updated": true,
   "id": "gen-rainbow-firefly-dance",
   "url": "shaders/gen-rainbow-firefly-dance.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "fast-motion",
+    "depth-aware"
+  ]
 }

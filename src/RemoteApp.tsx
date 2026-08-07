@@ -170,6 +170,19 @@ const RemoteApp: React.FC = () => {
         sendMessage('CMD_LOAD_MODEL');
     };
 
+    /** Main app owns availableModes + mode application; remote only dispatches. */
+    const handleRoulette = () => {
+        sendMessage('CMD_ROULETTE');
+    };
+
+    const handleRandomizeSlot = (slot: number) => {
+        sendMessage('CMD_RANDOMIZE_SLOT', slot);
+    };
+
+    const handleRandomizeAllSlots = () => {
+        sendMessage('CMD_RANDOMIZE_ALL_SLOTS');
+    };
+
     const handleSetSelectedVideo = (video: string) => {
         setSelectedVideo(video);
         sendMessage('CMD_SELECT_VIDEO', video);
@@ -270,6 +283,9 @@ const RemoteApp: React.FC = () => {
                     setIsMuted={handleSetMuted}
                     onUploadImageTrigger={() => fileInputImageRef.current?.click()}
                     onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
+                    onRoulette={handleRoulette}
+                    onRandomizeAllSlots={handleRandomizeAllSlots}
+                    onRandomizeSlot={handleRandomizeSlot}
                     isAiVjMode={false}
                     onToggleAiVj={() => {}}
                     aiVjStatus={'idle'}

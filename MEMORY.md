@@ -1,6 +1,64 @@
 # MEMORY.md - Long-Term Curated Memory (Spark Engine)
 
-**Last updated:** 2026-08-05 (Batch 36 shader upgrades)
+**Last updated:** 2026-08-06 (Batch 39 shader upgrade)
+
+## 2026-08-06 — Shader upgrade Batch 39 — FAST MOTION ENCORE
+
+- Continued the smallest clean single-pass generative queue with Chrono Voronoi
+  Mycelium, Singularity Forge, Obsidian Echo Chamber, Prismatic Aether Loom,
+  Rainbow Firefly Dance, Cybernetic Liquid Chrome Engine, Magnetic Field Lines,
+  and Bifurcation Diagram; tracker is now #355.
+- Added shader-specific fast motion through smooth traveling particles,
+  warp/conveyor cameras, velocity-stretched streaks, click events, and bounded
+  field/derivative/history advection. Removed redundant raymarch and field-line
+  loops while repairing control/audio/mouse truth and generated depth/A writes.
+- 8/8 existing `updatedParams` exact; canonical bindings and 16x16x1 retained;
+  no `extraBuffer` writes and `dataTextureB` stays unused.
+- Proof: gate 8/8, focused extraBuffer and custom liveness checks clean, 421
+  generative / 1,310 manifest entries, 1,323 unique IDs, Jest 478/1, and
+  `SKIP_WASM_BUILD=1` build green. Report drift restored. The legacy dead-slider
+  audit scans zero `updatedParams`-only controls, so custom x/y/z/w liveness is
+  the cohort proof. Visual QA remains external.
+
+## 2026-08-06 — Shader upgrade Batch 38 (4-agent swarm) — FAST MOTION batch
+
+- User directive: add fast motion. Next 8 smallest: Sonoluminescent Chrono
+  Geode Matrix, Abyssal Quantum Leviathan Skeleton, Eldritch Tesseract
+  Hive-Mind, Stellar Web-Loom, Neon Plasma Biomechanical Hive, Sentient
+  Aether-Flora Biosphere, Magnetic Dipole Field, Mycelium Network; tracker is
+  now #347.
+- Every shader gained ≥2 fast-motion techniques (closed-form orbitals/whip
+  kinematics, warp-flight cameras, velocity-advected HDR-clamped trails,
+  bass-transient kicks, speed streaks, time-warp easing, analytic dipole-line
+  advection) under stability rules (clamped velocities, bounded feedback, no
+  strobing, dt-based integration).
+- Massive uniform-truth finds: geode's config scrambled as [resX,resY,time,
+  aspect]; neon-plasma hive read all 4 sliders from zoom_config; flora's p1/p2
+  never read; config.y-as-audio in 4 shaders. Coordinator caught vertically
+  mirrored mouse gravity wells in geode + leviathan (camera-convention y
+  mismatch; same class as b37 moth flip — now a standing review item).
+- 8/8 updatedParams byte-exact; state only extraBuffer[133..138] single-writer.
+- Proof: gate 8/8, audits PASS, generative list synced, manifest 1,310/1,310,
+  Jest 478/1, SKIP_WASM_BUILD=1 build green, drift restored. Visual QA
+  external. ~103 pending generative remain.
+
+## 2026-08-06 — Shader upgrade Batch 37 (4-agent swarm)
+
+- Same 4-agent pattern on the next 8 smallest pending generative shaders:
+  Fireworks Fan Shell / Horse Tail / Ring Shell / Kamuro Gold, Symbiotic
+  Cyber-Fungal Core-Reactor, Evolutionary Cellular Gardens, Chrono Kitsune
+  Prism Weaver, Quantum Fluorescent Aether Moth Swarm; tracker is now #339.
+- Fireworks-family normalized-pointer bug confirmed cohort-wide (yz-as-pixels);
+  fixed config.y-as-audio in fungal/kitsune/moth, fungal's engine-owned
+  zoom_config.w mutation slider, gardens' fake hash CA, moth's dead scatter +
+  18-tap curl (→4-tap potential curl). Fungal gained 4 NEW indexed
+  updatedParams (controls-dict schema; engine-owned control excluded).
+- Coordinator caught a moth mouse y-flip (vertical mirror) post-swarm; fixed
+  and re-gated. 7/7 pre-existing updatedParams byte-exact; state only
+  extraBuffer[133..138] single-writer.
+- Proof: gate 8/8, audits PASS, generative list synced, manifest 1,310/1,310
+  (+1 = fungal qualifies), Jest 478/1, SKIP_WASM_BUILD=1 build green, drift
+  restored. Visual QA external. ~111 pending generative remain.
 
 ## 2026-08-05 — Shader upgrade Batch 36 (4-agent swarm)
 

@@ -37,6 +37,18 @@ export const ADAPTIVE_SCALE_STEP_UP = 0.0625;
 export const ADAPTIVE_FPS_LOW_RATIO = 0.7;
 export const ADAPTIVE_FPS_HIGH_RATIO = 0.95;
 
+/**
+ * Minimum time between adaptive resolution-scale changes.
+ * Each scale change rebuilds internal WebGPU textures (often 100–400ms on
+ * mid-range GPUs). Without a cooldown, the once-per-second adaptive timer
+ * can hitch the main thread every tick — Chrome reports this as
+ * `[Violation] 'setInterval' handler took Nms`.
+ */
+export const ADAPTIVE_SCALE_COOLDOWN_MS = 4000;
+
+/** Consecutive low/high FPS samples required before changing scale. */
+export const ADAPTIVE_SCALE_STREAK = 2;
+
 export type RenderQualityMode = 'battery' | 'balanced' | 'ultra' | 'auto';
 
 export interface ResolvedPerformancePolicy {

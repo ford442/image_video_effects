@@ -1,8 +1,14 @@
 // ----------------------------------------------------------------
 // Quantum-Fluorescent Aether-Moth Swarm
 // Category: generative
+// Features: swarm-field, curl-flow, temporal-feedback (textureLoad),
+//           hdr-feedback, aces-tone-map, semantic-alpha, generated-depth,
+//           audio-reactive, interactive-mouse
+// Optimizer pass (Batch 37): 18-tap 3D curlNoise replaced by a 4-tap
+//           curl of a scalar potential (~4.5x noise-eval reduction),
+//           dead-code removal, named constants, HDR feedback chain,
+//           fixed mouse/audio uniform truth, clamped advection fetch.
 // ----------------------------------------------------------------
-
 @group(0) @binding(0) var u_sampler: sampler;
 @group(0) @binding(1) var readTexture: texture_2d<f32>;
 @group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
@@ -18,13 +24,32 @@
 @group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Swarm Density, y=Curl Intensity, z=Glow Strength, w=Audio Sensitivity
-    ripples: array<vec4<f32>, 50>,
+  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
+  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
+  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
+  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
 };
 
-// 3D Simplex noise
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;
+
+// ── Named field constants ───────────────────────────────────────
+const FIELD_SCALE: f32 = 3.0;      // flow-field domain scale
+const FLOW_DRIFT: f32 = 0.5;       // temporal drift of the flow domain
+const CURL_EPS: f32 = 0.12;        // finite-difference step for curl
+const SPAWN_FREQ: f32 = 20.0;      // moth spawn field frequency
+const SPAWN_LO: f32 = 0.7;         // spawn threshold low
+const SPAWN_HI: f32 = 0.9;         // spawn threshold high
+const TRAIL_DECAY: f32 = 0.92;     // advected trail persistence
+const ADVECT_SCALE: f32 = 0.02;    // trail advection step
+const MOUSE_FORCE: f32 = 0.05;     // gravity-node strength
+const MOUSE_SOFT: f32 = 0.1;       // force softening (1/(d²+soft))
+const SCATTER_PUSH: f32 = -2.5;    // repulsion on mouse-down
+const MANDALA_RINGS: f32 = 20.0;
+const MANDALA_ARMS: f32 = 8.0;
+const HDR_CEIL: f32 = 6.0;         // keep HDR feedback bounded
+
+// ── 3D simplex noise (canonical Ashima form) ────────────────────
 fn mod289(x: vec3<f32>) -> vec3<f32> {
     return x - floor(x * (1.0 / 289.0)) * 289.0;
 }
@@ -98,111 +123,119 @@ fn snoise(v: vec3<f32>) -> f32 {
     return 42.0 * dot(m * m, vec4<f32>(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
 }
 
-fn snoiseVec3(x: vec3<f32>) -> vec3<f32> {
-    var s = snoise(vec3<f32>(x));
-    var s1 = snoise(vec3<f32>(x.y - 19.1, x.z + 33.4, x.x + 47.2));
-    var s2 = snoise(vec3<f32>(x.z + 74.2, x.x - 124.5, x.y + 99.4));
-    return vec3<f32>(s, s1, s2);
+// ── Cheap divergence-free 2D flow: curl of a scalar potential ───
+// 4 snoise taps instead of the old 18-tap 3D curlNoise (6 × snoiseVec3).
+fn curl2(p: vec3<f32>) -> vec2<f32> {
+    let dx = vec3<f32>(CURL_EPS, 0.0, 0.0);
+    let dy = vec3<f32>(0.0, CURL_EPS, 0.0);
+    let dndx = (snoise(p + dx) - snoise(p - dx)) / (2.0 * CURL_EPS);
+    let dndy = (snoise(p + dy) - snoise(p - dy)) / (2.0 * CURL_EPS);
+    return vec2<f32>(dndy, -dndx); // perpendicular gradient = divergence-free
 }
 
-fn curlNoise(p: vec3<f32>) -> vec3<f32> {
-    let e = 0.1;
-    let dx = vec3<f32>(e, 0.0, 0.0);
-    let dy = vec3<f32>(0.0, e, 0.0);
-    let dz = vec3<f32>(0.0, 0.0, e);
-
-    let p_x0 = snoiseVec3(p - dx);
-    let p_x1 = snoiseVec3(p + dx);
-    let p_y0 = snoiseVec3(p - dy);
-    let p_y1 = snoiseVec3(p + dy);
-    let p_z0 = snoiseVec3(p - dz);
-    let p_z1 = snoiseVec3(p + dz);
-
-    let x = p_y1.z - p_y0.z - p_z1.y + p_z0.y;
-    let y = p_z1.x - p_z0.x - p_x1.z + p_x0.z;
-    let z = p_x1.y - p_x0.y - p_y1.x + p_y0.x;
-
-    let divisor = 1.0 / (2.0 * e);
-    return normalize(vec3<f32>(x, y, z) * divisor);
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Memory rule says: read from dataTextureC and write to dataTextureA
-// (However, this is typically for ping-pong. For particle swarms on a screen, we compute a field and display it).
-// The task requires: flocking behavior mimicking complex fluid dynamics,
-// a persistent buffer if needed, audio-reactive fluorescence.
+fn luma(rgb: vec3<f32>) -> f32 {
+    return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let res = vec2<f32>(u.config.z, u.config.w);
-    let gid = vec2<i32>(global_id.xy);
-    if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) {
-        return;
-    }
+    let pixel = vec2<i32>(global_id.xy);
+    let res   = vec2<f32>(u.config.zw);
+    // bounds guard — mandatory
+    if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-    let uv = (vec2<f32>(gid) / res) * 2.0 - 1.0;
-    let uv_scaled = uv * vec2<f32>(res.x / res.y, 1.0);
+    let aspect = vec2<f32>(res.x / res.y, 1.0);
+    let uv = (vec2<f32>(pixel) / res) * 2.0 - vec2<f32>(1.0);
+    let uv_scaled = uv * aspect;
 
     let time = u.config.x;
-    let audio = u.config.y;
-    let mouse = (vec2<f32>(u.zoom_config.y, u.zoom_config.z) / res) * 2.0 - 1.0;
-    let mouse_scaled = mouse * vec2<f32>(res.x / res.y, 1.0);
-    let click = select(0.0, 1.0, u.config.y > 0.5); // proxy for click or audio reactivity
 
-    let swarm_density = u.zoom_params.x;
-    let curl_intensity = u.zoom_params.y;
-    let glow_strength = u.zoom_params.z;
-    let audio_sens = u.zoom_params.w;
-
-    // Read previous frame from dataTextureC (as per Memory rule)
-    let old_color = textureLoad(dataTextureC, gid, 0).rgb;
-
-    // Base particle space
-    var p = vec3<f32>(uv_scaled * 3.0, time * 0.2);
-
-    // Apply curl noise
-    var vel = curlNoise(p * curl_intensity + time * 0.5);
-
-    // Attraction to mouse / gravity nodes
-    let dist_to_mouse = distance(uv_scaled, mouse_scaled);
-    let force_dir = normalize(mouse_scaled - uv_scaled);
-    let force_mag = (1.0 / (dist_to_mouse * dist_to_mouse + 0.1)) * 0.05;
-
-    // Scatter on click/high audio
-    let scatter = select(1.0, -2.0, u.zoom_config.y > 0.0); // Simple interaction model
-
-    vel = vel + vec3<f32>(force_dir * force_mag * scatter, 0.0);
-
-    // Advection style trails
-    let advect_offset = vel.xy * 0.02;
-    let advect_uv = (uv + advect_offset) * 0.5 + 0.5;
-    let advect_gid = vec2<i32>(advect_uv * res);
-    let trail = textureLoad(dataTextureC, advect_gid, 0).rgb;
-
-    // Spawn particles (noise threshold)
-    let particle_noise = snoise(vec3<f32>(uv_scaled * 20.0 * swarm_density, time));
-    var spawn = smoothstep(0.7, 0.9, particle_noise);
-
-    // Audio reactivity - spontaneous assembly
-    if (audio > 0.5) {
-        let mandala = sin(length(uv_scaled) * 20.0 - time * 5.0) * cos(atan2(uv_scaled.y, uv_scaled.x) * 8.0);
-        spawn += smoothstep(0.8, 1.0, mandala) * audio * audio_sens;
+    // Audio — ONLY plasmaBuffer[0].xyz + guarded FFT bins 1–8
+    let bass   = plasmaBuffer[0].x;
+    let mids   = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    var fft = 0.0;
+    if (arrayLength(&extraBuffer) > 13u) {
+        for (var k = 1u; k <= 8u; k = k + 1u) {
+            fft += extraBuffer[4u + k];
+        }
+        fft *= 0.125;
     }
 
-    // Color mapping
-    let speed = length(vel);
+    // Mouse: zoom_config.yz is already 0–1 uv (y=0 top) — no /res divide, no y-flip
+    // (uv.y is -1 at the top of the frame, so top-down mouse maps 1:1).
+    let mouse01 = u.zoom_config.yz;
+    let mouse = mouse01 * 2.0 - vec2<f32>(1.0);
+    let mouse_scaled = mouse * aspect;
+    let mouse_down = u.zoom_config.w > 0.5;
+
+    // Live sliders
+    let swarm_density  = u.zoom_params.x;
+    let curl_intensity = u.zoom_params.y;
+    let glow_strength  = u.zoom_params.z;
+    let audio_sens     = u.zoom_params.w;
+
+    // ── Flow field (4-tap curl; 1 extra tap for z-wobble) ───────
+    let flow_p = vec3<f32>(uv_scaled * FIELD_SCALE, time * 0.2)
+               * max(curl_intensity, 0.05)
+               + vec3<f32>(0.0, 0.0, time * FLOW_DRIFT);
+    let flow = curl2(flow_p) * (0.6 + curl_intensity * 0.8);
+    let wobble = snoise(flow_p * 1.7 + vec3<f32>(11.3, 7.9, 3.1));
+
+    // Attraction to mouse gravity node; scatter (repel) on mouse-down
+    let to_mouse = mouse_scaled - uv_scaled;
+    let dist_sq = dot(to_mouse, to_mouse) + MOUSE_SOFT;
+    let force_dir = to_mouse * inverseSqrt(dist_sq);
+    let force_mag = MOUSE_FORCE / dist_sq;
+    let scatter = select(1.0, SCATTER_PUSH, mouse_down);
+
+    let vel = vec3<f32>(flow + force_dir * force_mag * scatter, wobble * 0.25);
+
+    // ── Advected trails (textureLoad feedback, clamped fetch) ───
+    let advect_uv = (uv + vel.xy * ADVECT_SCALE) * 0.5 + vec2<f32>(0.5);
+    let advect_px = clamp(vec2<i32>(advect_uv * res), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+    let trail = textureLoad(dataTextureC, advect_px, 0).rgb;
+
+    // ── Moth spawn field (noise threshold, density slider) ──────
+    let particle_noise = snoise(vec3<f32>(uv_scaled * SPAWN_FREQ * swarm_density, time));
+    var spawn = smoothstep(SPAWN_LO, SPAWN_HI, particle_noise);
+
+    // Audio-driven mandala assembly (branchless gate, bass+mids energy)
+    let audio_energy = bass + mids * 0.5;
+    let gate = smoothstep(0.15, 0.7, audio_energy) * audio_sens;
+    let mandala = sin(length(uv_scaled) * MANDALA_RINGS - time * 5.0)
+                * cos(atan2(uv_scaled.y, uv_scaled.x) * MANDALA_ARMS);
+    spawn += smoothstep(0.8, 1.0, mandala) * gate;
+
+    // ── Fluorescent color mapping ───────────────────────────────
     let col1 = vec3<f32>(0.0, 1.0, 1.0); // Cyan
     let col2 = vec3<f32>(1.0, 0.0, 1.0); // Magenta
     let col3 = vec3<f32>(0.2, 0.0, 0.8); // Indigo
 
-    let vel_color = mix(col3, mix(col1, col2, speed), speed * 2.0);
+    let speed = length(vel);
+    let vel_color = mix(col3, mix(col1, col2, saturate(speed)), saturate(speed * 2.0));
+    let shimmer = 1.0 + treble * 0.6 + fft * 0.4; // quantum fluorescence flicker
 
-    var final_color = trail * 0.92; // Decay
-    final_color += vel_color * spawn * glow_strength;
+    // ── HDR compose + bounded feedback ──────────────────────────
+    var hdr = trail * TRAIL_DECAY;
+    hdr += vel_color * spawn * glow_strength * shimmer;
+    hdr = min(hdr, vec3<f32>(HDR_CEIL));
 
-    // Tone mapping
-    final_color = final_color / (1.0 + final_color);
+    // ── Real generated depth: dense moth clusters sit closer ────
+    let depth_val = clamp(1.0 - spawn * 0.85 - saturate(luma(hdr)) * 0.15, 0.0, 1.0);
+    textureStore(writeDepthTexture, pixel, vec4<f32>(depth_val, 0.0, 0.0, 0.0));
 
-    textureStore(dataTextureA, gid, vec4<f32>(final_color, 1.0));
-    textureStore(writeTexture, gid, vec4<f32>(final_color, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    // ── Semantic alpha: swarm intensity ─────────────────────────
+    let alpha = clamp(spawn * 0.7 + luma(hdr) * 0.4, 0.03, 0.95);
+
+    // HDR history for next frame's feedback (A = primary state)
+    textureStore(dataTextureA, pixel, vec4<f32>(hdr, alpha));
+
+    // Presentation-only: ACES tone map at the end of the chain
+    let ldr = acesToneMap(hdr * (0.9 + mids * 0.2));
+    textureStore(writeTexture, pixel, vec4<f32>(ldr, alpha));
 }

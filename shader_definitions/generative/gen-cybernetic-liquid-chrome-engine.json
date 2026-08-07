@@ -8,7 +8,7 @@
     "raymarching",
     "fractal"
   ],
-  "description": "A colossal, endlessly shifting mechanical engine constructed of hyper-reflective liquid chrome, pumping iridescent plasma through infinitely complex fractal pistons that react to the heavy bass of audio frequencies.",
+  "description": "A liquid-chrome engine racing on a wrapped conveyor camera, with audio-driven piston surges, spectral reflection streaks, mouse orbit, and bounded metallic smears.",
   "workgroup_size": [
     16,
     16,
@@ -53,5 +53,11 @@
   "updated": true,
   "id": "gen-cybernetic-liquid-chrome-engine",
   "url": "shaders/gen-cybernetic-liquid-chrome-engine.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "fast-motion",
+    "depth-aware"
+  ]
 }

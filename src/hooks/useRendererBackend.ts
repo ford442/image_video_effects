@@ -77,10 +77,12 @@ export function useRendererBackend({
             const manager = rendererRef.current;
             if (!manager) return;
             const fps = manager.getCurrentFPS?.() ?? 0;
+            // Skip no-op React updates — 800ms setState thrash was contributing
+            // to main-thread pressure alongside adaptive scale rebuilds.
             if (activeRendererType === 'wasm') {
-                setWasmFps(fps);
+                setWasmFps((prev) => (Math.abs(prev - fps) < 0.5 ? prev : fps));
             } else {
-                setJsFps(fps);
+                setJsFps((prev) => (Math.abs(prev - fps) < 0.5 ? prev : fps));
             }
         }, 800);
         return () => clearInterval(interval);

@@ -8,7 +8,7 @@
     "reflection",
     "dark"
   ],
-  "description": "An infinite, abyssal expanse of highly polished, brutalist obsidian monoliths that react to audio by emitting and reflecting brilliant, luminescent echolocation ripples across their glassy surfaces.",
+  "description": "A wrapped high-speed flight through polished obsidian monoliths, with audio-driven sonar bands, click echoes, spectral reflections, and bounded corridor trails.",
   "workgroup_size": [
     16,
     16,
@@ -53,5 +53,12 @@
   "updated": true,
   "id": "gen-obsidian-echo-chamber",
   "url": "shaders/gen-obsidian-echo-chamber.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal",
+    "fast-motion",
+    "depth-aware"
+  ]
 }

@@ -8,7 +8,7 @@
     "temporal",
     "audio-reactive"
   ],
-  "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core.",
+  "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core. Fast-motion upgrade: closed-form orbital camera with eased time-warp spin, sonoluminescent flash-burst physics (bubble-collapse cycles with ballistic shockwave shells), bass-transient kick bursts, and swirl-advected motion-blur trails.",
   "workgroup_size": [
     16,
     16,
@@ -53,5 +53,17 @@
   "updated": true,
   "id": "gen-sonoluminescent-chrono-geode-matrix",
   "url": "shaders/gen-sonoluminescent-chrono-geode-matrix.wgsl",
-  "features": []
+  "features": [
+    "fast-motion",
+    "flash-burst-physics",
+    "time-warp-easing",
+    "orbital-camera",
+    "motion-blur-trails",
+    "bass-transient-kick",
+    "audio-reactive",
+    "temporal-feedback",
+    "aces-tone-map",
+    "semantic-alpha",
+    "generated-depth"
+  ]
 }

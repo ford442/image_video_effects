@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "A hyper-dense, gravity-warped crucible of collapsing stars and chaotic plasma rings, endlessly generating and consuming geometric artifacts.",
+  "description": "A gravity-warped stellar forge with relativistic accretion shear, ballistic jet knots, mouse lensing, and bounded angular light trails driven by live audio.",
   "workgroup_size": [
     16,
     16,
@@ -56,5 +56,11 @@
   "updated": true,
   "id": "gen-singularity-forge",
   "url": "shaders/gen-singularity-forge.wgsl",
-  "features": []
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "temporal",
+    "fast-motion",
+    "depth-aware"
+  ]
 }
