@@ -51,7 +51,7 @@ fi
 export EM_CACHE=/tmp/emscripten_cache
 
 # Print diagnostics
-emcc --version | head -1
+em++ --version | head -1
 echo "EM_CACHE: $EM_CACHE"
 echo "EMCC_CFLAGS: ${EMCC_CFLAGS:-<unset>}"
 
@@ -147,7 +147,7 @@ SOURCES=(
     "$SCRIPT_DIR/audio_depth.cpp"
     "$SCRIPT_DIR/wasm_internal.cpp"
 )
-emcc -std=c++20 -O2 \
+em++ -std=c++20 -O2 \
     --use-port=emdawnwebgpu \
     "${SOURCES[@]}" \
     "-I$SCRIPT_DIR" \
