@@ -147,7 +147,7 @@ SOURCES=(
     "$SCRIPT_DIR/audio_depth.cpp"
     "$SCRIPT_DIR/wasm_internal.cpp"
 )
-emcc -std=c++20 -O2 \
+em++ -std=c++20 -O2 \
     --use-port=emdawnwebgpu \
     "${SOURCES[@]}" \
     "-I$SCRIPT_DIR" \
